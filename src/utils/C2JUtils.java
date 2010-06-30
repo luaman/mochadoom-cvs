@@ -38,5 +38,8 @@ public class C2JUtils {
             System.exit(-1);
         }
     }
+    public static int toUnsignedByte(byte b){
+        return (0x000000FF&b);
+    }
     
 }

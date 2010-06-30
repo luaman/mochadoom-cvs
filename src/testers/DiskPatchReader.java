@@ -45,6 +45,13 @@ public class DiskPatchReader {
     wall1.read(f);
     System.out.println(wall1.height);
     
+    System.out.println("Num for HELP1: "+W.GetNumForName("HELP1"));
+    bb=W.CacheLumpName("HELP1", 0);
+    patch_t stbar=new patch_t();
+    stbar.unpack(bb);
+    System.out.println(stbar.height);
+    System.out.println(stbar.width);
+    
         }
     
 }

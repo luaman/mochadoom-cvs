@@ -9,7 +9,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomVideo.java,v 1.1 2010/06/30 08:58:51 velktron Exp $
+// $Id: DoomVideo.java,v 1.2 2010/06/30 15:47:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: DoomVideo.java,v $
+// Revision 1.2  2010/06/30 15:47:43  velktron
+// Still working on column_t...
+//
 // Revision 1.1  2010/06/30 08:58:51  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -62,7 +65,7 @@ import static data.Defines.*;
 
 public class DoomVideo{
 	
-static final String rcsid = "$Id: DoomVideo.java,v 1.1 2010/06/30 08:58:51 velktron Exp $";
+static final String rcsid = "$Id: DoomVideo.java,v 1.2 2010/06/30 15:47:43 velktron Exp $";
 
 private boolean RANGECHECK = false;
 
@@ -298,6 +301,18 @@ if (RANGECHECK)
 	// step through the posts in a column 
 	 //	while (column->topdelta != 0xff ) 
 	
+	/* MAES:
+	 * What happens here is that there can be more columns than those specified by
+	 * "width".
+	 * Max length of a column is 128 pixels, so longer "columns" are actually made
+	 * by several "post_t" chained to each other...which use the same datatype
+	 * as columns. E.g. For a height of 200 pixels 3 are used: 128+72+0 (with FF topdelta)
+	 * 
+	 * I propose tweaking the reader so it's able to read "tall patches" as well,
+	 * and composite/merge multiple columns into one.
+	 * 
+	 */
+	
 	while (column.topdelta != (byte)0xff )
 	{ 
 	    //source = (byte *)column + 3;
@@ -319,7 +334,7 @@ if (RANGECHECK)
 	} 
  }			 
 }
-
+}
 
 /*
 

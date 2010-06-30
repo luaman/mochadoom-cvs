@@ -1,5 +1,12 @@
 package rr;
 
+/** The difference with a column_t is that a post_t carries pixel data only,
+ *  while a column_t may actuallyactually only groups
+ * 
+ * @author Maes
+ *
+ */
+
 public class post_t {
     
     public post_t(byte topdelta, byte length) {
@@ -11,7 +18,3 @@ public class post_t {
     public byte        length;     // length data bytes follows
 }
 
-
-// MAES: This distinction is really pointless in Java. Stick to either type.
-//column_t is a list of 0 or more post_t, (byte)-1 terminated
-//typedef post_t  column_t;
