@@ -5,5 +5,5 @@ import java.nio.ByteBuffer;
 
 public interface CacheableDoomObject {
     
-    public void unpack(ByteBuffer buf) throws IOException, Exception ;
+    public void unpack(ByteBuffer buf) throws IOException ;
 }

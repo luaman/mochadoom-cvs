@@ -4,6 +4,12 @@ import java.io.IOException;
 
 import m.Swap;
 
+/** filelumps are on-disk structures. lumpinfos are almost the same, but are memory only.
+ * 
+ * @author Maes
+ *
+ */
+
 public class filelump_t  implements ReadableDoomObject {
         int         filepos;
         long         size; // Is INT 32-bit in file!

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: WadLoader.java,v 1.2 2010/06/30 11:44:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.2  2010/06/30 11:44:40  velktron
+// Added a tester for patches (one of the most loosely-coupled structs in Doom!) and fixed some minor stuff all around.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -241,11 +244,10 @@ public void AddFile (String filename) throws Exception
 	    // Homebrew levels?
 	    if (header.identification.compareTo("PWAD")!=0)
 	    {
-		// TODO: I_Error ("Wad file %s doesn't have IWAD "
-		//	 "or PWAD id\n", filename);
+		system.Error ("Wad file %s doesn't have IWAD or PWAD id\n", filename);
 	    }
 	    
-	    // ???modifiedgame = true;		
+	    // TODO: modifiedgame = true;		
 	}
 
     // MAES: I don't think the following are needed. Casting to long? :-S    
@@ -479,6 +481,46 @@ public int CheckNumForName (String name)
     return -1;
 }
 
+/** Returns actual lumpinfo_t object for a given name.
+ *  Useful if you want to access something on a file, I guess?
+ * 
+ * @param name
+ * @return
+ */
+public lumpinfo_t GetLumpinfoForName (String name)
+{
+
+ 
+ int     v1;
+ int     v2;
+ //lumpinfo_t lump_p;    
+ 
+ int lump_p;
+ // make the name into two integers for easy compares
+ // case insensitive
+ name8 union=new name8(strupr (name));
+
+ v1 = union.x[0];
+ v2 = union.x[1];
+
+
+ // scan backwards so patch lump files take precedence
+ lump_p = numlumps;
+
+ while (lump_p-- != 0)
+ {
+     int a=name8.stringToInt(lumpinfo[lump_p].name,0);
+     int b=name8.stringToInt(lumpinfo[lump_p].name,4);
+ if ( ( a== v1)&&(
+         b == v2))
+ {
+     return lumpinfo[lump_p];
+ }
+ }
+
+ // TFB. Not found.
+ return null;
+}
 
 
 

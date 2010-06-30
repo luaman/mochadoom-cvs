@@ -28,9 +28,14 @@ public class C2JUtils {
      * @throws Exception 
      * @throws  
      */
-    public static void initArrayOfObjects(Object[] os, Class c) throws Exception{
+    public static void initArrayOfObjects(Object[] os, Class c) {
+        try {
         for (int i=0;i<os.length;i++){
             os[i]=c.newInstance();
+        }
+        } catch (Exception e){
+            System.err.println("Failure to allocate "+os.length+" objects of class" +c.getName()+ "!");
+            System.exit(-1);
         }
     }
     

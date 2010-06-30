@@ -28,21 +28,29 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
     
     @Override
     public void read(DoomFile f) throws IOException{
-        // OK, for some fucked up reason these appear to be big endian in the WAD disk, and
-        // whenever they are accessed their endianness is changed on-the-fly.
-        this.width=f.readShort();
-        this.height=f.readShort();
-        this.leftoffset=f.readShort();
-        this.topoffset=f.readShort();
+
+        long pos=f.getFilePointer();
+        this.width=f.readLEShort();
+        this.height=f.readLEShort();
+        this.leftoffset=f.readLEShort();
+        this.topoffset=f.readLEShort();
         // As many columns as width...right???
         this.columnofs=new int[this.width];
-        f.readIntArray(this.columnofs, this.columnofs.length);
-        // TODO Auto-generated method stub
+        this.columns=new column_t[this.width];
+        C2JUtils.initArrayOfObjects( this.columns, column_t.class);
+        
+        // Read the column offsets.
+        f.readIntArray(this.columnofs, this.columnofs.length, ByteOrder.LITTLE_ENDIAN);
+        for (int i=0;i<this.width;i++){
+            // Go to offset.
+            f.seek(pos+this.columnofs[i]);
+            this.columns[i].read(f);
+        }
         
     }
     @Override
     public void unpack(ByteBuffer b)
-            throws Exception {
+            throws IOException {
         // Remember to reset the ByteBuffer position each time.
         b.position(0);
         // In ByteBuffers, the order can be conveniently set beforehand :-o

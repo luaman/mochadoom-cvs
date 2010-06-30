@@ -22,9 +22,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+//$Id: DoomFile.java,v 1.2 2010/06/30 11:44:41 velktron Exp $
 
 import java.io.*;
+import java.nio.ByteOrder;
+
+import m.Swap;
 
 /**
 * RandomAccessFile, but handles readString/WriteString specially and offers
@@ -137,12 +140,15 @@ public class DoomFile extends RandomAccessFile {
        }
    }
    
-   public void readIntArray(int[] s,int len) throws IOException {
+   public void readIntArray(int[] s,int len, ByteOrder bo) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){           
            s[i]=this.readInt();
+           if (bo==ByteOrder.LITTLE_ENDIAN){
+               s[i]=Swap.LONG(s[i]);
+           }
        }
    }
    
@@ -185,7 +191,7 @@ public class DoomFile extends RandomAccessFile {
    
    public int readLEInt() throws IOException{
        int tmp=readInt();
-       return INT_little_endian_TO_big_endian(tmp);
+       return Swap.LONG(tmp);
    }
    
 // 2-byte number
@@ -199,5 +205,10 @@ public class DoomFile extends RandomAccessFile {
    {
        return((i&0xff)<<24)+((i&0xff00)<<8)+((i&0xff0000)>>8)+((i>>24)&0xff);
    }
+
+public short readLEShort() throws IOException {
+    short tmp=readShort();
+    return Swap.SHORT(tmp);
+}
    
 }
