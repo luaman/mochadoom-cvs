@@ -22,7 +22,7 @@ public class C2JUtils {
     }
     
     /** Automatically "initializes" arrays of objects. Better than doing it by hand!!!
-     *  NOTE: doesn't work :-(
+     * 
      * @param os
      * @param c
      * @throws Exception 
