@@ -1,0 +1,213 @@
+# Project: Project1
+# Makefile created by Dev-C++ 4.9.9.2
+
+CPP  = g++.exe
+CC   = gcc.exe
+WINDRES = windres.exe
+RES  = 
+OBJ  = am_map.o d_items.o d_main.o d_net.o doomdef.o doomstat.o dstrings.o f_finale.o f_wipe.o g_game.o hu_lib.o hu_stuff.o i_main.o i_net.o i_sound.o i_system.o i_video.o info.o m_argv.o m_bbox.o m_cheat.o m_fixed.o m_menu.o m_misc.o m_random.o m_swap.o p_ceilng.o p_doors.o p_enemy.o p_floor.o p_inter.o p_lights.o p_map.o p_maputl.o p_mobj.o p_plats.o p_pspr.o p_saveg.o p_setup.o p_sight.o p_spec.o p_switch.o p_telept.o p_tick.o p_user.o r_bsp.o r_data.o r_draw.o r_main.o r_plane.o r_segs.o r_sky.o r_things.o s_sound.o sounds.o st_lib.o st_stuff.o tables.o v_video.o w_wad.o wi_stuff.o z_zone.o $(RES)
+LINKOBJ  = am_map.o d_items.o d_main.o d_net.o doomdef.o doomstat.o dstrings.o f_finale.o f_wipe.o g_game.o hu_lib.o hu_stuff.o i_main.o i_net.o i_sound.o i_system.o i_video.o info.o m_argv.o m_bbox.o m_cheat.o m_fixed.o m_menu.o m_misc.o m_random.o m_swap.o p_ceilng.o p_doors.o p_enemy.o p_floor.o p_inter.o p_lights.o p_map.o p_maputl.o p_mobj.o p_plats.o p_pspr.o p_saveg.o p_setup.o p_sight.o p_spec.o p_switch.o p_telept.o p_tick.o p_user.o r_bsp.o r_data.o r_draw.o r_main.o r_plane.o r_segs.o r_sky.o r_things.o s_sound.o sounds.o st_lib.o st_stuff.o tables.o v_video.o w_wad.o wi_stuff.o z_zone.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib"  
+INCS =  -I"C:/Dev-Cpp/include" 
+CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include" 
+BIN  = Doom.exe
+CXXFLAGS = $(CXXINCS)  
+CFLAGS = $(INCS)  
+RM = rm -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before Doom.exe all-after
+
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CC) $(LINKOBJ) -o "Doom.exe" $(LIBS)
+
+am_map.o: am_map.c
+	$(CC) -c am_map.c -o am_map.o $(CFLAGS)
+
+d_items.o: d_items.c
+	$(CC) -c d_items.c -o d_items.o $(CFLAGS)
+
+d_main.o: d_main.c
+	$(CC) -c d_main.c -o d_main.o $(CFLAGS)
+
+d_net.o: d_net.c
+	$(CC) -c d_net.c -o d_net.o $(CFLAGS)
+
+doomdef.o: doomdef.c
+	$(CC) -c doomdef.c -o doomdef.o $(CFLAGS)
+
+doomstat.o: doomstat.c
+	$(CC) -c doomstat.c -o doomstat.o $(CFLAGS)
+
+dstrings.o: dstrings.c
+	$(CC) -c dstrings.c -o dstrings.o $(CFLAGS)
+
+f_finale.o: f_finale.c
+	$(CC) -c f_finale.c -o f_finale.o $(CFLAGS)
+
+f_wipe.o: f_wipe.c
+	$(CC) -c f_wipe.c -o f_wipe.o $(CFLAGS)
+
+g_game.o: g_game.c
+	$(CC) -c g_game.c -o g_game.o $(CFLAGS)
+
+hu_lib.o: hu_lib.c
+	$(CC) -c hu_lib.c -o hu_lib.o $(CFLAGS)
+
+hu_stuff.o: hu_stuff.c
+	$(CC) -c hu_stuff.c -o hu_stuff.o $(CFLAGS)
+
+i_main.o: i_main.c
+	$(CC) -c i_main.c -o i_main.o $(CFLAGS)
+
+i_net.o: i_net.c
+	$(CC) -c i_net.c -o i_net.o $(CFLAGS)
+
+i_sound.o: i_sound.c
+	$(CC) -c i_sound.c -o i_sound.o $(CFLAGS)
+
+i_system.o: i_system.c
+	$(CC) -c i_system.c -o i_system.o $(CFLAGS)
+
+i_video.o: i_video.c
+	$(CC) -c i_video.c -o i_video.o $(CFLAGS)
+
+info.o: info.c
+	$(CC) -c info.c -o info.o $(CFLAGS)
+
+m_argv.o: m_argv.c
+	$(CC) -c m_argv.c -o m_argv.o $(CFLAGS)
+
+m_bbox.o: m_bbox.c
+	$(CC) -c m_bbox.c -o m_bbox.o $(CFLAGS)
+
+m_cheat.o: m_cheat.c
+	$(CC) -c m_cheat.c -o m_cheat.o $(CFLAGS)
+
+m_fixed.o: m_fixed.c
+	$(CC) -c m_fixed.c -o m_fixed.o $(CFLAGS)
+
+m_menu.o: m_menu.c
+	$(CC) -c m_menu.c -o m_menu.o $(CFLAGS)
+
+m_misc.o: m_misc.c
+	$(CC) -c m_misc.c -o m_misc.o $(CFLAGS)
+
+m_random.o: m_random.c
+	$(CC) -c m_random.c -o m_random.o $(CFLAGS)
+
+m_swap.o: m_swap.c
+	$(CC) -c m_swap.c -o m_swap.o $(CFLAGS)
+
+p_ceilng.o: p_ceilng.c
+	$(CC) -c p_ceilng.c -o p_ceilng.o $(CFLAGS)
+
+p_doors.o: p_doors.c
+	$(CC) -c p_doors.c -o p_doors.o $(CFLAGS)
+
+p_enemy.o: p_enemy.c
+	$(CC) -c p_enemy.c -o p_enemy.o $(CFLAGS)
+
+p_floor.o: p_floor.c
+	$(CC) -c p_floor.c -o p_floor.o $(CFLAGS)
+
+p_inter.o: p_inter.c
+	$(CC) -c p_inter.c -o p_inter.o $(CFLAGS)
+
+p_lights.o: p_lights.c
+	$(CC) -c p_lights.c -o p_lights.o $(CFLAGS)
+
+p_map.o: p_map.c
+	$(CC) -c p_map.c -o p_map.o $(CFLAGS)
+
+p_maputl.o: p_maputl.c
+	$(CC) -c p_maputl.c -o p_maputl.o $(CFLAGS)
+
+p_mobj.o: p_mobj.c
+	$(CC) -c p_mobj.c -o p_mobj.o $(CFLAGS)
+
+p_plats.o: p_plats.c
+	$(CC) -c p_plats.c -o p_plats.o $(CFLAGS)
+
+p_pspr.o: p_pspr.c
+	$(CC) -c p_pspr.c -o p_pspr.o $(CFLAGS)
+
+p_saveg.o: p_saveg.c
+	$(CC) -c p_saveg.c -o p_saveg.o $(CFLAGS)
+
+p_setup.o: p_setup.c
+	$(CC) -c p_setup.c -o p_setup.o $(CFLAGS)
+
+p_sight.o: p_sight.c
+	$(CC) -c p_sight.c -o p_sight.o $(CFLAGS)
+
+p_spec.o: p_spec.c
+	$(CC) -c p_spec.c -o p_spec.o $(CFLAGS)
+
+p_switch.o: p_switch.c
+	$(CC) -c p_switch.c -o p_switch.o $(CFLAGS)
+
+p_telept.o: p_telept.c
+	$(CC) -c p_telept.c -o p_telept.o $(CFLAGS)
+
+p_tick.o: p_tick.c
+	$(CC) -c p_tick.c -o p_tick.o $(CFLAGS)
+
+p_user.o: p_user.c
+	$(CC) -c p_user.c -o p_user.o $(CFLAGS)
+
+r_bsp.o: r_bsp.c
+	$(CC) -c r_bsp.c -o r_bsp.o $(CFLAGS)
+
+r_data.o: r_data.c
+	$(CC) -c r_data.c -o r_data.o $(CFLAGS)
+
+r_draw.o: r_draw.c
+	$(CC) -c r_draw.c -o r_draw.o $(CFLAGS)
+
+r_main.o: r_main.c
+	$(CC) -c r_main.c -o r_main.o $(CFLAGS)
+
+r_plane.o: r_plane.c
+	$(CC) -c r_plane.c -o r_plane.o $(CFLAGS)
+
+r_segs.o: r_segs.c
+	$(CC) -c r_segs.c -o r_segs.o $(CFLAGS)
+
+r_sky.o: r_sky.c
+	$(CC) -c r_sky.c -o r_sky.o $(CFLAGS)
+
+r_things.o: r_things.c
+	$(CC) -c r_things.c -o r_things.o $(CFLAGS)
+
+s_sound.o: s_sound.c
+	$(CC) -c s_sound.c -o s_sound.o $(CFLAGS)
+
+sounds.o: sounds.c
+	$(CC) -c sounds.c -o sounds.o $(CFLAGS)
+
+st_lib.o: st_lib.c
+	$(CC) -c st_lib.c -o st_lib.o $(CFLAGS)
+
+st_stuff.o: st_stuff.c
+	$(CC) -c st_stuff.c -o st_stuff.o $(CFLAGS)
+
+tables.o: tables.c
+	$(CC) -c tables.c -o tables.o $(CFLAGS)
+
+v_video.o: v_video.c
+	$(CC) -c v_video.c -o v_video.o $(CFLAGS)
+
+w_wad.o: w_wad.c
+	$(CC) -c w_wad.c -o w_wad.o $(CFLAGS)
+
+wi_stuff.o: wi_stuff.c
+	$(CC) -c wi_stuff.c -o wi_stuff.o $(CFLAGS)
+
+z_zone.o: z_zone.c
+	$(CC) -c z_zone.c -o z_zone.o $(CFLAGS)
