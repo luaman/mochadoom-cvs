@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: fixed_t.java,v 1.2 2010/07/01 18:38:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.2  2010/07/01 18:38:09  velktron
+// Video "rendering" completed, columns_t parsing completed. Play around with testers :-p
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -50,6 +53,10 @@ public class fixed_t implements Comparable{
     public static final int FRACUNIT =       (1<<FRACBITS);
     public int val;
     
+    public fixed_t(){
+        this.set(0);
+    }
+    
     public int get(){
         return val;
     }
@@ -75,9 +82,14 @@ public class fixed_t implements Comparable{
         this.val=val;
     }
     
-//static const char rcsid[] = "$Id: fixed_t.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.2 2010/07/01 18:38:09 velktron Exp $";
 
-// Fixme. __USE_C_FIXED__ or something.
+/** Creates a new fixed_t object for the result a*b
+ * 
+ * @param a
+ * @param b
+ * @return
+ */
 
 public static fixed_t FixedMul
 ( fixed_t	a,
@@ -86,9 +98,34 @@ public static fixed_t FixedMul
     return new fixed_t((int)(((long) a.val * (long ) b.val) >>> FRACBITS));
 }
 
-//
-// FixedDiv, C version.
-//
+/** Returns result straight as an int..
+ * 
+ * @param a
+ * @param b
+ * @return
+ */
+
+public static int FixedMulInt
+( fixed_t   a,
+        fixed_t   b )
+{
+    return (int)(((long) a.val * (long ) b.val) >> FRACBITS);
+}
+
+/** In-place c=a*b
+ * 
+ * @param a
+ * @param b
+ * @param c
+ */
+
+public static void FixedMul
+( fixed_t   a,
+        fixed_t   b,
+        fixed_t c)
+{
+    c.set((int)(((long) a.val * (long ) b.val) >> FRACBITS));
+}
 
 public static fixed_t
 FixedDiv
@@ -100,6 +137,38 @@ FixedDiv
     return FixedDiv2 (a,b);
 }
 
+public static void
+FixedDiv
+( fixed_t   a,
+        fixed_t b, fixed_t c)
+{
+    if ( (Math.abs(a.val)>>14) >= Math.abs(b.val)){
+        if ((a.val^b.val)<0) {
+            c.set(Integer.MIN_VALUE);
+        }
+        else { 
+            c.set(Integer.MAX_VALUE);
+        } 
+        return;
+    }
+    FixedDiv2 (a,b,c);
+}
+
+
+public static void
+FixedDiv2
+( fixed_t   a,
+        fixed_t b, fixed_t c )
+{
+    c.set((int)((((long)a.val)<<16) / (long)b.val));
+
+      
+c.set((int)(((double)a.val) / ((double)b.val) * FRACUNIT));
+
+//if (c >= 2147483648.0 || c < -2147483648.0)
+//I_Error("FixedDiv: divide by zero");
+//return new fixed_t((int)c);*/
+}
 
 
 public static fixed_t

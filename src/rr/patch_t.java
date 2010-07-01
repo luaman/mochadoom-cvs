@@ -43,7 +43,7 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
         f.readIntArray(this.columnofs, this.columnofs.length, ByteOrder.LITTLE_ENDIAN);
         for (int i=0;i<this.width;i++){
             // Go to offset.
-            f.seek(pos+this.columnofs[i]);
+            //f.seek(pos+this.columnofs[i]);
             this.columns[i].read(f);
         }
         
@@ -64,6 +64,13 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
         this.columnofs=new int[this.width];
         this.columns=new column_t[this.width];
         C2JUtils.initArrayOfObjects( this.columns, column_t.class);
+        
+        // Compute the ACTUAL full-column sizes.
+        int[] actualsizes=new int[columns.length];
+        
+        for (int i=0;i<actualsizes.length-1;i++){
+            actualsizes[i]=columnofs[i+1]-columnofs[i];
+        }
         
         // The offsets.
         DoomBuffer.readIntArray(b, this.columnofs, this.columnofs.length);

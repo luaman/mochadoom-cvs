@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: bbox.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: bbox.java,v 1.2 2010/07/01 18:38:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: bbox.java,v $
+// Revision 1.2  2010/07/01 18:38:09  velktron
+// Video "rendering" completed, columns_t parsing completed. Play around with testers :-p
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -39,9 +42,10 @@ package m;
 //	PCX Screenshots.
 //
 //-----------------------------------------------------------------------------
-// static const char rcsid[] = "$Id: bbox.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
+// static const char rcsid[] = "$Id: bbox.java,v 1.2 2010/07/01 18:38:09 velktron Exp $";
 
 import static data.doomtype.*;
+import utils.C2JUtils;
 
 public class bbox {
 
@@ -55,6 +59,9 @@ public class bbox {
 
 	public bbox() {
 		pts = new fixed_t[4];
+		C2JUtils.initArrayOfObjects(pts,fixed_t.class);
+		
+		
 	}
 
 	// Static method
