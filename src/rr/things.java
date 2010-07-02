@@ -3,7 +3,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: things.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: things.java,v 1.2 2010/07/02 14:26:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,10 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: things.java,v $
+// Revision 1.2  2010/07/02 14:26:16  velktron
+// Now basic video rendering code should be fine (in SimpleRenderer)
+// Defined DoomVideoSystem interface for SimpleRenderer.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -37,9 +41,10 @@ package rr;
 //
 //-----------------------------------------------------------------------------
 
-import static data.doomdef.*;
+import static data.Defines.*;
+import i.system;
 import m.fixed_t;
-import m.swap.*;
+import m.Swap.*;
 import static m.fixed_t.*;
 //#include "i_system.h"
 //#include "z_zone.h"
@@ -98,18 +103,17 @@ String		spritename;
 // R_InstallSpriteLump
 // Local function for R_InitSprites.
 //
-public static void
+private void
 R_InstallSpriteLump
 ( int		lump,
-  unsigned	frame,
-  unsigned	rotation,
+  int	frame,
+  int	rotation,
   boolean	flipped )
 {
     int		r;
 	
-/*    if (frame >= 29 || rotation > 8)
-	I_Error("R_InstallSpriteLump: "
-		"Bad frame characters in lump %i", lump);*/
+    if (frame >= 29 || rotation > 8)
+        system.Error("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
 	
     if ((int)frame > maxframe)
 	maxframe = frame;
@@ -118,11 +122,11 @@ R_InstallSpriteLump
     {
 	// the lump should be used for all rotations
 	if (sprtemp[frame].rotate == false)
-	    I_Error ("R_InitSprites: Sprite %s frame %c has "
+	    system.Error("R_InitSprites: Sprite %s frame %c has "+
 		     "multip rot=0 lump", spritename, 'A'+frame);
 
 	if (sprtemp[frame].rotate == true)
-	    I_Error ("R_InitSprites: Sprite %s frame %c has rotations "
+	    system.Error("R_InitSprites: Sprite %s frame %c has rotations "+
 		     "and a rot=0 lump", spritename, 'A'+frame);
 			
 	sprtemp[frame].rotate = false;
@@ -136,7 +140,7 @@ R_InstallSpriteLump
 	
     // the lump is only used for one rotation
     if (sprtemp[frame].rotate == false)
-	I_Error ("R_InitSprites: Sprite %s frame %c has rotations "
+        system.Error("R_InitSprites: Sprite %s frame %c has rotations "+
 		 "and a rot=0 lump", spritename, 'A'+frame);
 		
     sprtemp[frame].rotate = true;
@@ -144,12 +148,12 @@ R_InstallSpriteLump
     // make 0 based
     rotation--;		
     if (sprtemp[frame].lump[rotation] != -1)
-	I_Error ("R_InitSprites: Sprite %s : %c : %c "
+        system.Error("R_InitSprites: Sprite %s : %c : %c "+
 		 "has two lumps mapped to it",
 		 spritename, 'A'+frame, '1'+rotation);
 		
     sprtemp[frame].lump[rotation] = lump - firstspritelump;
-    sprtemp[frame].flip[rotation] = (byte)flipped;
+    sprtemp[frame].flip[rotation] = (byte) (flipped?0:1);
 }
 
 
@@ -283,9 +287,9 @@ public static void R_InitSpriteDefs (String[] namelist)
 //
 // GAME FUNCTIONS
 //
-public static vissprite_t[]	vissprites=new vissprite_t[MAXVISSPRITES];
+public vissprite_t[]	vissprites=new vissprite_t[MAXVISSPRITES];
 // MAES: was used as pointer.
-public static int	vissprite_p;
+private int	vissprite_p;
 
 
 
@@ -294,7 +298,7 @@ public static int	vissprite_p;
 // R_InitSprites
 // Called at program start.
 //
-public static void R_InitSprites (char** namelist)
+public void R_InitSprites (String[] namelist)
 {
     int		i;
 	
@@ -312,7 +316,7 @@ public static void R_InitSprites (char** namelist)
 // R_ClearSprites
 // Called at frame start.
 //
-void R_ClearSprites ()
+public void R_ClearSprites ()
 {
     // Maes: set to point back to zero.
     vissprite_p = 0;
@@ -322,9 +326,9 @@ void R_ClearSprites ()
 //
 // R_NewVisSprite
 //
-public static vissprite_t	overflowsprite;
+private vissprite_t	overflowsprite;
 
-public static vissprite_t R_NewVisSprite ()
+public vissprite_t R_NewVisSprite ()
 {
     // MAES: we probably need a struct comparison here.
     if (vissprites[vissprite_p] == vissprites[MAXVISSPRITES])
@@ -344,13 +348,13 @@ public static vissprite_t R_NewVisSprite ()
 //
 
 // MAES: were pointers to arrays.
-public static short[]		mfloorclip;
-public static short[]		mceilingclip;
+private short[]		mfloorclip;
+private  short[]		mceilingclip;
 
-public static fixed_t		spryscale;
-public static fixed_t		sprtopscreen;
+private fixed_t		spryscale;
+private fixed_t		sprtopscreen;
 
-public static void R_DrawMaskedColumn (column_t column)
+public  void R_DrawMaskedColumn (column_t column)
 {
     int		topscreen;
     int 	bottomscreen;
@@ -358,12 +362,13 @@ public static void R_DrawMaskedColumn (column_t column)
 	
     basetexturemid = dc_texturemid;
 	
-    for ( ; column->topdelta != 0xff ; ) 
-    {
+    
+    // For each post in column...
+    for (int i=0;i<column.posts;i++){
 	// calculate unclipped screen coordinates
 	//  for post
-	topscreen = sprtopscreen + spryscale*column->topdelta;
-	bottomscreen = topscreen + spryscale*column->length;
+	topscreen = sprtopscreen + spryscale*column.postdeltas[i];
+	bottomscreen = topscreen + spryscale*column.postlen[i];
 
 	dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
 	dc_yh = (bottomscreen-1)>>FRACBITS;
@@ -388,14 +393,15 @@ public static void R_DrawMaskedColumn (column_t column)
 	
     dc_texturemid = basetexturemid;
 }
+}
 
-
+/*
 
 //
 // R_DrawVisSprite
 //  mfloorclip and mceilingclip should also be set.
 //
-void
+public void
 R_DrawVisSprite
 ( vissprite_t*		vis,
   int			x1,
@@ -987,6 +993,6 @@ void R_DrawMasked (void)
 	R_DrawPlayerSprites ();
 }
 
-
+*/
 
 }

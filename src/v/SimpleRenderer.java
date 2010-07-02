@@ -10,7 +10,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomVideo.java,v 1.3 2010/07/01 18:38:09 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.1 2010/07/02 14:26:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,7 +23,11 @@ import static data.Defines.*;
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log: DoomVideo.java,v $
+// $Log: SimpleRenderer.java,v $
+// Revision 1.1  2010/07/02 14:26:16  velktron
+// Now basic video rendering code should be fine (in SimpleRenderer)
+// Defined DoomVideoSystem interface for SimpleRenderer.
+//
 // Revision 1.3  2010/07/01 18:38:09  velktron
 // Video "rendering" completed, columns_t parsing completed. Play around with testers :-p
 //
@@ -67,12 +71,12 @@ import static data.Defines.*;
 #include "v_video.h"
 */
 
-public class DoomVideo{
+public class SimpleRenderer implements DoomVideoSystem{
 	
-static final String rcsid = "$Id: DoomVideo.java,v 1.3 2010/07/01 18:38:09 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.1 2010/07/02 14:26:16 velktron Exp $";
 
 private boolean RANGECHECK = true;
-
+static byte[][] colbuf;
 protected int CENTERY;//=			(SCREENHEIGHT/2);
 protected int width;
 protected int height;
@@ -84,14 +88,14 @@ public byte[][]			screens=new byte[5][];
 
 public bbox				dirtybox=new bbox(); 
 
-public DoomVideo(){
+public SimpleRenderer(){
     // Defaults
     width=SCREENWIDTH;
     height=SCREENHEIGHT;
     CENTERY=        (SCREENHEIGHT/2);
 }
 
-public DoomVideo(int w,int h){
+public SimpleRenderer(int w,int h){
     // Defaults
     width=w;
     height=h;
@@ -194,12 +198,15 @@ public int	usegamma;
  *  expanding it.
  * 
  */
+
+@Override
 public void MarkRect ( int		x,  int		y,  int		width,  int		height ) 
 { 
     dirtybox.AddToBox(x, y); 
     dirtybox.AddToBox(x+width-1, y+height-1); 
 } 
 
+@Override
 public void Init () 
 { 
  int		i;
@@ -207,18 +214,22 @@ public void Init ()
 		
  // stick these in low dos memory on PCs
 
- //base = I_AllocLow (SCREENWIDTH*SCREENHEIGHT*4);
+ //base = I_AllocLow (this.width*SCREENHEIGHT*4);
 
  for (i=0 ; i<screens.length ; i++){
 	screens[i] = new byte[this.getHeight()*this.getWidth()];
 	}
      dirtybox=new bbox();
+     
+     colbuf=new byte[width][height];
 }
 
 
 //
 //V_CopyRect 
 //
+
+@Override
 public void CopyRect (int		srcx,
         int		srcy,
         int		srcscrn,
@@ -234,10 +245,10 @@ public void CopyRect (int		srcx,
 
     if  (RANGECHECK) {
         if (srcx<0
-                ||srcx+width >SCREENWIDTH
+                ||srcx+width >this.width
                 || srcy<0
                 || srcy+height>SCREENHEIGHT 
-                ||destx<0||destx+width >SCREENWIDTH
+                ||destx<0||destx+width >this.width
                 || desty<0
                 || desty+height>SCREENHEIGHT 
                 || srcscrn>4
@@ -250,15 +261,15 @@ public void CopyRect (int		srcx,
 
 
     // MAES: these were pointers to a specific position inside the screen.
-    int srcPos = SCREENWIDTH*srcy+srcx; 
-    int destPos = SCREENWIDTH*desty+destx; 
+    int srcPos = this.width*srcy+srcx; 
+    int destPos = this.width*desty+destx; 
 
     for ( ; height>0 ; height--) 
     { 
         System.arraycopy(src,srcPos, dest, destPos, width);
         //memcpy (dest, src, width); 
-        srcPos += SCREENWIDTH; 
-        destPos += SCREENWIDTH; 
+        srcPos += this.width; 
+        destPos += this.width; 
     }
 
 }
@@ -268,6 +279,8 @@ public void CopyRect (int		srcx,
 //
 
 // desttop, dest and source were byte*
+
+@Override
 public void DrawPatch
 ( int		x,
 int		y,
@@ -275,11 +288,9 @@ int		scrn,
 patch_t	patch ) 
 { 
 
- int		count;
  column_t	column; 
  int	desttop;
  byte[]	dest=screens[scrn];
- int	source; 
  int		w; 
 	 
  y -= patch.topoffset; 
@@ -298,44 +309,35 @@ if (RANGECHECK)
 
 	 
  w = patch.width; 
- desttop = x*SCREENWIDTH+y; 
+ desttop = x+this.width*y; 
  int abspos=desttop;
  // For each column..
- int detPos=0;
+ int destPos;
  int ptr=0;
- for (int col=0 ; col<w ; desttop++, col++,x++,y++)
+ for (int col=0 ; col<w ; desttop++, col++,x++)
  { 
 	// This points at a "column" object.	 
 	//column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
 	column=patch.columns[col];
-	int destPos=0;
 	// For each post...
 	for (int i=0;i<column.posts;i++){
 	    // Get pointer to post offset.
 	    ptr=column.postofs[i];
 	    // Get post delta
-	    int delta=C2JUtils.toUnsignedByte(column.data[ptr]);
+	    short delta=column.postdeltas[i];
 	    // We skip delta, len and padding.
 	    ptr+=3; 
 	    
 	    // Skip transparent rows...
 	    if (delta==0xFF) break;
 
-	    destPos = desttop + delta*SCREENWIDTH;  
-	    //abspos=x*SCREENHEIGHT+delta;
+	    destPos = desttop + delta*this.width;  
 	    
         // These lengths are already correct.
-	    //System.arraycopy(column.data, ptr, dest,abspos, column.postlen[i]);
-	    for (int j=0;j<column.postlen[i];j++, destPos += SCREENWIDTH){
+	    for (int j=0;j<column.postlen[i];j++){
 	           dest[destPos] = column.data[ptr++];
+	           destPos += this.width;
 	    }
-
-	    /*
-        for (int j=0;j<column.postlen[i];j++, abspos++){
-               dest[abspos] = column.data[ptr+j];
-        }*/
-
-
 	}
  }
 	
@@ -370,33 +372,41 @@ if (RANGECHECK)
 
      
  w = patch.width; 
- desttop = y*SCREENWIDTH+x; 
- 
+ desttop = x+this.width*y; 
+ int abspos=desttop;
  // For each column..
- for (int col=0 ; col<w ; desttop++, col++)
+ int destPos;
+ int ptr=0;
+ for (int col=0 ; col<w ; desttop++, col++,x++)
  { 
     // This points at a "column" object.     
     //column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
     column=patch.columns[col];
-    
     // For each post...
     for (int i=0;i<column.posts;i++){
         // Get pointer to post offset.
-        int ptr=column.postofs[i];
+        ptr=column.postofs[i];
         // Get post delta
-        int delta=C2JUtils.toUnsignedByte(column.data[ptr]);
+        short delta=column.postdeltas[i];
         // We skip delta, len and padding.
         ptr+=3; 
         
         // Skip transparent rows...
         if (delta==0xFF) break;
 
-        int destPos = desttop + delta*SCREENWIDTH;  
-
-        // These lengths are already correct.
+        //destPos = desttop + delta*this.width;
+        //destPos = x*this.width+y + delta*this.width = (this.width+delta)  
+        abspos=x*this.height+(y+delta);
         
-        for (int j=0;j<column.postlen[i];j++, destPos += SCREENWIDTH){
-               dest[destPos] = column.data[ptr+j];
+        // These lengths are already correct.
+        //System.arraycopy(column.data, ptr, dest,abspos, column.postlen[i]);
+        /*for (int j=0;j<column.postlen[i];j++, destPos += this.width){
+               dest[destPos] = column.data[ptr++];
+        }*/
+
+        
+        for (int j=0;j<column.postlen[i];j++, abspos++){
+               dest[abspos] = column.data[ptr+j];
         }
 
 
@@ -404,9 +414,69 @@ if (RANGECHECK)
  }
     
     
-}
+}   
+
+public void DrawPatchFaster
+( int       x,
+int     y,
+int     scrn,
+patch_t patch ) 
+{ 
+
+ column_t   column; 
+ int    desttop;
+ byte[] dest=screens[scrn];
+ int        w; 
+     
+ y -= patch.topoffset; 
+ x -= patch.leftoffset; 
+if (RANGECHECK) 
+ if (doRangeCheck(x,y,patch,scrn))
+ {
+   System.err.print("Patch at "+x+","+y+" exceeds LFB\n");
+   // No I_Error abort - what is up with TNT.WAD?
+   System.err.print("V_DrawPatch: bad patch (ignored)\n");
+   return;
+ }
+
+ if (scrn==0)
+    this.MarkRect (x, y, patch.width, patch.height); 
+
+     
+ w = patch.width; 
+ desttop = x+this.width*y; 
+ int abspos=desttop;
+ // For each column..
+ int destPos;
+ int ptr=0;
+ for (int col=0 ; col<w ; desttop++, col++,x++)
+ { 
+    // This points at a "column" object.     
+    //column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
+    column=patch.columns[col];
+    // For each post...
+    for (int i=0;i<column.posts;i++){
+        // Get pointer to post offset.
+        ptr=column.postofs[i];
+        // Get post delta
+        short delta=column.postdeltas[i];
+        // We skip delta, len and padding.
+        ptr+=3; 
+        
+        // Skip transparent rows...
+        if (delta==0xFF) break;
+
+        //destPos = desttop + delta*this.width;
+        //destPos = x*this.width+y + delta*this.width = (this.width+delta)  
+        abspos=x*this.height+(y+delta);
+        
+        // These lengths are already correct.
+        System.arraycopy(column.data, ptr, dest,abspos, column.postlen[i]);
 
 
+    }
+ }
+ }
 
 private boolean doRangeCheck(int x, int y,patch_t patch, int scrn){
   return      (x<0
@@ -430,6 +500,7 @@ private boolean doRangeCheck(int x, int y, int scrn){
 // Flips horizontally, e.g. to mirror face.
 //
 
+@Override
 public void DrawPatchFlipped ( int		x,   int		y,    int		scrn,  patch_t	patch ) 
 { 
 
@@ -459,7 +530,7 @@ public void DrawPatchFlipped ( int		x,   int		y,    int		scrn,  patch_t	patch )
   
       
     w = patch.width; 
-    desttop = y*SCREENWIDTH+x;     
+    desttop = y*this.width+x;     
  // For each column..
     for (int col=0 ; col<w ; desttop++,col++)
     {         
@@ -479,11 +550,11 @@ public void DrawPatchFlipped ( int		x,   int		y,    int		scrn,  patch_t	patch )
            // We skip delta, len and padding.
            ptr+=3;
            if (delta==0xFF) break;
-           int destPos = desttop+delta*SCREENWIDTH;
+           int destPos = desttop+delta*this.width;
            //count = column.length; 
 
            // These lengths are already correct.
-           for (int j=0;j<column.postlen[i];j++,   destPos += SCREENWIDTH){
+           for (int j=0;j<column.postlen[i];j++,   destPos += this.width){
                   dest[destPos] = column.data[ptr+j];
                   // next line
                 
@@ -523,7 +594,7 @@ V_DrawPatchDirect
 
 #ifdef RANGECHECK 
     if (x<0
-	||x+SHORT(patch->width) >SCREENWIDTH
+	||x+SHORT(patch->width) >this.width
 	|| y<0
 	|| y+SHORT(patch->height)>SCREENHEIGHT 
 	|| (unsigned)scrn>4)
@@ -533,7 +604,7 @@ V_DrawPatchDirect
 #endif 
  
     //	V_MarkRect (x, y, SHORT(patch->width), SHORT(patch->height)); 
-    desttop = destscreen + y*SCREENWIDTH/4 + (x>>2); 
+    desttop = destscreen + y*this.width/4 + (x>>2); 
 	 
     w = SHORT(patch->width); 
     for ( col = 0 ; col<w ; col++) 
@@ -546,13 +617,13 @@ V_DrawPatchDirect
 	while (column->topdelta != 0xff ) 
 	{ 
 	    source = (byte *)column + 3; 
-	    dest = desttop + column->topdelta*SCREENWIDTH/4; 
+	    dest = desttop + column->topdelta*this.width/4; 
 	    count = column->length; 
  
 	    while (count--) 
 	    { 
 		*dest = *source++; 
-		dest += SCREENWIDTH/4; 
+		dest += this.width/4; 
 	    } 
 	    column = (column_t *)(  (byte *)column + column->length 
 				    + 4 ); 
@@ -564,7 +635,7 @@ V_DrawPatchDirect
 */
 
 
-
+@Override
 public void
 DrawBlock
 ( int		x,
@@ -635,20 +706,47 @@ if (RANGECHECK){
 }
 
 public int getHeight() {
-    // TODO Auto-generated method stub
-    return height;
+    return this.height;
 } 
 public int getWidth() {
-    // TODO Auto-generated method stub
-    return width;
+    return this.width;
 } 
 
 public void ColumnsFirstToRowsFirst(byte[] src, byte[] dest,int width,int height){
     for (int y=0;y<height;y++){
+        //int tmp=x*height;
+        int tmp2=y*width;
         for (int x=0;x<width;x++){    
-            System.arraycopy(src, y+x*height, dest, x+y*width, 1);
-            //dest[x+y*width]=src[y+x*height];
+            //System.arraycopy(src, y+x*height, dest, x+tmp2, 1);
+            dest[x+tmp2]=src[y+x*height];
         }
+    }
+}
+
+/** This has been EXTREEEEEEEEEEMELY optimized within Java's limits!!!
+ *  Will only work correctly for square canvases though. It's still 
+ *  about 50% slower than the normal renderer, so sometimes it *may*
+ *  be worth using.
+ * 
+ * @param src
+ * @param width
+ * @param height
+ */
+
+public void InPlaceTranspose(byte[] src,int width,int height){
+    int tmp2=0;
+    int tmp;
+    byte t;
+    for (int y=0;y<(height*3)/4;y++){
+        tmp=y;
+        for (int x=0;x<width;x++){
+            t=src[tmp2];
+            src[tmp2]=src[tmp];
+            src[tmp]=t;
+            tmp+=height;
+            tmp2++;
+        }
+        
     }
 }
 
@@ -656,5 +754,16 @@ public void Unscramble(int screen, byte[] dest){
     this.ColumnsFirstToRowsFirst(screens[screen], dest, this.getWidth(),this.getHeight());
 
     }
+public void Unscramble(int screen){
+    this.InPlaceTranspose(screens[screen],this.getWidth(),this.getHeight());
+
+    }
+
+
+@Override
+public void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
+    // TODO Auto-generated method stub
+    
+}
 }
 
