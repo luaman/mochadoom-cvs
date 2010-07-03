@@ -3,7 +3,7 @@ package m;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: cheatseq_t.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+//$Id: cheatseq_t.java,v 1.2 2010/07/03 23:24:13 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 //GNU General Public License for more details.
 //
 //$Log: cheatseq_t.java,v $
+//Revision 1.2  2010/07/03 23:24:13  velktron
+//Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
+//
 //Revision 1.1  2010/06/30 08:58:50  velktron
 //Let's see if this stuff will finally commit....
 //
@@ -52,7 +55,12 @@ public class cheatseq_t {
 	// Was a char*, but in Java it makes more sense to have it as an int.
 	 public int  p;
 
-	 /** This was in cheat.c, but makes more sense to be used as an initializer/constructor.
+	 public cheatseq_t(char[] sequence, int p) {
+		this.sequence=sequence;
+		this.p=p;
+	}
+
+	/** This was in cheat.c, but makes more sense to be used as an initializer/constructor.
 	  * 
 	  */
 	 public void

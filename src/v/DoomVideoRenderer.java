@@ -9,7 +9,7 @@ import rr.patch_t;
  *
  */
 
-public interface DoomVideoSystem {
+public interface DoomVideoRenderer {
     // Allocates buffer screens, call before R_Init.
     public void Init();
 

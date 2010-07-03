@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.2 2010/07/01 18:38:09 velktron Exp $
+// $Id: fixed_t.java,v 1.3 2010/07/03 23:24:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.3  2010/07/03 23:24:13  velktron
+// Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
+//
 // Revision 1.2  2010/07/01 18:38:09  velktron
 // Video "rendering" completed, columns_t parsing completed. Play around with testers :-p
 //
@@ -82,7 +85,7 @@ public class fixed_t implements Comparable{
         this.val=val;
     }
     
-public static final String rcsid = "$Id: fixed_t.java,v 1.2 2010/07/01 18:38:09 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.3 2010/07/03 23:24:13 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -160,7 +163,8 @@ FixedDiv2
 ( fixed_t   a,
         fixed_t b, fixed_t c )
 {
-    c.set((int)((((long)a.val)<<16) / (long)b.val));
+	
+//    c.set((int)((((long)a.val)<<16) / (long)b.val));
 
       
 c.set((int)(((double)a.val) / ((double)b.val) * FRACUNIT));

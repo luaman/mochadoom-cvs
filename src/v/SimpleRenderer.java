@@ -10,7 +10,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.1 2010/07/02 14:26:16 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.2 2010/07/03 23:24:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.2  2010/07/03 23:24:13  velktron
+// Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
+//
 // Revision 1.1  2010/07/02 14:26:16  velktron
 // Now basic video rendering code should be fine (in SimpleRenderer)
 // Defined DoomVideoSystem interface for SimpleRenderer.
@@ -71,9 +74,9 @@ import static data.Defines.*;
 #include "v_video.h"
 */
 
-public class SimpleRenderer implements DoomVideoSystem{
+public class SimpleRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.1 2010/07/02 14:26:16 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.2 2010/07/03 23:24:13 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;

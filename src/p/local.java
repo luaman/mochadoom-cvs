@@ -1,7 +1,9 @@
+package p;
+
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: local.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: local.java,v 1.2 2010/07/03 23:24:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,54 +23,51 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __P_LOCAL__
-#define __P_LOCAL__
+import static m.fixed_t.*;	
+import static data.doomtype.*;
+import doom.thinker_t;
+	
+public class local{
 
-#ifndef __R_LOCAL__
-#include "r_local.h"
-#endif
+public static int FLOATSPEED		=(FRACUNIT*4);
 
-#define FLOATSPEED		(FRACUNIT*4)
+public static int MAXHEALTH		=100;
 
-
-#define MAXHEALTH		100
-#define VIEWHEIGHT		(41*FRACUNIT)
+public static int VIEWHEIGHT	=	(41*FRACUNIT);
 
 // mapblocks are used to check movement
 // against lines and things
-#define MAPBLOCKUNITS	128
-#define MAPBLOCKSIZE	(MAPBLOCKUNITS*FRACUNIT)
-#define MAPBLOCKSHIFT	(FRACBITS+7)
-#define MAPBMASK		(MAPBLOCKSIZE-1)
-#define MAPBTOFRAC		(MAPBLOCKSHIFT-FRACBITS)
+public static int MAPBLOCKUNITS=	128;
+public static int MAPBLOCKSIZE	=(MAPBLOCKUNITS*FRACUNIT);
+public static int MAPBLOCKSHIFT	=(FRACBITS+7);
+public static int MAPBMASK		=(MAPBLOCKSIZE-1);
+public static int MAPBTOFRAC=		(MAPBLOCKSHIFT-FRACBITS);
 
 
 // player radius for movement checking
-#define PLAYERRADIUS	16*FRACUNIT
+public static int PLAYERRADIUS	=16*FRACUNIT;
 
 // MAXRADIUS is for precalculated sector block boxes
 // the spider demon is larger,
 // but we do not have any moving sectors nearby
-#define MAXRADIUS		32*FRACUNIT
+public static int MAXRADIUS	=	32*FRACUNIT;
 
-#define GRAVITY		FRACUNIT
-#define MAXMOVE		(30*FRACUNIT)
+public static int GRAVITY	=	FRACUNIT;
+public static int MAXMOVE	=	(30*FRACUNIT);
 
-#define USERANGE		(64*FRACUNIT)
-#define MELEERANGE		(64*FRACUNIT)
-#define MISSILERANGE	(32*64*FRACUNIT)
+public static int USERANGE		=(64*FRACUNIT);
+public static int MELEERANGE	=	(64*FRACUNIT);
+public static int MISSILERANGE=(32*64*FRACUNIT);
 
 // follow a player exlusively for 3 seconds
-#define	BASETHRESHOLD	 	100
-
-
+public static int	BASETHRESHOLD=	 	100;
 
 //
 // P_TICK
 //
 
 // both the head and tail of the thinker list
-extern	thinker_t	thinkercap;	
+public thinker_t	thinkercap;	
 
 
 void P_InitThinkers (void);
@@ -93,8 +92,8 @@ void	P_PlayerThink (player_t* player);
 //
 // P_MOBJ
 //
-#define ONFLOORZ		MININT
-#define ONCEILINGZ		MAXINT
+public static int ONFLOORZ	=	MININT;
+public static int ONCEILINGZ	=	MAXINT;
 
 // Time interval for item respawning.
 #define ITEMQUESIZE		128
@@ -219,25 +218,7 @@ boolean P_ChangeSector (sector_t* sector, boolean crunch);
 
 extern mobj_t*	linetarget;	// who got hit (or NULL)
 
-fixed_t
-P_AimLineAttack
-( mobj_t*	t1,
-  angle_t	angle,
-  fixed_t	distance );
 
-void
-P_LineAttack
-( mobj_t*	t1,
-  angle_t	angle,
-  fixed_t	distance,
-  fixed_t	slope,
-  int		damage );
-
-void
-P_RadiusAttack
-( mobj_t*	spot,
-  mobj_t*	source,
-  int		damage );
 
 
 
@@ -261,29 +242,20 @@ extern mobj_t**		blocklinks;	// for thing chains
 extern int		maxammo[NUMAMMO];
 extern int		clipammo[NUMAMMO];
 
-void
-P_TouchSpecialThing
-( mobj_t*	special,
-  mobj_t*	toucher );
-
-void
-P_DamageMobj
-( mobj_t*	target,
-  mobj_t*	inflictor,
-  mobj_t*	source,
-  int		damage );
 
 
 //
 // P_SPEC
 //
-#include "p_spec.h"
+//#include "p_spec.h"
 
 
-#endif	// __P_LOCAL__
 //-----------------------------------------------------------------------------
 //
 // $Log: local.java,v $
+// Revision 1.2  2010/07/03 23:24:13  velktron
+// Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -299,5 +271,4 @@ P_DamageMobj
 //
 //
 //-----------------------------------------------------------------------------
-
 

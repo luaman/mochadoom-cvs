@@ -39,16 +39,16 @@ public class LNBTester {
     pistol.unpack(bb);
     patch_t troll= new patch_t();
     troll.unpack(W.CacheLumpName("TROOA1", 0));
-    SimpleRenderer V=new SimpleRenderer(1600,1600);
+    SimpleRenderer V=new SimpleRenderer(640,640);
     V.Init();
     int count=0;
     long timea=System.nanoTime();
     for (int i=0;i<100;i++){
         for (int s=0;s<4;s++){
-            for (int y=0;y<5/*V.getHeight()/titlepic.height*/;y++){
+            for (int y=0;y<1/*V.getHeight()/titlepic.height*/;y++){
             for (int x=0;x<V.getWidth()/titlepic.width;x++){
                 
-                V.DrawPatch(x*titlepic.width, y*titlepic.height,s, titlepic);
+                V.DrawPatchFaster(x*titlepic.width, y*titlepic.height,s, titlepic);
                     }
             }
             count++;

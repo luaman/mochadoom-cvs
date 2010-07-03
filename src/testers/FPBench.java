@@ -7,7 +7,7 @@ public static final int PRECISION=16;
 
     public static void main(String argv[])
 {
-    final int tests=1500000;
+    final int tests=500000;
  for (int j=0;j<2;j++){   
     float[] a=new float[tests];
     float[] b=new float[tests];
@@ -77,6 +77,15 @@ public static final int PRECISION=16;
     
     System.out.println("Perform "+tests+" random fixed_t multiplications (in-place): \t"+ (tan_1-tan_0));
 
+    tan_0=System.nanoTime();
+    for (int i=0;i<tests;i++){
+     c[i]=a[i]/b[i];    
+    }
+    tan_1=System.nanoTime();
+    
+    System.out.println("Perform "+tests+" random IEEE floats divisions: \t" + (tan_1-tan_0));
+    
+    
     tan_0=System.nanoTime();
     for (int i=0;i<tests;i++){
         fc[i]=fixed_t.FixedDiv(fa[i],fb[i]);    

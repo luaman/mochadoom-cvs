@@ -1,7 +1,9 @@
+package st;
+
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: stuff.java,v 1.1 2010/06/30 08:58:51 velktron Exp $
+// $Id: StatusBar.java,v 1.1 2010/07/03 23:24:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,7 +17,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: stuff.java,v $
+// $Log: StatusBar.java,v $
+// Revision 1.1  2010/07/03 23:24:13  velktron
+// Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
+//
 // Revision 1.1  2010/06/30 08:58:51  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -37,10 +42,23 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char
-rcsid[] = "$Id: stuff.java,v 1.1 2010/06/30 08:58:51 velktron Exp $";
+import static data.Defines.*;
+import static data.dstrings.*;
+import static doom.englsh.*;
+import static st.DoomStatusBar.*;
+import static st.DoomStatusBar.BG;
+import static st.DoomStatusBar.FG;
+import m.cheatseq_t;
+import data.doomstat;
+import doom.player_t;
+import rr.patch_t;
+import v.DoomVideoRenderer;
+import v.SimpleRenderer;
+import w.WadLoader;
+public class StatusBar{
+public static final String rcsid = "$Id: StatusBar.java,v 1.1 2010/07/03 23:24:13 velktron Exp $";
 
-
+/*
 #include <stdio.h>
 
 #include "i_system.h"
@@ -74,7 +92,11 @@ rcsid[] = "$Id: stuff.java,v 1.1 2010/06/30 08:58:51 velktron Exp $";
 // Data.
 #include "dstrings.h"
 #include "sounds.h"
+*/
 
+protected DoomVideoRenderer V;
+protected doomstat ds;
+protected WadLoader W;
 //
 // STATUS BAR DATA
 //
@@ -82,62 +104,63 @@ rcsid[] = "$Id: stuff.java,v 1.1 2010/06/30 08:58:51 velktron Exp $";
 
 // Palette indices.
 // For damage/bonus red-/gold-shifts
-#define STARTREDPALS		1
-#define STARTBONUSPALS		9
-#define NUMREDPALS			8
-#define NUMBONUSPALS		4
+private static int  STARTREDPALS	=	1;
+private static int STARTBONUSPALS	=	9;
+private static int NUMREDPALS		=	8;
+private static int NUMBONUSPALS	=	4;
 // Radiation suit, green shift.
-#define RADIATIONPAL		13
+private static int RADIATIONPAL		=13;
 
 // N/256*100% probability
 //  that the normal face state will change
-#define ST_FACEPROBABILITY		96
+private static int ST_FACEPROBABILITY	=	96;
 
 // For Responder
-#define ST_TOGGLECHAT		KEY_ENTER
+private static int ST_TOGGLECHAT	=	KEY_ENTER;
 
 // Location of status bar
-#define ST_X				0
-#define ST_X2				104
+private static int ST_X				= 0;
+private static int ST_X2			=	104;
 
-#define ST_FX  			143
-#define ST_FY  			169
+private static int ST_FX  		=	143;
+private static int ST_FY  		=	169;
 
 // Should be set to patch width
 //  for tall numbers later on
-#define ST_TALLNUMWIDTH		(tallnum[0]->width)
+//TODO: private static int ST_TALLNUMWIDTH	=	(tallnum[0].width);
 
 // Number of status faces.
-#define ST_NUMPAINFACES		5
-#define ST_NUMSTRAIGHTFACES	3
-#define ST_NUMTURNFACES		2
-#define ST_NUMSPECIALFACES		3
+private static int ST_NUMPAINFACES	=	5;
+private static int ST_NUMSTRAIGHTFACES	=3;
+private static int ST_NUMTURNFACES		=2;
+private static int ST_NUMSPECIALFACES	=	3;
 
-#define ST_FACESTRIDE \
-          (ST_NUMSTRAIGHTFACES+ST_NUMTURNFACES+ST_NUMSPECIALFACES)
+private static int ST_FACESTRIDE =
+          (ST_NUMSTRAIGHTFACES+ST_NUMTURNFACES+ST_NUMSPECIALFACES);
 
-#define ST_NUMEXTRAFACES		2
+private static int ST_NUMEXTRAFACES	=	2;
 
-#define ST_NUMFACES \
-          (ST_FACESTRIDE*ST_NUMPAINFACES+ST_NUMEXTRAFACES)
+private static int ST_NUMFACES =
+          (ST_FACESTRIDE*ST_NUMPAINFACES+ST_NUMEXTRAFACES);
 
-#define ST_TURNOFFSET		(ST_NUMSTRAIGHTFACES)
-#define ST_OUCHOFFSET		(ST_TURNOFFSET + ST_NUMTURNFACES)
-#define ST_EVILGRINOFFSET		(ST_OUCHOFFSET + 1)
-#define ST_RAMPAGEOFFSET		(ST_EVILGRINOFFSET + 1)
-#define ST_GODFACE			(ST_NUMPAINFACES*ST_FACESTRIDE)
-#define ST_DEADFACE			(ST_GODFACE+1)
 
-#define ST_FACESX			143
-#define ST_FACESY			168
+private static int ST_TURNOFFSET		=(ST_NUMSTRAIGHTFACES);
+private static int ST_OUCHOFFSET		=(ST_TURNOFFSET + ST_NUMTURNFACES);
+private static int ST_EVILGRINOFFSET=		(ST_OUCHOFFSET + 1);
+private static int ST_RAMPAGEOFFSET	=	(ST_EVILGRINOFFSET + 1);
+private static int ST_GODFACE		=	(ST_NUMPAINFACES*ST_FACESTRIDE);
+private static int ST_DEADFACE		=	(ST_GODFACE+1);
 
-#define ST_EVILGRINCOUNT		(2*TICRATE)
-#define ST_STRAIGHTFACECOUNT	(TICRATE/2)
-#define ST_TURNCOUNT		(1*TICRATE)
-#define ST_OUCHCOUNT		(1*TICRATE)
-#define ST_RAMPAGEDELAY		(2*TICRATE)
+private static int ST_FACESX		=	143;
+private static int ST_FACESY		=	168;
 
-#define ST_MUCHPAIN			20
+private static int ST_EVILGRINCOUNT	=	(2*TICRATE);
+private static int ST_STRAIGHTFACECOUNT	=(TICRATE/2);
+private static int ST_TURNCOUNT		=(1*TICRATE);
+private static int ST_OUCHCOUNT		=(1*TICRATE);
+private static int ST_RAMPAGEDELAY	=	(2*TICRATE);
+
+private static int ST_MUCHPAIN		=	20;
 
 
 // Location and size of statistics,
@@ -149,310 +172,308 @@ rcsid[] = "$Id: stuff.java,v 1.1 2010/06/30 08:58:51 velktron Exp $";
 //       or into the frame buffer?
 
 // AMMO number pos.
-#define ST_AMMOWIDTH		3	
-#define ST_AMMOX			44
-#define ST_AMMOY			171
+private static int ST_AMMOWIDTH	=	3	;
+private static int ST_AMMOX		=	44;
+private static int ST_AMMOY		=	171;
 
 // HEALTH number pos.
-#define ST_HEALTHWIDTH		3	
-#define ST_HEALTHX			90
-#define ST_HEALTHY			171
+private static int ST_HEALTHWIDTH	=	3	;
+private static int ST_HEALTHX		=	90;
+private static int ST_HEALTHY		=	171;
 
 // Weapon pos.
-#define ST_ARMSX			111
-#define ST_ARMSY			172
-#define ST_ARMSBGX			104
-#define ST_ARMSBGY			168
-#define ST_ARMSXSPACE		12
-#define ST_ARMSYSPACE		10
+private static int ST_ARMSX		=	111;
+private static int ST_ARMSY		=	172;
+private static int ST_ARMSBGX	=		104;
+private static int ST_ARMSBGY	=		168;
+private static int ST_ARMSXSPACE=		12;
+private static int ST_ARMSYSPACE=		10;
 
 // Frags pos.
-#define ST_FRAGSX			138
-#define ST_FRAGSY			171	
-#define ST_FRAGSWIDTH		2
+private static int ST_FRAGSX	=		138;
+private static int ST_FRAGSY	=		171	;
+private static int ST_FRAGSWIDTH=		2;
 
 // ARMOR number pos.
-#define ST_ARMORWIDTH		3
-#define ST_ARMORX			221
-#define ST_ARMORY			171
+private static int ST_ARMORWIDTH=		3;
+private static int ST_ARMORX	=		221;
+private static int ST_ARMORY	=		171;
 
 // Key icon positions.
-#define ST_KEY0WIDTH		8
-#define ST_KEY0HEIGHT		5
-#define ST_KEY0X			239
-#define ST_KEY0Y			171
-#define ST_KEY1WIDTH		ST_KEY0WIDTH
-#define ST_KEY1X			239
-#define ST_KEY1Y			181
-#define ST_KEY2WIDTH		ST_KEY0WIDTH
-#define ST_KEY2X			239
-#define ST_KEY2Y			191
+private static int ST_KEY0WIDTH	=	8;
+private static int ST_KEY0HEIGHT=		5;
+private static int ST_KEY0X		=	239;
+private static int ST_KEY0Y		=	171;
+private static int ST_KEY1WIDTH	=	ST_KEY0WIDTH;
+private static int ST_KEY1X		=	239;
+private static int ST_KEY1Y		=	181;
+private static int ST_KEY2WIDTH	=	ST_KEY0WIDTH;
+private static int ST_KEY2X		=	239;
+private static int ST_KEY2Y		=	191;
 
 // Ammunition counter.
-#define ST_AMMO0WIDTH		3
-#define ST_AMMO0HEIGHT		6
-#define ST_AMMO0X			288
-#define ST_AMMO0Y			173
-#define ST_AMMO1WIDTH		ST_AMMO0WIDTH
-#define ST_AMMO1X			288
-#define ST_AMMO1Y			179
-#define ST_AMMO2WIDTH		ST_AMMO0WIDTH
-#define ST_AMMO2X			288
-#define ST_AMMO2Y			191
-#define ST_AMMO3WIDTH		ST_AMMO0WIDTH
-#define ST_AMMO3X			288
-#define ST_AMMO3Y			185
+private static int ST_AMMO0WIDTH	=	3;
+private static int ST_AMMO0HEIGHT	=	6;
+private static int ST_AMMO0X		=	288;
+private static int ST_AMMO0Y		=	173;
+private static int ST_AMMO1WIDTH	=	ST_AMMO0WIDTH;
+private static int ST_AMMO1X		=	288;
+private static int ST_AMMO1Y		=	179;
+private static int ST_AMMO2WIDTH	=	ST_AMMO0WIDTH;
+private static int ST_AMMO2X		=	288;
+private static int ST_AMMO2Y		=	191;
+private static int ST_AMMO3WIDTH	=	ST_AMMO0WIDTH;
+private static int ST_AMMO3X		=	288;
+private static int ST_AMMO3Y		=	185;
 
 // Indicate maximum ammunition.
 // Only needed because backpack exists.
-#define ST_MAXAMMO0WIDTH		3
-#define ST_MAXAMMO0HEIGHT		5
-#define ST_MAXAMMO0X		314
-#define ST_MAXAMMO0Y		173
-#define ST_MAXAMMO1WIDTH		ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO1X		314
-#define ST_MAXAMMO1Y		179
-#define ST_MAXAMMO2WIDTH		ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO2X		314
-#define ST_MAXAMMO2Y		191
-#define ST_MAXAMMO3WIDTH		ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO3X		314
-#define ST_MAXAMMO3Y		185
+private static int ST_MAXAMMO0WIDTH	=	3;
+private static int ST_MAXAMMO0HEIGHT=		5;
+private static int ST_MAXAMMO0X	=	314;
+private static int ST_MAXAMMO0Y	=	173;
+private static int ST_MAXAMMO1WIDTH	=	ST_MAXAMMO0WIDTH;
+private static int ST_MAXAMMO1X	=	314;
+private static int ST_MAXAMMO1Y	=	179;
+private static int ST_MAXAMMO2WIDTH	=	ST_MAXAMMO0WIDTH;
+private static int ST_MAXAMMO2X	=	314;
+private static int ST_MAXAMMO2Y	=	191;
+private static int ST_MAXAMMO3WIDTH	=	ST_MAXAMMO0WIDTH;
+private static int ST_MAXAMMO3X=		314;
+private static int ST_MAXAMMO3Y	=	185;
 
 // pistol
-#define ST_WEAPON0X			110 
-#define ST_WEAPON0Y			172
+private static int ST_WEAPON0X			=110 ;
+private static int ST_WEAPON0Y			=172;
 
 // shotgun
-#define ST_WEAPON1X			122 
-#define ST_WEAPON1Y			172
+private static int ST_WEAPON1X			=122 ;
+private static int ST_WEAPON1Y			=172;
 
 // chain gun
-#define ST_WEAPON2X			134 
-#define ST_WEAPON2Y			172
+private static int ST_WEAPON2X			=134 ;
+private static int ST_WEAPON2Y			=172;
 
 // missile launcher
-#define ST_WEAPON3X			110 
-#define ST_WEAPON3Y			181
+private static int ST_WEAPON3X			=110 ;
+private static int ST_WEAPON3Y			=181;
 
 // plasma gun
-#define ST_WEAPON4X			122 
-#define ST_WEAPON4Y			181
+private static int ST_WEAPON4X		=	122 ;
+private static int ST_WEAPON4Y		=	181;
 
  // bfg
-#define ST_WEAPON5X			134
-#define ST_WEAPON5Y			181
+private static int ST_WEAPON5X		=	134;
+private static int ST_WEAPON5Y	=		181;
 
 // WPNS title
-#define ST_WPNSX			109 
-#define ST_WPNSY			191
+private static int ST_WPNSX	=		109 ;
+private static int ST_WPNSY	=		191;
 
  // DETH title
-#define ST_DETHX			109
-#define ST_DETHY			191
+private static int ST_DETHX	=		109;
+private static int ST_DETHY	=		191;
 
 //Incoming messages window location
 //UNUSED
 // #define ST_MSGTEXTX	   (viewwindowx)
 // #define ST_MSGTEXTY	   (viewwindowy+viewheight-18)
-#define ST_MSGTEXTX			0
-#define ST_MSGTEXTY			0
+private static int ST_MSGTEXTX		=	0;
+private static int ST_MSGTEXTY		=	0;
 // Dimensions given in characters.
-#define ST_MSGWIDTH			52
+private static int ST_MSGWIDTH		=	52;
 // Or shall I say, in lines?
-#define ST_MSGHEIGHT		1
+private static int ST_MSGHEIGHT	=	1;
 
-#define ST_OUTTEXTX			0
-#define ST_OUTTEXTY			6
+private static int ST_OUTTEXTX		=	0;
+private static int ST_OUTTEXTY		=	6;
 
 // Width, in characters again.
-#define ST_OUTWIDTH			52 
+private static int ST_OUTWIDTH		=	52;
  // Height, in lines. 
-#define ST_OUTHEIGHT		1
+private static int ST_OUTHEIGHT	=	1;
 
-#define ST_MAPWIDTH	\
-    (strlen(mapnames[(gameepisode-1)*9+(gamemap-1)]))
+// TODO private static int ST_MAPWIDTH	= (mapnames[(gameepisode-1)*9+(gamemap-1)].length));
 
-#define ST_MAPTITLEX \
-    (SCREENWIDTH - ST_MAPWIDTH * ST_CHATFONTWIDTH)
+// TODO private static int ST_MAPTITLEX  = (SCREENWIDTH - ST_MAPWIDTH * ST_CHATFONTWIDTH);
 
-#define ST_MAPTITLEY		0
-#define ST_MAPHEIGHT		1
+private static int ST_MAPTITLEY		=0;
+private static int ST_MAPHEIGHT		=1;
 
-	    
+// MAES: most of this shit was "static".
 // main player in game
-static player_t*	plyr; 
+private player_t	plyr; 
 
 // ST_Start() has just been called
-static boolean		st_firsttime;
+private boolean		st_firsttime;
 
 // used to execute ST_Init() only once
-static int		veryfirsttime = 1;
+private int		veryfirsttime = 1;
 
 // lump number for PLAYPAL
-static int		lu_palette;
+private int		lu_palette;
 
-// used for timing
-static unsigned int	st_clock;
+// used for timing (unsigned int .. maybe long !)
+private long	st_clock;
 
 // used for making messages go away
-static int		st_msgcounter=0;
+ int		st_msgcounter=0;
 
 // used when in chat 
-static st_chatstateenum_t	st_chatstate;
+ private st_chatstateenum_t	st_chatstate;
 
 // whether in automap or first-person
-static st_stateenum_t	st_gamestate;
+ private st_stateenum_t	st_gamestate;
 
 // whether left-side main status bar is active
-static boolean		st_statusbaron;
+ private boolean		st_statusbaron;
 
 // whether status bar chat is active
-static boolean		st_chat;
+ private boolean		st_chat;
 
 // value of st_chat before message popped up
-static boolean		st_oldchat;
+ private boolean		st_oldchat;
 
 // whether chat window has the cursor on
-static boolean		st_cursoron;
+ private boolean		st_cursoron;
 
 // !deathmatch
-static boolean		st_notdeathmatch; 
+ private boolean		st_notdeathmatch; 
 
 // !deathmatch && st_statusbaron
-static boolean		st_armson;
+ private boolean		st_armson;
 
 // !deathmatch
-static boolean		st_fragson; 
+ private boolean		st_fragson; 
 
 // main bar left
-static patch_t*		sbar;
+ private patch_t		sbar;
 
 // 0-9, tall numbers
-static patch_t*		tallnum[10];
+ private patch_t[]		tallnum=new patch_t[10];
 
 // tall % sign
-static patch_t*		tallpercent;
+ private patch_t		tallpercent;
 
 // 0-9, short, yellow (,different!) numbers
-static patch_t*		shortnum[10];
+ private patch_t[]		shortnum= new patch_t[10];
 
 // 3 key-cards, 3 skulls
-static patch_t*		keys[NUMCARDS]; 
+ private patch_t[]		keys= new patch_t[NUMCARDS]; 
 
 // face status patches
-static patch_t*		faces[ST_NUMFACES];
+ private patch_t[]		faces= new patch_t[ST_NUMFACES];
 
 // face background
-static patch_t*		faceback;
+ private patch_t		faceback;
 
  // main bar right
-static patch_t*		armsbg;
+ private patch_t		armsbg;
 
 // weapon ownership patches
-static patch_t*		arms[6][2]; 
+ private patch_t[][]		arms= new patch_t[6][2]; 
 
 // ready-weapon widget
-static st_number_t	w_ready;
+ private st_number_t	w_ready;
 
  // in deathmatch only, summary of frags stats
-static st_number_t	w_frags;
+ private st_number_t	w_frags;
 
 // health widget
-static st_percent_t	w_health;
+ private st_percent_t	w_health;
 
 // arms background
-static st_binicon_t	w_armsbg; 
+ private st_binicon_t	w_armsbg; 
 
 
 // weapon ownership widgets
-static st_multicon_t	w_arms[6];
+ private st_multicon_t[]	w_arms=new st_multicon_t[6];
 
 // face status widget
-static st_multicon_t	w_faces; 
+ private st_multicon_t	w_faces; 
 
 // keycard widgets
-static st_multicon_t	w_keyboxes[3];
+private st_multicon_t[]	w_keyboxes=new st_multicon_t[3];
 
 // armor widget
-static st_percent_t	w_armor;
+private st_percent_t	w_armor;
 
 // ammo widgets
-static st_number_t	w_ammo[4];
+private st_number_t[]	w_ammo=new st_number_t[4];
 
 // max ammo widgets
-static st_number_t	w_maxammo[4]; 
+private st_number_t[]	w_maxammo=new st_number_t[4]; 
 
 
 
  // number of frags so far in deathmatch
-static int	st_fragscount;
+private int	st_fragscount;
 
 // used to use appopriately pained face
-static int	st_oldhealth = -1;
+private int	st_oldhealth = -1;
 
 // used for evil grin
-static boolean	oldweaponsowned[NUMWEAPONS]; 
+private boolean[]	oldweaponsowned=new boolean[NUMWEAPONS]; 
 
  // count until face changes
-static int	st_facecount = 0;
+private int	st_facecount = 0;
 
 // current face index, used by w_faces
-static int	st_faceindex = 0;
+private int	st_faceindex = 0;
 
 // holds key-type for each key box on bar
-static int	keyboxes[3]; 
+private int[] 	keyboxes= new int[3]; 
 
 // a random number per tick
-static int	st_randomnumber;  
+private int	st_randomnumber;  
 
 
 
 // Massive bunches of cheat shit
 //  to keep it from being easy to figure them out.
 // Yeah, right...
-unsigned char	cheat_mus_seq[] =
+private char	cheat_mus_seq[] =
 {
     0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff
 };
 
-unsigned char	cheat_choppers_seq[] =
+private char	cheat_choppers_seq[] =
 {
     0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
 };
 
-unsigned char	cheat_god_seq[] =
+private char	cheat_god_seq[] =
 {
     0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff  // iddqd
 };
 
-unsigned char	cheat_ammo_seq[] =
+private char	cheat_ammo_seq[] =
 {
     0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff	// idkfa
 };
 
-unsigned char	cheat_ammonokey_seq[] =
+private char	cheat_ammonokey_seq[] =
 {
     0xb2, 0x26, 0x66, 0xa2, 0xff	// idfa
 };
 
 
 // Smashing Pumpkins Into Samml Piles Of Putried Debris. 
-unsigned char	cheat_noclip_seq[] =
+private char	cheat_noclip_seq[] =
 {
     0xb2, 0x26, 0xea, 0x2a, 0xb2,	// idspispopd
     0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
 };
 
 //
-unsigned char	cheat_commercial_noclip_seq[] =
+private char	cheat_commercial_noclip_seq[] =
 {
     0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
 }; 
 
 
 
-unsigned char	cheat_powerup_seq[7][10] =
+private char	cheat_powerup_seq[][] =
 {
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, 	// beholdv
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff }, 	// beholds
@@ -464,80 +485,122 @@ unsigned char	cheat_powerup_seq[7][10] =
 };
 
 
-unsigned char	cheat_clev_seq[] =
+private char	cheat_clev_seq[] =
 {
     0xb2, 0x26,  0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
 };
 
 
 // my position cheat
-unsigned char	cheat_mypos_seq[] =
+private char	cheat_mypos_seq[] =
 {
     0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff	// idmypos
 }; 
 
 
 // Now what?
-cheatseq_t	cheat_mus = { cheat_mus_seq, 0 };
-cheatseq_t	cheat_god = { cheat_god_seq, 0 };
-cheatseq_t	cheat_ammo = { cheat_ammo_seq, 0 };
-cheatseq_t	cheat_ammonokey = { cheat_ammonokey_seq, 0 };
-cheatseq_t	cheat_noclip = { cheat_noclip_seq, 0 };
-cheatseq_t	cheat_commercial_noclip = { cheat_commercial_noclip_seq, 0 };
+cheatseq_t	cheat_mus = new cheatseq_t(cheat_mus_seq, 0 );
+cheatseq_t	cheat_god = new cheatseq_t( cheat_god_seq, 0 );
+cheatseq_t	cheat_ammo = new cheatseq_t( cheat_ammo_seq, 0 );
+cheatseq_t	cheat_ammonokey = new cheatseq_t( cheat_ammonokey_seq, 0 );
+cheatseq_t	cheat_noclip = new cheatseq_t( cheat_noclip_seq, 0 );
+cheatseq_t	cheat_commercial_noclip = new cheatseq_t( cheat_commercial_noclip_seq, 0 );
 
-cheatseq_t	cheat_powerup[7] =
+cheatseq_t[]	cheat_powerup =
 {
-    { cheat_powerup_seq[0], 0 },
-    { cheat_powerup_seq[1], 0 },
-    { cheat_powerup_seq[2], 0 },
-    { cheat_powerup_seq[3], 0 },
-    { cheat_powerup_seq[4], 0 },
-    { cheat_powerup_seq[5], 0 },
-    { cheat_powerup_seq[6], 0 }
+		new cheatseq_t( cheat_powerup_seq[0], 0 ),
+		new cheatseq_t( cheat_powerup_seq[1], 0 ),
+		new cheatseq_t( cheat_powerup_seq[2], 0 ),
+		new cheatseq_t( cheat_powerup_seq[3], 0 ),
+		new cheatseq_t( cheat_powerup_seq[4], 0 ),
+		new cheatseq_t( cheat_powerup_seq[5], 0 ),
+		new cheatseq_t( cheat_powerup_seq[6], 0 )
 };
 
-cheatseq_t	cheat_choppers = { cheat_choppers_seq, 0 };
-cheatseq_t	cheat_clev = { cheat_clev_seq, 0 };
-cheatseq_t	cheat_mypos = { cheat_mypos_seq, 0 };
+cheatseq_t	cheat_choppers = new cheatseq_t( cheat_choppers_seq, 0 );
+cheatseq_t	cheat_clev = new cheatseq_t( cheat_clev_seq, 0 );
+cheatseq_t	cheat_mypos = new cheatseq_t( cheat_mypos_seq, 0 );
 
 
 // 
-extern char*	mapnames[];
+String[]	mapnames;
 
 
 //
 // STATUS BAR CODE
 //
-void ST_Stop(void);
 
-void ST_refreshBackground(void)
+public void refreshBackground()
 {
 
     if (st_statusbaron)
     {
-	V_DrawPatch(ST_X, 0, BG, sbar);
+	V.DrawPatch(ST_X, 0, BG, sbar);
 
-	if (netgame)
-	    V_DrawPatch(ST_FX, 0, BG, faceback);
+	if (ds.netgame)
+	    V.DrawPatch(ST_FX, 0, BG, faceback);
 
-	V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
+	V.CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
     }
 
 }
+void Init ()
+{
+    veryfirsttime = 0;
+    loadData();
+    // MAES: this actually Z_Mallocated 4 screens just for the status bar,
+    // so I presume they meant it to have its own screen buffers (?) 
+    this.V=new SimpleRenderer(ST_WIDTH,ST_HEIGHT);
+}
 
+protected boolean	st_stopped = true;
+
+
+void Start ()
+{
+
+    if (!st_stopped)
+	Stop();
+
+    initData();
+    createWidgets();
+    st_stopped = false;
+
+}
+
+public void Stop ()
+{
+	if (st_stopped)
+	return;
+
+    I_SetPalette (W.CacheLumpNum (lu_palette, PU_CACHE));
+
+    st_stopped = true;
+}
+
+public void loadData()
+{
+    lu_palette = W_GetNumForName ("PLAYPAL");
+    ST_loadGraphics();
+}
+
+
+}
+
+/*
 
 // Respond to keyboard input events,
 //  intercept cheats.
-boolean
-ST_Responder (event_t* ev)
+public boolean
+Responder (event_t ev)
 {
   int		i;
     
   // Filter automap on/off.
-  if (ev->type == ev_keyup
-      && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+  if (ev.type == ev_keyup
+      && ((ev.data1 & 0xffff0000) == AM_MSGHEADER))
   {
-    switch(ev->data1)
+    switch(ev.data1)
     {
       case AM_MSGENTERED:
 	st_gamestate = AutomapState;
@@ -738,15 +801,13 @@ ST_Responder (event_t* ev)
   return false;
 }
 
-
-
-int ST_calcPainOffset(void)
+public int calcPainOffset()
 {
     int		health;
     static int	lastcalc;
     static int	oldhealth = -1;
     
-    health = plyr->health > 100 ? 100 : plyr->health;
+    health = plyr.health > 100 ? 100 : plyr.health;
 
     if (health != oldhealth)
     {
@@ -763,7 +824,7 @@ int ST_calcPainOffset(void)
 // the precedence of expressions is:
 //  dead > evil grin > turned head > straight ahead
 //
-void ST_updateFaceWidget(void)
+void updateFaceWidget()
 {
     int		i;
     angle_t	badguyangle;
@@ -1212,11 +1273,7 @@ void ST_loadGraphics(void)
 
 }
 
-void ST_loadData(void)
-{
-    lu_palette = W_GetNumForName ("PLAYPAL");
-    ST_loadGraphics();
-}
+
 
 void ST_unloadGraphics(void)
 {
@@ -1452,34 +1509,9 @@ void ST_createWidgets(void)
 
 }
 
-static boolean	st_stopped = true;
 
 
-void ST_Start (void)
-{
 
-    if (!st_stopped)
-	ST_Stop();
 
-    ST_initData();
-    ST_createWidgets();
-    st_stopped = false;
 
-}
-
-void ST_Stop (void)
-{
-    if (st_stopped)
-	return;
-
-    I_SetPalette (W_CacheLumpNum (lu_palette, PU_CACHE));
-
-    st_stopped = true;
-}
-
-void ST_Init (void)
-{
-    veryfirsttime = 0;
-    ST_loadData();
-    screens[4] = (byte *) Z_Malloc(ST_WIDTH*ST_HEIGHT, PU_STATIC, 0);
 }
