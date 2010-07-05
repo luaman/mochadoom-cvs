@@ -2,7 +2,7 @@ package doom;
 
 //typedef actionf_t  think_t;
 
-public abstract class action_f
+public abstract class actionf_t
         implements think_t {
 
     // TODO: see what stuff gets actually passed in these parameters, and create suitable overloads, I suppose.

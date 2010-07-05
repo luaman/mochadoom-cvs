@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.3 2010/07/03 23:24:13 velktron Exp $
+// $Id: fixed_t.java,v 1.4 2010/07/05 16:18:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.4  2010/07/05 16:18:40  velktron
+// YOU DON'T WANNA KNOW
+//
 // Revision 1.3  2010/07/03 23:24:13  velktron
 // Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
 //
@@ -85,7 +88,11 @@ public class fixed_t implements Comparable{
         this.val=val;
     }
     
-public static final String rcsid = "$Id: fixed_t.java,v 1.3 2010/07/03 23:24:13 velktron Exp $";
+public fixed_t(fixed_t x) {
+        this.val=x.val;
+    }
+
+public static final String rcsid = "$Id: fixed_t.java,v 1.4 2010/07/05 16:18:40 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -94,12 +101,27 @@ public static final String rcsid = "$Id: fixed_t.java,v 1.3 2010/07/03 23:24:13 
  * @return
  */
 
-public static fixed_t FixedMul
+public static int FixedMul
 ( fixed_t	a,
   fixed_t	b )
 {
-    return new fixed_t((int)(((long) a.val * (long ) b.val) >>> FRACBITS));
+    return (int)(((long) a.val * (long ) b.val) >>> FRACBITS);
 }
+
+public static int FixedMul
+( int   a,
+  fixed_t   b )
+{
+    return (int)(((long) a * (long ) b.val) >>> FRACBITS);
+}
+
+public static int FixedMul
+( int   a,
+  int   b )
+{
+    return (int)(((long) a * (long ) b) >>> FRACBITS);
+}
+
 
 /** Returns result straight as an int..
  * 
@@ -199,9 +221,118 @@ FixedDiv2
 @Override
 public int compareTo(Object o) {
     if (o.getClass()!=fixed_t.class) return -1;
-    if (this.get()==((fixed_t)(o)).get()) return 0;
-    if (this.get()>((fixed_t)(o)).get()) return 1;
+    if (this.val==((fixed_t)(o)).val) return 0;
+    if (this.val>((fixed_t)(o)).val) return 1;
     else return -1;
     }
+
+public int compareTo(int o) {
+    if (this.val==o) return 0;
+    if (this.val>o) return 1;
+    else return -1;
+    }
+
+public void add(fixed_t a){
+    this.val+=a.val;
+}
+
+public void sub(fixed_t a){
+    this.val-=a.val;
+}
+
+public void add(int a){
+    this.val+=a;
+}
+
+public void sub(int a){
+    this.val-=a;
+}
+
+/** a+b
+ * 
+ * @param a
+ * @param b
+ * @return
+ */
+
+public static int add(fixed_t a,fixed_t b){
+    return a.val+b.val;
+}
+
+/** a-b
+ * 
+ * @param a
+ * @param b
+ * @return
+ */
+
+public static int sub(fixed_t a,fixed_t b){
+    return a.val-b.val;
+}
+
+/** c=a+b
+ * 
+ * @param c
+ * @param a
+ * @param b
+ */
+
+public static void add(fixed_t c, fixed_t a,fixed_t b){
+    c.val= a.val+b.val;
+}
+
+/** c=a-b
+ * 
+ * @param c
+ * @param a
+ * @param b
+ */
+
+public static void sub(fixed_t c,fixed_t a,fixed_t b){
+    c.val= a.val-b.val;
+}
+
+
+/** Equals Zero
+ * 
+ * @return
+ */
+
+public boolean isEZ() {
+    return (this.val==0);
+    }
+
+/** Greater than Zero
+ * 
+ * @return
+ */
+
+public boolean isGZ() {
+    return (this.val>0);
+    }
+
+/** Less than Zero
+ * 
+ * @return
+ */
+public boolean isLZ() {
+    return (this.val<0);
+    }
+
+// These are here to make easier handling all those methods in R 
+// that return "1" or "0" based on one result.
+
+public int oneEZ(){
+    return (this.val==0)?1:0;
+}
+
+public int oneGZ(){
+    return (this.val>0)?1:0;
+}
+
+public int oneLZ(){
+    return (this.val<0)?1:0;
+}
+
 
 }

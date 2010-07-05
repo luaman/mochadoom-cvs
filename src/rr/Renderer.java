@@ -1,7 +1,8 @@
+package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: main.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: Renderer.java,v 1.1 2010/07/05 16:18:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,7 +16,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: main.java,v $
+// $Log: Renderer.java,v $
+// Revision 1.1  2010/07/05 16:18:40  velktron
+// YOU DON'T WANNA KNOW
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -47,13 +51,15 @@
 #include "r_local.h"
 #include "r_sky.h"
  */
+import doom.player_t;
 import m.fixed_t;
 import static m.fixed_t.*;
-import static data.doomdef.*;
+import static data.Defines.*;
 import static rr.sky.*;
-import static data.tables.*;
+import static data.Tables.*;
+import static data.SineCosine.*;
 import m.bbox;
-public class main{
+public class Renderer{
 
     //
  // Lighting LUT.
@@ -100,12 +106,14 @@ public static fixed_t			viewx;
 public static fixed_t			viewy;
 public static fixed_t			viewz;
 
-public static angle_t			viewangle;
+//MAES: an exception to strict type safety. These are used only in here, anyway (?) and have no special functions.
+//Plus I must use them as indexes. angle_t
+public static 		int	viewangle;
 
 public static fixed_t			viewcos;
 public static fixed_t			viewsin;
 
-public static player_t*		viewplayer;
+public static player_t		viewplayer;
 
 // 0 = high, 1 = low
 public static int			detailshift;	
@@ -113,18 +121,18 @@ public static int			detailshift;
 //
 // precalculated math tables
 //
-public static angle_t			clipangle;
+public static int			clipangle;
 
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X. 
-public static int[]			viewangletox= new int[FINEANGLES/2];
+public static int[]			viewangletox=new int[FINEANGLES/2];
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-public static angle_t[]			xtoviewangle=new angle_t[SCREENWIDTH+1];
+public static int[]			xtoviewangle=new int[SCREENWIDTH+1];
 
 
 // UNUSED.
@@ -189,35 +197,37 @@ public static int
 R_PointOnSide
 ( fixed_t	x,
   fixed_t	y,
-  node_t*	node )
+  node_t	node )
 {
-    fixed_t	dx;
-    fixed_t	dy;
-    fixed_t	left;
-    fixed_t	right;
+    // These are used mainly as ints, no need to use fixed_t internally.
+    int	dx; 
+    int	dy;
+    int	left;
+    int	right;
 	
-    if (!node->dx)
+    if (node.dx.isEZ())
     {
-	if (x <= node->x)
-	    return node->dy > 0;
+	if (x.compareTo(node.x)<0)
+	    return node.dy.oneGZ();
 	
-	return node->dy < 0;
+	return node.dy.oneLZ();
     }
-    if (!node->dy)
+    
+    if (node.dy.isEZ())
     {
-	if (y <= node->y)
-	    return node->dx < 0;
+	if (y.val <= node.y.val)
+	    return node.dx.oneLZ();
 	
-	return node->dx > 0;
+	return node.dx.oneGZ();
     }
 	
-    dx = (x - node->x);
-    dy = (y - node->y);
+    dx = (x.val - node.x.val);
+    dy = (y.val - node.y.val);
 	
     // Try to quickly decide by looking at sign bits.
-    if ( (node->dy ^ node->dx ^ dx ^ dy)&0x80000000 )
+    if ( ((node.dy.val ^ node.dx.val ^ dx ^ dy)&0x80000000)!=0 )
     {
-	if  ( (node->dy ^ dx) & 0x80000000 )
+	if  ( ((node.dy.val ^ dx) & 0x80000000)!=0 )
 	{
 	    // (left is negative)
 	    return 1;
@@ -225,8 +235,8 @@ R_PointOnSide
 	return 0;
     }
 
-    left = FixedMul ( node->dy>>FRACBITS , dx );
-    right = FixedMul ( dy , node->dx>>FRACBITS );
+    left = FixedMul ( node.dy.val>>FRACBITS , dx );
+    right = FixedMul ( dy , node.dx.val>>FRACBITS );
 	
     if (right < left)
     {
@@ -242,45 +252,45 @@ int
 R_PointOnSegSide
 ( fixed_t	x,
   fixed_t	y,
-  seg_t*	line )
+  seg_t	line )
 {
-    fixed_t	lx;
-    fixed_t	ly;
-    fixed_t	ldx;
-    fixed_t	ldy;
-    fixed_t	dx;
-    fixed_t	dy;
-    fixed_t	left;
-    fixed_t	right;
+    int	lx;
+    int	ly;
+    int	ldx;
+    int	ldy;
+    int	dx;
+    int	dy;
+    int left;
+    int right;
 	
-    lx = line->v1->x;
-    ly = line->v1->y;
+    lx = line.v1.x.val;
+    ly = line.v1.y.val;
 	
-    ldx = line->v2->x - lx;
-    ldy = line->v2->y - ly;
+    ldx = line.v2.x.val-lx;
+    ldy = line.v2.y.val-ly;
 	
-    if (!ldx)
+    if (ldx==0)
     {
-	if (x <= lx)
-	    return ldy > 0;
+	if (x.val <= lx)
+	    return (ldy>0)?1:0;
 	
-	return ldy < 0;
+	return (ldy<0)?1:0;
     }
-    if (!ldy)
+    if (ldy==0)
     {
-	if (y <= ly)
-	    return ldx < 0;
+	if (y.val <= ly)
+	    return (ldx < 0)?1:0;
 	
-	return ldx > 0;
+	return (ldx > 0)?1:0;
     }
 	
-    dx = (x - lx);
-    dy = (y - ly);
+    dx=x.val-lx;
+    dy=y.val-ly;
 	
     // Try to quickly decide by looking at sign bits.
-    if ( (ldy ^ ldx ^ dx ^ dy)&0x80000000 )
+    if ( ((ldy ^ ldx ^ dx ^ dy)&0x80000000 )!=0)
     {
-	if  ( (ldy ^ dx) & 0x80000000 )
+	if  ( ((ldy ^ dx) & 0x80000000 )!=0)
 	{
 	    // (left is negative)
 	    return 1;
@@ -291,7 +301,7 @@ R_PointOnSegSide
     left = FixedMul ( ldy>>FRACBITS , dx );
     right = FixedMul ( dy , ldx>>FRACBITS );
 	
-    if (right < left)
+    if (right<left)
     {
 	// front side
 	return 0;
@@ -315,15 +325,15 @@ R_PointOnSegSide
 
 
 
-angle_t
+public int
 R_PointToAngle
-( fixed_t	x,
-  fixed_t	y )
+( fixed_t	xx,
+  fixed_t	yy )
 {	
-    x -= viewx;
-    y -= viewy;
+    int x=sub(xx, viewx);
+    int y=sub(yy, viewy);
     
-    if ( (!x) && (!y) )
+    if ( (x==0) && (y==0) )
 	return 0;
 
     if (x>= 0)
@@ -401,33 +411,34 @@ R_PointToAngle
 }
 
 
-angle_t
+int
 R_PointToAngle2
 ( fixed_t	x1,
   fixed_t	y1,
   fixed_t	x2,
   fixed_t	y2 )
 {	
-    viewx = x1;
-    viewy = y1;
+    // Careful with assignments...
+    viewx.copy(x1);
+    viewy.copy(y1);
     
     return R_PointToAngle (x2, y2);
 }
 
 
-fixed_t
+public fixed_t
 R_PointToDist
 ( fixed_t	x,
   fixed_t	y )
 {
     int		angle;
-    fixed_t	dx;
-    fixed_t	dy;
+    int	dx;
+    int	dy;
     fixed_t	temp;
     fixed_t	dist;
 	
-    dx = abs(x - viewx);
-    dy = abs(y - viewy);
+    dx = Math.abs(x - viewx);
+    dy = Math.abs(y - viewy);
 	
     if (dy>dx)
     {

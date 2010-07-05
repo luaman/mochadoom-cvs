@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.java,v 1.2 2010/07/03 23:24:13 velktron Exp $
+// $Id: am_map.java,v 1.3 2010/07/05 16:18:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 //
 //
 // $Log: am_map.java,v $
+// Revision 1.3  2010/07/05 16:18:40  velktron
+// YOU DON'T WANNA KNOW
+//
 // Revision 1.2  2010/07/03 23:24:13  velktron
 // Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
 //
@@ -32,12 +35,12 @@ package am;
 import static data.Defines.*;
 import doom.player_t;
 import rr.patch_t;
+import m.cheatseq_t;
 import m.fixed_t;
 import static m.fixed_t.*;
 
-
 public class am_map {
-public static String rcsid = "$Id: am_map.java,v 1.2 2010/07/03 23:24:13 velktron Exp $";
+public static String rcsid = "$Id: am_map.java,v 1.3 2010/07/05 16:18:40 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -134,9 +137,6 @@ static final int FTOM( int x){
   return  FixedMul(((x)<<16),scale_ftom);
 }
 
-static final int FixedMul( int x){
-  return  FixedMul(((x)<<16),scale_ftom);
-}
 
 // translates between frame-buffer and map distances
 //#define FTOM(x) FixedMul(((x)<<16),scale_ftom)
@@ -157,7 +157,7 @@ static final int FixedMul( int x){
 
 private static float R=((8*PLAYERRADIUS)/7);
 mline_t player_arrow[] = {
-    { { -R+R/8, 0 }, { R, 0 } }, // -----
+    new { { -R+R/8, 0 }, { R, 0 } }, // -----
     { { R, 0 }, { R-R/2, R/4 } },  // ----->
     { { R, 0 }, { R-R/2, -R/4 } },
     { { -R+R/8, 0 }, { -R-R/8, R/4 } }, // >---->
@@ -279,8 +279,8 @@ static int markpointnum = 0; // next point to be assigned
 
 static int followplayer = 1; // specifies whether to follow the player around
 
-static char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
-static cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
+static char[] cheat_amap_seq = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
+static cheatseq_t cheat_amap =  new cheatseq_t(cheat_amap_seq, 0 );
 
 static boolean stopped = true;
 

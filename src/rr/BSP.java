@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BSP.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: BSP.java,v 1.2 2010/07/05 16:18:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: BSP.java,v $
+// Revision 1.2  2010/07/05 16:18:40  velktron
+// YOU DON'T WANNA KNOW
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -54,7 +57,7 @@ package rr;
 
 public class BSP{
 
-// static const char rcsid[] = "$Id: BSP.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
+// static const char rcsid[] = "$Id: BSP.java,v 1.2 2010/07/05 16:18:40 velktron Exp $";
 
     public seg_t       curline;
     public side_t      sidedef;
@@ -80,27 +83,32 @@ public class BSP{
     public lighttable_t[][]   vscalelight;
     public lighttable_t[][]   dscalelight;
 
-// MAES: DAT HURT
-//    typedef void (*drawfunc_t) (int start, int stop);
+    /*
+    public interface drawfunc_t {
 
-//#include "r_local.h"
+        // MAES: This is defined but apparently never used. So let's not bother...
+       //  typedef void (*drawfunc_t) (int start, int stop);
 
-void
-R_StoreWallRange
-( int	start,
+           public void draw(int start, int stop);
+           
+       } */
+ 
+    /* An example of what it would look like
+class R_StoreWallRange implements drawfunc_t{
+ public void draw(int	start,
   int	stop ){
 }
-
-
-
-
+}*/
+    
+          public void    R_StoreWallRange(int   start, int   stop ){
+          }
 
 //
 // R_ClearDrawSegs
 //
 void R_ClearDrawSegs ()
 {
-    ds_p = drawsegs;
+    ds_p = drawsegs[0];
 }
 
 
@@ -123,32 +131,29 @@ public static final int MAXSEGS=32;
 cliprange_t	newend;
 cliprange_t[]	solidsegs= new cliprange_t[MAXSEGS];
 
-
-
-
 //
 // R_ClipSolidWallSegment
 // Does handle solid walls,
 //  e.g. single sided LineDefs (middle texture)
 //  that entirely block the view.
 // 
-void
-R_ClipSolidWallSegment
-( int			first,
-  int			last )
-{
-    cliprange_t	next;
-    cliprange_t	start;
+
+class R_ClipSolidWallSegment implements drawfunc_t{
+public void draw(int   first,
+        int   last ){
+    int	next;
+    int	start;
 
     // Find the first range that touches the range
     //  (adjacent pixels are touching).
-    start = solidsegs;
-    while (start.last < first-1)
+    start = 0;
+    
+    while (solidsegs[start].last < first-1)
 	start++;
 
-    if (first < start->first)
+    if (first < solidsegs[start].first)
     {
-	if (last < start->first-1)
+	if (last < solidsegs[start].first-1)
 	{
 	    // Post is entirely visible (above start),
 	    //  so insert a new clippost.
@@ -158,32 +163,32 @@ R_ClipSolidWallSegment
 	    
 	    while (next != start)
 	    {
-		*next = *(next-1);
+	        solidsegs[next] = solidsegs[next-1];
 		next--;
 	    }
-	    next->first = first;
-	    next->last = last;
+	    solidsegs[next].first = first;
+	    solidsegs[next].last = last;
 	    return;
 	}
 		
 	// There is a fragment above *start.
-	R_StoreWallRange (first, start->first - 1);
+	R_StoreWallRange (first, solidsegs[start].first - 1);
 	// Now adjust the clip size.
-	start->first = first;	
+	solidsegs[start].first = first;	
     }
 
     // Bottom contained in start?
-    if (last <= start->last)
+    if (last <= solidsegs[start].last)
 	return;			
 		
     next = start;
-    while (last >= (next+1)->first-1)
+    while (last >= solidsegs[(next+1)].first-1)
     {
 	// There is a fragment between two posts.
-	R_StoreWallRange (next->last + 1, (next+1)->first - 1);
+	R_StoreWallRange (solidsegs[next].last + 1, solidsegs[next+1].first - 1);
 	next++;
 	
-	if (last <= next->last)
+	if (last <= next.last)
 	{
 	    // Bottom is contained in next.
 	    // Adjust the clip size.
@@ -230,17 +235,21 @@ R_ClipPassWallSegment
 ( int	first,
   int	last )
 {
-    cliprange_t*	start;
+    cliprange_t	start;
 
     // Find the first range that touches the range
     //  (adjacent pixels are touching).
-    start = solidsegs;
-    while (start->last < first-1)
-	start++;
+    int startptr=0;
+    start = solidsegs[startptr];
+    while (start.last < first-1)
+	startptr++;
 
-    if (first < start->first)
+    start = solidsegs[startptr];
+    
+    
+    if (first < start.first)
     {
-	if (last < start->first-1)
+	if (last < start.first-1)
 	{
 	    // Post is entirely visible (above start).
 	    R_StoreWallRange (first, last);
@@ -248,25 +257,26 @@ R_ClipPassWallSegment
 	}
 		
 	// There is a fragment above *start.
-	R_StoreWallRange (first, start->first - 1);
+	R_StoreWallRange (first, start.first - 1);
     }
 
     // Bottom contained in start?
-    if (last <= start->last)
+    if (last <= start.last)
 	return;			
 		
-    while (last >= (start+1)->first-1)
+    while (last >= solidsegs[startptr+1].first-1)
     {
 	// There is a fragment between two posts.
-	R_StoreWallRange (start->last + 1, (start+1)->first - 1);
-	start++;
+	R_StoreWallRange (start.last + 1, solidsegs[startptr+1].first - 1);
+	startptr++;
+	start=solidsegs[startptr];
 	
-	if (last <= start->last)
+	if (last <= start.last)
 	    return;
     }
 	
     // There is a fragment after *next.
-    R_StoreWallRange (start->last + 1, last);
+    R_StoreWallRange (start.last + 1, last);
 }
 
 
@@ -274,13 +284,13 @@ R_ClipPassWallSegment
 //
 // R_ClearClipSegs
 //
-void R_ClearClipSegs (void)
+public void R_ClearClipSegs ()
 {
     solidsegs[0].first = -0x7fffffff;
     solidsegs[0].last = -1;
     solidsegs[1].first = viewwidth;
     solidsegs[1].last = 0x7fffffff;
-    newend = solidsegs+2;
+    newend = solidsegs[2];
 }
 
 //
@@ -288,20 +298,20 @@ void R_ClearClipSegs (void)
 // Clips the given segment
 // and adds any visible pieces to the line list.
 //
-void R_AddLine (seg_t*	line)
+void R_AddLine (seg_t	line)
 {
     int			x1;
     int			x2;
-    angle_t		angle1;
-    angle_t		angle2;
-    angle_t		span;
-    angle_t		tspan;
+    int		angle1;
+    int		angle2;
+    int		span;
+    int		tspan;
     
     curline = line;
 
     // OPTIMIZE: quickly reject orthogonal back sides.
-    angle1 = R_PointToAngle (line->v1->x, line->v1->y);
-    angle2 = R_PointToAngle (line->v2->x, line->v2->y);
+    angle1 = R_PointToAngle (line.v1.x.val, line.v1.y.val);
+    angle2 = R_PointToAngle (line.v2.x.val, line.v2.y.val);
     
     // Clip to view edges.
     // OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
@@ -583,7 +593,7 @@ void R_Subsector (int num)
 // Just call with BSP root.
 void R_RenderBSPNode (int bspnum)
 {
-    node_t*	bsp;
+    node_t	bsp;
     int		side;
 
     // Found a subsector?
@@ -596,17 +606,17 @@ void R_RenderBSPNode (int bspnum)
 	return;
     }
 		
-    bsp = &nodes[bspnum];
+    bsp = nodes[bspnum];
     
     // Decide which side the view point is on.
     side = R_PointOnSide (viewx, viewy, bsp);
 
     // Recursively divide front space.
-    R_RenderBSPNode (bsp->children[side]); 
+    R_RenderBSPNode (bsp.children[side]); 
 
     // Possibly divide back space.
-    if (R_CheckBBox (bsp->bbox[side^1]))	
-	R_RenderBSPNode (bsp->children[side^1]);
+    if (R_CheckBBox (bsp.bbox[side^1]))	
+	R_RenderBSPNode (bsp.children[side^1]);
 }
 
 

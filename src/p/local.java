@@ -3,7 +3,7 @@ package p;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: local.java,v 1.2 2010/07/03 23:24:13 velktron Exp $
+// $Id: local.java,v 1.3 2010/07/05 16:18:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -96,12 +96,12 @@ public static int ONFLOORZ	=	MININT;
 public static int ONCEILINGZ	=	MAXINT;
 
 // Time interval for item respawning.
-#define ITEMQUESIZE		128
+public static int ITEMQUESIZE		128
 
-extern mapthing_t	itemrespawnque[ITEMQUESIZE];
-extern int		itemrespawntime[ITEMQUESIZE];
-extern int		iquehead;
-extern int		iquetail;
+public mapthing_t	itemrespawnque[ITEMQUESIZE];
+public int		itemrespawntime[ITEMQUESIZE];
+public int		iquehead;
+public int		iquetail;
 
 
 void P_RespawnSpecials (void);
@@ -253,6 +253,9 @@ extern int		clipammo[NUMAMMO];
 //-----------------------------------------------------------------------------
 //
 // $Log: local.java,v $
+// Revision 1.3  2010/07/05 16:18:40  velktron
+// YOU DON'T WANNA KNOW
+//
 // Revision 1.2  2010/07/03 23:24:13  velktron
 // Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
 //
