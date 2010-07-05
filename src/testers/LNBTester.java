@@ -16,6 +16,7 @@ import rr.patch_t;
 import data.doomstat;
 import data.Defines.GameMission_t;
 
+import v.FastTranspose;
 import v.SimpleRenderer;
 import w.*;
 
@@ -39,16 +40,16 @@ public class LNBTester {
     pistol.unpack(bb);
     patch_t troll= new patch_t();
     troll.unpack(W.CacheLumpName("TROOA1", 0));
-    SimpleRenderer V=new SimpleRenderer(640,640);
+    SimpleRenderer V=new SimpleRenderer(1024,1024);
     V.Init();
     int count=0;
     long timea=System.nanoTime();
     for (int i=0;i<100;i++){
         for (int s=0;s<4;s++){
-            for (int y=0;y<1/*V.getHeight()/titlepic.height*/;y++){
+            for (int y=0;y<V.getHeight()/titlepic.height;y++){
             for (int x=0;x<V.getWidth()/titlepic.width;x++){
                 
-                V.DrawPatchFaster(x*titlepic.width, y*titlepic.height,s, titlepic);
+                V.DrawPatch(x*titlepic.width, y*titlepic.height,s, titlepic);
                     }
             }
             count++;
@@ -134,7 +135,39 @@ public class LNBTester {
             "U2_TITLEPIC.png");
     ImageIO.write(b, "PNG", outputFile);
      
+    count=0;
+    byte[] scratch=new byte[1<<(FastTranspose.BL<<1)];
+    
+    timea=System.nanoTime();
+    for (int i=0;i<10;i++){
+    FastTranspose.blocktranspose(V.screens[0], scratch, 10);
+    FastTranspose.blocktranspose(V.screens[1], scratch, 10);
+    FastTranspose.blocktranspose(V.screens[2], scratch, 10);
+    FastTranspose.blocktranspose(V.screens[3], scratch, 10);
+    count+=4;
+    }
+    timeb=System.nanoTime();     
+    
+    FastTranspose.blocktranspose(V.screens[0], scratch, 10);
+    V.GetBlock(0, 0, 0, V.getWidth(), V.getHeight(), dump);
+    System.out.println("Time for single transposing (Fast):" +(timeb-timea)/(count*1e06)+ " ms");
+    
+    for (int i=0;i<dump.length;i++){
+        tmp[i]=dump[i];
+    }
+
+    b.getRaster().setPixels(0, 0, V.getWidth(),V.getHeight(), tmp);
+    
+    outputFile =
+        new File(
+            "U#_TITLEPIC.png");
+    ImageIO.write(b, "PNG", outputFile);
+     
+         
          }
+    
+    
+    
 }
     
    

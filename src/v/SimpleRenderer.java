@@ -10,7 +10,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.2 2010/07/03 23:24:13 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.3 2010/07/05 13:24:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,11 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.3  2010/07/05 13:24:10  velktron
+// Added a "fast transpose" algorithm that does outperform the naive one even in Java (thanks to http://www.boo.net/~jasonp/ for it!).
+//
+// However, even with that optimization, it barely beats drawing columns directly and then only by forcing the canvas to be square powers of 2 and at very high resolutions (>1024 pixels per size). Worth it? Dunno, I'll stick it in there.
+//
 // Revision 1.2  2010/07/03 23:24:13  velktron
 // Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
 //
@@ -76,7 +81,7 @@ import static data.Defines.*;
 
 public class SimpleRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.2 2010/07/03 23:24:13 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.3 2010/07/05 13:24:10 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -726,6 +731,16 @@ public void ColumnsFirstToRowsFirst(byte[] src, byte[] dest,int width,int height
     }
 }
 
+public void ColumnsFirstToRowsFirst2(byte[] src, byte[] dest,int width,int height){
+    for (int x=0;x<width;x++){
+      int tmp=x*height;
+    for (int y=0;y<height;y++){
+            //System.arraycopy(src, y+x*height, dest, x+tmp2, 1);
+            dest[y+tmp]=src[x+y*width];
+        }
+    }
+}
+
 /** This has been EXTREEEEEEEEEEMELY optimized within Java's limits!!!
  *  Will only work correctly for square canvases though. It's still 
  *  about 50% slower than the normal renderer, so sometimes it *may*
@@ -740,12 +755,20 @@ public void InPlaceTranspose(byte[] src,int width,int height){
     int tmp2=0;
     int tmp;
     byte t;
-    for (int y=0;y<(height*3)/4;y++){
+    for (int y=0;y<height;y++){
         tmp=y;
-        for (int x=0;x<width;x++){
+        for (int x=0;x<width;x+=2){
             t=src[tmp2];
             src[tmp2]=src[tmp];
             src[tmp]=t;
+
+            tmp+=height;
+            tmp2++;
+            
+            t=src[tmp2];
+            src[tmp2]=src[tmp];
+            src[tmp]=t;
+
             tmp+=height;
             tmp2++;
         }
@@ -754,7 +777,7 @@ public void InPlaceTranspose(byte[] src,int width,int height){
 }
 
 public void Unscramble(int screen, byte[] dest){
-    this.ColumnsFirstToRowsFirst(screens[screen], dest, this.getWidth(),this.getHeight());
+    this.ColumnsFirstToRowsFirst2(screens[screen], dest, this.getWidth(),this.getHeight());
 
     }
 public void Unscramble(int screen){
