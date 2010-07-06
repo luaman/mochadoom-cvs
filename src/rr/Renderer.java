@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.1 2010/07/05 16:18:40 velktron Exp $
+// $Id: Renderer.java,v 1.2 2010/07/06 12:54:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.2  2010/07/06 12:54:50  velktron
+// A lot of work thrown in the renderer, but don't get too excited...
+//
 // Revision 1.1  2010/07/05 16:18:40  velktron
 // YOU DON'T WANNA KNOW
 //
@@ -51,7 +54,9 @@ package rr;
 #include "r_local.h"
 #include "r_sky.h"
  */
+import data.doomstat;
 import doom.player_t;
+import doom.thinker_t;
 import m.fixed_t;
 import static m.fixed_t.*;
 import static data.Defines.*;
@@ -61,6 +66,9 @@ import static data.SineCosine.*;
 import m.bbox;
 public class Renderer{
 
+    private doomstat ds;
+    private WadLoader W;
+    
     //
  // Lighting LUT.
  // Used for z-depth cuing per column/row,
@@ -85,38 +93,38 @@ public static int			viewangleoffset;
 public static int			validcount = 1;		
 
 // TODO
-//lighttable_t*		fixedcolormap;
+lighttable_t		fixedcolormap;
 //extern lighttable_t**	walllights;
 
-public static int			centerx;
-public static int			centery;
+public int			centerx;
+public int			centery;
 
 fixed_t			centerxfrac;
 fixed_t			centeryfrac;
 fixed_t			projection;
 
 // just for profiling purposes
-public static int			framecount;	
+public  int			framecount;	
 
-public static int			sscount;
-public static int			linecount;
-public static int			loopcount;
+public  int			sscount;
+public  int			linecount;
+public  int			loopcount;
 
-public static fixed_t			viewx;
-public static fixed_t			viewy;
-public static fixed_t			viewz;
+public  fixed_t			viewx;
+public  fixed_t			viewy;
+public  fixed_t			viewz;
 
 //MAES: an exception to strict type safety. These are used only in here, anyway (?) and have no special functions.
 //Plus I must use them as indexes. angle_t
-public static 		int	viewangle;
+public int	viewangle;
 
-public static fixed_t			viewcos;
-public static fixed_t			viewsin;
+public fixed_t			viewcos;
+public fixed_t			viewsin;
 
-public static player_t		viewplayer;
+public player_t		viewplayer;
 
 // 0 = high, 1 = low
-public static int			detailshift;	
+public int			detailshift;	
 
 //
 // precalculated math tables
@@ -144,12 +152,12 @@ public static int[]			xtoviewangle=new int[SCREENWIDTH+1];
 // fixed_t		finesine[5*FINEANGLES/4];
 // MAES: uh oh. So now all these ints must become finesines? fuck that.
 // Also wtf @ this hack....this points to approx 1/4th of the finesine table, but what happens if I read past it?
-//int[]		finecosine = finesine[FINEANGLES/4];
+// int[]		finecosine = finesine[FINEANGLES/4];
 
 // TODO:
-//lighttable_t*		scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-//lighttable_t*		scalelightfixed[MAXLIGHTSCALE];
-//lighttable_t*		zlight[LIGHTLEVELS][MAXLIGHTZ];
+public lighttable_t[][]		scalelight=new lighttable_t[LIGHTLEVELS][MAXLIGHTSCALE];
+public lighttable_t[]		scalelightfixed=new lighttable_t[MAXLIGHTSCALE];
+public lighttable_t[][]		zlight=new lighttable_t[LIGHTLEVELS][MAXLIGHTZ];
 
 // bumped light from gun blasts
 public static int			extralight;			
@@ -163,6 +171,62 @@ void (*transcolfunc) (void);
 void (*spanfunc) (void);
 */
 
+// MAES: More renderer fields from segs.
+
+//OPTIMIZE: closed two sided lines as single sided
+
+//True if any of the segs textures might be visible.
+boolean     segtextured;    
+
+//False if the back side is the same plane.
+boolean     markfloor;  
+boolean     markceiling;
+
+boolean     maskedtexture;
+int     toptexture;
+int     bottomtexture;
+int     midtexture;
+
+
+int     rw_normalangle;
+//angle to line origin
+int     rw_angle1;  
+
+//
+//regular wall
+//
+int     rw_x;
+int     rw_stopx;
+int     rw_centerangle;
+fixed_t     rw_offset;
+fixed_t     rw_distance;
+fixed_t     rw_scale;
+fixed_t     rw_scalestep;
+fixed_t     rw_midtexturemid;
+fixed_t     rw_toptexturemid;
+fixed_t     rw_bottomtexturemid;
+
+int     worldtop;
+int     worldbottom;
+int     worldhigh;
+int     worldlow;
+
+fixed_t     pixhigh;
+fixed_t     pixlow;
+fixed_t     pixhighstep;
+fixed_t     pixlowstep;
+
+fixed_t     topfrac;
+fixed_t     topstep;
+
+fixed_t     bottomfrac;
+fixed_t     bottomstep;
+
+// MAES: was **
+lighttable_t[]  walllights;
+
+// MAES: was *
+short[]      maskedtexturecol;
 
 // R_AddPointToBox
 // Expand a given bbox
@@ -194,12 +258,13 @@ R_AddPointToBox
 // Returns side 0 (front) or 1 (back).
 //
 public static int
-R_PointOnSide
+PointOnSide
 ( fixed_t	x,
   fixed_t	y,
   node_t	node )
 {
-    // These are used mainly as ints, no need to use fixed_t internally.
+    // MAES: These are used mainly as ints, no need to use fixed_t internally.
+    // fixed_t will only be used as a "pass type", but calculations will be done with ints, preferably.
     int	dx; 
     int	dy;
     int	left;
@@ -249,7 +314,7 @@ R_PointOnSide
 
 
 int
-R_PointOnSegSide
+PointOnSegSide
 ( fixed_t	x,
   fixed_t	y,
   seg_t	line )
@@ -326,7 +391,7 @@ R_PointOnSegSide
 
 
 public int
-R_PointToAngle
+PointToAngle
 ( fixed_t	xx,
   fixed_t	yy )
 {	
@@ -412,7 +477,7 @@ R_PointToAngle
 
 
 int
-R_PointToAngle2
+PointToAngle2
 ( fixed_t	x1,
   fixed_t	y1,
   fixed_t	x2,
@@ -422,23 +487,23 @@ R_PointToAngle2
     viewx.copy(x1);
     viewy.copy(y1);
     
-    return R_PointToAngle (x2, y2);
+    return PointToAngle (x2, y2);
 }
 
 
-public fixed_t
-R_PointToDist
+public int
+PointToDist
 ( fixed_t	x,
   fixed_t	y )
 {
     int		angle;
     int	dx;
     int	dy;
-    fixed_t	temp;
-    fixed_t	dist;
+    int	temp;
+    int	dist;
 	
-    dx = Math.abs(x - viewx);
-    dy = Math.abs(y - viewy);
+    dx = Math.abs(x.val - viewx.val);
+    dy = Math.abs(y.val - viewy.val);
 	
     if (dy>dx)
     {
@@ -461,10 +526,10 @@ R_PointToDist
 //
 // R_InitPointToAngle
 //
-void R_InitPointToAngle (void)
+public void InitPointToAngle ()
 {
     // UNUSED - now getting from tables.c
-#if 0
+if (false){
     int	i;
     long	t;
     float	f;
@@ -473,11 +538,11 @@ void R_InitPointToAngle (void)
 //
     for (i=0 ; i<=SLOPERANGE ; i++)
     {
-	f = atan( (float)i/SLOPERANGE )/(3.141592657*2);
-	t = 0xffffffff*f;
-	tantoangle[i] = t;
+	f = (float) Math.atan( (double)(i/SLOPERANGE )/(3.141592657*2));
+	t = (long) (0xffffffffL*f);
+	tantoangle[i] = (int) t;
     }
-#endif
+}
 }
 
 
@@ -488,18 +553,18 @@ void R_InitPointToAngle (void)
 //  at the given angle.
 // rw_distance must be calculated first.
 //
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
+public int ScaleFromGlobalAngle (int visangle)
 {
-    fixed_t		scale;
+    int		    scale;
     int			anglea;
     int			angleb;
     int			sinea;
     int			sineb;
-    fixed_t		num;
+    int		    num;
     int			den;
 
     // UNUSED
-#if 0
+/*
 {
     fixed_t		dist;
     fixed_t		z;
@@ -513,7 +578,7 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
     scale = FixedDiv(projection, z);
     return scale;
 }
-#endif
+*/
 
     anglea = ANG90 + (visangle-viewangle);
     angleb = ANG90 + (visangle-rw_normalangle);
@@ -521,8 +586,8 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
     // both sines are allways positive
     sinea = finesine[anglea>>ANGLETOFINESHIFT];	
     sineb = finesine[angleb>>ANGLETOFINESHIFT];
-    num = FixedMul(projection,sineb)<<detailshift;
-    den = FixedMul(rw_distance,sinea);
+    num = FixedMul(projection.val,sineb)<<detailshift;
+    den = FixedMul(rw_distance.val,sinea);
 
     if (den > num>>16)
     {
@@ -544,10 +609,10 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 //
 // R_InitTables
 //
-void R_InitTables (void)
+public void InitTables ()
 {
     // UNUSED: now getting from tables.c
-#if 0
+/*
     int		i;
     float	a;
     float	fv;
@@ -570,7 +635,7 @@ void R_InitTables (void)
 	t = FRACUNIT*sin (a);
 	finesine[i] = t;
     }
-#endif
+*/
 
 }
 
@@ -579,12 +644,12 @@ void R_InitTables (void)
 //
 // R_InitTextureMapping
 //
-void R_InitTextureMapping (void)
+public void InitTextureMapping ()
 {
     int			i;
     int			x;
     int			t;
-    fixed_t		focallength;
+    int		focallength;
     
     // Use tangent table to generate viewangletox:
     //  viewangletox will give the next greatest x
@@ -592,7 +657,7 @@ void R_InitTextureMapping (void)
     //
     // Calc focallength
     //  so FIELDOFVIEW angles covers SCREENWIDTH.
-    focallength = FixedDiv (centerxfrac,
+    focallength = FixedDiv (centerxfrac.val,
 			    finetangent[FINEANGLES/4+FIELDOFVIEW/2] );
 	
     for (i=0 ; i<FINEANGLES/2 ; i++)
@@ -600,16 +665,16 @@ void R_InitTextureMapping (void)
 	if (finetangent[i] > FRACUNIT*2)
 	    t = -1;
 	else if (finetangent[i] < -FRACUNIT*2)
-	    t = viewwidth+1;
+	    t = ds.viewwidth+1;
 	else
 	{
 	    t = FixedMul (finetangent[i], focallength);
-	    t = (centerxfrac - t+FRACUNIT-1)>>FRACBITS;
+	    t = (centerxfrac.val - t+FRACUNIT-1)>>FRACBITS;
 
 	    if (t < -1)
 		t = -1;
-	    else if (t>viewwidth+1)
-		t = viewwidth+1;
+	    else if (t>ds.viewwidth+1)
+		t = ds.viewwidth+1;
 	}
 	viewangletox[i] = t;
     }
@@ -617,7 +682,7 @@ void R_InitTextureMapping (void)
     // Scan viewangletox[] to generate xtoviewangle[]:
     //  xtoviewangle will give the smallest view angle
     //  that maps to x.	
-    for (x=0;x<=viewwidth;x++)
+    for (x=0;x<=ds.viewwidth;x++)
     {
 	i = 0;
 	while (viewangletox[i]>x)
@@ -633,8 +698,8 @@ void R_InitTextureMapping (void)
 	
 	if (viewangletox[i] == -1)
 	    viewangletox[i] = 0;
-	else if (viewangletox[i] == viewwidth+1)
-	    viewangletox[i]  = viewwidth;
+	else if (viewangletox[i] == ds.viewwidth+1)
+	    viewangletox[i]  = ds.viewwidth;
     }
 	
     clipangle = xtoviewangle[0];
@@ -647,9 +712,9 @@ void R_InitTextureMapping (void)
 // Only inits the zlight table,
 //  because the scalelight table changes with view size.
 //
-#define DISTMAP		2
+protected static int DISTMAP	=	2;
 
-void R_InitLightTables (void)
+public void InitLightTables ()
 {
     int		i;
     int		j;
@@ -674,7 +739,7 @@ void R_InitLightTables (void)
 	    if (level >= NUMCOLORMAPS)
 		level = NUMCOLORMAPS-1;
 
-	    zlight[i][j] = colormaps + level*256;
+	    zlight[i][j] = colormaps[level*256];
 	}
     }
 }
@@ -693,7 +758,7 @@ int		setdetail;
 
 
 void
-R_SetViewSize
+SetViewSize
 ( int		blocks,
   int		detail )
 {
@@ -706,10 +771,10 @@ R_SetViewSize
 //
 // R_ExecuteSetViewSize
 //
-void R_ExecuteSetViewSize (void)
+public void ExecuteSetViewSize ()
 {
-    fixed_t	cosadj;
-    fixed_t	dy;
+    int	cosadj;
+    int	dy;
     int		i;
     int		j;
     int		level;
@@ -719,24 +784,25 @@ void R_ExecuteSetViewSize (void)
 
     if (setblocks == 11)
     {
-	scaledviewwidth = SCREENWIDTH;
-	viewheight = SCREENHEIGHT;
+	ds.scaledviewwidth = SCREENWIDTH;
+	ds.viewheight = SCREENHEIGHT;
     }
     else
     {
-	scaledviewwidth = setblocks*32;
-	viewheight = (setblocks*168/10)&~7;
+	ds.scaledviewwidth = setblocks*32;
+	ds.viewheight = (setblocks*168/10)&~7;
     }
     
     detailshift = setdetail;
-    viewwidth = scaledviewwidth>>detailshift;
+    ds.viewwidth = ds.scaledviewwidth>>detailshift;
 	
-    centery = viewheight/2;
-    centerx = viewwidth/2;
-    centerxfrac = centerx<<FRACBITS;
-    centeryfrac = centery<<FRACBITS;
-    projection = centerxfrac;
+    centery = ds.viewheight/2;
+    centerx = ds.viewwidth/2;
+    centerxfrac.set(centerx<<FRACBITS);
+    centeryfrac.set(centery<<FRACBITS);
+    projection.copy(centerxfrac);
 
+    /*
     if (!detailshift)
     {
 	colfunc = basecolfunc = R_DrawColumn;
@@ -750,7 +816,7 @@ void R_ExecuteSetViewSize (void)
 	fuzzcolfunc = R_DrawFuzzColumn;
 	transcolfunc = R_DrawTranslatedColumn;
 	spanfunc = R_DrawSpanLow;
-    }
+    }*/
 
     R_InitBuffer (scaledviewwidth, viewheight);
 	
@@ -803,30 +869,28 @@ void R_ExecuteSetViewSize (void)
 //
 // R_Init
 //
-extern int	detailLevel;
-extern int	screenblocks;
+public int	detailLevel;
+public int	screenblocks;
 
-
-
-void R_Init (void)
+void Init ()
 {
-    R_InitData ();
-    printf ("\nR_InitData");
-    R_InitPointToAngle ();
-    printf ("\nR_InitPointToAngle");
-    R_InitTables ();
+    InitData ();
+    System.out.print("\nR_InitData");
+    InitPointToAngle ();
+    System.out.print("\nR_InitPointToAngle");
+    InitTables ();
     // viewwidth / viewheight / detailLevel are set by the defaults
-    printf ("\nR_InitTables");
+    System.out.print ("\nR_InitTables");
 
-    R_SetViewSize (screenblocks, detailLevel);
-    R_InitPlanes ();
-    printf ("\nR_InitPlanes");
-    R_InitLightTables ();
-    printf ("\nR_InitLightTables");
-    R_InitSkyMap ();
-    printf ("\nR_InitSkyMap");
-    R_InitTranslationTables ();
-    printf ("\nR_InitTranslationsTables");
+    SetViewSize (screenblocks, detailLevel);
+    InitPlanes ();
+    System.out.print ("\nR_InitPlanes");
+    InitLightTables ();
+    System.out.print("\nR_InitLightTables");
+    InitSkyMap ();
+    System.out.print("\nR_InitSkyMap");
+    InitTranslationTables ();
+    System.out.print("\nR_InitTranslationsTables");
 	
     framecount = 0;
 }
@@ -835,12 +899,12 @@ void R_Init (void)
 //
 // R_PointInSubsector
 //
-subsector_t*
-R_PointInSubsector
+public subsector_t
+PointInSubsector
 ( fixed_t	x,
   fixed_t	y )
 {
-    node_t*	node;
+    node_t	node;
     int		side;
     int		nodenum;
 
@@ -865,15 +929,15 @@ R_PointInSubsector
 //
 // R_SetupFrame
 //
-void R_SetupFrame (player_t* player)
+public void SetupFrame (player_t player)
 {		
     int		i;
     
     viewplayer = player;
-    viewx = player->mo->x;
-    viewy = player->mo->y;
-    viewangle = player->mo->angle + viewangleoffset;
-    extralight = player->extralight;
+    viewx = player.mo.x;
+    viewy = player.mo.y;
+    viewangle = player.mo.angle + viewangleoffset;
+    extralight = player.extralight;
 
     viewz = player->viewz;
     
@@ -905,33 +969,756 @@ void R_SetupFrame (player_t* player)
 //
 // R_RenderView
 //
-void R_RenderPlayerView (player_t* player)
+public void RenderPlayerView (player_t player)
 {	
-    R_SetupFrame (player);
+    SetupFrame (player);
 
     // Clear buffers.
-    R_ClearClipSegs ();
-    R_ClearDrawSegs ();
-    R_ClearPlanes ();
-    R_ClearSprites ();
+    ClearClipSegs ();
+    ClearDrawSegs ();
+    ClearPlanes ();
+    ClearSprites ();
     
-    // check for new console commands.
-    NetUpdate ();
+    // TODO: check for new console commands.
+    //NetUpdate ();
 
     // The head node is the last node output.
     R_RenderBSPNode (numnodes-1);
     
     // Check for new console commands.
-    NetUpdate ();
+    //NetUpdate ();
     
-    R_DrawPlanes ();
+    DrawPlanes ();
     
     // Check for new console commands.
-    NetUpdate ();
+    //NetUpdate ();
     
-    R_DrawMasked ();
+    DrawMasked ();
 
     // Check for new console commands.
-    NetUpdate ();				
+   // NetUpdate ();				
 }
+
+
+
+
+//
+// R_PrecacheLevel
+// Preloads all relevant graphics for the level.
+//
+int     flatmemory;
+int     texturememory;
+int     spritememory;
+
+public void R_PrecacheLevel ()
+{
+    String       flatpresent;
+    String       texturepresent;
+    String       spritepresent;
+
+    int         i;
+    int         j;
+    int         k;
+    int         lump;
+    
+    texture_t      texture;
+    thinker_t      th;
+    spriteframe_t  sf;
+
+    if (ds.demoplayback)
+    return;
+    
+    // Precache flats.
+    flatpresent = alloca(numflats);
+    memset (flatpresent,0,numflats);    
+
+    for (i=0 ; i<numsectors ; i++)
+    {
+    flatpresent[sectors[i].floorpic] = 1;
+    flatpresent[sectors[i].ceilingpic] = 1;
+    }
+    
+    flatmemory = 0;
+
+    for (i=0 ; i<numflats ; i++)
+    {
+    if (flatpresent[i])
+    {
+        lump = firstflat + i;
+        flatmemory += lumpinfo[lump].size;
+        W_CacheLumpNum(lump, PU_CACHE);
+    }
+    }
+    
+    // Precache textures.
+    texturepresent = alloca(numtextures);
+    memset (texturepresent,0, numtextures);
+    
+    for (i=0 ; i<numsides ; i++)
+    {
+    texturepresent[sides[i].toptexture] = 1;
+    texturepresent[sides[i].midtexture] = 1;
+    texturepresent[sides[i].bottomtexture] = 1;
+    }
+
+    // Sky texture is always present.
+    // Note that F_SKY1 is the name used to
+    //  indicate a sky floor/ceiling as a flat,
+    //  while the sky texture is stored like
+    //  a wall texture, with an episode dependend
+    //  name.
+    texturepresent[skytexture] = 1;
+    
+    texturememory = 0;
+    for (i=0 ; i<numtextures ; i++)
+    {
+    if (!texturepresent[i])
+        continue;
+
+    texture = textures[i];
+    
+    for (j=0 ; j<texture->patchcount ; j++)
+    {
+        lump = texture->patches[j].patch;
+        texturememory += lumpinfo[lump].size;
+        W_CacheLumpNum(lump , PU_CACHE);
+    }
+    }
+    
+    // Precache sprites.
+    spritepresent = alloca(numsprites);
+    memset (spritepresent,0, numsprites);
+    
+    for (th = thinkercap.next ; th != &thinkercap ; th=th->next)
+    {
+    if (th->function.acp1 == (actionf_p1)P_MobjThinker)
+        spritepresent[((mobj_t *)th)->sprite] = 1;
+    }
+    
+    spritememory = 0;
+    for (i=0 ; i<numsprites ; i++)
+    {
+    if (!spritepresent[i])
+        continue;
+
+    for (j=0 ; j<sprites[i].numframes ; j++)
+    {
+        sf = &sprites[i].spriteframes[j];
+        for (k=0 ; k<8 ; k++)
+        {
+        lump = firstspritelump + sf->lump[k];
+        spritememory += lumpinfo[lump].size;
+        W_CacheLumpNum(lump , PU_CACHE);
+        }
+    }
+    }
+}
+
+//
+//R_GetColumn
+//
+byte*
+R_GetColumn
+( int       tex,
+int       col )
+{
+ int     lump;
+ int     ofs;
+ 
+ col &= texturewidthmask[tex];
+ lump = texturecolumnlump[tex][col];
+ ofs = texturecolumnofs[tex][col];
+ 
+ if (lump > 0)
+ return (byte *)W_CacheLumpNum(lump,PU_CACHE)+ofs;
+
+ if (!texturecomposite[tex])
+ R_GenerateComposite (tex);
+
+ return texturecomposite[tex] + ofs;
+}
+
+
+
+
+//
+//R_InitTextures
+//Initializes the texture list
+//with the textures from the world map.
+//
+void R_InitTextures (void)
+{
+ maptexture_t*   mtexture;
+ texture_t*      texture;
+ mappatch_t*     mpatch;
+ texpatch_t*     patch;
+
+ int         i;
+ int         j;
+
+ int*        maptex;
+ int*        maptex2;
+ int*        maptex1;
+ 
+ char        name[9];
+ char*       names;
+ char*       name_p;
+ 
+ int*        patchlookup;
+ 
+ int         totalwidth;
+ int         nummappatches;
+ int         offset;
+ int         maxoff;
+ int         maxoff2;
+ int         numtextures1;
+ int         numtextures2;
+
+ int*        directory;
+ 
+ int         temp1;
+ int         temp2;
+ int         temp3;
+
+ 
+ // Load the patch names from pnames.lmp.
+ name[8] = 0;    
+ names = W_CacheLumpName ("PNAMES", PU_STATIC);
+ nummappatches = LONG ( *((int *)names) );
+ name_p = names+4;
+ patchlookup = alloca (nummappatches*sizeof(*patchlookup));
+ 
+ for (i=0 ; i<nummappatches ; i++)
+ {
+ strncpy (name,name_p+i*8, 8);
+ patchlookup[i] = W_CheckNumForName (name);
+ }
+ Z_Free (names);
+ 
+ // Load the map texture definitions from textures.lmp.
+ // The data is contained in one or two lumps,
+ //  TEXTURE1 for shareware, plus TEXTURE2 for commercial.
+ maptex = maptex1 = W_CacheLumpName ("TEXTURE1", PU_STATIC);
+ numtextures1 = LONG(*maptex);
+ maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
+ directory = maptex+1;
+ 
+ if (W_CheckNumForName ("TEXTURE2") != -1)
+ {
+ maptex2 = W_CacheLumpName ("TEXTURE2", PU_STATIC);
+ numtextures2 = LONG(*maptex2);
+ maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
+ }
+ else
+ {
+ maptex2 = NULL;
+ numtextures2 = 0;
+ maxoff2 = 0;
+ }
+ numtextures = numtextures1 + numtextures2;
+ 
+ textures = Z_Malloc (numtextures*4, PU_STATIC, 0);
+ texturecolumnlump = Z_Malloc (numtextures*4, PU_STATIC, 0);
+ texturecolumnofs = Z_Malloc (numtextures*4, PU_STATIC, 0);
+ texturecomposite = Z_Malloc (numtextures*4, PU_STATIC, 0);
+ texturecompositesize = Z_Malloc (numtextures*4, PU_STATIC, 0);
+ texturewidthmask = Z_Malloc (numtextures*4, PU_STATIC, 0);
+ textureheight = Z_Malloc (numtextures*4, PU_STATIC, 0);
+
+ totalwidth = 0;
+ 
+ //  Really complex printing shit...
+ temp1 = W_GetNumForName ("S_START");  // P_???????
+ temp2 = W_GetNumForName ("S_END") - 1;
+ temp3 = ((temp2-temp1+63)/64) + ((numtextures+63)/64);
+ printf("[");
+ for (i = 0; i < temp3; i++)
+ printf(" ");
+ printf("         ]");
+ for (i = 0; i < temp3; i++)
+ printf("\x8");
+ printf("\x8\x8\x8\x8\x8\x8\x8\x8\x8\x8");   
+ 
+ for (i=0 ; i<numtextures ; i++, directory++)
+ {
+ if (!(i&63))
+     printf (".");
+
+ if (i == numtextures1)
+ {
+     // Start looking in second texture file.
+     maptex = maptex2;
+     maxoff = maxoff2;
+     directory = maptex+1;
+ }
+     
+ offset = LONG(*directory);
+
+ if (offset > maxoff)
+     I_Error ("R_InitTextures: bad texture directory");
+ 
+ mtexture = (maptexture_t *) ( (byte *)maptex + offset);
+
+ texture = textures[i] =
+     Z_Malloc (sizeof(texture_t)
+           + sizeof(texpatch_t)*(SHORT(mtexture->patchcount)-1),
+           PU_STATIC, 0);
+ 
+ texture->width = SHORT(mtexture->width);
+ texture->height = SHORT(mtexture->height);
+ texture->patchcount = SHORT(mtexture->patchcount);
+
+ memcpy (texture->name, mtexture->name, sizeof(texture->name));
+ mpatch = &mtexture->patches[0];
+ patch = &texture->patches[0];
+
+ for (j=0 ; j<texture->patchcount ; j++, mpatch++, patch++)
+ {
+     patch->originx = SHORT(mpatch->originx);
+     patch->originy = SHORT(mpatch->originy);
+     patch->patch = patchlookup[SHORT(mpatch->patch)];
+     if (patch->patch == -1)
+     {
+     I_Error ("R_InitTextures: Missing patch in texture %s",
+          texture->name);
+     }
+ }       
+ texturecolumnlump[i] = Z_Malloc (texture->width*2, PU_STATIC,0);
+ texturecolumnofs[i] = Z_Malloc (texture->width*2, PU_STATIC,0);
+
+ j = 1;
+ while (j*2 <= texture->width)
+     j<<=1;
+
+ texturewidthmask[i] = j-1;
+ textureheight[i] = texture->height<<FRACBITS;
+     
+ totalwidth += texture->width;
+ }
+
+ Z_Free (maptex1);
+ if (maptex2)
+ Z_Free (maptex2);
+ 
+ // Precalculate whatever possible.  
+ for (i=0 ; i<numtextures ; i++)
+ R_GenerateLookup (i);
+ 
+ // Create translation table for global animation.
+ texturetranslation = Z_Malloc ((numtextures+1)*4, PU_STATIC, 0);
+ 
+ for (i=0 ; i<numtextures ; i++)
+ texturetranslation[i] = i;
+}
+
+
+
+//
+//R_InitFlats
+//
+void R_InitFlats (void)
+{
+ int     i;
+ 
+ firstflat = W_GetNumForName ("F_START") + 1;
+ lastflat = W_GetNumForName ("F_END") - 1;
+ numflats = lastflat - firstflat + 1;
+ 
+ // Create translation table for global animation.
+ flattranslation = Z_Malloc ((numflats+1)*4, PU_STATIC, 0);
+ 
+ for (i=0 ; i<numflats ; i++)
+ flattranslation[i] = i;
+}
+
+
+//
+//R_InitSpriteLumps
+//Finds the width and hoffset of all sprites in the wad,
+//so the sprite does not need to be cached completely
+//just for having the header info ready during rendering.
+//
+void R_InitSpriteLumps (void)
+{
+ int     i;
+ patch_t *patch;
+ 
+ firstspritelump = W_GetNumForName ("S_START") + 1;
+ lastspritelump = W_GetNumForName ("S_END") - 1;
+ 
+ numspritelumps = lastspritelump - firstspritelump + 1;
+ spritewidth = Z_Malloc (numspritelumps*4, PU_STATIC, 0);
+ spriteoffset = Z_Malloc (numspritelumps*4, PU_STATIC, 0);
+ spritetopoffset = Z_Malloc (numspritelumps*4, PU_STATIC, 0);
+ 
+ for (i=0 ; i< numspritelumps ; i++)
+ {
+ if (!(i&63))
+     printf (".");
+
+ patch = W_CacheLumpNum (firstspritelump+i, PU_CACHE);
+ spritewidth[i] = SHORT(patch->width)<<FRACBITS;
+ spriteoffset[i] = SHORT(patch->leftoffset)<<FRACBITS;
+ spritetopoffset[i] = SHORT(patch->topoffset)<<FRACBITS;
+ }
+}
+
+
+
+//
+//R_InitColormaps
+//
+void R_InitColormaps (void)
+{
+ int lump, length;
+ 
+ // Load in the light tables, 
+ //  256 byte align tables.
+ lump = W_GetNumForName("COLORMAP"); 
+ length = W_LumpLength (lump) + 255; 
+ colormaps = Z_Malloc (length, PU_STATIC, 0); 
+ colormaps = (byte *)( ((int)colormaps + 255)&~0xff); 
+ W_ReadLump (lump,colormaps); 
+}
+
+
+
+//
+//R_InitData
+//Locates all the lumps
+//that will be used by all views
+//Must be called after W_Init.
+//
+void R_InitData (void)
+{
+ R_InitTextures ();
+ printf ("\nInitTextures");
+ R_InitFlats ();
+ printf ("\nInitFlats");
+ R_InitSpriteLumps ();
+ printf ("\nInitSprites");
+ R_InitColormaps ();
+ printf ("\nInitColormaps");
+}
+
+
+
+//
+//R_FlatNumForName
+//Retrieval, get a flat number for a flat name.
+//
+int R_FlatNumForName (char* name)
+{
+ int     i;
+ char    namet[9];
+
+ i = W_CheckNumForName (name);
+
+ if (i == -1)
+ {
+ namet[8] = 0;
+ memcpy (namet, name,8);
+ I_Error ("R_FlatNumForName: %s not found",namet);
+ }
+ return i - firstflat;
+}
+
+
+
+
+//
+//R_CheckTextureNumForName
+//Check whether texture is available.
+//Filter out NoTexture indicator.
+//
+int R_CheckTextureNumForName (char *name)
+{
+ int     i;
+
+ // "NoTexture" marker.
+ if (name[0] == '-')     
+ return 0;
+     
+ for (i=0 ; i<numtextures ; i++)
+ if (!strncasecmp (textures[i]->name, name, 8) )
+     return i;
+     
+ return -1;
+}
+
+
+
+//
+//R_TextureNumForName
+//Calls R_CheckTextureNumForName,
+//aborts with error message.
+//
+int R_TextureNumForName (char* name)
+{
+ int     i;
+ 
+ i = R_CheckTextureNumForName (name);
+
+ if (i==-1)
+ {
+ I_Error ("R_TextureNumForName: %s not found",
+      name);
+ }
+ return i;
+}
+
+//
+//R_GenerateLookup
+//
+void R_GenerateLookup (int texnum)
+{
+ texture_t*      texture;
+ byte*       patchcount; // patchcount[texture->width]
+ texpatch_t*     patch;  
+ patch_t*        realpatch;
+ int         x;
+ int         x1;
+ int         x2;
+ int         i;
+ short*      collump;
+ unsigned short* colofs;
+ 
+ texture = textures[texnum];
+
+ // Composited texture not created yet.
+ texturecomposite[texnum] = 0;
+ 
+ texturecompositesize[texnum] = 0;
+ collump = texturecolumnlump[texnum];
+ colofs = texturecolumnofs[texnum];
+ 
+ // Now count the number of columns
+ //  that are covered by more than one patch.
+ // Fill in the lump / offset, so columns
+ //  with only a single patch are all done.
+ patchcount = (byte *)alloca (texture->width);
+ memset (patchcount, 0, texture->width);
+ patch = texture->patches;
+     
+ for (i=0 , patch = texture->patches;
+  i<texture->patchcount;
+  i++, patch++)
+ {
+ realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
+ x1 = patch->originx;
+ x2 = x1 + SHORT(realpatch->width);
+ 
+ if (x1 < 0)
+     x = 0;
+ else
+     x = x1;
+
+ if (x2 > texture->width)
+     x2 = texture->width;
+ for ( ; x<x2 ; x++)
+ {
+     patchcount[x]++;
+     collump[x] = patch->patch;
+     colofs[x] = LONG(realpatch->columnofs[x-x1])+3;
+ }
+ }
+ 
+ for (x=0 ; x<texture->width ; x++)
+ {
+ if (!patchcount[x])
+ {
+     printf ("R_GenerateLookup: column without a patch (%s)\n",
+         texture->name);
+     return;
+ }
+ // I_Error ("R_GenerateLookup: column without a patch");
+ 
+ if (patchcount[x] > 1)
+ {
+     // Use the cached block.
+     collump[x] = -1;    
+     colofs[x] = texturecompositesize[texnum];
+     
+     if (texturecompositesize[texnum] > 0x10000-texture->height)
+     {
+     I_Error ("R_GenerateLookup: texture %i is >64k",
+          texnum);
+     }
+     
+     texturecompositesize[texnum] += texture->height;
+ }
+ }   
+}
+
+
+
+
+
+
+
+
+
+
+int     firstflat;
+int     lastflat;
+int     numflats;
+
+int     firstpatch;
+int     lastpatch;
+int     numpatches;
+
+int     firstspritelump;
+int     lastspritelump;
+int     numspritelumps;
+
+int     numtextures;
+texture_t[] textures;
+
+
+int            texturewidthmask;
+// needed for texture pegging
+fixed_t        textureheight;      
+int[]            texturecompositesize;
+short[][]         texturecolumnlump;
+char[]    texturecolumnofs;
+byte[][]          texturecomposite;
+
+// for global animation
+int        flattranslation;
+int        texturetranslation;
+
+// needed for pre rendering
+fixed_t    spritewidth;    
+fixed_t    spriteoffset;
+fixed_t    spritetopoffset;
+
+lighttable_t[]    colormaps;
+
+
+//
+// MAPTEXTURE_T CACHING
+// When a texture is first needed,
+//  it counts the number of composite columns
+//  required in the texture and allocates space
+//  for a column directory and any new columns.
+// The directory will simply point inside other patches
+//  if there is only one patch in a given column,
+//  but any columns with multiple patches
+//  will have new column_ts generated.
+//
+
+
+
+//
+// R_DrawColumnInCache
+// Clip and draw a column
+//  from a patch into a cached post.
+//
+void
+R_DrawColumnInCache
+( column_t* patch,
+  byte*     cache,
+  int       originy,
+  int       cacheheight )
+{
+    int     count;
+    int     position;
+    byte*   source;
+    byte*   dest;
+    
+    dest = (byte *)cache + 3;
+    
+    while (patch->topdelta != 0xff)
+    {
+    source = (byte *)patch + 3;
+    count = patch->length;
+    position = originy + patch->topdelta;
+
+    if (position < 0)
+    {
+        count += position;
+        position = 0;
+    }
+
+    if (position + count > cacheheight)
+        count = cacheheight - position;
+
+    if (count > 0)
+        memcpy (cache + position, source, count);
+        
+    patch = (column_t *)(  (byte *)patch + patch->length + 4); 
+    }
+}
+
+
+
+//
+// R_GenerateComposite
+// Using the texture definition,
+//  the composite texture is created from the patches,
+//  and each column is cached.
+//
+void R_GenerateComposite (int texnum)
+{
+    byte*       block;
+    texture_t*      texture;
+    texpatch_t*     patch;  
+    patch_t*        realpatch;
+    int         x;
+    int         x1;
+    int         x2;
+    int         i;
+    column_t*       patchcol;
+    short*      collump;
+    unsigned short* colofs;
+    
+    texture = textures[texnum];
+
+    block = Z_Malloc (texturecompositesize[texnum],
+              PU_STATIC, 
+              &texturecomposite[texnum]);   
+
+    collump = texturecolumnlump[texnum];
+    colofs = texturecolumnofs[texnum];
+    
+    // Composite the columns together.
+    patch = texture->patches;
+        
+    for (i=0 , patch = texture->patches;
+     i<texture->patchcount;
+     i++, patch++)
+    {
+    realpatch = W_CacheLumpNum (patch->patch, PU_CACHE);
+    x1 = patch->originx;
+    x2 = x1 + SHORT(realpatch->width);
+
+    if (x1<0)
+        x = 0;
+    else
+        x = x1;
+    
+    if (x2 > texture->width)
+        x2 = texture->width;
+
+    for ( ; x<x2 ; x++)
+    {
+        // Column does not have multiple patches?
+        if (collump[x] >= 0)
+        continue;
+        
+        patchcol = (column_t *)((byte *)realpatch
+                    + LONG(realpatch->columnofs[x-x1]));
+        R_DrawColumnInCache (patchcol,
+                 block + colofs[x],
+                 patch->originy,
+                 texture->height);
+    }
+                        
+    }
+
+    // Now that the texture has been built in column cache,
+    //  it is purgable from zone memory.
+    Z_ChangeTag (block, PU_CACHE);
+}
+
 }

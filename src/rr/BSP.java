@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BSP.java,v 1.2 2010/07/05 16:18:40 velktron Exp $
+// $Id: BSP.java,v 1.3 2010/07/06 12:54:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: BSP.java,v $
+// Revision 1.3  2010/07/06 12:54:50  velktron
+// A lot of work thrown in the renderer, but don't get too excited...
+//
 // Revision 1.2  2010/07/05 16:18:40  velktron
 // YOU DON'T WANNA KNOW
 //
@@ -39,6 +42,9 @@
 //-----------------------------------------------------------------------------
 package rr;
 
+import m.fixed_t;
+import data.doomstat;
+
 /*
 #include "doomdef.h"
 
@@ -57,8 +63,10 @@ package rr;
 
 public class BSP{
 
-// static const char rcsid[] = "$Id: BSP.java,v 1.2 2010/07/05 16:18:40 velktron Exp $";
+// static const char rcsid[] = "$Id: BSP.java,v 1.3 2010/07/06 12:54:50 velktron Exp $";
 
+    private doomstat ds;
+    
     public seg_t       curline;
     public side_t      sidedef;
     public line_t      linedef;
@@ -288,7 +296,7 @@ public void R_ClearClipSegs ()
 {
     solidsegs[0].first = -0x7fffffff;
     solidsegs[0].last = -1;
-    solidsegs[1].first = viewwidth;
+    solidsegs[1].first = ds.viewwidth;
     solidsegs[1].last = 0x7fffffff;
     newend = solidsegs[2];
 }
@@ -404,7 +412,7 @@ void R_AddLine (seg_t	line)
 // Returns true
 //  if some part of the bbox might be visible.
 //
-int	checkcoord[12][4] =
+private int[][]	checkcoord =
 {
     {3,0,2,1},
     {3,0,2,0},
@@ -420,23 +428,25 @@ int	checkcoord[12][4] =
 };
 
 
-boolean R_CheckBBox (fixed_t*	bspcoord)
+boolean R_CheckBBox (fixed_t	bspcoord)
 {
     int			boxx;
     int			boxy;
     int			boxpos;
 
-    fixed_t		x1;
-    fixed_t		y1;
-    fixed_t		x2;
-    fixed_t		y2;
+    // fixed_t
+    int		x1;
+    int		y1;
+    int		x2;
+    int		y2;
     
-    angle_t		angle1;
-    angle_t		angle2;
-    angle_t		span;
-    angle_t		tspan;
+    //angle_t
+    int		angle1;
+    int		angle2;
+    int		span;
+    int		tspan;
     
-    cliprange_t*	start;
+    cliprange_t	start;
 
     int			sx1;
     int			sx2;
