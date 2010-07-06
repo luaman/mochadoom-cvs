@@ -31,7 +31,7 @@ public class WadLoaderTester {
    
     // We prepare a ByteBuffer to receive a "SECTORS" object. Deserializing it is
     // another matter.
-    ByteBuffer bb=W.CacheLumpName("SECTORS", 0);
+    ByteBuffer bb=W.CacheLumpName("SECTORS", 0).getBuffer();
     System.out.println("Num for THINGS: "+W.GetNumForName("THINGS"));
     doomstat ds = new doomstat();
     ds.gameepisode=1;

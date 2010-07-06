@@ -4,6 +4,7 @@ package m;
  *  They use direct bit manipulation with little -if any- looping.
  *  
  *  The methods can probably be generalized but not a priority for now.
+ *  They do not handle Infinities, NaNs and unnormalized numbers.
  *  
  * @author Maes
  *
@@ -61,7 +62,6 @@ public class FixedFloat {
     }
     
     public static int toFixed(float fl){
-        System.out.println(Integer.toBinaryString(Float.floatToRawIntBits(fl)));
         // Get the raw bits.
         int flbits=Float.floatToRawIntBits(fl);
         // Remember sign.
@@ -80,7 +80,6 @@ public class FixedFloat {
          * 
          */
         int result;
-        System.out.println("Exponent:"+exp);
         if ((exp-7)>=0)
             result=sign|(denorm<<(exp-7));
         else

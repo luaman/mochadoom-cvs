@@ -27,8 +27,8 @@ public static final int PRECISION=16;
     System.out.println(FixedFloat.toFloat(c));
     System.out.println(Integer.toBinaryString(Float.floatToRawIntBits(FixedFloat.toFloat(c))));
 
-    int d=FixedFloat.toFixed(1.0125d);
-    int e=FixedFloat.toFixed(2.5123d);
+    int d=FixedFloat.toFixed(32768.0125d);
+    int e=FixedFloat.toFixed(Double.NEGATIVE_INFINITY);
     int f=FixedFloat.toFixed(-2.5123d);
     System.out.println(FixedFloat.toFloat(d));
     System.out.println(FixedFloat.toFloat(e));

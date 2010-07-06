@@ -28,11 +28,10 @@ public class DiskPatchReader {
     System.out.println("Num for WALL00_1: "+W.GetNumForName("WALL00_1"));
     // We prepare a ByteBuffer to receive a "SECTORS" object. Deserializing it is
     // another matter.
-    ByteBuffer bb=W.CacheLumpName("WALL00_1", 0);
-    
+    //ByteBuffer bb=W.CacheLumpName("WALL00_1", 0);
+    //
 
-    patch_t wall=new patch_t();
-    wall.unpack(bb);
+    patch_t wall=(patch_t) W.CacheLumpName("WALL00_1", 0,patch_t.class);
     lumpinfo_t lump= W.GetLumpinfoForName("WALL00_1");
     System.out.println(lump.name);
     System.out.println(lump.position);
@@ -46,12 +45,11 @@ public class DiskPatchReader {
     System.out.println(wall1.height);
     
     System.out.println("Num for HELP1: "+W.GetNumForName("HELP1"));
-    bb=W.CacheLumpName("HELP1", 0);
-    patch_t stbar=new patch_t();
-    stbar.unpack(bb);
+    //bb=W.CacheLumpName("HELP1", 0);
+    patch_t stbar=(patch_t)W.CacheLumpName("HELP1", 0,patch_t.class);
     System.out.println(stbar.height);
     System.out.println(stbar.width);
-    
+    stbar=(patch_t)W.CacheLumpName("HELP1", 0,stbar.getClass());
         }
     
 }

@@ -1,5 +1,6 @@
 package testers;
 
+import m.FixedFloat;
 import m.fixed_t;
 
 class FPBench{         
@@ -44,6 +45,15 @@ public static final int PRECISION=16;
     System.out.println("Convert "+tests+" random IEEE floats into fixed_t (reuses objects): \t" + (tan_1-tan_0));
     
     tan_0=System.nanoTime();
+    for (int i=0;i<tests;i++){           
+    fa[i].set(FixedFloat.toFixed(a[i]));
+    fb[i].set(FixedFloat.toFixed(b[i]));
+    }
+    tan_1=System.nanoTime();
+    
+    System.out.println("Convert "+tests+" random IEEE floats into fixed_t (new method, reuses objects): \t" + (tan_1-tan_0));
+    
+    tan_0=System.nanoTime();
     for (int i=0;i<tests;i++){
      c[i]=a[i]*b[i];    
     }
@@ -53,7 +63,7 @@ public static final int PRECISION=16;
     
     tan_0=System.nanoTime();
     for (int i=0;i<tests;i++){
-     fc[i]=fixed_t.FixedMul(fa[i],fb[i]);    
+     fc[i]=new fixed_t(fixed_t.FixedMul(fa[i],fb[i]));    
     }
     tan_1=System.nanoTime();
 

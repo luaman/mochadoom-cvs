@@ -32,14 +32,14 @@ public class LNBTester {
     System.out.println("Total lumps read: "+W.numlumps);
    
     System.out.println("Num for TITLEPIC: "+W.GetNumForName("TITLEPIC"));
-    ByteBuffer bb=W.CacheLumpName("TITLEPIC", 0);
-    patch_t titlepic=new patch_t();
-    titlepic.unpack(bb);
-    bb=W.CacheLumpName("PISGC0", 0);
-    patch_t pistol=new patch_t();
-    pistol.unpack(bb);
-    patch_t troll= new patch_t();
-    troll.unpack(W.CacheLumpName("TROOA1", 0));
+   
+    patch_t titlepic=(patch_t)W.CacheLumpName("TITLEPIC", 0,patch_t.class);
+
+    patch_t pistol= (patch_t)W.CacheLumpName("PISGC0", 0,patch_t.class);
+
+    patch_t troll= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
+    patch_t troll1= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
+    patch_t troll2= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
     SimpleRenderer V=new SimpleRenderer(1024,1024);
     V.Init();
     int count=0;

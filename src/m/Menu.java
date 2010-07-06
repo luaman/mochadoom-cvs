@@ -5,7 +5,7 @@ import rr.patch_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: Menu.java,v 1.2 2010/07/06 15:20:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,11 @@ import rr.patch_t;
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.2  2010/07/06 15:20:23  velktron
+// Several changes in the WAD loading routine. Now lumps are directly unpacked as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer reads.
+//
+// Makes caching more effective.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -176,10 +181,6 @@ String[]    skullName= {"M_SKULL1","M_SKULL2"};
 // current menudef
 // MAES: pointer? array?
 menu_t[]	currentMenu;                          
-
-
-
-
 
 
 //
@@ -797,13 +798,7 @@ void M_MusicVol(int choice)
 
 
 
-//
-// M_DrawMainMenu
-//
-void M_DrawMainMenu(void)
-{
-    V_DrawPatchDirect (94,2,0,W_CacheLumpName("M_DOOM",PU_CACHE));
-}
+
 
 
 

@@ -5,7 +5,8 @@ import data.Defines.GameMode_t;
 
 
 /* MAES: This might be one of the hardest aspects of "OO-ification" to grasp.
- * This used to be a pointable function with a specific
+ * This used to be a pointable function with a specific calling convention.
+ * Context needs to be passed long.
  * 
  */
 public class NewGame implements MenuRoutine{
@@ -22,7 +23,9 @@ public class NewGame implements MenuRoutine{
 	
 	public NewGame(doomstat ds, Menu M){
 	this.ds=ds;	
+	this.M=M;
 	}
+	
 	@Override
 	public void execute(int choice)
 	{

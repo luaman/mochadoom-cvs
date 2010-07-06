@@ -2,7 +2,7 @@ package hu;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.1 2010/06/30 08:58:51 velktron Exp $
+// $Id: HU.java,v 1.2 2010/07/06 15:20:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,11 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.2  2010/07/06 15:20:23  velktron
+// Several changes in the WAD loading routine. Now lumps are directly unpacked as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer reads.
+//
+// Makes caching more effective.
+//
 // Revision 1.1  2010/06/30 08:58:51  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -73,7 +78,7 @@ import doom.player_t;
 */
 
 public class HU{
-public final static String rcsid = "$Id: HU.java,v 1.1 2010/06/30 08:58:51 velktron Exp $";
+public final static String rcsid = "$Id: HU.java,v 1.2 2010/07/06 15:20:23 velktron Exp $";
 
 // MAES: Status and wad data.
 WadLoader wd;
@@ -481,7 +486,7 @@ public void Init() throws Exception
     {
 	buffer=xxx.sprintf(j++);
 	//hu_font[i] = ((patch_t[]) wd.CacheLumpName(buffer, PU_STATIC);
-	hu_font[i].unpack(wd.CacheLumpName(buffer, PU_STATIC));
+	hu_font[i]=(patch_t)( wd.CacheLumpName(buffer, PU_STATIC,patch_t.class));
     }
     
     // MAES: Doom's SC had a really fucked up endianness change for height.
