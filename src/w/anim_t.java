@@ -1,6 +1,6 @@
 package w;
 
-import data.Defines.animenum_t;
+import w.animenum_t;
 import rr.patch_t;
 
 //

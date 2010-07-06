@@ -10,7 +10,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.3 2010/07/05 13:24:10 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.4 2010/07/06 16:32:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.4  2010/07/06 16:32:38  velktron
+// Threw some work in WI, now EndLevel. YEAH THERE'S GONNA BE A SEPARATE EndLevel OBJECT THAT'S HOW PIMP THE PROJECT IS!!!!11!!!
+//
 // Revision 1.3  2010/07/05 13:24:10  velktron
 // Added a "fast transpose" algorithm that does outperform the naive one even in Java (thanks to http://www.boo.net/~jasonp/ for it!).
 //
@@ -81,7 +84,7 @@ import static data.Defines.*;
 
 public class SimpleRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.3 2010/07/05 13:24:10 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.4 2010/07/06 16:32:38 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -790,6 +793,11 @@ public void Unscramble(int screen){
 public void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
     // TODO Auto-generated method stub
     
+}
+
+@Override
+public byte[] getScreen(int index) {
+   return screens[index];
 }
 }
 

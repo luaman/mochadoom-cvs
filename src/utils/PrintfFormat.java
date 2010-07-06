@@ -530,6 +530,7 @@ private String nonControl(String s,int start) {
  if (cPos==-1) cPos=s.length();
  return s.substring(start,cPos);
 }
+
 /**
 * Format an array of objects.  Byte, Short,
 * Integer, Long, Float, Double, and Character

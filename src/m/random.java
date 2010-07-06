@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: random.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: random.java,v 1.2 2010/07/06 16:32:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: random.java,v $
+// Revision 1.2  2010/07/06 16:32:38  velktron
+// Threw some work in WI, now EndLevel. YEAH THERE'S GONNA BE A SEPARATE EndLevel OBJECT THAT'S HOW PIMP THE PROJECT IS!!!!11!!!
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -65,26 +68,31 @@ public static short rndtable[] = {
     120, 163, 236, 249
 };
 
-protected static int	rndindex = 0;
-protected static int	prndindex = 0;
+protected int	rndindex = 0;
+protected int	prndindex = 0;
 
 // Which one is deterministic?
-public static int P_Random ()
+public int P_Random ()
 {
     prndindex = (prndindex+1)&0xff;
     return rndtable[prndindex];
 }
 
-public static int M_Random ()
+public int M_Random ()
 {
     rndindex = (rndindex+1)&0xff;
     return rndtable[rndindex];
 }
 
-public static void M_ClearRandom ()
+public void M_ClearRandom ()
 {
     rndindex = prndindex = 0;
 }
+
+public random(){
+    this.M_ClearRandom();
+}
+
 }
 
 

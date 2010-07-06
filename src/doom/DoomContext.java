@@ -1,5 +1,7 @@
 package doom;
 
+import data.doomstat;
+import m.random;
 import rr.Renderer;
 import v.DoomVideoRenderer;
 import w.WadLoader;
@@ -15,8 +17,12 @@ import w.WadLoader;
  */
 
 public class DoomContext {
+    public doomstat DS;
     public WadLoader W;
     public Renderer R;
     public DoomVideoRenderer V;
+    public random RND;
+    
+    
     
 }
