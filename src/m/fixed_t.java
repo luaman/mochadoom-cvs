@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.5 2010/07/06 12:54:50 velktron Exp $
+// $Id: fixed_t.java,v 1.6 2010/07/07 16:17:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.6  2010/07/07 16:17:37  velktron
+// *** empty log message ***
+//
 // Revision 1.5  2010/07/06 12:54:50  velktron
 // A lot of work thrown in the renderer, but don't get too excited...
 //
@@ -95,7 +98,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.5 2010/07/06 12:54:50 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.6 2010/07/07 16:17:37 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -199,10 +202,11 @@ FixedDiv2
         fixed_t b, fixed_t c )
 {
 	
-//    c.set((int)((((long)a.val)<<16) / (long)b.val));
+//c.set((int)((((long)a.val)<<16) / (long)b.val));
 
+    c.set((int)((((long)a.val)<<16) / (long)b.val));
       
-c.set((int)(((double)a.val) / ((double)b.val) * FRACUNIT));
+//c.set((int)(((double)a.val) / ((double)b.val) * FRACUNIT));
 
 //if (c >= 2147483648.0 || c < -2147483648.0)
 //I_Error("FixedDiv: divide by zero");
@@ -239,9 +243,9 @@ FixedDiv2
 
     /*
     int c;
-    c = (int)(((long)a.val<<16) / (long)b.val);
-    return new fixed_t(c);
-     */
+    c = (int)(((long)a<<16) / (long)b);
+    return c;*/
+    
     
     double c;
 
@@ -249,7 +253,8 @@ FixedDiv2
 
 //    if (c >= 2147483648.0 || c < -2147483648.0)
 //  I_Error("FixedDiv: divide by zero");
-    return (int)c;
+ 
+ return (int)c;
 }
 
 @Override

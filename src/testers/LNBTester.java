@@ -40,7 +40,7 @@ public class LNBTester {
     patch_t troll= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
     patch_t troll1= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
     patch_t troll2= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
-    SimpleRenderer V=new SimpleRenderer(1024,1024);
+    SimpleRenderer V=new SimpleRenderer(512,512);
     V.Init();
     int count=0;
     long timea=System.nanoTime();
@@ -140,15 +140,15 @@ public class LNBTester {
     
     timea=System.nanoTime();
     for (int i=0;i<10;i++){
-    FastTranspose.blocktranspose(V.screens[0], scratch, 10);
-    FastTranspose.blocktranspose(V.screens[1], scratch, 10);
-    FastTranspose.blocktranspose(V.screens[2], scratch, 10);
-    FastTranspose.blocktranspose(V.screens[3], scratch, 10);
+    FastTranspose.blocktranspose(V.screens[0], scratch,9);
+    FastTranspose.blocktranspose(V.screens[1], scratch,9);
+    FastTranspose.blocktranspose(V.screens[2], scratch,9);
+    FastTranspose.blocktranspose(V.screens[3], scratch,9);
     count+=4;
     }
     timeb=System.nanoTime();     
     
-    FastTranspose.blocktranspose(V.screens[0], scratch, 10);
+    FastTranspose.blocktranspose(V.screens[0], scratch, 9);
     V.GetBlock(0, 0, 0, V.getWidth(), V.getHeight(), dump);
     System.out.println("Time for single transposing (Fast):" +(timeb-timea)/(count*1e06)+ " ms");
     
@@ -160,7 +160,7 @@ public class LNBTester {
     
     outputFile =
         new File(
-            "U#_TITLEPIC.png");
+            "U3_TITLEPIC.png");
     ImageIO.write(b, "PNG", outputFile);
      
          

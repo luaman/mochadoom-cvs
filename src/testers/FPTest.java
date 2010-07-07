@@ -2,6 +2,7 @@ package testers;
 
 import m.FixedFloat;
 import m.fixed_t;
+import static m.fixed_t.*;
 
 class FPTest{         
 public static final int PRECISION=16;
@@ -37,6 +38,11 @@ public static final int PRECISION=16;
     System.out.println(FixedFloat.toDouble(d));
     System.out.println(FixedFloat.toDouble(e));
     System.out.println(FixedFloat.toDouble(f));
+    
+    int g=FixedFloat.toFixed(10.0);
+    int h=FixedFloat.toFixed(3.0);
+    System.out.println(FixedFloat.toFloat(FixedDiv(g,h)));
+    
     //System.out.println(Integer.toBinaryString(Float.floatToRawIntBits(FixedFloat.toDouble(c))));
 
     /*
