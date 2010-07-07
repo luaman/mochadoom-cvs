@@ -6,7 +6,7 @@ public class Unsigned {
 
     public static void main(String[] argv){
         int TESTS=100000000;
-       //random r=new random();
+       random r=new random();
         
        byte ub=(byte) 0xFF;
        char us=(char) ub;
@@ -14,7 +14,7 @@ public class Unsigned {
        System.out.println((int)us);
        long a=System.nanoTime();
         for (int i=0;i<TESTS;i++) {
-        ub=(byte)random.P_Random();
+        ub=(byte)r.P_Random();
         us=(char) (0x00FF&ub);
     }
     long b=System.nanoTime();
@@ -22,7 +22,7 @@ public class Unsigned {
 
         a=System.nanoTime();
         for (int i=0;i<TESTS;i++) {
-        ub=(byte)random.P_Random();
+        ub=(byte)r.P_Random();
         us=unsigned(ub);
     }
     b=System.nanoTime();
@@ -30,7 +30,7 @@ public class Unsigned {
 
         a=System.nanoTime();
         for (int i=0;i<TESTS;i++) {
-        ub=(byte)random.P_Random();
+        ub=(byte)r.P_Random();
         us=unsigned2(ub);
         }
     b=System.nanoTime();
@@ -38,7 +38,7 @@ public class Unsigned {
         
         a=System.nanoTime();
         for (int i=0;i<TESTS;i++) {
-        ub=(byte)random.P_Random();
+        ub=(byte)r.P_Random();
         us=(char) ub;
     }
     b=System.nanoTime();
