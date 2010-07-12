@@ -40,13 +40,13 @@ public class LNBTester {
     patch_t troll= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
     patch_t troll1= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
     patch_t troll2= (patch_t)W.CacheLumpName("TROOA1", 0,patch_t.class);
-    SimpleRenderer V=new SimpleRenderer(512,512);
+    SimpleRenderer V=new SimpleRenderer(1024,1024);
     V.Init();
     int count=0;
     long timea=System.nanoTime();
     for (int i=0;i<100;i++){
         for (int s=0;s<4;s++){
-            for (int y=0;y<V.getHeight()/titlepic.height;y++){
+            for (int y=0;y<V.getHeight()/titlepic.height-1;y++){
             for (int x=0;x<V.getWidth()/titlepic.width;x++){
                 
                 V.DrawPatch(x*titlepic.width, y*titlepic.height,s, titlepic);
@@ -140,15 +140,15 @@ public class LNBTester {
     
     timea=System.nanoTime();
     for (int i=0;i<10;i++){
-    FastTranspose.blocktranspose(V.screens[0], scratch,9);
-    FastTranspose.blocktranspose(V.screens[1], scratch,9);
-    FastTranspose.blocktranspose(V.screens[2], scratch,9);
-    FastTranspose.blocktranspose(V.screens[3], scratch,9);
+    FastTranspose.blocktranspose(V.screens[0], scratch,10,1024,600);
+    FastTranspose.blocktranspose(V.screens[1], scratch,10,1024,600);
+    FastTranspose.blocktranspose(V.screens[2], scratch,10,1024,600);
+    FastTranspose.blocktranspose(V.screens[3], scratch,10,1024,600);
     count+=4;
     }
     timeb=System.nanoTime();     
     
-    FastTranspose.blocktranspose(V.screens[0], scratch, 9);
+    FastTranspose.blocktranspose(V.screens[0], scratch, 10);
     V.GetBlock(0, 0, 0, V.getWidth(), V.getHeight(), dump);
     System.out.println("Time for single transposing (Fast):" +(timeb-timea)/(count*1e06)+ " ms");
     

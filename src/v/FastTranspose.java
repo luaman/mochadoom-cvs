@@ -60,9 +60,10 @@ for(i=0; i<(1<<BL); i++) {
     //if (startpt>=maxx) break;
     // index= maxx*i
     if (startpt/startlength>=maxy) {
-        System.out.println(startpt/startlength) break;
+    //    System.out.println(startpt/startlength);
+        return;
     }
-    if (destpt/destlength>=maxx) break;
+    if (destpt/destlength>=maxx) return;
 pt1=startpt;
 pt2=destpt;
 for(j=0; j<(1<<BL); j+=64) {           
