@@ -1,7 +1,8 @@
+package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: plane.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: Plane.java,v 1.1 2010/07/14 16:12:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,7 +16,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: plane.java,v $
+// $Log: Plane.java,v $
+// Revision 1.1  2010/07/14 16:12:20  velktron
+// A new direction has been taken for the Renderer: instead of making a single, omnipotent "Renderer" object, the functionality will remain split into at least Renderer, Things, Planes and Draw, with a new DoomRendererContext object keeping everything glued together.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -37,23 +41,28 @@
 //
 //-----------------------------------------------------------------------------
 
+import static data.Defines.*;
+import data.doomstat;
+import doom.DoomContext;
+import i.system;
+import m.fixed_t;
+import static m.fixed_t.*;
+import static data.SineCosine.*;
 
-static const char
-rcsid[] = "$Id: plane.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
+public class Plane{
+public static final String
+rcsid = "$Id: Plane.java,v 1.1 2010/07/14 16:12:20 velktron Exp $";
 
-#include <stdlib.h>
+private Draw DR;
+private Renderer R;
+private doomstat DS;
 
-#include "i_system.h"
-#include "z_zone.h"
-#include "w_wad.h"
+public Plane (DoomRenderingContext DRC){
+    this.DR=DRC.DR;
+    this.R=DRC.R;
+}
 
-#include "doomdef.h"
-#include "doomstat.h"
-
-#include "r_local.h"
-#include "r_sky.h"
-
-
+doomstat ds;
 
 planefunction_t		floorfunc;
 planefunction_t		ceilingfunc;
@@ -63,16 +72,19 @@ planefunction_t		ceilingfunc;
 //
 
 // Here comes the obnoxious "visplane".
-#define MAXVISPLANES	128
-visplane_t		visplanes[MAXVISPLANES];
-visplane_t*		lastvisplane;
-visplane_t*		floorplane;
-visplane_t*		ceilingplane;
+public static final int  MAXVISPLANES	=128;
+visplane_t[]		visplanes=new visplane_t[MAXVISPLANES];
+visplane_t		lastvisplane;
+visplane_t		floorplane;
+visplane_t		ceilingplane;
 
 // ?
-#define MAXOPENINGS	SCREENWIDTH*64
-short			openings[MAXOPENINGS];
-short*			lastopening;
+public static final int MAXOPENINGS	=SCREENWIDTH*64;
+
+private static final boolean RANGECHECK = false;
+short[]			openings=new short[MAXOPENINGS];
+// Maes: pointer hack.
+Short			lastopening=new Short((short) 0);
 
 
 //
@@ -80,31 +92,37 @@ short*			lastopening;
 //  floorclip starts out SCREENHEIGHT
 //  ceilingclip starts out -1
 //
-short			floorclip[SCREENWIDTH];
-short			ceilingclip[SCREENWIDTH];
+short[]			floorclip=new short[SCREENWIDTH];
+short[]			ceilingclip=new short[SCREENWIDTH];
 
 //
 // spanstart holds the start of a plane span
 // initialized to 0 at start
 //
-int			spanstart[SCREENHEIGHT];
-int			spanstop[SCREENHEIGHT];
+int[]			spanstart=new int[SCREENHEIGHT];
+int[]			spanstop=new int [SCREENHEIGHT];
 
 //
 // texture mapping
 //
-lighttable_t**		planezlight;
-fixed_t			planeheight;
+lighttable_t[][]		planezlight;
+/** To treat as fixed_t */
+int			planeheight;
+/** To treat at fixed_t */
+int[]			yslope=new int[SCREENHEIGHT];
+/** To treat as fixed_t */
+int[]			distscale=new int[SCREENWIDTH];
+/** To treat as fixed_t */
+int			basexscale, baseyscale;
 
-fixed_t			yslope[SCREENHEIGHT];
-fixed_t			distscale[SCREENWIDTH];
-fixed_t			basexscale;
-fixed_t			baseyscale;
-
-fixed_t			cachedheight[SCREENHEIGHT];
-fixed_t			cacheddistance[SCREENHEIGHT];
-fixed_t			cachedxstep[SCREENHEIGHT];
-fixed_t			cachedystep[SCREENHEIGHT];
+/** To treat as fixed_t */
+int[]			cachedheight=new int[SCREENHEIGHT];
+/** To treat as fixed_t */
+int[]			cacheddistance=new int[SCREENHEIGHT];
+/** To treat as fixed_t */
+int[]			cachedxstep=new int[SCREENHEIGHT];
+/** To treat as fixed_t */
+int[]			cachedystep=new int[SCREENHEIGHT];
 
 
 
@@ -112,7 +130,7 @@ fixed_t			cachedystep[SCREENHEIGHT];
 // R_InitPlanes
 // Only at game startup.
 //
-void R_InitPlanes (void)
+void InitPlanes ()
 {
   // Doh!
 }
@@ -131,45 +149,47 @@ void R_InitPlanes (void)
 //
 // BASIC PRIMITIVE
 //
-void
-R_MapPlane
+public void
+MapPlane
 ( int		y,
   int		x1,
   int		x2 )
 {
-    angle_t	angle;
-    fixed_t	distance;
-    fixed_t	length;
-    unsigned	index;
+    // MAES: angle_t
+    int	angle;
+    // 
+    int	distance;
+    int	length;
+    int	index;
 	
-#ifdef RANGECHECK
+if (RANGECHECK){
     if (x2 < x1
 	|| x1<0
-	|| x2>=viewwidth
-	|| (unsigned)y>viewheight)
+	|| x2>=ds.viewwidth
+	|| y>ds.viewheight)
     {
-	I_Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+	system.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
     }
-#endif
+}
 
     if (planeheight != cachedheight[y])
     {
 	cachedheight[y] = planeheight;
 	distance = cacheddistance[y] = FixedMul (planeheight, yslope[y]);
-	ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
-	ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
+	DR.ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
+	DR.ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
     }
     else
     {
 	distance = cacheddistance[y];
-	ds_xstep = cachedxstep[y];
-	ds_ystep = cachedystep[y];
+	DR.ds_xstep = cachedxstep[y];
+	DR.ds_ystep = cachedystep[y];
     }
 	
     length = FixedMul (distance,distscale[x1]);
-    angle = (viewangle + xtoviewangle[x1])>>ANGLETOFINESHIFT;
-    ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-    ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+    angle = (R.viewangle + R.xtoviewangle[x1])>>ANGLETOFINESHIFT;
+    DR.ds_xfrac = R.viewx + FixedMul(finecosine[angle], length);
+    DR.ds_yfrac = -R.viewy - FixedMul(finesine[angle], length);
 
     if (fixedcolormap)
 	ds_colormap = fixedcolormap;
@@ -196,13 +216,13 @@ R_MapPlane
 // R_ClearPlanes
 // At begining of frame.
 //
-void R_ClearPlanes (void)
+public void ClearPlanes ()
 {
     int		i;
-    angle_t	angle;
+    int	angle;
     
     // opening / clipping determination
-    for (i=0 ; i<viewwidth ; i++)
+    for (i=0 ; i<R.viewwidth ; i++)
     {
 	floorclip[i] = viewheight;
 	ceilingclip[i] = -1;
@@ -464,4 +484,6 @@ void R_DrawPlanes (void)
 	
 	Z_ChangeTag (ds_source, PU_CACHE);
     }
+}
+
 }

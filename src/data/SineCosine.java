@@ -1056,21 +1056,21 @@ public class SineCosine {
      */
     
  // Re-use data, is just PI/2 phase shift.
-  protected static final int[] finecosine=new int[FINEANGLES];
+  public static final int[] finecosine=new int[FINEANGLES];
 
-  /* MAES: Java can't use that much direct init data in a single class (finesine alone is well beyond that)
-   * so a first workaround is to generate the data procedurally.
+  /* MAES: Java can't use that much direct init data in a single class so a first workaround 
+   * s to generate the data procedurally.
    * If this proves to cause accuracy problems, an external data file could be used.
-   * Another workaround is to define the int table in its own file and then import or "implement" it.
+   * Another workaround is to define the int table in its own file and then import 
+   * or "implement" it.
    */
 
   static{
   System.arraycopy(finesine, FINEANGLES/4,finecosine, 0, FINEANGLES);
   }
 
-    static{
-    System.arraycopy(finesine, FINEANGLES/4,finecosine, 0, FINEANGLES);
-    }
-
+  private SineCosine(){
+      
+  }
     
 }

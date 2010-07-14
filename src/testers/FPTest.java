@@ -9,6 +9,9 @@ public static final int PRECISION=16;
 
     public static void main(String argv[])
 {
+        
+    byte aa=(byte) 129;
+        
     fixed_t a=new fixed_t(0x8FFF0000);
     fixed_t b=new fixed_t(0xFFFFFFFF);
     
