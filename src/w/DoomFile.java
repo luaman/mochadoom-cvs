@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.2 2010/06/30 11:44:41 velktron Exp $
+//$Id: DoomFile.java,v 1.3 2010/07/15 14:01:49 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -136,6 +136,29 @@ public class DoomFile extends RandomAccessFile {
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){           
+           s[i].read(this);
+       }
+   }
+
+   public void readObjectArrayWithReflection(ReadableDoomObject[] s,int len) throws Exception {
+
+       if (len==0) return;
+       Class c=s.getClass().getComponentType();
+       
+       for (int i=0;i<Math.min(len,s.length);i++){
+           if (s[i]==null) s[i]=(ReadableDoomObject) c.newInstance();
+           s[i].read(this);
+       }
+   }
+   
+   public void readObjectArray(ReadableDoomObject[] s,int len, Class c) throws Exception {
+
+       if ((s==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,s.length);i++){
+           if (s[i]==null) {
+               s[i]=(ReadableDoomObject) c.newInstance();
+           }
            s[i].read(this);
        }
    }

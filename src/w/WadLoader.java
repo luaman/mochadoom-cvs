@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.3 2010/07/06 15:20:23 velktron Exp $
+// $Id: WadLoader.java,v 1.4 2010/07/15 14:01:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.4  2010/07/15 14:01:49  velktron
+// Added reflector Method stuff for function pointers.
+//
 // Revision 1.3  2010/07/06 15:20:23  velktron
 // Several changes in the WAD loading routine. Now lumps are directly unpacked as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer reads.
 //
@@ -312,13 +315,12 @@ public class WadLoader {
     /**
      * W_Reload Flushes any of the reloadable lumps in memory and reloads the
      * directory.
-     * 
-     * @throws IOException
+     * @throws Exception 
      */
     @SuppressWarnings("null")
     public void Reload()
-            throws IOException {
-        wadinfo_t header = null;
+            throws Exception {
+        wadinfo_t header = new wadinfo_t();
         int lumpcount;
         int lump_p; // Maes: same as in W_WADload
         int i;
@@ -336,6 +338,7 @@ public class WadLoader {
         }
 
         header.load(handle);
+        // Actual number of lumps in file...
         lumpcount = (int) header.numlumps;
         header.infotableofs = header.infotableofs;
         length = lumpcount;
@@ -345,13 +348,13 @@ public class WadLoader {
         // MAES: we can't read raw structs here, and even less BLOCKS of
         // structs.
 
-        handle.readObjectArray(fileinfo, (int) length);
+        handle.readObjectArrayWithReflection(fileinfo, (int) length);
 
         /*
          * for (int j=0;j<length;j++){ fileinfo[j].load (handle); }
          */
 
-        numlumps += header.numlumps;
+//        numlumps += header.numlumps;
         // read (handle, fileinfo, length);
 
         // Fill in lumpinfo
@@ -416,10 +419,10 @@ public class WadLoader {
     //
     public void InitFile(String filename)
             throws Exception {
-        String[] names = new String[2];
+        String[] names = new String[1];
 
         names[0] = filename;
-        names[1] = null;
+//        names[1] = null;
         InitMultipleFiles(names);
     }
 
@@ -589,7 +592,7 @@ public class WadLoader {
 
             // read the lump in
 
-            // printf ("cache miss on lump %i\n",lump);
+            System.out.println("cache miss on lump "+lump);
             // ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[lump]);
             // Read as a byte buffer anyway.
             ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));

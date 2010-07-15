@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Plane.java,v 1.1 2010/07/14 16:12:20 velktron Exp $
+// $Id: Plane.java,v 1.2 2010/07/15 14:01:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Plane.java,v $
+// Revision 1.2  2010/07/15 14:01:49  velktron
+// Added reflector Method stuff for function pointers.
+//
 // Revision 1.1  2010/07/14 16:12:20  velktron
 // A new direction has been taken for the Renderer: instead of making a single, omnipotent "Renderer" object, the functionality will remain split into at least Renderer, Things, Planes and Draw, with a new DoomRendererContext object keeping everything glued together.
 //
@@ -48,10 +51,12 @@ import i.system;
 import m.fixed_t;
 import static m.fixed_t.*;
 import static data.SineCosine.*;
+import static rr.Renderer.*;
+import static data.Tables.*;
 
 public class Plane{
 public static final String
-rcsid = "$Id: Plane.java,v 1.1 2010/07/14 16:12:20 velktron Exp $";
+rcsid = "$Id: Plane.java,v 1.2 2010/07/15 14:01:49 velktron Exp $";
 
 private Draw DR;
 private Renderer R;
@@ -191,8 +196,8 @@ if (RANGECHECK){
     DR.ds_xfrac = R.viewx + FixedMul(finecosine[angle], length);
     DR.ds_yfrac = -R.viewy - FixedMul(finesine[angle], length);
 
-    if (fixedcolormap)
-	ds_colormap = fixedcolormap;
+    if (R.fixedcolormap!=null)
+	DR.ds_colormap = R.fixedcolormap;
     else
     {
 	index = distance >> LIGHTZSHIFT;
@@ -200,15 +205,15 @@ if (RANGECHECK){
 	if (index >= MAXLIGHTZ )
 	    index = MAXLIGHTZ-1;
 
-	ds_colormap = planezlight[index];
+	DR.ds_colormap = planezlight[index];
     }
 	
-    ds_y = y;
-    ds_x1 = x1;
-    ds_x2 = x2;
+    DR.ds_y = y;
+    DR.ds_x1 = x1;
+    DR.ds_x2 = x2;
 
     // high or low detail
-    spanfunc ();	
+    R.spanfunc.invoke(this, void.class);	
 }
 
 
@@ -222,9 +227,9 @@ public void ClearPlanes ()
     int	angle;
     
     // opening / clipping determination
-    for (i=0 ; i<R.viewwidth ; i++)
+    for (i=0 ; i<DS.viewwidth ; i++)
     {
-	floorclip[i] = viewheight;
+	floorclip[i] = DS.viewheight;
 	ceilingclip[i] = -1;
     }
 

@@ -113,7 +113,7 @@ public   boolean     noblit;
 
 public   int     viewwindowx;
 public   int     viewwindowy;
-public   int     viewheight;
+public   short     viewheight;
 public   int     viewwidth;
 public   int     scaledviewwidth;
 

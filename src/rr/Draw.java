@@ -3,7 +3,7 @@ package rr;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Draw.java,v 1.2 2010/07/14 16:12:20 velktron Exp $
+// $Id: Draw.java,v 1.3 2010/07/15 14:01:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Draw.java,v $
+// Revision 1.3  2010/07/15 14:01:49  velktron
+// Added reflector Method stuff for function pointers.
+//
 // Revision 1.2  2010/07/14 16:12:20  velktron
 // A new direction has been taken for the Renderer: instead of making a single, omnipotent "Renderer" object, the functionality will remain split into at least Renderer, Things, Planes and Draw, with a new DoomRendererContext object keeping everything glued together.
 //
@@ -59,7 +62,7 @@ import static m.fixed_t.*;
 
 public class Draw {
     public static String rcsid =
-        "$Id: Draw.java,v 1.2 2010/07/14 16:12:20 velktron Exp $";
+        "$Id: Draw.java,v 1.3 2010/07/15 14:01:49 velktron Exp $";
 
     Renderer R;
 
@@ -478,6 +481,7 @@ public class Draw {
 
     int ds_x2;
 
+    /** DrawSpan colormap */
     lighttable_t[] ds_colormap;
 
     /** fixed_t */
