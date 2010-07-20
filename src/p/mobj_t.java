@@ -1,5 +1,6 @@
 package p;
 
+import rr.subsector_t;
 import m.fixed_t;
 import data.mobjinfo_t;
 import data.state_t;
@@ -13,44 +14,42 @@ import doom.thinker_t;
 // typedef struct mobj_s
 
 
-public class mobj_t {
+public class mobj_t implements Interceptable {
 
-        // List: thinker links.
+        /** List: thinker links. */
         thinker_t       thinker;
 
-        // Info for drawing: position.
-        fixed_t     x;
-        fixed_t     y;
-        fixed_t     z;
+        /** (fixed_t) Info for drawing: position. */
+        public int     x,y,z;
 
         // More list: links in sector (if needed)
         thinker_t  snext;
         thinker_t  sprev;
 
         //More drawing info: to determine current sprite.
-        //TODO angle_t     angle;  // orientation
-        spritenum_t     sprite; // used to find patch_t and flip value
-        int         frame;  // might be ORed with FF_FULLBRIGHT
-
-        // Interaction info, by BLOCKMAP.
-        // Links in blocks (if needed).
-        mobj_t  bnext;
-        mobj_t  bprev;
+        /** orientation */
+        int     angle;  
         
-        //TODO: struct subsector_s* subsector;
+        /** used to find patch_t and flip value */
+        spritenum_t     sprite; 
+        /** might be ORed with FF_FULLBRIGHT */
+        int         frame;  
 
-        // The closest interval over all contacted Sectors.
+        /** Interaction info, by BLOCKMAP. Links in blocks (if needed). */
+        mobj_t  bnext, bprev;
+        
+        /** MAES: was actually struct subsector_s */ 
+        subsector_t subsector;
+
+        /** The closest interval over all contacted Sectors. */
         fixed_t     floorz;
         fixed_t     ceilingz;
 
-        // For movement checking.
-        fixed_t     radius;
-        fixed_t     height; 
+        /** (fixed_t) For movement checking. */
+        int     radius,  height; 
 
-        // Momentums, used to update position.
-        fixed_t     momx;
-        fixed_t     momy;
-        fixed_t     momz;
+        /** (fixed_t) Momentums, used to update position. */
+        int     momx , momy,  momz;
 
         // If == validcount, already checked.
         int         validcount;
@@ -92,7 +91,7 @@ public class mobj_t {
         int         lastlook;   
 
         // For nightmare respawn.
-        //TODO: mapthing_t      spawnpoint; 
+       mapthing_t      spawnpoint; 
 
         // Thing being chased/attacked for tracers.
         // MAES: was a pointer

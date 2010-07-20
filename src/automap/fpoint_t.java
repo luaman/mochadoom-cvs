@@ -1,4 +1,4 @@
-package am;
+package automap;
 
 public class fpoint_t
 {

@@ -5,7 +5,7 @@ public class point_t {
         this.x=x;
         this.y=y;
     }
-    public   int     x;
+     public   int     x;
      public  int     y;
         
     }

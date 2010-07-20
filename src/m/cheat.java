@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: cheat.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: cheat.java,v 1.2 2010/07/20 15:52:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: cheat.java,v $
+// Revision 1.2  2010/07/20 15:52:56  velktron
+// LOTS of changes, Automap almost complete. Use of fixed_t inside methods severely limited.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -47,12 +50,6 @@ public static char SCRAMBLE(char a){
 (char) ((((a)&1)<<7) + (((a)&2)<<5) + ((a)&4) + (((a)&8)<<1) 
     + (((a)&16)>>1) + ((a)&32) + (((a)&64)>>5) + (((a)&128)>>7));
 }
-
-class cheatseq_t
-{
- public char  sequence;
- public char  p;
- } 
 
 public static boolean		firsttime = true;
 public static char[] cheat_xlate_table=new char[256];
@@ -95,10 +92,10 @@ public static int cht_CheckCheat
     return rc;
 }
 
-void
+public static void
 cht_GetParam
-( cheatseq_t*	cht,
-  char*		buffer )
+( cheatseq_t	cht,
+  char[]		buffer )
 {
 
     unsigned char *p, c;

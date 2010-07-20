@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.1 2010/07/03 23:24:13 velktron Exp $
+// $Id: StatusBar.java,v 1.2 2010/07/20 15:52:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.2  2010/07/20 15:52:56  velktron
+// LOTS of changes, Automap almost complete. Use of fixed_t inside methods severely limited.
+//
 // Revision 1.1  2010/07/03 23:24:13  velktron
 // Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
 //
@@ -56,7 +59,7 @@ import v.DoomVideoRenderer;
 import v.SimpleRenderer;
 import w.WadLoader;
 public class StatusBar{
-public static final String rcsid = "$Id: StatusBar.java,v 1.1 2010/07/03 23:24:13 velktron Exp $";
+public static final String rcsid = "$Id: StatusBar.java,v 1.2 2010/07/20 15:52:56 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -573,21 +576,20 @@ public void Stop ()
 	if (st_stopped)
 	return;
 
-    I_SetPalette (W.CacheLumpNum (lu_palette, PU_CACHE));
+    // TODO: I_SetPalette (W.CacheLumpNum (lu_palette, PU_CACHE));
 
     st_stopped = true;
 }
 
 public void loadData()
 {
-    lu_palette = W_GetNumForName ("PLAYPAL");
-    ST_loadGraphics();
+    lu_palette = W.GetNumForName ("PLAYPAL");
+    loadGraphics();
 }
 
 
 }
 
-/*
 
 // Respond to keyboard input events,
 //  intercept cheats.
@@ -615,7 +617,7 @@ Responder (event_t ev)
   }
 
   // if a user keypress...
-  else if (ev->type == ev_keydown)
+  else if (ev.type == evtype_t.ev_keydown)
   {
     if (!netgame)
     {
@@ -625,58 +627,59 @@ Responder (event_t ev)
       // 'dqd' cheat for toggleable god mode
       if (cht_CheckCheat(&cheat_god, ev->data1))
       {
-	plyr->cheats ^= CF_GODMODE;
-	if (plyr->cheats & CF_GODMODE)
+	plyr.cheats ^= CF_GODMODE;
+	if (plyr.cheats & CF_GODMODE !=0)
 	{
-	  if (plyr->mo)
-	    plyr->mo->health = 100;
+	  if (plyr.mo!=null)
+	    plyr.mo.health = 100;
 	  
-	  plyr->health = 100;
-	  plyr->message = STSTR_DQDON;
+	  plyr.health = 100;
+	  plyr.message = STSTR_DQDON;
 	}
 	else 
-	  plyr->message = STSTR_DQDOFF;
+	  plyr.message = STSTR_DQDOFF;
       }
       // 'fa' cheat for killer fucking arsenal
-      else if (cht_CheckCheat(&cheat_ammonokey, ev->data1))
+      else if (cht_CheckCheat(cheat_ammonokey, ev.data1))
       {
-	plyr->armorpoints = 200;
-	plyr->armortype = 2;
+	plyr.armorpoints = 200;
+	plyr.armortype = 2;
 	
 	for (i=0;i<NUMWEAPONS;i++)
-	  plyr->weaponowned[i] = true;
+	  plyr.weaponowned[i] = true;
 	
 	for (i=0;i<NUMAMMO;i++)
-	  plyr->ammo[i] = plyr->maxammo[i];
+	  plyr.ammo[i] = plyr.maxammo[i];
 	
-	plyr->message = STSTR_FAADDED;
+	plyr.message = STSTR_FAADDED;
       }
       // 'kfa' cheat for key full ammo
-      else if (cht_CheckCheat(&cheat_ammo, ev->data1))
+      else if (cht_CheckCheat(cheat_ammo, ev.data1))
       {
-	plyr->armorpoints = 200;
-	plyr->armortype = 2;
+	plyr.armorpoints = 200;
+	plyr.armortype = 2;
 	
 	for (i=0;i<NUMWEAPONS;i++)
-	  plyr->weaponowned[i] = true;
+	  plyr.weaponowned[i] = true;
 	
 	for (i=0;i<NUMAMMO;i++)
-	  plyr->ammo[i] = plyr->maxammo[i];
+	  plyr.ammo[i] = plyr.maxammo[i];
 	
 	for (i=0;i<NUMCARDS;i++)
-	  plyr->cards[i] = true;
+	  plyr.cards[i] = true;
 	
-	plyr->message = STSTR_KFAADDED;
+	plyr.message = STSTR_KFAADDED;
       }
       // 'mus' cheat for changing music
       else if (cht_CheckCheat(&cheat_mus, ev->data1))
       {
 	
-	char	buf[3];
+	char[]	buf=new char[3];
 	int		musnum;
 	
-	plyr->message = STSTR_MUS;
-	cht_GetParam(&cheat_mus, buf);
+	plyr.message = STSTR_MUS;
+	cheat_mus.cht_GetParam(nuf);
+	
 	
 	if (gamemode == commercial)
 	{

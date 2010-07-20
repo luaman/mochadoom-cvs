@@ -1,37 +1,38 @@
 package p;
 
+import m.fixed_t;
+
 public interface DoomPlayer {
 	
-	fixed_t
-	P_AimLineAttack
-	( mobj_t*	t1,
-	  angle_t	angle,
+	public fixed_t
+	AimLineAttack
+	( mobj_t	t1,
+	  int	angle,
 	  fixed_t	distance );
 
-	void
-	P_LineAttack
-	( mobj_t*	t1,
-	  angle_t	angle,
+	public void
+	LineAttack
+	( mobj_t	t1,
+	  int	angle,
 	  fixed_t	distance,
 	  fixed_t	slope,
 	  int		damage );
 
 	void
-	P_RadiusAttack
-	( mobj_t*	spot,
-	  mobj_t*	source,
+	RadiusAttack
+	( mobj_t	spot,
+	  mobj_t	source,
 	  int		damage );
 	
 	void
-	P_TouchSpecialThing
-	( mobj_t*	special,
-	  mobj_t*	toucher );
+	TouchSpecialThing
+	( mobj_t	special,
+	  mobj_t	toucher );
 
 	void
-	P_DamageMobj
-	( mobj_t*	target,
-	  mobj_t*	inflictor,
-	  mobj_t*	source,
+	DamageMobj
+	( mobj_t	target,
+	  mobj_t	inflictor,
+	  mobj_t	source,
 	  int		damage );
 	}
-}

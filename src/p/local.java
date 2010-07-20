@@ -3,7 +3,7 @@ package p;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: local.java,v 1.3 2010/07/05 16:18:40 velktron Exp $
+// $Id: local.java,v 1.4 2010/07/20 15:52:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,38 +29,6 @@ import doom.thinker_t;
 	
 public class local{
 
-public static int FLOATSPEED		=(FRACUNIT*4);
-
-public static int MAXHEALTH		=100;
-
-public static int VIEWHEIGHT	=	(41*FRACUNIT);
-
-// mapblocks are used to check movement
-// against lines and things
-public static int MAPBLOCKUNITS=	128;
-public static int MAPBLOCKSIZE	=(MAPBLOCKUNITS*FRACUNIT);
-public static int MAPBLOCKSHIFT	=(FRACBITS+7);
-public static int MAPBMASK		=(MAPBLOCKSIZE-1);
-public static int MAPBTOFRAC=		(MAPBLOCKSHIFT-FRACBITS);
-
-
-// player radius for movement checking
-public static int PLAYERRADIUS	=16*FRACUNIT;
-
-// MAXRADIUS is for precalculated sector block boxes
-// the spider demon is larger,
-// but we do not have any moving sectors nearby
-public static int MAXRADIUS	=	32*FRACUNIT;
-
-public static int GRAVITY	=	FRACUNIT;
-public static int MAXMOVE	=	(30*FRACUNIT);
-
-public static int USERANGE		=(64*FRACUNIT);
-public static int MELEERANGE	=	(64*FRACUNIT);
-public static int MISSILERANGE=(32*64*FRACUNIT);
-
-// follow a player exlusively for 3 seconds
-public static int	BASETHRESHOLD=	 	100;
 
 //
 // P_TICK
@@ -89,14 +57,7 @@ void P_DropWeapon (player_t* player);
 void	P_PlayerThink (player_t* player);
 
 
-//
-// P_MOBJ
-//
-public static int ONFLOORZ	=	MININT;
-public static int ONCEILINGZ	=	MAXINT;
 
-// Time interval for item respawning.
-public static int ITEMQUESIZE		128
 
 public mapthing_t	itemrespawnque[ITEMQUESIZE];
 public int		itemrespawntime[ITEMQUESIZE];
@@ -129,29 +90,11 @@ void	P_SpawnPlayerMissile (mobj_t* source, mobjtype_t type);
 void P_NoiseAlert (mobj_t* target, mobj_t* emmiter);
 
 
-//
-// P_MAPUTL
-//
-typedef struct
-{
-    fixed_t	x;
-    fixed_t	y;
-    fixed_t	dx;
-    fixed_t	dy;
-    
-} divline_t;
 
-typedef struct
-{
-    fixed_t	frac;		// along trace line
-    boolean	isaline;
-    union {
-	mobj_t*	thing;
-	line_t*	line;
-    }			d;
-} intercept_t;
 
-#define MAXINTERCEPTS	128
+
+
+
 
 extern intercept_t	intercepts[MAXINTERCEPTS];
 extern intercept_t*	intercept_p;
@@ -175,9 +118,6 @@ void 	P_LineOpening (line_t* linedef);
 boolean P_BlockLinesIterator (int x, int y, boolean(*func)(line_t*) );
 boolean P_BlockThingsIterator (int x, int y, boolean(*func)(mobj_t*) );
 
-#define PT_ADDLINES		1
-#define PT_ADDTHINGS	2
-#define PT_EARLYOUT		4
 
 extern divline_t	trace;
 
@@ -253,6 +193,9 @@ extern int		clipammo[NUMAMMO];
 //-----------------------------------------------------------------------------
 //
 // $Log: local.java,v $
+// Revision 1.4  2010/07/20 15:52:56  velktron
+// LOTS of changes, Automap almost complete. Use of fixed_t inside methods severely limited.
+//
 // Revision 1.3  2010/07/05 16:18:40  velktron
 // YOU DON'T WANNA KNOW
 //

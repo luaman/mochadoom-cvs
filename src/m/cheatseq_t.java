@@ -3,7 +3,7 @@ package m;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: cheatseq_t.java,v 1.2 2010/07/03 23:24:13 velktron Exp $
+//$Id: cheatseq_t.java,v 1.3 2010/07/20 15:52:56 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 //GNU General Public License for more details.
 //
 //$Log: cheatseq_t.java,v $
+//Revision 1.3  2010/07/20 15:52:56  velktron
+//LOTS of changes, Automap almost complete. Use of fixed_t inside methods severely limited.
+//
 //Revision 1.2  2010/07/03 23:24:13  velktron
 //Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
 //
@@ -64,7 +67,7 @@ public class cheatseq_t {
 	  * 
 	  */
 	 public void
-	 cht_GetParam
+	 GetParam
 	 ( 
 	   char[]		buffer )
 	 {
@@ -92,7 +95,7 @@ public class cheatseq_t {
 	 }
 	 
 	 /** Called in st_stuff module, which handles the input.
-	  *  Returns a 1 if the cheat was successful, 0 if failed.
+	  *  Returns true if the cheat was successful, false if failed.
 	  *  
 	  * MAES: Let's make this boolean.
 	  * 
@@ -101,7 +104,7 @@ public class cheatseq_t {
 	  * @return
 	  */
 
-	 public boolean cht_CheckCheat
+	 public boolean CheckCheat
 	 ( cheatseq_t	cht,
 	   char		key )
 	 {
@@ -123,6 +126,7 @@ public class cheatseq_t {
 	     else if
 	 	(cheat_xlate_table[(char)key] == cht.sequence[cht.p]) cht.p++;
 	     else
+	    // Failure: back to the beginning.
 	 	cht.p= 0;
 
 	     if (cht.sequence[cht.p]== 1)

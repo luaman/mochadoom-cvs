@@ -1,13 +1,18 @@
 package data;
 
 //import m.define;
+import static data.doomtype.MAXINT;
+import static data.doomtype.MININT;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
 import w.anim_t;
 import w.point_t;
+import w.animenum_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.1 2010/06/30 08:58:51 velktron Exp $
+// $Id: Defines.java,v 1.2 2010/07/20 15:52:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -118,7 +123,7 @@ public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 public static int SCREENWIDTH = 320;
 //SCREEN_MUL*BASE_WIDTH //320
-public static int SCREENHEIGHT= 200;
+public static short SCREENHEIGHT= 200;
 //(int)(SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO) //200
 
 // The maximum number of players, multiplayer/networking.
@@ -460,13 +465,7 @@ final static public point_t[][] lnodes =
 
 };
 
-public static enum animenum_t {
 
-    ANIM_ALWAYS,
-    ANIM_RANDOM,
-    ANIM_LEVEL
-
-}
 
 //
 //Animation locations for episode 0 (1).
@@ -614,6 +613,60 @@ static public final int SAVESTRINGSIZE = 24;
    
     static public final int MAXEVENTS       =64;
     
+    
+    //==================== Stuff from r_local.c =========================================
+
+    
+    public static int FLOATSPEED        =(FRACUNIT*4);
+
+    public static int MAXHEALTH     =100;
+
+    public static int VIEWHEIGHT    =   (41*FRACUNIT);
+
+    // mapblocks are used to check movement
+    // against lines and things
+    public static int MAPBLOCKUNITS=    128;
+    public static int MAPBLOCKSIZE  =(MAPBLOCKUNITS*FRACUNIT);
+    public static int MAPBLOCKSHIFT =(FRACBITS+7);
+    public static int MAPBMASK      =(MAPBLOCKSIZE-1);
+    public static int MAPBTOFRAC=       (MAPBLOCKSHIFT-FRACBITS);
+
+
+    // player radius for movement checking
+    public static int PLAYERRADIUS  =16*FRACUNIT;
+
+    // MAXRADIUS is for precalculated sector block boxes
+    // the spider demon is larger,
+    // but we do not have any moving sectors nearby
+    public static int MAXRADIUS =   32*FRACUNIT;
+
+    public static int GRAVITY   =   FRACUNIT;
+    public static int MAXMOVE   =   (30*FRACUNIT);
+
+    public static int USERANGE      =(64*FRACUNIT);
+    public static int MELEERANGE    =   (64*FRACUNIT);
+    public static int MISSILERANGE=(32*64*FRACUNIT);
+
+    // follow a player exlusively for 3 seconds
+    public static int   BASETHRESHOLD=      100;
+
+    public static int MAXINTERCEPTS   =128;
+    
+    public static int PT_ADDLINES     =1;
+    public static int PT_ADDTHINGS    =2;
+    public static int PT_EARLYOUT     =4;
+    
+ //
+ // P_MOBJ
+ //
+ public static int ONFLOORZ  =   MININT;
+ public static int ONCEILINGZ    =   MAXINT;
+
+ // Time interval for item respawning.
+ public static int ITEMQUESIZE       =128;
+    
+    
+    
     //
  // GLOBAL VARIABLES
  //
@@ -665,5 +718,5 @@ static public final int SAVESTRINGSIZE = 24;
 //#include "p_tick.h"
 
 static final char[]
-rcsid = ("$Id: Defines.java,v 1.1 2010/06/30 08:58:51 velktron Exp $").toCharArray();
+rcsid = ("$Id: Defines.java,v 1.2 2010/07/20 15:52:56 velktron Exp $").toCharArray();
 }

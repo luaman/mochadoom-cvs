@@ -1,11 +1,12 @@
 package rr;
 
+import p.Interceptable;
 import data.Defines.slopetype_t;
 import doom.thinker_t;
 import m.bbox;
 import m.fixed_t;
 
-public class line_t {
+public class line_t implements Interceptable{
 
        // Vertices, from v1 to v2.
        // MAES pointers

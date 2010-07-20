@@ -1,10 +1,10 @@
-package am;
+package automap;
 import doom.event_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomAutoMap.java,v 1.1 2010/07/03 23:24:13 velktron Exp $
+// $Id: DoomAutoMap.java,v 1.1 2010/07/20 15:52:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,18 +32,18 @@ public final int AM_MSGEXITED= (AM_MSGHEADER | ('x'<<8));
 
 
 // Called by main loop.
-public boolean AM_Responder (event_t ev);
+public boolean Responder (event_t ev);
 
 // Called by main loop.
-public void AM_Ticker ();
+public void Ticker ();
 
 // Called by main loop,
 // called instead of view drawer if automap active.
-public void  AM_Drawer ();
+public void  Drawer ();
 
 // Called to force the automap to quit
 // if the level is completed while it is up.
-public void  AM_Stop ();
+public void  Stop ();
 
 
 }

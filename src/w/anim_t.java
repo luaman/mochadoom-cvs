@@ -26,9 +26,9 @@ public class anim_t {
         this.state = state;
     }
         // Partial constructor, only 4 first fields.
-        public anim_t(animenum_t type, int period, int nanims, point_t loc
+        public anim_t(animenum_t animAlways, int period, int nanims, point_t loc
                ) {
-            this.type = type;
+            this.type = animAlways;
             this.period = period;
             this.nanims = nanims;
             this.loc = loc;
