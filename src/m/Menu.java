@@ -1,11 +1,14 @@
 package m;
 
 import data.doomstat;
+import doom.DoomContext;
 import rr.patch_t;
+import v.DoomVideoRenderer;
+import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.2 2010/07/06 15:20:23 velktron Exp $
+// $Id: Menu.java,v 1.3 2010/07/21 11:41:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +23,9 @@ import rr.patch_t;
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.3  2010/07/21 11:41:47  velktron
+// Work on menus...
+//
 // Revision 1.2  2010/07/06 15:20:23  velktron
 // Several changes in the WAD loading routine. Now lumps are directly unpacked as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer reads.
 //
@@ -82,7 +88,9 @@ import static data.Defines.*;
 public class Menu{
 
 	doomstat ds;
-	
+	DoomContext DC;
+	WadLoader W;
+	DoomVideoRenderer V;
 	
 /** The fonts
  * 
@@ -100,31 +108,31 @@ boolean		chat_on;		// in heads-up code
 //
 int			mouseSensitivity;       // has default
 
-// Show messages has default, 0 = off, 1 = on
+/** Show messages has default, 0 = off, 1 = on */
 int			showMessages;
 	
 
-// Blocky mode, has default, 0 = high, 1 = normal
+/** Blocky mode, has default, 0 = high, 1 = normal */
 int			detailLevel;		
 int			screenblocks;		// has default
 
-// temp for screenblocks (0-9)
+/** temp for screenblocks (0-9) */
 int			screenSize;		
 
-// -1 = no quicksave slot picked!
+/** -1 = no quicksave slot picked! */
 int			quickSaveSlot;          
 
- // 1 = message to be printed
+/** 1 = message to be printed */
 int			messageToPrint;
-// ...and here is the message string!
+
+/** ...and here is the message string! */
 String			messageString;		
 
-// message x & y
-int			messx;			
-int			messy;
+/** message x & y */
+int			messx, messy;
 int			messageLastMenuActive;
 
-// timed message = no input from user
+/** timed message = no input from user */
 boolean			messageNeedsInput;     
 
 //TODO: probably I need some MessageRoutine interface at this point?
@@ -142,11 +150,11 @@ String[] gammamsg =
     "GAMMALVL4"
 };
 
-// we are going to be entering a savegame string
+/** we are going to be entering a savegame string */
 int			saveStringEnter;              
-int             	saveSlot;	// which slot to save in
+int           	saveSlot;	// which slot to save in
 int			saveCharIndex;	// which char we're editing
-// old save description before edit
+/** old save description before edit */
 char[]			saveOldString=new char[SAVESTRINGSIZE];  
 
 boolean			inhelpscreens;
@@ -166,21 +174,22 @@ char[]	endstring=new char[160];
 //
 
 
+/** menu item skull is on */
+short		itemOn;			
 
+/** skull animation counter */
+short		skullAnimCounter;	
+/** which skull to draw */
+short		whichSkull;		 
 
-
-
-short		itemOn;			// menu item skull is on
-short		skullAnimCounter;	// skull animation counter
-short		whichSkull;		// which skull to draw
-
-// graphic name of skulls
-// warning: initializer-string for array of chars is too long
+/** graphic name of skulls
+   warning: initializer-string for array of chars is too long
+   */
 String[]    skullName= {"M_SKULL1","M_SKULL2"};
 
-// current menudef
+/**  current menudef */
 // MAES: pointer? array?
-menu_t[]	currentMenu;                          
+menu_t	currentMenu;                          
 
 
 //
@@ -188,19 +197,29 @@ menu_t[]	currentMenu;
 //
 
 // MAES: was an enum called "main_e" used purely as numerals. No need for strong typing.
+/**
+ *  main_e enum;
+ */
+    private static int newgame = 0,
+    options=1,
+    loadgam=2,
+    savegame=3,
+    readthis=4,
+    quitdoom=5,
+    main_end=6;
 
-    private int newgame = 0;
-    private int options=1;
-    private int loadgam=2;
-    private int savegame=3;
-    private int readthis=4;
-    private int quitdoom=5;
-    private int main_end=6;
+MenuRoutine NewGame=new M_NewGame(this.DC,this);
+MenuRoutine Options =new M_Options(this.DC,this);
+//MenuRoutine NewGame=new NewGame(this.DC,this);
+//MenuRoutine NewGame=new NewGame(this.DC,this);
+//MenuRoutine NewGame=new NewGame(this.DC,this);
 
+DrawRoutine DrawMainMenu=new M_DrawMainMenu(this.DC);
 
+    
 menuitem_t MainMenu[]=
 {
-    new menuitem_t((short)1,"M_NGAME",new NewGame(this.ds, this),'n')
+    new menuitem_t((short)1,"M_NGAME",NewGame,'n')
     /*new menuitem_t(1,"M_OPTION",M_Options,'o'),
     new menuitem_t(1,"M_LOADG",M_LoadGame,'l'),
     new menuitem_t(1,"M_SAVEG",M_SaveGame,'s'),
@@ -213,7 +232,7 @@ menu_t  MainDef = new menu_t(
     main_end,
     null,
     MainMenu,
-    M_DrawMainMenu,
+    DrawMainMenu,
     97,64,
     0);
 
@@ -221,12 +240,13 @@ menu_t  MainDef = new menu_t(
 //
 // EPISODE SELECT
 //
-// MAES: episodes_e enum
-private int ep1=0;
-private int    ep2=1;
-private int    ep3=2;
-private int    ep4=3'
-private int    ep_end=4;
+ 
+/** episodes_e enum */
+private int ep1=0, 
+            ep2=1,
+            ep3=2,
+            ep4=3,
+            ep_end=4;
 
 
 menuitem_t EpisodeMenu[]=
@@ -242,7 +262,7 @@ new menu_t(
     ep_end,		// # of menu items
     MainDef,		// previous menu
     EpisodeMenu,	// menuitem_t ->
-    M_DrawEpisode,	// drawing routine ->
+    DrawEpisode,	// drawing routine ->
     48,63,              // x,y
     ep1			// lastOn
 );
@@ -250,23 +270,26 @@ new menu_t(
 //
 // NEW GAME
 //
-enum
-{
-    killthings,
-    toorough,
-    hurtme,
-    violence,
-    nightmare,
-    newg_end
-} newgame_e;
+/**
+ * newgame_e enum;
+ */
+private static int killthings=0,
+                   toorough=1,
+                   hurtme=2,
+                   violence=3,
+                   nightmare=4,
+                   newg_end=5;
+
+
+
 
 menuitem_t NewGameMenu[]=
 {
-    {1,"M_JKILL",	M_ChooseSkill, 'i'},
-    {1,"M_ROUGH",	M_ChooseSkill, 'h'},
-    {1,"M_HURT",	M_ChooseSkill, 'h'},
-    {1,"M_ULTRA",	M_ChooseSkill, 'u'},
-    {1,"M_NMARE",	M_ChooseSkill, 'n'}
+    new menuitem_t(1,"M_JKILL",	M_ChooseSkill, 'i'),
+    new menuitem_t(1,"M_ROUGH",	M_ChooseSkill, 'h'),
+        new menuitem_t(1,"M_HURT",	M_ChooseSkill, 'h'),
+            new menuitem_t(1,"M_ULTRA",	M_ChooseSkill, 'u'),
+                new menuitem_t(1,"M_NMARE",	M_ChooseSkill, 'n')
 };
 
 menu_t  NewDef =
@@ -284,18 +307,20 @@ menu_t  NewDef =
 //
 // OPTIONS MENU
 //
-enum
-{
-    endgame,
-    messages,
-    detail,
-    scrnsize,
-    option_empty1,
-    mousesens,
-    option_empty2,
-    soundvol,
-    opt_end
-} options_e;
+
+
+/** options_e enum;
+ * 
+ */
+
+static int endgame=0,
+   messages=1,
+  detail=2,
+scrnsize=3,
+option_empty1=4,
+mousesens=5,
+option_empty2=6,
+soundvol=7, opt_end=8;
 
 menuitem_t OptionsMenu[]=
 {
@@ -309,24 +334,25 @@ menuitem_t OptionsMenu[]=
     {1,"M_SVOL",	M_Sound,'s'}
 };
 
-menu_t  OptionsDef =
-{
+public menu_t  OptionsDef =
+new menu_t(
     opt_end,
-    &MainDef,
+    this.MainDef,
     OptionsMenu,
     M_DrawOptions,
     60,37,
     0
-};
+);
 
 //
 // Read This! MENU 1 & 2
 //
-enum
-{
-    rdthsempty1,
-    read1_end
-} read_e;
+
+/**
+ * read_e enum
+ */
+private static int  rdthsempty1=0,
+    read1_end=1;
 
 menuitem_t ReadMenu1[] =
 {
@@ -800,31 +826,12 @@ void M_MusicVol(int choice)
 
 
 
-
-
-
-//
-// M_NewGame
-//
-void M_DrawNewGame(void)
-{
-    V_DrawPatchDirect (96,14,0,W_CacheLumpName("M_NEWG",PU_CACHE));
-    V_DrawPatchDirect (54,38,0,W_CacheLumpName("M_SKILL",PU_CACHE));
-}
-
-
-
-
 //
 //      M_Episode
 //
 int     epi;
 
 /*
-void M_DrawEpisode(void)
-{
-    V_DrawPatchDirect (54,38,0,W_CacheLumpName("M_EPISOD",PU_CACHE));
-}
 
 void M_VerifyNightmare(int ch)
 {
@@ -847,59 +854,11 @@ void M_ChooseSkill(int choice)
     M_ClearMenus ();
 }
 
-void M_Episode(int choice)
-{
-    if ( (gamemode == shareware)
-	 && choice)
-    {
-	M_StartMessage(SWSTRING,NULL,false);
-	M_SetupNextMenu(&ReadDef1);
-	return;
-    }
-
-    // Yet another hack...
-    if ( (gamemode == registered)
-	 && (choice > 2))
-    {
-      fprintf( stderr,
-	       "M_Episode: 4th episode requires UltimateDOOM\n");
-      choice = 0;
-    }
-	 
-    epi = choice;
-    M_SetupNextMenu(&NewDef);
-}
 
 
 
-//
-// M_Options
-//
-char    detailNames[2][9]	= {"M_GDHIGH","M_GDLOW"};
-char	msgNames[2][9]		= {"M_MSGOFF","M_MSGON"};
 
 
-void M_DrawOptions(void)
-{
-    V_DrawPatchDirect (108,15,0,W_CacheLumpName("M_OPTTTL",PU_CACHE));
-	
-    V_DrawPatchDirect (OptionsDef.x + 175,OptionsDef.y+LINEHEIGHT*detail,0,
-		       W_CacheLumpName(detailNames[detailLevel],PU_CACHE));
-
-    V_DrawPatchDirect (OptionsDef.x + 120,OptionsDef.y+LINEHEIGHT*messages,0,
-		       W_CacheLumpName(msgNames[showMessages],PU_CACHE));
-
-    M_DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(mousesens+1),
-		 10,mouseSensitivity);
-	
-    M_DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(scrnsize+1),
-		 9,screenSize);
-}
-
-void M_Options(int choice)
-{
-    M_SetupNextMenu(&OptionsDef);
-}
 
 
 
@@ -1110,8 +1069,8 @@ void M_SizeDisplay(int choice)
 //
 //      Menu Functions
 //
-void
-M_DrawThermo
+public void
+DrawThermo
 ( int	x,
   int	y,
   int	thermWidth,
@@ -1121,17 +1080,17 @@ M_DrawThermo
     int		i;
 
     xx = x;
-    V_DrawPatchDirect (xx,y,0,W_CacheLumpName("M_THERML",PU_CACHE));
+    V.DrawPatchDirect (xx,y,0,W.CacheLumpName("M_THERML",PU_CACHE));
     xx += 8;
     for (i=0;i<thermWidth;i++)
     {
-	V_DrawPatchDirect (xx,y,0,W_CacheLumpName("M_THERMM",PU_CACHE));
+	V.DrawPatchDirect (xx,y,0,W.CacheLumpName("M_THERMM",PU_CACHE));
 	xx += 8;
     }
-    V_DrawPatchDirect (xx,y,0,W_CacheLumpName("M_THERMR",PU_CACHE));
+    V.DrawPatchDirect (xx,y,0,W.CacheLumpName("M_THERMR",PU_CACHE));
 
-    V_DrawPatchDirect ((x+8) + thermDot*8,y,
-		       0,W_CacheLumpName("M_THERMO",PU_CACHE));
+    V.DrawPatchDirect ((x+8) + thermDot*8,y,
+		       0,W.CacheLumpName("M_THERMO",PU_CACHE));
 }
 
 
@@ -1155,10 +1114,10 @@ M_DrawSelCell
 }
 
 
-void
-M_StartMessage
-( char*		string,
-  void*		routine,
+public void
+StartMessage
+( String		string,
+  MenuRoutine		routine,
   boolean	input )
 {
     messageLastMenuActive = menuactive;
@@ -1747,22 +1706,20 @@ void M_ClearMenus (void)
 }
 
 
-
-
-//
-// M_SetupNextMenu
-//
-void M_SetupNextMenu(menu_t *menudef)
+/**
+ *  M_SetupNextMenu
+ */
+public void SetupNextMenu(menu_t menudef)
 {
     currentMenu = menudef;
-    itemOn = currentMenu->lastOn;
+    itemOn = currentMenu.lastOn;
 }
 
 
-//
-// M_Ticker
-//
-void M_Ticker (void)
+/**
+* M_Ticker
+*/
+public void Ticker ()
 {
     if (--skullAnimCounter <= 0)
     {
@@ -1772,14 +1729,14 @@ void M_Ticker (void)
 }
 
 
-//
-// M_Init
-//
-void M_Init (void)
+/**
+ * M_Init
+ */
+public void Init ()
 {
-    currentMenu = &MainDef;
+    currentMenu = MainDef;
     menuactive = 0;
-    itemOn = currentMenu->lastOn;
+    itemOn = currentMenu.lastOn;
     whichSkull = 0;
     skullAnimCounter = 10;
     screenSize = screenblocks - 3;

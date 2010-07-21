@@ -2,16 +2,20 @@ package m;
 
 import data.doomstat;
 import data.Defines.GameMode_t;
+import doom.DoomContext;
+import static doom.englsh.NEWGAME;
 
 
 /* MAES: This might be one of the hardest aspects of "OO-ification" to grasp.
  * This used to be a pointable function with a specific calling convention.
- * Context needs to be passed long.
+ * Now, there are Method classes in Java...but these are allegedly very slow.
+ * So we'll go with the traditional "invokable interface" drill.
+ * Context needs to be passed along. 
  * 
  */
-public class NewGame implements MenuRoutine{
+public class M_NewGame implements MenuRoutine{
 
-	doomstat ds;
+	doomstat DS;
 	Menu M;
 	
 	/** Constructor. We must give it some context to play with.
@@ -21,21 +25,21 @@ public class NewGame implements MenuRoutine{
 	 * @param M
 	 */
 	
-	public NewGame(doomstat ds, Menu M){
-	this.ds=ds;	
+	public M_NewGame(DoomContext DC, Menu M){
+	this.DS=DC.DS;	
 	this.M=M;
 	}
 	
 	@Override
-	public void execute(int choice)
+	public void invoke(int choice)
 	{
-	    if (ds.netgame && !ds.demoplayback)
+	    if (DS.netgame && !DS.demoplayback)
 	    {
 		M.StartMessage(NEWGAME,null,false);
 		return;
 	    }
 		
-	    if ( ds.gamemode == GameMode_t.commercial )
+	    if ( DS.gamemode == GameMode_t.commercial )
 		M.SetupNextMenu(M.NewDef);
 	    else
 		M.SetupNextMenu(M.EpiDef);

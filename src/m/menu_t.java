@@ -1,14 +1,29 @@
 package m;
 
 public class menu_t {
-	    short		numitems;	// # of menu items
-	    // Maes: was menu_s*... just make it menu_t already.
-	    menu_t	prevMenu;	// previous menu
-	    menuitem_t[]		menuitems;	// menu items
-	    // MAES: probably we need some kind of "DrawRoutine" interface here.
-	    //void		(*routine)();	// draw routine
+	    public menu_t(int numitems, menu_t prev, menuitem_t[] menuitems,
+            DrawRoutine drawroutine, int x, int y, int lastOn) {
+	        this.numitems=numitems;
+	        this.prevMenu=prev;
+	        this.menuitems=menuitems;
+	        this.routine=drawroutine;
+	        this.x=x;
+	        this.y=y;
+	        this.lastOn=lastOn;
+	        
+    }
+	    /** # of menu items */	    
+        int		numitems;
+        
+	    /**  previous menu */
+	    menu_t	prevMenu;
+
+	    /** menu items */
+	    menuitem_t[]		menuitems;	
+	    /** draw routine */
 	    DrawRoutine routine;
-	    short		x;
-	    short		y;		// x,y of menu
-	    short		lastOn;		// last item user was on in menu
+	    /**  x,y of menu */
+	    int		x,y;
+	    /** last item user was on in menu */
+	    int		lastOn;
 	} 

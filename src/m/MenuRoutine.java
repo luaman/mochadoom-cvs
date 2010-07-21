@@ -10,5 +10,5 @@ package m;
 public interface MenuRoutine {
 	
 	
-public void execute(int choice);
+public void invoke(int choice);
 }

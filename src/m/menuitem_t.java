@@ -13,7 +13,7 @@ public class menuitem_t {
 		// 0 = no cursor here, 1 = ok, 2 = arrows ok
 	    short	status;
 	    
-	    String	name=new String[10];
+	    String	name;
 	    
 	    // choice = menu item #.
 	    // if status = 2,

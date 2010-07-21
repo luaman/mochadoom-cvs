@@ -68,4 +68,4 @@ public class pcx_t implements WritableDoomObject{
 		    //unsigned char	data;		// unbounded
 		    f.write(data.array());
 		}
-	} pcx_t;
+	} ;
