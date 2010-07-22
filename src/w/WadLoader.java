@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.4 2010/07/15 14:01:49 velktron Exp $
+// $Id: WadLoader.java,v 1.5 2010/07/22 15:37:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.5  2010/07/22 15:37:53  velktron
+// MAJOR changes in Menu system.
+//
 // Revision 1.4  2010/07/15 14:01:49  velktron
 // Added reflector Method stuff for function pointers.
 //
@@ -56,6 +59,8 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import rr.patch_t;
 
 import utils.C2JUtils;
 import z.memblock_t;
@@ -213,7 +218,7 @@ public class WadLoader {
             return;
         }
 
-        System.out.println(" adding " + filename + "\n");
+        //System.out.println(" adding " + filename + "\n");
 
         // We start at the number of lumps? :-S
         startlump = this.numlumps;
@@ -654,6 +659,23 @@ public class WadLoader {
     {
 try {
     return (DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag, DoomBuffer.class);
+} catch (IOException e) {
+    // TODO Auto-generated catch block
+    e.printStackTrace();
+    return null;
+}
+}
+    
+    /** Specific method for loading cached patches, since it's by FAR the most common operation.
+     * 
+     * @param name
+     * @return
+     */
+    
+    public patch_t CachePatchName(String name)
+    {
+try {
+    return (patch_t) this.CacheLumpNum(this.GetNumForName(name), PU_CACHE, patch_t.class);
 } catch (IOException e) {
     // TODO Auto-generated catch block
     e.printStackTrace();

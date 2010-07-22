@@ -2,7 +2,7 @@ package data;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.java,v 1.1 2010/06/30 08:58:51 velktron Exp $
+// $Id: dstrings.java,v 1.2 2010/07/22 15:37:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package data;
 // GNU General Public License for more details.
 //
 // $Log: dstrings.java,v $
+// Revision 1.2  2010/07/22 15:37:53  velktron
+// MAJOR changes in Menu system.
+//
 // Revision 1.1  2010/06/30 08:58:51  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -40,7 +43,7 @@ import static doom.englsh.*;
 
 public class dstrings{
 
-//public static const char rcsid[] = "$Id: dstrings.java,v 1.1 2010/06/30 08:58:51 velktron Exp $";
+//public static const char rcsid[] = "$Id: dstrings.java,v 1.2 2010/07/22 15:37:53 velktron Exp $";
 
 
     // Misc. other strings.
@@ -60,7 +63,7 @@ public class dstrings{
     public static final int NUM_QUITMESSAGES= 22;
 
 
-String[] endmsg=
+public static String[] endmsg=
 {
   // DOOM1
   QUITMSG,

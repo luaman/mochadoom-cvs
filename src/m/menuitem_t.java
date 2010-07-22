@@ -2,7 +2,7 @@ package m;
 
 public class menuitem_t {
 
-	    public menuitem_t(short status, String name, MenuRoutine routine, char alphaKey) {
+	    public menuitem_t(int status, String name, MenuRoutine routine, char alphaKey) {
 	    	this.status=status;
 	    	this.name=name;
 	    	this.routine= routine;
@@ -10,8 +10,14 @@ public class menuitem_t {
 		// TODO Auto-generated constructor stub
 	}	
 
-		// 0 = no cursor here, 1 = ok, 2 = arrows ok
-	    short	status;
+		public menuitem_t(int status, String name, MenuRoutine routine) {
+		     this.status=status;
+	            this.name=name;
+	            this.routine= routine;
+        }
+
+        // 0 = no cursor here, 1 = ok, 2 = arrows ok
+	    int	status;
 	    
 	    String	name;
 	    

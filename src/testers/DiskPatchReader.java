@@ -31,7 +31,7 @@ public class DiskPatchReader {
     //ByteBuffer bb=W.CacheLumpName("WALL00_1", 0);
     //
 
-    patch_t wall=(patch_t) W.CacheLumpName("WALL00_1", 0,patch_t.class);
+    patch_t wall= W.CachePatchName("WALL00_1");
     lumpinfo_t lump= W.GetLumpinfoForName("WALL00_1");
     System.out.println(lump.name);
     System.out.println(lump.position);
@@ -46,7 +46,7 @@ public class DiskPatchReader {
     
     System.out.println("Num for HELP1: "+W.GetNumForName("HELP1"));
     //bb=W.CacheLumpName("HELP1", 0);
-    patch_t stbar=(patch_t)W.CacheLumpName("HELP1", 0,patch_t.class);
+    patch_t stbar= W.CachePatchName("HELP1");
     System.out.println(stbar.height);
     System.out.println(stbar.width);
     stbar=(patch_t)W.CacheLumpName("HELP1", 0,stbar.getClass());

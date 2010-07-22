@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.6 2010/07/07 16:17:37 velktron Exp $
+// $Id: fixed_t.java,v 1.7 2010/07/22 15:37:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.7  2010/07/22 15:37:53  velktron
+// MAJOR changes in Menu system.
+//
 // Revision 1.6  2010/07/07 16:17:37  velktron
 // *** empty log message ***
 //
@@ -98,7 +101,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.6 2010/07/07 16:17:37 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.7 2010/07/22 15:37:53 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -157,6 +160,21 @@ public static void FixedMul
 {
     c.set((int)(((long) a.val * (long ) b.val) >> FRACBITS));
 }
+
+
+/** In-place this=this*a
+ * 
+ * @param a
+ * @param b
+ * @param c
+ */
+
+public void FixedMul
+( fixed_t   a)
+{
+    this.set((int)(((long) a.val * (long ) this.val) >> FRACBITS));
+}
+
 
 public static fixed_t
 FixedDiv
