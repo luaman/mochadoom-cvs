@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>mocha</name>
+	<name>mochadoom</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>g</name>
+			<type>2</type>
+			<location>C:/Java Workspace/mochadoom/src/g</location>
+		</link>
+	</linkedResources>
 </projectDescription>

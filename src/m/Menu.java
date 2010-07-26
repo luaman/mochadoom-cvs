@@ -1,16 +1,19 @@
 package m;
 
+import g.DoomGame;
+import data.Defines;
 import data.doomstat;
 import data.Defines.GameMode_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
+import doom.event_t;
 import rr.patch_t;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.4 2010/07/22 15:37:53 velktron Exp $
+// $Id: Menu.java,v 1.5 2010/07/26 20:17:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -25,6 +28,9 @@ import w.WadLoader;
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.5  2010/07/26 20:17:39  velktron
+// Some work on menus...
+//
 // Revision 1.4  2010/07/22 15:37:53  velktron
 // MAJOR changes in Menu system.
 //
@@ -89,9 +95,7 @@ import w.WadLoader;
 #include "m_menu.h"
 */
 import static data.Defines.*;
-import static doom.englsh.NEWGAME;
-import static doom.englsh.NIGHTMARE;
-import static doom.englsh.SWSTRING;
+import static doom.englsh.*;
 import static data.dstrings.*;
 
 public class Menu{
@@ -100,6 +104,7 @@ public class Menu{
 	DoomContext DC;
 	WadLoader W;
 	DoomVideoRenderer V;
+	DoomGame G;
 	
 /** The fonts
  * 
@@ -217,33 +222,57 @@ menu_t	currentMenu;
     quitdoom=5,
     main_end=6;
 
-MenuRoutine NewGame=new M_NewGame();
-MenuRoutine Options =new M_Options();
-MenuRoutine ChooseSkill=new M_ChooseSkill();
-MenuRoutine Episode=new M_Episode();
-MenuRoutine VerifyNightmare=new M_VerifyNightmare();
+    /**
+     * MenuRoutine class definitions, replacing "function pointers".
+     */
+    MenuRoutine ChangeDetail,ChangeMessages,ChangeSensitivity,ChooseSkill,EndGame,
+    			Episode,   FinishReadThis, NewGame,   Options,  VerifyNightmare,
+    SizeDisplay,QuitDOOM,ReadThis,ReadThis2,Sound;
+    
+    /** DrawRoutine class definitions, replacing "function pointers". */
+    
+    DrawRoutine DrawEpisode,DrawNewGame,DrawReadThis1,DrawReadThis2,
+    DrawOptions,DrawMainMenu;
+    
+private void initMenuRoutines(){
+ NewGame=new M_NewGame();
+ Options =new M_Options();
+ ChooseSkill=new M_ChooseSkill();
+ Episode=new M_Episode();
+ VerifyNightmare=new M_VerifyNightmare();
+	EndGame=new M_EndGame();
+	ChangeMessages=new M_ChangeMessages();
+	ChangeDetail=new M_ChangeDetail();
+	SizeDisplay= new M_SizeDisplay();
+	ChangeSensitivity=new M_ChangeSensitivity();
+	ReadThis=new M_ReadThis();
+	ReadThis2=new M_ReadThis2();
+	Sound=new M_Sound();
+	QuitDOOM=new M_QuitDOOM();
+}
 
-DrawRoutine DrawEpisode=new M_DrawEpisode();
-DrawRoutine DrawNewGame=new M_DrawNewGame(); 
-DrawRoutine DrawReadThis1=new M_DrawReadThis1();
-DrawRoutine DrawReadThis2=new M_DrawReadThis2();
-DrawRoutine DrawOptions=new M_DrawOptions();
-//MenuRoutine NewGame=new NewGame(this.DC,this);
-//MenuRoutine NewGame=new NewGame(this.DC,this);
-//MenuRoutine NewGame=new NewGame(this.DC,this);
+/**
+ *  
+ */
+private void initDrawRoutines(){
+ DrawEpisode=new M_DrawEpisode();
+ DrawNewGame=new M_DrawNewGame(); 
+ DrawReadThis1=new M_DrawReadThis1();
+ DrawReadThis2=new M_DrawReadThis2();
+ DrawOptions=new M_DrawOptions();
 
-DrawRoutine DrawMainMenu=new M_DrawMainMenu();
-
+ DrawMainMenu=new M_DrawMainMenu();
+}
     
 menuitem_t MainMenu[]=
 {
-    new menuitem_t((short)1,"M_NGAME",NewGame,'n')
-    /*new menuitem_t(1,"M_OPTION",M_Options,'o'),
-    new menuitem_t(1,"M_LOADG",M_LoadGame,'l'),
-    new menuitem_t(1,"M_SAVEG",M_SaveGame,'s'),
+    new menuitem_t((short)1,"M_NGAME",NewGame,'n'),
+    new menuitem_t(1,"M_OPTION",Options,'o'),
+    new menuitem_t(1,"M_LOADG",LoadGame,'l'),
+    new menuitem_t(1,"M_SAVEG",SaveGame,'s'),
     // Another hickup with Special edition.
-    new menuitem_t(1,"M_RDTHIS",M_ReadThis,'r'),
-    new menuitem_t(1,"M_QUITG",M_QuitDOOM,'q')*/
+    new menuitem_t(1,"M_RDTHIS",ReadThis,'r'),
+    new menuitem_t(1,"M_QUITG",QuitDOOM,'q')
 };
 
 menu_t  MainDef = new menu_t(
@@ -342,14 +371,14 @@ soundvol=7, opt_end=8;
 
 menuitem_t[] OptionsMenu=
 {
-    new menuitem_t(1,"M_ENDGAM",	M_EndGame,'e'),
-    new menuitem_t(1,"M_MESSG",	M_ChangeMessages,'m'),
-    new menuitem_t(1,"M_DETAIL",	M_ChangeDetail,'g'),
-    new menuitem_t(2,"M_SCRNSZ",	M_SizeDisplay,'s'),
+    new menuitem_t(1,"M_ENDGAM",	EndGame,'e'),
+    new menuitem_t(1,"M_MESSG",	ChangeMessages,'m'),
+    new menuitem_t(1,"M_DETAIL",	ChangeDetail,'g'),
+    new menuitem_t(2,"M_SCRNSZ",	SizeDisplay,'s'),
     new menuitem_t(-1,"",null),
-    new menuitem_t(2,"M_MSENS",	M_ChangeSensitivity,'m'),
+    new menuitem_t(2,"M_MSENS",	ChangeSensitivity,'m'),
     new menuitem_t(-1,"",null),
-    new menuitem_t(1,"M_SVOL",	M_Sound,'s')
+    new menuitem_t(1,"M_SVOL",	Sound,'s')
 };
 
 public menu_t  OptionsDef =
@@ -372,9 +401,9 @@ new menu_t(
 private static int  rdthsempty1=0,
     read1_end=1;
 
-menuitem_t[] ReadMenu1[] 
+menuitem_t[] ReadMenu1= 
 {
-    new menuitem_t(1,"",ReadThis2,0)
+    new menuitem_t(1,"",ReadThis2,(char) 0)
 };
 
 menu_t  ReadDef1 = new menu_t(
@@ -386,26 +415,25 @@ menu_t  ReadDef1 = new menu_t(
     0
 );
 
-enum
-{
-    rdthsempty2,
-    read2_end
-} read_e2;
+
+/** read_2 enum */
+private static int
+    rdthsempty2=0,
+    read2_end=1;
 
 menuitem_t ReadMenu2[]=
 {
-    {1,"",M_FinishReadThis,0}
+    new menuitem_t(1,"",FinishReadThis,(char) 0)
 };
 
-menu_t  ReadDef2 =
-{
+menu_t  ReadDef2 = new menu_t(
     read2_end,
-    &ReadDef1,
+    ReadDef1,
     ReadMenu2,
-    M_DrawReadThis2,
+    DrawReadThis2,
     330,175,
     0
-};
+);
 
 //
 // SOUND VOLUME MENU
@@ -420,10 +448,10 @@ static int sfx_vol=0,
 
 menuitem_t SoundMenu[]=
 {
-    {2,"M_SFXVOL",M_SfxVol,'s'},
-    {-1,"",0},
-    {2,"M_MUSVOL",M_MusicVol,'m'},
-    {-1,"",0}
+    new menuitem_t(2,"M_SFXVOL",SfxVol,'s'),
+    new menuitem_t(-1,"",0),
+    new menuitem_t(2,"M_MUSVOL",MusicVol,'m'),
+    new menuitem_t(-1,"",0)
 };
 
 menu_t  SoundDef =
@@ -565,31 +593,37 @@ void M_DrawSaveLoadBorder(int x,int y)
 //
 // User wants to load this game
 //
-void M_LoadSelect(int choice)
-{
-    char    name[256];
+class M_LoadSelect implements MenuRoutine{
+    @Override
+    public void invoke(int choice){
+    char[]    name= new char[256];
 	
-    if (M_CheckParm("-cdrom"))
+    if (CheckParm("-cdrom")){
 	sprintf(name,"c:\\doomdata\\"SAVEGAMENAME"%d.dsg",choice);
     else
 	sprintf(name,SAVEGAMENAME"%d.dsg",choice);
-    G_LoadGame (name);
-    M_ClearMenus ();
+    G.LoadGame (name);
+    ClearMenus ();
+}
+    }
 }
 
-//
-// Selected from DOOM menu
-//
-void M_LoadGame (int choice)
-{
-    if (netgame)
+/**
+* Selected from DOOM menu
+*/
+class M_LoadGame implements MenuRoutine{
+    @Override
+    public void invoke(int choice){
+
+    if (DS.netgame)
     {
-	M_StartMessage(LOADNET,NULL,false);
+	StartMessage(LOADNET,NULL,false);
 	return;
     }
 	
-    M_SetupNextMenu(&LoadDef);
-    M_ReadSaveStrings();
+    SetupNextMenu(LoadDef);
+    ReadSaveStrings();
+}
 }
 
 
@@ -862,7 +896,7 @@ int     epi;
 
 
 
-class M_Verify  implements MenuRoutine{
+class M_VerifyNightmare  implements MenuRoutine{
 
     @Override
     public void invoke(int ch)
@@ -870,8 +904,8 @@ class M_Verify  implements MenuRoutine{
     if (ch != 'y')
 	return;
 		
-    G_DeferedInitNew(nightmare,epi+1,1);
-    M_ClearMenus ();
+    G.DeferedInitNew(Defines.skill_t.sk_nightmare,epi+1,1);
+    this.ClearMenus ();
 }
 }
 
@@ -1117,7 +1151,7 @@ class M_SizeDisplay implements MenuRoutine {
     }
 	
 
-    R.SetViewSize (screenblocks, detailLevel);
+   //TODO: R.SetViewSize (screenblocks, detailLevel);
 }
 
 }
@@ -1132,25 +1166,7 @@ class M_Options implements MenuRoutine{
 
 }
     
-    class M_NewGame implements MenuRoutine{
-
-        
-        @Override
-        public void invoke(int choice)
-        {
-            if (DS.netgame && !DS.demoplayback)
-            {
-            StartMessage(NEWGAME,null,false);
-            return;
-            }
-            
-            if ( DS.gamemode == GameMode_t.commercial )
-            SetupNextMenu(NewDef);
-            else
-            SetupNextMenu(EpiDef);
-        }
-
-    }
+ 
     
     class M_Episode implements MenuRoutine{
         
@@ -1178,6 +1194,26 @@ class M_Options implements MenuRoutine{
                 M.SetupNextMenu(M.NewDef);
              //TODO: ?   M.SetupNextMenu(M.OptionsDef);
             }
+
+    }
+    
+   class M_NewGame implements MenuRoutine{
+
+        
+        @Override
+        public void invoke(int choice)
+        {
+            if (DS.netgame && !DS.demoplayback)
+            {
+            StartMessage(NEWGAME,null,false);
+            return;
+            }
+            
+            if ( DS.gamemode == GameMode_t.commercial )
+            SetupNextMenu(NewDef);
+            else
+            SetupNextMenu(EpiDef);
+        }
 
     }
     
