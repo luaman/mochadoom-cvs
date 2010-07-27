@@ -3,7 +3,7 @@ package i;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSoundInterface.java,v 1.1 2010/07/04 01:42:38 velktron Exp $
+// $Id: SystemSoundInterface.java,v 1.1 2010/07/27 14:27:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -37,7 +37,7 @@ extern char* sndserver_filename;
 #endif*/
 
 
-public interface DoomSoundInterface{
+public interface SystemSoundInterface{
 
 
 // Init at program start...

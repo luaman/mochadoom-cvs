@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.3 2010/07/15 14:01:49 velktron Exp $
+//$Id: DoomFile.java,v 1.4 2010/07/27 14:27:16 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -94,6 +94,33 @@ public class DoomFile extends RandomAccessFile {
 
        return new String(bb, 0, len);
    }
+   
+   /** MAES: Reads multiple strings with a specified number of bytes from a file.
+    * If the array is not large enough, only partial reads will occur.
+    *  
+    * @param len
+    * @return
+    * @throws IOException
+    */
+      
+      public String[] readMultipleFixedLengthStrings(String[] dest, int num, int len) throws IOException {
+
+    	  // Some sanity checks...
+          if (num<=0 || len < 0)
+              return null;
+
+          if (len == 0) {
+        	  for (int i=0;i<dest.length;i++){
+        		  dest[i]=new String("");
+        	  }
+        	  return dest;
+          }        	  
+          
+          for (int i=0;i<num;i++){
+        	  dest[i]=this.readString(len);
+          }
+          return dest;
+      }
 
    
    /** Writes a length specified string to a file. */

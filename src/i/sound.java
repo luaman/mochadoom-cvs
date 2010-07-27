@@ -3,7 +3,7 @@ package i;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sound.java,v 1.1 2010/07/04 01:42:38 velktron Exp $
+// $Id: sound.java,v 1.2 2010/07/27 14:27:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,10 @@ package i;
 // GNU General Public License for more details.
 //
 // $Log: sound.java,v $
+// Revision 1.2  2010/07/27 14:27:16  velktron
+// Menu system is almost complete! Tester coming soon...
+// Lots of additions to misc interfaces and C-like functions too.
+//
 // Revision 1.1  2010/07/04 01:42:38  velktron
 // Some work on the "i" package...damn pointers.
 //
@@ -38,11 +42,12 @@ import static data.sounds.*;
 import data.doomstat;
 import data.sounds.sfxenum_t;
 
-public class sound implements DoomSoundInterface{
+public class sound implements SystemSoundInterface{
 
 	public WadLoader W;
 	public doomstat ds;
-public static final String rcsid = "$Id: sound.java,v 1.1 2010/07/04 01:42:38 velktron Exp $";
+	
+public static final String rcsid = "$Id: sound.java,v 1.2 2010/07/27 14:27:16 velktron Exp $";
 
 
 // UNIX hack, to be removed.

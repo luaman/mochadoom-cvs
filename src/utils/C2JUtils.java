@@ -21,6 +21,47 @@ public class C2JUtils {
         return s1;
     }
     
+    /** Emulates C-style "string comparison".
+     *  "Strings" are considered null-terminated,
+     *  and comparison is performed only up to the smaller
+     *  of the two.
+     * 
+     * @param s1
+     * @param s2
+     * @return
+     */
+    
+    static public boolean strcmp(char[] s1, final char[] s2) {
+    	boolean match=true;
+        for (int i=0;i<Math.min(s1.length,s2.length);i++){
+            if (s1[i]!=s2[i]) {
+            	match=false;
+            	break;
+            }
+        }
+        return match;
+    }
+ 
+    static public boolean strcmp(char[] s1, String s2) {
+    	return strcmp(s1,s2.toCharArray());
+    }
+    
+    /** C-like string length.
+     * 
+     * @param s1
+     * @return 
+     */
+    static public int strlen(char[] s1) {
+    	if (s1==null) return 0;
+    	int len=0;
+    	
+    	while(s1[len++]>0){
+    		if (len>s1.length) break;
+            }
+    	
+    	return len;
+    }
+    
     /** Automatically "initializes" arrays of objects. Better than doing it by hand!!!
      * 
      * @param os

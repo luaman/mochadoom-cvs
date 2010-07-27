@@ -1,5 +1,12 @@
 package m;
 
+import i.SystemInterface;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+
 import g.DoomGame;
 import data.Defines;
 import data.doomstat;
@@ -7,13 +14,17 @@ import data.Defines.GameMode_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.event_t;
+import doom.evtype_t;
 import rr.patch_t;
+import s.DoomSoundInterface;
+import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import w.DoomFile;
 import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.5 2010/07/26 20:17:39 velktron Exp $
+// $Id: Menu.java,v 1.6 2010/07/27 14:27:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,6 +39,10 @@ import w.WadLoader;
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.6  2010/07/27 14:27:16  velktron
+// Menu system is almost complete! Tester coming soon...
+// Lots of additions to misc interfaces and C-like functions too.
+//
 // Revision 1.5  2010/07/26 20:17:39  velktron
 // Some work on menus...
 //
@@ -103,8 +118,10 @@ public class Menu{
 	doomstat DS;
 	DoomContext DC;
 	WadLoader W;
+	SystemInterface I;
 	DoomVideoRenderer V;
 	DoomGame G;
+	DoomSoundInterface S;
 	
 /** The fonts
  * 
@@ -150,7 +167,7 @@ int			messageLastMenuActive;
 boolean			messageNeedsInput;     
 
 //TODO: probably I need some MessageRoutine interface at this point?
-//void    (*messageRoutine)(int response);
+public MenuRoutine messageRoutine;
 
 //char gammamsg[5][26] =
 
@@ -172,7 +189,7 @@ int			saveCharIndex;	// which char we're editing
 char[]			saveOldString=new char[SAVESTRINGSIZE];  
 
 boolean			inhelpscreens;
-boolean			menuactive;
+int			menuactive;
 
 protected static final int SKULLXOFF	=	-32;
 protected static final int LINEHEIGHT =		16;
@@ -225,14 +242,15 @@ menu_t	currentMenu;
     /**
      * MenuRoutine class definitions, replacing "function pointers".
      */
-    MenuRoutine ChangeDetail,ChangeMessages,ChangeSensitivity,ChooseSkill,EndGame,
-    			Episode,   FinishReadThis, NewGame,   Options,  VerifyNightmare,
-    SizeDisplay,QuitDOOM,ReadThis,ReadThis2,Sound;
-    
+    MenuRoutine ChangeDetail,ChangeMessages,ChangeSensitivity,ChooseSkill,
+    			EndGame, Episode,   FinishReadThis,LoadGame,LoadSelect,MusicVol, NewGame,   
+    			Options,  VerifyNightmare, SaveSelect, SfxVol, SizeDisplay,
+    			SaveGame,Sound,QuitDOOM,ReadThis,ReadThis2;
+
     /** DrawRoutine class definitions, replacing "function pointers". */
     
-    DrawRoutine DrawEpisode,DrawNewGame,DrawReadThis1,DrawReadThis2,
-    DrawOptions,DrawMainMenu;
+    DrawRoutine DrawEpisode,DrawReadThis1,DrawReadThis2,
+    DrawLoad,DrawMainMenu,DrawNewGame,DrawOptions,DrawSave,DrawSound;
     
 private void initMenuRoutines(){
  NewGame=new M_NewGame();
@@ -435,6 +453,7 @@ menu_t  ReadDef2 = new menu_t(
     0
 );
 
+
 //
 // SOUND VOLUME MENU
 //
@@ -449,27 +468,27 @@ static int sfx_vol=0,
 menuitem_t SoundMenu[]=
 {
     new menuitem_t(2,"M_SFXVOL",SfxVol,'s'),
-    new menuitem_t(-1,"",0),
+    new menuitem_t(-1,"",null),
     new menuitem_t(2,"M_MUSVOL",MusicVol,'m'),
-    new menuitem_t(-1,"",0)
+    new menuitem_t(-1,"",null)
 };
 
 menu_t  SoundDef =
-{
+new menu_t(
     sound_end,
-    &OptionsDef,
+    OptionsDef,
     SoundMenu,
-    M_DrawSound,
+    DrawSound,
     80,64,
     0
-};
+);
 
 //
 // LOAD GAME MENU
 //
 
 /**load_e enum */
-    static int load1=0
+    static int load1=0,
     load2=1,
     load3=2,
     load4=3,
@@ -479,113 +498,120 @@ menu_t  SoundDef =
 
 menuitem_t LoadMenu[]=
 {
-    {1,"", M_LoadSelect,'1'},
-    {1,"", M_LoadSelect,'2'},
-    {1,"", M_LoadSelect,'3'},
-    {1,"", M_LoadSelect,'4'},
-    {1,"", M_LoadSelect,'5'},
-    {1,"", M_LoadSelect,'6'}
+    new menuitem_t(1,"", LoadSelect,'1'),
+    new menuitem_t(1,"", LoadSelect,'2'),
+    new menuitem_t(1,"", LoadSelect,'3'),
+    new menuitem_t(1,"", LoadSelect,'4'),
+    new menuitem_t(1,"", LoadSelect,'5'),
+    new menuitem_t(1,"", LoadSelect,'6')
 };
 
 menu_t  LoadDef =
-{
+	new menu_t(
     load_end,
-    &MainDef,
+    MainDef,
     LoadMenu,
-    M_DrawLoad,
+    DrawLoad,
     80,54,
     0
-};
+);
 
 //
 // SAVE GAME MENU
 //
 menuitem_t SaveMenu[]=
 {
-    {1,"", M_SaveSelect,'1'},
-    {1,"", M_SaveSelect,'2'},
-    {1,"", M_SaveSelect,'3'},
-    {1,"", M_SaveSelect,'4'},
-    {1,"", M_SaveSelect,'5'},
-    {1,"", M_SaveSelect,'6'}
+		new menuitem_t(1,"", SaveSelect,'1'),
+		new menuitem_t(1,"", SaveSelect,'2'),
+		new menuitem_t(1,"", SaveSelect,'3'),
+		new menuitem_t(1,"", SaveSelect,'4'),
+		new menuitem_t(1,"", SaveSelect,'5'),
+		new menuitem_t(1,"", SaveSelect,'6')
 };
 
 menu_t  SaveDef =
-{
+	new menu_t(
     load_end,
-    &MainDef,
+    MainDef,
     SaveMenu,
-    M_DrawSave,
+    DrawSave,
     80,54,
     0
-};
+);
 
 
 //
 // M_ReadSaveStrings
 //  read the strings from the savegame files
 //
-void M_ReadSaveStrings(void)
+public void ReadSaveStrings()
 {
-    int             handle;
+    DoomFile             handle;
     int             count;
     int             i;
-    char    name[256];
+    String    name;
 	
     for (i = 0;i < load_end;i++)
     {
-	if (M_CheckParm("-cdrom"))
-	    sprintf(name,"c:\\doomdata\\"SAVEGAMENAME"%d.dsg",i);
+	if (this.CheckParm("-cdrom")!=0)
+	    name="c:\\doomdata\\"+SAVEGAMENAME+(i)+".dsg";
 	else
-	    sprintf(name,SAVEGAMENAME"%d.dsg",i);
+	    name=SAVEGAMENAME+(i)+".dsg";
 
-	handle = open (name, O_RDONLY | 0, 0666);
-	if (handle == -1)
-	{
-	    strcpy(&savegamestrings[i][0],EMPTYSTRING);
+	try{
+	handle=new DoomFile(name, "r");
+	savegamestrings[i]=handle.readString(SAVESTRINGSIZE).toCharArray();
+	handle.close();
+	LoadMenu[i].status = 1;
+    } catch (IOException e) {
+	    savegamestrings[i][0]=0x00;
 	    LoadMenu[i].status = 0;
 	    continue;
 	}
-	count = read (handle, &savegamestrings[i], SAVESTRINGSIZE);
-	close (handle);
-	LoadMenu[i].status = 1;
-    }
+
+}
 }
 
 
 //
 // M_LoadGame & Cie.
 //
-void M_DrawLoad(void)
-{
+
+class M_DrawLoad implements DrawRoutine{
+	@Override
+	public void invoke(){
     int             i;
 	
-    V_DrawPatchDirect (72,28,0,W_CacheLumpName("M_LOADG",PU_CACHE));
+    V.DrawPatchDirect (72,28,0,W.CachePatchName("M_LOADG"));
     for (i = 0;i < load_end; i++)
     {
-	M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i);
-	M_WriteText(LoadDef.x,LoadDef.y+LINEHEIGHT*i,savegamestrings[i]);
+	DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i);
+	WriteText(LoadDef.x,LoadDef.y+LINEHEIGHT*i,savegamestrings[i]);
     }
+
+}
 }
 
 
 
-//
-// Draw border for the savegame description
-//
-void M_DrawSaveLoadBorder(int x,int y)
+/**
+ * Draw border for the savegame description. This
+ * is special in that it's not "invokable" like the other drawroutines, 
+ * but standalone.
+ */
+private void DrawSaveLoadBorder(int x,int y)
 {
     int             i;
 	
-    V_DrawPatchDirect (x-8,y+7,0,W_CacheLumpName("M_LSLEFT",PU_CACHE));
+    V.DrawPatchDirect (x-8,y+7,0,W.CachePatchName("M_LSLEFT"));
 	
     for (i = 0;i < 24;i++)
     {
-	V_DrawPatchDirect (x,y+7,0,W_CacheLumpName("M_LSCNTR",PU_CACHE));
+	V.DrawPatchDirect (x,y+7,0,W.CachePatchName("M_LSCNTR"));
 	x += 8;
     }
 
-    V_DrawPatchDirect (x,y+7,0,W_CacheLumpName("M_LSRGHT",PU_CACHE));
+    V.DrawPatchDirect (x,y+7,0,W.CachePatchName("M_LSRGHT"));
 }
 
 
@@ -596,15 +622,14 @@ void M_DrawSaveLoadBorder(int x,int y)
 class M_LoadSelect implements MenuRoutine{
     @Override
     public void invoke(int choice){
-    char[]    name= new char[256];
+    String    name;
 	
-    if (CheckParm("-cdrom")){
-	sprintf(name,"c:\\doomdata\\"SAVEGAMENAME"%d.dsg",choice);
+    if (CheckParm("-cdrom")!=0)
+	name=("c:\\doomdata\\"+SAVEGAMENAME+(choice)+".dsg");
     else
-	sprintf(name,SAVEGAMENAME"%d.dsg",choice);
+	name=(SAVEGAMENAME+(choice)+".dsg");
     G.LoadGame (name);
     ClearMenus ();
-}
     }
 }
 
@@ -617,7 +642,7 @@ class M_LoadGame implements MenuRoutine{
 
     if (DS.netgame)
     {
-	StartMessage(LOADNET,NULL,false);
+	StartMessage(LOADNET,null,false);
 	return;
     }
 	
@@ -630,68 +655,75 @@ class M_LoadGame implements MenuRoutine{
 //
 //  M_SaveGame & Cie.
 //
-void M_DrawSave(void)
+public void M_DrawSave()
 {
     int             i;
 	
-    V_DrawPatchDirect (72,28,0,W_CacheLumpName("M_SAVEG",PU_CACHE));
+    V.DrawPatchDirect (72,28,0,W.CachePatchName("M_SAVEG"));
     for (i = 0;i < load_end; i++)
     {
-	M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i);
-	M_WriteText(LoadDef.x,LoadDef.y+LINEHEIGHT*i,savegamestrings[i]);
+	DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i);
+	WriteText(LoadDef.x,LoadDef.y+LINEHEIGHT*i,savegamestrings[i]);
     }
 	
-    if (saveStringEnter)
+    if (saveStringEnter!=0)
     {
-	i = M_StringWidth(savegamestrings[saveSlot]);
-	M_WriteText(LoadDef.x + i,LoadDef.y+LINEHEIGHT*saveSlot,"_");
+	i = StringWidth(savegamestrings[saveSlot]);
+	WriteText(LoadDef.x + i,LoadDef.y+LINEHEIGHT*saveSlot,"_");
     }
 }
 
-//
-// M_Responder calls this when user is finished
-//
-void M_DoSave(int slot)
+/** M_Responder calls this when user is finished
+ * 
+ * @param slot
+ */
+
+public void DoSave(int slot)
 {
-    G_SaveGame (slot,savegamestrings[slot]);
-    M_ClearMenus ();
+    G.SaveGame (slot,new String(savegamestrings[slot]));
+    ClearMenus ();
 
     // PICK QUICKSAVE SLOT YET?
     if (quickSaveSlot == -2)
 	quickSaveSlot = slot;
 }
 
-//
-// User wants to save. Start string input for M_Responder
-//
-void M_SaveSelect(int choice)
-{
+/** User wants to save. Start string input for M_Responder
+ *   
+ */
+
+class SaveSelect implements MenuRoutine{
+	@Override
+	public void invoke(int choice){
     // we are going to be intercepting all chars
     saveStringEnter = 1;
     
     saveSlot = choice;
-    strcpy(saveOldString,savegamestrings[choice]);
-    if (!strcmp(savegamestrings[choice],EMPTYSTRING))
+    C2JUtils.strcpy(saveOldString,savegamestrings[choice]);
+    if (!C2JUtils.strcmp(savegamestrings[choice],EMPTYSTRING))
 	savegamestrings[choice][0] = 0;
-    saveCharIndex = strlen(savegamestrings[choice]);
+    saveCharIndex = C2JUtils.strlen(savegamestrings[choice]);
+}
 }
 
-//
-// Selected from DOOM menu
-//
-void M_SaveGame (int choice)
-{
-    if (!usergame)
+/**
+ * Selected from DOOM menu
+ */
+class SaveGame implements MenuRoutine{
+	@Override
+	public void invoke(int choice){
+    if (!DS.usergame)
     {
-	M_StartMessage(SAVEDEAD,NULL,false);
+	StartMessage(SAVEDEAD,null,false);
 	return;
     }
 	
-    if (gamestate != GS_LEVEL)
+    if (DS.gamestate !=gamestate_t.GS_LEVEL)
 	return;
 	
-    M_SetupNextMenu(&SaveDef);
-    M_ReadSaveStrings();
+    SetupNextMenu(SaveDef);
+    ReadSaveStrings();
+	}
 }
 
 
@@ -699,26 +731,27 @@ void M_SaveGame (int choice)
 //
 //      M_QuickSave
 //
-char    tempstring[80];
+private String    tempstring;
 
-void M_QuickSaveResponse(int ch)
-{
+class M_QuickSaveResponse implements MenuRoutine{
+	@Override
+	public void invoke(int ch){
     if (ch == 'y')
     {
-	M_DoSave(quickSaveSlot);
-	S_StartSound(NULL,sfx_swtchx);
+	DoSave(quickSaveSlot);
+	S.StartSound(null,sfxenum_t.sfx_swtchx);
     }
 }
+}
 
-public void QuickSave()
-{
+private void QuickSave (){
     if (!DS.usergame)
     {
-	S_StartSound(NULL,sfx_oof);
+	S.StartSound(null,sfxenum_t.sfx_oof);
 	return;
     }
 
-    if (gamestate != GS_LEVEL)
+    if (DS.gamestate != gamestate_t.GS_LEVEL)
 	return;
 	
     if (quickSaveSlot < 0)
@@ -729,22 +762,22 @@ public void QuickSave()
 	quickSaveSlot = -2;	// means to pick a slot now
 	return;
     }
-    //TODO: sprintf(tempstring,QSPROMPT,savegamestrings[quickSaveSlot]);
+    tempstring=(QSPROMPT+savegamestrings[quickSaveSlot]);
     //TODO:M_StartMessage(tempstring,M_QuickSaveResponse,true);
 }
-
-
 
 //
 // M_QuickLoad
 //
-void M_QuickLoadResponse(int ch)
-{
+class M_QuickLoadResponse implements MenuRoutine{
+	@Override
+	public void invoke(int ch){
     if (ch == 'y')
     {
-	M_LoadSelect(quickSaveSlot);
-	S_StartSound(NULL,sfx_swtchx);
+	LoadSelect.invoke(quickSaveSlot);
+	S.StartSound(null,sfxenum_t.sfx_swtchx);
     }
+}
 }
 
 
@@ -752,17 +785,17 @@ public void QuickLoad()
 {
     if (DS.netgame)
     {
-	StartMessage(QLOADNET,NULL,false);
+	StartMessage(QLOADNET,null,false);
 	return;
     }
 	
     if (quickSaveSlot < 0)
     {
-	StartMessage(QSAVESPOT,NULL,false);
+	StartMessage(QSAVESPOT,null,false);
 	return;
     }
-    //TODO: sprintf(tempstring,QLPROMPT,savegamestrings[quickSaveSlot]);
-    //TODO: StartMessage(tempstring,M_QuickLoadResponse,true);
+    tempstring =(QLPROMPT+savegamestrings[quickSaveSlot]);
+    StartMessage(tempstring,QuickLoadResponse,true);
 }
 
 
@@ -774,15 +807,15 @@ class M_DrawReadThis1 implements DrawRoutine{
 
     public void invoke(){
     inhelpscreens = true;
-    switch ( gamemode )
+    switch ( DS.gamemode )
     {
       case commercial:
-	V.DrawPatchDirect (0,0,0,W_CacheLumpName("HELP",PU_CACHE));
+	V.DrawPatchDirect (0,0,0,W.CachePatchName("HELP"));
 	break;
       case shareware:
       case registered:
       case retail:
-	V.DrawPatchDirect (0,0,0,W_CacheLumpName("HELP1",PU_CACHE));
+	V.DrawPatchDirect (0,0,0,W.CachePatchName("HELP1"));
 	break;
       default:
 	break;
@@ -800,16 +833,16 @@ class M_DrawReadThis2 implements DrawRoutine{
     public void invoke()
 {
     inhelpscreens = true;
-    switch ( gamemode )
+    switch ( DS.gamemode )
     {
       case retail:
       case commercial:
 	// This hack keeps us from having to change menus.
-	V.DrawPatchDirect (0,0,0,(patch_t)W.CacheLumpName("CREDIT",PU_CACHE,patch_t.class));
+	V.DrawPatchDirect (0,0,0,W.CachePatchName("CREDIT"));
 	break;
       case shareware:
       case registered:
-	V.DrawPatchDirect (0,0,0,(patch_t)W.CacheLumpName("HELP2",PU_CACHE,patch_t.class));
+    	  V.DrawPatchDirect (0,0,0,(patch_t)W.CachePatchName("HELP2"));
 	break;
       default:
 	break;
@@ -828,10 +861,10 @@ class M_DrawSound implements DrawRoutine{
     V.DrawPatchDirect (60,38,0,(patch_t)W.CacheLumpName("M_SVOL",PU_CACHE,patch_t.class));
 
     DrawThermo(SoundDef.x,SoundDef.y+LINEHEIGHT*(sfx_vol+1),
-		 16,snd_SfxVolume);
+		 16,DS.snd_SfxVolume);
 
     DrawThermo(SoundDef.x,SoundDef.y+LINEHEIGHT*(music_vol+1),
-		 16,snd_MusicVolume);
+		 16,DS.snd_MusicVolume);
 }
 }
 
@@ -851,12 +884,12 @@ class M_SfxVol implements MenuRoutine{
     switch(choice)
     {
       case 0:
-	if (snd_SfxVolume)
-	    snd_SfxVolume--;
+	if (DS.snd_SfxVolume!=0)
+	    DS.snd_SfxVolume--;
 	break;
       case 1:
-	if (snd_SfxVolume < 15)
-	    snd_SfxVolume++;
+	if (DS.snd_SfxVolume < 15)
+	    DS.snd_SfxVolume++;
 	break;
     }
 	
@@ -892,9 +925,7 @@ class M_MusicVol implements MenuRoutine{
 //
 //      M_Episode
 //
-int     epi;
-
-
+private int     epi;
 
 class M_VerifyNightmare  implements MenuRoutine{
 
@@ -905,7 +936,7 @@ class M_VerifyNightmare  implements MenuRoutine{
 	return;
 		
     G.DeferedInitNew(Defines.skill_t.sk_nightmare,epi+1,1);
-    this.ClearMenus ();
+    ClearMenus ();
 }
 }
 
@@ -942,8 +973,8 @@ class M_EndGameResponse implements MenuRoutine{
 	return;
 		
     currentMenu.lastOn = itemOn;
-    M_ClearMenus ();
-    D_StartTitle ();
+    ClearMenus ();
+    D.StartTitle ();
 }
 }
 
@@ -953,19 +984,19 @@ class M_EndGame implements MenuRoutine{
     public void invoke(int choice)
     {
     choice = 0;
-    if (!usergame)
+    if (!DS.usergame)
     {
-	S_StartSound(NULL,sfx_oof);
+	S.StartSound(null,sfxenum_t.sfx_oof);
 	return;
     }
 	
-    if (netgame)
+    if (DS.netgame)
     {
-	M_StartMessage(NETEND,NULL,false);
+	StartMessage(NETEND,null,false);
 	return;
     }
 	
-    M_StartMessage(ENDGAME,M_EndGameResponse,true);
+    StartMessage(ENDGAME,EndGameResponse,true);
 }
 }
 
@@ -1093,7 +1124,7 @@ class M_ChangeSensitivity implements MenuRoutine{
     switch(choice)
     {
       case 0:
-	if (mouseSensitivity)
+	if (mouseSensitivity!=0)
 	    mouseSensitivity--;
 	break;
       case 1:
@@ -1169,6 +1200,7 @@ class M_Options implements MenuRoutine{
  
     
     class M_Episode implements MenuRoutine{
+    	private int epi;
         
         @Override
         public void invoke(int choice)
@@ -1190,9 +1222,9 @@ class M_Options implements MenuRoutine{
                   choice = 0;
                 }
                  
-                M.epi = choice;
-                M.SetupNextMenu(M.NewDef);
-             //TODO: ?   M.SetupNextMenu(M.OptionsDef);
+                epi = choice;
+                SetupNextMenu(NewDef);
+                SetupNextMenu(OptionsDef);
             }
 
     }
@@ -1241,15 +1273,15 @@ public void invoke() {
 
 @Override
 public void invoke() {
-        V.DrawPatchDirect (96,14,0,(patch_t) W.CachePatchName("M_NEWG",PU_CACHE,patch_t.class));
-        V.DrawPatchDirect (54,38,0,(patch_t) W.CachePatchName("M_SKILL",PU_CACHE,patch_t.class));
+        V.DrawPatchDirect (96,14,0,(patch_t) W.CachePatchName("M_NEWG"));
+        V.DrawPatchDirect (54,38,0,(patch_t) W.CachePatchName("M_SKILL"));
     }
 }
     class M_DrawOptions
     implements DrawRoutine {
 
-private static String    detailNames[]   = {"M_GDHIGH","M_GDLOW"};
-private  static String  msgNames[]      = {"M_MSGOFF","M_MSGON"};
+private String    detailNames[]   = {"M_GDHIGH","M_GDLOW"};
+private String  msgNames[]      = {"M_MSGOFF","M_MSGON"};
 
 
 @Override
@@ -1259,16 +1291,16 @@ public void invoke() {
     V.DrawPatchDirect (108,15,0, W.CachePatchName("M_OPTTTL"));
     
     V.DrawPatchDirect (OptionsDef.x + 175,OptionsDef.y+LINEHEIGHT*detail,0,
-        W.CachePatchName(detailNames[M.detailLevel]));
+        W.CachePatchName(detailNames[detailLevel]));
 
     V.DrawPatchDirect (OptionsDef.x + 120,OptionsDef.y+LINEHEIGHT*messages,0,
-        W.CachePatchName(msgNames[M.showMessages]));
+        W.CachePatchName(msgNames[showMessages]));
 
-    M.DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(mousesens+1),
-         10,M.mouseSensitivity);
+    DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(mousesens+1),
+         10,mouseSensitivity);
     
-    M.DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(scrnsize+1),
-         9,M.screenSize);
+    DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(scrnsize+1),
+         9,screenSize);
 
     }
 
@@ -1358,13 +1390,13 @@ public int StringWidth(char[] string)
     int             w = 0;
     int             c;
 	
-    for (i = 0;i < strlen(string);i++)
+    for (i = 0;i < C2JUtils.strlen(string);i++)
     {
-	c = toupper(string[i]) - HU_FONTSTART;
+	c = Character.toUpperCase(string[i]) - HU_FONTSTART;
 	if (c < 0 || c >= HU_FONTSIZE)
 	    w += 4;
 	else
-	    w += SHORT (hu_font[c].width);
+	    w += hu_font[c].width;
     }
 		
     return w;
@@ -1375,14 +1407,14 @@ public int StringWidth(char[] string)
 /**
  *     Find string height from hu_font chars
  */
-int StringHeight(char[] string)
+private int StringHeight(char[] string)
 {
     int             i;
     int             h;
-    int             height = SHORT(hu_font[0].height);
+    int             height = hu_font[0].height;
 	
     h = height;
-    for (i = 0;i < strlen(string);i++)
+    for (i = 0;i < string.length;i++)
 	if (string[i] == '\n')
 	    h += height;
 		
@@ -1390,30 +1422,32 @@ int StringHeight(char[] string)
 }
 
 
-//
-//      Write a string using the hu_font
-//
-void
-M_WriteText
+/**
+ *     Write a string using the hu_font
+ */
+
+private void
+WriteText
 ( int		x,
   int		y,
   char[]		string)
 {
-    /*int		w;
-    char*	ch;
+    int		w;
+    char[]	ch;
     int		c;
     int		cx;
     int		cy;
 		
 
     ch = string;
+    int chptr=0;
     cx = x;
     cy = y;
 	
-    while(1)
+    while(true)
     {
-	c = *ch++;
-	if (!c)
+	c = ch[chptr++];
+	if (c==0)
 	    break;
 	if (c == '\n')
 	{
@@ -1422,22 +1456,68 @@ M_WriteText
 	    continue;
 	}
 		
-	c = toupper(c) - HU_FONTSTART;
+	c = Character.toUpperCase(c) - HU_FONTSTART;
 	if (c < 0 || c>= HU_FONTSIZE)
 	{
 	    cx += 4;
 	    continue;
 	}
 		
-	w = SHORT (hu_font[c]->width);
+	w = hu_font[c].width;
 	if (cx+w > SCREENWIDTH)
 	    break;
-	V_DrawPatchDirect(cx, cy, 0, hu_font[c]);
+	V.DrawPatchDirect(cx, cy, 0, hu_font[c]);
 	cx+=w;
     }
-    */
+    
 }
 
+private void
+WriteText
+( int		x,
+  int		y,
+  String		string)
+{
+	if (string==null || string.length()==0) return;
+	
+	int		w;
+    char	ch;
+    int		cx;
+    int		cy;
+		
+    int chptr=0;
+    char c;
+    
+    cx = x;
+    cy = y;
+	
+    while(true)
+    {
+	c =string.charAt(chptr++);
+	if (c==0)
+	    break;
+	if (c == '\n')
+	{
+	    cx = x;
+	    cy += 12;
+	    continue;
+	}
+		
+	c = (char) (Character.toUpperCase(c) - HU_FONTSTART);
+	if (c < 0 || c>= HU_FONTSIZE)
+	{
+	    cx += 4;
+	    continue;
+	}
+		
+	w = hu_font[c].width;
+	if (cx+w > SCREENWIDTH)
+	    break;
+	V.DrawPatchDirect(cx, cy, 0, hu_font[c]);
+	cx+=w;
+    }
+    
+}
 
 
 //
@@ -1447,103 +1527,106 @@ M_WriteText
 //
 // M_Responder
 //
-public boolean M_Responder (event_t ev)
+
+private  int     joywait = 0;
+private  int     mousewait = 0;
+private  int     mousey = 0;
+private  int     lasty = 0;
+private  int     mousex = 0;
+private  int     lastx = 0;
+
+public boolean Responder (event_t ev)
 {
-    /*
-    int             ch;
+    
+    char             ch;
     int             i;
-    static  int     joywait = 0;
-    static  int     mousewait = 0;
-    static  int     mousey = 0;
-    static  int     lasty = 0;
-    static  int     mousex = 0;
-    static  int     lastx = 0;
+ 
 	
     ch = -1;
 	
-    if (ev->type == ev_joystick && joywait < I_GetTime())
+    if (ev.type == evtype_t.ev_joystick && joywait < I.GetTime())
     {
-	if (ev->data3 == -1)
+	if (ev.data3 == -1)
 	{
 	    ch = KEY_UPARROW;
-	    joywait = I_GetTime() + 5;
+	    joywait = I.GetTime() + 5;
 	}
-	else if (ev->data3 == 1)
+	else if (ev.data3 == 1)
 	{
 	    ch = KEY_DOWNARROW;
-	    joywait = I_GetTime() + 5;
+	    joywait = I.GetTime() + 5;
 	}
 		
-	if (ev->data2 == -1)
+	if (ev.data2 == -1)
 	{
 	    ch = KEY_LEFTARROW;
-	    joywait = I_GetTime() + 2;
+	    joywait = I.GetTime() + 2;
 	}
-	else if (ev->data2 == 1)
+	else if (ev.data2 == 1)
 	{
 	    ch = KEY_RIGHTARROW;
-	    joywait = I_GetTime() + 2;
+	    joywait = I.GetTime() + 2;
 	}
 		
-	if (ev->data1&1)
+	if ((ev.data1&1)!=0)
 	{
 	    ch = KEY_ENTER;
-	    joywait = I_GetTime() + 5;
+	    joywait = I.GetTime() + 5;
 	}
-	if (ev->data1&2)
+	if ((ev.data1&2)!=0)
 	{
 	    ch = KEY_BACKSPACE;
-	    joywait = I_GetTime() + 5;
+	    joywait = I.GetTime() + 5;
 	}
     }
     else
     {
-	if (ev->type == ev_mouse && mousewait < I_GetTime())
+	if (ev.type == evtype_t.ev_mouse && mousewait < I.GetTime())
 	{
-	    mousey += ev->data3;
+	    mousey += ev.data3;
 	    if (mousey < lasty-30)
 	    {
 		ch = KEY_DOWNARROW;
-		mousewait = I_GetTime() + 5;
+		mousewait = I.GetTime() + 5;
 		mousey = lasty -= 30;
 	    }
 	    else if (mousey > lasty+30)
 	    {
 		ch = KEY_UPARROW;
-		mousewait = I_GetTime() + 5;
+		mousewait = I.GetTime() + 5;
 		mousey = lasty += 30;
 	    }
 		
-	    mousex += ev->data2;
+	    mousex += ev.data2;
 	    if (mousex < lastx-30)
 	    {
 		ch = KEY_LEFTARROW;
-		mousewait = I_GetTime() + 5;
+		mousewait = I.GetTime() + 5;
 		mousex = lastx -= 30;
 	    }
 	    else if (mousex > lastx+30)
 	    {
 		ch = KEY_RIGHTARROW;
-		mousewait = I_GetTime() + 5;
+		mousewait = I.GetTime() + 5;
 		mousex = lastx += 30;
 	    }
 		
-	    if (ev->data1&1)
+	    if ((ev.data1&1)!=0)
 	    {
 		ch = KEY_ENTER;
-		mousewait = I_GetTime() + 15;
+		mousewait = I.GetTime() + 15;
 	    }
 			
-	    if (ev->data1&2)
+	    if ((ev.data1&2)!=0)
 	    {
 		ch = KEY_BACKSPACE;
-		mousewait = I_GetTime() + 15;
+		mousewait = I.GetTime() + 15;
 	    }
 	}
 	else
-	    if (ev->type == ev_keydown)
+	    if (ev.type == evtype_t.ev_keydown)
 	    {
-		ch = ev->data1;
+		ch = ev.data1;
 	    }
     }
     
@@ -1552,7 +1635,7 @@ public boolean M_Responder (event_t ev)
 
     
     // Save Game string input
-    if (saveStringEnter)
+    if (saveStringEnter!=0)
     {
 	switch(ch)
 	{
@@ -1566,23 +1649,23 @@ public boolean M_Responder (event_t ev)
 				
 	  case KEY_ESCAPE:
 	    saveStringEnter = 0;
-	    strcpy(&savegamestrings[saveSlot][0],saveOldString);
+	    C2JUtils.strcpy(savegamestrings[saveSlot],saveOldString);
 	    break;
 				
 	  case KEY_ENTER:
 	    saveStringEnter = 0;
-	    if (savegamestrings[saveSlot][0])
-		M_DoSave(saveSlot);
+	    if (savegamestrings[saveSlot][0]!=0)
+		DoSave(saveSlot);
 	    break;
 				
 	  default:
-	    ch = toupper(ch);
+	    ch = Character.toUpperCase(ch);
 	    if (ch != 32)
 		if (ch-HU_FONTSTART < 0 || ch-HU_FONTSTART >= HU_FONTSIZE)
 		    break;
 	    if (ch >= 32 && ch <= 127 &&
 		saveCharIndex < SAVESTRINGSIZE-1 &&
-		M_StringWidth(savegamestrings[saveSlot]) <
+		StringWidth(savegamestrings[saveSlot]) <
 		(SAVESTRINGSIZE-2)*8)
 	    {
 		savegamestrings[saveSlot][saveCharIndex++] = ch;
@@ -1594,7 +1677,7 @@ public boolean M_Responder (event_t ev)
     }
     
     // Take care of any messages that need input
-    if (messageToPrint)
+    if (messageToPrint!=0)
     {
 	if (messageNeedsInput == true &&
 	    !(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE))
@@ -1602,98 +1685,98 @@ public boolean M_Responder (event_t ev)
 		
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
-	if (messageRoutine)
-	    messageRoutine(ch);
+	if (messageRoutine!=null)
+	    messageRoutine.invoke(ch);
 			
-	menuactive = false;
-	S_StartSound(NULL,sfx_swtchx);
+	menuactive = 0; // "false"
+	S.StartSound(null,sfxenum_t.sfx_swtchx);
 	return true;
     }
 	
-    if (devparm && ch == KEY_F1)
+    if (DS.devparm && ch == KEY_F1)
     {
-	G_ScreenShot ();
+	G.ScreenShot ();
 	return true;
     }
 		
     
     // F-Keys
-    if (!menuactive)
+    if (!DS.menuactive)
 	switch(ch)
 	{
 	  case KEY_MINUS:         // Screen size down
-	    if (automapactive || chat_on)
+	    if (DS.automapactive || chat_on)
 		return false;
-	    M_SizeDisplay(0);
-	    S_StartSound(NULL,sfx_stnmov);
+	    SizeDisplay.invoke(0);
+	    S.StartSound(null,sfxenum_t.sfx_stnmov);
 	    return true;
 				
 	  case KEY_EQUALS:        // Screen size up
-	    if (automapactive || chat_on)
+	    if (DS.automapactive || chat_on)
 		return false;
-	    M_SizeDisplay(1);
-	    S_StartSound(NULL,sfx_stnmov);
+	    SizeDisplay.invoke(1);
+	    S.StartSound(null,sfxenum_t.sfx_stnmov);
 	    return true;
 				
 	  case KEY_F1:            // Help key
-	    M_StartControlPanel ();
+	    StartControlPanel ();
 
-	    if ( gamemode == retail )
-	      currentMenu = &ReadDef2;
+	    if ( DS.gamemode == GameMode_t.retail )
+	      currentMenu = ReadDef2;
 	    else
-	      currentMenu = &ReadDef1;
+	      currentMenu = ReadDef1;
 	    
 	    itemOn = 0;
-	    S_StartSound(NULL,sfx_swtchn);
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
 	    return true;
 				
 	  case KEY_F2:            // Save
-	    M_StartControlPanel();
-	    S_StartSound(NULL,sfx_swtchn);
-	    M_SaveGame(0);
+	    StartControlPanel();
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
+	    SaveGame.invoke(0);
 	    return true;
 				
 	  case KEY_F3:            // Load
-	    M_StartControlPanel();
-	    S_StartSound(NULL,sfx_swtchn);
-	    M_LoadGame(0);
+	    StartControlPanel();
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
+	    LoadGame.invoke(0);
 	    return true;
 				
 	  case KEY_F4:            // Sound Volume
-	    M_StartControlPanel ();
-	    currentMenu = &SoundDef;
-	    itemOn = sfx_vol;
-	    S_StartSound(NULL,sfx_swtchn);
+	    StartControlPanel ();
+	    currentMenu = SoundDef;
+	    itemOn = (short) sfx_vol;
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
 	    return true;
 				
 	  case KEY_F5:            // Detail toggle
-	    M_ChangeDetail(0);
-	    S_StartSound(NULL,sfx_swtchn);
+	    ChangeDetail.invoke(0);
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
 	    return true;
 				
 	  case KEY_F6:            // Quicksave
-	    S_StartSound(NULL,sfx_swtchn);
-	    M_QuickSave();
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
+	    QuickSave();
 	    return true;
 				
 	  case KEY_F7:            // End game
-	    S_StartSound(NULL,sfx_swtchn);
-	    M_EndGame(0);
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
+	    EndGame.invoke(0);
 	    return true;
 				
 	  case KEY_F8:            // Toggle messages
-	    M_ChangeMessages(0);
-	    S_StartSound(NULL,sfx_swtchn);
+	    ChangeMessages.invoke(0);
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
 	    return true;
 				
 	  case KEY_F9:            // Quickload
-	    S_StartSound(NULL,sfx_swtchn);
-	    M_QuickLoad();
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
+	    QuickLoad();
 	    return true;
 				
 	  case KEY_F10:           // Quit DOOM
-	    S_StartSound(NULL,sfx_swtchn);
-	    M_QuitDOOM(0);
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
+	    QuitDOOM.invoke(0);
 	    return true;
 				
 	  case KEY_F11:           // gamma toggle
@@ -1708,12 +1791,12 @@ public boolean M_Responder (event_t ev)
 
     
     // Pop-up menu?
-    if (!menuactive)
+    if (menuactive==0)
     {
 	if (ch == KEY_ESCAPE)
 	{
-	    M_StartControlPanel ();
-	    S_StartSound(NULL,sfx_swtchn);
+	    StartControlPanel ();
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
 	    return true;
 	}
 	return false;
@@ -1726,88 +1809,88 @@ public boolean M_Responder (event_t ev)
       case KEY_DOWNARROW:
 	do
 	{
-	    if (itemOn+1 > currentMenu->numitems-1)
+	    if (itemOn+1 > currentMenu.numitems-1)
 		itemOn = 0;
 	    else itemOn++;
-	    S_StartSound(NULL,sfx_pstop);
-	} while(currentMenu->menuitems[itemOn].status==-1);
+	    S.StartSound(null,sfxenum_t.sfx_pstop);
+	} while(currentMenu.menuitems[itemOn].status==-1);
 	return true;
 		
       case KEY_UPARROW:
 	do
 	{
-	    if (!itemOn)
-		itemOn = currentMenu->numitems-1;
+	    if (itemOn==0)
+		itemOn = (short) (currentMenu.numitems-1);
 	    else itemOn--;
-	    S_StartSound(NULL,sfx_pstop);
-	} while(currentMenu->menuitems[itemOn].status==-1);
+	    S.StartSound(null,sfxenum_t.sfx_pstop);
+	} while(currentMenu.menuitems[itemOn].status==-1);
 	return true;
 
       case KEY_LEFTARROW:
-	if (currentMenu->menuitems[itemOn].routine &&
-	    currentMenu->menuitems[itemOn].status == 2)
+	if ((currentMenu.menuitems[itemOn].routine!=null) &&
+	    (currentMenu.menuitems[itemOn].status == 2))
 	{
-	    S_StartSound(NULL,sfx_stnmov);
-	    currentMenu->menuitems[itemOn].routine(0);
+	    S.StartSound(null,sfxenum_t.sfx_stnmov);
+	    currentMenu.menuitems[itemOn].routine.invoke(0);
 	}
 	return true;
 		
       case KEY_RIGHTARROW:
-	if (currentMenu->menuitems[itemOn].routine &&
-	    currentMenu->menuitems[itemOn].status == 2)
+	if ((currentMenu.menuitems[itemOn].routine!=null) &&
+	    (currentMenu.menuitems[itemOn].status == 2))
 	{
-	    S_StartSound(NULL,sfx_stnmov);
-	    currentMenu->menuitems[itemOn].routine(1);
+	    S.StartSound(null,sfxenum_t.sfx_stnmov);
+	    currentMenu.menuitems[itemOn].routine.invoke(1);
 	}
 	return true;
 
       case KEY_ENTER:
-	if (currentMenu->menuitems[itemOn].routine &&
-	    currentMenu->menuitems[itemOn].status)
+	if ((currentMenu.menuitems[itemOn].routine!=null) &&
+	    currentMenu.menuitems[itemOn].status!=0)
 	{
-	    currentMenu->lastOn = itemOn;
-	    if (currentMenu->menuitems[itemOn].status == 2)
+	    currentMenu.lastOn = itemOn;
+	    if (currentMenu.menuitems[itemOn].status == 2)
 	    {
-		currentMenu->menuitems[itemOn].routine(1);      // right arrow
-		S_StartSound(NULL,sfx_stnmov);
+		currentMenu.menuitems[itemOn].routine.invoke(1);      // right arrow
+		S.StartSound(null,sfxenum_t.sfx_stnmov);
 	    }
 	    else
 	    {
-		currentMenu->menuitems[itemOn].routine(itemOn);
-		S_StartSound(NULL,sfx_pistol);
+		currentMenu.menuitems[itemOn].routine.invoke(itemOn);
+		S.StartSound(null,sfxenum_t.sfx_pistol);
 	    }
 	}
 	return true;
 		
       case KEY_ESCAPE:
-	currentMenu->lastOn = itemOn;
-	M_ClearMenus ();
-	S_StartSound(NULL,sfx_swtchx);
+	currentMenu.lastOn = itemOn;
+	ClearMenus ();
+	S.StartSound(null,sfxenum_t.sfx_swtchx);
 	return true;
 		
       case KEY_BACKSPACE:
-	currentMenu->lastOn = itemOn;
-	if (currentMenu->prevMenu)
+	currentMenu.lastOn = itemOn;
+	if (currentMenu.prevMenu!=null)
 	{
-	    currentMenu = currentMenu->prevMenu;
-	    itemOn = currentMenu->lastOn;
-	    S_StartSound(NULL,sfx_swtchn);
+	    currentMenu = currentMenu.prevMenu;
+	    itemOn = (short) currentMenu.lastOn;
+	    S.StartSound(null,sfxenum_t.sfx_swtchn);
 	}
 	return true;
 	
       default:
-	for (i = itemOn+1;i < currentMenu->numitems;i++)
-	    if (currentMenu->menuitems[i].alphaKey == ch)
+	for (i = itemOn+1;i < currentMenu.numitems;i++)
+	    if (currentMenu.menuitems[i].alphaKey == ch)
 	    {
-		itemOn = i;
-		S_StartSound(NULL,sfx_pstop);
+		itemOn = (short) i;
+		S.StartSound(null,sfxenum_t.sfx_pstop);
 		return true;
 	    }
 	for (i = 0;i <= itemOn;i++)
-	    if (currentMenu->menuitems[i].alphaKey == ch)
+	    if (currentMenu.menuitems[i].alphaKey == ch)
 	    {
-		itemOn = i;
-		S_StartSound(NULL,sfx_pstop);
+		itemOn = (short) i;
+		S.StartSound(null,sfxenum_t.sfx_pstop);
 		return true;
 	    }
 	break;
@@ -1822,16 +1905,15 @@ public boolean M_Responder (event_t ev)
 //
 // M_StartControlPanel
 //
-void M_StartControlPanel (void)
+public void StartControlPanel ()
 {
     // intro might call this repeatedly
-    if (menuactive)
+    if (menuactive!=0)
 	return;
     
     menuactive = 1;
-    currentMenu = &MainDef;         // JDC
-    itemOn = currentMenu->lastOn;   // JDC
-    */
+    currentMenu = MainDef;         // JDC
+    itemOn = (short) currentMenu.lastOn;   // JDC    
 }
 
 
@@ -1877,7 +1959,7 @@ public void M_Drawer ()
 				
 	    x = 160 - M_StringWidth(string)/2;
 	    M_WriteText(x,y,string);
-	    y += SHORT(hu_font[0]->height);
+	    y += SHORT(hu_font[0].height);
 	}
 	return;
     }
@@ -1885,25 +1967,25 @@ public void M_Drawer ()
     if (!menuactive)
 	return;
 
-    if (currentMenu->routine)
-	currentMenu->routine();         // call Draw routine
+    if (currentMenu.routine)
+	currentMenu.routine();         // call Draw routine
     
     // DRAW MENU
-    x = currentMenu->x;
-    y = currentMenu->y;
-    max = currentMenu->numitems;
+    x = currentMenu.x;
+    y = currentMenu.y;
+    max = currentMenu.numitems;
 
     for (i=0;i<max;i++)
     {
-	if (currentMenu->menuitems[i].name[0])
+	if (currentMenu.menuitems[i].name[0])
 	    V_DrawPatchDirect (x,y,0,
-			       W_CacheLumpName(currentMenu->menuitems[i].name ,PU_CACHE));
+			       W_CacheLumpName(currentMenu.menuitems[i].name ,PU_CACHE));
 	y += LINEHEIGHT;
     }
 
     
     // DRAW SKULL
-    V_DrawPatchDirect(x + SKULLXOFF,currentMenu->y - 5 + itemOn*LINEHEIGHT, 0,
+    V_DrawPatchDirect(x + SKULLXOFF,currentMenu.y - 5 + itemOn*LINEHEIGHT, 0,
 		      W_CacheLumpName(skullName[whichSkull],PU_CACHE));
 		      */
 
@@ -1927,7 +2009,7 @@ public void ClearMenus ()
 public void SetupNextMenu(menu_t menudef)
 {
     currentMenu = menudef;
-    itemOn = currentMenu.lastOn;
+    itemOn = (short) currentMenu.lastOn;
 }
 
 
@@ -1951,12 +2033,12 @@ public void Init ()
 {
     currentMenu = MainDef;
     menuactive = 0;
-    itemOn = currentMenu.lastOn;
+    itemOn = (short) currentMenu.lastOn;
     whichSkull = 0;
     skullAnimCounter = 10;
     screenSize = screenblocks - 3;
     messageToPrint = 0;
-    messageString = NULL;
+    messageString = null;
     messageLastMenuActive = menuactive;
     quickSaveSlot = -1;
 
@@ -1964,7 +2046,7 @@ public void Init ()
     //  like HELP1/2, and four episodes.
 
   
-    switch ( gamemode )
+    switch ( DS.gamemode )
     {
       case commercial:
 	// This is used because DOOM 2 had only one HELP
@@ -1973,11 +2055,11 @@ public void Init ()
 	MainMenu[readthis] = MainMenu[quitdoom];
 	MainDef.numitems--;
 	MainDef.y += 8;
-	NewDef.prevMenu = &MainDef;
-	ReadDef1.routine = M_DrawReadThis1;
+	NewDef.prevMenu = MainDef;
+	ReadDef1.routine = DrawReadThis1;
 	ReadDef1.x = 330;
 	ReadDef1.y = 165;
-	ReadMenu1[0].routine = M_FinishReadThis;
+	ReadMenu1[0].routine = FinishReadThis;
 	break;
       case shareware:
 	// Episode 2 and 3 are handled,
@@ -1994,6 +2076,31 @@ public void Init ()
     
 }
 
+public int		myargc;
+public String[] myargv;
+
+
+
+
+/**
+ * M_CheckParm
+ * Checks for the given parameter
+ * in the program's command line arguments.
+ * Returns the argument number (1 to argc-1)
+ * or 0 if not present
+ */
+public int CheckParm (String check)
+{
+    int		i;
+
+    for (i = 1;i<myargc;i++)
+    {
+	if ( check.compareToIgnoreCase(myargv[i])==0)
+	    return i;
+    }
+
+    return 0;
+}
 
 
 }

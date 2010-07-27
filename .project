@@ -14,11 +14,4 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>g</name>
-			<type>2</type>
-			<location>C:/Java Workspace/mochadoom/src/g</location>
-		</link>
-	</linkedResources>
 </projectDescription>

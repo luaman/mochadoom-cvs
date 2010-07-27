@@ -1,8 +1,10 @@
 package doom;
 
+import i.SystemInterface;
 import data.doomstat;
 import m.random;
 import rr.Renderer;
+import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 
@@ -22,6 +24,8 @@ public class DoomContext {
     public Renderer R;
     public DoomVideoRenderer V;
     public random RND;
+    public SystemInterface I;
+    public DoomSoundInterface S;
     
     
     
