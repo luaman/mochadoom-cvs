@@ -6,13 +6,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-
-import g.DoomGame;
+import g.DoomGameInterface;
 import data.Defines;
 import data.doomstat;
 import data.Defines.GameMode_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
+import doom.DoomInterface;
 import doom.event_t;
 import doom.evtype_t;
 import rr.patch_t;
@@ -24,7 +24,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.6 2010/07/27 14:27:16 velktron Exp $
+// $Id: Menu.java,v 1.7 2010/07/29 15:29:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +39,9 @@ import w.WadLoader;
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.7  2010/07/29 15:29:00  velktron
+// More work on menus...and digging some dependencies..
+//
 // Revision 1.6  2010/07/27 14:27:16  velktron
 // Menu system is almost complete! Tester coming soon...
 // Lots of additions to misc interfaces and C-like functions too.
@@ -120,7 +123,8 @@ public class Menu{
 	WadLoader W;
 	SystemInterface I;
 	DoomVideoRenderer V;
-	DoomGame G;
+	DoomGameInterface G;
+	DoomInterface D;
 	DoomSoundInterface S;
 	
 /** The fonts
@@ -140,8 +144,17 @@ boolean		chat_on;		// in heads-up code
 int			mouseSensitivity;       // has default
 
 /** Show messages has default, 0 = off, 1 = on */
-int			showMessages;
+ 
+
+private int			showMessages;
 	
+/** showMessages can be read outside of Menu, but not modified.
+ *  Menu has the actual C definition (not declaration)
+ * */
+
+public int getShowMessages() {
+	return showMessages;
+}
 
 /** Blocky mode, has default, 0 = high, 1 = normal */
 int			detailLevel;		
@@ -197,7 +210,7 @@ protected static final int LINEHEIGHT =		16;
 public boolean		sendpause;
 char[][]			savegamestrings=new char[10][SAVESTRINGSIZE];
 
-char[]	endstring=new char[160];
+String	endstring=new String();
 
 
 //
@@ -243,9 +256,9 @@ menu_t	currentMenu;
      * MenuRoutine class definitions, replacing "function pointers".
      */
     MenuRoutine ChangeDetail,ChangeMessages,ChangeSensitivity,ChooseSkill,
-    			EndGame, Episode,   FinishReadThis,LoadGame,LoadSelect,MusicVol, NewGame,   
+    			EndGame,EndGameResponse, Episode,   FinishReadThis,LoadGame,LoadSelect,MusicVol, NewGame,   
     			Options,  VerifyNightmare, SaveSelect, SfxVol, SizeDisplay,
-    			SaveGame,Sound,QuitDOOM,ReadThis,ReadThis2;
+    			SaveGame,Sound,QuitDOOM,QuitResponse,QuickLoadResponse,ReadThis,ReadThis2;
 
     /** DrawRoutine class definitions, replacing "function pointers". */
     
@@ -257,6 +270,8 @@ private void initMenuRoutines(){
  Options =new M_Options();
  ChooseSkill=new M_ChooseSkill();
  Episode=new M_Episode();
+ EndGame=new M_EndGame();
+ EndGameResponse=new M_EndGameResponse();
  VerifyNightmare=new M_VerifyNightmare();
 	EndGame=new M_EndGame();
 	ChangeMessages=new M_ChangeMessages();
@@ -267,6 +282,8 @@ private void initMenuRoutines(){
 	ReadThis2=new M_ReadThis2();
 	Sound=new M_Sound();
 	QuitDOOM=new M_QuitDOOM();
+	QuickLoadResponse=new M_QuickLoadResponse();
+	QuitResponse=new M_QuitResponse();
 }
 
 /**
@@ -779,7 +796,22 @@ class M_QuickLoadResponse implements MenuRoutine{
     }
 }
 }
-
+class  M_QuitResponse implements MenuRoutine{
+	@Override
+	public void invoke(int ch){
+    if (ch != 'y')
+	return;
+    if (!DS.netgame)
+    {
+	if (DS.gamemode == GameMode_t.commercial)
+	    S.StartSound(null,quitsounds2[(DS.gametic>>2)&7]);
+	else
+	    S.StartSound(null,quitsounds[(DS.gametic>>2)&7]);
+	//TI.WaitVBL(105);
+    }
+    I.Quit ();
+	}
+}
 
 public void QuickLoad()
 {
@@ -1047,7 +1079,7 @@ class M_ChooseSkill implements MenuRoutine{
             StartMessage(NIGHTMARE,VerifyNightmare,true);
             return;            }
             
-            G.DeferedInitNew(choice,epi+1,1);
+            G.DeferedInitNew(skill_t.values()[choice],epi+1,1);
             ClearMenus ();
         }
 
@@ -1111,7 +1143,7 @@ class M_QuitDOOM implements MenuRoutine{
   else
     endstring=endmsg[ (DS.gametic%(NUM_QUITMESSAGES-2))+1 ]+"\n\n"+DOSY;
   
-  StartMessage(endstring,M_QuitResponse,true);
+  StartMessage(endstring,QuitResponse,true);
 }
 }
 
@@ -1210,7 +1242,7 @@ class M_Options implements MenuRoutine{
                  && (choice!=0))
                 {
                 StartMessage(SWSTRING,null,false);
-                SetupNextMenu(M.ReadDef1);
+                SetupNextMenu(ReadDef1);
                 return;
                 }
 
@@ -1286,8 +1318,6 @@ private String  msgNames[]      = {"M_MSGOFF","M_MSGON"};
 
 @Override
 public void invoke() {
-    menu_t OptionsDef =M.OptionsDef;
-    
     V.DrawPatchDirect (108,15,0, W.CachePatchName("M_OPTTTL"));
     
     V.DrawPatchDirect (OptionsDef.x + 175,OptionsDef.y+LINEHEIGHT*detail,0,
@@ -1367,7 +1397,7 @@ StartMessage
     messageString = string;
     messageRoutine = routine;
     messageNeedsInput = input;
-    menuactive = true;
+    menuactive = 1; // "true"
     return;
 }
 
@@ -1540,9 +1570,7 @@ public boolean Responder (event_t ev)
     
     char             ch;
     int             i;
- 
-	
-    ch = -1;
+     ch = 0xFFFF;
 	
     if (ev.type == evtype_t.ev_joystick && joywait < I.GetTime())
     {
@@ -1626,11 +1654,11 @@ public boolean Responder (event_t ev)
 	else
 	    if (ev.type == evtype_t.ev_keydown)
 	    {
-		ch = ev.data1;
+		ch = (char) ev.data1;
 	    }
     }
     
-    if (ch == -1)
+    if (ch == 0xFFFF)
 	return false;
 
     
@@ -1780,11 +1808,12 @@ public boolean Responder (event_t ev)
 	    return true;
 				
 	  case KEY_F11:           // gamma toggle
-	    usegamma++;
+		int usegamma=V.getUsegamma();
 	    if (usegamma > 4)
 		usegamma = 0;
-	    players[consoleplayer].message = gammamsg[usegamma];
-	    I_SetPalette (W_CacheLumpName ("PLAYPAL",PU_CACHE));
+	    DS.players[DS.consoleplayer].message = gammamsg[usegamma];
+	    I.SetPalette (W.CacheLumpName ("PLAYPAL",PU_CACHE));
+	    V.setUsegamma(usegamma);
 	    return true;
 				
 	}
@@ -2102,5 +2131,49 @@ public int CheckParm (String check)
     return 0;
 }
 
+/**
+ * M_DrawText
+ * Returns the final X coordinate
+ * HU_Init must have been called to init the font
+ * @param x
+ * @param y
+ * @param direct
+ * @param string
+ * @return
+ */
+
+public int
+DrawText
+( int		x,
+  int		y,
+  boolean	direct,
+  char[]		string )
+{
+    int 	c;
+    int		w;
+    int  ptr=0;
+    
+    while (string[ptr]>0)
+    {
+	c = Character.toUpperCase(string[ptr]) - HU_FONTSTART;
+	ptr++;
+	if (c < 0 || c> HU_FONTSIZE)
+	{
+	    x += 4;
+	    continue;
+	}
+		
+	w = hu_font[c].width;
+	if (x+w > SCREENWIDTH)
+	    break;
+	if (direct)
+	    V.DrawPatchDirect(x, y, 0, hu_font[c]);
+	else
+	    V.DrawPatch(x, y, 0, hu_font[c]);
+	x+=w;
+    }
+
+    return x;
+}
 
 }

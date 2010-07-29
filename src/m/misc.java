@@ -1,7 +1,11 @@
+package m;
+
+import rr.patch_t;
+
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: misc.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: misc.java,v 1.2 2010/07/29 15:29:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +21,9 @@
 //
 //
 // $Log: misc.java,v $
+// Revision 1.2  2010/07/29 15:29:00  velktron
+// More work on menus...and digging some dependencies..
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -38,17 +45,11 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char
-rcsid[] = "$Id: misc.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
+public class MenuMisc{
 
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
+public static final String rcsid[] = "$Id: misc.java,v 1.2 2010/07/29 15:29:00 velktron Exp $";
 
-#include <ctype.h>
-
+/*
 
 #include "doomdef.h"
 
@@ -72,46 +73,16 @@ rcsid[] = "$Id: misc.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
 #include "dstrings.h"
 
 #include "m_misc.h"
+*/
 
 //
 // M_DrawText
 // Returns the final X coordinate
 // HU_Init must have been called to init the font
 //
-extern patch_t*		hu_font[HU_FONTSIZE];
+public  patch_t[]		hu_font;
 
-int
-M_DrawText
-( int		x,
-  int		y,
-  boolean	direct,
-  char*		string )
-{
-    int 	c;
-    int		w;
 
-    while (*string)
-    {
-	c = toupper(*string) - HU_FONTSTART;
-	string++;
-	if (c < 0 || c> HU_FONTSIZE)
-	{
-	    x += 4;
-	    continue;
-	}
-		
-	w = SHORT (hu_font[c]->width);
-	if (x+w > SCREENWIDTH)
-	    break;
-	if (direct)
-	    V_DrawPatchDirect(x, y, 0, hu_font[c]);
-	else
-	    V_DrawPatch(x, y, 0, hu_font[c]);
-	x+=w;
-    }
-
-    return x;
-}
 
 
 
@@ -123,16 +94,16 @@ M_DrawText
 #define O_BINARY 0
 #endif
 
-boolean
-M_WriteFile
-( char const*	name,
-  void*		source,
+public static boolean
+WriteFile
+( String	name,
+  byte[]		source,
   int		length )
 {
-    int		handle;
+    DoomFile		handle;
     int		count;
 	
-    handle = open ( name, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+    handle=new DoomFile(name,"rw");
 
     if (handle == -1)
 	return false;
@@ -538,4 +509,4 @@ void M_ScreenShot (void)
     players[consoleplayer].message = "screen shot";
 }
 
-
+}

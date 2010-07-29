@@ -7,7 +7,7 @@ import doom.event_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGame.java,v 1.2 2010/07/27 14:27:16 velktron Exp $
+// $Id: DoomGameInterface.java,v 1.1 2010/07/29 15:28:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -26,7 +26,7 @@ import doom.event_t;
 // 
 //-----------------------------------------------------------------------------
 
-public interface DoomGame {
+public interface DoomGameInterface {
 
 
 //

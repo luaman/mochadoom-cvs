@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.2 2010/07/20 15:52:56 velktron Exp $
+// $Id: Defines.java,v 1.3 2010/07/29 15:28:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -140,7 +140,8 @@ public static enum gamestate_t
     GS_LEVEL,
     GS_INTERMISSION,
     GS_FINALE,
-    GS_DEMOSCREEN
+    GS_DEMOSCREEN,
+    GS_MINUS_ONE // hack used for the "-1" state
 };
 
 //
@@ -718,5 +719,5 @@ static public final int SAVESTRINGSIZE = 24;
 //#include "p_tick.h"
 
 static final char[]
-rcsid = ("$Id: Defines.java,v 1.2 2010/07/20 15:52:56 velktron Exp $").toCharArray();
+rcsid = ("$Id: Defines.java,v 1.3 2010/07/29 15:28:59 velktron Exp $").toCharArray();
 }

@@ -33,4 +33,9 @@ public interface DoomVideoRenderer {
     public void MarkRect(int x, int y, int width, int height);
 
     public byte[] getScreen(int index);
+    
+    public int getUsegamma();
+
+    public void setUsegamma(int gamma);
+    
 }

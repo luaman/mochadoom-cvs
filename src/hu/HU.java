@@ -2,7 +2,7 @@ package hu;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.2 2010/07/06 15:20:23 velktron Exp $
+// $Id: HU.java,v 1.3 2010/07/29 15:28:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.3  2010/07/29 15:28:59  velktron
+// More work on menus...and digging some dependencies..
+//
 // Revision 1.2  2010/07/06 15:20:23  velktron
 // Several changes in the WAD loading routine. Now lumps are directly unpacked as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer reads.
 //
@@ -47,6 +50,7 @@ import utils.PrintfFormat;
 
 import java.io.IOException;
 
+import m.Menu;
 import m.Swap;
 import rr.patch_t;
 import w.WadLoader;
@@ -78,11 +82,12 @@ import doom.player_t;
 */
 
 public class HU{
-public final static String rcsid = "$Id: HU.java,v 1.2 2010/07/06 15:20:23 velktron Exp $";
+public final static String rcsid = "$Id: HU.java,v 1.3 2010/07/29 15:28:59 velktron Exp $";
 
 // MAES: Status and wad data.
 WadLoader wd;
 doomstat ds;
+Menu M;
 
 //
 // Locally used constants, shortcuts.
@@ -152,7 +157,9 @@ boolean		message_nottobefuckedwith;
 hu_stext_t	w_message;
 int		message_counter;
 
-int		showMessages;
+// This is actually an "extern" pointing inside m_menu (Menu.java). So we
+// need to share Menu context.
+//int		showMessages;
 // MAES: I think this is supposed to be visible by the various hu_ crap...
 boolean		automapactive;
 
@@ -607,7 +614,7 @@ public void Ticker()
 	message_nottobefuckedwith = false;
     }
 
-    if ((showMessages!=0) || message_dontfuckwithme)
+    if ((M.getShowMessages()!=0) || message_dontfuckwithme)
     {
 
 	// display message if necessary

@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.4 2010/07/27 14:27:16 velktron Exp $
+//$Id: DoomFile.java,v 1.5 2010/07/29 15:29:00 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -30,8 +30,9 @@ import java.nio.ByteOrder;
 import m.Swap;
 
 /**
-* RandomAccessFile, but handles readString/WriteString specially and offers
-* other helper functions
+* RandomAccessFile, but handles readString/WriteString specially 
+* and offers several Doom related (and cross-OS) helper functions,
+* such as reading multiple objects or fixed-length strings off disk.
 */
 public class DoomFile extends RandomAccessFile {
 

@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.4 2010/07/15 14:01:49 velktron Exp $
+// $Id: Renderer.java,v 1.5 2010/07/29 15:28:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.5  2010/07/29 15:28:59  velktron
+// More work on menus...and digging some dependencies..
+//
 // Revision 1.4  2010/07/15 14:01:49  velktron
 // Added reflector Method stuff for function pointers.
 //
@@ -853,7 +856,7 @@ public void InitLightTables ()
 //  because it might be in the middle of a refresh.
 // The change will take effect next refresh.
 //
-boolean		setsizeneeded;
+public boolean		setsizeneeded;
 int		setblocks;
 int		setdetail;
 
@@ -892,7 +895,7 @@ public void ExecuteSetViewSize ()
     else
     {
 	ds.scaledviewwidth = setblocks*32;
-	ds.viewheight = (setblocks*168/10)&~7;
+	ds.viewheight = (short) ((setblocks*168/10)&~7);
     }
     
     detailshift = setdetail;
@@ -916,7 +919,7 @@ public void ExecuteSetViewSize ()
     {
 	colfunc = basecolfunc = Draw.class.getDeclaredMethod("DrawColumnLow",Void.class);
 	fuzzcolfunc = Draw.class.getDeclaredMethod("DrawFuzzColumn",Void.class);
-	transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn",Void.class)
+	transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn",Void.class);
 	spanfunc = Draw.class.getDeclaredMethod("DrawSpanLow",Void.class);
     }
 
