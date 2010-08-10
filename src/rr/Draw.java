@@ -3,7 +3,7 @@ package rr;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Draw.java,v 1.3 2010/07/15 14:01:49 velktron Exp $
+// $Id: Draw.java,v 1.4 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Draw.java,v $
+// Revision 1.4  2010/08/10 16:41:57  velktron
+// Threw some work into map loading.
+//
 // Revision 1.3  2010/07/15 14:01:49  velktron
 // Added reflector Method stuff for function pointers.
 //
@@ -60,9 +63,20 @@ import i.system;
 import m.fixed_t;
 import static m.fixed_t.*;
 
+
+/**
+ * 
+ * All drawing to the view buffer is accomplished in this file.
+ * The other refresh files only know about ccordinates,
+ * not the architecture of the frame buffer.
+ * Conveniently, the frame buffer is a linear one,
+ * and we need only the base address,
+ * and the total size == width*height*depth/8.,
+ */
+
 public class Draw {
     public static String rcsid =
-        "$Id: Draw.java,v 1.3 2010/07/15 14:01:49 velktron Exp $";
+        "$Id: Draw.java,v 1.4 2010/08/10 16:41:57 velktron Exp $";
 
     Renderer R;
 
@@ -87,14 +101,6 @@ public class Draw {
 
     private static final boolean RANGECHECK = false;
 
-    //
-    // All drawing to the view buffer is accomplished in this file.
-    // The other refresh files only know about ccordinates,
-    // not the architecture of the frame buffer.
-    // Conveniently, the frame buffer is a linear one,
-    // and we need only the base address,
-    // and the total size == width*height*depth/8.,
-    //
 
     byte[] viewimage;
 

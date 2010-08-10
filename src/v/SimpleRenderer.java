@@ -4,13 +4,13 @@ import rr.column_t;
 import rr.patch_t;
 import utils.C2JUtils;
 import i.system;
-import m.bbox;
+import m.BBox;
 import static data.Defines.*;
 
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.5 2010/07/29 15:29:00 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.6 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.6  2010/08/10 16:41:57  velktron
+// Threw some work into map loading.
+//
 // Revision 1.5  2010/07/29 15:29:00  velktron
 // More work on menus...and digging some dependencies..
 //
@@ -87,7 +90,7 @@ import static data.Defines.*;
 
 public class SimpleRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.5 2010/07/29 15:29:00 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.6 2010/08/10 16:41:57 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -100,7 +103,7 @@ public byte[][]			screens=new byte[5][];
  
 //MAES: maybe this should be a bbox?
 
-public bbox				dirtybox=new bbox(); 
+public BBox				dirtybox=new BBox(); 
 
 public SimpleRenderer(){
     // Defaults
@@ -241,7 +244,7 @@ public void Init ()
  for (i=0 ; i<screens.length ; i++){
 	screens[i] = new byte[this.getHeight()*this.getWidth()];
 	}
-     dirtybox=new bbox();
+     dirtybox=new BBox();
      
      colbuf=new byte[width][height];
 }

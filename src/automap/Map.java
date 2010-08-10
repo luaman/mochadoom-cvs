@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.1 2010/07/20 15:52:56 velktron Exp $
+// $Id: Map.java,v 1.2 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.2  2010/08/10 16:41:57  velktron
+// Threw some work into map loading.
+//
 // Revision 1.1  2010/07/20 15:52:56  velktron
 // LOTS of changes, Automap almost complete. Use of fixed_t inside methods severely limited.
 //
@@ -44,16 +47,29 @@ package automap;
 import static data.Defines.*;
 import static data.doomtype.*;
 import static m.fixed_t.*;
+import data.doomstat;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import rr.patch_t;
+import st.DoomStatusBarInterface;
+import v.DoomVideoRenderer;
+import w.WadLoader;
 import m.cheatseq_t;
 import m.fixed_t;
 
 public class Map implements DoomAutoMap{
 
-public final String rcsid = "$Id: Map.java,v 1.1 2010/07/20 15:52:56 velktron Exp $";
+/////////////////// Status objects ///////////////////
+    
+DoomStatusBarInterface ST;
+WadLoader W;
+doomstat DS;
+DoomVideoRenderer V;
+    
+    
+    
+public final String rcsid = "$Id: Map.java,v 1.2 2010/08/10 16:41:57 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -178,11 +194,11 @@ public static void initVectorGraphics(){
 int R =((8*PLAYERRADIUS)/7);
 player_arrow = new mline_t[]{
      new mline_t( -R+R/8, 0,  R, 0 ), // -----
-     new mline_t( R, 0 , R-R/2, R/4),  // ----->
+     new mline_t( R, 0 , R-R/2, R/4),  // ----
      new mline_t( R, 0 ,  R-R/2, -R/4 ), 
-      new mline_t(-R+R/8, 0 , -R-R/8, R/4 ),  // >---->
+      new mline_t(-R+R/8, 0 , -R-R/8, R/4 ),  // >---
       new mline_t(-R+R/8, 0 , -R-R/8, -R/4 ), 
-      new mline_t( -R+3*R/8, 0 , -R+R/8, R/4 ),  // >>--->
+      new mline_t( -R+3*R/8, 0 , -R+R/8, R/4 ),  // >>--
       new mline_t(-R+3*R/8, 0 , -R+R/8, -R/4 ) 
  };
 
@@ -190,19 +206,19 @@ NUMPLYRLINES =player_arrow.length;
 
 cheat_player_arrow = new mline_t[]{
     new mline_t( -R+R/8, 0 , R, 0 ), // -----
-    new mline_t( R, 0 , R-R/2, R/6 ),  // ----->
+    new mline_t( R, 0 , R-R/2, R/6 ),  // ----
     new mline_t( R, 0 , R-R/2, -R/6 ),
-    new mline_t( -R+R/8, 0 , -R-R/8, R/6 ), // >----->
+    new mline_t( -R+R/8, 0 , -R-R/8, R/6 ), // >----
     new mline_t( -R+R/8, 0 , -R-R/8, -R/6 ),
-    new mline_t( -R+3*R/8, 0 , -R+R/8, R/6 ), // >>----->
+    new mline_t( -R+3*R/8, 0 , -R+R/8, R/6 ), // >>----
     new mline_t( -R+3*R/8, 0 , -R+R/8, -R/6 ),
-    new mline_t( -R/2, 0 , -R/2, -R/6 ), // >>-d--->
+    new mline_t( -R/2, 0 , -R/2, -R/6 ), // >>-d--
     new mline_t(-R/2, -R/6 , -R/2+R/6, -R/6 ),
     new mline_t( -R/2+R/6, -R/6 , -R/2+R/6, R/4 ),
-    new mline_t(-R/6, 0 , -R/6, -R/6 ), // >>-dd-->
+    new mline_t(-R/6, 0 , -R/6, -R/6 ), // >>-dd-
     new mline_t( -R/6, -R/6 , 0, -R/6 ),
     new mline_t( 0, -R/6 , 0, R/4 ),
-    new mline_t( R/6, R/4 , R/6, -R/7 ), // >>-ddt->
+    new mline_t( R/6, R/4 , R/6, -R/7 ), // >>-ddt
     new mline_t( R/6, -R/7 , R/6+R/32, -R/7-R/32 ),
     new mline_t( R/6+R/32, -R/7-R/32 , R/6+R/10, -R/7 ) 
 };
@@ -280,10 +296,10 @@ private int  max_h;
 private int  min_w, min_h;
 
 /** (fixed_t) used to tell when to stop zooming out */
-private fixed_t  min_scale_mtof; 
+private int  min_scale_mtof; 
 
 /** (fixed_t) used to tell when to stop zooming in */
-private fixed_t  max_scale_mtof; 
+private int  max_scale_mtof; 
 
 /** (fixed_t) old stuff for recovery later */
 private int old_m_w, old_m_h, old_m_x, old_m_y;
@@ -390,11 +406,13 @@ public void restoreScaleAndLoc()
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 
-public MarkRect
+public void MarkRect
 ( int   x,
   int   y,
   int   width,
-  int   height );
+  int   height ){
+    
+}
 
 /** 
  * adds a marker at the current location
@@ -414,14 +432,13 @@ public void addMark()
 
 public void findMinMaxBoundaries()
 {
-    int i;
     int a;
     int b;
 
     min_x = min_y =  MAXINT;
     max_x = max_y = -MAXINT;
   
-    for (i=0;i<numvertexes;i++)
+    for (int i=0;i<numvertexes;i++)
     {
     if (vertexes[i].x < min_x)
         min_x = vertexes[i].x;
@@ -451,9 +468,9 @@ public void findMinMaxBoundaries()
 
 public void changeWindowLoc()
 {
-    if (m_paninc.x || m_paninc.y)
+    if (m_paninc.x!=0 || m_paninc.y!=0)
     {
-    followplayer = 0;
+    followplayer = false;
     f_oldloc.x = MAXINT;
     }
 
@@ -474,14 +491,14 @@ public void changeWindowLoc()
     m_y2 = m_y + m_h;
 }
 
-private event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
+
 
 public void initVariables()
 {
     int pnum;
 
     automapactive = true;
-    fb = screens[0];
+    fb = V.getScreen(0);
 
     f_oldloc.x = MAXINT;
     amclock = 0;
@@ -495,15 +512,15 @@ public void initVariables()
     m_h = FTOM(f_h);
 
     // find player to center on initially
-    if (!playeringame[pnum = consoleplayer])
+    if (!DS.playeringame[pnum = DS.consoleplayer])
     for (pnum=0;pnum<MAXPLAYERS;pnum++)
-        if (playeringame[pnum])
+        if (DS.playeringame[pnum])
         break;
   
-    plr = &players[pnum];
-    m_x = plr->mo->x - m_w/2;
-    m_y = plr->mo->y - m_h/2;
-    AM_changeWindowLoc();
+    plr = DS.players[pnum];
+    m_x = plr.mo.x - m_w/2;
+    m_y = plr.mo.y - m_h/2;
+    this.changeWindowLoc();
 
     // for saving & restoring
     old_m_x = m_x;
@@ -519,29 +536,29 @@ public void initVariables()
 //
 // 
 //
-void AM_loadPics(void)
+public void loadPics()
 {
     int i;
-    char namebuf[9];
+    String namebuf;
   
     for (i=0;i<10;i++)
     {
-    sprintf(namebuf, "AMMNUM%d", i);
-    marknums[i] = W_CacheLumpName(namebuf, PU_STATIC);
+    namebuf= ("AMMNUM"+ i);
+    marknums[i] = W.CachePatchName(namebuf);
     }
 
 }
 
-void AM_unloadPics(void)
+public void unloadPics()
 {
     int i;
   
-    for (i=0;i<10;i++)
-    Z_ChangeTag(marknums[i], PU_CACHE);
-
+    for (i=0;i<10;i++){
+   // TODO: Z_ChangeTag(marknums[i], PU_CACHE);
+    }
 }
 
-void AM_clearMarks(void)
+public void clearMarks()
 {
     int i;
 
@@ -550,11 +567,11 @@ void AM_clearMarks(void)
     markpointnum = 0;
 }
 
-//
-// should be called at the start of every level
-// right now, i figure it out myself
-//
-void AM_LevelInit(void)
+/**
+ * should be called at the start of every level
+ * right now, i figure it out myself
+ */
+public void LevelInit()
 {
     leveljuststarted = 0;
 
@@ -562,101 +579,110 @@ void AM_LevelInit(void)
     f_w = finit_width;
     f_h = finit_height;
 
-    AM_clearMarks();
+    this.clearMarks();
 
-    AM_findMinMaxBoundaries();
+    this.findMinMaxBoundaries();
     scale_mtof = FixedDiv(min_scale_mtof, (int) (0.7*FRACUNIT));
     if (scale_mtof > max_scale_mtof)
     scale_mtof = min_scale_mtof;
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 
-
-
-
 //
 //
 //
-void AM_Stop (void)
+
+//private event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
+
+
+public void Stop ()
 {
-    static event_t st_notify = { 0, ev_keyup, AM_MSGEXITED };
+    // MAES: Was a "method static variable"...but what's the point? It's never modified.
+    event_t st_notify = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
 
-    AM_unloadPics();
+    this.unloadPics();
     automapactive = false;
-    ST_Responder(&st_notify);
+    // TODO: could it be modified by the Responder?
+    ST.Responder(st_notify);
     stopped = true;
 }
 
 //
 //
 //
-void AM_Start (void)
+
+// More "static" stuff.
+protected int lastlevel = -1, lastepisode = -1;
+
+public void Start ()
 {
-    static int lastlevel = -1, lastepisode = -1;
 
     if (!stopped) AM_Stop();
     stopped = false;
     if (lastlevel != gamemap || lastepisode != gameepisode)
     {
-    AM_LevelInit();
+    this.LevelInit();
     lastlevel = gamemap;
     lastepisode = gameepisode;
     }
-    AM_initVariables();
-    AM_loadPics();
+    this.initVariables();
+    this.loadPics();
 }
 
-//
-// set the window scale to the maximum size
-//
-void AM_minOutWindowScale(void)
+/**
+ * set the window scale to the maximum size
+ */
+public void minOutWindowScale()
 {
     scale_mtof = min_scale_mtof;
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
-    AM_activateNewScale();
+    this.activateNewScale();
 }
 
-//
-// set the window scale to the minimum size
-//
-void AM_maxOutWindowScale(void)
+/**
+ * set the window scale to the minimum size
+ */
+
+public void maxOutWindowScale()
 {
     scale_mtof = max_scale_mtof;
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
-    AM_activateNewScale();
+    this.activateNewScale();
 }
 
 
-//
-// Handle events (user inputs) in automap mode
-//
-boolean
-AM_Responder
-( event_t*  ev )
+/** These belong to AM_Responder */
+protected int cheatstate=0,bigstate=0;
+
+/**     static char buffer[20] in AM_Responder */
+protected byte[] buffer=new byte[20];
+
+ /**
+ * Handle events (user inputs) in automap mode
+ */
+
+public boolean Responder ( event_t  ev )
 {
 
     int rc;
-    static int cheatstate=0;
-    static int bigstate=0;
-    static char buffer[20];
 
     rc = false;
 
     if (!automapactive)
     {
-    if (ev->type == ev_keydown && ev->data1 == AM_STARTKEY)
+    if (ev.type == evtype_t.ev_keydown && ev.data1 == AM_STARTKEY)
     {
-        AM_Start ();
-        viewactive = false;
+        this.Start ();
+        DS.viewactive = false;
         rc = true;
     }
     }
 
-    else if (ev->type == ev_keydown)
+    else if (ev.type == evtype_t.ev_keydown)
     {
 
     rc = true;
-    switch(ev->data1)
+    switch(ev.data1)
     {
       case AM_PANRIGHTKEY: // pan right
         if (!followplayer) m_paninc.x = FTOM(F_PANINC);
@@ -685,50 +711,50 @@ AM_Responder
       case AM_ENDKEY:
         bigstate = 0;
         viewactive = true;
-        AM_Stop ();
+        this.Stop ();
         break;
       case AM_GOBIGKEY:
         bigstate = !bigstate;
         if (bigstate)
         {
-        AM_saveScaleAndLoc();
-        AM_minOutWindowScale();
+        this.saveScaleAndLoc();
+        this.minOutWindowScale();
         }
-        else AM_restoreScaleAndLoc();
+        else this.restoreScaleAndLoc();
         break;
       case AM_FOLLOWKEY:
         followplayer = !followplayer;
         f_oldloc.x = MAXINT;
-        plr->message = followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF;
+        plr.message = followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF;
         break;
       case AM_GRIDKEY:
         grid = !grid;
-        plr->message = grid ? AMSTR_GRIDON : AMSTR_GRIDOFF;
+        plr.message = grid ? AMSTR_GRIDON : AMSTR_GRIDOFF;
         break;
       case AM_MARKKEY:
         sprintf(buffer, "%s %d", AMSTR_MARKEDSPOT, markpointnum);
-        plr->message = buffer;
+        plr.message = buffer;
         AM_addMark();
         break;
       case AM_CLEARMARKKEY:
         AM_clearMarks();
-        plr->message = AMSTR_MARKSCLEARED;
+        plr.message = AMSTR_MARKSCLEARED;
         break;
       default:
         cheatstate=0;
         rc = false;
     }
-    if (!deathmatch && cht_CheckCheat(&cheat_amap, ev->data1))
+    if (!deathmatch && cht_CheckCheat(&cheat_amap, ev.data1))
     {
         rc = false;
         cheating = (cheating+1) % 3;
     }
     }
 
-    else if (ev->type == ev_keyup)
+    else if (ev.type == ev_keyup)
     {
     rc = false;
-    switch (ev->data1)
+    switch (ev.data1)
     {
       case AM_PANRIGHTKEY:
         if (!followplayer) m_paninc.x = 0;
@@ -755,10 +781,10 @@ AM_Responder
 }
 
 
-//
-// Zooming
-//
-void AM_changeWindowScale(void)
+/**
+ * Zooming
+ */
+public void changeWindowScale()
 {
 
     // Change the scaling multipliers
@@ -766,33 +792,33 @@ void AM_changeWindowScale(void)
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 
     if (scale_mtof < min_scale_mtof)
-    AM_minOutWindowScale();
+    this.minOutWindowScale();
     else if (scale_mtof > max_scale_mtof)
-    AM_maxOutWindowScale();
+        this.maxOutWindowScale();
     else
-    AM_activateNewScale();
+        this.activateNewScale();
 }
 
 
 //
 //
 //
-void AM_doFollowPlayer(void)
+public void doFollowPlayer()
 {
 
-    if (f_oldloc.x != plr->mo->x || f_oldloc.y != plr->mo->y)
+    if (f_oldloc.x != plr.mo.x || f_oldloc.y != plr.mo.y)
     {
-    m_x = FTOM(MTOF(plr->mo->x)) - m_w/2;
-    m_y = FTOM(MTOF(plr->mo->y)) - m_h/2;
+    m_x = FTOM(MTOF(plr.mo.x)) - m_w/2;
+    m_y = FTOM(MTOF(plr.mo.y)) - m_h/2;
     m_x2 = m_x + m_w;
     m_y2 = m_y + m_h;
-    f_oldloc.x = plr->mo->x;
-    f_oldloc.y = plr->mo->y;
+    f_oldloc.x = plr.mo.x;
+    f_oldloc.y = plr.mo.y;
 
-    //  m_x = FTOM(MTOF(plr->mo->x - m_w/2));
-    //  m_y = FTOM(MTOF(plr->mo->y - m_h/2));
-    //  m_x = plr->mo->x - m_w/2;
-    //  m_y = plr->mo->y - m_h/2;
+    //  m_x = FTOM(MTOF(plr.mo.x - m_w/2));
+    //  m_y = FTOM(MTOF(plr.mo.y - m_h/2));
+    //  m_x = plr.mo.x - m_w/2;
+    //  m_y = plr.mo.y - m_h/2;
 
     }
 
@@ -801,28 +827,30 @@ void AM_doFollowPlayer(void)
 //
 //
 //
-void AM_updateLightLev(void)
+
+protected int nexttic=0;
+protected int[] litelevels = { 0, 4, 7, 10, 12, 14, 15, 15 };
+protected int litelevelscnt = 0;
+
+
+public void updateLightLev()
 {
-    static nexttic = 0;
-    //static int litelevels[] = { 0, 3, 5, 6, 6, 7, 7, 7 };
-    static int litelevels[] = { 0, 4, 7, 10, 12, 14, 15, 15 };
-    static int litelevelscnt = 0;
    
     // Change light level
     if (amclock>nexttic)
     {
     lightlev = litelevels[litelevelscnt++];
-    if (litelevelscnt == sizeof(litelevels)/sizeof(int)) litelevelscnt = 0;
+    if (litelevelscnt == litelevels.length) litelevelscnt = 0;
     nexttic = amclock + 6 - (amclock % 6);
     }
 
 }
 
 
-//
-// Updates on Game Tick
-//
-void AM_Ticker (void)
+/**
+* Updates on Game Tick
+*/
+public void Ticker ()
 {
 
     if (!automapactive)
@@ -831,15 +859,15 @@ void AM_Ticker (void)
     amclock++;
 
     if (followplayer)
-    AM_doFollowPlayer();
+    this.doFollowPlayer();
 
     // Change the zoom if necessary
     if (ftom_zoommul != FRACUNIT)
-    AM_changeWindowScale();
+        this.changeWindowScale();
 
     // Change x,y location
     if (m_paninc.x || m_paninc.y)
-    AM_changeWindowLoc();
+        this.changeWindowLoc();
 
     // Update light level
     // AM_updateLightLev();
@@ -850,84 +878,81 @@ void AM_Ticker (void)
 //
 // Clear automap frame buffer.
 //
-void AM_clearFB(int color)
+public void AM_clearFB(int color)
 {
-    memset(fb, color, f_w*f_h);
+    
+    // Buffer a whole scanline.
+    byte[] scanline=new byte[];
+    for (int i=0;i<f_w;i++){
+        scanline[i]=(byte)color;
+    }
+    for (int i=0;i<f_h;i++){
+    System.arraycopy(scanline, 0, fb, i*f_w, f_w);
+    }
+ //   memset(fb, color, f_w*f_h);
 }
 
 
-//
-// Automap clipping of lines.
-//
-// Based on Cohen-Sutherland clipping algorithm but with a slightly
-// faster reject and precalculated slopes.  If the speed is needed,
-// use a hash algorithm to handle  the common cases.
-//
-boolean
-AM_clipMline
-( mline_t*  ml,
-  fline_t*  fl )
+
+
+/**
+* Automap clipping of lines.
+*
+* Based on Cohen-Sutherland clipping algorithm but with a slightly
+* faster reject and precalculated slopes.  If the speed is needed,
+* use a hash algorithm to handle  the common cases.
+*/
+
+public boolean
+clipMline
+( mline_t ml,
+  fline_t fl )
 {
-    enum
-    {
-    LEFT    =1,
-    RIGHT   =2,
-    BOTTOM  =4,
-    TOP =8
-    };
+    // These were supposed to be "registers", so they exhibit by-ref properties.
+    int    outcode1 = 0;
+    int    outcode2 = 0;
+    int    outside;
     
-    register    outcode1 = 0;
-    register    outcode2 = 0;
-    register    outside;
-    
-    fpoint_t    tmp;
+    fpoint_t    tmp=new fpoint_t();
     int     dx;
     int     dy;
 
     
-#define DOOUTCODE(oc, mx, my) \
-    (oc) = 0; \
-    if ((my) < 0) (oc) |= TOP; \
-    else if ((my) >= f_h) (oc) |= BOTTOM; \
-    if ((mx) < 0) (oc) |= LEFT; \
-    else if ((mx) >= f_w) (oc) |= RIGHT;
-
-    
     // do trivial rejects and outcodes
-    if (ml->a.y > m_y2)
+    if (ml.a.y > m_y2)
     outcode1 = TOP;
-    else if (ml->a.y < m_y)
+    else if (ml.a.y < m_y)
     outcode1 = BOTTOM;
 
-    if (ml->b.y > m_y2)
+    if (ml.b.y > m_y2)
     outcode2 = TOP;
-    else if (ml->b.y < m_y)
+    else if (ml.b.y < m_y)
     outcode2 = BOTTOM;
     
     if (outcode1 & outcode2)
     return false; // trivially outside
 
-    if (ml->a.x < m_x)
+    if (ml.a.x < m_x)
     outcode1 |= LEFT;
-    else if (ml->a.x > m_x2)
+    else if (ml.a.x > m_x2)
     outcode1 |= RIGHT;
     
-    if (ml->b.x < m_x)
+    if (ml.b.x < m_x)
     outcode2 |= LEFT;
-    else if (ml->b.x > m_x2)
+    else if (ml.b.x > m_x2)
     outcode2 |= RIGHT;
     
     if (outcode1 & outcode2)
     return false; // trivially outside
 
     // transform to frame-buffer coordinates.
-    fl->a.x = CXMTOF(ml->a.x);
-    fl->a.y = CYMTOF(ml->a.y);
-    fl->b.x = CXMTOF(ml->b.x);
-    fl->b.y = CYMTOF(ml->b.y);
+    fl.a.x = CXMTOF(ml.a.x);
+    fl.a.y = CYMTOF(ml.a.y);
+    fl.b.x = CXMTOF(ml.b.x);
+    fl.b.y = CYMTOF(ml.b.y);
 
-    DOOUTCODE(outcode1, fl->a.x, fl->a.y);
-    DOOUTCODE(outcode2, fl->b.x, fl->b.y);
+    outcode1= DOOUTCODE(fl.a.x, fl.a.y);
+    outcode2 =DOOUTCODE(fl.b.x, fl.b.y);
 
     if (outcode1 & outcode2)
     return false;
@@ -944,42 +969,42 @@ AM_clipMline
     // clip to each side
     if (outside & TOP)
     {
-        dy = fl->a.y - fl->b.y;
-        dx = fl->b.x - fl->a.x;
-        tmp.x = fl->a.x + (dx*(fl->a.y))/dy;
+        dy = fl.a.y - fl.b.y;
+        dx = fl.b.x - fl.a.x;
+        tmp.x = fl.a.x + (dx*(fl.a.y))/dy;
         tmp.y = 0;
     }
     else if (outside & BOTTOM)
     {
-        dy = fl->a.y - fl->b.y;
-        dx = fl->b.x - fl->a.x;
-        tmp.x = fl->a.x + (dx*(fl->a.y-f_h))/dy;
+        dy = fl.a.y - fl.b.y;
+        dx = fl.b.x - fl.a.x;
+        tmp.x = fl.a.x + (dx*(fl.a.y-f_h))/dy;
         tmp.y = f_h-1;
     }
     else if (outside & RIGHT)
     {
-        dy = fl->b.y - fl->a.y;
-        dx = fl->b.x - fl->a.x;
-        tmp.y = fl->a.y + (dy*(f_w-1 - fl->a.x))/dx;
+        dy = fl.b.y - fl.a.y;
+        dx = fl.b.x - fl.a.x;
+        tmp.y = fl.a.y + (dy*(f_w-1 - fl.a.x))/dx;
         tmp.x = f_w-1;
     }
     else if (outside & LEFT)
     {
-        dy = fl->b.y - fl->a.y;
-        dx = fl->b.x - fl->a.x;
-        tmp.y = fl->a.y + (dy*(-fl->a.x))/dx;
+        dy = fl.b.y - fl.a.y;
+        dx = fl.b.x - fl.a.x;
+        tmp.y = fl.a.y + (dy*(-fl.a.x))/dx;
         tmp.x = 0;
     }
 
     if (outside == outcode1)
     {
-        fl->a = tmp;
-        DOOUTCODE(outcode1, fl->a.x, fl->a.y);
+        fl.a = tmp;
+        outcode1=DOOUTCODE( fl.a.x, fl.a.y);
     }
     else
     {
-        fl->b = tmp;
-        DOOUTCODE(outcode2, fl->b.x, fl->b.y);
+        fl.b = tmp;
+        outcode2=DOOUTCODE(fl.b.x, fl.b.y);
     }
     
     if (outcode1 & outcode2)
@@ -988,59 +1013,79 @@ AM_clipMline
 
     return true;
 }
-#undef DOOUTCODE
 
+protected static int LEFT    =1,
+RIGHT   =2,
+BOTTOM  =4,
+TOP =8;
+
+/**MAES: the result was supposed to be passed in an "oc" parameter by reference.
+ * Not convenient, so I made some changes...
+ * 
+ * @param mx
+ * @param my
+ */
+
+protected int DOOUTCODE(int mx,int my){
+    int oc = 0;
+    if ((my) < 0) (oc) |= TOP;
+    else if ((my) >= f_h) (oc) |= BOTTOM;
+    if ((mx) < 0) (oc) |= LEFT;
+    else if ((mx) >= f_w) (oc) |= RIGHT;
+    return oc;
+}
+
+/** Not my idea ;-) */
+protected int fuck = 0;
 
 //
 // Classic Bresenham w/ whatever optimizations needed for speed
 //
-void
-AM_drawFline
-( fline_t*  fl,
+public void drawFline
+( fline_t  fl,
   int       color )
 {
-    register int x;
-    register int y;
-    register int dx;
-    register int dy;
-    register int sx;
-    register int sy;
-    register int ax;
-    register int ay;
-    register int d;
     
-    static fuck = 0;
+    // MAES: wish they were registers...
+    int x;
+    int y;
+    int dx;
+    int dy;
+    int sx;
+    int sy;
+    int ax;
+    int ay;
+    int d;
+    
 
     // For debugging only
-    if (      fl->a.x < 0 || fl->a.x >= f_w
-       || fl->a.y < 0 || fl->a.y >= f_h
-       || fl->b.x < 0 || fl->b.x >= f_w
-       || fl->b.y < 0 || fl->b.y >= f_h)
+    if (      fl.a.x < 0 || fl.a.x >= f_w
+       || fl.a.y < 0 || fl.a.y >= f_h
+       || fl.b.x < 0 || fl.b.x >= f_w
+       || fl.b.y < 0 || fl.b.y >= f_h)
     {
-    fprintf(stderr, "fuck %d \r", fuck++);
+    System.err.println("fuck "+(fuck++)+" \r");
     return;
     }
 
-#define PUTDOT(xx,yy,cc) fb[(yy)*f_w+(xx)]=(cc)
-
-    dx = fl->b.x - fl->a.x;
+    dx = fl.b.x - fl.a.x;
     ax = 2 * (dx<0 ? -dx : dx);
     sx = dx<0 ? -1 : 1;
 
-    dy = fl->b.y - fl->a.y;
+    dy = fl.b.y - fl.a.y;
     ay = 2 * (dy<0 ? -dy : dy);
     sy = dy<0 ? -1 : 1;
 
-    x = fl->a.x;
-    y = fl->a.y;
+    x = fl.a.x;
+    y = fl.a.y;
 
     if (ax > ay)
     {
     d = ay - ax/2;
-    while (1)
+    while (true)
     {
         PUTDOT(x,y,color);
-        if (x == fl->b.x) return;
+        if (x == fl.b.x) return;
         if (d>=0)
         {
         y += sy;
@@ -1053,10 +1098,10 @@ AM_drawFline
     else
     {
     d = ax - ay/2;
-    while (1)
+    while (true)
     {
         PUTDOT(x, y, color);
-        if (y == fl->b.y) return;
+        if (y == fl.b.y) return;
         if (d >= 0)
         {
         x += sx;
@@ -1068,27 +1113,31 @@ AM_drawFline
     }
 }
 
+protected void PUTDOT(int xx,int yy, byte cc) {
+    fb[(yy)*f_w+(xx)]=(cc);
+}
+
 
 //
 // Clip lines, draw visible part sof lines.
 //
-void
-AM_drawMline
-( mline_t*  ml,
+public void
+drawMline
+( mline_t  ml,
   int       color )
 {
-    static fline_t fl;
 
-    if (AM_clipMline(ml, &fl))
-    AM_drawFline(&fl, color); // draws it on frame buffer using fb coords
+
+    if (this.clipMline(ml, fl))
+    this.drawFline(fl, color); // draws it on frame buffer using fb coords
 }
 
+protected fline_t fl=new fline_t();
 
-
-//
-// Draws flat (floor/ceiling tile) aligned grid lines.
-//
-void AM_drawGrid(int color)
+/**
+ * Draws flat (floor/ceiling tile) aligned grid lines.
+ */
+public void drawGrid(int color)
 {
     fixed_t x, y;
     fixed_t start, end;
@@ -1130,21 +1179,22 @@ void AM_drawGrid(int color)
 
 }
 
-//
-// Determines visible lines, draws them.
-// This is LineDef based, not LineSeg based.
-//
-void AM_drawWalls(void)
-{
-    int i;
-    static mline_t l;
+protected  mline_t l=new mline_t();
 
-    for (i=0;i<numlines;i++)
+/**
+ * Determines visible lines, draws them.
+ * This is LineDef based, not LineSeg based.
+ */
+
+public void drawWalls()
+{
+
+    for (int i=0;i<numlines;i++)
     {
-    l.a.x = lines[i].v1->x;
-    l.a.y = lines[i].v1->y;
-    l.b.x = lines[i].v2->x;
-    l.b.y = lines[i].v2->y;
+    l.a.x = lines[i].v1.x;
+    l.a.y = lines[i].v1.y;
+    l.b.x = lines[i].v2.x;
+    l.b.y = lines[i].v2.y;
     if (cheating || (lines[i].flags & ML_MAPPED))
     {
         if ((lines[i].flags & LINE_NEVERSEE) && !cheating)
@@ -1164,12 +1214,12 @@ void AM_drawWalls(void)
             if (cheating) AM_drawMline(&l, SECRETWALLCOLORS + lightlev);
             else AM_drawMline(&l, WALLCOLORS+lightlev);
         }
-        else if (lines[i].backsector->floorheight
-               != lines[i].frontsector->floorheight) {
+        else if (lines[i].backsector.floorheight
+               != lines[i].frontsector.floorheight) {
             AM_drawMline(&l, FDWALLCOLORS + lightlev); // floor level change
         }
-        else if (lines[i].backsector->ceilingheight
-               != lines[i].frontsector->ceilingheight) {
+        else if (lines[i].backsector.ceilingheight
+               != lines[i].frontsector.ceilingheight) {
             AM_drawMline(&l, CDWALLCOLORS+lightlev); // ceiling level change
         }
         else if (cheating) {
@@ -1177,7 +1227,7 @@ void AM_drawWalls(void)
         }
         }
     }
-    else if (plr->powers[pw_allmap])
+    else if (plr.powers[pw_allmap])
     {
         if (!(lines[i].flags & LINE_NEVERSEE)) AM_drawMline(&l, GRAYS+3);
     }
@@ -1270,11 +1320,11 @@ void AM_drawPlayers(void)
     if (cheating)
         AM_drawLineCharacter
         (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-         plr->mo->angle, WHITE, plr->mo->x, plr->mo->y);
+         plr.mo.angle, WHITE, plr.mo.x, plr.mo.y);
     else
         AM_drawLineCharacter
-        (player_arrow, NUMPLYRLINES, 0, plr->mo->angle,
-         WHITE, plr->mo->x, plr->mo->y);
+        (player_arrow, NUMPLYRLINES, 0, plr.mo.angle,
+         WHITE, plr.mo.x, plr.mo.y);
     return;
     }
 
@@ -1289,14 +1339,14 @@ void AM_drawPlayers(void)
     if (!playeringame[i])
         continue;
 
-    if (p->powers[pw_invisibility])
+    if (p.powers[pw_invisibility])
         color = 246; // *close* to black
     else
         color = their_colors[their_color];
     
     AM_drawLineCharacter
-        (player_arrow, NUMPLYRLINES, 0, p->mo->angle,
-         color, p->mo->x, p->mo->y);
+        (player_arrow, NUMPLYRLINES, 0, p.mo.angle,
+         color, p.mo.x, p.mo.y);
     }
 
 }
@@ -1315,8 +1365,8 @@ public void drawThings
     {
         AM_drawLineCharacter
         (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-         16<<FRACBITS, t->angle, colors+lightlev, t->x, t->y);
-        t = t->snext;
+         16<<FRACBITS, t.angle, colors+lightlev, t.x, t.y);
+        t = t.snext;
     }
     }
 }
@@ -1329,8 +1379,8 @@ public void AM_drawMarks()
     {
     if (markpoints[i].x != -1)
     {
-        //      w = SHORT(marknums[i]->width);
-        //      h = SHORT(marknums[i]->height);
+        //      w = SHORT(marknums[i].width);
+        //      h = SHORT(marknums[i].height);
         w = 5; // because something's wrong with the wad, i guess
         h = 6; // because something's wrong with the wad, i guess
         fx = CXMTOF(markpoints[i].x);

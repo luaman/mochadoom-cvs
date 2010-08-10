@@ -51,6 +51,62 @@ public class DoomBuffer implements CacheableDoomObject  {
             s[i]=buf.getInt();
         }
     }
+    
+    /** Reads a length specified string from a buffer. */
+    public static String readString(ByteBuffer buf) throws IOException {
+        int len = buf.getInt();
+
+        if (len == -1)
+            return null;
+
+        if (len == 0)
+            return "";
+
+        byte bb[] = new byte[len];
+
+        buf.get(bb, 0, len);
+
+        return new String(bb, 0, len);
+    }
+
+ /** MAES: Reads a specified number of bytes from a buffer into a new String.
+  *  With many lengths being implicit, we need to actually take the loader by the hand.
+  * 
+  * @param buf
+  * @param len
+  * @return
+  * @throws IOException
+  */
+    
+    public static String getString(ByteBuffer buf, int len) throws IOException {
+
+        if (len == -1)
+            return null;
+
+        if (len == 0)
+            return "";
+
+        byte bb[] = new byte[len];
+
+        buf.get(bb, 0, len);
+
+        return new String(bb, 0, len);
+    }
+    
+    /** MAES: Reads a specified number of bytes from a buffer into a new String.
+     *  With many lengths being implicit, we need to actually take the loader by the hand.
+     * 
+     * @param buf
+     * @param len
+     * @return
+     * @throws IOException
+     */
+       
+       public static char[] getCharSeq(ByteBuffer buf, int len) throws IOException {
+           return (getString(buf,len)).toCharArray();
+       }
+
+    
 
     @Override
     public void unpack(ByteBuffer buf)

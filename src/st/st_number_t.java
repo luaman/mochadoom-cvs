@@ -6,7 +6,7 @@ import i.system;
 import rr.patch_t;
 import v.DoomVideoRenderer;
 import w.WadLoader;
-import static st.DoomStatusBar.*;
+import static st.DoomStatusBarInterface.*;
 import static data.Defines.PU_STATIC;
 // Number widget
 

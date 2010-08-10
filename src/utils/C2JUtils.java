@@ -62,7 +62,9 @@ public class C2JUtils {
     	return len;
     }
     
-    /** Automatically "initializes" arrays of objects. Better than doing it by hand!!!
+    /** Automatically "initializes" arrays of objects with their
+     * default constuctor. It's better than doing it by hand, IMO.
+     * If you have a better way, be my guest.
      * 
      * @param os
      * @param c
@@ -79,6 +81,7 @@ public class C2JUtils {
             System.exit(-1);
         }
     }
+    
     public static int toUnsignedByte(byte b){
         return (0x000000FF&b);
     }

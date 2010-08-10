@@ -12,8 +12,12 @@ package rr;
   */
 public class subsector_t {
     
-     public subsector_t(sector_t sector, short numlines, short firstline) {
-        super();
+
+    public subsector_t() {
+        this(null,(short)0,(short)0);
+    }
+    
+    public subsector_t(sector_t sector, short numlines, short firstline) {
         this.sector = sector;
         this.numlines = numlines;
         this.firstline = firstline;

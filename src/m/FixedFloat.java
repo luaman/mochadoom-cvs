@@ -24,13 +24,17 @@ public class FixedFloat {
     public static final long MANTISSA_64=0x000fffffffffffffL;
     
     public static float toFloat(int fixed){
-        
+        if (fixed==0) return (float)(0.0);
         // Remember sign.
         int sign=fixed&SIGN_32;
+        if (fixed<0) fixed=-fixed;
         int exp=findShift(fixed);
         // First shift to left to "cancel" bits "above" the first.
         int mantissa=(fixed<<(exp+2))>>>9;
         int result=sign|(((14-exp)+127)<<23)|mantissa;
+        /*if (fixed<0) System.out.println(Integer.toBinaryString(fixed) +"\n"+
+                                        Integer.toBinaryString(-fixed) +"\n"+
+                                        Integer.toBinaryString(result));*/
         return Float.intBitsToFloat(result);
     }
  
@@ -50,10 +54,18 @@ public class FixedFloat {
     }
     
     public static double toDouble(int fixed){
+        
+        
         // Remember sign.
+        
         long fx=fixed;
         fx<<=32;
         long sign=(long)fx&SIGN_64;
+        
+         if (fixed<0) {
+             fixed=-fixed;
+             fx=-fx;
+         }
         long exp=findShift(fixed);
         // First shift to left to "swallow" sign and implicit 1.
         long bits=(fx<<(exp+2))>>>12;

@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.5 2010/07/29 15:28:59 velktron Exp $
+// $Id: Renderer.java,v 1.6 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.6  2010/08/10 16:41:57  velktron
+// Threw some work into map loading.
+//
 // Revision 1.5  2010/07/29 15:28:59  velktron
 // More work on menus...and digging some dependencies..
 //
@@ -1423,7 +1426,21 @@ public void R_InitTextures ()
  texturetranslation[i] = i;
 }
 
+//
+//R_FlatNumForName
+//Retrieval, get a flat number for a flat name.
+//
+public int FlatNumForName (String name)
+{
+int     i;
+i = W.CheckNumForName (name);
 
+if (i == -1)
+{
+system.Error ("R_FlatNumForName: %s not found",name);
+}
+return i - firstflat;
+}
 
 /*
 
@@ -1517,25 +1534,7 @@ void R_InitData (void)
 
 
 
-//
-//R_FlatNumForName
-//Retrieval, get a flat number for a flat name.
-//
-int R_FlatNumForName (char* name)
-{
- int     i;
- char    namet[9];
 
- i = W_CheckNumForName (name);
-
- if (i == -1)
- {
- namet[8] = 0;
- memcpy (namet, name,8);
- I_Error ("R_FlatNumForName: %s not found",namet);
- }
- return i - firstflat;
-}
 
 
 

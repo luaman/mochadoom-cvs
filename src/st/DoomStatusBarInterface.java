@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomStatusBar.java,v 1.1 2010/07/03 23:24:13 velktron Exp $
+// $Id: DoomStatusBarInterface.java,v 1.1 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -26,7 +26,7 @@ package st;
 import static data.Defines.*;
 import doom.event_t;
 
-public interface DoomStatusBar {
+public interface DoomStatusBarInterface {
 
 // Size of statusbar.
 // Now sensitive for scaling.
@@ -41,22 +41,19 @@ public static int FG =0;
 //
 
 // Called by main loop.
-public boolean ST_Responder (event_t ev);
+public boolean Responder (event_t ev);
 
 // Called by main loop.
-public void ST_Ticker ();
+public void Ticker ();
 
 // Called by main loop.
-public void ST_Drawer (boolean fullscreen, boolean refresh);
+public void Drawer (boolean fullscreen, boolean refresh);
 
 // Called when the console player is spawned on each level.
-public void ST_Start ();
+public void Start ();
 
 // Called by startup code.
-public void ST_Init ();
-
-//public boolean ST_Responder(event_t ev);
-
+public void Init ();
 
 
 }

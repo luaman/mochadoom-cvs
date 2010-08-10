@@ -1,32 +1,37 @@
 package rr;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import w.CacheableDoomObject;
 import m.fixed_t;
 
-/**The LineSeg.
+/**The LineSeg. Must be built from on-disk mapsegs_t, which are much 
+ * simpler.
  *  
  * @author admin
  *
  */
-public class seg_t {
+public class seg_t{
 
-   // MAES: pointers
-   vertex_t   v1;
-   vertex_t   v2;
+   /** To be used as references */
+   public vertex_t   v1, v2;
+
    
-   fixed_t offset;
+   /** (fixed_t) */
+   public int offset;
 
-   // MAES: Well, type safety above everything...or not? Was angle_t
-   int angle;
+   /** (angle_t) */
+   public int angle;
 
    // MAES: all were single pointers.
    
-   side_t sidedef;
-   line_t linedef;
+   public side_t sidedef;
+   public line_t linedef;
 
-   // Sector references.
-   // Could be retrieved from linedef, too.
-   // backsector is NULL for one sided lines
-   sector_t   frontsector;
-   sector_t   backsector;
+   /** Sector references.
+    Could be retrieved from linedef, too.
+    backsector is NULL for one sided lines */
+   public sector_t   frontsector,backsector;
    
 }

@@ -24,7 +24,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.7 2010/07/29 15:29:00 velktron Exp $
+// $Id: Menu.java,v 1.8 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +39,9 @@ import w.WadLoader;
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.8  2010/08/10 16:41:57  velktron
+// Threw some work into map loading.
+//
 // Revision 1.7  2010/07/29 15:29:00  velktron
 // More work on menus...and digging some dependencies..
 //
@@ -2175,5 +2178,7 @@ DrawText
 
     return x;
 }
+
+////////////////////////////// DRAWROUTINES //////////////////////////////////
 
 }

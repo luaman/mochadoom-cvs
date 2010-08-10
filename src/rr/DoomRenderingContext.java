@@ -1,8 +1,8 @@
 package rr;
 
 public class DoomRenderingContext {
-Renderer R;
-Draw DR;
+public Renderer R;
+public Draw DR;
 
     
 }

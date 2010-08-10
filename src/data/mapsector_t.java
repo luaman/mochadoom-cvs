@@ -1,0 +1,41 @@
+package data;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import w.CacheableDoomObject;
+import w.DoomBuffer;
+
+/** Sector definition, from editing. */ 
+public class mapsector_t implements CacheableDoomObject {
+    
+        public mapsector_t(){
+
+        }
+    
+      public short     floorheight;
+      public  short     ceilingheight;
+      public  String floorpic;
+      public  String        ceilingpic;
+      public  short     lightlevel;
+      public  short     special;
+      public  short     tag;
+    @Override
+    public void unpack(ByteBuffer buf)
+            throws IOException {
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        this.floorheight = buf.getShort();
+        this.ceilingheight = buf.getShort();
+        this.floorpic=DoomBuffer.getString(buf,8);
+        this.ceilingpic=DoomBuffer.getString(buf,8);
+        this.lightlevel= buf.getShort();
+        this.special= buf.getShort();
+        this.tag= buf.getShort();
+    }
+    
+    public static int sizeOf() {
+        return 24;
+    }
+      
+}

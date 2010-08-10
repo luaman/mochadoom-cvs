@@ -2,7 +2,9 @@ package automap;
 
 public class mline_t
 {
-    
+    public mline_t(){
+        this(0,0,0,0);
+    }
     
     public mline_t(mpoint_t a, mpoint_t b) {
         this.a = a;

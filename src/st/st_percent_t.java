@@ -2,7 +2,7 @@ package st;
 
 import rr.patch_t;
 import v.DoomVideoRenderer;
-import static st.DoomStatusBar.*;
+import static st.DoomStatusBarInterface.*;
 
 public class st_percent_t {
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.5 2010/07/22 15:37:53 velktron Exp $
+// $Id: WadLoader.java,v 1.6 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.6  2010/08/10 16:41:57  velktron
+// Threw some work into map loading.
+//
 // Revision 1.5  2010/07/22 15:37:53  velktron
 // MAJOR changes in Menu system.
 //
@@ -581,9 +584,9 @@ public class WadLoader {
 
     }
 
-    //
-    // W_CacheLumpNum
-    //
+    /**
+    * W_CacheLumpNum
+    */
     public Object CacheLumpNum(int lump, int tag, Class what)
             throws IOException {
         // byte* ptr;
@@ -634,6 +637,61 @@ public class WadLoader {
         return lumpcache[lump];
     }
 
+    /**
+     * Read a lump into an object array, if possible. The binary blob lump will still be
+     * cached as usual, but as a ByteBuffer this time, and deserialization
+     * will be performed into the given Object[] array. Helps keep syntax compact. 
+     * 
+     */
+     public void CacheLumpNumIntoArray(int lump, int tag, Object[] array, Class what)
+             throws IOException {
+
+         if (lump >= numlumps) {
+             system.Error("W_CacheLumpNum: %i >= numlumps", lump);
+         }
+
+         // Nothing cached here...
+         if ((lumpcache[lump] == null)) {
+
+             // read the lump in
+
+             System.out.println("cache miss on lump "+lump);
+             // ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[lump]);
+             // Read as a byte buffer anyway.
+             ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
+             ReadLump(lump, thebuffer);
+             // Store the buffer anyway (as a DoomBuffer)
+             lumpcache[lump] = new DoomBuffer(thebuffer);
+            
+         } else {
+             System.out.println("cache hit on lump " + lump);
+             // Z.ChangeTag (lumpcache[lump],tag);
+         }
+
+         // Class type specified. If the previously cached stuff is a "DoomBuffer" we can go on.
+
+         if ((what != null)&&(lumpcache[lump].getClass()==DoomBuffer.class)) {
+             try {
+                 // Can it be uncached? If so, deserialize it. FOR EVERY OBJECT.
+                 ByteBuffer b=((DoomBuffer)(lumpcache[lump])).getBuffer();
+                 b.rewind();
+                 
+                 for (int i=0;i<array.length;i++){
+                 if (implementsInterface(what, w.CacheableDoomObject.class)) {
+                     ((CacheableDoomObject)array[i]).unpack(b);
+                 }
+                 }
+             } catch (Exception e) {
+                 System.err.println("Could not auto-unpack lump "
+                         + lump + " into an array of objects of class " + what);
+                 e.printStackTrace();
+             }
+
+         }
+         
+         return;
+     }
+    
     private boolean implementsInterface(Class what, Class which) {
         Class[] shit = what.getInterfaces();
         for (int i = 0; i < shit.length; i++) {
@@ -644,6 +702,8 @@ public class WadLoader {
         return false;
     }
 
+    
+    
 
     /** Return a cached lump based on its name, and for a specificc
      *  class. This will autoload it too, and should be the preferred

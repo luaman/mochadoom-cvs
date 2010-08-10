@@ -103,5 +103,19 @@ for ( int i = 1; i <= PRECISION; i++)
 return fixint_value;
 }
 
+public static double Value(int fixed){
+    double dec=(fixed>>FRACBITS);
+    double frac=0;char fixint_value=0;
+
+    for ( int i = FRACBITS; i >=0; i--)
+    {
+       if (((fixed>>FRACBITS)&(0x0001))==1) {
+           frac+=1/(2+(FRACBITS-i));
+           }
+    }
+return (dec+frac);
+}
+
+
 }
 

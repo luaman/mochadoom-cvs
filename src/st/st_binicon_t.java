@@ -3,7 +3,7 @@ package st;
 import i.system;
 import rr.patch_t;
 import v.DoomVideoRenderer;
-import static st.DoomStatusBar.*;
+import static st.DoomStatusBarInterface.*;
 
 public class st_binicon_t {
 	

@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: bbox.java,v 1.2 2010/07/01 18:38:09 velktron Exp $
+// $Id: BBox.java,v 1.1 2010/08/10 16:41:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,7 +17,10 @@ package m;
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: bbox.java,v $
+// $Log: BBox.java,v $
+// Revision 1.1  2010/08/10 16:41:57  velktron
+// Threw some work into map loading.
+//
 // Revision 1.2  2010/07/01 18:38:09  velktron
 // Video "rendering" completed, columns_t parsing completed. Play around with testers :-p
 //
@@ -42,12 +45,12 @@ package m;
 //	PCX Screenshots.
 //
 //-----------------------------------------------------------------------------
-// static const char rcsid[] = "$Id: bbox.java,v 1.2 2010/07/01 18:38:09 velktron Exp $";
+// static const char rcsid[] = "$Id: BBox.java,v 1.1 2010/08/10 16:41:57 velktron Exp $";
 
 import static data.doomtype.*;
 import utils.C2JUtils;
 
-public class bbox {
+public class BBox {
 
 	public static final int BOXTOP = 0;
 	public static final int BOXBOTTOM = 1;
@@ -57,7 +60,7 @@ public class bbox {
 
 	// Points of the bbox as an object
 
-	public bbox() {
+	public BBox() {
 		pts = new fixed_t[4];
 		C2JUtils.initArrayOfObjects(pts,fixed_t.class);
 		

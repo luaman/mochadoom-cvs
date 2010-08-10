@@ -3,8 +3,10 @@ package doom;
 import i.SystemInterface;
 import data.doomstat;
 import m.random;
+import rr.DoomRenderingContext;
 import rr.Renderer;
 import s.DoomSoundInterface;
+import st.DoomStatusBarInterface;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 
@@ -21,11 +23,11 @@ import w.WadLoader;
 public class DoomContext {
     public doomstat DS;
     public WadLoader W;
-    public Renderer R;
-    public DoomVideoRenderer V;
+    public DoomRenderingContext DRC;
     public random RND;
     public SystemInterface I;
     public DoomSoundInterface S;
+    public DoomStatusBarInterface ST;
     
     
     
