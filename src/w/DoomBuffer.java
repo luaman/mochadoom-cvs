@@ -2,6 +2,7 @@ package w;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -52,6 +53,35 @@ public class DoomBuffer implements CacheableDoomObject  {
         }
     }
     
+    public static void readCharArray(ByteBuffer buf,char[] s,int len) throws IOException {
+
+        if ((s==null)||(len==0)) return;
+        
+        for (int i=0;i<Math.min(len,s.length);i++){           
+            s[i]=buf.getChar();
+        }
+    }
+    
+    public static void readShortArray(ByteBuffer buf,short[] s,int len) throws IOException {
+
+        if ((s==null)||(len==0)) return;
+        
+        for (int i=0;i<Math.min(len,s.length);i++){           
+            s[i]=buf.getShort();
+        }
+    }
+
+    public void readShortArray(short[] s,int len) throws IOException {
+
+        if ((s==null)||(len==0)) return;
+        
+        for (int i=0;i<Math.min(len,s.length);i++){           
+            s[i]=this.buffer.getShort();
+            
+        }
+    }
+    
+    
     /** Reads a length specified string from a buffer. */
     public static String readString(ByteBuffer buf) throws IOException {
         int len = buf.getInt();
@@ -93,6 +123,37 @@ public class DoomBuffer implements CacheableDoomObject  {
         return new String(bb, 0, len);
     }
     
+    /** MAES: Reads a maximum specified number of bytes from a buffer into a new String,
+     * considering the bytes as representing a null-terminated, C-style string.
+     * 
+     * @param buf
+     * @param len
+     * @return
+     * @throws IOException
+     */
+       
+       public static String getNullTerminatedString(ByteBuffer buf, int len) throws IOException {
+
+           if (len == -1)
+               return null;
+
+           if (len == 0)
+               return "";
+
+           byte bb[] = new byte[len];
+           
+           buf.get(bb, 0, len);
+           // Detect null-termination.
+           for (int i=0;i<len;i++){
+               if (bb[i]==0x00){
+                   len=i;
+                   break;
+               }
+           }
+           
+           return new String(bb, 0, len);
+       }
+    
     /** MAES: Reads a specified number of bytes from a buffer into a new String.
      *  With many lengths being implicit, we need to actually take the loader by the hand.
      * 
@@ -119,6 +180,14 @@ public class DoomBuffer implements CacheableDoomObject  {
         return buffer;
     }
     
+    public void setOrder(ByteOrder bo){
+        this.buffer.order(bo);
+    }
+
+    public void rewind() {
+        this.buffer.rewind();
+        
+    }
     
 
 }

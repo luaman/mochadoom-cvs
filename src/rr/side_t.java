@@ -8,22 +8,26 @@ import m.fixed_t;
  *
  */
 public class side_t {
-     // add this to the calculated texture column
-     public fixed_t textureoffset;
+     /** (fixed_t) add this to the calculated texture column */
+     public int textureoffset;
      
-     // add this to the calculated texture top
-     public fixed_t rowoffset;
+     /** (fixed_t) add this to the calculated texture top */
+     public int rowoffset;
 
-     // Texture indices.
-     // We do not maintain names here. 
+     /** Texture indices.
+      * We do not maintain names here.  
+      */
      public short   toptexture;
      public short   bottomtexture;
      public short   midtexture;
 
-     // Sector the SideDef is facing. MAES: pointer *
+     /** Sector the SideDef is facing. MAES: pointer */
      public sector_t   sector;
 
-    public side_t(fixed_t textureoffset, fixed_t rowoffset, short toptexture,
+     public side_t() {
+     }
+     
+    public side_t(int textureoffset, int rowoffset, short toptexture,
             short bottomtexture, short midtexture, sector_t sector) {
         super();
         this.textureoffset = textureoffset;

@@ -4,6 +4,10 @@ import static data.Defines.MAXPLAYERS;
 
 public class wbstartstruct_t {
 
+        public wbstartstruct_t(){
+            plyr=new wbstartstruct_t[MAXPLAYERS];
+        }
+    
         public int      epsd;   // episode # (0-2)
 
         // if true, splash the secret level
@@ -24,6 +28,6 @@ public class wbstartstruct_t {
         // index of this player in game
         public int      pnum;   
 
-        public wbstartstruct_t[]   plyr=new wbstartstruct_t[MAXPLAYERS];
+        public wbstartstruct_t[]   plyr;
 
     } 

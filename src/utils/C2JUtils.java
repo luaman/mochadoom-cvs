@@ -46,7 +46,7 @@ public class C2JUtils {
     	return strcmp(s1,s2.toCharArray());
     }
     
-    /** C-like string length.
+    /** C-like string length (null termination).
      * 
      * @param s1
      * @return 
@@ -69,8 +69,9 @@ public class C2JUtils {
      * @param os
      * @param c
      * @throws Exception 
-     * @throws  
-     */
+     * @throws
+     */  
+
     public static void initArrayOfObjects(Object[] os, Class c) {
         try {
         for (int i=0;i<os.length;i++){

@@ -3,7 +3,7 @@ package p;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: local.java,v 1.4 2010/07/20 15:52:56 velktron Exp $
+// $Id: local.java,v 1.5 2010/08/11 16:31:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -188,33 +188,3 @@ extern int		clipammo[NUMAMMO];
 // P_SPEC
 //
 //#include "p_spec.h"
-
-
-//-----------------------------------------------------------------------------
-//
-// $Log: local.java,v $
-// Revision 1.4  2010/07/20 15:52:56  velktron
-// LOTS of changes, Automap almost complete. Use of fixed_t inside methods severely limited.
-//
-// Revision 1.3  2010/07/05 16:18:40  velktron
-// YOU DON'T WANNA KNOW
-//
-// Revision 1.2  2010/07/03 23:24:13  velktron
-// Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
-//
-// Revision 1.1  2010/06/30 08:58:50  velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still  being worked on. For a good place to start and get an idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1  2010/06/29 11:07:34  velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete, and there's still mixed C code in there. I suggest you load everything up in Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you  can get an idea of how a few of the implemented stuff works.
-//
-//
-//-----------------------------------------------------------------------------
-

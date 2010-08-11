@@ -3,16 +3,26 @@ package p;
 import static data.Defines.*;
 import static data.doomtype.*;
 import static m.fixed_t.*;
+import static data.doomdata.*;
+import static m.BBox.*;
 
+import i.system;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import data.doomstat;
-import static data.doomdata.*;
+
+import data.maplinedef_t;
+import data.mapnode_t;
 import data.mapsector_t;
 import data.mapseg_t;
+import data.mapsidedef_t;
 import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
+import doom.DoomContext;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -38,7 +48,7 @@ import m.fixed_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Playfield.java,v 1.1 2010/08/10 16:41:57 velktron Exp $
+// $Id: Playfield.java,v 1.2 2010/08/11 16:31:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -53,6 +63,9 @@ import m.fixed_t;
 // GNU General Public License for more details.
 //
 // $Log: Playfield.java,v $
+// Revision 1.2  2010/08/11 16:31:34  velktron
+// Map loading works! Check out LevelLoaderTester for more.
+//
 // Revision 1.1  2010/08/10 16:41:57  velktron
 // Threw some work into map loading.
 //
@@ -73,7 +86,7 @@ public class Playfield {
     DoomVideoRenderer V;
     Renderer R;
 
-  public static final String  rcsid = "$Id: Playfield.java,v 1.1 2010/08/10 16:41:57 velktron Exp $";
+  public static final String  rcsid = "$Id: Playfield.java,v 1.2 2010/08/11 16:31:34 velktron Exp $";
 
 /*
   #include <math.h>
@@ -139,7 +152,7 @@ public class Playfield {
   // offsets in blockmap are from here
   short[]      blockmaplump;       
   /** (fixed_t) origin of block map */
-  fixed_t     bmaporgx,  bmaporgy;
+  int     bmaporgx,  bmaporgy;
   /** for thing chains */
   mobj_t[]    blocklinks;     
 
@@ -168,17 +181,18 @@ public class Playfield {
 
   /**
   * P_LoadVertexes
+ * @throws IOException 
   */
-  public void LoadVertexes (int lump)
+  public void LoadVertexes (int lump) throws IOException
   {
       // Make a lame-ass attempt at loading some vertexes.
       
       // Determine number of lumps:
       //  total lump length / vertex record length.
-      int numvertexes = W.LumpLength (lump) / mapvertex_t.sizeOf();
+      numvertexes = W.LumpLength (lump) / mapvertex_t.sizeOf();
 
       // Allocate zone memory for buffer.
-      vertex_t[] vertexes = new vertex_t[numvertexes];
+      vertexes = new vertex_t[numvertexes];
       // Init those "vertexes"
       C2JUtils.initArrayOfObjects(vertexes, vertex_t.class);
 
@@ -195,11 +209,12 @@ public class Playfield {
 
   /**
   * P_LoadSegs
+ * @throws IOException 
   */
-  public void LoadSegs (int lump)
+  public void LoadSegs (int lump) throws IOException
   {
    
-      mapseg_t[] msegs;
+      mapseg_t[] data;
       mapseg_t       ml;
       seg_t li;
       line_t     ldef;
@@ -209,17 +224,19 @@ public class Playfield {
       // Another disparity between disk/memory. Treat it the same as VERTEXES.
       numsegs = W.LumpLength (lump) / mapseg_t.sizeOf();
       segs = new seg_t[numsegs];
-      msegs = new mapseg_t[numsegs];
+      C2JUtils.initArrayOfObjects(segs, seg_t.class);
+      data = new mapseg_t[numsegs];
+      C2JUtils.initArrayOfObjects(data, mapseg_t.class);
       
       // Read "mapsegs". 
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,msegs,mapseg_t.class);
+      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapseg_t.class);
       
 
       // We're not done yet!
       for (int i=0 ; i<numsegs ; i++)
       {
           li=segs[i];
-          ml=msegs[i];
+          ml=data[i];
       li.v1 = vertexes[ml.v1];
       li.v2 = vertexes[ml.v2];
                       
@@ -241,17 +258,22 @@ public class Playfield {
 
   /**
   * P_LoadSubsectors
+ * @throws IOException 
   */
-  public void LoadSubsectors (int lump)
+  public void LoadSubsectors (int lump) throws IOException
   {
       mapsubsector_t ms;
       subsector_t    ss;
       mapsubsector_t[] data;
       
-      numsubsectors = W.LumpLength (lump) / mapsubsector_t.sizeOf();
-      
+      numsubsectors = W.LumpLength (lump) / mapsubsector_t.sizeOf();      
       subsectors = new subsector_t[numsubsectors];
+      C2JUtils.initArrayOfObjects(subsectors, subsector_t.class);
+            
       data= new mapsubsector_t[numsubsectors];
+      C2JUtils.initArrayOfObjects(data, mapsubsector_t.class);
+      
+      // Read "mapsubsectors"
       W.CacheLumpNumIntoArray(lump,PU_STATIC,data, mapsubsector_t.class);
       
       for (int i=0 ; i<numsubsectors ; i++)
@@ -266,16 +288,22 @@ public class Playfield {
   
   /**
    * P_LoadSectors
+ * @throws IOException 
    */
-  public void LoadSectors (int lump)
+  public void LoadSectors (int lump) throws IOException
   {
       mapsector_t[]       data;
       mapsector_t    ms;
       sector_t       ss;
       
       numsectors = W.LumpLength (lump) / mapsector_t.sizeOf();
-      sectors = new sector_t[numsectors];    
+      sectors = new sector_t[numsectors];
+      C2JUtils.initArrayOfObjects(sectors, sector_t.class);
+      
       data=new mapsector_t[numsectors];
+      C2JUtils.initArrayOfObjects(data, mapsector_t.class);
+      
+      // Read "mapsectors"
       W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapsector_t.class);
       
 
@@ -285,8 +313,8 @@ public class Playfield {
           ss = sectors[i];
       ss.floorheight = ms.floorheight<<FRACBITS;
       ss.ceilingheight = ms.ceilingheight<<FRACBITS;
-      ss.floorpic = (short) R.FlatNumForName(ms.floorpic);
-      ss.ceilingpic = (short) R.FlatNumForName(ms.ceilingpic);
+     //TODO: ss.floorpic = (short) R.FlatNumForName(ms.floorpic);
+     //TODO: ss.ceilingpic = (short) R.FlatNumForName(ms.ceilingpic);
       ss.lightlevel = ms.lightlevel;
       ss.special = ms.special;
       ss.tag = ms.tag;
@@ -296,65 +324,73 @@ public class Playfield {
   }
 
 
-  //
-  // P_LoadNodes
-  //
-  /*
-  void P_LoadNodes (int lump)
+  /**
+  * P_LoadNodes
+ * @throws IOException 
+  */
+  
+  public void LoadNodes (int lump) throws IOException
   {
-      byte*   data;
+      mapnode_t[]   data;
       int     i;
       int     j;
       int     k;
-      mapnode_t*  mn;
-      node_t* no;
+      mapnode_t  mn;
+      node_t no;
       
-      numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
-      nodes = Z_Malloc (numnodes*sizeof(node_t),PU_LEVEL,0);  
-      data = W_CacheLumpNum (lump,PU_STATIC);
+      numnodes = W.LumpLength (lump) / mapnode_t.sizeOf();
+      nodes = new node_t[numnodes];
+      C2JUtils.initArrayOfObjects(nodes, node_t.class);
+      data = new mapnode_t[numnodes];  
+      C2JUtils.initArrayOfObjects(data, mapnode_t.class);
+      // Read "mapnodes"
+      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapnode_t.class);
       
-      mn = (mapnode_t *)data;
-      no = nodes;
       
-      for (i=0 ; i<numnodes ; i++, no++, mn++)
+      for (i=0 ; i<numnodes ; i++)
       {
-      no.x = SHORT(mn.x)<<FRACBITS;
-      no.y = SHORT(mn.y)<<FRACBITS;
-      no.dx = SHORT(mn.dx)<<FRACBITS;
-      no.dy = SHORT(mn.dy)<<FRACBITS;
+          mn=data[i];
+          no=nodes[i];
+      no.x = mn.x<<FRACBITS;
+      no.y = mn.y<<FRACBITS;
+      no.dx = mn.dx<<FRACBITS;
+      no.dy = mn.dy<<FRACBITS;
       for (j=0 ; j<2 ; j++)
       {
-          no.children[j] = SHORT(mn.children[j]);
+          no.children[j] = mn.children[j];
           for (k=0 ; k<4 ; k++)
-          no.bbox[j][k] = SHORT(mn.bbox[j][k])<<FRACBITS;
+          no.bbox[j].set(k, mn.bbox[j][k]<<FRACBITS);
       }
       }
       
-      Z_Free (data);
   }
 
 
-  //
-  // P_LoadThings
-  //
-  void P_LoadThings (int lump)
+  /**
+   * P_LoadThings
+ * @throws IOException 
+   */
+  public void LoadThings (int lump) throws IOException
   {
-      byte*       data;
-      int         i;
-      mapthing_t*     mt;
+      mapthing_t[]       data;
+      mapthing_t     mt;
       int         numthings;
-      boolean     spawn;
+      boolean     spawn;      
       
-      data = W_CacheLumpNum (lump,PU_STATIC);
-      numthings = W_LumpLength (lump) / sizeof(mapthing_t);
+      numthings = W.LumpLength (lump) / mapthing_t.sizeOf();
+      data=new mapthing_t[numthings];
+      C2JUtils.initArrayOfObjects(data, mapthing_t.class);
+      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapthing_t.class);
       
-      mt = (mapthing_t *)data;
-      for (i=0 ; i<numthings ; i++, mt++)
+      
+      
+      for (int i=0 ; i<numthings ; i++)
       {
+          mt = data[i];
       spawn = true;
 
       // Do not spawn cool, new monsters if !commercial
-      if ( gamemode != commercial)
+      if ( DS.gamemode != GameMode_t.commercial)
       {
           switch(mt.type)
           {
@@ -375,60 +411,66 @@ public class Playfield {
       if (spawn == false)
           break;
 
-      // Do spawn all other stuff. 
-      mt.x = SHORT(mt.x);
+      // Do spawn all other stuff.
+      // MAES: we have loaded the shit with the proper endianness, so no fucking around, bitch.
+      /*mt.x = SHORT(mt.x);
       mt.y = SHORT(mt.y);
       mt.angle = SHORT(mt.angle);
       mt.type = SHORT(mt.type);
-      mt.options = SHORT(mt.options);
+      mt.options = SHORT(mt.options);*/
       
-      P_SpawnMapThing (mt);
+      // TODO: P_SpawnMapThing (mt);
       }
       
-      Z_Free (data);
   }
 
 
-  //
-  // P_LoadLineDefs
-  // Also counts secret lines for intermissions.
-  //
-  void P_LoadLineDefs (int lump)
+  /**
+   * P_LoadLineDefs
+   * Also counts secret lines for intermissions.
+ * @throws IOException 
+   */
+  public void LoadLineDefs (int lump) throws IOException
   {
-      byte*       data;
-      int         i;
-      maplinedef_t*   mld;
-      line_t*     ld;
-      vertex_t*       v1;
-      vertex_t*       v2;
+      maplinedef_t[]       data;
+      maplinedef_t   mld;
+      line_t     ld;
+      vertex_t       v1;
+      vertex_t       v2;
       
-      numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-      lines = Z_Malloc (numlines*sizeof(line_t),PU_LEVEL,0);  
-      memset (lines, 0, numlines*sizeof(line_t));
-      data = W_CacheLumpNum (lump,PU_STATIC);
+      numlines = W.LumpLength (lump) / maplinedef_t.sizeOf();
+      lines = new line_t[numlines];
+      C2JUtils.initArrayOfObjects(lines, line_t.class);
+      data = new maplinedef_t[numlines];
+      C2JUtils.initArrayOfObjects(data, maplinedef_t.class);
+
+      // read "maplinedefs"
+      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,maplinedef_t.class);
       
-      mld = (maplinedef_t *)data;
-      ld = lines;
-      for (i=0 ; i<numlines ; i++, mld++, ld++)
+      for (int i=0 ; i<numlines ; i++)
       {
-      ld.flags = SHORT(mld.flags);
-      ld.special = SHORT(mld.special);
-      ld.tag = SHORT(mld.tag);
-      v1 = ld.v1 = &vertexes[SHORT(mld.v1)];
-      v2 = ld.v2 = &vertexes[SHORT(mld.v2)];
+          mld = data[i];
+          ld = lines[i];
+    
+          
+      ld.flags = mld.flags;
+      ld.special = mld.special;
+      ld.tag = mld.tag;
+      v1 = ld.v1 = vertexes[mld.v1];
+      v2 = ld.v2 = vertexes[mld.v2];
       ld.dx = v2.x - v1.x;
       ld.dy = v2.y - v1.y;
       
-      if (!ld.dx)
-          ld.slopetype = ST_VERTICAL;
-      else if (!ld.dy)
-          ld.slopetype = ST_HORIZONTAL;
+      if (ld.dx==0)
+          ld.slopetype = slopetype_t.ST_VERTICAL;
+      else if (ld.dy==0)
+          ld.slopetype = slopetype_t.ST_HORIZONTAL;
       else
       {
           if (FixedDiv (ld.dy , ld.dx) > 0)
-          ld.slopetype = ST_POSITIVE;
+          ld.slopetype = slopetype_t.ST_POSITIVE;
           else
-          ld.slopetype = ST_NEGATIVE;
+          ld.slopetype = slopetype_t.ST_NEGATIVE;
       }
           
       if (v1.x < v2.x)
@@ -453,69 +495,79 @@ public class Playfield {
           ld.bbox[BOXTOP] = v1.y;
       }
 
-      ld.sidenum[0] = SHORT(mld.sidenum[0]);
-      ld.sidenum[1] = SHORT(mld.sidenum[1]);
+      ld.sidenum[0] = mld.sidenum[0];
+      ld.sidenum[1] = mld.sidenum[1];
 
       if (ld.sidenum[0] != -1)
           ld.frontsector = sides[ld.sidenum[0]].sector;
       else
-          ld.frontsector = 0;
+          ld.frontsector = null;
 
       if (ld.sidenum[1] != -1)
           ld.backsector = sides[ld.sidenum[1]].sector;
       else
-          ld.backsector = 0;
+          ld.backsector = null;
       }
-      
-      Z_Free (data);
   }
 
 
   //
   // P_LoadSideDefs
   //
-  void P_LoadSideDefs (int lump)
+  public void LoadSideDefs (int lump) throws IOException
   {
-      byte*       data;
-      int         i;
-      mapsidedef_t*   msd;
-      side_t*     sd;
+      mapsidedef_t[]       data;
+      mapsidedef_t   msd;
+      side_t     sd;
       
-      numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-      sides = Z_Malloc (numsides*sizeof(side_t),PU_LEVEL,0);  
-      memset (sides, 0, numsides*sizeof(side_t));
-      data = W_CacheLumpNum (lump,PU_STATIC);
+      numsides = W.LumpLength (lump) / mapsidedef_t.sizeOf();
+      sides = new side_t[numsides];  
+      C2JUtils.initArrayOfObjects(sides, side_t.class);
+      data= new mapsidedef_t[numsides];
+      C2JUtils.initArrayOfObjects(data, mapsidedef_t.class);
+      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapsidedef_t.class);
       
-      msd = (mapsidedef_t *)data;
-      sd = sides;
-      for (i=0 ; i<numsides ; i++, msd++, sd++)
+      for (int i=0 ; i<numsides ; i++)
       {
-      sd.textureoffset = SHORT(msd.textureoffset)<<FRACBITS;
-      sd.rowoffset = SHORT(msd.rowoffset)<<FRACBITS;
-      sd.toptexture = R_TextureNumForName(msd.toptexture);
-      sd.bottomtexture = R_TextureNumForName(msd.bottomtexture);
-      sd.midtexture = R_TextureNumForName(msd.midtexture);
-      sd.sector = &sectors[SHORT(msd.sector)];
+          msd = data[i];
+          sd = sides[i];
+          
+      sd.textureoffset = (msd.textureoffset)<<FRACBITS;
+      sd.rowoffset = (msd.rowoffset)<<FRACBITS;
+      //TODO: sd.toptexture = R.TextureNumForName(msd.toptexture);
+      //TODO: sd.bottomtexture = R.TextureNumForName(msd.bottomtexture);
+      //TODO: sd.midtexture = R.TextureNumForName(msd.midtexture);
+      sd.sector = sectors[msd.sector];
       }
-      
-      Z_Free (data);
   }
 
 
-  //
-  // P_LoadBlockMap
-  //
-  void P_LoadBlockMap (int lump)
+  /**
+   * P_LoadBlockMap
+ * @throws IOException 
+   */
+  public void LoadBlockMap (int lump) throws IOException
   {
       int     i;
       int     count;
       
-      blockmaplump = W_CacheLumpNum (lump,PU_LEVEL);
-      blockmap = blockmaplump+4;
-      count = W_LumpLength (lump)/2;
+      DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
+      count=W.LumpLength(lump)/2;
+      blockmaplump=new short[count];
+      blockmap=new short[count-4];
+      data.setOrder(ByteOrder.LITTLE_ENDIAN);
+      data.rewind();
+      data.readShortArray(blockmaplump, count);
+
+      //blockmap = blockmaplump+4;
+      // Maes: skips first FOUR shorts?
+      for (i=0 ; i<count-4 ; i++){
+          blockmap[i]=blockmaplump[i+4];
+      }
 
       for (i=0 ; i<count ; i++)
-      blockmaplump[i] = SHORT(blockmaplump[i]);
+      // MAES: not needed
+      //blockmaplump[i] = blockmaplump[i];
           
       bmaporgx = blockmaplump[0]<<FRACBITS;
       bmaporgy = blockmaplump[1]<<FRACBITS;
@@ -523,11 +575,11 @@ public class Playfield {
       bmapheight = blockmaplump[3];
       
       // clear out mobj chains
-      count = sizeof(*blocklinks)* bmapwidth*bmapheight;
-      blocklinks = Z_Malloc (count,PU_LEVEL, 0);
-      memset (blocklinks, 0, count);
+      count = bmapwidth*bmapheight;
+      blocklinks = new mobj_t[count];
+      C2JUtils.initArrayOfObjects(blocklinks, mobj_t.class);
   }
-*/
+
 
 
   //
@@ -535,34 +587,38 @@ public class Playfield {
   // Builds sector line lists and subsector sector numbers.
   // Finds block bounding boxes for sectors.
   //
+
+  
   public void GroupLines ()
   {
       line_t[]        linebuffer;
-      int         i;
-      int         j;
-      int         total;
+      int         total, partial;
       line_t     li;
       sector_t       sector;
       subsector_t    ss;
       seg_t      seg;
-      BBox     bbox=new BBox();
+      int[]     bbox=new int[4];
       int         block;
       
       // look up sector number for each subsector
       
-      for (i=0 ; i<numsubsectors ; i++)
+      for (int i=0 ; i<numsubsectors ; i++)
       {
       ss = subsectors[i];
       seg = segs[ss.firstline];
       ss.sector = seg.sidedef.sector;
       }
 
+      //linebuffer=new line_t[numsectors][0];
       // count number of lines in each sector
-
+      
+      
       total = 0;
-      for (i=0 ; i<numlines ; i++)
+
+      for (int i=0 ; i<numlines ; i++)
       {
-          li = lines[i];
+      partial=0;
+      li = lines[i];
       total++;
       li.frontsector.linecount++;
 
@@ -571,28 +627,63 @@ public class Playfield {
           li.backsector.linecount++;
           total++;
       }
+      
+      
       }
       
       // build line tables for each sector    
-      linebuffer = new line_t[total];
-      int linebuffercount=0;
+      // MAES: we don't really need this in Java.
+      // linebuffer = new line_t[total];
+      // int linebuffercount=0;
       
-      for (i=0 ; i<numsectors ; i++)
+      // We scan through ALL sectors.
+      for (int i=0 ; i<numsectors ; i++)
       {
           sector = sectors[i];
-     bbox.ClearBox();
-      sector.lines = linebuffer[linebuffercount];
-      for (j=0 ; j<numlines ; j++)
+          BBox.ClearBox(bbox);
+          //sector->lines = linebuffer;
+          // We can just construct line tables of the correct size
+          // for each sector.
+          int countlines=0;
+      // We scan through ALL lines....
+          
+         // System.out.println(i+ ": looking for sector -> "+sector);
+      for (int j=0 ; j<numlines ; j++)
       {
-          li=lines[i];
+          li=lines[j];
+          
+          //System.out.println(j+ " front "+li.frontsector+ " back "+li.backsector);
+          
           if (li.frontsector == sector || li.backsector == sector)
           {
-          linebuffer[linebuffercount++] = li;
-          bbox.AddToBox ( li.v1.x, li.v1.y);
-          bbox.AddToBox ( li.v2.x, li.v2.y);
+              // This sector will have one more line.
+              countlines++;
+          // Expand bounding box...
+          BBox.AddToBox(bbox, li.v1.x, li.v1.y);
+          BBox.AddToBox (bbox, li.v2.x, li.v2.y);
           }
       }
-      if (linebuffercount - sector.lines != sector.linecount)
+      
+      // So, this sector must have that many lines.
+      sector.lines=new line_t[countlines];
+      int pointline=0;
+
+      int addedlines=0;
+      
+      // Add actual lines into sectors.
+      for (int j=0 ; j<numlines ; j++)
+      {
+          li=lines[j];
+          // If
+          if (li.frontsector == sector || li.backsector == sector)
+          {
+              // This sector will have one more line.
+              sectors[i].lines[pointline++]=lines[j];
+              addedlines++;
+          }
+      }
+      
+      if (sector.lines.length != sector.linecount)
           system.Error ("P_GroupLines: miscounted");
               
       // set the degenmobj_t to the middle of the bounding box
@@ -600,7 +691,7 @@ public class Playfield {
       sector.soundorg.y = (bbox[BOXTOP]+bbox[BOXBOTTOM])/2;
           
       // adjust bounding box to map blocks
-      block = (bbox.[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
+      block = (bbox[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
       block = block >= bmapheight ? bmapheight-1 : block;
       sector.blockbox[BOXTOP]=block;
 
@@ -620,36 +711,37 @@ public class Playfield {
   }
 
 
-  //
-  // P_SetupLevel
-  //
-  void
-  P_SetupLevel
+  /**
+   * P_SetupLevel
+ * @throws Exception 
+   */
+  public void
+  SetupLevel
   ( int       episode,
     int       map,
     int       playermask,
-    skill_t   skill)
+    skill_t   skill) throws Exception
   {
       int     i;
-      char    lumpname[9];
+      String    lumpname;
       int     lumpnum;
       
-      totalkills = totalitems = totalsecret = wminfo.maxfrags = 0;
-      wminfo.partime = 180;
+      DS.totalkills = DS.totalitems = DS.totalsecret = DS.wminfo.maxfrags = 0;
+      DS.wminfo.partime = 180;
       for (i=0 ; i<MAXPLAYERS ; i++)
       {
-      players[i].killcount = players[i].secretcount 
-          = players[i].itemcount = 0;
+      DS.players[i].killcount = DS.players[i].secretcount 
+          = DS.players[i].itemcount = 0;
       }
 
       // Initial height of PointOfView
       // will be set by player think.
-      players[consoleplayer].viewz = 1; 
+      DS.players[DS.consoleplayer].viewz = 1; 
 
       // Make sure all sounds are stopped before Z_FreeTags.
-      S_Start ();         
+      //TODO: S_Start ();         
 
-      
+  /*    
   #if 0 // UNUSED
       if (debugfile)
       {
@@ -658,79 +750,81 @@ public class Playfield {
       }
       else
   #endif
-      Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
+  */
+    //  Z_FreeTags (PU_LEVEL, PU_PURGELEVEL-1);
 
 
       // UNUSED W_Profile ();
-      P_InitThinkers ();
+      //TODO: P_InitThinkers ();
 
       // if working with a devlopment map, reload it
-      W_Reload ();            
+      W.Reload ();            
          
       // find map name
-      if ( gamemode == commercial)
+      if ( DS.gamemode == GameMode_t.commercial)
       {
       if (map<10)
-          sprintf (lumpname,"map0%i", map);
+          lumpname="map0"+map;
       else
-          sprintf (lumpname,"map%i", map);
+          lumpname="map"+map;
       }
       else
       {
-      lumpname[0] = 'E';
-      lumpname[1] = '0' + episode;
-      lumpname[2] = 'M';
-      lumpname[3] = '0' + map;
-      lumpname[4] = 0;
+      lumpname = ("E"+
+     (char)( '0' + episode)+
+     "M"+
+      (char)( '0' + map)
+      );
       }
 
-      lumpnum = W_GetNumForName (lumpname);
+      lumpnum = W.GetNumForName (lumpname);
       
-      leveltime = 0;
+      DS.leveltime = 0;
       
       // note: most of this ordering is important 
-      P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
-      P_LoadVertexes (lumpnum+ML_VERTEXES);
-      P_LoadSectors (lumpnum+ML_SECTORS);
-      P_LoadSideDefs (lumpnum+ML_SIDEDEFS);
-
-      P_LoadLineDefs (lumpnum+ML_LINEDEFS);
-      P_LoadSubsectors (lumpnum+ML_SSECTORS);
-      P_LoadNodes (lumpnum+ML_NODES);
-      P_LoadSegs (lumpnum+ML_SEGS);
+      this.LoadBlockMap (lumpnum+ML_BLOCKMAP);
+      this.LoadVertexes (lumpnum+ML_VERTEXES);
+      this.LoadSectors (lumpnum+ML_SECTORS);
+      this.LoadSideDefs (lumpnum+ML_SIDEDEFS);
+      // Depends on sides[]
+      this.LoadLineDefs (lumpnum+ML_LINEDEFS);
+      this.LoadSubsectors (lumpnum+ML_SSECTORS);
+      this.LoadNodes (lumpnum+ML_NODES);
+      // Depends on lines[]
+      this.LoadSegs (lumpnum+ML_SEGS);
       
-      rejectmatrix = W_CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL);
-      P_GroupLines ();
+      //TODO: rejectmatrix = W_CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL);
+      this.GroupLines ();
 
-      bodyqueslot = 0;
-      deathmatch_p = deathmatchstarts;
-      P_LoadThings (lumpnum+ML_THINGS);
+      DS.bodyqueslot = 0;
+      //TODO: deathmatch_p = deathmatchstarts;
+      this.LoadThings (lumpnum+ML_THINGS);
       
       // if deathmatch, randomly spawn the active players
-      if (deathmatch)
+      if (DS.deathmatch)
       {
       for (i=0 ; i<MAXPLAYERS ; i++)
-          if (playeringame[i])
+          if (DS.playeringame[i])
           {
-          players[i].mo = NULL;
-          G_DeathMatchSpawnPlayer (i);
+          DS.players[i].mo = null;
+          //TODO: G_DeathMatchSpawnPlayer (i);
           }
               
       }
 
       // clear special respawning que
-      iquehead = iquetail = 0;        
+      //TODO: iquehead = iquetail = 0;        
       
       // set up world state
-      P_SpawnSpecials ();
+      //TODO: P_SpawnSpecials ();
       
       // build subsector connect matrix
       //  UNUSED P_ConnectSubsectors ();
 
       // preload graphics
-      if (precache)
-      R_PrecacheLevel ();
-
+      if (DS.precache){
+      //TODO: R_PrecacheLevel ();
+      }
       //printf ("free memory: 0x%x\n", Z_FreeMemory());
 
   }
@@ -740,14 +834,19 @@ public class Playfield {
   //
   // P_Init
   //
-  void P_Init (void)
+  public void P_Init ()
   {
-      P_InitSwitchList ();
-      P_InitPicAnims ();
-      R_InitSprites (sprnames);
+      //TODO:
+      /*InitSwitchList ();
+      InitPicAnims ();
+      InitSprites (sprnames);*/
   }
 
-
+  public Playfield(DoomContext DC){
+      this.W=DC.W;
+      this.DS=DC.DS;
+   
+  }
 
 
 }

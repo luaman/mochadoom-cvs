@@ -1,22 +1,45 @@
 package data;
 
-/** BSP Node structure */
-public class mapnode_t {
-    
-    public mapnode_t(){
-        this.bbox=new short[2][4];
-        this.children=new int[2];
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import w.CacheableDoomObject;
+import w.DoomBuffer;
+
+/** BSP Node structure on-disk */
+public class mapnode_t
+        implements CacheableDoomObject {
+
+    public mapnode_t() {
+        this.bbox = new short[2][4];
+        this.children = new char[2];
     }
 
-      // Partition line from (x,y) to x+dx,y+dy)
-      public short     x;
-      public short     y;
-      public short     dx;
-      public short     dy;
+    /** Partition line from (x,y) to x+dx,y+dy) */
+    public short x, y, dx, dy;
 
-      /** Bounding box for each child, clip against view frustum. */
-      public short[][]     bbox;
+    /** Bounding box for each child, clip against view frustum. */
+    public short[][] bbox;
 
-      /** If NF_SUBSECTOR its a subsector,  else it's a node of another subtree. */
-      public int[] children=new int[2]; // MAES: used to be unsigned short.      
-    } ;
+    /** If NF_SUBSECTOR its a subsector, else it's a node of another subtree. */
+    public char[] children = new char[2]; // MAES: used to be unsigned short.
+
+    public static int sizeOf() {
+        return (8 + 16 + 4);
+    }
+
+    @Override
+    public void unpack(ByteBuffer buf)
+            throws IOException {
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        this.x = buf.getShort();
+        this.y = buf.getShort();
+        this.dx = buf.getShort();
+        this.dy = buf.getShort();
+        DoomBuffer.readShortArray(buf, this.bbox[0], 4);
+        DoomBuffer.readShortArray(buf, this.bbox[1], 4);
+        DoomBuffer.readCharArray(buf, this.children, 2);
+    }
+
+}

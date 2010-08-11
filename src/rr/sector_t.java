@@ -13,7 +13,7 @@ import m.fixed_t;
 public class sector_t {
 
     public sector_t(){
-        
+        soundorg =new degenmobj_t();
     }
     
         /** (fixed_t) */

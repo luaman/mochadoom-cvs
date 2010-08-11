@@ -16,8 +16,7 @@ import doom.thinker_t;
 
 public class degenmobj_t {
 public thinker_t       thinker;    // not used for anything
-public fixed_t     x;
-public fixed_t     y;
-public fixed_t     z;
+/** (fixed_t) */
+public int     x,y,z;
 
 }

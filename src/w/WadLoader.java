@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.6 2010/08/10 16:41:57 velktron Exp $
+// $Id: WadLoader.java,v 1.7 2010/08/11 16:31:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.7  2010/08/11 16:31:34  velktron
+// Map loading works! Check out LevelLoaderTester for more.
+//
 // Revision 1.6  2010/08/10 16:41:57  velktron
 // Threw some work into map loading.
 //
@@ -586,6 +589,9 @@ public class WadLoader {
 
     /**
     * W_CacheLumpNum
+    * Modified to read a lump as a specific type of CacheableDoomObject.
+    * If the class is not identified or is null, then a generic DoomBuffer object is left in the
+    * lump cache and returned. 
     */
     public Object CacheLumpNum(int lump, int tag, Class what)
             throws IOException {
@@ -628,6 +634,11 @@ public class WadLoader {
                     e.printStackTrace();
                 }
 
+            }
+            else {
+                // Class not specified? Then gimme a containing DoomBuffer!
+                DoomBuffer db=new DoomBuffer(thebuffer);
+                lumpcache[lump]=db;
             }
         } else {
             System.out.println("cache hit on lump " + lump);

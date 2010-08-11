@@ -1,54 +1,14 @@
 package m;
 
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id: BBox.java,v 1.1 2010/08/10 16:41:57 velktron Exp $
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// $Log: BBox.java,v $
-// Revision 1.1  2010/08/10 16:41:57  velktron
-// Threw some work into map loading.
-//
-// Revision 1.2  2010/07/01 18:38:09  velktron
-// Video "rendering" completed, columns_t parsing completed. Play around with testers :-p
-//
-// Revision 1.1  2010/06/30 08:58:50  velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still  being worked on. For a good place to start and get an idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1  2010/06/29 11:07:34  velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete, and there's still mixed C code in there. I suggest you load everything up in Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you  can get an idea of how a few of the implemented stuff works.
-//
-//
-// DESCRIPTION:
-//	Main loop menu stuff.
-//	Random number LUT.
-//	Default Config File.
-//	PCX Screenshots.
-//
-//-----------------------------------------------------------------------------
-// static const char rcsid[] = "$Id: BBox.java,v 1.1 2010/08/10 16:41:57 velktron Exp $";
-
 import static data.doomtype.*;
-import utils.C2JUtils;
+
+/** A fucked-up bounding box class.
+ *  Fucked-up  because it's supposed to wrap fixed_t's.... no fucking way I'm doing
+ *  this with fixed_t objects.
+ *  
+ * @author admin
+ *
+ */
 
 public class BBox {
 
@@ -56,15 +16,13 @@ public class BBox {
 	public static final int BOXBOTTOM = 1;
 	public static final int BOXLEFT = 2;
 	public static final int BOXRIGHT = 3;
-	fixed_t[] pts;
+	/** (fixed_t) */
+	protected int[] pts;
 
-	// Points of the bbox as an object
+	/** Points of the bbox as an object */
 
 	public BBox() {
-		pts = new fixed_t[4];
-		C2JUtils.initArrayOfObjects(pts,fixed_t.class);
-		
-		
+		pts = new int[4];
 	}
 
 	// Static method
@@ -79,10 +37,10 @@ public class BBox {
 	// Instance method
 
 	public void ClearBox() {
-		pts[BOXRIGHT].set(MININT);
-		pts[BOXTOP].set(MININT);
-		pts[BOXLEFT].set(MAXINT);
-		pts[BOXBOTTOM].set(MAXINT);
+		pts[BOXRIGHT]=(MININT);
+		pts[BOXTOP]=(MININT);
+		pts[BOXLEFT]=(MAXINT);
+		pts[BOXBOTTOM]=(MAXINT);
 	}
 
 	public static void AddToBox(fixed_t[] box, fixed_t x, fixed_t y) {
@@ -98,13 +56,13 @@ public class BBox {
 
 	public void AddToBox(fixed_t x, fixed_t y) {
 		if (x.compareTo(pts[BOXLEFT]) < 0)
-			pts[BOXLEFT].copy(x);
+			pts[BOXLEFT]=x.val;
 		else if (x.compareTo(pts[BOXRIGHT]) > 0)
-			pts[BOXRIGHT].copy(x);
+			pts[BOXRIGHT]=x.val;
 		if (y.compareTo(pts[BOXBOTTOM]) < 0)
-			pts[BOXBOTTOM] = y;
+			pts[BOXBOTTOM] = y.val;
 		else if (y.compareTo(pts[BOXTOP]) > 0)
-			pts[BOXTOP] = y;
+			pts[BOXTOP] = y.val;
 	}
 
 	/**
@@ -115,14 +73,14 @@ public class BBox {
 	 * @param y
 	 */
 	public void AddToBox(int x, int y) {
-		if (x < pts[BOXLEFT].val)
-			pts[BOXLEFT].set(x);
-		if (x > pts[BOXRIGHT].val)
-			pts[BOXRIGHT].set(x);
-		if (y < pts[BOXBOTTOM].val)
-			pts[BOXBOTTOM].set(y);
-		if (y > pts[BOXTOP].val)
-			pts[BOXTOP].set(y);
+		if (x < pts[BOXLEFT])
+			pts[BOXLEFT]=(x);
+		if (x > pts[BOXRIGHT])
+			pts[BOXRIGHT]=(x);
+		if (y < pts[BOXBOTTOM])
+			pts[BOXBOTTOM]=(y);
+		if (y > pts[BOXTOP])
+			pts[BOXTOP]=(y);
 	}
 
 	/**
@@ -153,14 +111,40 @@ public class BBox {
 	 */
 
 	public void AddPointToBox(int x, int y) {
-		if (x < pts[BOXLEFT].val)
-			pts[BOXLEFT].set(x);
-		if (x > pts[BOXRIGHT].val)
-			pts[BOXRIGHT].set(x);
-		if (y < pts[BOXBOTTOM].val)
-			pts[BOXBOTTOM].set(y);
-		if (y > pts[BOXTOP].val)
-			pts[BOXTOP].set(y);
+		if (x < pts[BOXLEFT])
+			pts[BOXLEFT]=x;
+		if (x > pts[BOXRIGHT])
+			pts[BOXRIGHT]=x;
+		if (y < pts[BOXBOTTOM])
+			pts[BOXBOTTOM]=y;
+		if (y > pts[BOXTOP])
+			pts[BOXTOP]=y;
 	}
 
+	public int get(int BOXCOORDS){
+	    return this.pts[BOXCOORDS];
+	}
+	
+    public void set(int BOXCOORDS, int val){
+        this.pts[BOXCOORDS]=val;
+    }
+
+    public static void ClearBox(int[] bbox) {
+        bbox[BOXRIGHT]=(MININT);
+        bbox[BOXTOP]=(MININT);
+        bbox[BOXLEFT]=(MAXINT);
+        bbox[BOXBOTTOM]=(MAXINT);
+    }
+
+    public static void AddToBox(int[] box, int x, int y) {
+        if (x < box[BOXLEFT])
+            box[BOXLEFT]=x;
+        if (x > box[BOXRIGHT])
+            box[BOXRIGHT]=x;
+        if (y < box[BOXBOTTOM])
+            box[BOXBOTTOM]=y;
+        if (y > box[BOXTOP])
+            box[BOXTOP]=y;        
+    }
+	
 }
