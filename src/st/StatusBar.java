@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.2 2010/07/20 15:52:56 velktron Exp $
+// $Id: StatusBar.java,v 1.3 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.3  2010/08/13 14:06:36  velktron
+// Endlevel screen fully functional!
+//
 // Revision 1.2  2010/07/20 15:52:56  velktron
 // LOTS of changes, Automap almost complete. Use of fixed_t inside methods severely limited.
 //
@@ -48,58 +51,38 @@ package st;
 import static data.Defines.*;
 import static data.dstrings.*;
 import static doom.englsh.*;
-import static st.DoomStatusBar.*;
-import static st.DoomStatusBar.BG;
-import static st.DoomStatusBar.FG;
+import java.io.IOException;
+
+import i.system;
 import m.cheatseq_t;
 import data.doomstat;
 import doom.player_t;
+import static doom.player_t.*;
+import rr.Renderer;
 import rr.patch_t;
 import v.DoomVideoRenderer;
 import v.SimpleRenderer;
 import w.WadLoader;
+
 public class StatusBar{
-public static final String rcsid = "$Id: StatusBar.java,v 1.2 2010/07/20 15:52:56 velktron Exp $";
+public static final String rcsid = "$Id: StatusBar.java,v 1.3 2010/08/13 14:06:36 velktron Exp $";
 
-/*
-#include <stdio.h>
-
-#include "i_system.h"
-#include "i_video.h"
-#include "z_zone.h"
-#include "m_random.h"
-#include "w_wad.h"
-
-#include "doomdef.h"
-
-#include "g_game.h"
-
-#include "st_stuff.h"
-#include "st_lib.h"
-#include "r_local.h"
-
-#include "p_local.h"
-#include "p_inter.h"
-
-#include "am_map.h"
-#include "m_cheat.h"
-
-#include "s_sound.h"
-
-// Needs access to LFB.
-#include "v_video.h"
-
-// State.
-#include "doomstat.h"
-
-// Data.
-#include "dstrings.h"
-#include "sounds.h"
-*/
+///// STATUS //////////
 
 protected DoomVideoRenderer V;
 protected doomstat ds;
 protected WadLoader W;
+protected Renderer R;
+protected doomstat DS;
+
+//Size of statusbar.
+//Now sensitive for scaling.
+public static int ST_HEIGHT =32*SCREEN_MUL;
+public static int ST_WIDTH  =SCREENWIDTH;
+public static int ST_Y      =(SCREENHEIGHT - ST_HEIGHT);
+public static int BG =4;
+public static int FG =0;
+
 //
 // STATUS BAR DATA
 //
@@ -329,7 +312,7 @@ private long	st_clock;
  private st_stateenum_t	st_gamestate;
 
 // whether left-side main status bar is active
- private boolean		st_statusbaron;
+ private Boolean		st_statusbaron;
 
 // whether status bar chat is active
  private boolean		st_chat;
@@ -588,11 +571,11 @@ public void loadData()
 }
 
 
-}
-
-
 // Respond to keyboard input events,
 //  intercept cheats.
+
+/*
+
 public boolean
 Responder (event_t ev)
 {
@@ -625,7 +608,7 @@ Responder (event_t ev)
       // if (gameskill != sk_nightmare) {
       
       // 'dqd' cheat for toggleable god mode
-      if (cht_CheckCheat(&cheat_god, ev->data1))
+      if (cht_CheckCheat(&cheat_god, ev.data1))
       {
 	plyr.cheats ^= CF_GODMODE;
 	if (plyr.cheats & CF_GODMODE !=0)
@@ -671,7 +654,7 @@ Responder (event_t ev)
 	plyr.message = STSTR_KFAADDED;
       }
       // 'mus' cheat for changing music
-      else if (cht_CheckCheat(&cheat_mus, ev->data1))
+      else if (cht_CheckCheat(&cheat_mus, ev.data1))
       {
 	
 	char[]	buf=new char[3];
@@ -686,7 +669,7 @@ Responder (event_t ev)
 	  musnum = mus_runnin + (buf[0]-'0')*10 + buf[1]-'0' - 1;
 	  
 	  if (((buf[0]-'0')*10 + buf[1]-'0') > 35)
-	    plyr->message = STSTR_NOMUS;
+	    plyr.message = STSTR_NOMUS;
 	  else
 	    S_ChangeMusic(musnum, 1);
 	}
@@ -695,65 +678,65 @@ Responder (event_t ev)
 	  musnum = mus_e1m1 + (buf[0]-'1')*9 + (buf[1]-'1');
 	  
 	  if (((buf[0]-'1')*9 + buf[1]-'1') > 31)
-	    plyr->message = STSTR_NOMUS;
+	    plyr.message = STSTR_NOMUS;
 	  else
 	    S_ChangeMusic(musnum, 1);
 	}
       }
       // Simplified, accepting both "noclip" and "idspispopd".
       // no clipping mode cheat
-      else if ( cht_CheckCheat(&cheat_noclip, ev->data1) 
-		|| cht_CheckCheat(&cheat_commercial_noclip,ev->data1) )
+      else if ( cht_CheckCheat(&cheat_noclip, ev.data1) 
+		|| cht_CheckCheat(&cheat_commercial_noclip,ev.data1) )
       {	
-	plyr->cheats ^= CF_NOCLIP;
+	plyr.cheats ^= CF_NOCLIP;
 	
-	if (plyr->cheats & CF_NOCLIP)
-	  plyr->message = STSTR_NCON;
+	if (plyr.cheats & CF_NOCLIP)
+	  plyr.message = STSTR_NCON;
 	else
-	  plyr->message = STSTR_NCOFF;
+	  plyr.message = STSTR_NCOFF;
       }
       // 'behold?' power-up cheats
       for (i=0;i<6;i++)
       {
-	if (cht_CheckCheat(&cheat_powerup[i], ev->data1))
+	if (cht_CheckCheat(&cheat_powerup[i], ev.data1))
 	{
-	  if (!plyr->powers[i])
+	  if (!plyr.powers[i])
 	    P_GivePower( plyr, i);
 	  else if (i!=pw_strength)
-	    plyr->powers[i] = 1;
+	    plyr.powers[i] = 1;
 	  else
-	    plyr->powers[i] = 0;
+	    plyr.powers[i] = 0;
 	  
-	  plyr->message = STSTR_BEHOLDX;
+	  plyr.message = STSTR_BEHOLDX;
 	}
       }
       
       // 'behold' power-up menu
-      if (cht_CheckCheat(&cheat_powerup[6], ev->data1))
+      if (cht_CheckCheat(&cheat_powerup[6], ev.data1))
       {
-	plyr->message = STSTR_BEHOLD;
+	plyr.message = STSTR_BEHOLD;
       }
       // 'choppers' invulnerability & chainsaw
-      else if (cht_CheckCheat(&cheat_choppers, ev->data1))
+      else if (cht_CheckCheat(&cheat_choppers, ev.data1))
       {
-	plyr->weaponowned[wp_chainsaw] = true;
-	plyr->powers[pw_invulnerability] = true;
-	plyr->message = STSTR_CHOPPERS;
+	plyr.weaponowned[wp_chainsaw] = true;
+	plyr.powers[pw_invulnerability] = true;
+	plyr.message = STSTR_CHOPPERS;
       }
       // 'mypos' for player position
-      else if (cht_CheckCheat(&cheat_mypos, ev->data1))
+      else if (cht_CheckCheat(&cheat_mypos, ev.data1))
       {
 	static char	buf[ST_MSGWIDTH];
 	sprintf(buf, "ang=0x%x;x,y=(0x%x,0x%x)",
-		players[consoleplayer].mo->angle,
-		players[consoleplayer].mo->x,
-		players[consoleplayer].mo->y);
-	plyr->message = buf;
+		players[consoleplayer].mo.angle,
+		players[consoleplayer].mo.x,
+		players[consoleplayer].mo.y);
+	plyr.message = buf;
       }
     }
     
     // 'clev' change-level cheat
-    if (cht_CheckCheat(&cheat_clev, ev->data1))
+    if (cht_CheckCheat(&cheat_clev, ev.data1))
     {
       char		buf[3];
       int		epsd;
@@ -797,12 +780,14 @@ Responder (event_t ev)
 	return false;
 
       // So be it.
-      plyr->message = STSTR_CLEV;
+      plyr.message = STSTR_CLEV;
       G_DeferedInitNew(gameskill, epsd, map);
     }    
   }
   return false;
 }
+
+*/
 
 public int calcPainOffset()
 {
@@ -829,9 +814,8 @@ public int calcPainOffset()
 //
 void updateFaceWidget()
 {
-    int		i;
-    angle_t	badguyangle;
-    angle_t	diffang;
+    int	badguyangle; // angle_t
+    int	diffang; 
     static int	lastattackdown = -1;
     static int	priority = 0;
     boolean	doevilgrin;
@@ -839,7 +823,7 @@ void updateFaceWidget()
     if (priority < 10)
     {
 	// dead
-	if (!plyr->health)
+	if (plyr.health==0)
 	{
 	    priority = 9;
 	    st_faceindex = ST_DEADFACE;
@@ -849,17 +833,17 @@ void updateFaceWidget()
 
     if (priority < 9)
     {
-	if (plyr->bonuscount)
+	if (plyr.bonuscount!=0)
 	{
 	    // picking up bonus
 	    doevilgrin = false;
 
-	    for (i=0;i<NUMWEAPONS;i++)
+	    for (int i=0;i<NUMWEAPONS;i++)
 	    {
-		if (oldweaponsowned[i] != plyr->weaponowned[i])
+		if (oldweaponsowned[i] != plyr.weaponowned[i])
 		{
 		    doevilgrin = true;
-		    oldweaponsowned[i] = plyr->weaponowned[i];
+		    oldweaponsowned[i] = plyr.weaponowned[i];
 		}
 	    }
 	    if (doevilgrin) 
@@ -867,7 +851,7 @@ void updateFaceWidget()
 		// evil grin if just picked up weapon
 		priority = 8;
 		st_facecount = ST_EVILGRINCOUNT;
-		st_faceindex = ST_calcPainOffset() + ST_EVILGRINOFFSET;
+		st_faceindex = calcPainOffset() + ST_EVILGRINOFFSET;
 	    }
 	}
 
@@ -875,48 +859,48 @@ void updateFaceWidget()
   
     if (priority < 8)
     {
-	if (plyr->damagecount
-	    && plyr->attacker
-	    && plyr->attacker != plyr->mo)
+	if ((plyr.damagecount!=0)
+	    && (plyr.attacker!=null)
+	    && (plyr.attacker!=plyr.mo))
 	{
 	    // being attacked
 	    priority = 7;
 	    
-	    if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+	    if (plyr.health - st_oldhealth > ST_MUCHPAIN)
 	    {
 		st_facecount = ST_TURNCOUNT;
-		st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
+		st_faceindex = calcPainOffset() + ST_OUCHOFFSET;
 	    }
 	    else
 	    {
-		badguyangle = R_PointToAngle2(plyr->mo->x,
-					      plyr->mo->y,
-					      plyr->attacker->x,
-					      plyr->attacker->y);
+		badguyangle = R.PointToAngle2(plyr.mo.x,
+					      plyr.mo.y,
+					      plyr.attacker.x,
+					      plyr.attacker.y);
 		
-		if (badguyangle > plyr->mo->angle)
+		if (badguyangle > plyr.mo.angle)
 		{
 		    // whether right or left
-		    diffang = badguyangle - plyr->mo->angle;
+		    diffang = badguyangle - plyr.mo.angle;
 		    i = diffang > ANG180; 
 		}
 		else
 		{
 		    // whether left or right
-		    diffang = plyr->mo->angle - badguyangle;
+		    diffang = plyr.mo.angle - badguyangle;
 		    i = diffang <= ANG180; 
 		} // confusing, aint it?
 
 		
 		st_facecount = ST_TURNCOUNT;
-		st_faceindex = ST_calcPainOffset();
+		st_faceindex = calcPainOffset();
 		
 		if (diffang < ANG45)
 		{
 		    // head-on    
 		    st_faceindex += ST_RAMPAGEOFFSET;
 		}
-		else if (i)
+		else if (i!=0)
 		{
 		    // turn face right
 		    st_faceindex += ST_TURNOFFSET;
@@ -933,19 +917,19 @@ void updateFaceWidget()
     if (priority < 7)
     {
 	// getting hurt because of your own damn stupidity
-	if (plyr->damagecount)
+	if (plyr.damagecount!=0)
 	{
-	    if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+	    if (plyr.health - st_oldhealth > ST_MUCHPAIN)
 	    {
 		priority = 7;
 		st_facecount = ST_TURNCOUNT;
-		st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
+		st_faceindex = calcPainOffset() + ST_OUCHOFFSET;
 	    }
 	    else
 	    {
 		priority = 6;
 		st_facecount = ST_TURNCOUNT;
-		st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
+		st_faceindex = calcPainOffset() + ST_RAMPAGEOFFSET;
 	    }
 
 	}
@@ -955,14 +939,14 @@ void updateFaceWidget()
     if (priority < 6)
     {
 	// rapid firing
-	if (plyr->attackdown)
+	if (plyr.attackdown)
 	{
 	    if (lastattackdown==-1)
 		lastattackdown = ST_RAMPAGEDELAY;
-	    else if (!--lastattackdown)
+	    else if (--lastattackdown==0)
 	    {
 		priority = 5;
-		st_faceindex = ST_calcPainOffset() + ST_RAMPAGEOFFSET;
+		st_faceindex = calcPainOffset() + ST_RAMPAGEOFFSET;
 		st_facecount = 1;
 		lastattackdown = 1;
 	    }
@@ -975,8 +959,8 @@ void updateFaceWidget()
     if (priority < 5)
     {
 	// invulnerability
-	if ((plyr->cheats & CF_GODMODE)
-	    || plyr->powers[pw_invulnerability])
+	if (((plyr.cheats & CF_GODMODE)!=0)
+	    || (plyr.powers[pw_invulnerability]!=0))
 	{
 	    priority = 4;
 
@@ -990,7 +974,7 @@ void updateFaceWidget()
     // look left or look right if the facecount has timed out
     if (!st_facecount)
     {
-	st_faceindex = ST_calcPainOffset() + (st_randomnumber % 3);
+	st_faceindex = calcPainOffset() + (st_randomnumber % 3);
 	st_facecount = ST_STRAIGHTFACECOUNT;
 	priority = 0;
     }
@@ -999,28 +983,30 @@ void updateFaceWidget()
 
 }
 
-void ST_updateWidgets(void)
+protected int  largeammo = 1994; // means "n/a"
+
+public void updateWidgets()
 {
-    static int	largeammo = 1994; // means "n/a"
+
     int		i;
 
     // must redirect the pointer if the ready weapon has changed.
-    //  if (w_ready.data != plyr->readyweapon)
+    //  if (w_ready.data != plyr.readyweapon)
     //  {
-    if (weaponinfo[plyr->readyweapon].ammo == am_noammo)
+    if (weaponinfo[plyr.readyweapon].ammo == am_noammo)
 	w_ready.num = &largeammo;
     else
-	w_ready.num = &plyr->ammo[weaponinfo[plyr->readyweapon].ammo];
+	w_ready.num = &plyr.ammo[weaponinfo[plyr.readyweapon].ammo];
     //{
     // static int tic=0;
     // static int dir=-1;
     // if (!(tic&15))
-    //   plyr->ammo[weaponinfo[plyr->readyweapon].ammo]+=dir;
-    // if (plyr->ammo[weaponinfo[plyr->readyweapon].ammo] == -100)
+    //   plyr.ammo[weaponinfo[plyr.readyweapon].ammo]+=dir;
+    // if (plyr.ammo[weaponinfo[plyr.readyweapon].ammo] == -100)
     //   dir = 1;
     // tic++;
     // }
-    w_ready.data = plyr->readyweapon;
+    w_ready.data = plyr.readyweapon;
 
     // if (*w_ready.on)
     //  STlib_updateNum(&w_ready, true);
@@ -1030,9 +1016,9 @@ void ST_updateWidgets(void)
     // update keycard multiple widgets
     for (i=0;i<3;i++)
     {
-	keyboxes[i] = plyr->cards[i] ? i : -1;
+	keyboxes[i] = plyr.cards[i] ? i : -1;
 
-	if (plyr->cards[i+3])
+	if (plyr.cards[i+3])
 	    keyboxes[i] = i+3;
     }
 
@@ -1052,9 +1038,9 @@ void ST_updateWidgets(void)
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
 	if (i != consoleplayer)
-	    st_fragscount += plyr->frags[i];
+	    st_fragscount += plyr.frags[i];
 	else
-	    st_fragscount -= plyr->frags[i];
+	    st_fragscount -= plyr.frags[i];
     }
 
     // get rid of chat window if up because of message
@@ -1069,7 +1055,7 @@ void ST_Ticker (void)
     st_clock++;
     st_randomnumber = M_Random();
     ST_updateWidgets();
-    st_oldhealth = plyr->health;
+    st_oldhealth = plyr.health;
 
 }
 
@@ -1083,12 +1069,12 @@ void ST_doPaletteStuff(void)
     int		cnt;
     int		bzc;
 
-    cnt = plyr->damagecount;
+    cnt = plyr.damagecount;
 
-    if (plyr->powers[pw_strength])
+    if (plyr.powers[pw_strength])
     {
 	// slowly fade the berzerk out
-  	bzc = 12 - (plyr->powers[pw_strength]>>6);
+  	bzc = 12 - (plyr.powers[pw_strength]>>6);
 
 	if (bzc > cnt)
 	    cnt = bzc;
@@ -1104,9 +1090,9 @@ void ST_doPaletteStuff(void)
 	palette += STARTREDPALS;
     }
 
-    else if (plyr->bonuscount)
+    else if (plyr.bonuscount)
     {
-	palette = (plyr->bonuscount+7)>>3;
+	palette = (plyr.bonuscount+7)>>3;
 
 	if (palette >= NUMBONUSPALS)
 	    palette = NUMBONUSPALS-1;
@@ -1114,8 +1100,8 @@ void ST_doPaletteStuff(void)
 	palette += STARTBONUSPALS;
     }
 
-    else if ( plyr->powers[pw_ironfeet] > 4*32
-	      || plyr->powers[pw_ironfeet]&8)
+    else if ( plyr.powers[pw_ironfeet] > 4*32
+	      || plyr.powers[pw_ironfeet]&8)
 	palette = RADIATIONPAL;
     else
 	palette = 0;
@@ -1177,79 +1163,81 @@ void ST_doRefresh(void)
 
 }
 
-void ST_diffDraw(void)
+public void diffDraw()
 {
     // update all widgets
-    ST_drawWidgets(false);
+    drawWidgets(false);
 }
 
-void ST_Drawer (boolean fullscreen, boolean refresh)
+public void Drawer (boolean fullscreen, boolean refresh)
 {
   
     st_statusbaron = (!fullscreen) || automapactive;
     st_firsttime = st_firsttime || refresh;
 
     // Do red-/gold-shifts from damage/items
-    ST_doPaletteStuff();
+    doPaletteStuff();
 
     // If just after ST_Start(), refresh all
-    if (st_firsttime) ST_doRefresh();
+    if (st_firsttime) doRefresh();
     // Otherwise, update as little as possible
-    else ST_diffDraw();
+    else diffDraw();
 
 }
 
-void ST_loadGraphics(void)
+public void loadGraphics()
 {
 
     int		i;
     int		j;
     int		facenum;
     
-    char	namebuf[9];
+    String	namebuf;
 
     // Load the numbers, tall and short
     for (i=0;i<10;i++)
     {
-	sprintf(namebuf, "STTNUM%d", i);
-	tallnum[i] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+	namebuf=("STTNUM"+i);
+	tallnum[i] = W.CachePatchName(namebuf,PU_STATIC);
 
-	sprintf(namebuf, "STYSNUM%d", i);
-	shortnum[i] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+	namebuf=("STYSNUM"+i);
+	shortnum[i] = W.CachePatchName(namebuf,PU_STATIC);
+
     }
 
     // Load percent key.
     //Note: why not load STMINUS here, too?
-    tallpercent = (patch_t *) W_CacheLumpName("STTPRCNT", PU_STATIC);
+    tallpercent = W.CachePatchName("STTPRCNT",PU_STATIC);
+    // TODO: stminus= W.CachePatchName("STMINUS");
 
     // key cards
     for (i=0;i<NUMCARDS;i++)
     {
-	sprintf(namebuf, "STKEYS%d", i);
-	keys[i] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+	namebuf=("STKEYS"+ i);
+	keys[i] = W.CachePatchName(namebuf,PU_STATIC);
     }
 
     // arms background
-    armsbg = (patch_t *) W_CacheLumpName("STARMS", PU_STATIC);
+    armsbg = W.CachePatchName("STARMS",PU_STATIC);
 
     // arms ownership widgets
     for (i=0;i<6;i++)
     {
-	sprintf(namebuf, "STGNUM%d", i+2);
+	namebuf=("STGNUM"+(i+2));
 
 	// gray #
-	arms[i][0] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+	arms[i][0] = W.CachePatchName(namebuf,PU_STATIC);
 
 	// yellow #
 	arms[i][1] = shortnum[i+2]; 
     }
 
     // face backgrounds for different color players
-    sprintf(namebuf, "STFB%d", consoleplayer);
-    faceback = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
+    namebuf= ("STFB"+ DS.consoleplayer);
+    faceback =  W.CachePatchName(namebuf, PU_STATIC);
 
     // status bar background bits
-    sbar = (patch_t *) W_CacheLumpName("STBAR", PU_STATIC);
+    sbar = W.CachePatchName("STBAR", PU_STATIC);
 
     // face states
     facenum = 0;
@@ -1257,29 +1245,30 @@ void ST_loadGraphics(void)
     {
 	for (j=0;j<ST_NUMSTRAIGHTFACES;j++)
 	{
-	    sprintf(namebuf, "STFST%d%d", i, j);
-	    faces[facenum++] = W_CacheLumpName(namebuf, PU_STATIC);
+	    namebuf=("STFST"+ (i)+ (j));
+	    faces[facenum++] = W.CachePatchName(namebuf, PU_STATIC);
 	}
-	sprintf(namebuf, "STFTR%d0", i);	// turn right
-	faces[facenum++] = W_CacheLumpName(namebuf, PU_STATIC);
-	sprintf(namebuf, "STFTL%d0", i);	// turn left
-	faces[facenum++] = W_CacheLumpName(namebuf, PU_STATIC);
-	sprintf(namebuf, "STFOUCH%d", i);	// ouch!
-	faces[facenum++] = W_CacheLumpName(namebuf, PU_STATIC);
-	sprintf(namebuf, "STFEVL%d", i);	// evil grin ;)
-	faces[facenum++] = W_CacheLumpName(namebuf, PU_STATIC);
-	sprintf(namebuf, "STFKILL%d", i);	// pissed off
-	faces[facenum++] = W_CacheLumpName(namebuf, PU_STATIC);
+	namebuf= "STFTR"+ i+"0";	// turn right
+	faces[facenum++] = W.CachePatchName(namebuf, PU_STATIC);
+	namebuf= "STFTL"+ i+"0";	// turn left
+	faces[facenum++] = W.CachePatchName(namebuf, PU_STATIC);
+	namebuf= "STFOUCH"+ i;	// ouch!
+	faces[facenum++] = W.CachePatchName(namebuf, PU_STATIC);
+	namebuf= "STFEVL"+ i;	// evil grin ;)
+	faces[facenum++] = W.CachePatchName(namebuf, PU_STATIC);
+	namebuf= "STFKILL"+ i;	// pissed off
+	faces[facenum++] = W.CachePatchName(namebuf, PU_STATIC);
     }
-    faces[facenum++] = W_CacheLumpName("STFGOD0", PU_STATIC);
-    faces[facenum++] = W_CacheLumpName("STFDEAD0", PU_STATIC);
+    faces[facenum++] = W.CachePatchName("STFGOD0", PU_STATIC);
+    faces[facenum++] = W.CachePatchName("STFDEAD0", PU_STATIC);
 
 }
 
 
 
-void ST_unloadGraphics(void)
+public void unloadGraphics()
 {
+    /*
 
     int i;
 
@@ -1309,28 +1298,30 @@ void ST_unloadGraphics(void)
     for (i=0;i<ST_NUMFACES;i++)
 	Z_ChangeTag(faces[i], PU_CACHE);
 
+    */
+    
     // Note: nobody ain't seen no unloading
     //   of stminus yet. Dude.
     
 
 }
 
-void ST_unloadData(void)
+public void unloadData()
 {
-    ST_unloadGraphics();
+    unloadGraphics();
 }
 
-void ST_initData(void)
+public void initData()
 {
 
     int		i;
 
     st_firsttime = true;
-    plyr = &players[consoleplayer];
+    plyr = DS.players[DS.consoleplayer];
 
     st_clock = 0;
-    st_chatstate = StartChatState;
-    st_gamestate = FirstPersonState;
+    st_chatstate = st_chatstateenum_t.StartChatState;
+    st_gamestate = st_stateenum_t.FirstPersonState;
 
     st_statusbaron = true;
     st_oldchat = st_chat = false;
@@ -1342,50 +1333,50 @@ void ST_initData(void)
     st_oldhealth = -1;
 
     for (i=0;i<NUMWEAPONS;i++)
-	oldweaponsowned[i] = plyr->weaponowned[i];
+	oldweaponsowned[i] = plyr.weaponowned[i];
 
     for (i=0;i<3;i++)
 	keyboxes[i] = -1;
 
-    STlib_init();
+    Init();
 
 }
 
 
 
-void ST_createWidgets(void)
+public void createWidgets()
 {
 
     int i;
 
     // ready weapon ammo
-    STlib_initNum(&w_ready,
+    w_ready.initNum(
 		  ST_AMMOX,
 		  ST_AMMOY,
 		  tallnum,
-		  &plyr->ammo[weaponinfo[plyr->readyweapon].ammo],
-		  &st_statusbaron,
+		  plyr.ammo[weaponinfo[plyr.readyweapon.ordinal()].ammo],
+		  st_statusbaron,
 		  ST_AMMOWIDTH );
 
     // the last weapon type
-    w_ready.data = plyr->readyweapon; 
+    w_ready.data = plyr.readyweapon.ordinal(); 
 
     // health percentage
-    STlib_initPercent(&w_health,
+    w_health.initPercent(
 		      ST_HEALTHX,
 		      ST_HEALTHY,
 		      tallnum,
-		      &plyr->health,
-		      &st_statusbaron,
+		      plyr.health,
+		      st_statusbaron,
 		      tallpercent);
 
     // arms background
-    STlib_initBinIcon(&w_armsbg,
+    w_armsbg.initBinIcon(
 		      ST_ARMSBGX,
 		      ST_ARMSBGY,
 		      armsbg,
-		      &st_notdeathmatch,
-		      &st_statusbaron);
+		      st_notdeathmatch,
+		      st_statusbaron);
 
     // weapons owned
     for(i=0;i<6;i++)
@@ -1393,7 +1384,7 @@ void ST_createWidgets(void)
 	STlib_initMultIcon(&w_arms[i],
 			   ST_ARMSX+(i%3)*ST_ARMSXSPACE,
 			   ST_ARMSY+(i/3)*ST_ARMSYSPACE,
-			   arms[i], (int *) &plyr->weaponowned[i+1],
+			   arms[i], (int *) &plyr.weaponowned[i+1],
 			   &st_armson);
     }
 
@@ -1419,7 +1410,7 @@ void ST_createWidgets(void)
 		      ST_ARMORX,
 		      ST_ARMORY,
 		      tallnum,
-		      &plyr->armorpoints,
+		      &plyr.armorpoints,
 		      &st_statusbaron, tallpercent);
 
     // keyboxes 0-2
@@ -1449,7 +1440,7 @@ void ST_createWidgets(void)
 		  ST_AMMO0X,
 		  ST_AMMO0Y,
 		  shortnum,
-		  &plyr->ammo[0],
+		  &plyr.ammo[0],
 		  &st_statusbaron,
 		  ST_AMMO0WIDTH);
 
@@ -1457,7 +1448,7 @@ void ST_createWidgets(void)
 		  ST_AMMO1X,
 		  ST_AMMO1Y,
 		  shortnum,
-		  &plyr->ammo[1],
+		  &plyr.ammo[1],
 		  &st_statusbaron,
 		  ST_AMMO1WIDTH);
 
@@ -1465,7 +1456,7 @@ void ST_createWidgets(void)
 		  ST_AMMO2X,
 		  ST_AMMO2Y,
 		  shortnum,
-		  &plyr->ammo[2],
+		  &plyr.ammo[2],
 		  &st_statusbaron,
 		  ST_AMMO2WIDTH);
     
@@ -1473,7 +1464,7 @@ void ST_createWidgets(void)
 		  ST_AMMO3X,
 		  ST_AMMO3Y,
 		  shortnum,
-		  &plyr->ammo[3],
+		  &plyr.ammo[3],
 		  &st_statusbaron,
 		  ST_AMMO3WIDTH);
 
@@ -1482,7 +1473,7 @@ void ST_createWidgets(void)
 		  ST_MAXAMMO0X,
 		  ST_MAXAMMO0Y,
 		  shortnum,
-		  &plyr->maxammo[0],
+		  &plyr.maxammo[0],
 		  &st_statusbaron,
 		  ST_MAXAMMO0WIDTH);
 
@@ -1490,7 +1481,7 @@ void ST_createWidgets(void)
 		  ST_MAXAMMO1X,
 		  ST_MAXAMMO1Y,
 		  shortnum,
-		  &plyr->maxammo[1],
+		  &plyr.maxammo[1],
 		  &st_statusbaron,
 		  ST_MAXAMMO1WIDTH);
 
@@ -1498,7 +1489,7 @@ void ST_createWidgets(void)
 		  ST_MAXAMMO2X,
 		  ST_MAXAMMO2Y,
 		  shortnum,
-		  &plyr->maxammo[2],
+		  &plyr.maxammo[2],
 		  &st_statusbaron,
 		  ST_MAXAMMO2WIDTH);
     
@@ -1506,15 +1497,371 @@ void ST_createWidgets(void)
 		  ST_MAXAMMO3X,
 		  ST_MAXAMMO3Y,
 		  shortnum,
-		  &plyr->maxammo[3],
+		  &plyr.maxammo[3],
 		  &st_statusbaron,
 		  ST_MAXAMMO3WIDTH);
 
 }
 
+/** Binary Icon widget */
+
+class st_binicon_t {
+
+        // center-justified location of icon
+        int         x;
+        int         y;
+
+        // last icon value
+        boolean         oldval;
+
+        // pointer to current icon status
+        Boolean       val;
+
+        // pointer to boolean
+        //  stating whether to update icon
+        Boolean       on;  
+
+
+        patch_t     p;  // icon
+        int         data;   // user data
+        
+     // Binary Icon widget routines
+
+        void
+        STlib_initBinIcon
+        ( 
+          int           x,
+          int           y,
+          patch_t       i,
+          Boolean     val,
+          Boolean     on )
+        {
+            this.x  = x;
+            this.y  = y;
+            this.oldval = false;
+            this.val    = val;
+            this.on = on;
+            this.p  = i;
+        }
+
+
+
+        void
+        updateBinIcon
+        ( 
+          boolean       refresh )
+        {
+            st_binicon_t        bi=this;
+            int         x;
+            int         y;
+            int         w;
+            int         h;
+
+            if (bi.on
+            && (bi.oldval != ((bi.val || refresh))))
+            {
+            x = bi.x - bi.p.leftoffset;
+            y = bi.y - bi.p.topoffset;
+            w = bi.p.width;
+            h = bi.p.height;
+
+            if (y - ST_Y < 0)
+                system.Error("updateBinIcon: y - ST_Y < 0");
+
+            if (bi.val)
+                V.DrawPatch(bi.x, bi.y, FG, bi.p);
+            else
+                V.CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
+
+            bi.oldval = bi.val;
+            }
+
+        }
+
+    }
+
+/** Icon widget */
+
+class st_multicon_t {
+    
+         // center-justified location of icons
+        int         x;
+        int         y;
+
+        // last icon number
+        int         oldinum;
+
+        // pointer to current icon
+        int[]       inum;
+
+        // pointer to boolean stating
+        //  whether to update icon
+        Boolean       on;
+
+        // list of icons
+        patch_t[]       p;
+        
+        // user data
+        int         data;
+        
+        void
+        initMultIcon
+        ( int           x,
+          int           y,
+          patch_t[]     il,
+          int[]         inum,
+          Boolean     on )
+        {
+            this.x  = x;
+            this.y  = y;
+            this.oldinum    = -1;
+            this.inum   = inum;
+            this.on = on;
+            this.p  = il;
+        }
+
+
+
+        void
+        updateMultIcon
+        ( 
+          boolean       refresh )
+        {
+            st_multicon_t   mi=this;
+            int         w;
+            int         h;
+            int         x;
+            int         y;
+
+            if (mi.on
+            && ((mi.oldinum!=0) != ((mi.inum[0]!=0) || refresh))
+            && (mi.inum[0]!=-1))
+            {
+            if (mi.oldinum != -1)
+            {
+                x = mi.x - mi.p[mi.oldinum].leftoffset;
+                y = mi.y - mi.p[mi.oldinum].topoffset;
+                w = mi.p[mi.oldinum].width;
+                h = mi.p[mi.oldinum].height;
+
+                if (y - ST_Y < 0)
+                system.Error("updateMultIcon: y - ST_Y < 0");
+
+                V.CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
+            }
+            V.DrawPatch(mi.x, mi.y, FG, mi.p[mi.inum[0]]);
+            mi.oldinum = mi.inum[0];
+            }
+        }
+        
+        
+    } 
+
+/ ** Number widget */
+
+class st_number_t {
+    
+    //
+    // Hack display negative frags.
+    //  Loads and store the stminus lump.
+    // MAES: this is only ever used here (AFAICT), so no need to have a "STLib"
+    // just for that.
+    
+    private patch_t      sttminus;
+
+    private void init() throws IOException
+    {
+        sttminus=W.CachePatchName("STTMINUS");
+    }
+    
+
+
+        // upper right-hand corner
+        //  of the number (right-justified)
+        int     x;
+        int     y;
+
+        // max # of digits in number
+        int width;    
+
+        // last number value
+        int     oldnum;
+        
+        // pointer to current value
+        // int* num;
+        
+        int[] num;
+        // pointer to boolean stating
+        //  whether to update number
+        Boolean   on;
+
+        // list of patches for 0-9
+        patch_t[]   p;
+
+        // user data
+        int data;
+        
+     // Number widget routines
+        public void
+        initNum
+        ( st_number_t       n,
+          int           x,
+          int           y,
+          patch_t[]     pl,
+          int[]         num,
+          boolean[]     on,
+          int           width ) {
+    }
+
+        public void
+        updateNum
+        ( st_number_t       n,
+          boolean       refresh ) {
+        }
+        
+        
+     // ?
+        void
+        initNum
+        ( int           x,
+          int           y,
+          patch_t[]     pl,
+          int[]         num,
+          Boolean     on,
+          int           width )
+        {
+            this.x  = x;
+            this.y  = y;
+            this.oldnum = 0;
+            this.width  = width;
+            this.num    = num;
+            this.on = on;
+            this.p  = pl;
+        }
+
+
+        // 
+        // A fairly efficient way to draw a number
+        //  based on differences from the old number.
+        // Note: worth the trouble?
+        //
+        void
+        drawNum
+        ( 
+          boolean   refresh )
+        {
+
+            st_number_t n =this;
+            int     numdigits = this.width;
+            int     num = this.num[0];
+            
+            int     w = this.p[0].width;
+            int     h = this.p[0].height;
+            int     x = this.x;
+            
+            boolean     neg;
+
+            this.oldnum=this.num[0];
+
+            neg = num < 0;
+
+            if (neg)
+            {
+            if (numdigits == 2 && num < -9)
+                num = -9;
+            else if (numdigits == 3 && num < -99)
+                num = -99;
+            
+            num = -num;
+            }
+
+            // clear the area
+            x = this.x - numdigits*w;
+
+            if (this.y - ST_Y < 0) {
+            system.Error("drawNum: n.y - ST_Y < 0");
+            }
+
+            V.CopyRect(x, this.y - ST_Y, BG, w*numdigits, h, x, n.y, FG);
+
+            // if non-number, do not draw it
+            if (num == 1994)
+            return;
+
+            x = n.x;
+
+            // in the special case of 0, you draw 0
+            if (num==0)
+            V.DrawPatch(x - w, n.y, FG, n.p[ 0 ]);
+
+            // draw the new number
+            while (((num!=0) && (numdigits--!=0)))
+            {
+            x -= w;
+            V.DrawPatch(x, n.y, FG, n.p[ num % 10 ]);
+            num /= 10;
+            }
+
+            // draw a minus sign if necessary
+            if (neg)
+            V.DrawPatch(x - 8, n.y, FG, sttminus);
+        }
+
+
+        //
+        public void
+        updateNum
+        ( boolean       refresh )
+        {
+            if (this.on) drawNum(refresh);
+        }
+        
+    } 
+
+class st_percent_t {
+
+    // Percent widget ("child" of number widget,
+//  or, more precisely, contains a number widget.)
+    // number information
+    st_number_t     n;
+
+    // percent sign graphic
+    patch_t     p;
+    
+    
+    public st_percent_t(){
+        this.n=new st_number_t();
+    }
+    
+    //
+    void
+    initPercent
+    ( 
+      int           x,
+      int           y,
+      patch_t[]     pl,
+      int[]         num,
+      Boolean     on,
+      patch_t       percent )
+    {
+        n.initNum(x, y, pl, num, on, 3);
+        p = percent;
+    }
 
 
 
 
+    void
+    updatePercent
+    ( 
+      boolean           refresh )
+    {
+        if (refresh && this.n.on)
+        V.DrawPatch(n.x, n.y, FG, p);
+        
+        n.updateNum(refresh);
+    }
+
+} 
 
 }

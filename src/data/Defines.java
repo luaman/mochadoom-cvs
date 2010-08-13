@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.3 2010/07/29 15:28:59 velktron Exp $
+// $Id: Defines.java,v 1.4 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -228,20 +228,14 @@ public static final int NUMAMMO=ammotype_t.NUMAMMO.ordinal();
 
 
 // Power up artifacts.
-public static enum powertype_t
-{
-    pw_invulnerability,
-    pw_strength,
-    pw_invisibility,
-    pw_ironfeet,
-    pw_allmap,
-    pw_infrared,
-    NUMPOWERS
-    
-} ;
+public static int pw_invulnerability=0;
+public static int    pw_strength=1;
+public static int    pw_invisibility=2;
+public static int    pw_ironfeet=3;
+public static int    pw_allmap=4;
+public static int    pw_infrared=5;
+public static int    NUMPOWERS=6;
 
-// Maes: this makes it a bit less retarded.
-public static final int NUMPOWERS=powertype_t.NUMPOWERS.ordinal();
 
 //
 // Power up durations,
@@ -403,8 +397,6 @@ static public final int SP_TIMEY      =  (SCREENHEIGHT-32);
 //NET GAME STUFF
 static public final int NG_STATSY       =50;
 
-// MAES: TODO
-//#define NG_STATSX       (32 + SHORT(star->width)/2 + 32*!dofrags)
 
 static public final int NG_SPACINGX        = 64;
 
@@ -719,5 +711,5 @@ static public final int SAVESTRINGSIZE = 24;
 //#include "p_tick.h"
 
 static final char[]
-rcsid = ("$Id: Defines.java,v 1.3 2010/07/29 15:28:59 velktron Exp $").toCharArray();
+rcsid = ("$Id: Defines.java,v 1.4 2010/08/13 14:06:36 velktron Exp $").toCharArray();
 }

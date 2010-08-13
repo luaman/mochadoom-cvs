@@ -1,11 +1,13 @@
 package doom;
 
 import static data.Defines.MAXPLAYERS;
+import utils.C2JUtils;
 
 public class wbstartstruct_t {
 
         public wbstartstruct_t(){
-            plyr=new wbstartstruct_t[MAXPLAYERS];
+            plyr=new wbplayerstruct_t[MAXPLAYERS];
+            C2JUtils.initArrayOfObjects(plyr, wbplayerstruct_t.class);
         }
     
         public int      epsd;   // episode # (0-2)
@@ -27,7 +29,7 @@ public class wbstartstruct_t {
         
         // index of this player in game
         public int      pnum;   
-
-        public wbstartstruct_t[]   plyr;
+        /** meant to be treated as a "struct", therefore assignments should be deep copies */
+        public wbplayerstruct_t[]   plyr;
 
     } 

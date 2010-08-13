@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomStatusBarInterface.java,v 1.1 2010/08/10 16:41:57 velktron Exp $
+// $Id: DoomStatusBarInterface.java,v 1.2 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,14 +27,6 @@ import static data.Defines.*;
 import doom.event_t;
 
 public interface DoomStatusBarInterface {
-
-// Size of statusbar.
-// Now sensitive for scaling.
-public static int ST_HEIGHT	=32*SCREEN_MUL;
-public static int ST_WIDTH	=SCREENWIDTH;
-public static int ST_Y		=(SCREENHEIGHT - ST_HEIGHT);
-public static int BG =4;
-public static int FG =0;
 
 //
 // STATUS BAR

@@ -1,5 +1,13 @@
 package v;
 
+import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.awt.image.IndexColorModel;
+import java.io.File;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
 import rr.column_t;
 import rr.patch_t;
 import utils.C2JUtils;
@@ -10,7 +18,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.6 2010/08/10 16:41:57 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.7 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +32,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.7  2010/08/13 14:06:36  velktron
+// Endlevel screen fully functional!
+//
 // Revision 1.6  2010/08/10 16:41:57  velktron
 // Threw some work into map loading.
 //
@@ -90,7 +101,7 @@ import static data.Defines.*;
 
 public class SimpleRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.6 2010/08/10 16:41:57 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.7 2010/08/13 14:06:36 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -813,5 +824,27 @@ public void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
 public byte[] getScreen(int index) {
    return screens[index];
 }
+
+@Override
+public void takeScreenShot(int screen, String imagefile, IndexColorModel icm) throws IOException {
+    
+    BufferedImage b=new BufferedImage(this.getWidth(),this.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, icm);
+    
+    
+    int[] tmp=new int[this.screens[screen].length];
+    for (int i=0;i<this.screens[screen].length;i++){
+        tmp[i]=this.screens[screen][i];
+    }
+    
+    b.getRaster().setPixels(0, 0, this.getWidth(),this.getHeight(), tmp);
+    
+    File outputFile =
+        new File(
+            imagefile+".png");
+    ImageIO.write(b, "PNG", outputFile);
+    
+}
+
+
 }
 

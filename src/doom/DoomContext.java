@@ -28,6 +28,8 @@ public class DoomContext {
     public SystemInterface I;
     public DoomSoundInterface S;
     public DoomStatusBarInterface ST;
+    public DoomVideoRenderer V;
+    
     
     
     

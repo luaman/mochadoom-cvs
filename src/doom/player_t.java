@@ -18,7 +18,7 @@ public class player_t
         extends mobj_t {
     
     public player_t(){
-        powers = new int[powertype_t.NUMPOWERS.ordinal()];
+        powers = new int[NUMPOWERS];
         frags = new int[MAXPLAYERS];
         ammo = new int[NUMAMMO];
         maxammo = new int[NUMAMMO];
@@ -86,9 +86,9 @@ public class player_t
     public int[] maxammo;
 
     /** True if button down last tic. */
-    public int attackdown;
+    public boolean attackdown;
 
-    public int usedown;
+    public boolean usedown;
 
     // Bit flags, for cheats and debug.
     // See cheat_t, above.

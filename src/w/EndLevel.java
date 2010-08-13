@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.1 2010/07/06 16:32:38 velktron Exp $
+// $Id: EndLevel.java,v 1.2 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.2  2010/08/13 14:06:36  velktron
+// Endlevel screen fully functional!
+//
 // Revision 1.1  2010/07/06 16:32:38  velktron
 // Threw some work in WI, now EndLevel. YEAH THERE'S GONNA BE A SEPARATE EndLevel OBJECT THAT'S HOW PIMP THE PROJECT IS!!!!11!!!
 //
@@ -41,18 +44,22 @@ package w;
 
 
 import static data.Defines.*;
+import data.doomstat;
 import data.Defines.GameMode_t;
+import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.event_t;
+import doom.player_t;
 import doom.wbplayerstruct_t;
 import doom.wbstartstruct_t;
 import m.random;
 import rr.*;
 import utils.C2JUtils;
 import utils.PrintfFormat;
+import v.DoomVideoRenderer;
 
 /** This class (stuff.c) seems to implement the endlevel screens.
- *  If we want to go truly OO, it should be made non-static.
+ *  If we want to go truly OO, it should be made non-.
  * 
  * @author Maes
  *
@@ -60,8 +67,18 @@ import utils.PrintfFormat;
 
 public class EndLevel{
 
+    ////////////////// STATUS ///////////////////
+    private doomstat DS;
+    private DoomVideoRenderer V;
+    private WadLoader W;
+    private random RND;
     
-    private DoomContext DC;
+    private static int COUNT_KILLS=2;
+    private static int COUNT_ITEMS=4;
+    private static int COUNT_SECRETS=6;
+    private static int COUNT_TIME=8;
+    private static int COUNT_DONE=10;
+    
     /*
 #include <stdio.h>
 
@@ -100,22 +117,23 @@ public class EndLevel{
 //
 // Locally used stuff.
 //
-public final int FB= 0;
+public static final int FB= 0;
+private static final boolean RANGECHECKING = true;
 
 
 // States for single-player
-static int SP_KILLS	=	0;
-static int SP_ITEMS	=	2;
-static int SP_SECRET	=	4;
-static int SP_FRAGS	=	6 ;
-static int SP_TIME		=	8 ;
-static int SP_PAR		=	SP_TIME;
+protected static int SP_KILLS	=	0;
+protected static int SP_ITEMS	=	2;
+protected static int SP_SECRET	=	4;
+protected static int SP_FRAGS	=	6 ;
+protected static int SP_TIME		=	8 ;
+protected static int SP_PAR		=	SP_TIME;
 
-static int SP_PAUSE	=	1;
+protected int SP_PAUSE	=	1;
 
 // in seconds
-static  int SHOWNEXTLOCDELAY	=4;
-static  int SHOWLASTLOCDELAY	=SHOWNEXTLOCDELAY;
+protected  int SHOWNEXTLOCDELAY	=4;
+protected  int SHOWLASTLOCDELAY	=SHOWNEXTLOCDELAY;
 
 
 // used to accelerate or skip a stage
@@ -128,7 +146,7 @@ int		me;
 int	state;
 
 // contains information passed into intermission
-wbstartstruct_t	wbs;
+public wbstartstruct_t	wbs;
 
 wbplayerstruct_t[] plrs;  // wbs->plyr[]
 
@@ -145,8 +163,8 @@ int[]		cnt_kills=new int[MAXPLAYERS];
 int[]		cnt_items=new int[MAXPLAYERS];
 int[]		cnt_secret=new int[MAXPLAYERS];
 int		cnt_time;
-static int		cnt_par;
-static int		cnt_pause;
+int		cnt_par;
+int		cnt_pause;
 
 // # of commercial levels
 int		NUMCMAPS; 
@@ -157,121 +175,132 @@ int		NUMCMAPS;
 //
 
 // background (map of levels).
-static patch_t		bg;
+patch_t		bg;
 
 // You Are Here graphic
-static patch_t[]		yah=new patch_t[2]; 
+patch_t[]		yah=new patch_t[2]; 
 
 // splat
-static patch_t		splat;
+patch_t		splat;
 
-// %, : graphics
-static patch_t		percent;
-static patch_t		colon;
+/** %, : graphics */
+patch_t		percent,colon;
 
-// 0-9 graphic
-static patch_t[]		num=new patch_t[10];
+/** 0-9 graphic */
+patch_t[]		num=new patch_t[10];
 
-// minus sign
-static patch_t	wiminus;
+/** minus sign */
+ patch_t	wiminus;
 
 // "Finished!" graphics
-static patch_t		finished;
+ patch_t		finished;
 
 // "Entering" graphic
-static patch_t		entering; 
+ patch_t		entering; 
 
 // "secret"
-static patch_t		sp_secret;
+ patch_t		sp_secret;
 
- // "Kills", "Scrt", "Items", "Frags"
-static patch_t		kills;
-static patch_t		secret;
-static patch_t		items;
-static patch_t		frags;
+ /** "Kills", "Scrt", "Items", "Frags" */
+ patch_t		kills,	secret,items,frags;
 
-// Time sucks.
-static patch_t		time;
-static patch_t		par;
-static patch_t		sucks;
+/** Time sucks. */
+ patch_t		time,	par,sucks;
 
-// "killers", "victims"
-static patch_t		killers;
-static patch_t		victims; 
+/** "killers", "victims" */
+ patch_t		killers,victims; 
 
-// "Total", your face, your dead face
-static patch_t		total;
-static patch_t		star;
-static patch_t		bstar;
+/** "Total", your face, your dead face */
+ patch_t		total,	star, bstar;
 
-// "red P[1..MAXPLAYERS]"
-static patch_t[]		p=new patch_t[MAXPLAYERS];
+/** "red P[1..MAXPLAYERS]"*/
+ patch_t[]		p=new patch_t[MAXPLAYERS];
 
-// "gray P[1..MAXPLAYERS]"
-static patch_t[] bp=new patch_t[MAXPLAYERS];
+/** "gray P[1..MAXPLAYERS]" */
+ patch_t[] bp=new patch_t[MAXPLAYERS];
 
- // Name graphics of each level (centered)
-static patch_t[]	lnames;
+ /** Name graphics of each level (centered) */
+ patch_t[]	lnames;
 
 //
 // CODE
 //
 
 // slam background
-// UNUSED static unsigned char *background=0;
+// UNUSED  unsigned char *background=0;
 
+
+public EndLevel(DoomContext DC) {
+    this.DS=DC.DS;
+    this.V=DC.V;
+    this.W=DC.W;
+    this.RND=DC.RND;
+    this.wbs=new wbstartstruct_t();
+    this.Start(DS.wminfo);
+}
 
 public void slamBackground()
 {
-    System.arraycopy(DC.V.getScreen(0), 0 ,DC.V.getScreen(1),0, SCREENWIDTH * SCREENHEIGHT);
-    DC.V.MarkRect (0, 0, SCREENWIDTH, SCREENHEIGHT);
+    //    memcpy(screens[0], screens[1], SCREENWIDTH * SCREENHEIGHT);
+    // Remember, the second arg is the source!
+    System.arraycopy(V.getScreen(1), 0 ,V.getScreen(0),0, SCREENWIDTH * SCREENHEIGHT);
+    V.MarkRect (0, 0, SCREENWIDTH, SCREENHEIGHT);
 }
 
 // The ticker is used to detect keys
 //  because of timing issues in netgames.
-boolean Responder(event_t ev)
+public boolean Responder(event_t ev)
 {
     return false;
 }
 
 
-// Draws "<Levelname> Finished!"
-public void drawLF()
+/** Draws "<Levelname> Finished!" */
+protected void drawLF()
 {
     int y = WI_TITLEY;
 
     // draw <LevelName> 
-    DC.V.DrawPatch((SCREENWIDTH - lnames[wbs.last].width)/2,
+    V.DrawPatch((SCREENWIDTH - lnames[wbs.last].width)/2,
 		y, FB, lnames[wbs.last]);
 
     // draw "Finished!"
     y += (5*lnames[wbs.last].height)/4;
     
-    DC.V.DrawPatch((SCREENWIDTH - finished.width)/2,
+    V.DrawPatch((SCREENWIDTH - finished.width)/2,
 		y, FB, finished);
 }
 
 
 
-// Draws "Entering <LevelName>"
-public void WI_drawEL()
+/** Draws "Entering <LevelName>" */
+protected void drawEL()
 {
     int y = WI_TITLEY;
 
     // draw "Entering"
-    DC.V.DrawPatch((SCREENWIDTH - entering.width/2),
+    V.DrawPatch((SCREENWIDTH - entering.width)/2,
 		y, FB, entering);
 
     // draw level
     y += (5*lnames[wbs.next].height)/4;
 
-    DC.V.DrawPatch((SCREENWIDTH - lnames[wbs.next].width)/2,
+    V.DrawPatch((SCREENWIDTH - lnames[wbs.next].width)/2,
 		y, FB, lnames[wbs.next]);
 
 }
 
-public void
-WI_drawOnLnode
+/** For whatever fucked-up reason, it expects c to be an array of patches, 
+ *  and may choose to draw from alternative ones...which however are never loaded,
+ *  or are supposed to be "next" in memory or whatever. I kept this behavior, however 
+ *  in Java it will NOT work as intended, if ever.
+ * 
+ * @param n
+ * @param c
+ */
+
+protected void
+drawOnLnode
 ( int		n,
   patch_t[]	c )
 {
@@ -306,7 +335,7 @@ WI_drawOnLnode
 
     if (fits && i<2)
     {
-	DC.V.DrawPatch(lnodes[wbs.epsd][n].x, lnodes[wbs.epsd][n].y,
+	V.DrawPatch(lnodes[wbs.epsd][n].x, lnodes[wbs.epsd][n].y,
 		    FB, c[i]);
     }
     else
@@ -323,7 +352,7 @@ public void initAnimatedBack()
     int		i;
     anim_t	a;
 
-    if (DC.DS.gamemode == GameMode_t.commercial)
+    if (DS.gamemode == GameMode_t.commercial)
 	return;
 
     if (wbs.epsd > 2)
@@ -338,9 +367,9 @@ public void initAnimatedBack()
 
 	// specify the next time to draw it
 	if (a.type == animenum_t.ANIM_ALWAYS)
-	    a.nexttic = bcnt + 1 + (DC.RND.M_Random()%a.period);
+	    a.nexttic = bcnt + 1 + (RND.M_Random()%a.period);
 	else if (a.type == animenum_t.ANIM_RANDOM)
-	    a.nexttic = bcnt + 1 + a.data2+(DC.RND.M_Random()%a.data1);
+	    a.nexttic = bcnt + 1 + a.data2+(RND.M_Random()%a.data1);
 	else if (a.type == animenum_t.ANIM_LEVEL)
 	    a.nexttic = bcnt + 1;
     }
@@ -352,7 +381,7 @@ public void updateAnimatedBack()
     int		i;
     anim_t	a;
 
-    if (DC.DS.gamemode == GameMode_t.commercial)
+    if (DS.gamemode == GameMode_t.commercial)
 	return;
 
     if (wbs.epsd > 2)
@@ -369,7 +398,7 @@ public void updateAnimatedBack()
 	    switch (a.type)
 	    {
 	      case ANIM_ALWAYS:
-		if (anims[++aaptr][i].ctr >= a.nanims) a.ctr = 0;
+		if (++anims[aaptr][i].ctr >= a.nanims) a.ctr = 0;
 		a.nexttic = bcnt + a.period;
 		break;
 
@@ -378,7 +407,7 @@ public void updateAnimatedBack()
 		if (a.ctr == a.nanims)
 		{
 		    a.ctr = -1;
-		    a.nexttic = bcnt+a.data2+(DC.RND.M_Random()%a.data1);
+		    a.nexttic = bcnt+a.data2+(RND.M_Random()%a.data1);
 		}
 		else a.nexttic = bcnt + a.period;
 		break;
@@ -400,12 +429,12 @@ public void updateAnimatedBack()
 
 }
 
-public void drawAnimatedBack()
+protected void drawAnimatedBack()
 {
     int			i;
     anim_t		a;
 
-    if (DC.DS.gamemode==GameMode_t.commercial)
+    if (DS.gamemode==GameMode_t.commercial)
 	return;
 
     if (wbs.epsd > 2)
@@ -416,7 +445,7 @@ public void drawAnimatedBack()
 	a = anims[wbs.epsd][i];
 
 	if (a.ctr >= 0)
-	    DC.V.DrawPatch(a.loc.x, a.loc.y, FB, a.p[a.ctr]);
+	    V.DrawPatch(a.loc.x, a.loc.y, FB, a.p[a.ctr]);
     }
 
 }
@@ -473,13 +502,13 @@ drawNum
     while ((digits--)!=0)
     {
 	x -= fontwidth;
-	DC.V.DrawPatch(x, y, FB, num[ n % 10 ]);
+	V.DrawPatch(x, y, FB, num[ n % 10 ]);
 	n /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
-	DC.V.DrawPatch(x-=8, y, FB, wiminus);
+	V.DrawPatch(x-=8, y, FB, wiminus);
 
     return x;
 
@@ -496,7 +525,7 @@ drawPercent
     if (p < 0)
 	return;
 
-    DC.V.DrawPatch(x, y, FB, percent);
+    V.DrawPatch(x, y, FB, percent);
     drawNum(x, y, p, -1);
 }
 
@@ -530,14 +559,14 @@ public void drawTime
 
 	    // draw
 	    if ((div==60) || (t / div)>0)
-		DC.V.DrawPatch(x, y, FB, colon);
+		V.DrawPatch(x, y, FB, colon);
 	    
 	} while ((t / div)>0);
     }
     else
     {
 	// "sucks"
-	DC.V.DrawPatch(x - sucks.width, y, FB, sucks); 
+	V.DrawPatch(x - sucks.width, y, FB, sucks); 
     }
 }
 
@@ -570,7 +599,7 @@ public void updateNoState() {
 boolean		snl_pointeron = false;
 
 
-public void WI_initShowNextLoc()
+public void initShowNextLoc()
 {
     state = ShowNextLoc;
     acceleratestage = 0;
@@ -600,11 +629,11 @@ void drawShowNextLoc()
     // draw animated background
     drawAnimatedBack(); 
 
-    if ( DC.DS.gamemode != GameMode_t.commercial)
+    if ( DS.gamemode != GameMode_t.commercial)
     {
   	if (wbs.epsd > 2)
 	{
-	    WI_drawEL();
+	    drawEL();
 	    return;
 	}
 	
@@ -612,21 +641,21 @@ void drawShowNextLoc()
 
 	// draw a splat on taken cities.
 	for (i=0 ; i<=last ; i++)
-	    drawOnLnode(i, splat);
+	    drawOnLnode(i, new patch_t[]{splat});
 
 	// splat the secret level?
 	if (wbs.didsecret)
-	    drawOnLnode(8, splat);
+	    drawOnLnode(8, new patch_t[]{splat});
 
 	// draw flashing ptr
 	if (snl_pointeron)
-	    WI_drawOnLnode(wbs.next, yah); 
+	    drawOnLnode(wbs.next, yah); 
     }
 
     // draws which level you are entering..
-    if ( (gamemode != commercial)
+    if ( (DS.gamemode != GameMode_t.commercial)
 	 || wbs.next != 30)
-	WI_drawEL();  
+	drawEL();  
 
 }
 
@@ -643,7 +672,7 @@ int fragSum(int playernum)
     
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-	if (DC.DS.playeringame[i]
+	if (DS.playeringame[i]
 	    && i!=playernum)
 	{
 	    frags += plrs[playernum].frags[i];
@@ -681,10 +710,10 @@ public void initDeathmatchStats()
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-	if (DC.DS.playeringame[i])
+	if (DS.playeringame[i])
 	{
 	    for (j=0 ; j<MAXPLAYERS ; j++)
-		if (DC.DS.playeringame[j])
+		if (DS.playeringame[j])
 		    dm_frags[i][j] = 0;
 
 	    dm_totals[i] = 0;
@@ -712,10 +741,10 @@ void updateDeathmatchStats()
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
-	    if (DC.DS.playeringame[i])
+	    if (DS.playeringame[i])
 	    {
 		for (j=0 ; j<MAXPLAYERS ; j++)
-		    if (DC.DS.playeringame[j])
+		    if (DS.playeringame[j])
 			dm_frags[i][j] = plrs[i].frags[j];
 
 		dm_totals[i] = fragSum(i);
@@ -730,18 +759,18 @@ void updateDeathmatchStats()
     
     if (dm_state == 2)
     {
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	    // TODO: S_StartSound(0, sfx_pistol);
 	
 	stillticking = false;
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
-	    if (playeringame[i])
+	    if (DS.playeringame[i])
 	    {
 		for (j=0 ; j<MAXPLAYERS ; j++)
 		{
-		    if (playeringame[j]
+		    if (DS.playeringame[j]
 			&& dm_frags[i][j] != plrs[i].frags[j])
 		    {
 			if (plrs[i].frags[j] < 0)
@@ -758,7 +787,7 @@ void updateDeathmatchStats()
 			stillticking = true;
 		    }
 		}
-		dm_totals[i] = WI_fragSum(i);
+		dm_totals[i] = fragSum(i);
 
 		if (dm_totals[i] > 99)
 		    dm_totals[i] = 99;
@@ -770,26 +799,26 @@ void updateDeathmatchStats()
 	}
 	if (!stillticking)
 	{
-	    S_StartSound(0, sfx_barexp);
+	 // TODO:   S_StartSound(0, sfx_barexp);
 	    dm_state++;
 	}
 
     }
     else if (dm_state == 4)
     {
-	if (acceleratestage)
+	if (acceleratestage!=0)
 	{
-	    S_StartSound(0, sfx_slop);
+	   // TODO: S_StartSound(0, sfx_slop);
 
-	    if ( gamemode == commercial)
-		WI_initNoState();
+	    if ( DS.gamemode == GameMode_t.commercial)
+		initNoState();
 	    else
-		WI_initShowNextLoc();
+		initShowNextLoc();
 	}
     }
-    else if (dm_state & 1)
+    else if ((dm_state & 1)!=0)
     {
-	if (!--cnt_pause)
+	if (--cnt_pause==0)
 	{
 	    dm_state++;
 	    cnt_pause = TICRATE;
@@ -799,7 +828,7 @@ void updateDeathmatchStats()
 
 
 
-void WI_drawDeathmatchStats(void)
+public void drawDeathmatchStats()
 {
 
     int		i;
@@ -812,20 +841,20 @@ void WI_drawDeathmatchStats(void)
 
     lh = WI_SPACINGY;
 
-    WI_slamBackground();
+    slamBackground();
     
     // draw animated background
-    WI_drawAnimatedBack(); 
-    WI_drawLF();
+    drawAnimatedBack(); 
+    drawLF();
 
     // draw stat titles (top line)
-    V_DrawPatch(DM_TOTALSX-SHORT(total.width)/2,
+    V.DrawPatch(DM_TOTALSX-total.width/2,
 		DM_MATRIXY-WI_SPACINGY+10,
 		FB,
 		total);
     
-    V_DrawPatch(DM_KILLERSX, DM_KILLERSY, FB, killers);
-    V_DrawPatch(DM_VICTIMSX, DM_VICTIMSY, FB, victims);
+    V.DrawPatch(DM_KILLERSX, DM_KILLERSY, FB, killers);
+    V.DrawPatch(DM_VICTIMSX, DM_VICTIMSY, FB, victims);
 
     // draw P?
     x = DM_MATRIXX + DM_SPACINGX;
@@ -833,26 +862,26 @@ void WI_drawDeathmatchStats(void)
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-	if (playeringame[i])
+	if (DS.playeringame[i])
 	{
-	    V_DrawPatch(x-SHORT(p[i].width)/2,
+	    V.DrawPatch(x-p[i].width/2,
 			DM_MATRIXY - WI_SPACINGY,
 			FB,
 			p[i]);
 	    
-	    V_DrawPatch(DM_MATRIXX-SHORT(p[i].width)/2,
+	    V.DrawPatch(DM_MATRIXX-p[i].width/2,
 			y,
 			FB,
 			p[i]);
 
 	    if (i == me)
 	    {
-		V_DrawPatch(x-SHORT(p[i].width)/2,
+		V.DrawPatch(x-p[i].width/2,
 			    DM_MATRIXY - WI_SPACINGY,
 			    FB,
 			    bstar);
 
-		V_DrawPatch(DM_MATRIXX-SHORT(p[i].width)/2,
+		V.DrawPatch(DM_MATRIXX-p[i].width/2,
 			    y,
 			    FB,
 			    star);
@@ -871,32 +900,32 @@ void WI_drawDeathmatchStats(void)
 
     // draw stats
     y = DM_MATRIXY+10;
-    w = SHORT(num[0].width);
+    w = num[0].width;
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
 	x = DM_MATRIXX + DM_SPACINGX;
 
-	if (playeringame[i])
+	if (DS.playeringame[i])
 	{
 	    for (j=0 ; j<MAXPLAYERS ; j++)
 	    {
-		if (playeringame[j])
-		    WI_drawNum(x+w, y, dm_frags[i][j], 2);
+		if (DS.playeringame[j])
+		    drawNum(x+w, y, dm_frags[i][j], 2);
 
 		x += DM_SPACINGX;
 	    }
-	    WI_drawNum(DM_TOTALSX+w, y, dm_totals[i], 2);
+	    drawNum(DM_TOTALSX+w, y, dm_totals[i], 2);
 	}
 	y += WI_SPACINGY;
     }
 }
 
-static int	cnt_frags[MAXPLAYERS];
-static int	dofrags;
-static int	ng_state;
+ int[]	cnt_frags=new int[MAXPLAYERS];
+ int	dofrags;
+ int	ng_state;
 
-void WI_initNetgameStats(void)
+public void initNetgameStats()
 {
 
     int i;
@@ -909,22 +938,22 @@ void WI_initNetgameStats(void)
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-	if (!playeringame[i])
+	if (!DS.playeringame[i])
 	    continue;
 
 	cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
 
-	dofrags += WI_fragSum(i);
+	dofrags += fragSum(i);
     }
 
-    dofrags = !!dofrags;
+    dofrags = ~~dofrags;
 
-    WI_initAnimatedBack();
+    initAnimatedBack();
 }
 
 
 
-void WI_updateNetgameStats(void)
+public void updateNetgameStats()
 {
 
     int		i;
@@ -932,38 +961,38 @@ void WI_updateNetgameStats(void)
     
     boolean	stillticking;
 
-    WI_updateAnimatedBack();
+    updateAnimatedBack();
 
-    if (acceleratestage && ng_state != 10)
+    if (acceleratestage!=0 && ng_state != 10)
     {
 	acceleratestage = 0;
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
-	    if (!playeringame[i])
+	    if (!DS.playeringame[i])
 		continue;
 
 	    cnt_kills[i] = (plrs[i].skills * 100) / wbs.maxkills;
 	    cnt_items[i] = (plrs[i].sitems * 100) / wbs.maxitems;
 	    cnt_secret[i] = (plrs[i].ssecret * 100) / wbs.maxsecret;
 
-	    if (dofrags)
-		cnt_frags[i] = WI_fragSum(i);
+	    if (dofrags!=0)
+		cnt_frags[i] = fragSum(i);
 	}
-	S_StartSound(0, sfx_barexp);
+	// TODO:S_StartSound(0, sfx_barexp);
 	ng_state = 10;
     }
 
     if (ng_state == 2)
     {
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	    // TODO:S_StartSound(0, sfx_pistol);
 
 	stillticking = false;
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
-	    if (!playeringame[i])
+	    if (!DS.playeringame[i])
 		continue;
 
 	    cnt_kills[i] += 2;
@@ -976,20 +1005,20 @@ void WI_updateNetgameStats(void)
 	
 	if (!stillticking)
 	{
-	    S_StartSound(0, sfx_barexp);
+	  //TODO:S_StartSound(0, sfx_barexp);
 	    ng_state++;
 	}
     }
     else if (ng_state == 4)
     {
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	  //TODO: S_StartSound(0, sfx_pistol);
 
 	stillticking = false;
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
-	    if (!playeringame[i])
+	    if (!DS.playeringame[i])
 		continue;
 
 	    cnt_items[i] += 2;
@@ -1000,20 +1029,20 @@ void WI_updateNetgameStats(void)
 	}
 	if (!stillticking)
 	{
-	    S_StartSound(0, sfx_barexp);
+	  //TODO: S_StartSound(0, sfx_barexp);
 	    ng_state++;
 	}
     }
     else if (ng_state == 6)
     {
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	  //TODO: S_StartSound(0, sfx_pistol);
 
 	stillticking = false;
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
-	    if (!playeringame[i])
+	    if (!DS.playeringame[i])
 		continue;
 
 	    cnt_secret[i] += 2;
@@ -1026,25 +1055,25 @@ void WI_updateNetgameStats(void)
 	
 	if (!stillticking)
 	{
-	    S_StartSound(0, sfx_barexp);
-	    ng_state += 1 + 2*!dofrags;
+	    //TODO:S_StartSound(0, sfx_barexp);
+	    ng_state += 1 + 2*~dofrags;
 	}
     }
     else if (ng_state == 8)
     {
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	  //TODO:S_StartSound(0, sfx_pistol);
 
 	stillticking = false;
 
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	{
-	    if (!playeringame[i])
+	    if (!DS.playeringame[i])
 		continue;
 
 	    cnt_frags[i] += 1;
 
-	    if (cnt_frags[i] >= (fsum = WI_fragSum(i)))
+	    if (cnt_frags[i] >= (fsum = fragSum(i)))
 		cnt_frags[i] = fsum;
 	    else
 		stillticking = true;
@@ -1052,24 +1081,24 @@ void WI_updateNetgameStats(void)
 	
 	if (!stillticking)
 	{
-	    S_StartSound(0, sfx_pldeth);
+	  //TODO:S_StartSound(0, sfx_pldeth);
 	    ng_state++;
 	}
     }
     else if (ng_state == 10)
     {
-	if (acceleratestage)
+	if (acceleratestage!=0)
 	{
-	    S_StartSound(0, sfx_sgcock);
-	    if ( gamemode == commercial )
-		WI_initNoState();
+	  //TODO: S_StartSound(0, sfx_sgcock);
+	    if ( DS.gamemode == GameMode_t.commercial )
+		initNoState();
 	    else
-		WI_initShowNextLoc();
+		initShowNextLoc();
 	}
     }
-    else if (ng_state & 1)
+    else if ((ng_state & 1)!=0)
     {
-	if (!--cnt_pause)
+	if (--cnt_pause==0)
 	{
 	    ng_state++;
 	    cnt_pause = TICRATE;
@@ -1077,66 +1106,65 @@ void WI_updateNetgameStats(void)
     }
 }
 
-
-
-void WI_drawNetgameStats(void)
+public void drawNetgameStats()
 {
     int		i;
     int		x;
     int		y;
-    int		pwidth = SHORT(percent.width);
+    int		pwidth = percent.width;
 
-    WI_slamBackground();
+    slamBackground();
     
     // draw animated background
-    WI_drawAnimatedBack(); 
+    drawAnimatedBack(); 
 
-    WI_drawLF();
+    drawLF();
 
     // draw stat titles (top line)
-    V_DrawPatch(NG_STATSX+NG_SPACINGX-SHORT(kills.width),
+    V.DrawPatch(NG_STATSX()+NG_SPACINGX-kills.width,
 		NG_STATSY, FB, kills);
 
-    V_DrawPatch(NG_STATSX+2*NG_SPACINGX-SHORT(items.width),
+    V.DrawPatch(NG_STATSX()+2*NG_SPACINGX-items.width,
 		NG_STATSY, FB, items);
 
-    V_DrawPatch(NG_STATSX+3*NG_SPACINGX-SHORT(secret.width),
+    V.DrawPatch(NG_STATSX()+3*NG_SPACINGX-secret.width,
 		NG_STATSY, FB, secret);
     
-    if (dofrags)
-	V_DrawPatch(NG_STATSX+4*NG_SPACINGX-SHORT(frags.width),
+    if (dofrags!=0)
+	V.DrawPatch(NG_STATSX()+4*NG_SPACINGX-frags.width,
 		    NG_STATSY, FB, frags);
 
     // draw stats
-    y = NG_STATSY + SHORT(kills.height);
+    y = NG_STATSY + kills.height;
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
-	if (!playeringame[i])
+	if (!DS.playeringame[i])
 	    continue;
 
-	x = NG_STATSX;
-	V_DrawPatch(x-SHORT(p[i].width), y, FB, p[i]);
+	x = NG_STATSX();
+	V.DrawPatch(x-p[i].width, y, FB, p[i]);
 
 	if (i == me)
-	    V_DrawPatch(x-SHORT(p[i].width), y, FB, star);
+	    V.DrawPatch(x-p[i].width, y, FB, star);
 
 	x += NG_SPACINGX;
-	WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);	x += NG_SPACINGX;
-	WI_drawPercent(x-pwidth, y+10, cnt_items[i]);	x += NG_SPACINGX;
-	WI_drawPercent(x-pwidth, y+10, cnt_secret[i]);	x += NG_SPACINGX;
+	drawPercent(x-pwidth, y+10, cnt_kills[i]);	x += NG_SPACINGX;
+	drawPercent(x-pwidth, y+10, cnt_items[i]);	x += NG_SPACINGX;
+	drawPercent(x-pwidth, y+10, cnt_secret[i]);	x += NG_SPACINGX;
 
-	if (dofrags)
-	    WI_drawNum(x, y+10, cnt_frags[i], -1);
+	if (dofrags!=0)
+	    drawNum(x, y+10, cnt_frags[i], -1);
 
 	y += WI_SPACINGY;
     }
 
 }
 
-static int	sp_state;
 
-void WI_initStats(void)
+ int	sp_state;
+
+public void initStats()
 {
     state = StatCount;
     acceleratestage = 0;
@@ -1145,15 +1173,17 @@ void WI_initStats(void)
     cnt_time = cnt_par = -1;
     cnt_pause = TICRATE;
 
-    WI_initAnimatedBack();
+    initAnimatedBack();
 }
 
-void WI_updateStats(void)
+public void updateStats()
 {
 
-    WI_updateAnimatedBack();
+    updateAnimatedBack();
+    
+    //System.out.println("SP_State "+sp_state);
 
-    if (acceleratestage && sp_state != 10)
+    if ((acceleratestage !=0) && sp_state != COUNT_DONE)
     {
 	acceleratestage = 0;
 	cnt_kills[0] = (plrs[me].skills * 100) / wbs.maxkills;
@@ -1161,57 +1191,57 @@ void WI_updateStats(void)
 	cnt_secret[0] = (plrs[me].ssecret * 100) / wbs.maxsecret;
 	cnt_time = plrs[me].stime / TICRATE;
 	cnt_par = wbs.partime / TICRATE;
-	S_StartSound(0, sfx_barexp);
+	// TODO:S_StartSound(0, sfx_barexp);
 	sp_state = 10;
     }
 
-    if (sp_state == 2)
+    if (sp_state == COUNT_KILLS)
     {
 	cnt_kills[0] += 2;
 
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	    //TODO: S_StartSound(0, sfx_pistol);
 
 	if (cnt_kills[0] >= (plrs[me].skills * 100) / wbs.maxkills)
 	{
 	    cnt_kills[0] = (plrs[me].skills * 100) / wbs.maxkills;
-	    S_StartSound(0, sfx_barexp);
+	   // TODO: S_StartSound(0, sfx_barexp);
 	    sp_state++;
 	}
     }
-    else if (sp_state == 4)
+    else if (sp_state == COUNT_ITEMS)
     {
 	cnt_items[0] += 2;
 
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	    // TODO: S_StartSound(0, sfx_pistol);
 
 	if (cnt_items[0] >= (plrs[me].sitems * 100) / wbs.maxitems)
 	{
 	    cnt_items[0] = (plrs[me].sitems * 100) / wbs.maxitems;
-	    S_StartSound(0, sfx_barexp);
+	    // TODO: S_StartSound(0, sfx_barexp);
 	    sp_state++;
 	}
     }
-    else if (sp_state == 6)
+    else if (sp_state == COUNT_SECRETS)
     {
 	cnt_secret[0] += 2;
 
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	    // TODO: S_StartSound(0, sfx_pistol);
 
 	if (cnt_secret[0] >= (plrs[me].ssecret * 100) / wbs.maxsecret)
 	{
 	    cnt_secret[0] = (plrs[me].ssecret * 100) / wbs.maxsecret;
-	    S_StartSound(0, sfx_barexp);
+	    // TODO: S_StartSound(0, sfx_barexp);
 	    sp_state++;
 	}
     }
 
-    else if (sp_state == 8)
+    else if (sp_state == COUNT_TIME)
     {
-	if (!(bcnt&3))
-	    S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0);
+	   // TODO: S_StartSound(0, sfx_pistol);
 
 	cnt_time += 3;
 
@@ -1226,26 +1256,27 @@ void WI_updateStats(void)
 
 	    if (cnt_time >= plrs[me].stime / TICRATE)
 	    {
-		S_StartSound(0, sfx_barexp);
+		// TODO: S_StartSound(0, sfxenum_t.sfx_barexp);
 		sp_state++;
 	    }
 	}
     }
-    else if (sp_state == 10)
+    else if (sp_state == COUNT_DONE)
     {
-	if (acceleratestage)
+	if (acceleratestage!=0)
 	{
-	    S_StartSound(0, sfx_sgcock);
+	    // TODO: S_StartSound(0, sfxenum_t.sfx_sgcock);
 
-	    if (gamemode == commercial)
-		WI_initNoState();
+	    if (DS.gamemode == GameMode_t.commercial)
+		initNoState();
 	    else
-		WI_initShowNextLoc();
+		initShowNextLoc();
 	}
     }
-    else if (sp_state & 1)
+    // Non-drawing, pausing state. Any odd value introduces a 35 tic pause.
+    else if ((sp_state & 1)>0)
     {
-	if (!--cnt_pause)
+	if (--cnt_pause==0)
 	{
 	    sp_state++;
 	    cnt_pause = TICRATE;
@@ -1254,54 +1285,50 @@ void WI_updateStats(void)
 
 }
 
-/*
 public void drawStats()
 {
     // line height
     int lh;	
 
-    lh = (3*SHORT(num[0].height))/2;
+    lh = (3*num[0].height)/2;
 
-    WI_slamBackground();
+    slamBackground();
 
     // draw animated background
-    WI_drawAnimatedBack();
+    drawAnimatedBack();
     
-    WI_drawLF();
+    drawLF();
 
-    V_DrawPatch(SP_STATSX, SP_STATSY, FB, kills);
-    WI_drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
+    V.DrawPatch(SP_STATSX, SP_STATSY, FB, kills);
+    drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
 
-    V_DrawPatch(SP_STATSX, SP_STATSY+lh, FB, items);
-    WI_drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
+    V.DrawPatch(SP_STATSX, SP_STATSY+lh, FB, items);
+    drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
 
-    V_DrawPatch(SP_STATSX, SP_STATSY+2*lh, FB, sp_secret);
-    WI_drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
+    V.DrawPatch(SP_STATSX, SP_STATSY+2*lh, FB, sp_secret);
+    drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
 
-    V_DrawPatch(SP_TIMEX, SP_TIMEY, FB, time);
-    WI_drawTime(SCREENWIDTH/2 - SP_TIMEX, SP_TIMEY, cnt_time);
+    V.DrawPatch(SP_TIMEX, SP_TIMEY, FB, time);
+    drawTime(SCREENWIDTH/2 - SP_TIMEX, SP_TIMEY, cnt_time);
 
     if (wbs.epsd < 3)
     {
-	V_DrawPatch(SCREENWIDTH/2 + SP_TIMEX, SP_TIMEY, FB, par);
-	WI_drawTime(SCREENWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
+	V.DrawPatch(SCREENWIDTH/2 + SP_TIMEX, SP_TIMEY, FB, par);
+	drawTime(SCREENWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
     }
 
 }
-*/
-/*
 
-void WI_checkForAccelerate(void)
+public void checkForAccelerate()
 {
-    int   i;
-    player_t  *player;
 
     // check for button presses to skip delays
-    for (i=0, player = players ; i<MAXPLAYERS ; i++, player++)
+    for (int i=0 ; i<MAXPLAYERS ; i++)
     {
-	if (playeringame[i])
+        player_t player = DS.players[i];
+	if (DS.playeringame[i])
 	{
-	    if (player.cmd.buttons & BT_ATTACK)
+	    if ((player.cmd.buttons & BT_ATTACK)!=0)
 	    {
 		if (!player.attackdown)
 		    acceleratestage = 1;
@@ -1309,7 +1336,7 @@ void WI_checkForAccelerate(void)
 	    }
 	    else
 		player.attackdown = false;
-	    if (player.cmd.buttons & BT_USE)
+	    if ((player.cmd.buttons & BT_USE)!=0)
 	    {
 		if (!player.usedown)
 		    acceleratestage = 1;
@@ -1320,12 +1347,11 @@ void WI_checkForAccelerate(void)
 	}
     }
 }
-*/
 
-/*
 
-// Updates stuff each tick
-public void WI_Ticker()
+
+/** Updates stuff each tick */
+public void Ticker()
 {
     // counter for general background animation
     bcnt++;  
@@ -1333,33 +1359,35 @@ public void WI_Ticker()
     if (bcnt == 1)
     {
 	// intermission music
-  	if ( gamemode == commercial )
-	  S_ChangeMusic(mus_dm2int, true);
+  	if ( DS.gamemode == GameMode_t.commercial )
+  	    ;
+  	//TODO: S_ChangeMusic(mus_dm2int, true);
 	else
-	  S_ChangeMusic(mus_inter, true); 
+	    ;
+	  //TODO: S_ChangeMusic(mus_inter, true); 
     }
 
-    WI_checkForAccelerate();
-
+    checkForAccelerate();
+//System.out.println("State "+state);
+    
     switch (state)
     {
       case StatCount:
-	if (deathmatch) WI_updateDeathmatchStats();
-	else if (netgame) WI_updateNetgameStats();
-	else WI_updateStats();
+	if (DS.deathmatch) updateDeathmatchStats();
+	else if (DS.netgame) updateNetgameStats();
+	else updateStats();
 	break;
 	
       case ShowNextLoc:
-	WI_updateShowNextLoc();
+	updateShowNextLoc();
 	break;
 	
       case NoState:
-	WI_updateNoState();
+	updateNoState();
 	break;
     }
 
 }
-*/
 
 public void loadData()
 {
@@ -1368,21 +1396,21 @@ public void loadData()
     String	name;
     anim_t	a;
 
-    if (DC.DS.gamemode == GameMode_t.commercial)
+    if (DS.gamemode == GameMode_t.commercial)
 	name= "INTERPIC";
     else 
 	//sprintf(name, "WIMAP%d", wbs.epsd);
         name=("WIMAP"+Integer.toString(wbs.epsd));
     
-    if ( DC.DS.gamemode == GameMode_t.retail )
+    if ( DS.gamemode == GameMode_t.retail )
     {
       if (wbs.epsd == 3)
           name= "INTERPIC";
     }
 
     // background
-    bg = (patch_t) DC.W.CacheLumpName(name, PU_CACHE,patch_t.class);    
-    DC.V.DrawPatch(0, 0, 1, bg);
+    bg = (patch_t) W.CacheLumpName(name, PU_CACHE,patch_t.class);    
+    V.DrawPatch(0, 0, 1, bg);
 
 
     // UNUSED unsigned char *pic = screens[1];
@@ -1396,11 +1424,11 @@ public void loadData()
     // }
     //}
 
-    if (DC.DS.gamemode == GameMode_t.commercial)
+    if (DS.gamemode == GameMode_t.commercial)
     {
 	NUMCMAPS = 32;								
 //	lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUMCMAPS,
-//				       PU_STATIC, 0);
+//				       PU_, 0);
 	
 	lnames=new patch_t[NUMCMAPS];
     PrintfFormat xxx=new PrintfFormat("CWILV%2.2d");
@@ -1408,7 +1436,7 @@ public void loadData()
 	for (i=0 ; i<NUMCMAPS ; i++)
 	{								
 	    name=xxx.sprintf(i);
-	    lnames[i] = (patch_t) DC.W.CacheLumpName(name, PU_STATIC,patch_t.class);
+	    lnames[i] = (patch_t) W.CacheLumpName(name, PU_STATIC,patch_t.class);
 	}					
     }
     else
@@ -1419,17 +1447,17 @@ public void loadData()
 	for (i=0 ; i<NUMMAPS ; i++)
 	{
 	    name=xxx.sprintf(new Object[]{wbs.epsd, i});
-	    lnames[i] = (patch_t) DC.W.CacheLumpName(name, PU_STATIC,patch_t.class);
+	    lnames[i] = (patch_t) W.CacheLumpName(name, PU_STATIC,patch_t.class);
 	}
 
 	// you are here
-	yah[0] = (patch_t) DC.W.CacheLumpName("WIURH0", PU_STATIC,patch_t.class);
+	yah[0] = (patch_t) W.CacheLumpName("WIURH0", PU_STATIC,patch_t.class);
 
 	// you are here (alt.)
-	yah[1] = (patch_t) DC.W.CacheLumpName("WIURH1", PU_STATIC,patch_t.class);
+	yah[1] = (patch_t) W.CacheLumpName("WIURH1", PU_STATIC,patch_t.class);
 
 	// splat
-	splat = (patch_t) DC.W.CacheLumpName("WISPLAT", PU_STATIC,patch_t.class); 
+	splat = (patch_t) W.CacheLumpName("WISPLAT", PU_STATIC,patch_t.class); 
 	
 	if (wbs.epsd < 3)
 	{
@@ -1444,7 +1472,7 @@ public void loadData()
 		    {
 			// animations
 			name=xxx.sprintf(new Object[] {wbs.epsd, j, i});  
-			a.p[i] = (patch_t)DC.W.CacheLumpName(name, PU_STATIC,patch_t.class);
+			a.p[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);
 		    }
 		    else
 		    {
@@ -1457,74 +1485,74 @@ public void loadData()
     }
 
     // More hacks on minus sign.
-    wiminus = (patch_t)DC.W.CacheLumpName("WIMINUS", PU_STATIC,patch_t.class); 
+    wiminus = (patch_t)W.CacheLumpName("WIMINUS", PU_STATIC,patch_t.class); 
 
     PrintfFormat xxx=new PrintfFormat("WINUM%d");
     for (i=0;i<10;i++)
     {
 	 // numbers 0-9
 	name=xxx.sprintf(i);     
-	num[i] = (patch_t)DC.W.CacheLumpName(name, PU_STATIC,patch_t.class);
+	num[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);
     }
 
     // percent sign
-    percent = (patch_t)DC.W.CacheLumpName("WIPCNT", PU_STATIC,patch_t.class);
+    percent = (patch_t)W.CacheLumpName("WIPCNT", PU_STATIC,patch_t.class);
 
     // "finished"
-    finished = (patch_t)DC.W.CacheLumpName("WIF", PU_STATIC,patch_t.class);
+    finished = (patch_t)W.CacheLumpName("WIF", PU_STATIC,patch_t.class);
 
     // "entering"
-    entering = (patch_t)DC.W.CacheLumpName("WIENTER", PU_STATIC,patch_t.class);
+    entering = (patch_t)W.CacheLumpName("WIENTER", PU_STATIC,patch_t.class);
 
     // "kills"
-    kills = (patch_t)DC.W.CacheLumpName("WIOSTK", PU_STATIC,patch_t.class);   
+    kills = (patch_t)W.CacheLumpName("WIOSTK", PU_STATIC,patch_t.class);   
 
     // "scrt"
-    secret = (patch_t)DC.W.CacheLumpName("WIOSTS", PU_STATIC,patch_t.class);
+    secret = (patch_t)W.CacheLumpName("WIOSTS", PU_STATIC,patch_t.class);
 
      // "secret"
-    sp_secret =(patch_t)DC.W.CacheLumpName("WISCRT2", PU_STATIC,patch_t.class);
+    sp_secret =(patch_t)W.CacheLumpName("WISCRT2", PU_STATIC,patch_t.class);
 
     // Yuck. 
-    if (DC.DS.language==Language_t.french)
+    if (DS.language==Language_t.french)
     {
 	// "items"
-	if (DC.DS.netgame && !DC.DS.deathmatch)
-	    items = (patch_t)DC.W.CacheLumpName("WIOBJ", PU_STATIC,patch_t.class);    
+	if (DS.netgame && !DS.deathmatch)
+	    items = (patch_t)W.CacheLumpName("WIOBJ", PU_STATIC,patch_t.class);    
   	else
-	    items = (patch_t)DC.W.CacheLumpName("WIOSTI", PU_STATIC,patch_t.class);
+	    items = (patch_t)W.CacheLumpName("WIOSTI", PU_STATIC,patch_t.class);
     } else
-	items = (patch_t)DC.W.CacheLumpName("WIOSTI", PU_STATIC,patch_t.class);
+	items = (patch_t)W.CacheLumpName("WIOSTI", PU_STATIC,patch_t.class);
 
     // "frgs"
-    frags = (patch_t)DC.W.CacheLumpName("WIFRGS", PU_STATIC,patch_t.class);    
+    frags = (patch_t)W.CacheLumpName("WIFRGS", PU_STATIC,patch_t.class);    
 
     // ":"
-    colon = (patch_t)DC.W.CacheLumpName("WICOLON", PU_STATIC,patch_t.class); 
+    colon = (patch_t)W.CacheLumpName("WICOLON", PU_STATIC,patch_t.class); 
 
     // "time"
-    time = (patch_t)DC.W.CacheLumpName("WITIME", PU_STATIC,patch_t.class);  
+    time = (patch_t)W.CacheLumpName("WITIME", PU_STATIC,patch_t.class);  
 
     // "sucks"
-    sucks = (patch_t)DC.W.CacheLumpName("WISUCKS", PU_STATIC,patch_t.class);  
+    sucks = (patch_t)W.CacheLumpName("WISUCKS", PU_STATIC,patch_t.class);  
 
     // "par"
-    par = (patch_t)DC.W.CacheLumpName("WIPAR", PU_STATIC,patch_t.class);   
+    par = (patch_t)W.CacheLumpName("WIPAR", PU_STATIC,patch_t.class);   
 
     // "killers" (vertical)
-    killers = (patch_t)DC.W.CacheLumpName("WIKILRS", PU_STATIC,patch_t.class);
+    killers = (patch_t)W.CacheLumpName("WIKILRS", PU_STATIC,patch_t.class);
 
     // "victims" (horiz)
-    victims = (patch_t)DC.W.CacheLumpName("WIVCTMS", PU_STATIC,patch_t.class);
+    victims = (patch_t)W.CacheLumpName("WIVCTMS", PU_STATIC,patch_t.class);
 
     // "total"
-    total = (patch_t)DC.W.CacheLumpName("WIMSTT", PU_STATIC,patch_t.class);   
+    total = (patch_t)W.CacheLumpName("WIMSTT", PU_STATIC,patch_t.class);   
 
     // your face
-    star = (patch_t)DC.W.CacheLumpName("STFST01", PU_STATIC,patch_t.class);
+    star = (patch_t)W.CacheLumpName("STFST01", PU_STATIC,patch_t.class);
 
     // dead face
-    bstar = (patch_t)DC.W.CacheLumpName("STFDEAD0", PU_STATIC,patch_t.class);    
+    bstar = (patch_t)W.CacheLumpName("STFDEAD0", PU_STATIC,patch_t.class);    
 
     PrintfFormat xx1=new PrintfFormat("STPB%d");
     PrintfFormat xx2=new PrintfFormat("WIBP%d");
@@ -1532,12 +1560,12 @@ public void loadData()
     {
 	// "1,2,3,4"
 	name= xx1.sprintf(i);      
-	p[i] = (patch_t)DC.W.CacheLumpName(name, PU_STATIC,patch_t.class);;
+	p[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);;
 
 	// "1,2,3,4"
 
 	name=xx2.sprintf(i+1);     
-	bp[i] = (patch_t)DC.W.CacheLumpName(name, PU_STATIC,patch_t.class);;
+	bp[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);;
     }
 
 }
@@ -1607,40 +1635,42 @@ public void WI_unloadData()
     for (i=0 ; i<MAXPLAYERS ; i++)
 	Z_ChangeTag(bp[i], PU_CACHE);
 }
+*/
 
-void WI_Drawer (void)
+
+public void Drawer ()
 {
     switch (state)
     {
       case StatCount:
-	if (deathmatch)
-	    WI_drawDeathmatchStats();
-	else if (netgame)
-	    WI_drawNetgameStats();
+	if (DS.deathmatch)
+	    drawDeathmatchStats();
+	else if (DS.netgame)
+	    drawNetgameStats();
 	else
-	    WI_drawStats();
+	    drawStats();
 	break;
 	
       case ShowNextLoc:
-	WI_drawShowNextLoc();
+	drawShowNextLoc();
 	break;
 	
       case NoState:
-	WI_drawNoState();
+	drawNoState();
 	break;
     }
 }
 
 
-void WI_initVariables(wbstartstruct_t* wbstartstruct)
+void initVariables(wbstartstruct_t wbstartstruct)
 {
 
     wbs = wbstartstruct;
 
-#ifdef RANGECHECKING
-    if (gamemode != commercial)
+if (RANGECHECKING){
+    if (DS.gamemode != GameMode_t.commercial)
     {
-      if ( gamemode == retail )
+      if ( DS.gamemode == GameMode_t.retail )
 	RNGCHECK(wbs.epsd, 0, 3);
       else
 	RNGCHECK(wbs.epsd, 0, 2);
@@ -1652,24 +1682,24 @@ void WI_initVariables(wbstartstruct_t* wbstartstruct)
     }
     RNGCHECK(wbs.pnum, 0, MAXPLAYERS);
     RNGCHECK(wbs.pnum, 0, MAXPLAYERS);
-#endif
+}
 
     acceleratestage = 0;
     cnt = bcnt = 0;
     firstrefresh = 1;
     me = wbs.pnum;
-    plrs = wbs.plyr;
+    plrs = wbs.plyr.clone();
 
-    if (!wbs.maxkills)
+    if (wbs.maxkills==0)
 	wbs.maxkills = 1;
 
-    if (!wbs.maxitems)
+    if (wbs.maxitems==0)
 	wbs.maxitems = 1;
 
-    if (!wbs.maxsecret)
+    if (wbs.maxsecret==0)
 	wbs.maxsecret = 1;
 
-    if ( gamemode != retail )
+    if ( DS.gamemode != GameMode_t.retail )
       if (wbs.epsd > 2)
 	wbs.epsd -= 3;
 }
@@ -1680,11 +1710,21 @@ public void Start(wbstartstruct_t wbstartstruct)
     initVariables(wbstartstruct);
     loadData();
 
-    if (DC.DS.deathmatch)
+    if (DS.deathmatch)
 	initDeathmatchStats();
-    else if (DC.DS.netgame)
+    else if (DS.netgame)
 	initNetgameStats();
     else
 	initStats();
-}*/
+}
+
+
+public int NG_STATSX(){
+    return 32 + star.width/2 + 32*~dofrags;
+}
+
+public static boolean RNGCHECK(int what, int min, int max){
+    return (what>=min && what <=max)?true:false;
+}
+
 }

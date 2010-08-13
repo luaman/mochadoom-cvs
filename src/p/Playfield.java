@@ -48,7 +48,7 @@ import m.fixed_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Playfield.java,v 1.2 2010/08/11 16:31:34 velktron Exp $
+// $Id: Playfield.java,v 1.3 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +63,9 @@ import m.fixed_t;
 // GNU General Public License for more details.
 //
 // $Log: Playfield.java,v $
+// Revision 1.3  2010/08/13 14:06:36  velktron
+// Endlevel screen fully functional!
+//
 // Revision 1.2  2010/08/11 16:31:34  velktron
 // Map loading works! Check out LevelLoaderTester for more.
 //
@@ -86,7 +89,7 @@ public class Playfield {
     DoomVideoRenderer V;
     Renderer R;
 
-  public static final String  rcsid = "$Id: Playfield.java,v 1.2 2010/08/11 16:31:34 velktron Exp $";
+  public static final String  rcsid = "$Id: Playfield.java,v 1.3 2010/08/13 14:06:36 velktron Exp $";
 
 /*
   #include <math.h>
@@ -511,9 +514,9 @@ public class Playfield {
   }
 
 
-  //
-  // P_LoadSideDefs
-  //
+  /**
+  * P_LoadSideDefs
+  */
   public void LoadSideDefs (int lump) throws IOException
   {
       mapsidedef_t[]       data;
@@ -582,17 +585,16 @@ public class Playfield {
 
 
 
-  //
-  // P_GroupLines
-  // Builds sector line lists and subsector sector numbers.
-  // Finds block bounding boxes for sectors.
-  //
+  /**
+   * P_GroupLines
+   * Builds sector line lists and subsector sector numbers.
+   * Finds block bounding boxes for sectors.
+  */
 
   
   public void GroupLines ()
   {
-      line_t[]        linebuffer;
-      int         total, partial;
+      int         total;
       line_t     li;
       sector_t       sector;
       subsector_t    ss;
@@ -617,7 +619,6 @@ public class Playfield {
 
       for (int i=0 ; i<numlines ; i++)
       {
-      partial=0;
       li = lines[i];
       total++;
       li.frontsector.linecount++;
@@ -683,7 +684,7 @@ public class Playfield {
           }
       }
       
-      if (sector.lines.length != sector.linecount)
+      if (addedlines != sector.linecount)
           system.Error ("P_GroupLines: miscounted");
               
       // set the degenmobj_t to the middle of the bounding box
@@ -786,14 +787,12 @@ public class Playfield {
       this.LoadVertexes (lumpnum+ML_VERTEXES);
       this.LoadSectors (lumpnum+ML_SECTORS);
       this.LoadSideDefs (lumpnum+ML_SIDEDEFS);
-      // Depends on sides[]
       this.LoadLineDefs (lumpnum+ML_LINEDEFS);
       this.LoadSubsectors (lumpnum+ML_SSECTORS);
       this.LoadNodes (lumpnum+ML_NODES);
-      // Depends on lines[]
       this.LoadSegs (lumpnum+ML_SEGS);
       
-      //TODO: rejectmatrix = W_CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL);
+      //rejectmatrix = W.CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL);
       this.GroupLines ();
 
       DS.bodyqueslot = 0;

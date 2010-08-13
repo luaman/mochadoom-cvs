@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.6 2010/08/10 16:41:57 velktron Exp $
+// $Id: Renderer.java,v 1.7 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.7  2010/08/13 14:06:36  velktron
+// Endlevel screen fully functional!
+//
 // Revision 1.6  2010/08/10 16:41:57  velktron
 // Threw some work into map loading.
 //
@@ -378,9 +381,9 @@ PointOnSide
     int	left;
     int	right;
 	
-    if (node.dx.isEZ())
+    if (node.dx==0)
     {
-	if (x.compareTo(node.x)<0)
+	if (x<node.x)
 	    return node.dy.oneGZ();
 	
 	return node.dy.oneLZ();
@@ -493,16 +496,18 @@ PointOnSegSide
  *  the y (<=x) is scaled and divided by x to get a
  *  tangent (slope) value which is looked up in the
  *   tantoangle[] table.
+ *   
+ *   @param xx (fixed_t)
+ *   @param yy (fixed_t)
  */
-
 
 public int
 PointToAngle
-( fixed_t	xx,
-  fixed_t	yy )
+( int	xx,
+  int	yy )
 {	
-    int x=xx.val- viewx;
-    int y=yy.val- viewy;
+    int x=xx- viewx;
+    int y=yy- viewy;
     
     if ( (x==0) && (y==0) )
 	return 0;
@@ -583,7 +588,7 @@ PointToAngle
 }
 
 
-int
+public int
 PointToAngle2
 ( fixed_t	x1,
   fixed_t	y1,
@@ -594,8 +599,23 @@ PointToAngle2
     viewx=x1.val;
     viewy=y1.val;
     
+    return PointToAngle (x2.val, y2.val);
+}
+
+public int
+PointToAngle2
+( int   x1,
+  int   y1,
+  int   x2,
+  int   y2 )
+{   
+    // Careful with assignments...
+    viewx=x1;
+    viewy=y1;
+    
     return PointToAngle (x2, y2);
 }
+
 
 
 public int

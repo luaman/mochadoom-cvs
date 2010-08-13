@@ -1,5 +1,9 @@
 package v;
 
+import java.awt.Color;
+import java.awt.image.IndexColorModel;
+import java.io.IOException;
+
 import rr.patch_t;
 
 /** DoomVideoSystem is now an interface, that all "video drivers" (wheter do screen, disk, etc.)
@@ -37,5 +41,7 @@ public interface DoomVideoRenderer {
     public int getUsegamma();
 
     public void setUsegamma(int gamma);
+    
+    public void takeScreenShot(int screen, String imagefile, IndexColorModel icm) throws IOException;
     
 }

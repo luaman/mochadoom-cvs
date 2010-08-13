@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.7 2010/08/11 16:31:34 velktron Exp $
+// $Id: WadLoader.java,v 1.8 2010/08/13 14:06:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.8  2010/08/13 14:06:36  velktron
+// Endlevel screen fully functional!
+//
 // Revision 1.7  2010/08/11 16:31:34  velktron
 // Map loading works! Check out LevelLoaderTester for more.
 //
@@ -749,6 +752,23 @@ try {
     return (patch_t) this.CacheLumpNum(this.GetNumForName(name), PU_CACHE, patch_t.class);
 } catch (IOException e) {
     // TODO Auto-generated catch block
+    e.printStackTrace();
+    return null;
+}
+}
+    
+    /** Specific method for loading cached patches, since it's by FAR the most common operation.
+     * 
+     * @param name
+     * @param tag
+     * @return
+     */
+    
+    public patch_t CachePatchName(String name,int tag)
+    {
+try {
+    return (patch_t) this.CacheLumpNum(this.GetNumForName(name), tag, patch_t.class);
+} catch (IOException e) {
     e.printStackTrace();
     return null;
 }
