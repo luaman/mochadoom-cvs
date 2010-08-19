@@ -39,8 +39,8 @@ public class sector_t {
      /** if == validcount, already checked */
      public int     validcount;
 
-     /** list of mobjs in sector (MAES: made * into array) */
-     public mobj_t[] thinglist;
+     /** list of mobjs in sector (MAES: it's used as a linked list) */
+     public mobj_t thinglist;
 
      /** thinker_t for reversable actions */
      public thinker_t specialdata;

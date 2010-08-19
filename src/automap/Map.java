@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.2 2010/08/10 16:41:57 velktron Exp $
+// $Id: Map.java,v 1.3 2010/08/19 23:14:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.3  2010/08/19 23:14:49  velktron
+// Automap
+//
 // Revision 1.2  2010/08/10 16:41:57  velktron
 // Threw some work into map loading.
 //
@@ -47,12 +50,18 @@ package automap;
 import static data.Defines.*;
 import static data.doomtype.*;
 import static m.fixed_t.*;
+import static doom.englsh.*;
+import static data.SineCosine.*;
+import static data.Tables.*;
+import p.Playfield;
+import p.mobj_t;
 import data.doomstat;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import rr.patch_t;
 import st.DoomStatusBarInterface;
+import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 import m.cheatseq_t;
@@ -66,10 +75,10 @@ DoomStatusBarInterface ST;
 WadLoader W;
 doomstat DS;
 DoomVideoRenderer V;
+Playfield P;    
     
     
-    
-public final String rcsid = "$Id: Map.java,v 1.2 2010/08/10 16:41:57 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.3 2010/08/19 23:14:49 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -136,14 +145,14 @@ public static final int XHAIRCOLORS =GRAYS;
 // drawing stuff
 public static final int FB  =   0;
 
-public static final char AM_PANDOWNKEY  =KEY_DOWNARROW;
-public static final char AM_PANUPKEY    =KEY_UPARROW;
-public static final char AM_PANRIGHTKEY =KEY_RIGHTARROW;
-public static final char AM_PANLEFTKEY  =KEY_LEFTARROW;
+public static final char AM_PANDOWNKEY  =0xaf;
+public static final char AM_PANUPKEY    =0xad;
+public static final char AM_PANRIGHTKEY =0xae;
+public static final char AM_PANLEFTKEY  =0xac;
 public static final char AM_ZOOMINKEY=  '=';
 public static final char AM_ZOOMOUTKEY= '-';
-public static final char AM_STARTKEY=   KEY_TAB;
-public static final char AM_ENDKEY  =KEY_TAB;
+public static final char AM_STARTKEY=   9;	// KEY_TAB
+public static final char AM_ENDKEY  =9;	// KEY_TAB
 public static final char AM_GOBIGKEY=   '0';
 public static final char AM_FOLLOWKEY=  'f';
 public static final char AM_GRIDKEY=    'g';
@@ -174,7 +183,7 @@ private int CXMTOF(int x){ return (f_x + MTOF((x)-m_x));}
 private int CYMTOF(int y) {return (f_y + (f_h - MTOF((y)-m_y)));}
 
 // the following is crap
-//public static final int LINE_NEVERSEE =ML_DONTDRAW;
+public static final int LINE_NEVERSEE =ML_DONTDRAW;
 
 //
 // The vector graphics for the automap.
@@ -243,8 +252,8 @@ thintriangle_guy = new mline_t[]{
 NUMTHINTRIANGLEGUYLINES= thintriangle_guy.length;
 }
 
-private int  cheating = 0;
-private int  grid = 0;
+protected int  cheating = 0;
+protected boolean  grid = false;
 
 private int  leveljuststarted = 1;   // kluge until AM_LevelInit() is called
 
@@ -438,17 +447,17 @@ public void findMinMaxBoundaries()
     min_x = min_y =  MAXINT;
     max_x = max_y = -MAXINT;
   
-    for (int i=0;i<numvertexes;i++)
+    for (int i=0;i<P.numvertexes;i++)
     {
-    if (vertexes[i].x < min_x)
-        min_x = vertexes[i].x;
-    else if (vertexes[i].x > max_x)
-        max_x = vertexes[i].x;
+    if (P.vertexes[i].x < min_x)
+        min_x = P.vertexes[i].x;
+    else if (P.vertexes[i].x > max_x)
+        max_x = P.vertexes[i].x;
     
-    if (vertexes[i].y < min_y)
-        min_y = vertexes[i].y;
-    else if (vertexes[i].y > max_y)
-        max_y = vertexes[i].y;
+    if (P.vertexes[i].y < min_y)
+        min_y = P.vertexes[i].y;
+    else if (P.vertexes[i].y > max_y)
+        max_y = P.vertexes[i].y;
     }
   
     max_w = max_x - min_x;
@@ -592,18 +601,18 @@ public void LevelInit()
 //
 //
 
-//private event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
+public event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
 
 
 public void Stop ()
 {
     // MAES: Was a "method static variable"...but what's the point? It's never modified.
-    event_t st_notify = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
+    event_t st_notify_ex = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
 
     this.unloadPics();
     automapactive = false;
     // TODO: could it be modified by the Responder?
-    ST.Responder(st_notify);
+    ST.Responder(st_notify_ex);
     stopped = true;
 }
 
@@ -617,13 +626,13 @@ protected int lastlevel = -1, lastepisode = -1;
 public void Start ()
 {
 
-    if (!stopped) AM_Stop();
+    if (!stopped) Stop();
     stopped = false;
-    if (lastlevel != gamemap || lastepisode != gameepisode)
+    if (lastlevel != DS.gamemap || lastepisode != DS.gameepisode)
     {
     this.LevelInit();
-    lastlevel = gamemap;
-    lastepisode = gameepisode;
+    lastlevel = DS.gamemap;
+    lastepisode = DS.gameepisode;
     }
     this.initVariables();
     this.loadPics();
@@ -652,10 +661,10 @@ public void maxOutWindowScale()
 
 
 /** These belong to AM_Responder */
-protected int cheatstate=0,bigstate=0;
+protected boolean cheatstate=false,bigstate=false;
 
 /**     static char buffer[20] in AM_Responder */
-protected byte[] buffer=new byte[20];
+protected String buffer;
 
  /**
  * Handle events (user inputs) in automap mode
@@ -664,7 +673,7 @@ protected byte[] buffer=new byte[20];
 public boolean Responder ( event_t  ev )
 {
 
-    int rc;
+    boolean rc;
 
     rc = false;
 
@@ -709,8 +718,8 @@ public boolean Responder ( event_t  ev )
         ftom_zoommul = M_ZOOMOUT;
         break;
       case AM_ENDKEY:
-        bigstate = 0;
-        viewactive = true;
+        bigstate = false;
+        DS.viewactive = true;
         this.Stop ();
         break;
       case AM_GOBIGKEY:
@@ -732,26 +741,26 @@ public boolean Responder ( event_t  ev )
         plr.message = grid ? AMSTR_GRIDON : AMSTR_GRIDOFF;
         break;
       case AM_MARKKEY:
-        sprintf(buffer, "%s %d", AMSTR_MARKEDSPOT, markpointnum);
+        buffer=(AMSTR_MARKEDSPOT+" "+ markpointnum);
         plr.message = buffer;
-        AM_addMark();
+        this.addMark();
         break;
       case AM_CLEARMARKKEY:
-        AM_clearMarks();
+        this.clearMarks();
         plr.message = AMSTR_MARKSCLEARED;
         break;
       default:
-        cheatstate=0;
+        cheatstate=false;
         rc = false;
     }
-    if (!deathmatch && cht_CheckCheat(&cheat_amap, ev.data1))
+    if (!DS.deathmatch && cheat_amap.CheckCheat((char) ev.data1))
     {
         rc = false;
         cheating = (cheating+1) % 3;
     }
     }
 
-    else if (ev.type == ev_keyup)
+    else if (ev.type == evtype_t.ev_keyup)
     {
     rc = false;
     switch (ev.data1)
@@ -866,7 +875,7 @@ public void Ticker ()
         this.changeWindowScale();
 
     // Change x,y location
-    if (m_paninc.x || m_paninc.y)
+    if ((m_paninc.x | m_paninc.y)!=0)
         this.changeWindowLoc();
 
     // Update light level
@@ -878,11 +887,11 @@ public void Ticker ()
 //
 // Clear automap frame buffer.
 //
-public void AM_clearFB(int color)
+public void clearFB(int color)
 {
     
     // Buffer a whole scanline.
-    byte[] scanline=new byte[];
+    byte[] scanline=new byte[SCREENWIDTH*SCREENHEIGHT];
     for (int i=0;i<f_w;i++){
         scanline[i]=(byte)color;
     }
@@ -929,7 +938,7 @@ clipMline
     else if (ml.b.y < m_y)
     outcode2 = BOTTOM;
     
-    if (outcode1 & outcode2)
+    if ((outcode1 & outcode2)!=0)
     return false; // trivially outside
 
     if (ml.a.x < m_x)
@@ -942,7 +951,7 @@ clipMline
     else if (ml.b.x > m_x2)
     outcode2 |= RIGHT;
     
-    if (outcode1 & outcode2)
+    if ((outcode1 & outcode2)!=0)
     return false; // trivially outside
 
     // transform to frame-buffer coordinates.
@@ -954,41 +963,41 @@ clipMline
     outcode1= DOOUTCODE(fl.a.x, fl.a.y);
     outcode2 =DOOUTCODE(fl.b.x, fl.b.y);
 
-    if (outcode1 & outcode2)
+    if ((outcode1 & outcode2)!=0)
     return false;
 
-    while (outcode1 | outcode2)
+    while ((outcode1 | outcode2)!=0)
     {
     // may be partially inside box
     // find an outside point
-    if (outcode1)
+    if (outcode1!=0)
         outside = outcode1;
     else
         outside = outcode2;
     
     // clip to each side
-    if (outside & TOP)
+    if ((outside & TOP)!=0)
     {
         dy = fl.a.y - fl.b.y;
         dx = fl.b.x - fl.a.x;
         tmp.x = fl.a.x + (dx*(fl.a.y))/dy;
         tmp.y = 0;
     }
-    else if (outside & BOTTOM)
+    else if ((outside & BOTTOM)!=0)
     {
         dy = fl.a.y - fl.b.y;
         dx = fl.b.x - fl.a.x;
         tmp.x = fl.a.x + (dx*(fl.a.y-f_h))/dy;
         tmp.y = f_h-1;
     }
-    else if (outside & RIGHT)
+    else if ((outside & RIGHT)!=0)
     {
         dy = fl.b.y - fl.a.y;
         dx = fl.b.x - fl.a.x;
         tmp.y = fl.a.y + (dy*(f_w-1 - fl.a.x))/dx;
         tmp.x = f_w-1;
     }
-    else if (outside & LEFT)
+    else if ((outside & LEFT)!=0)
     {
         dy = fl.b.y - fl.a.y;
         dx = fl.b.x - fl.a.x;
@@ -1007,7 +1016,7 @@ clipMline
         outcode2=DOOUTCODE(fl.b.x, fl.b.y);
     }
     
-    if (outcode1 & outcode2)
+    if ((outcode1 & outcode2)!=0)
         return false; // trivially outside
     }
 
@@ -1078,13 +1087,17 @@ public void drawFline
 
     x = fl.a.x;
     y = fl.a.y;
-
+    byte c=(byte)color;
+    
     if (ax > ay)
     {
     d = ay - ax/2;
+    
+
+    
     while (true)
     {
-        PUTDOT(x,y,color);
+        PUTDOT(x,y,c);
         if (x == fl.b.x) return;
         if (d>=0)
         {
@@ -1100,7 +1113,7 @@ public void drawFline
     d = ax - ay/2;
     while (true)
     {
-        PUTDOT(x, y, color);
+        PUTDOT(x, y, c);
         if (y == fl.b.y) return;
         if (d >= 0)
         {
@@ -1139,15 +1152,15 @@ protected fline_t fl=new fline_t();
  */
 public void drawGrid(int color)
 {
-    fixed_t x, y;
-    fixed_t start, end;
-    mline_t ml;
+    int x, y; // fixed_t
+    int start, end; // fixed_t
+    mline_t ml=new mline_t();
 
     // Figure out start of vertical gridlines
     start = m_x;
-    if ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS))
+    if (((start-P.bmaporgx)%(MAPBLOCKUNITS<<FRACBITS))!=0)
     start += (MAPBLOCKUNITS<<FRACBITS)
-        - ((start-bmaporgx)%(MAPBLOCKUNITS<<FRACBITS));
+        - ((start-P.bmaporgx)%(MAPBLOCKUNITS<<FRACBITS));
     end = m_x + m_w;
 
     // draw vertical gridlines
@@ -1157,14 +1170,14 @@ public void drawGrid(int color)
     {
     ml.a.x = x;
     ml.b.x = x;
-    AM_drawMline(&ml, color);
+    drawMline(ml, color);
     }
 
     // Figure out start of horizontal gridlines
     start = m_y;
-    if ((start-bmaporgy)%(MAPBLOCKUNITS<<FRACBITS))
+    if (((start-P.bmaporgy)%(MAPBLOCKUNITS<<FRACBITS))!=0)
     start += (MAPBLOCKUNITS<<FRACBITS)
-        - ((start-bmaporgy)%(MAPBLOCKUNITS<<FRACBITS));
+        - ((start-P.bmaporgy)%(MAPBLOCKUNITS<<FRACBITS));
     end = m_y + m_h;
 
     // draw horizontal gridlines
@@ -1174,7 +1187,7 @@ public void drawGrid(int color)
     {
     ml.a.y = y;
     ml.b.y = y;
-    AM_drawMline(&ml, color);
+    drawMline(ml, color);
     }
 
 }
@@ -1189,47 +1202,49 @@ protected  mline_t l=new mline_t();
 public void drawWalls()
 {
 
-    for (int i=0;i<numlines;i++)
+    for (int i=0;i<P.numlines;i++)
     {
-    l.a.x = lines[i].v1.x;
-    l.a.y = lines[i].v1.y;
-    l.b.x = lines[i].v2.x;
-    l.b.y = lines[i].v2.y;
-    if (cheating || (lines[i].flags & ML_MAPPED))
+    l.a.x = P.lines[i].v1.x;
+    l.a.y = P.lines[i].v1.y;
+    l.b.x = P.lines[i].v2.x;
+    l.b.y = P.lines[i].v2.y;
+    if ((cheating | (P.lines[i].flags & ML_MAPPED))!=0)
     {
-        if ((lines[i].flags & LINE_NEVERSEE) && !cheating)
+        if (((P.lines[i].flags & LINE_NEVERSEE) & ~cheating)!=0)
         continue;
-        if (!lines[i].backsector)
+        if (P.lines[i].backsector==null)
         {
-        AM_drawMline(&l, WALLCOLORS+lightlev);
+        drawMline(l, WALLCOLORS+lightlev);
         }
         else
         {
-        if (lines[i].special == 39)
+        if (P.lines[i].special == 39)
         { // teleporters
-            AM_drawMline(&l, WALLCOLORS+WALLRANGE/2);
+            drawMline(l, WALLCOLORS+WALLRANGE/2);
         }
-        else if (lines[i].flags & ML_SECRET) // secret door
+        else if ((P.lines[i].flags & ML_SECRET)!=0) // secret door
         {
-            if (cheating) AM_drawMline(&l, SECRETWALLCOLORS + lightlev);
-            else AM_drawMline(&l, WALLCOLORS+lightlev);
+            if (cheating!=0) drawMline(l, SECRETWALLCOLORS + lightlev);
+            else drawMline(l, WALLCOLORS+lightlev);
         }
-        else if (lines[i].backsector.floorheight
-               != lines[i].frontsector.floorheight) {
-            AM_drawMline(&l, FDWALLCOLORS + lightlev); // floor level change
+        else if (P.lines[i].backsector.floorheight
+               != P.lines[i].frontsector.floorheight) {
+            drawMline(l, FDWALLCOLORS + lightlev); // floor level change
         }
-        else if (lines[i].backsector.ceilingheight
-               != lines[i].frontsector.ceilingheight) {
-            AM_drawMline(&l, CDWALLCOLORS+lightlev); // ceiling level change
+        else if (P.lines[i].backsector.ceilingheight
+               != P.lines[i].frontsector.ceilingheight) {
+            drawMline(l, CDWALLCOLORS+lightlev); // ceiling level change
         }
-        else if (cheating) {
-            AM_drawMline(&l, TSWALLCOLORS+lightlev);
+        else if (cheating!=0) {
+            drawMline(l, TSWALLCOLORS+lightlev);
         }
         }
     }
-    else if (plr.powers[pw_allmap])
+    // If we have allmap...
+    else if (plr.powers[pw_allmap]!=0)
     {
-        if (!(lines[i].flags & LINE_NEVERSEE)) AM_drawMline(&l, GRAYS+3);
+    	// Some are never seen even with that!
+        if ((P.lines[i].flags & LINE_NEVERSEE)==0) drawMline(l, GRAYS+3);
     }
     }
 }
@@ -1239,51 +1254,65 @@ public void drawWalls()
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-void
-AM_rotate
-( fixed_t*  x,
-  fixed_t*  y,
-  angle_t   a )
+protected int rotx, roty; 
+
+/**
+* Rotation in 2D.
+* Used to rotate player arrow line character.
+* 
+ * @param x fixed_t
+ * @param y fixed_t
+ * @param a fixed_t
+ */
+
+public void rotate
+( int  x,
+  int y,
+  int   a )
 {
-    fixed_t tmpx;
+    //int tmpx;
 
-    tmpx =
-    FixedMul(*x,finecosine[a>>ANGLETOFINESHIFT])
-    - FixedMul(*y,finesine[a>>ANGLETOFINESHIFT]);
+    rotx =
+    FixedMul(x,finecosine[a>>ANGLETOFINESHIFT])
+    - FixedMul(y,finesine[a>>ANGLETOFINESHIFT]);
     
-    *y   =
-    FixedMul(*x,finesine[a>>ANGLETOFINESHIFT])
-    + FixedMul(*y,finecosine[a>>ANGLETOFINESHIFT]);
+    roty   =
+    FixedMul(x,finesine[a>>ANGLETOFINESHIFT])
+    + FixedMul(y,finecosine[a>>ANGLETOFINESHIFT]);
 
-    *x = tmpx;
+    //rotx.val = tmpx;
 }
 
 void
-AM_drawLineCharacter
-( mline_t*  lineguy,
+drawLineCharacter
+( mline_t[]  lineguy,
   int       lineguylines,
-  fixed_t   scale,
-  angle_t   angle,
+  int   scale, // fixed_t
+  int   angle, // angle_t
   int       color,
-  fixed_t   x,
-  fixed_t   y )
+  int   x, // fixed_t
+  int   y // fixed_t
+  )
 {
     int     i;
-    mline_t l;
+    mline_t l=new mline_t();
 
     for (i=0;i<lineguylines;i++)
     {
     l.a.x = lineguy[i].a.x;
     l.a.y = lineguy[i].a.y;
 
-    if (scale)
+    if (scale!=0)
     {
         l.a.x = FixedMul(scale, l.a.x);
         l.a.y = FixedMul(scale, l.a.y);
     }
 
-    if (angle)
-        AM_rotate(&l.a.x, &l.a.y, angle);
+    if (angle!=0)
+        rotate(l.a.x, l.a.y, angle);
+    // MAES: assign rotations
+    	l.a.x=rotx;
+    	l.a.y=roty;
 
     l.a.x += x;
     l.a.y += y;
@@ -1291,60 +1320,65 @@ AM_drawLineCharacter
     l.b.x = lineguy[i].b.x;
     l.b.y = lineguy[i].b.y;
 
-    if (scale)
+    if (scale!=0)
     {
         l.b.x = FixedMul(scale, l.b.x);
         l.b.y = FixedMul(scale, l.b.y);
     }
 
-    if (angle)
-        AM_rotate(&l.b.x, &l.b.y, angle);
+    if (angle!=0)
+        rotate(l.b.x, l.b.y, angle);
+    // MAES: assign rotations
+	l.a.x=rotx;
+	l.a.y=roty;
+
     
     l.b.x += x;
     l.b.y += y;
 
-    AM_drawMline(&l, color);
+    drawMline(l, color);
     }
 }
 
-void AM_drawPlayers(void)
+protected static int  their_colors[] = { GREENS, GRAYS, BROWNS, REDS };
+
+public void drawPlayers()
 {
-    int     i;
-    player_t*   p;
-    static int  their_colors[] = { GREENS, GRAYS, BROWNS, REDS };
+    player_t   p;
+    
     int     their_color = -1;
     int     color;
 
-    if (!netgame)
+    if (!DS.netgame)
     {
-    if (cheating)
-        AM_drawLineCharacter
+    if (cheating!=0)
+        drawLineCharacter
         (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
          plr.mo.angle, WHITE, plr.mo.x, plr.mo.y);
     else
-        AM_drawLineCharacter
+        drawLineCharacter
         (player_arrow, NUMPLYRLINES, 0, plr.mo.angle,
          WHITE, plr.mo.x, plr.mo.y);
     return;
     }
 
-    for (i=0;i<MAXPLAYERS;i++)
+    for (int i=0;i<MAXPLAYERS;i++)
     {
     their_color++;
-    p = &players[i];
+    p = DS.players[i];
 
-    if ( (deathmatch && !singledemo) && p != plr)
+    if ( (DS.deathmatch && !DS.singledemo) && p != plr)
         continue;
 
-    if (!playeringame[i])
+    if (!DS.playeringame[i])
         continue;
 
-    if (p.powers[pw_invisibility])
+    if (p.powers[pw_invisibility]!=0)
         color = 246; // *close* to black
     else
         color = their_colors[their_color];
     
-    AM_drawLineCharacter
+    drawLineCharacter
         (player_arrow, NUMPLYRLINES, 0, p.mo.angle,
          color, p.mo.x, p.mo.y);
     }
@@ -1355,23 +1389,23 @@ public void drawThings
 ( int   colors,
   int   colorrange)
 {
-    int     i;
     mobj_t t;
 
-    for (i=0;i<numsectors;i++)
+    for (int i=0;i<P.numsectors;i++)
     {
-    t = sectors[i].thinglist;
-    while (t)
+    // MAES: get first on the list.
+    t = P.sectors[i].thinglist;
+    while(t!=null)
     {
-        AM_drawLineCharacter
+        drawLineCharacter
         (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
          16<<FRACBITS, t.angle, colors+lightlev, t.x, t.y);
-        t = t.snext;
+        t = (mobj_t)t.getNext();
     }
     }
 }
 
-public void AM_drawMarks()
+public void drawMarks()
 {
     int i, fx, fy, w, h;
 
@@ -1386,7 +1420,7 @@ public void AM_drawMarks()
         fx = CXMTOF(markpoints[i].x);
         fy = CYMTOF(markpoints[i].y);
         if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
-        V_DrawPatch(fx, fy, FB, marknums[i]);
+        V.DrawPatch(fx, fy, FB, marknums[i]);
     }
     }
 
@@ -1394,13 +1428,13 @@ public void AM_drawMarks()
 
 public void drawCrosshair(int color)
 {
-    fb[(f_w*(f_h+1))/2] = color; // single point for now
+    fb[(f_w*(f_h+1))/2] = (byte)color; // single point for now
 
 }
 
 public void Drawer ()
 {
-    if (!automapactive) return;
+    if (!DS.automapactive) return;
 
     clearFB(BACKGROUND);
     if (grid)
@@ -1413,7 +1447,7 @@ public void Drawer ()
 
     drawMarks();
 
-    V_MarkRect(f_x, f_y, f_w, f_h);
+    V.MarkRect(f_x, f_y, f_w, f_h);
 
 }
 

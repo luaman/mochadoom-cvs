@@ -1,8 +1,10 @@
 package doom;
 
 import p.mobj_t;
+import p.pspdef_t;
 import m.fixed_t;
 import static data.Defines.*;
+import static p.SpriteAnimations.NUMPSPRITES;
 
 /**
  * Extended player object info: player_t The player data structure depends on a
@@ -24,6 +26,7 @@ public class player_t
         maxammo = new int[NUMAMMO];
         cards= new boolean[card_t.NUMCARDS.ordinal()];
         weaponowned = new boolean[NUMWEAPONS];
+        psprites =new pspdef_t[NUMPSPRITES];
     }
 
     public final static int CF_NOCLIP = 1; // No damage, no health loss.
@@ -127,7 +130,7 @@ public class player_t
     public int colormap;
 
     // TODO: Overlay view sprites (gun, etc).
-    // pspdef_t[] psprites=new pspdef_t[NUMPSPRITES];
+    public pspdef_t[] psprites;
 
     // True if secret level has been done.
     public boolean didsecret;

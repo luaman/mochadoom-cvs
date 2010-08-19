@@ -3,7 +3,6 @@ package p;
 import static data.Defines.*;
 import static data.doomtype.*;
 import static m.fixed_t.*;
-import static data.doomdata.*;
 import static m.BBox.*;
 
 import i.system;
@@ -48,7 +47,7 @@ import m.fixed_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Playfield.java,v 1.3 2010/08/13 14:06:36 velktron Exp $
+// $Id: Playfield.java,v 1.4 2010/08/19 23:14:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +62,9 @@ import m.fixed_t;
 // GNU General Public License for more details.
 //
 // $Log: Playfield.java,v $
+// Revision 1.4  2010/08/19 23:14:49  velktron
+// Automap
+//
 // Revision 1.3  2010/08/13 14:06:36  velktron
 // Endlevel screen fully functional!
 //
@@ -89,7 +91,7 @@ public class Playfield {
     DoomVideoRenderer V;
     Renderer R;
 
-  public static final String  rcsid = "$Id: Playfield.java,v 1.3 2010/08/13 14:06:36 velktron Exp $";
+  public static final String  rcsid = "$Id: Playfield.java,v 1.4 2010/08/19 23:14:49 velktron Exp $";
 
 /*
   #include <math.h>
@@ -119,26 +121,26 @@ public class Playfield {
   // MAP related Lookup tables.
   // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
   //
-  int     numvertexes;
-  vertex_t[]   vertexes;
+  public int     numvertexes;
+  public vertex_t[]   vertexes;
 
-  int     numsegs;
-  seg_t[]      segs;
+  public int     numsegs;
+  public seg_t[]      segs;
 
-  int     numsectors;
-  sector_t[]   sectors;
+  public int     numsectors;
+  public sector_t[]   sectors;
 
-  int     numsubsectors;
-  subsector_t[]    subsectors;
+  public int     numsubsectors;
+  public subsector_t[]    subsectors;
 
-  int     numnodes;
-  node_t[]     nodes;
+  public int     numnodes;
+  public node_t[]     nodes;
 
-  int     numlines;
-  line_t[]     lines;
+  public int     numlines;
+  public line_t[]     lines;
 
-  int     numsides;
-  side_t[]     sides;
+  public int     numsides;
+  public side_t[]     sides;
 
 
   // BLOCKMAP
@@ -155,7 +157,8 @@ public class Playfield {
   // offsets in blockmap are from here
   short[]      blockmaplump;       
   /** (fixed_t) origin of block map */
-  int     bmaporgx,  bmaporgy;
+  public int     bmaporgx;
+public int bmaporgy;
   /** for thing chains */
   mobj_t[]    blocklinks;     
 

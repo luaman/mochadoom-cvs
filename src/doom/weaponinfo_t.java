@@ -1,7 +1,5 @@
 package doom;
 import data.Defines.*;
-import data.info.statenum_t;
-
 
 //
 // PSPRITE ACTIONS for waepons.

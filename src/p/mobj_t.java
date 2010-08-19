@@ -1,20 +1,27 @@
 package p;
 
 import rr.subsector_t;
-import m.fixed_t;
+import static m.fixed_t.*;
 import data.mobjinfo_t;
 import data.state_t;
 import data.mapthing_t;
-import data.info.mobjtype_t;
-import data.info.spritenum_t;
+import data.mobjtype_t;
+import data.spritenum_t;
+import data.Defines.statenum_t;
+import doom.acp1;
+import doom.acp2;
 import doom.player_t;
+import doom.think_t;
 import doom.thinker_t;
+import static data.info.*;
+import static data.Tables.*;
+import static data.SineCosine.*;
 
 // Map Object definition.
 // typedef struct mobj_s
 
 
-public class mobj_t implements Interceptable {
+public class mobj_t implements Interceptable, thinker_t {
     
         public mobj_t(){
             
@@ -58,9 +65,9 @@ public class mobj_t implements Interceptable {
 
         public mobjtype_t      type;
         // MAES: was a pointer
-        public mobjinfo_t      info;   // &mobjinfo[mobj->type]
+        public mobjinfo_t      info;   // &mobjinfo[mobj.type]
         
-        public int         tics;   // state tic counter
+        public long         tics;   // state tic counter
         // MAES: was a pointer
         public state_t     state;
         public int         flags;
@@ -87,7 +94,7 @@ public class mobj_t implements Interceptable {
            Only valid if type == MT_PLAYER
           struct player_s*    player;*/
 
-        player_t    player;
+       public  player_t    player;
         
         /** Player number last looked for. */
         public int         lastlook;   
@@ -97,6 +104,196 @@ public class mobj_t implements Interceptable {
 
         /** Thing being chased/attacked for tracers. */
 
-        mobj_t  tracer;         // MAES: was a pointer 
-        
+       public mobj_t  tracer;         // MAES: was a pointer 
+     
+       //
+    // P_SetMobjState
+    // Returns true if the mobj is still present.
+    //
+
+    public boolean
+    SetMobjState
+    (statenum_t	state )
+    {
+        state_t	st;
+
+        do
+        {
+    	if (state == statenum_t.S_NULL)
+    	{
+    	    this.state = null;
+    	    // TODO:P_RemoveMobj (mobj);
+    	    return false;
+    	}
+
+    	st = states[state.ordinal()];
+    	this.state = st;
+    	this.tics = st.tics;
+    	this.sprite = st.sprite;
+    	this.frame = (int) st.frame;
+
+    	// Modified handling.
+    	// Call action functions when the state is set
+    	if (acp1.class.isInstance(st.action))		
+    	    ((acp1)st.action).invoke(this);	
+    	
+    	state = st.nextstate;
+        } while (this.tics==0);
+    				
+        return true;
+    }
+    
+ /**
+ * P_SpawnPlayerMissile
+ * Tries to aim at a nearby monster
+ */
+ public void  P_SpawnPlayerMissile
+ (   mobjtype_t	type )
+ {
+     mobj_t	th;     
+     int	an; // angle_t     
+     int	x,	y,z,slope; // fixed_t
+     
+     // see which target is to be aimed at
+     an = this.angle;
+     slope = AimLineAttack (an, 16*64*FRACUNIT);
+     
+     if (!linetarget)
+     {
+ 	an += 1<<26;
+ 	slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+
+ 	if (!linetarget)
+ 	{
+ 	    an -= 2<<26;
+ 	    slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+ 	}
+
+ 	if (!linetarget)
+ 	{
+ 	    an = source.angle;
+ 	    slope = 0;
+ 	}
+     }
+ 		
+     x = source.x;
+     y = source.y;
+     z = source.z + 4*8*FRACUNIT;
+ 	
+     th = P_SpawnMobj (x,y,z, type);
+
+     if (th.info.seesound)
+ 	S_StartSound (th, th.info.seesound);
+
+     th.target = source;
+     th.angle = an;
+     th.momx = FixedMul( th.info.speed,
+ 			 finecosine[an>>ANGLETOFINESHIFT]);
+     th.momy = FixedMul( th.info.speed,
+ 			 finesine[an>>ANGLETOFINESHIFT]);
+     th.momz = FixedMul( th.info.speed, slope);
+
+     P_CheckMissileSpawn (th);
+ }
+    
+     
+ // Call P_SpecialThing when touched.
+    public static int MF_SPECIAL        = 1;
+    // Blocks.
+    public static int MF_SOLID      = 2;
+    // Can be hit.
+    public static int MF_SHOOTABLE  = 4;
+    // Don't use the sector links (invisible but touchable).
+    public static int MF_NOSECTOR       = 8;
+    // Don't use the blocklinks (inert but displayable)
+    public static int MF_NOBLOCKMAP = 16;                    
+
+    // Not to be activated by sound, deaf monster.
+    public static int MF_AMBUSH     = 32;
+    // Will try to attack right back.
+    public static int MF_JUSTHIT        = 64;
+    // Will take at least one step before attacking.
+    public static int MF_JUSTATTACKED   = 128;
+    // On level spawning (initial position),
+    //  hang from ceiling instead of stand on floor.
+    public static int MF_SPAWNCEILING   = 256;
+    // Don't apply gravity (every tic),
+    //  that is, object will float, keeping current height
+    //  or changing it actively.
+    public static int MF_NOGRAVITY  = 512;
+
+    // Movement flags.
+    // This allows jumps from high places.
+    public static int MF_DROPOFF        = 0x400;
+    // For players, will pick up items.
+    public static int MF_PICKUP     = 0x800;
+    // Player cheat. ???
+    public static int MF_NOCLIP     = 0x1000;
+    // Player: keep info about sliding along walls.
+    public static int MF_SLIDE      = 0x2000;
+    // Allow moves to any height, no gravity.
+    // For active floaters, e.g. cacodemons, pain elementals.
+    public static int MF_FLOAT      = 0x4000;
+    // Don't cross lines
+    //   ??? or look at heights on teleport.
+    public static int MF_TELEPORT       = 0x8000;
+    // Don't hit same species, explode on block.
+    // Player missiles as well as fireballs of various kinds.
+    public static int MF_MISSILE        = 0x10000;  
+    // Dropped by a demon, not level spawned.
+    // E.g. ammo clips dropped by dying former humans.
+    public static int MF_DROPPED        = 0x20000;
+    // Use fuzzy draw (shadow demons or spectres),
+    //  temporary player invisibility powerup.
+    public static int MF_SHADOW     = 0x40000;
+    // Flag: don't bleed when shot (use puff),
+    //  barrels and shootable furniture shall not bleed.
+    public static int MF_NOBLOOD        = 0x80000;
+    // Don't stop moving halfway off a step,
+    //  that is, have dead bodies slide down all the way.
+    public static int MF_CORPSE     = 0x100000;
+    // Floating to a height for a move, ???
+    //  don't auto float to target's height.
+    public static int MF_INFLOAT        = 0x200000;
+
+    // On kill, count this enemy object
+    //  towards intermission kill total.
+    // Happy gathering.
+    public static int MF_COUNTKILL  = 0x400000;
+    
+    // On picking up, count this item object
+    //  towards intermission item total.
+    public static int MF_COUNTITEM  = 0x800000;
+
+    // Special handling: skull in flight.
+    // Neither a cacodemon nor a missile.
+    public static int    MF_SKULLFLY        = 0x1000000;
+
+    // Don't spawn this object
+    //  in death match mode (e.g. key cards).
+    public static int    MF_NOTDMATCH       = 0x2000000;
+
+    // Player sprites in multiplayer modes are modified
+    //  using an internal color lookup table for re-indexing.
+    // If 0x4 0x8 or 0xc,
+    //  use a translation table for player colormaps
+    public static int    MF_TRANSLATION     = 0xc000000;
+    // Hmm ???.
+    public static int MF_TRANSSHIFT = 26;
+
+	@Override
+	public think_t getFunction() {
+		return this.thinker.getFunction();
+	}
+
+	@Override
+	public thinker_t getNext() {
+		return this.snext;
+	}
+
+	@Override
+	public thinker_t getPrev() {
+		return this.sprev;
+	}
+    
     }

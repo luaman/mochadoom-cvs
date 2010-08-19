@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: items.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: items.java,v 1.2 2010/08/19 23:14:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: items.java,v $
+// Revision 1.2  2010/08/19 23:14:49  velktron
+// Automap
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -35,7 +38,6 @@ package doom;
 //
 //-----------------------------------------------------------------------------
 
-import static data.info.*;
 import static data.Defines.*;
 
 public class items{

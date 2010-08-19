@@ -3,7 +3,7 @@ package p;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: local.java,v 1.5 2010/08/11 16:31:34 velktron Exp $
+// $Id: local.java,v 1.6 2010/08/19 23:14:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -46,15 +46,15 @@ void P_RemoveThinker (thinker_t* thinker);
 //
 // P_PSPR
 //
-void P_SetupPsprites (player_t* curplayer);
-void P_MovePsprites (player_t* curplayer);
-void P_DropWeapon (player_t* player);
+//void P_SetupPsprites (player_t* curplayer);
+//void P_MovePsprites (player_t* curplayer);
+//void P_DropWeapon (player_t* player);
 
 
 //
 // P_USER
 //
-void	P_PlayerThink (player_t* player);
+//void	P_PlayerThink (player_t* player);
 
 
 

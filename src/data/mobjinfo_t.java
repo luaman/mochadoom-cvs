@@ -1,6 +1,6 @@
 package data;
 
-import data.info.statenum_t;
+import data.statenum_t;
 import data.sounds.sfxenum_t;
 
 public class mobjinfo_t {

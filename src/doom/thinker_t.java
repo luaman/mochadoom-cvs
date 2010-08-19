@@ -1,7 +1,7 @@
 package doom;
 
-public class thinker_t {
-   public thinker_t   prev;
-   public thinker_t   next;
-   public think_t     function;
+public interface thinker_t {
+   public thinker_t   getPrev();
+   public thinker_t   getNext();
+   public think_t     getFunction();
 }
