@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.3 2010/08/19 23:14:49 velktron Exp $
+// $Id: Map.java,v 1.4 2010/08/22 18:04:21 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.4  2010/08/22 18:04:21  velktron
+// Automap
+//
 // Revision 1.3  2010/08/19 23:14:49  velktron
 // Automap
 //
@@ -61,11 +64,9 @@ import doom.evtype_t;
 import doom.player_t;
 import rr.patch_t;
 import st.DoomStatusBarInterface;
-import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 import m.cheatseq_t;
-import m.fixed_t;
 
 public class Map implements DoomAutoMap{
 
@@ -78,7 +79,7 @@ DoomVideoRenderer V;
 Playfield P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.3 2010/08/19 23:14:49 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.4 2010/08/22 18:04:21 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -257,7 +258,6 @@ protected boolean  grid = false;
 
 private int  leveljuststarted = 1;   // kluge until AM_LevelInit() is called
 
-boolean     automapactive = false;
 private int  finit_width = SCREENWIDTH;
 private int  finit_height = SCREENHEIGHT - 32;
 
@@ -506,7 +506,7 @@ public void initVariables()
 {
     int pnum;
 
-    automapactive = true;
+    DS.automapactive = true;
     fb = V.getScreen(0);
 
     f_oldloc.x = MAXINT;
@@ -610,7 +610,7 @@ public void Stop ()
     event_t st_notify_ex = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
 
     this.unloadPics();
-    automapactive = false;
+    DS.automapactive = false;
     // TODO: could it be modified by the Responder?
     ST.Responder(st_notify_ex);
     stopped = true;
@@ -677,7 +677,7 @@ public boolean Responder ( event_t  ev )
 
     rc = false;
 
-    if (!automapactive)
+    if (!DS.automapactive)
     {
     if (ev.type == evtype_t.ev_keydown && ev.data1 == AM_STARTKEY)
     {
@@ -862,7 +862,7 @@ public void updateLightLev()
 public void Ticker ()
 {
 
-    if (!automapactive)
+    if (!DS.automapactive)
     return;
 
     amclock++;
