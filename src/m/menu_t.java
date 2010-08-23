@@ -1,11 +1,11 @@
 package m;
 
 public class menu_t {
-	    public menu_t(int numitems, menu_t prev, menuitem_t[] menuitems,
+	    public menu_t(int numitems, menu_t prev, menuitem_t[] readMenu1,
             DrawRoutine drawroutine, int x, int y, int lastOn) {
 	        this.numitems=numitems;
 	        this.prevMenu=prev;
-	        this.menuitems=menuitems;
+	        this.menuitems=readMenu1;
 	        this.routine=drawroutine;
 	        this.x=x;
 	        this.y=y;
@@ -13,17 +13,17 @@ public class menu_t {
 	        
     }
 	    /** # of menu items */	    
-        int		numitems;
+        public int		numitems;
         
 	    /**  previous menu */
-	    menu_t	prevMenu;
+	    public menu_t	prevMenu;
 
 	    /** menu items */
-	    menuitem_t[]		menuitems;	
+	    public menuitem_t[]		menuitems;	
 	    /** draw routine */
-	    DrawRoutine routine;
+	    public DrawRoutine routine;
 	    /**  x,y of menu */
-	    int		x,y;
+	    public int		x,y;
 	    /** last item user was on in menu */
-	    int		lastOn;
+	    public int		lastOn;
 	} 

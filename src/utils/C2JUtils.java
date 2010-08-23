@@ -13,6 +13,14 @@ public class C2JUtils {
         }
         return s1;
     }
+    
+    static public char[] strcpy(char[] s1, final char[] s2,int off, int len) {
+        for (int i=0;i<len;i++){
+            s1[i]=s2[i+off];
+        }
+        return s1;
+    }
+    
  
     static public char[] strcpy(char[] s1, String s2) {
         for (int i=0;i<Math.min(s1.length,s2.length());i++){
@@ -85,6 +93,12 @@ public class C2JUtils {
     
     public static int toUnsignedByte(byte b){
         return (0x000000FF&b);
+    }
+
+    public static void memset(char[] string, char val, int len) {
+        for (int i=0;i<len;i++){
+            string[i]=val;
+        }        
     }
 
     

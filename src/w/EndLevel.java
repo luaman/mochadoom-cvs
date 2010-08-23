@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.2 2010/08/13 14:06:36 velktron Exp $
+// $Id: EndLevel.java,v 1.3 2010/08/23 14:36:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.3  2010/08/23 14:36:08  velktron
+// Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
+//
 // Revision 1.2  2010/08/13 14:06:36  velktron
 // Endlevel screen fully functional!
 //
@@ -235,11 +238,11 @@ public EndLevel(DoomContext DC) {
     this.V=DC.V;
     this.W=DC.W;
     this.RND=DC.RND;
-    this.wbs=new wbstartstruct_t();
+    //this.wbs=new wbstartstruct_t();
     this.Start(DS.wminfo);
 }
 
-public void slamBackground()
+protected void slamBackground()
 {
     //    memcpy(screens[0], screens[1], SCREENWIDTH * SCREENHEIGHT);
     // Remember, the second arg is the source!
@@ -347,7 +350,7 @@ drawOnLnode
 
 
 
-public void initAnimatedBack()
+protected void initAnimatedBack()
 {
     int		i;
     anim_t	a;
@@ -376,7 +379,7 @@ public void initAnimatedBack()
 
 }
 
-public void updateAnimatedBack()
+protected void updateAnimatedBack()
 {
     int		i;
     anim_t	a;
@@ -450,14 +453,14 @@ protected void drawAnimatedBack()
 
 }
 
-//
-// Draws a number.
-// If digits > 0, then use that many digits minimum,
-//  otherwise only use as many as necessary.
-// Returns new x position.
-//
+/**
+ * Draws a number.
+ * If digits > 0, then use that many digits minimum,
+ *  otherwise only use as many as necessary.
+ * Returns new x position.
+ */
 
-public int
+protected int
 drawNum
 ( int		x,
   int		y,
@@ -514,7 +517,7 @@ drawNum
 
 }
 
-public 
+protected 
 
 void
 drawPercent
@@ -535,7 +538,7 @@ drawPercent
 // Display level completion time and par,
 //  or "sucks" message if overflow.
 //
-public void drawTime
+protected void drawTime
 ( int		x,
   int		y,
   int		t )
@@ -571,20 +574,20 @@ public void drawTime
 }
 
 
-public void End()
+protected void End()
 {
     //unloadData();
 }
 
 
-public void initNoState()
+protected void initNoState()
 {
     state = NoState;
     acceleratestage = 0;
     cnt = 10;
 }
 
-public void updateNoState() {
+protected void updateNoState() {
 
     updateAnimatedBack();
 
@@ -599,7 +602,7 @@ public void updateNoState() {
 boolean		snl_pointeron = false;
 
 
-public void initShowNextLoc()
+protected void initShowNextLoc()
 {
     state = ShowNextLoc;
     acceleratestage = 0;
@@ -608,7 +611,7 @@ public void initShowNextLoc()
     initAnimatedBack();
 }
 
-void updateShowNextLoc()
+protected void updateShowNextLoc()
 {
     updateAnimatedBack();
 
@@ -618,7 +621,7 @@ void updateShowNextLoc()
 	snl_pointeron = (cnt & 31) < 20;
 }
 
-void drawShowNextLoc()
+protected void drawShowNextLoc()
 {
 
     int		i;
@@ -659,13 +662,13 @@ void drawShowNextLoc()
 
 }
 
-public void drawNoState()
+protected void drawNoState()
 {
     snl_pointeron = true;
     drawShowNextLoc();
 }
 
-int fragSum(int playernum)
+protected int fragSum(int playernum)
 {
     int		i;
     int		frags = 0;
@@ -696,7 +699,7 @@ int	[]	dm_totals=new int[MAXPLAYERS];
 
 
 
-public void initDeathmatchStats()
+protected void initDeathmatchStats()
 {
 
     int		i;
@@ -725,7 +728,7 @@ public void initDeathmatchStats()
 
 
 
-void updateDeathmatchStats()
+protected void updateDeathmatchStats()
 {
 
     int		i;
@@ -828,7 +831,7 @@ void updateDeathmatchStats()
 
 
 
-public void drawDeathmatchStats()
+protected void drawDeathmatchStats()
 {
 
     int		i;
@@ -925,7 +928,7 @@ public void drawDeathmatchStats()
  int	dofrags;
  int	ng_state;
 
-public void initNetgameStats()
+ protected void initNetgameStats()
 {
 
     int i;
@@ -953,7 +956,7 @@ public void initNetgameStats()
 
 
 
-public void updateNetgameStats()
+protected void updateNetgameStats()
 {
 
     int		i;
@@ -1106,7 +1109,7 @@ public void updateNetgameStats()
     }
 }
 
-public void drawNetgameStats()
+protected void drawNetgameStats()
 {
     int		i;
     int		x;
@@ -1164,7 +1167,7 @@ public void drawNetgameStats()
 
  int	sp_state;
 
-public void initStats()
+ protected void initStats()
 {
     state = StatCount;
     acceleratestage = 0;
@@ -1176,7 +1179,7 @@ public void initStats()
     initAnimatedBack();
 }
 
-public void updateStats()
+protected void updateStats()
 {
 
     updateAnimatedBack();
@@ -1285,7 +1288,7 @@ public void updateStats()
 
 }
 
-public void drawStats()
+protected void drawStats()
 {
     // line height
     int lh;	
@@ -1319,7 +1322,7 @@ public void drawStats()
 
 }
 
-public void checkForAccelerate()
+protected void checkForAccelerate()
 {
 
     // check for button presses to skip delays
@@ -1389,7 +1392,7 @@ public void Ticker()
 
 }
 
-public void loadData()
+protected void loadData()
 {
     int		i;
     int		j;
@@ -1662,10 +1665,10 @@ public void Drawer ()
 }
 
 
-void initVariables(wbstartstruct_t wbstartstruct)
+protected void initVariables(wbstartstruct_t wbstartstruct)
 {
 
-    wbs = wbstartstruct;
+    wbs = wbstartstruct.clone();
 
 if (RANGECHECKING){
     if (DS.gamemode != GameMode_t.commercial)
@@ -1719,11 +1722,11 @@ public void Start(wbstartstruct_t wbstartstruct)
 }
 
 
-public int NG_STATSX(){
+protected int NG_STATSX(){
     return 32 + star.width/2 + 32*~dofrags;
 }
 
-public static boolean RNGCHECK(int what, int min, int max){
+protected static boolean RNGCHECK(int what, int min, int max){
     return (what>=min && what <=max)?true:false;
 }
 

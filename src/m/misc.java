@@ -5,7 +5,7 @@ import rr.patch_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: misc.java,v 1.2 2010/07/29 15:29:00 velktron Exp $
+// $Id: misc.java,v 1.3 2010/08/23 14:36:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import rr.patch_t;
 //
 //
 // $Log: misc.java,v $
+// Revision 1.3  2010/08/23 14:36:08  velktron
+// Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
+//
 // Revision 1.2  2010/07/29 15:29:00  velktron
 // More work on menus...and digging some dependencies..
 //
@@ -47,7 +50,7 @@ import rr.patch_t;
 
 public class MenuMisc{
 
-public static final String rcsid[] = "$Id: misc.java,v 1.2 2010/07/29 15:29:00 velktron Exp $";
+public static final String rcsid[] = "$Id: misc.java,v 1.3 2010/08/23 14:36:08 velktron Exp $";
 
 /*
 
@@ -94,58 +97,7 @@ public  patch_t[]		hu_font;
 #define O_BINARY 0
 #endif
 
-public static boolean
-WriteFile
-( String	name,
-  byte[]		source,
-  int		length )
-{
-    DoomFile		handle;
-    int		count;
-	
-    handle=new DoomFile(name,"rw");
 
-    if (handle == -1)
-	return false;
-
-    count = write (handle, source, length);
-    close (handle);
-	
-    if (count < length)
-	return false;
-		
-    return true;
-}
-
-
-//
-// M_ReadFile
-//
-int
-M_ReadFile
-( char const*	name,
-  byte**	buffer )
-{
-    int	handle, count, length;
-    struct stat	fileinfo;
-    byte		*buf;
-	
-    handle = open (name, O_RDONLY | O_BINARY, 0666);
-    if (handle == -1)
-	I_Error ("Couldn't read file %s", name);
-    if (fstat (handle,&fileinfo) == -1)
-	I_Error ("Couldn't read file %s", name);
-    length = fileinfo.st_size;
-    buf = Z_Malloc (length, PU_STATIC, NULL);
-    count = read (handle, buf, length);
-    close (handle);
-	
-    if (count < length)
-	I_Error ("Couldn't read file %s", name);
-		
-    *buffer = buf;
-    return length;
-}
 
 
 //

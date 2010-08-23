@@ -18,7 +18,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.7 2010/08/13 14:06:36 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.8 2010/08/23 14:36:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,6 +32,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.8  2010/08/23 14:36:08  velktron
+// Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
+//
 // Revision 1.7  2010/08/13 14:06:36  velktron
 // Endlevel screen fully functional!
 //
@@ -101,7 +104,7 @@ import static data.Defines.*;
 
 public class SimpleRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.7 2010/08/13 14:06:36 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.8 2010/08/23 14:36:08 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -816,7 +819,7 @@ public void Unscramble(int screen){
 
 @Override
 public void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
-    // TODO Auto-generated method stub
+    this.DrawPatch(x, y, scrn, patch);
     
 }
 

@@ -23,14 +23,19 @@ public class wbplayerstruct_t implements Cloneable{
      public int     score;
    
      public wbplayerstruct_t clone(){
-         wbplayerstruct_t r=new wbplayerstruct_t();
-         r.in=this.in;
+         wbplayerstruct_t r=null;
+        try {
+            r = (wbplayerstruct_t)super.clone();
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
+         /*r.in=this.in;
          r.skills=this.skills;
          r.sitems=this.sitems;
          r.ssecret=this.ssecret;
-         r.stime=this.stime;
+         r.stime=this.stime; */
          System.arraycopy(this.frags, 0, r.frags,0,r.frags.length);
-         r.score=this.score;
+         // r.score=this.score;
          
          
         return r;

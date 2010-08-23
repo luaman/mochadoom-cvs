@@ -13,7 +13,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.5 2010/08/19 23:14:49 velktron Exp $
+// $Id: Defines.java,v 1.6 2010/08/23 14:36:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -253,37 +253,37 @@ public enum powerduration_t
 //
 // Maes: using chars here instead of bytes.
 
-public static char KEY_RIGHTARROW  =0xae;
-public static char KEY_LEFTARROW   =0xac;
-public static char KEY_UPARROW =0xad;
-public static char KEY_DOWNARROW   =0xaf;
-public static char KEY_ESCAPE = 27;
-public static char KEY_ENTER =  13;
-public static char KEY_TAB  =   9;
-public static char KEY_F1      =(0x80+0x3b);
-public static char KEY_F2      =(0x80+0x3c);
-public static char KEY_F3      =(0x80+0x3d);
-public static char KEY_F4      =(0x80+0x3e);
-public static char KEY_F5      =(0x80+0x3f);
-public static char KEY_F6      =(0x80+0x40);
-public static char KEY_F7      =(0x80+0x41);
-public static char KEY_F8      =(0x80+0x42);
-public static char KEY_F9      =(0x80+0x43);
-public static char KEY_F10     =(0x80+0x44);
-public static char KEY_F11     =(0x80+0x57);
-public static char KEY_F12     =(0x80+0x58);
+public final static char KEY_RIGHTARROW  =0xae;
+public final static char KEY_LEFTARROW   =0xac;
+public final static char KEY_UPARROW =0xad;
+public final static char KEY_DOWNARROW   =0xaf;
+public final static char KEY_ESCAPE = 27;
+public final static char KEY_ENTER =  13;
+public final static char KEY_TAB  =   9;
+public final static char KEY_F1      =(0x80+0x3b);
+public final static char KEY_F2      =(0x80+0x3c);
+public final static char KEY_F3      =(0x80+0x3d);
+public final static char KEY_F4      =(0x80+0x3e);
+public final static char KEY_F5      =(0x80+0x3f);
+public final static char KEY_F6      =(0x80+0x40);
+public final static char KEY_F7      =(0x80+0x41);
+public final static char KEY_F8      =(0x80+0x42);
+public final static char KEY_F9      =(0x80+0x43);
+public final static char KEY_F10     =(0x80+0x44);
+public final static char KEY_F11     =(0x80+0x57);
+public final static char KEY_F12     =(0x80+0x58);
 
-public static char KEY_BACKSPACE  = 127;
-public static char KEY_PAUSE   =0xff;
+public final static char KEY_BACKSPACE  = 127;
+public final static char KEY_PAUSE   =0xff;
 
-public static char KEY_EQUALS  =0x3d;
-public static char KEY_MINUS   =0x2d;
+public final static char KEY_EQUALS  =0x3d;
+public final static char KEY_MINUS   =0x2d;
 
-public static char KEY_RSHIFT = (0x80+0x36);
-public static char KEY_RCTRL  = (0x80+0x1d);
-public static final char KEY_RALT   = (0x80+0x38);
+public final static char KEY_RSHIFT = (0x80+0x36);
+public final static char KEY_RCTRL  = (0x80+0x1d);
+public final static char KEY_RALT   = (0x80+0x38);
 
-public static final char KEY_LALT  =  KEY_RALT;
+public final static char KEY_LALT  =  KEY_RALT;
 
 // from r_defs.h:
 
@@ -1755,5 +1755,5 @@ static public final int SAVESTRINGSIZE = 24;
 	
  
 static final String
-rcsid = "$Id: Defines.java,v 1.5 2010/08/19 23:14:49 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.6 2010/08/23 14:36:08 velktron Exp $";
 }

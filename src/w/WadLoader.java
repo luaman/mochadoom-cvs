@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.8 2010/08/13 14:06:36 velktron Exp $
+// $Id: WadLoader.java,v 1.9 2010/08/23 14:36:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.9  2010/08/23 14:36:08  velktron
+// Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
+//
 // Revision 1.8  2010/08/13 14:06:36  velktron
 // Endlevel screen fully functional!
 //
@@ -106,11 +109,10 @@ public class WadLoader {
 
     private boolean[] preloaded;
 
-    // #define strcmpi strcasecmp
-
-    // MAES: this is just capitalization.
-    // However we can't manipulate String object in Java directly like this,
-    // so this must be a return type.
+    /** #define strcmpi strcasecmp
+     * MAES: this is just capitalization.
+     * However we can't manipulate String object in Java directly like this,
+     *  so this must be a return type. */
 
     public String strupr(String s) {
         return s.toUpperCase();
@@ -122,7 +124,7 @@ public class WadLoader {
         }
     }
 
-    // Maes: File intead of "inthandle"
+    /** Maes: File intead of "inthandle" */
 
     public long filelength(File handle) {
         try {/*
@@ -138,9 +140,10 @@ public class WadLoader {
 
     }
 
-    // MAES: same problem here. I'd rather return a new String than doing stupid
-    // shit like passing an array of Strings as dest and modifying the first
-    // item.
+    /** MAES: same problem here. I'd rather return a new String than doing stupid
+     * shit like passing an array of Strings as dest and modifying the first
+     * item.
+     */
 
     public String ExtractFileBase(String path) {
         byte[] dest = new byte[8];
@@ -198,7 +201,12 @@ public class WadLoader {
     // MAES: was char*
     String reloadname;
 
-    @SuppressWarnings("null")
+    /**
+     * 
+     * @param filename
+     * @throws Exception
+     */
+    
     public void AddFile(String filename)
             throws Exception {
         wadinfo_t header = new wadinfo_t();
@@ -319,6 +327,11 @@ public class WadLoader {
                 // 8);
                 lumpinfo[lump_p].name =
                     fileinfo[fileinfo_p].name.substring(0, 8);
+                lumpinfo[lump_p].hash=//name8.getLongHash(strupr(lumpinfo[lump_p].name)); 
+                    LumpNameHash(lumpinfo[lump_p].name);
+                lumpinfo[lump_p].stringhash=name8.getLongHash(strupr(lumpinfo[lump_p].name)); 
+                    //LumpNameHash(lumpinfo[lump_p].name);
+
             }
 
             if (reloadname != null)
@@ -424,7 +437,7 @@ public class WadLoader {
         if (lumpcache == null)
             system.Error("Couldn't allocate lumpcache");
 
-        // memset (lumpcache,0, size);
+        this.InitLumpHash();
     }
 
     //
@@ -447,12 +460,39 @@ public class WadLoader {
         return numlumps;
     }
 
-    //
-    // W_CheckNumForName
-    // Returns -1 if name not found.
-    //
+    /**
+     * W_CheckNumForName
+     * Returns -1 if name not found.
+     */
 
-    public int CheckNumForName(String name) {
+    public int CheckNumForName2(String name) {
+
+        // scan backwards so patch lump files take precedence
+        int lump_p= numlumps;
+        
+        // make the name into two integers for easy compares
+        // case insensitive
+
+        long hash=WadLoader.LumpNameHash(strupr(name));
+        //System.out.print("Looking for "+name + " with hash " +Long.toHexString(hash));
+        while (lump_p-- != 0) 
+            if (lumpinfo[lump_p].hash==hash) {
+               // System.out.print(" found "+lumpinfo[lump_p]+"\n" );
+                return lump_p;
+            }
+
+        // TFB. Not found.
+        return -1;
+    }
+    
+    
+    /** Old, shitty method for CheckNumForName.
+     * 
+     * @param name
+     * @return
+     */
+    
+    public int CheckNumForName3(String name) {
 
         int v1;
         int v2;
@@ -488,6 +528,7 @@ public class WadLoader {
      * @param name
      * @return
      */
+    
     public lumpinfo_t GetLumpinfoForName(String name) {
 
         int v1;
@@ -833,5 +874,68 @@ try {
         }
         f.close();
     }
+    
+    ///////////////////// HASH SHIT ///////////////////
+    
+    //
+ // killough 1/31/98: Initialize lump hash table
+ //
 
+ protected void InitLumpHash()
+ {
+
+   for (int i=0; i<numlumps; i++)
+     lumpinfo[i].index = -1;                     // mark slots empty
+
+   // Insert nodes to the beginning of each chain, in first-to-last
+   // lump order, so that the last lump of a given name appears first
+   // in any chain, observing pwad ordering rules. killough
+
+   for (int i=0; i<numlumps; i++)
+     {                                           // hash function:
+       int j = (int) (LumpNameHash(lumpinfo[i].name) % numlumps);
+       lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
+       lumpinfo[j].index = i;
+     }
+ }
+    
+//Hash function used for lump names.
+//Must be mod'ed with table size.
+//Can be used for any 8-character names.
+//by Lee Killough
+
+protected static long LumpNameHash(String name)
+{
+    //int r=name.hashCode();
+    return name8.getLongHash(name);
+    //return (r<0)?-r:r;
+    //return (0x7FFFFFFF&name.hashCode());
+}
+
+public int CheckNumForName (String name/*, int namespace*/)
+{
+  // Hash function maps the name to one of possibly numlump chains.
+  // It has been tuned so that the average chain length never exceeds 2.
+
+  long hash=LumpNameHash(name);
+  int i = lumpinfo[(int) (hash % numlumps)].index;
+  //System.out.print("Looking for "+name + " with hash " +Long.toHexString(hash));
+
+  // We search along the chain until end, looking for case-insensitive
+  // matches which also match a namespace tag. Separate hash tables are
+  // not used for each namespace, because the performance benefit is not
+  // worth the overhead, considering namespace collisions are rare in
+  // Doom wads.
+
+  while (i >= 0 && ((lumpinfo[i].hash!=hash))) {
+          // || lumpinfo[i].namespace != namespace))
+    i = lumpinfo[i].next;
+
+  // Return the matching lump, or -1 if none found.
+  }
+   // System.out.print(" found "+lumpinfo[i]+"\n" );
+  return i;
+}
+
+ 
 }

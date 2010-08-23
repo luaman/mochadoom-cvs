@@ -1,43 +1,30 @@
 package testers;
 
+import static data.Defines.KEY_F1;
 import static data.Defines.PU_STATIC;
-import static m.fixed_t.FRACBITS;
-import hu.HU;
 
-import java.awt.Color;
-import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import p.Playfield;
-
-import m.FixedFloat;
+import m.DoomMenu;
+import m.Menu;
 import m.random;
-
-import rr.vertex_t;
-
+import utils.C2JUtils;
+import v.SimpleRenderer;
+import w.DoomBuffer;
+import w.WadLoader;
+import data.Defines;
 import data.doomstat;
-import data.mapvertex_t;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
-import data.Defines.skill_t;
 import doom.DoomContext;
 import doom.event_t;
 import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
 
-import utils.C2JUtils;
-import v.SimpleRenderer;
-import w.*;
+/** This is a very simple tester for Menu module  */
 
-/** This is a very simple tester for the End Level screen drawer.
- * 
- * 
- */
-
-public class EndLevelTester {
+public class MenuTester {
 
     public static void main(String[] argv) {
         try {
@@ -45,6 +32,11 @@ public class EndLevelTester {
     W.InitMultipleFiles(new String[] {"doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
+    System.out.println("NUm for E1M1: "+W.GetNumForName("E1M1"));
+   int lump=W.GetNumForName("VERTEXES");
+   System.out.println("NUm for VERTEXES: "+W.GetNumForName("VERTEXES"));
+    doomstat ds = new doomstat();
+    
     SimpleRenderer V=new SimpleRenderer();
     V.Init();
     
@@ -52,7 +44,11 @@ public class EndLevelTester {
     byte[] pal=palette.getBuffer().array();
     IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
         
-    doomstat ds = new doomstat();
+    DoomContext DC=new DoomContext();
+    DC.DS=ds;
+    DC.W=W;
+    DC.V=V;
+    
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;
@@ -60,7 +56,6 @@ public class EndLevelTester {
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
     
-    DoomContext DC=new DoomContext();
     DC.DS=ds;
     DC.W=W;
     DC.V=V;
@@ -82,35 +77,48 @@ public class EndLevelTester {
     ds.wminfo.maxkills=100;
     ds.wminfo.maxsecret=100;
     ds.wminfo.partime=28595;
-
-    EndLevel EL=new EndLevel(DC);
-    
-
-   // EL.Start(wbstartstruct);
+   
+    DoomMenu M=new Menu(DC);
+    M.Init();
+   
     
     for (int i=0;i<20;i++){
-    EL.Ticker();
-    EL.Drawer();
-    }
-    V.takeScreenShot(0, "tic1",icm);
-    for (int i=20;i<150;i++){
-        EL.Ticker();
-        EL.Drawer();
-        if (i==100){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
+        M.Ticker();
+        M.Drawer();
         }
-        
-        if (i==120){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
-        }
-        V.takeScreenShot(0,( "tic"+i),icm);
-        }
-       
-        } catch (Exception e){
-            e.printStackTrace();
-        }
+   
+    V.takeScreenShot(0, "menutic19",icm);
+    ds.menuactive=true;        
+        for (int i=20;i<150;i++){
+            M.Ticker();
+            M.Drawer();
+
+            if (i==40){
+                M.Responder(new event_t(Defines.KEY_DOWNARROW));
+            }
+
+            if (i==60){
+                M.Responder(new event_t(Defines.KEY_DOWNARROW));
+            }
+            
+            if (i==80){
+                M.Responder(new event_t(Defines.KEY_ESCAPE));
+            }
+            
+            if (i==100){
+                M.Responder(new event_t(KEY_F1));
+            }
+            
+            if (i==120){
+                M.Responder(new event_t(Defines.KEY_ESCAPE));
+            }
+            V.takeScreenShot(0,( "menutic"+i),icm);
+            }
+           
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+    
     }
     
 }
