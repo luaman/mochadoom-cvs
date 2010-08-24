@@ -1,7 +1,13 @@
+package p;
+
+import data.doomstat;
+import doom.actionf_t;
+import doom.thinker_t;
+import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tick.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: Tick.java,v 1.1 2010/08/24 14:57:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,7 +21,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: tick.java,v $
+// $Log: Tick.java,v $
+// Revision 1.1  2010/08/24 14:57:42  velktron
+// A lot but inconclusive work today.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -36,14 +45,11 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char
-rcsid[] = "$Id: tick.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
+public class Tick{
 
-#include "z_zone.h"
-#include "p_local.h"
+public static final String rcsid = "$Id: Tick.java,v 1.1 2010/08/24 14:57:42 velktron Exp $";
 
-#include "doomstat.h"
-
+doomstat DS;
 
 int	leveltime;
 
@@ -55,18 +61,16 @@ int	leveltime;
 // but the first element must be thinker_t.
 //
 
-
-
-// Both the head and tail of the thinker list.
-thinker_t	thinkercap;
-
+/** Both the head and the tail of the thinkers list */
+public thinker_t    thinkercap; 
 
 //
 // P_InitThinkers
 //
-void P_InitThinkers (void)
+public void InitThinkers ()
 {
-    thinkercap.prev = thinkercap.next  = &thinkercap;
+    thinkercap.setNext(thinkercap);
+    thinkercap.setPrev(thinkercap);
 }
 
 
@@ -76,12 +80,12 @@ void P_InitThinkers (void)
 // P_AddThinker
 // Adds a new thinker at the end of the list.
 //
-void P_AddThinker (thinker_t* thinker)
+public void AddThinker (thinker_t thinker)
 {
-    thinkercap.prev->next = thinker;
-    thinker->next = &thinkercap;
-    thinker->prev = thinkercap.prev;
-    thinkercap.prev = thinker;
+    thinkercap.getPrev().setNext(thinker);
+    thinker.setNext(thinkercap);
+    thinker.setPrev(thinkercap.getPrev());
+    thinkercap.setPrev(thinker);
 }
 
 
@@ -91,10 +95,10 @@ void P_AddThinker (thinker_t* thinker)
 // Deallocation is lazy -- it will not actually be freed
 // until its thinking turn comes up.
 //
-void P_RemoveThinker (thinker_t* thinker)
+public void RemoveThinker (thinker_t thinker)
 {
   // FIXME: NOP.
-  thinker->function.acv = (actionf_v)(-1);
+  thinker.setFunction(null);
 }
 
 
@@ -103,7 +107,7 @@ void P_RemoveThinker (thinker_t* thinker)
 // P_AllocateThinker
 // Allocates memory and adds a new thinker at the end of the list.
 //
-void P_AllocateThinker (thinker_t*	thinker)
+public void AllocateThinker (thinker_t	thinker)
 {
 }
 
@@ -112,26 +116,25 @@ void P_AllocateThinker (thinker_t*	thinker)
 //
 // P_RunThinkers
 //
-void P_RunThinkers (void)
+public void RunThinkers ()
 {
-    thinker_t*	currentthinker;
+    thinker_t	currentthinker;
 
-    currentthinker = thinkercap.next;
-    while (currentthinker != &thinkercap)
+    currentthinker = thinkercap.getNext();
+    while (currentthinker != thinkercap)
     {
-	if ( currentthinker->function.acv == (actionf_v)(-1) )
+	if ( currentthinker.getFunction() == null )
 	{
 	    // time to remove it
-	    currentthinker->next->prev = currentthinker->prev;
-	    currentthinker->prev->next = currentthinker->next;
-	    Z_Free (currentthinker);
+	    currentthinker.getNext().setPrev( currentthinker.getPrev());
+	    currentthinker.getNext().setNext(currentthinker.getNext());
 	}
 	else
 	{
-	    if (currentthinker->function.acp1)
-		currentthinker->function.acp1 (currentthinker);
+	    if (currentthinker.getFunction().getType()==actionf_t.acp1)
+		currentthinker.getFunction().acp1(currentthinker);
 	}
-	currentthinker = currentthinker->next;
+	currentthinker = currentthinker.getNext();
     }
 }
 
@@ -141,31 +144,31 @@ void P_RunThinkers (void)
 // P_Ticker
 //
 
-void P_Ticker (void)
+public void Ticker ()
 {
     int		i;
     
     // run the tic
-    if (paused)
+    if (DS.paused)
 	return;
 		
     // pause if in menu and at least one tic has been run
-    if ( !netgame
-	 && menuactive
-	 && !demoplayback
-	 && players[consoleplayer].viewz != 1)
+    if ( !DS.netgame
+	 && DS.menuactive
+	 && !DS.demoplayback
+	 && DS.players[DS.consoleplayer].viewz != 1)
     {
 	return;
     }
     
 		
     for (i=0 ; i<MAXPLAYERS ; i++)
-	if (playeringame[i])
-	    P_PlayerThink (&players[i]);
+	if (DS.playeringame[i])
+	    PlayerThink (DS.players[i]);
 			
-    P_RunThinkers ();
-    P_UpdateSpecials ();
-    P_RespawnSpecials ();
+    RunThinkers ();
+    UpdateSpecials (); // In specials. Merge?
+    RespawnSpecials ();
 
     // for par times
     leveltime++;	

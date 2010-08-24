@@ -20,7 +20,7 @@ public class player_t
         extends mobj_t {
     
     public player_t(){
-        powers = new int[NUMPOWERS];
+        powers = new boolean[NUMPOWERS];
         frags = new int[MAXPLAYERS];
         ammo = new int[NUMAMMO];
         maxammo = new int[NUMAMMO];
@@ -38,7 +38,8 @@ public class player_t
 
     public mobj_t mo;
 
-    public playerstate_t playerstate;
+    /** playerstate_t */
+    public int playerstate;
 
     public ticcmd_t cmd;
 
@@ -67,7 +68,7 @@ public class player_t
     /** Armor type is 0-2. */
     public int armortype;
 
-    // Power ups. invinc and invis are tic counters.
+    /** Power ups. invinc and invis are tic counters. */
     public int[] powers;
 
     public boolean[] cards;

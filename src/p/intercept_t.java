@@ -12,8 +12,7 @@ public class intercept_t {
         line_t line;
         
         public Interceptable d(){
-            if (isaline) return line;
-            else return thing;
+            return (isaline)? line: thing;
         }
         
     }

@@ -13,7 +13,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.6 2010/08/23 14:36:08 velktron Exp $
+// $Id: Defines.java,v 1.7 2010/08/24 14:57:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -210,41 +210,23 @@ public static final int NUMAMMO=ammotype_t.NUMAMMO.ordinal();
 
 
 // Power up artifacts.
-public static int pw_invulnerability=0;
-public static int    pw_strength=1;
-public static int    pw_invisibility=2;
-public static int    pw_ironfeet=3;
-public static int    pw_allmap=4;
-public static int    pw_infrared=5;
-public static int    NUMPOWERS=6;
+public static final int pw_invulnerability=0;
+public static final int    pw_strength=1;
+public static final int    pw_invisibility=2;
+public static final int    pw_ironfeet=3;
+public static final int    pw_allmap=4;
+public static final int    pw_infrared=5;
+public static final int    NUMPOWERS=6;
 
 
-//
-// Power up durations,
-//  how many seconds till expiration,
-//  assuming TICRATE is 35 ticks/second.
-//
-public enum powerduration_t
-{
-    INVULNTICS(30*TICRATE),
-    INVISTICS(60*TICRATE),
-    INFRATICS(120*TICRATE),
-    IRONTICS (60*TICRATE);
-
-    powerduration_t(int val) {
-            duration = val;
-        }
-
-        protected int duration;
-
-        public int getDuration() {
-            return duration;
-        }
-    
-};
-
-
-
+/** Power up durations,
+ *  how many seconds till expiration,
+ *  assuming TICRATE is 35 ticks/second.
+ */
+    public static final int INVULNTICS=(30*TICRATE),
+    INVISTICS=(60*TICRATE),
+    INFRATICS=(120*TICRATE),
+    IRONTICS =(60*TICRATE);
 
 //
 // DOOM keyboard definition.
@@ -1753,7 +1735,15 @@ static public final int SAVESTRINGSIZE = 24;
     /** Indicate a leaf. */
     public static int NF_SUBSECTOR = 0x8000;
 	
+    
+    /** Player states. */
+    
+    public static int   PST_LIVE=0,     // Playing or camping.    
+        PST_DEAD=1,        // Dead on the ground, view follows killer.
+
+        PST_REBORN=2;            // Ready to restart/respawn???
+    
  
 static final String
-rcsid = "$Id: Defines.java,v 1.6 2010/08/23 14:36:08 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.7 2010/08/24 14:57:42 velktron Exp $";
 }

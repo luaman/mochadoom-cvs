@@ -21,7 +21,7 @@ import static data.SineCosine.*;
 // typedef struct mobj_s
 
 
-public class mobj_t implements Interceptable, thinker_t {
+public class mobj_t implements Interceptable  {
     
         public mobj_t(){
             
@@ -106,95 +106,8 @@ public class mobj_t implements Interceptable, thinker_t {
 
        public mobj_t  tracer;         // MAES: was a pointer 
      
-       //
-    // P_SetMobjState
-    // Returns true if the mobj is still present.
-    //
 
-    public boolean
-    SetMobjState
-    (statenum_t	state )
-    {
-        state_t	st;
-
-        do
-        {
-    	if (state == statenum_t.S_NULL)
-    	{
-    	    this.state = null;
-    	    // TODO:P_RemoveMobj (mobj);
-    	    return false;
-    	}
-
-    	st = states[state.ordinal()];
-    	this.state = st;
-    	this.tics = st.tics;
-    	this.sprite = st.sprite;
-    	this.frame = (int) st.frame;
-
-    	// Modified handling.
-    	// Call action functions when the state is set
-    	if (acp1.class.isInstance(st.action))		
-    	    ((acp1)st.action).invoke(this);	
-    	
-    	state = st.nextstate;
-        } while (this.tics==0);
-    				
-        return true;
-    }
-    
- /**
- * P_SpawnPlayerMissile
- * Tries to aim at a nearby monster
- */
- public void  P_SpawnPlayerMissile
- (   mobjtype_t	type )
- {
-     mobj_t	th;     
-     int	an; // angle_t     
-     int	x,	y,z,slope; // fixed_t
-     
-     // see which target is to be aimed at
-     an = this.angle;
-     slope = AimLineAttack (an, 16*64*FRACUNIT);
-     
-     if (!linetarget)
-     {
- 	an += 1<<26;
- 	slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-
- 	if (!linetarget)
- 	{
- 	    an -= 2<<26;
- 	    slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
- 	}
-
- 	if (!linetarget)
- 	{
- 	    an = source.angle;
- 	    slope = 0;
- 	}
-     }
- 		
-     x = source.x;
-     y = source.y;
-     z = source.z + 4*8*FRACUNIT;
- 	
-     th = P_SpawnMobj (x,y,z, type);
-
-     if (th.info.seesound)
- 	S_StartSound (th, th.info.seesound);
-
-     th.target = source;
-     th.angle = an;
-     th.momx = FixedMul( th.info.speed,
- 			 finecosine[an>>ANGLETOFINESHIFT]);
-     th.momy = FixedMul( th.info.speed,
- 			 finesine[an>>ANGLETOFINESHIFT]);
-     th.momz = FixedMul( th.info.speed, slope);
-
-     P_CheckMissileSpawn (th);
- }
+       //// MF_ flags for mobjs.
     
      
  // Call P_SpecialThing when touched.
@@ -281,19 +194,5 @@ public class mobj_t implements Interceptable, thinker_t {
     // Hmm ???.
     public static int MF_TRANSSHIFT = 26;
 
-	@Override
-	public think_t getFunction() {
-		return this.thinker.getFunction();
-	}
-
-	@Override
-	public thinker_t getNext() {
-		return this.snext;
-	}
-
-	@Override
-	public thinker_t getPrev() {
-		return this.sprev;
-	}
-    
+   
     }

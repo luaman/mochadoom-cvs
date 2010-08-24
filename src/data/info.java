@@ -3,11 +3,12 @@ package data;
 import static data.sounds.*;
 import static m.fixed_t.*;
 import static p.mobj.*;
+import data.Defines.statenum_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.2 2010/08/19 23:14:49 velktron Exp $
+// $Id: info.java,v 1.3 2010/08/24 14:57:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +23,9 @@ import static p.mobj.*;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.3  2010/08/24 14:57:42  velktron
+// A lot but inconclusive work today.
+//
 // Revision 1.2  2010/08/19 23:14:49  velktron
 // Automap
 //
@@ -48,7 +52,7 @@ import static p.mobj.*;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.2 2010/08/19 23:14:49 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.3 2010/08/24 14:57:42 velktron Exp $";
 
 // Data.
 //#include "sounds.h"

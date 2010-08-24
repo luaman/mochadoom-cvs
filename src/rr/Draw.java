@@ -3,7 +3,7 @@ package rr;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Draw.java,v 1.4 2010/08/10 16:41:57 velktron Exp $
+// $Id: Draw.java,v 1.5 2010/08/24 14:57:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Draw.java,v $
+// Revision 1.5  2010/08/24 14:57:42  velktron
+// A lot but inconclusive work today.
+//
 // Revision 1.4  2010/08/10 16:41:57  velktron
 // Threw some work into map loading.
 //
@@ -76,7 +79,7 @@ import static m.fixed_t.*;
 
 public class Draw {
     public static String rcsid =
-        "$Id: Draw.java,v 1.4 2010/08/10 16:41:57 velktron Exp $";
+        "$Id: Draw.java,v 1.5 2010/08/24 14:57:42 velktron Exp $";
 
     Renderer R;
 
@@ -130,7 +133,12 @@ public class Draw {
     // R_DrawColumn
     // Source is the top of the column to scale.
     //
-    lighttable_t[] dc_colormap;
+    
+    /** MAES: this was a typedef for unsigned bytes, called "lighttable_t". It makes more sense
+     * to make it primitive, since it's performance-critical in the renderer. Now, whether this should be made
+     * bytes or chars (unsigned 16-bit) is debatable.
+     */
+    char[] dc_colormap;
 
     int dc_x;
 
@@ -138,13 +146,14 @@ public class Draw {
 
     int dc_yh;
 
-    fixed_t dc_iscale;
+    /** fixed_t */
+    int dc_iscale;
 
     /** fixed_t */
     int dc_texturemid;
 
     /** first pixel in a column (possibly virtual) */
-    byte[] dc_source;
+    column_t dc_source;
 
     // byte[] dc_data;
 
@@ -194,7 +203,7 @@ public class Draw {
 
         // Determine scaling,
         // which is the only mapping to be done.
-        fracstep = dc_iscale.val;
+        fracstep = dc_iscale;
         frac = dc_texturemid + (dc_yl - R.centery) * fracstep;
 
         // Inner loop that does the actual texture mapping,
@@ -207,7 +216,7 @@ public class Draw {
             // pointing.
             // dc_source was probably just a pointer to a decompressed
             // column...right?
-            screen[dest] = dc_colormap[dc_source[(frac >> FRACBITS) & 127]].val;
+            screen[dest] = (byte) dc_colormap[dc_source.data[(frac >> FRACBITS) & 127]];
 
             dest += SCREENWIDTH;
             frac += fracstep;

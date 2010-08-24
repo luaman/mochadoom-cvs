@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Plane.java,v 1.2 2010/07/15 14:01:49 velktron Exp $
+// $Id: Plane.java,v 1.3 2010/08/24 14:57:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Plane.java,v $
+// Revision 1.3  2010/08/24 14:57:42  velktron
+// A lot but inconclusive work today.
+//
 // Revision 1.2  2010/07/15 14:01:49  velktron
 // Added reflector Method stuff for function pointers.
 //
@@ -56,11 +59,12 @@ import static data.Tables.*;
 
 public class Plane{
 public static final String
-rcsid = "$Id: Plane.java,v 1.2 2010/07/15 14:01:49 velktron Exp $";
+rcsid = "$Id: Plane.java,v 1.3 2010/08/24 14:57:42 velktron Exp $";
 
 private Draw DR;
 private Renderer R;
 private doomstat DS;
+private BSP BSP;
 
 public Plane (DoomRenderingContext DRC){
     this.DR=DRC.DR;
@@ -78,10 +82,9 @@ planefunction_t		ceilingfunc;
 
 // Here comes the obnoxious "visplane".
 public static final int  MAXVISPLANES	=128;
-visplane_t[]		visplanes=new visplane_t[MAXVISPLANES];
-visplane_t		lastvisplane;
-visplane_t		floorplane;
-visplane_t		ceilingplane;
+protected visplane_t[]		visplanes=new visplane_t[MAXVISPLANES];
+/** visplane_t*,  treat as indexes into visplanes */
+protected int		lastvisplane, floorplane, 	ceilingplane;
 
 // ?
 public static final int MAXOPENINGS	=SCREENWIDTH*64;
@@ -89,7 +92,7 @@ public static final int MAXOPENINGS	=SCREENWIDTH*64;
 private static final boolean RANGECHECK = false;
 short[]			openings=new short[MAXOPENINGS];
 // Maes: pointer hack.
-Short			lastopening=new Short((short) 0);
+short			lastopening;//=new Short((short) 0);
 
 
 //
@@ -223,55 +226,59 @@ if (RANGECHECK){
 //
 public void ClearPlanes ()
 {
-    int		i;
     int	angle;
     
     // opening / clipping determination
-    for (i=0 ; i<DS.viewwidth ; i++)
+    for (int i=0 ; i<DS.viewwidth ; i++)
     {
 	floorclip[i] = DS.viewheight;
 	ceilingclip[i] = -1;
     }
 
-    lastvisplane = visplanes;
-    lastopening = openings;
+    lastvisplane = 0;
+    lastopening = openings[0];
     
     // texture calculation
-    memset (cachedheight, 0, sizeof(cachedheight));
+    //memset (cachedheight, 0, sizeof(cachedheight));
 
     // left to right mapping
-    angle = (viewangle-ANG90)>>ANGLETOFINESHIFT;
+    angle = (R.viewangle-ANG90)>>ANGLETOFINESHIFT;
 	
     // scale will be unit scale at SCREENWIDTH/2 distance
-    basexscale = FixedDiv (finecosine[angle],centerxfrac);
-    baseyscale = -FixedDiv (finesine[angle],centerxfrac);
+    basexscale = FixedDiv (finecosine[angle],R.centerxfrac);
+    baseyscale = -FixedDiv (finesine[angle],R.centerxfrac);
 }
 
 
+/**
+ * R_FindPlane
+ * 
+ * @param height (fixed_t)
+ * @param picnum
+ * @param lightlevel
+ * @return
+ */
 
-
-//
-// R_FindPlane
-//
-visplane_t*
-R_FindPlane
-( fixed_t	height,
+public visplane_t
+FindPlane
+( int	height,
   int		picnum,
   int		lightlevel )
 {
-    visplane_t*	check;
+    int check; // visplane_t* 
+    visplane_t chk=null;
 	
-    if (picnum == skyflatnum)
+    if (picnum == DS.skyflatnum)
     {
 	height = 0;			// all skys map together
 	lightlevel = 0;
     }
 	
-    for (check=visplanes; check<lastvisplane; check++)
+    for (check=0; check<lastvisplane; check++, chk=visplanes[check])
     {
-	if (height == check->height
-	    && picnum == check->picnum
-	    && lightlevel == check->lightlevel)
+	if (height == chk.height
+	    && picnum == chk.picnum
+	    && lightlevel ==chk.lightlevel)
 	{
 	    break;
 	}
@@ -279,31 +286,32 @@ R_FindPlane
     
 			
     if (check < lastvisplane)
-	return check;
+	return chk;
 		
-    if (lastvisplane - visplanes == MAXVISPLANES)
-	I_Error ("R_FindPlane: no more visplanes");
+    if (lastvisplane == MAXVISPLANES)
+	system.Error ("R_FindPlane: no more visplanes");
 		
     lastvisplane++;
 
-    check->height = height;
-    check->picnum = picnum;
-    check->lightlevel = lightlevel;
-    check->minx = SCREENWIDTH;
-    check->maxx = -1;
+    chk.height = height;
+    chk.picnum = picnum;
+    chk.lightlevel = lightlevel;
+    chk.minx = SCREENWIDTH;
+    chk.maxx = -1;
     
-    memset (check->top,0xff,sizeof(check->top));
+    //memset (chk.top,0xff,sizeof(chk.top));
+    chk.clearTop();
 		
-    return check;
+    return chk;
 }
 
 
 //
 // R_CheckPlane
 //
-visplane_t*
-R_CheckPlane
-( visplane_t*	pl,
+public visplane_t
+CheckPlane
+( visplane_t	pl,
   int		start,
   int		stop )
 {
@@ -311,63 +319,64 @@ R_CheckPlane
     int		intrh;
     int		unionl;
     int		unionh;
-    int		x;
+    int x;
 	
-    if (start < pl->minx)
+    if (start < pl.minx)
     {
-	intrl = pl->minx;
+	intrl = pl.minx;
 	unionl = start;
     }
     else
     {
-	unionl = pl->minx;
+	unionl = pl.minx;
 	intrl = start;
     }
 	
-    if (stop > pl->maxx)
+    if (stop > pl.maxx)
     {
-	intrh = pl->maxx;
+	intrh = pl.maxx;
 	unionh = stop;
     }
     else
     {
-	unionh = pl->maxx;
+	unionh = pl.maxx;
 	intrh = stop;
     }
 
     for (x=intrl ; x<= intrh ; x++)
-	if (pl->top[x] != 0xff)
+	if (pl.top[x] != 0xff)
 	    break;
 
     if (x > intrh)
     {
-	pl->minx = unionl;
-	pl->maxx = unionh;
+	pl.minx = unionl;
+	pl.maxx = unionh;
 
 	// use the same one
 	return pl;		
     }
 	
     // make a new visplane
-    lastvisplane->height = pl->height;
-    lastvisplane->picnum = pl->picnum;
-    lastvisplane->lightlevel = pl->lightlevel;
+    visplanes[lastvisplane].height = pl.height;
+    visplanes[lastvisplane].picnum = pl.picnum;
+    visplanes[lastvisplane].lightlevel = pl.lightlevel;
     
-    pl = lastvisplane++;
-    pl->minx = start;
-    pl->maxx = stop;
+    pl = visplanes[lastvisplane++];
+    pl.minx = start;
+    pl.maxx = stop;
 
-    memset (pl->top,0xff,sizeof(pl->top));
+    //memset (pl->top,0xff,sizeof(pl->top));
+    pl.clearTop();
 		
     return pl;
 }
 
 
-//
-// R_MakeSpans
-//
-void
-R_MakeSpans
+/**
+ * R_MakeSpans
+ */
+
+public void MakeSpans
 ( int		x,
   int		t1,
   int		b1,
@@ -376,12 +385,12 @@ R_MakeSpans
 {
     while (t1 < t2 && t1<=b1)
     {
-	R_MapPlane (t1,spanstart[t1],x-1);
+	this.MapPlane (t1,spanstart[t1],x-1);
 	t1++;
     }
     while (b1 > b2 && b1>=t1)
     {
-	R_MapPlane (b1,spanstart[b1],x-1);
+	this.MapPlane (b1,spanstart[b1],x-1);
 	b1--;
     }
 	
@@ -399,59 +408,59 @@ R_MakeSpans
 
 
 
-//
-// R_DrawPlanes
-// At the end of each frame.
-//
-void R_DrawPlanes (void)
+/**
+ * R_DrawPlanes
+ * At the end of each frame.
+ */
+public void DrawPlanes ()
 {
-    visplane_t*		pl;
+    visplane_t		pln; //visplane_t
     int			light;
     int			x;
     int			stop;
     int			angle;
 				
-#ifdef RANGECHECK
-    if (ds_p - drawsegs > MAXDRAWSEGS)
-	I_Error ("R_DrawPlanes: drawsegs overflow (%i)",
-		 ds_p - drawsegs);
+if (RANGECHECK){
+    if (BSP.ds_p > MAXDRAWSEGS)
+	system.Error("R_DrawPlanes: drawsegs overflow (%i)",
+	    BSP.ds_p );
     
-    if (lastvisplane - visplanes > MAXVISPLANES)
-	I_Error ("R_DrawPlanes: visplane overflow (%i)",
-		 lastvisplane - visplanes);
+    if (lastvisplane > MAXVISPLANES)
+        system.Error(" R_DrawPlanes: visplane overflow (%i)",
+		 lastvisplane);
     
-    if (lastopening - openings > MAXOPENINGS)
-	I_Error ("R_DrawPlanes: opening overflow (%i)",
-		 lastopening - openings);
-#endif
+    if (lastopening  > MAXOPENINGS)
+        system.Error( "R_DrawPlanes: opening overflow (%i)",
+		 lastopening );
+}
 
-    for (pl = visplanes ; pl < lastvisplane ; pl++)
+    for (int pl = 0 ; pl < lastvisplane ;  pln=visplanes[pl++])
     {
-	if (pl->minx > pl->maxx)
+	if (pln.minx > pln.maxx)
 	    continue;
 
 	
 	// sky flat
-	if (pl->picnum == skyflatnum)
+	if (pln.picnum == DS.skyflatnum)
 	{
-	    dc_iscale = pspriteiscale>>detailshift;
+	    DR.dc_iscale = R.pspriteiscale>>R.detailshift;
 	    
 	    // Sky is allways drawn full bright,
 	    //  i.e. colormaps[0] is used.
 	    // Because of this hack, sky is not affected
 	    //  by INVUL inverse mapping.
-	    dc_colormap = colormaps;
-	    dc_texturemid = skytexturemid;
-	    for (x=pl->minx ; x <= pl->maxx ; x++)
+	    DR.dc_colormap = R.colormaps;
+	    DR.dc_texturemid = R.kytexturemid;
+	    for (x=pln.minx ; x <= pln.maxx ; x++)
 	    {
-		dc_yl = pl->top[x];
-		dc_yh = pl->bottom[x];
+		DR.dc_yl = pln.top[x];
+		DR.dc_yh = pln.bottom[x];
 
-		if (dc_yl <= dc_yh)
+		if (DR.dc_yl <= DR.dc_yh)
 		{
-		    angle = (viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
-		    dc_x = x;
-		    dc_source = R_GetColumn(skytexture, angle);
+		    angle = (R.viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+		    DR.dc_x = x;
+		    DR.dc_source = R.GetColumn(R.skytexture, angle);
 		    colfunc ();
 		}
 	    }
@@ -460,11 +469,11 @@ void R_DrawPlanes (void)
 	
 	// regular flat
 	ds_source = W_CacheLumpNum(firstflat +
-				   flattranslation[pl->picnum],
+				   flattranslation[pl.picnum],
 				   PU_STATIC);
 	
-	planeheight = abs(pl->height-viewz);
-	light = (pl->lightlevel >> LIGHTSEGSHIFT)+extralight;
+	planeheight = abs(pl.height-viewz);
+	light = (pl.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
 	if (light >= LIGHTLEVELS)
 	    light = LIGHTLEVELS-1;
@@ -474,17 +483,17 @@ void R_DrawPlanes (void)
 
 	planezlight = zlight[light];
 
-	pl->top[pl->maxx+1] = 0xff;
-	pl->top[pl->minx-1] = 0xff;
+	pl.top[pl.maxx+1] = 0xff;
+	pl.top[pl.minx-1] = 0xff;
 		
-	stop = pl->maxx + 1;
+	stop = pl.maxx + 1;
 
-	for (x=pl->minx ; x<= stop ; x++)
+	for (x=pl.minx ; x<= stop ; x++)
 	{
-	    R_MakeSpans(x,pl->top[x-1],
-			pl->bottom[x-1],
-			pl->top[x],
-			pl->bottom[x]);
+	    R_MakeSpans(x,pl.top[x-1],
+			pl.bottom[x-1],
+			pl.top[x],
+			pl.bottom[x]);
 	}
 	
 	Z_ChangeTag (ds_source, PU_CACHE);

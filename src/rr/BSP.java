@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BSP.java,v 1.3 2010/07/06 12:54:50 velktron Exp $
+// $Id: BSP.java,v 1.4 2010/08/24 14:57:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: BSP.java,v $
+// Revision 1.4  2010/08/24 14:57:42  velktron
+// A lot but inconclusive work today.
+//
 // Revision 1.3  2010/07/06 12:54:50  velktron
 // A lot of work thrown in the renderer, but don't get too excited...
 //
@@ -63,7 +66,7 @@ import data.doomstat;
 
 public class BSP{
 
-// static const char rcsid[] = "$Id: BSP.java,v 1.3 2010/07/06 12:54:50 velktron Exp $";
+// static const char rcsid[] = "$Id: BSP.java,v 1.4 2010/08/24 14:57:42 velktron Exp $";
 
     private doomstat ds;
     
@@ -85,7 +88,8 @@ public class BSP{
     public boolean      skymap;
 
     public drawseg_t[]    drawsegs;
-    public drawseg_t   ds_p;
+    /** pointer to drawseg */
+    public int   ds_p;
 
     public lighttable_t[][]   hscalelight;
     public lighttable_t[][]   vscalelight;
@@ -114,9 +118,9 @@ class R_StoreWallRange implements drawfunc_t{
 //
 // R_ClearDrawSegs
 //
-void R_ClearDrawSegs ()
+public void ClearDrawSegs ()
 {
-    ds_p = drawsegs[0];
+    ds_p = 0;
 }
 
 
@@ -128,8 +132,8 @@ void R_ClearDrawSegs ()
 //
 class cliprange_t
 {
-    int	first;
-    int last;
+    public int	first;
+    public int last;
     
 } 
 

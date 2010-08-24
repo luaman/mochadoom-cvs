@@ -1,5 +1,8 @@
 package doom;
 
+import p.mobj;
+import p.pspdef_t;
+
 //Historically, "think_t" is yet another
 //function pointer to a routine to handle
 //an actor.
@@ -25,5 +28,8 @@ actionf_p2	acp2;
 */
 
 public interface think_t {
-    public actionf_t getType();
+    public ActionType getType();
+    public void acp1(mobj actor);
+    public void acp2(player_t a, pspdef_t b);
+    public void acpv();
 }

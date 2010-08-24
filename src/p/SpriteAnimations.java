@@ -12,8 +12,9 @@ import data.Defines.ammotype_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
 import doom.acp2;
-import doom.actionf_t;
+import doom.ActionType;
 import doom.player_t;
+import doom.think_t;
 import doom.weapontype_t;
 
 public class SpriteAnimations {
@@ -79,7 +80,7 @@ public class SpriteAnimations {
 		
 		// Call action routine.
 		// Modified handling.
-		if (state.action.getType()==actionf_t.acp2)
+		if (state.action.getType()==ActionType.acp2)
 		{
 		    ((acp2)(state.action)).invoke(player, psp);
 		    if (psp.state==null)
@@ -269,10 +270,11 @@ public class SpriteAnimations {
 	// or after previous attack/fire sequence.
 	//
 	
-class ActionWeaponReady implements think_t {	
+class A_WeaponReady implements think_t {	
 	
-	public void
-	A_WeaponReady
+	@Override
+    public void
+	acp2
 	( player_t	player,
 	  pspdef_t	psp )
 	{	
@@ -325,6 +327,22 @@ class ActionWeaponReady implements think_t {
 	    angle &= FINEANGLES/2-1;
 	    psp.sy = WEAPONTOP + FixedMul (player.bob, finesine[angle]);
 	}
+
+    @Override
+    public void acpv() {
+        
+    }
+
+    @Override
+    public ActionType getType() {
+        return ActionType.acp2;
+    }
+
+    @Override
+    public void acp1(mobj actor) {
+        // TODO Auto-generated method stub
+        
+    }
 
 }
 
@@ -636,7 +654,7 @@ void A_ReFire
 
 
 	//
-	// A_FirePistol
+	// FirePistol
 	//
 	void
 	A_FirePistol
@@ -658,10 +676,10 @@ void A_ReFire
 
 
 	//
-	// A_FireShotgun
+	// FireShotgun
 	//
 	void
-	A_FireShotgun
+	FireShotgun
 	( player_t*	player,
 	  pspdef_t*	psp ) 
 	{
@@ -685,10 +703,10 @@ void A_ReFire
 
 
 	//
-	// A_FireShotgun2
+	// FireShotgun2
 	//
 	void
-	A_FireShotgun2
+	FireShotgun2
 	( player_t*	player,
 	  pspdef_t*	psp ) 
 	{
@@ -722,10 +740,10 @@ void A_ReFire
 
 
 	//
-	// A_FireCGun
+	// FireCGun
 	//
 	void
-	A_FireCGun
+	FireCGun
 	( player_t*	player,
 	  pspdef_t*	psp ) 
 	{
@@ -753,27 +771,27 @@ void A_ReFire
 	//
 	// ?
 	//
-	void A_Light0 (player_t *player, pspdef_t *psp)
+	void Light0 (player_t *player, pspdef_t *psp)
 	{
 	    player.extralight = 0;
 	}
 
-	void A_Light1 (player_t *player, pspdef_t *psp)
+	void Light1 (player_t *player, pspdef_t *psp)
 	{
 	    player.extralight = 1;
 	}
 
-	void A_Light2 (player_t *player, pspdef_t *psp)
+	void Light2 (player_t *player, pspdef_t *psp)
 	{
 	    player.extralight = 2;
 	}
 
 
 	//
-	// A_BFGSpray
+	// BFGSpray
 	// Spawn a BFG explosion on every monster in view
 	//
-	void A_BFGSpray (mobj_t* mo) 
+	void BFGSpray (mobj_t* mo) 
 	{
 	    int			i;
 	    int			j;
@@ -807,10 +825,10 @@ void A_ReFire
 
 
 	//
-	// A_BFGsound
+	// BFGsound
 	//
 	void
-	A_BFGsound
+	BFGsound
 	( player_t*	player,
 	  pspdef_t*	psp )
 	{

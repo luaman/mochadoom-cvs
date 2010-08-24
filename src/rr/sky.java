@@ -3,7 +3,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sky.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: sky.java,v 1.2 2010/08/24 14:57:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: sky.java,v $
+// Revision 1.2  2010/08/24 14:57:42  velktron
+// A lot but inconclusive work today.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -52,19 +55,6 @@ public class sky{
 //
 // sky mapping
 //
-static public int			skyflatnum;
-static public int           skytexture;
-static public int skytexturemid;
 
-
-//
-// R_InitSkyMap
-// Called whenever the view size changes.
-//
-public static void R_InitSkyMap ()
-{
-  // skyflatnum = R_FlatNumForName ( SKYFLATNAME );
-    skytexturemid = 100*FRACUNIT;
-}
 
 }
