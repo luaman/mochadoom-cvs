@@ -16,6 +16,7 @@ import m.FixedFloat;
 import m.random;
 
 import rr.vertex_t;
+import st.StatusBar;
 
 import data.Defines;
 import data.doomstat;
@@ -28,6 +29,7 @@ import doom.event_t;
 import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
+import doom.weapontype_t;
 
 import utils.C2JUtils;
 import v.SimpleRenderer;
@@ -38,15 +40,15 @@ import w.*;
  * 
  */
 
-public class EndLevelTester {
+public class StatusBarTester {
 
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"C:\\games\\iwads\\doom2.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
-    SimpleRenderer V=new SimpleRenderer(640,480);
+    SimpleRenderer V=new SimpleRenderer(320,200);
     V.Init();
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
@@ -60,8 +62,8 @@ public class EndLevelTester {
     ds.gamemode=GameMode_t.commercial;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
-    Defines.SCREENWIDTH=640;
-    Defines.SCREENHEIGHT=480;
+    Defines.SCREENWIDTH=320;
+    Defines.SCREENHEIGHT=200;
     
     DoomContext DC=new DoomContext();
     DC.DS=ds;
@@ -72,6 +74,19 @@ public class EndLevelTester {
     ds.players[0].itemcount=1337;
     ds.players[0].killcount=1337;
     ds.players[0].secretcount=1337;
+    ds.players[0].weaponowned[0]=true;
+    ds.players[0].weaponowned[1]=true;
+    ds.players[0].weaponowned[2]=true;
+    ds.players[0].weaponowned[3]=true;
+    ds.players[0].readyweapon=weapontype_t.wp_pistol;
+    ds.players[0].health=100;
+    ds.players[0].armorpoints=600;
+    ds.players[0].ammo[0]=200;
+    ds.players[0].cards[0]=true;
+    ds.players[0].cards[2]=true;
+    ds.players[0].cards[4]=true;
+    ds.deathmatch=false;
+    ds.statusbaractive=true;
     
     ds.wminfo.plyr[0].in=true;
     ds.wminfo.plyr[0].sitems=1337;
@@ -86,15 +101,15 @@ public class EndLevelTester {
     ds.wminfo.maxsecret=100;
     ds.wminfo.partime=28595;
 
-    EndLevel EL=new EndLevel(DC);
-    
-
-   // EL.Start(wbstartstruct);
-    
+    StatusBar ST=new StatusBar(DC);
+    ST.Start();
+   
     for (int i=0;i<20;i++){
-    EL.Ticker();
-    EL.Drawer();
+    ST.Ticker();
+    ST.Drawer(false,true);
+    V.takeScreenShot(0, "tic"+i,icm);
     }
+    /*
     V.takeScreenShot(0, "tic1",icm);
     for (int i=20;i<150;i++){
         EL.Ticker();
@@ -109,7 +124,7 @@ public class EndLevelTester {
             ds.players[0].attackdown=false; // simulate attack
         }
         V.takeScreenShot(0,( "tic"+i),icm);
-        }
+        } */
        
         } catch (Exception e){
             e.printStackTrace();

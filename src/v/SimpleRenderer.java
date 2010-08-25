@@ -18,7 +18,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.8 2010/08/23 14:36:08 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.9 2010/08/25 15:16:07 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,6 +32,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.9  2010/08/25 15:16:07  velktron
+// Status bar functional.
+//
 // Revision 1.8  2010/08/23 14:36:08  velktron
 // Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
 //
@@ -104,7 +107,7 @@ import static data.Defines.*;
 
 public class SimpleRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.8 2010/08/23 14:36:08 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.9 2010/08/25 15:16:07 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -826,6 +829,11 @@ public void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
 @Override
 public byte[] getScreen(int index) {
    return screens[index];
+}
+
+@Override
+public void setScreen(int index, int width, int height){
+    this.screens[index]=new byte[width*height];
 }
 
 @Override

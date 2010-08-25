@@ -38,6 +38,8 @@ public interface DoomVideoRenderer {
 
     public byte[] getScreen(int index);
     
+    public void setScreen(int index, int width, int height);
+    
     public int getUsegamma();
 
     public void setUsegamma(int gamma);
