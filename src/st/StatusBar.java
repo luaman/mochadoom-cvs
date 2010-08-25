@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.3 2010/08/13 14:06:36 velktron Exp $
+// $Id: StatusBar.java,v 1.4 2010/08/25 00:50:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.4  2010/08/25 00:50:59  velktron
+// Some more work...
+//
 // Revision 1.3  2010/08/13 14:06:36  velktron
 // Endlevel screen fully functional!
 //
@@ -51,12 +54,19 @@ package st;
 import static data.Defines.*;
 import static data.dstrings.*;
 import static doom.englsh.*;
+import static automap.DoomAutoMap.*;
 import java.io.IOException;
+
+import p.mobj_t;
 
 import i.system;
 import m.cheatseq_t;
 import data.doomstat;
+import data.sounds.musicenum_t;
+import doom.event_t;
+import doom.evtype_t;
 import doom.player_t;
+import doom.weapontype_t;
 import static doom.player_t.*;
 import rr.Renderer;
 import rr.patch_t;
@@ -65,7 +75,7 @@ import v.SimpleRenderer;
 import w.WadLoader;
 
 public class StatusBar{
-public static final String rcsid = "$Id: StatusBar.java,v 1.3 2010/08/13 14:06:36 velktron Exp $";
+public static final String rcsid = "$Id: StatusBar.java,v 1.4 2010/08/25 00:50:59 velktron Exp $";
 
 ///// STATUS //////////
 
@@ -574,7 +584,6 @@ public void loadData()
 // Respond to keyboard input events,
 //  intercept cheats.
 
-/*
 
 public boolean
 Responder (event_t ev)
@@ -582,19 +591,19 @@ Responder (event_t ev)
   int		i;
     
   // Filter automap on/off.
-  if (ev.type == ev_keyup
+  if (ev.type == evtype_t.ev_keyup
       && ((ev.data1 & 0xffff0000) == AM_MSGHEADER))
   {
     switch(ev.data1)
     {
       case AM_MSGENTERED:
-	st_gamestate = AutomapState;
+	st_gamestate = st_stateenum_t.AutomapState;
 	st_firsttime = true;
 	break;
 	
       case AM_MSGEXITED:
 	//	fprintf(stderr, "AM exited\n");
-	st_gamestate = FirstPersonState;
+	st_gamestate = st_stateenum_t.FirstPersonState;
 	break;
     }
   }
@@ -602,16 +611,16 @@ Responder (event_t ev)
   // if a user keypress...
   else if (ev.type == evtype_t.ev_keydown)
   {
-    if (!netgame)
+    if (!DS.netgame)
     {
       // b. - enabled for more debug fun.
       // if (gameskill != sk_nightmare) {
       
       // 'dqd' cheat for toggleable god mode
-      if (cht_CheckCheat(&cheat_god, ev.data1))
+      if (cheat_god.CheckCheat((char) ev.data1))
       {
 	plyr.cheats ^= CF_GODMODE;
-	if (plyr.cheats & CF_GODMODE !=0)
+	if ((plyr.cheats& CF_GODMODE)!=0)
 	{
 	  if (plyr.mo!=null)
 	    plyr.mo.health = 100;
@@ -623,7 +632,7 @@ Responder (event_t ev)
 	  plyr.message = STSTR_DQDOFF;
       }
       // 'fa' cheat for killer fucking arsenal
-      else if (cht_CheckCheat(cheat_ammonokey, ev.data1))
+      else if (cheat_ammonokey.CheckCheat((char) ev.data1))
       {
 	plyr.armorpoints = 200;
 	plyr.armortype = 2;
@@ -637,7 +646,7 @@ Responder (event_t ev)
 	plyr.message = STSTR_FAADDED;
       }
       // 'kfa' cheat for key full ammo
-      else if (cht_CheckCheat(cheat_ammo, ev.data1))
+      else if (cheat_ammo.CheckCheat( (char) ev.data1))
       {
 	plyr.armorpoints = 200;
 	plyr.armortype = 2;
@@ -654,43 +663,43 @@ Responder (event_t ev)
 	plyr.message = STSTR_KFAADDED;
       }
       // 'mus' cheat for changing music
-      else if (cht_CheckCheat(&cheat_mus, ev.data1))
+      else if (cheat_mus.CheckCheat((char) ev.data1))
       {
 	
 	char[]	buf=new char[3];
 	int		musnum;
 	
 	plyr.message = STSTR_MUS;
-	cheat_mus.cht_GetParam(nuf);
+	cheat_mus.GetParam(buf);
 	
 	
-	if (gamemode == commercial)
+	if (DS.gamemode == GameMode_t.commercial)
 	{
-	  musnum = mus_runnin + (buf[0]-'0')*10 + buf[1]-'0' - 1;
+	  musnum = musicenum_t.mus_runnin.ordinal() + (buf[0]-'0')*10 + buf[1]-'0' - 1;
 	  
 	  if (((buf[0]-'0')*10 + buf[1]-'0') > 35)
 	    plyr.message = STSTR_NOMUS;
-	  else
-	    S_ChangeMusic(musnum, 1);
+	  else ;
+	    // TODO: S_ChangeMusic(musnum, 1);
 	}
 	else
 	{
-	  musnum = mus_e1m1 + (buf[0]-'1')*9 + (buf[1]-'1');
+	  musnum = musicenum_t.mus_e1m1.ordinal() + (buf[0]-'1')*9 + (buf[1]-'1');
 	  
 	  if (((buf[0]-'1')*9 + buf[1]-'1') > 31)
 	    plyr.message = STSTR_NOMUS;
-	  else
-	    S_ChangeMusic(musnum, 1);
+	  else ;
+	   // TODO: S_ChangeMusic(musnum, 1);
 	}
       }
       // Simplified, accepting both "noclip" and "idspispopd".
       // no clipping mode cheat
-      else if ( cht_CheckCheat(&cheat_noclip, ev.data1) 
-		|| cht_CheckCheat(&cheat_commercial_noclip,ev.data1) )
+      else if ( cheat_noclip.CheckCheat((char) ev.data1) 
+		|| cheat_commercial_noclip.CheckCheat((char) ev.data1) )
       {	
 	plyr.cheats ^= CF_NOCLIP;
 	
-	if (plyr.cheats & CF_NOCLIP)
+	if ((plyr.cheats & CF_NOCLIP)!=0)
 	  plyr.message = STSTR_NCON;
 	else
 	  plyr.message = STSTR_NCOFF;
@@ -698,10 +707,10 @@ Responder (event_t ev)
       // 'behold?' power-up cheats
       for (i=0;i<6;i++)
       {
-	if (cht_CheckCheat(&cheat_powerup[i], ev.data1))
+	if (cheat_powerup[i].CheckCheat((char) ev.data1))
 	{
-	  if (!plyr.powers[i])
-	    P_GivePower( plyr, i);
+	  if (plyr.powers[i]==0) ;
+	    //P_GivePower( plyr, i);
 	  else if (i!=pw_strength)
 	    plyr.powers[i] = 1;
 	  else
@@ -712,39 +721,42 @@ Responder (event_t ev)
       }
       
       // 'behold' power-up menu
-      if (cht_CheckCheat(&cheat_powerup[6], ev.data1))
+      if (cheat_powerup[6].CheckCheat((char) ev.data1))
       {
 	plyr.message = STSTR_BEHOLD;
       }
       // 'choppers' invulnerability & chainsaw
-      else if (cht_CheckCheat(&cheat_choppers, ev.data1))
+      else if (cheat_choppers.CheckCheat((char) ev.data1))
       {
-	plyr.weaponowned[wp_chainsaw] = true;
-	plyr.powers[pw_invulnerability] = true;
+	plyr.weaponowned[weapontype_t.wp_chainsaw.ordinal()] = true;
+	plyr.powers[pw_invulnerability] = 1; // true
 	plyr.message = STSTR_CHOPPERS;
       }
       // 'mypos' for player position
-      else if (cht_CheckCheat(&cheat_mypos, ev.data1))
+      else if (cheat_mypos.CheckCheat((char) ev.data1))
       {
-	static char	buf[ST_MSGWIDTH];
+	/*(static char	buf[ST_MSGWIDTH];
 	sprintf(buf, "ang=0x%x;x,y=(0x%x,0x%x)",
 		players[consoleplayer].mo.angle,
 		players[consoleplayer].mo.x,
-		players[consoleplayer].mo.y);
-	plyr.message = buf;
+		players[consoleplayer].mo.y); */
+    mobj_t mo=DS.players[DS.consoleplayer].mo;
+	plyr.message = "ang=0x"+Integer.toHexString(mo.angle)+
+	"0x"+Integer.toHexString(mo.x)+
+	"0x"+Integer.toHexString(mo.y)	;
       }
     }
     
     // 'clev' change-level cheat
-    if (cht_CheckCheat(&cheat_clev, ev.data1))
+    if (cheat_clev.CheckCheat((char) ev.data1))
     {
-      char		buf[3];
+      char[]		buf=new char[3];
       int		epsd;
       int		map;
       
-      cht_GetParam(&cheat_clev, buf);
+      cheat_clev.GetParam(buf);
       
-      if (gamemode == commercial)
+      if (DS.gamemode == GameMode_t.commercial)
       {
 	epsd = 0;
 	map = (buf[0] - '0')*10 + buf[1] - '0';
@@ -763,31 +775,29 @@ Responder (event_t ev)
 	return false;
       
       // Ohmygod - this is not going to work.
-      if ((gamemode == retail)
+      if ((DS.gamemode == GameMode_t.retail)
 	  && ((epsd > 4) || (map > 9)))
 	return false;
 
-      if ((gamemode == registered)
+      if ((DS.gamemode == GameMode_t.registered)
 	  && ((epsd > 3) || (map > 9)))
 	return false;
 
-      if ((gamemode == shareware)
+      if ((DS.gamemode == GameMode_t.shareware)
 	  && ((epsd > 1) || (map > 9)))
 	return false;
 
-      if ((gamemode == commercial)
+      if ((DS.gamemode == GameMode_t.commercial)
 	&& (( epsd > 1) || (map > 34)))
 	return false;
 
       // So be it.
       plyr.message = STSTR_CLEV;
-      G_DeferedInitNew(gameskill, epsd, map);
+      // TODO: G.DeferedInitNew(gameskill, epsd, map);
     }    
   }
   return false;
 }
-
-*/
 
 public int calcPainOffset()
 {
@@ -1350,6 +1360,8 @@ public void createWidgets()
     int i;
 
     // ready weapon ammo
+    w_ready=new st_number_t();
+    
     w_ready.initNum(
 		  ST_AMMOX,
 		  ST_AMMOY,
@@ -1657,7 +1669,7 @@ class st_multicon_t {
         
     } 
 
-/ ** Number widget */
+/** Number widget */
 
 class st_number_t {
     

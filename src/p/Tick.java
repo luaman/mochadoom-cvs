@@ -1,13 +1,13 @@
 package p;
 
 import data.doomstat;
-import doom.actionf_t;
+import doom.ActionType;
 import doom.thinker_t;
 import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tick.java,v 1.1 2010/08/24 14:57:42 velktron Exp $
+// $Id: Tick.java,v 1.2 2010/08/25 00:50:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +22,9 @@ import static data.Defines.*;
 // GNU General Public License for more details.
 //
 // $Log: Tick.java,v $
+// Revision 1.2  2010/08/25 00:50:59  velktron
+// Some more work...
+//
 // Revision 1.1  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -47,10 +50,10 @@ import static data.Defines.*;
 
 public class Tick{
 
-public static final String rcsid = "$Id: Tick.java,v 1.1 2010/08/24 14:57:42 velktron Exp $";
+public static final String rcsid = "$Id: Tick.java,v 1.2 2010/08/25 00:50:59 velktron Exp $";
 
 doomstat DS;
-
+spec SPEC;
 int	leveltime;
 
 //
@@ -131,7 +134,7 @@ public void RunThinkers ()
 	}
 	else
 	{
-	    if (currentthinker.getFunction().getType()==actionf_t.acp1)
+	    if (currentthinker.getFunction().getType()==ActionType.acp1)
 		currentthinker.getFunction().acp1(currentthinker);
 	}
 	currentthinker = currentthinker.getNext();
@@ -167,8 +170,8 @@ public void Ticker ()
 	    PlayerThink (DS.players[i]);
 			
     RunThinkers ();
-    UpdateSpecials (); // In specials. Merge?
-    RespawnSpecials ();
+    SPEC.UpdateSpecials (); // In specials. Merge?
+    SPEC.RespawnSpecials ();
 
     // for par times
     leveltime++;	

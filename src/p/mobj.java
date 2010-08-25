@@ -5,7 +5,7 @@ import data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: mobj.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: mobj.java,v 1.2 2010/08/25 00:50:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import data.Defines.*;
 // GNU General Public License for more details.
 //
 // $Log: mobj.java,v $
+// Revision 1.2  2010/08/25 00:50:59  velktron
+// Some more work...
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -60,7 +63,7 @@ import data.Defines.*;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: mobj.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+//$Id: mobj.java,v 1.2 2010/08/25 00:50:59 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -167,7 +170,7 @@ import data.info.*;
 //
 //Misc. mobj flags
 //
-public class mobj{
+public class mobj implements thinker_t{
 
   // Call P_SpecialThing when touched.
   public static int MF_SPECIAL        = 1;
@@ -252,6 +255,36 @@ public class mobj{
   public static int    MF_TRANSLATION     = 0xc000000;
   // Hmm ???.
   public static int MF_TRANSSHIFT = 26;
+@Override
+public think_t getFunction() {
+	// TODO Auto-generated method stub
+	return null;
+}
+@Override
+public thinker_t getNext() {
+	// TODO Auto-generated method stub
+	return null;
+}
+@Override
+public thinker_t getPrev() {
+	// TODO Auto-generated method stub
+	return null;
+}
+@Override
+public void setFunction(think_t acv) {
+	// TODO Auto-generated method stub
+	
+}
+@Override
+public void setNext(thinker_t t) {
+	// TODO Auto-generated method stub
+	
+}
+@Override
+public void setPrev(thinker_t t) {
+	// TODO Auto-generated method stub
+	
+}
   
   
 //MAES: mobjflag_t types are never instantiated or set as fields. No reason to exist as such.

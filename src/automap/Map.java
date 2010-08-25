@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.4 2010/08/22 18:04:21 velktron Exp $
+// $Id: Map.java,v 1.5 2010/08/25 00:50:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.5  2010/08/25 00:50:59  velktron
+// Some more work...
+//
 // Revision 1.4  2010/08/22 18:04:21  velktron
 // Automap
 //
@@ -79,7 +82,7 @@ DoomVideoRenderer V;
 Playfield P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.4 2010/08/22 18:04:21 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.5 2010/08/25 00:50:59 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -420,7 +423,7 @@ public void MarkRect
   int   y,
   int   width,
   int   height ){
-    
+    ;
 }
 
 /** 

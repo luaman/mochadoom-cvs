@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: cheatseq_t.java,v 1.4 2010/07/21 11:41:47 velktron Exp $
+// $Id: cheatseq_t.java,v 1.5 2010/08/25 00:50:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: cheatseq_t.java,v $
+// Revision 1.5  2010/08/25 00:50:59  velktron
+// Some more work...
+//
 // Revision 1.4  2010/07/21 11:41:47  velktron
 // Work on menus...
 //
@@ -119,12 +122,6 @@ public class cheatseq_t {
     public boolean CheckCheat(cheatseq_t cht, char key) {
         boolean rc = false;
 
-        if (firsttime) {
-            firsttime = false;
-            for (char i = 0; i < 256; i++)
-                cheat_xlate_table[i] = SCRAMBLE(i);
-        }
-
         if (cht.p < 0)
             cht.p = 0; // initialize if first time
 
@@ -160,11 +157,7 @@ public class cheatseq_t {
     public boolean CheckCheat(char key) {
         boolean rc = false;
 
-        if (firsttime) {
-            firsttime = false;
-            for (char i = 0; i < 256; i++)
-                cheat_xlate_table[i] = SCRAMBLE(i);
-        }
+
 
         if (this.p < 0)
             this.p = 0; // initialize if first time
@@ -209,4 +202,12 @@ public class cheatseq_t {
     public static boolean firsttime = true;
 
     public static char[] cheat_xlate_table = new char[256];
+
+   static {
+       if (firsttime) {
+           firsttime = false;
+           for (char i = 0; i < 256; i++)
+               cheat_xlate_table[i] = SCRAMBLE(i);
+       }
+   }
 }

@@ -17,6 +17,7 @@ import m.random;
 
 import rr.vertex_t;
 
+import data.Defines;
 import data.doomstat;
 import data.mapvertex_t;
 import data.Defines.GameMission_t;
@@ -42,10 +43,10 @@ public class EndLevelTester {
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"C:\\games\\iwads\\doom2.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
-    SimpleRenderer V=new SimpleRenderer();
+    SimpleRenderer V=new SimpleRenderer(640,480);
     V.Init();
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
@@ -56,9 +57,11 @@ public class EndLevelTester {
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;
-    ds.gamemode=GameMode_t.shareware;
+    ds.gamemode=GameMode_t.commercial;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
+    Defines.SCREENWIDTH=640;
+    Defines.SCREENHEIGHT=480;
     
     DoomContext DC=new DoomContext();
     DC.DS=ds;
