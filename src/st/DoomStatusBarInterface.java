@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomStatusBarInterface.java,v 1.2 2010/08/13 14:06:36 velktron Exp $
+// $Id: DoomStatusBarInterface.java,v 1.3 2010/08/26 16:43:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -46,6 +46,8 @@ public void Start ();
 
 // Called by startup code.
 public void Init ();
+
+public void Stop();
 
 
 }

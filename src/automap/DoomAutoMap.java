@@ -4,7 +4,7 @@ import doom.event_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomAutoMap.java,v 1.1 2010/07/20 15:52:56 velktron Exp $
+// $Id: DoomAutoMap.java,v 1.2 2010/08/26 16:43:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -44,6 +44,9 @@ public void  Drawer ();
 // Called to force the automap to quit
 // if the level is completed while it is up.
 public void  Stop ();
+
+public void Start();
+
 
 
 }

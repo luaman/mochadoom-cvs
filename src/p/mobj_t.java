@@ -21,7 +21,7 @@ import static data.SineCosine.*;
 // typedef struct mobj_s
 
 
-public class mobj_t implements Interceptable  {
+public class mobj_t implements Interceptable, thinker_t  {
     
         public mobj_t(){
             
@@ -193,6 +193,34 @@ public class mobj_t implements Interceptable  {
     public static int    MF_TRANSLATION     = 0xc000000;
     // Hmm ???.
     public static int MF_TRANSSHIFT = 26;
+    @Override
+    public think_t getFunction() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    @Override
+    public thinker_t getNext() {
+        return this.snext;
+    }
+    @Override
+    public thinker_t getPrev() {
+        return this.sprev;
+    }
+    @Override
+    public void setFunction(think_t acv) {
+        // TODO Auto-generated method stub
+        
+    }
+    @Override
+    public void setNext(thinker_t t) {
+        // TODO Auto-generated method stub
+        
+    }
+    @Override
+    public void setPrev(thinker_t t) {
+        // TODO Auto-generated method stub
+        
+    }
 
    
     }

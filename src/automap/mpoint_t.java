@@ -19,6 +19,15 @@ public class mpoint_t
       this.y = (int) y;
   }
   
+  public mpoint_t(){
+      this.x=0;
+      this.y=0;
+  }
+  
   /** fixed_t */
   public int x,y;
+  
+  public String toString(){
+      return (Integer.toHexString(x)+" , "+Integer.toHexString(y));
+  }
 };

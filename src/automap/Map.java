@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.5 2010/08/25 00:50:59 velktron Exp $
+// $Id: Map.java,v 1.6 2010/08/26 16:43:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.6  2010/08/26 16:43:42  velktron
+// Automap functional, biatch.
+//
 // Revision 1.5  2010/08/25 00:50:59  velktron
 // Some more work...
 //
@@ -62,13 +65,16 @@ import static data.Tables.*;
 import p.Playfield;
 import p.mobj_t;
 import data.doomstat;
+import doom.DoomContext;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import rr.patch_t;
 import st.DoomStatusBarInterface;
+import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.WadLoader;
+import m.FixedFloat;
 import m.cheatseq_t;
 
 public class Map implements DoomAutoMap{
@@ -82,7 +88,7 @@ DoomVideoRenderer V;
 Playfield P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.5 2010/08/25 00:50:59 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.6 2010/08/26 16:43:42 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -177,6 +183,22 @@ public static final int M_ZOOMIN =       ((int) (1.02*FRACUNIT));
 // pulls out to 0.5x in 1 second
 public static final int M_ZOOMOUT    =   ((int) (FRACUNIT/1.02));
 
+public Map(DoomContext dC) {
+    this.V=dC.V;
+    this.W=dC.W;
+    this.P=dC.P;
+    this.DS=dC.DS;
+    this.ST=dC.ST;
+    
+    // Some initializing...
+    this.markpoints=new mpoint_t[AM_NUMMARKPOINTS];
+    C2JUtils.initArrayOfObjects(markpoints, mpoint_t.class);
+    
+    f_oldloc=new mpoint_t();
+    m_paninc=new mpoint_t();
+}
+
+
 /** translates between frame-buffer and map distances */
 private int FTOM(int x){return FixedMul(((x)<<16),scale_ftom);}
 /** translates between frame-buffer and map distances */
@@ -187,7 +209,7 @@ private int CXMTOF(int x){ return (f_x + MTOF((x)-m_x));}
 private int CYMTOF(int y) {return (f_y + (f_h - MTOF((y)-m_y)));}
 
 // the following is crap
-public static final int LINE_NEVERSEE =ML_DONTDRAW;
+public static final short LINE_NEVERSEE =ML_DONTDRAW;
 
 //
 // The vector graphics for the automap.
@@ -330,7 +352,7 @@ private player_t plr;
 /** numbers used for marking by the automap */
 private patch_t[] marknums=new patch_t[10]; 
 /** where the points are */
-private mpoint_t[] markpoints=new mpoint_t[AM_NUMMARKPOINTS]; 
+private mpoint_t[] markpoints; 
 
 /** next point to be assigned */
 private int markpointnum = 0;  
@@ -397,7 +419,7 @@ public void saveScaleAndLoc()
     old_m_h = m_h;
 }
 
-public void restoreScaleAndLoc()
+private void restoreScaleAndLoc()
 {
 
     m_w = old_m_w;
@@ -418,14 +440,6 @@ public void restoreScaleAndLoc()
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 
-public void MarkRect
-( int   x,
-  int   y,
-  int   width,
-  int   height ){
-    ;
-}
-
 /** 
  * adds a marker at the current location
  */
@@ -444,7 +458,7 @@ public void addMark()
 
 public void findMinMaxBoundaries()
 {
-    int a;
+    int a; // fixed_t
     int b;
 
     min_x = min_y =  MAXINT;
@@ -796,7 +810,7 @@ public boolean Responder ( event_t  ev )
 /**
  * Zooming
  */
-public void changeWindowScale()
+private void changeWindowScale()
 {
 
     // Change the scaling multipliers
@@ -882,7 +896,7 @@ public void Ticker ()
         this.changeWindowLoc();
 
     // Update light level
-    // AM_updateLightLev();
+    updateLightLev();
 
 }
 
@@ -894,7 +908,7 @@ public void clearFB(int color)
 {
     
     // Buffer a whole scanline.
-    byte[] scanline=new byte[SCREENWIDTH*SCREENHEIGHT];
+    byte[] scanline=new byte[SCREENWIDTH];
     for (int i=0;i<f_w;i++){
         scanline[i]=(byte)color;
     }
@@ -917,9 +931,12 @@ public void clearFB(int color)
 
 public boolean
 clipMline
-( mline_t ml,
-  fline_t fl )
+( mline_t ml
+  ,fline_t fl)
 {
+    
+    //System.out.print("Asked to clip from "+FixedFloat.toFloat(ml.a.x)+","+FixedFloat.toFloat(ml.a.y));
+   // System.out.print(" to clip "+FixedFloat.toFloat(ml.b.x)+","+FixedFloat.toFloat(ml.b.y)+"\n");
     // These were supposed to be "registers", so they exhibit by-ref properties.
     int    outcode1 = 0;
     int    outcode2 = 0;
@@ -928,7 +945,10 @@ clipMline
     fpoint_t    tmp=new fpoint_t();
     int     dx;
     int     dy;
-
+    /*fl.a.x=0;
+    fl.a.y=0;
+    fl.b.x=0;
+    fl.b.y=0; */
     
     // do trivial rejects and outcodes
     if (ml.a.y > m_y2)
@@ -963,6 +983,7 @@ clipMline
     fl.b.x = CXMTOF(ml.b.x);
     fl.b.y = CYMTOF(ml.b.y);
 
+    //System.out.println(">>>>>> ("+fl.a.x+" , "+fl.a.y+" ),("+fl.b.x+" , "+fl.b.y+" )");
     outcode1= DOOUTCODE(fl.a.x, fl.a.y);
     outcode2 =DOOUTCODE(fl.b.x, fl.b.y);
 
@@ -1134,21 +1155,27 @@ protected void PUTDOT(int xx,int yy, byte cc) {
 }
 
 
-//
-// Clip lines, draw visible part sof lines.
-//
+/**
+ * Clip lines, draw visible parts of lines.
+ */
+protected int singlepixel=0;
+
 public void
 drawMline
 ( mline_t  ml,
   int       color )
 {
 
+   fline_t fl=new fline_t();
 
-    if (this.clipMline(ml, fl))
+    if (this.clipMline(ml,fl)){
+        if ((fl.a.x==fl.b.x)&&(fl.a.y==fl.b.y)) singlepixel++;
     this.drawFline(fl, color); // draws it on frame buffer using fb coords
+    }
 }
 
-protected fline_t fl=new fline_t();
+//protected fline_t fl=new fline_t();
+protected mline_t ml=new mline_t();
 
 /**
  * Draws flat (floor/ceiling tile) aligned grid lines.
@@ -1157,7 +1184,7 @@ public void drawGrid(int color)
 {
     int x, y; // fixed_t
     int start, end; // fixed_t
-    mline_t ml=new mline_t();
+
 
     // Figure out start of vertical gridlines
     start = m_x;
@@ -1211,7 +1238,7 @@ public void drawWalls()
     l.a.y = P.lines[i].v1.y;
     l.b.x = P.lines[i].v2.x;
     l.b.y = P.lines[i].v2.y;
-    if ((cheating | (P.lines[i].flags & ML_MAPPED))!=0)
+    if ((cheating | (P.lines[i].flags/* & ML_MAPPED*/))!=0)
     {
         if (((P.lines[i].flags & LINE_NEVERSEE) & ~cheating)!=0)
         continue;
@@ -1250,6 +1277,9 @@ public void drawWalls()
         if ((P.lines[i].flags & LINE_NEVERSEE)==0) drawMline(l, GRAYS+3);
     }
     }
+    
+    System.out.println("Single pixel draws: "+singlepixel+" out of "+P.lines.length);
+    singlepixel=0;
 }
 
 
@@ -1403,7 +1433,7 @@ public void drawThings
         drawLineCharacter
         (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
          16<<FRACBITS, t.angle, colors+lightlev, t.x, t.y);
-        t = (mobj_t)t.getNext();
+        t = (mobj_t)t.snext;
     }
     }
 }
