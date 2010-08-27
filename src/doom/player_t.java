@@ -27,7 +27,6 @@ public class player_t
         cards= new boolean[card_t.NUMCARDS.ordinal()];
         weaponowned = new boolean[NUMWEAPONS];
         psprites =new pspdef_t[NUMPSPRITES];
-        armorpoints=0;
     }
 
     public final static int CF_NOCLIP = 1; // No damage, no health loss.
@@ -61,11 +60,13 @@ public class player_t
 
     /**
      * This is only used between levels, mo->health is used during levels.
+     * MAES: fugly hax, as even passing "Integers" won't work, as they are immutable.
+     * Fuck that, I'm doing it the fugly MPI Java way!
      */
-    public Integer health;
+    public int[] health=new int[1];
 
     /** has to be passed around :-( */
-    public Integer armorpoints;
+    public int[] armorpoints=new int[1];
 
     /** Armor type is 0-2. */
     public int armortype;

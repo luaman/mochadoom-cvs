@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.6 2010/08/26 16:43:42 velktron Exp $
+// $Id: StatusBar.java,v 1.7 2010/08/27 23:46:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.7  2010/08/27 23:46:57  velktron
+// Introduced Buffered renderer, which makes tapping directly into byte[] screen buffers mapped to BufferedImages possible.
+//
 // Revision 1.6  2010/08/26 16:43:42  velktron
 // Automap functional, biatch.
 //
@@ -90,7 +93,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.6 2010/08/26 16:43:42 velktron Exp $";
+        "$Id: StatusBar.java,v 1.7 2010/08/27 23:46:57 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -519,7 +522,7 @@ public class StatusBar implements DoomStatusBarInterface {
     private int st_facecount = 0;
 
     // current face index, used by w_faces
-    private Integer st_faceindex = 0;
+    private int[] st_faceindex = new int[1];
 
     // holds key-type for each key box on bar
     private int[] keyboxes = new int[3];
@@ -700,14 +703,14 @@ public class StatusBar implements DoomStatusBarInterface {
                         if (plyr.mo != null)
                             plyr.mo.health = 100;
 
-                        plyr.health = 100;
+                        plyr.health[0] = 100;
                         plyr.message = STSTR_DQDON;
                     } else
                         plyr.message = STSTR_DQDOFF;
                 }
                 // 'fa' cheat for killer fucking arsenal
                 else if (cheat_ammonokey.CheckCheat((char) ev.data1)) {
-                    plyr.armorpoints = 200;
+                    plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
                     for (i = 0; i < NUMWEAPONS; i++)
@@ -720,7 +723,7 @@ public class StatusBar implements DoomStatusBarInterface {
                 }
                 // 'kfa' cheat for key full ammo
                 else if (cheat_ammo.CheckCheat((char) ev.data1)) {
-                    plyr.armorpoints = 200;
+                    plyr.armorpoints[0] = 200;
                     plyr.armortype = 2;
 
                     for (i = 0; i < NUMWEAPONS; i++)
@@ -873,7 +876,7 @@ public class StatusBar implements DoomStatusBarInterface {
     public int calcPainOffset() {
         int health = 0;
 
-        health = plyr.health > 100 ? 100 : plyr.health;
+        health = plyr.health[0] > 100 ? 100 : plyr.health[0];
 
         if (health != oldhealth) {
             lastcalc =
@@ -900,9 +903,9 @@ public class StatusBar implements DoomStatusBarInterface {
 
         if (priority < 10) {
             // dead
-            if (plyr.health == 0) {
+            if (plyr.health[0] == 0) {
                 priority = 9;
-                st_faceindex = ST_DEADFACE;
+                st_faceindex[0] = ST_DEADFACE;
                 st_facecount = 1;
             }
         }
@@ -922,7 +925,7 @@ public class StatusBar implements DoomStatusBarInterface {
                     // evil grin if just picked up weapon
                     priority = 8;
                     st_facecount = ST_EVILGRINCOUNT;
-                    st_faceindex = calcPainOffset() + ST_EVILGRINOFFSET;
+                    st_faceindex[0] = calcPainOffset() + ST_EVILGRINOFFSET;
                 }
             }
 
@@ -934,9 +937,9 @@ public class StatusBar implements DoomStatusBarInterface {
                 // being attacked
                 priority = 7;
 
-                if (plyr.health - st_oldhealth > ST_MUCHPAIN) {
+                if (plyr.health[0] - st_oldhealth > ST_MUCHPAIN) {
                     st_facecount = ST_TURNCOUNT;
-                    st_faceindex = calcPainOffset() + ST_OUCHOFFSET;
+                    st_faceindex[0] = calcPainOffset() + ST_OUCHOFFSET;
                 } else {
                     badguyangle =
                         R.PointToAngle2(plyr.mo.x, plyr.mo.y, plyr.attacker.x,
@@ -954,17 +957,17 @@ public class StatusBar implements DoomStatusBarInterface {
                     } // confusing, aint it?
 
                     st_facecount = ST_TURNCOUNT;
-                    st_faceindex = calcPainOffset();
+                    st_faceindex[0] = calcPainOffset();
 
                     if (diffang < ANG45) {
                         // head-on
-                        st_faceindex += ST_RAMPAGEOFFSET;
+                        st_faceindex[0] += ST_RAMPAGEOFFSET;
                     } else if (obtuse) {
                         // turn face right
-                        st_faceindex += ST_TURNOFFSET;
+                        st_faceindex[0] += ST_TURNOFFSET;
                     } else {
                         // turn face left
-                        st_faceindex += ST_TURNOFFSET + 1;
+                        st_faceindex[0] += ST_TURNOFFSET + 1;
                     }
                 }
             }
@@ -973,14 +976,14 @@ public class StatusBar implements DoomStatusBarInterface {
         if (priority < 7) {
             // getting hurt because of your own damn stupidity
             if (plyr.damagecount != 0) {
-                if (plyr.health - st_oldhealth > ST_MUCHPAIN) {
+                if (plyr.health[0] - st_oldhealth > ST_MUCHPAIN) {
                     priority = 7;
                     st_facecount = ST_TURNCOUNT;
-                    st_faceindex = calcPainOffset() + ST_OUCHOFFSET;
+                    st_faceindex[0] = calcPainOffset() + ST_OUCHOFFSET;
                 } else {
                     priority = 6;
                     st_facecount = ST_TURNCOUNT;
-                    st_faceindex = calcPainOffset() + ST_RAMPAGEOFFSET;
+                    st_faceindex[0] = calcPainOffset() + ST_RAMPAGEOFFSET;
                 }
 
             }
@@ -994,7 +997,7 @@ public class StatusBar implements DoomStatusBarInterface {
                     lastattackdown = ST_RAMPAGEDELAY;
                 else if (--lastattackdown == 0) {
                     priority = 5;
-                    st_faceindex = calcPainOffset() + ST_RAMPAGEOFFSET;
+                    st_faceindex[0] = calcPainOffset() + ST_RAMPAGEOFFSET;
                     st_facecount = 1;
                     lastattackdown = 1;
                 }
@@ -1009,7 +1012,7 @@ public class StatusBar implements DoomStatusBarInterface {
                     || (plyr.powers[pw_invulnerability] != 0)) {
                 priority = 4;
 
-                st_faceindex = ST_GODFACE;
+                st_faceindex[0] = ST_GODFACE;
                 st_facecount = 1;
 
             }
@@ -1018,7 +1021,7 @@ public class StatusBar implements DoomStatusBarInterface {
 
         // look left or look right if the facecount has timed out
         if (st_facecount == 0) {
-            st_faceindex = calcPainOffset() + (st_randomnumber % 3);
+            st_faceindex[0] = calcPainOffset() + (st_randomnumber % 3);
             st_facecount = ST_STRAIGHTFACECOUNT;
             priority = 0;
         }
@@ -1105,7 +1108,7 @@ public class StatusBar implements DoomStatusBarInterface {
         st_clock++;
         st_randomnumber = RND.M_Random();
         updateWidgets();
-        st_oldhealth = plyr.health;
+        st_oldhealth = plyr.health[0];
 
     }
 
@@ -1339,7 +1342,7 @@ public class StatusBar implements DoomStatusBarInterface {
         st_oldchat = st_chat = false;
         st_cursoron = false;
 
-        st_faceindex = 0;
+        st_faceindex[0] = 0;
         st_palette = -1;
 
         st_oldhealth = -1;

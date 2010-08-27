@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.6 2010/08/26 16:43:42 velktron Exp $
+// $Id: Map.java,v 1.7 2010/08/27 23:46:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.7  2010/08/27 23:46:57  velktron
+// Introduced Buffered renderer, which makes tapping directly into byte[] screen buffers mapped to BufferedImages possible.
+//
 // Revision 1.6  2010/08/26 16:43:42  velktron
 // Automap functional, biatch.
 //
@@ -88,7 +91,7 @@ DoomVideoRenderer V;
 Playfield P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.6 2010/08/26 16:43:42 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.7 2010/08/27 23:46:57 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -604,6 +607,8 @@ public void LevelInit()
     f_x = f_y = 0;
     f_w = finit_width;
     f_h = finit_height;
+    
+    scanline=new byte[f_h*f_w];
 
     this.clearMarks();
 
@@ -900,21 +905,35 @@ public void Ticker ()
 
 }
 
+//private static int BUFFERSIZE=f_h*f_w;
 
-//
-// Clear automap frame buffer.
-//
-public void clearFB(int color)
+
+private int lastcolor=-1;
+
+/**
+ * Clear automap frame buffer.
+ * MAES: optimized for efficiency, seen the lack of a proper "memset" in Java.
+ * 
+ */
+
+private byte[] scanline;
+
+public void clearFB(byte color)
 {
+    if (lastcolor==-1 || lastcolor !=color){
+    // Buffer a whole scanline with the appropriate color.
     
-    // Buffer a whole scanline.
-    byte[] scanline=new byte[SCREENWIDTH];
-    for (int i=0;i<f_w;i++){
-        scanline[i]=(byte)color;
+    for (int i=0;i<scanline.length;i++){
+        scanline[i]=color;
     }
-    for (int i=0;i<f_h;i++){
-    System.arraycopy(scanline, 0, fb, i*f_w, f_w);
+    lastcolor=color;
     }
+    /*
+    for (int i=1;i<(f_h*f_w)/BUFFERSIZE;i++){
+    System.arraycopy(fb, (i-1)*BUFFERSIZE, fb, i*BUFFERSIZE, BUFFERSIZE);
+    }*/
+    System.arraycopy(scanline, 0, fb, 0, f_h*f_w);
+    
  //   memset(fb, color, f_w*f_h);
 }
 
@@ -1169,7 +1188,7 @@ drawMline
    fline_t fl=new fline_t();
 
     if (this.clipMline(ml,fl)){
-        if ((fl.a.x==fl.b.x)&&(fl.a.y==fl.b.y)) singlepixel++;
+      //  if ((fl.a.x==fl.b.x)&&(fl.a.y==fl.b.y)) singlepixel++;
     this.drawFline(fl, color); // draws it on frame buffer using fb coords
     }
 }
@@ -1278,8 +1297,8 @@ public void drawWalls()
     }
     }
     
-    System.out.println("Single pixel draws: "+singlepixel+" out of "+P.lines.length);
-    singlepixel=0;
+    //System.out.println("Single pixel draws: "+singlepixel+" out of "+P.lines.length);
+    //singlepixel=0;
 }
 
 
@@ -1469,7 +1488,7 @@ public void Drawer ()
 {
     if (!DS.automapactive) return;
 
-    clearFB(BACKGROUND);
+    clearFB((byte)BACKGROUND); // BACKGROUND
     if (grid)
     drawGrid(GRIDCOLORS);
     drawWalls();

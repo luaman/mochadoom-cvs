@@ -3,47 +3,39 @@ package testers;
 import static data.Defines.PU_STATIC;
 import static data.Defines.pw_allmap;
 import static m.fixed_t.FRACBITS;
-import hu.HU;
 
-import java.awt.Color;
-import java.awt.image.ColorModel;
+import java.awt.Frame;
+import java.awt.GraphicsDevice;
+import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import automap.DoomAutoMap;
-import automap.Map;
+import javax.swing.JFrame;
 
+import m.random;
 import p.Playfield;
 import p.mobj_t;
-
-import m.FixedFloat;
-import m.random;
-
-import rr.vertex_t;
 import st.StatusBar;
-
+import utils.C2JUtils;
+import v.BufferedRenderer;
+import w.DoomBuffer;
+import w.WadLoader;
+import automap.DoomAutoMap;
+import automap.Map;
 import data.Defines;
 import data.doomstat;
-import data.mapvertex_t;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
 import doom.event_t;
-import doom.evtype_t;
 import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
 import doom.weapontype_t;
 
-import utils.C2JUtils;
-import v.SimpleRenderer;
-import w.*;
-
 /** This is a very simple tester for the Automap. Combined with status bar + Level loader. */
 
-public class AutoMapTester {
+public class AutoMapTester2 {
 
     public static void main(String[] argv) {
         try {
@@ -51,13 +43,15 @@ public class AutoMapTester {
     W.InitMultipleFiles(new String[] {"doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
-    SimpleRenderer V=new SimpleRenderer(320,200);
-    V.Init();
+
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     byte[] pal=palette.getBuffer().array();
     IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-        
+    
+    BufferedRenderer V=new BufferedRenderer(320,200,icm);
+    V.Init();
+    
     doomstat ds = new doomstat();
     ds.gameepisode=1;
     ds.gamemap=1;
@@ -83,15 +77,15 @@ public class AutoMapTester {
     ds.players[0].weaponowned[3]=true;
     ds.players[0].readyweapon=weapontype_t.wp_pistol;
     ds.players[0].health[0]=100;
-    ds.players[0].armorpoints[0]=666;
-    ds.players[0].ammo[0]=666;
-    ds.players[0].maxammo[0]=666;
-    ds.players[0].ammo[1]=666;
-    ds.players[0].maxammo[1]=666;
-    ds.players[0].ammo[2]=666;
-    ds.players[0].maxammo[2]=666;
-    ds.players[0].ammo[3]=666;
-    ds.players[0].maxammo[3]=666;
+    ds.players[0].armorpoints[0]=100;
+    ds.players[0].ammo[0]=400;
+    ds.players[0].maxammo[0]=400;
+    ds.players[0].ammo[1]=100;
+    ds.players[0].maxammo[1]=100;
+    ds.players[0].ammo[2]=100;
+    ds.players[0].maxammo[2]=100;
+    ds.players[0].ammo[3]=600;
+    ds.players[0].maxammo[3]=600;
 
     
     ds.players[0].cards[0]=true;
@@ -131,25 +125,35 @@ public class AutoMapTester {
     ST.Responder(new event_t('d'));
     ST.Responder(new event_t('d'));
     ST.Responder(new event_t('t'));
-
+    
     AM.Responder(new event_t(Map.AM_FOLLOWKEY));
-    AM.Responder(new event_t(Map.AM_ZOOMINKEY));
+    AM.Responder(new event_t(Map.AM_ZOOMOUTKEY));
     AM.Responder(new event_t(Map.AM_GRIDKEY));
-	 
-    for (int i=0;i<100;i++){
-    	ds.players[0].health[0]--;
-    	ds.players[0].ammo[0]=i;
-    	ds.players[0].damagecount=1; // if zero, it won't update.
-        AM.Responder(new event_t(evtype_t.ev_keyup,Map.AM_MSGENTERED));
+    BufferedImage bi=((BufferedRenderer)V).screenbuffer[0];
+    
+    JFrame frame = new JFrame("MochaDoom");
+    CrappyDisplay shit = new CrappyDisplay(bi);
+    frame.add(shit);
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.pack();
+    frame.setLocationRelativeTo(null);
+    //frame.setUndecorated(true);
+    frame.setVisible(true);
+    frame.setBounds(frame.getX(), frame.getY(), 640, 240);
+    
+    
+    long a=System.nanoTime();
+    int TICKS=10000;
+    for (int i=0;i<TICKS;i++){
     if ((i%20)<10)
         AM.Responder(new event_t(Map.AM_ZOOMINKEY));
        else
-       AM.Responder(new event_t(Map.AM_ZOOMOUTKEY));
+       AM.Responder(new event_t(Map.AM_ZOOMOUTKEY)); 
 
     if ((i%25)<12) {
         AM.Responder(new event_t(Map.AM_PANUPKEY));
         AM.Responder(new event_t(Map.AM_PANRIGHTKEY));
-    }
+    } 
        else {
        AM.Responder(new event_t(Map.AM_PANDOWNKEY));
        AM.Responder(new event_t(Map.AM_PANLEFTKEY));
@@ -160,14 +164,50 @@ public class AutoMapTester {
     AM.Drawer();
     ST.Ticker();
     ST.Drawer(false,true);
-    V.takeScreenShot(0, "tic"+i,icm);    
+    frame.update(frame.getGraphics());
+    /*File outputFile =
+        new File(
+            "tic"+i+".png");
+    ImageIO.write(bi, "PNG", outputFile); */
+//    V.takeScreenShot(0, "tic"+i,icm);    
     //AM.Responder(new event_t(Map.AM_PANLEFTKEY));
 
     }
     
+    long b=System.nanoTime();
+    
+    System.out.println(TICKS +" tics in " +((b-a)/1e09) +" = "+TICKS/((b-a)/1e09) + " fps");
+    /*
+    V.takeScreenShot(0, "tic1",icm);
+    for (int i=20;i<150;i++){
+        EL.Ticker();
+        EL.Drawer();
+        if (i==100){
+            ds.players[0].cmd.buttons=1; // simulate attack
+            ds.players[0].attackdown=false; // simulate attack
+        }
+        
+        if (i==120){
+            ds.players[0].cmd.buttons=1; // simulate attack
+            ds.players[0].attackdown=false; // simulate attack
+        }
+        V.takeScreenShot(0,( "tic"+i),icm);
+        } */
+       
         } catch (Exception e){
             e.printStackTrace();
         }
     }
+    
+    public static void initFullScreen(GraphicsDevice gd, Frame gf) {
+        // initialize the main app frame
+        gf = new Frame("Game Frame");
+        gf.setUndecorated(true);
+        // disable repaint mechanism
+        gf.setIgnoreRepaint(true);
+        // the next call shows the window
+        gd.setFullScreenWindow(gf);
+       }
+        
     
 }

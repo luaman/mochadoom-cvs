@@ -7,6 +7,12 @@ import m.fixed_t;
 
 import w.WadLoader;
 
+/** A simple benchmark proving how using reflection is slower than both simply switching
+ *  on a status flag, or using "invokable" objects. This affected the choice of invokable objects
+ *  and simple switching whenever Doom used function pointers.
+ *  
+ */
+
 public class TestReflection {
 
     /**
