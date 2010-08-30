@@ -8,10 +8,10 @@ import w.CacheableDoomObject;
 import w.DoomFile;
 import w.ReadableDoomObject;
 
-//column_t is a list of 0 or more post_t, (byte)-1 terminated
-//typedef post_t  column_t;
-
-/** For the sake of efficiency, "column_t" will store raw data.
+/** column_t is a list of 0 or more post_t, (byte)-1 terminated
+ * typedef post_t  column_t;
+ * For the sake of efficiency, "column_t" will store raw data, however I added
+ * some stuff to make my life easier.
  * 
  */
 
@@ -29,11 +29,17 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
     public short        topdelta;   // -1 is the last post in a column (actually 0xFF, since this was unsigned???)
     public short        length;     // length data bytes follows (actually add +2)
 	//public column_t[]      posts;    // This is quite tricky to read.
-	public byte[] data; // The RAW data.
+    /** The RAW data (includes initial header and padding, because no post gets preferential treatment). */
+    public byte[] data; 
+    /** Actual number of posts. All guesswork is done while loading */
 	public int posts;
-	public int[] postofs; // Posts relative offsets. Should help somehow.
-	public short[] postlen; // Posts lengths
-	public short[] postdeltas; // Posts lengths
+	/** Positions of posts inside the raw data (point at headers) */
+	public int[] postofs; 
+	/** Posts lengths */
+	public short[] postlen;
+	/** Vertical offset of each post. In theory it should be possible to quickly
+	 *  clip to the next visible post when drawing a column */
+	public short[] postdeltas;
 	
     @Override
 		public void unpack(ByteBuffer buf) throws IOException {
@@ -46,25 +52,26 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
 	        int postno=0; // Actual number of posts.
 	        int topdelta=0;
 	        
-	        // Did we read an FF?
+	        // Scan every byte until we encounter an 0xFF which definitively marks the end of a column.
 	        while((topdelta=C2JUtils.toUnsignedByte(buf.get()))!=0xFF){
-	        // This is where this posts starts.
-	            //if (postno==0){
-	                guesspostdeltas[postno]=(short)topdelta;
-	            //}
-	        guesspostofs[postno]=skipped;
-	        
+	        // First byte of a post should be its "topdelta"
 
-	        //this.topdelta=(short)f.readUnsignedByte();
+            guesspostdeltas[postno]=(short)topdelta;
+	        guesspostofs[postno]=skipped;
+
+	        // Read one more byte...this should be the post length.
 	        postlen=(short)C2JUtils.toUnsignedByte(buf.get());
 	        guesspostlens[postno++]=postlen;
 	        // So, we already read 2 bytes (topdelta + length)
-	        // Two further bytes are padding so we can safely skip 2+length bytes.
+	        // Two further bytes are padding so we can safely skip 2+2+postlen bytes until the next post
 	        skipped+=4+postlen;
 	        buf.position(buf.position()+2+postlen);
+	        // Obviously, this adds to the height of the column, which might not be equal to the patch that
+	        // contains it.
 	        colheight+=postlen;
 	        }
 	        
+	        // Skip final padding byte ?
 	        skipped++;
 	        
 	        len = finalizeStatus(skipped, colheight, postno);
@@ -115,9 +122,19 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
         f.read(data, 0, len);
     }
   
+    /** This -almost- completes reading, by filling in the header information
+     *  before the raw column data is read in.
+     *  
+     * @param skipped
+     * @param colheight
+     * @param postno
+     * @return
+     */
+    
     private int finalizeStatus(int skipped, int colheight, int postno) {
         int len;
-        // That's the length.
+        // That's the TOTAL length including all padding.
+        // This means we redundantly read some data
         len=(int) (skipped);
         this.data=new byte[len];
         

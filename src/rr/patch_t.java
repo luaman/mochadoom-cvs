@@ -18,13 +18,18 @@ import w.ReadableDoomObject;
 
 public class patch_t implements ReadableDoomObject,CacheableDoomObject{
 
-    public short       width;      // bounding box size 
-    public short       height; 
-    public short       leftoffset; // pixels to the left of origin 
-    public short       topoffset;  // pixels below the origin 
-    public int[]         columnofs;   // only [width] used
- //                                 the [0] is &columnofs[width] 
-    public column_t[] columns;
+    /** bounding box size */ 
+    public short       width,   height;  
+    /** pixels to the left of origin */
+    public short       leftoffset;  
+    /** pixels below the origin */
+    public short       topoffset;   
+    /** This used to be an implicit array pointing to raw posts of data. 
+     * 
+     * only [width] used the [0] is &columnofs[width] */
+    public int[]         columnofs;     
+    /** The ACTUAL data is here, nicely deserialized (well, almost) */
+    public column_t[] columns;       
     
     @Override
     public void read(DoomFile f) throws IOException{
@@ -48,6 +53,16 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
         }
         
     }
+    
+    /** In the C code, reading is "aided", aka they know how long the header + all
+     *  posts/columns actually are on disk, and only "deserialize" them when using them.
+     *  Here, we strive to keep stuff as elegant and OO as possible, so each column will get 
+     *  deserialized one by one. I thought about reading ALL column data as raw data, but
+     *  IMO that's shit in the C code, and would be utter shite here too. Ergo, I cleanly 
+     *  separate columns at the patch level (an advantage is that it's now easy to address
+     *  individual columns). However, column data is still read "raw".
+     */
+    
     @Override
     public void unpack(ByteBuffer b)
             throws IOException {
@@ -55,7 +70,7 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
         b.position(0);
         // In ByteBuffers, the order can be conveniently set beforehand :-o
         b.order(ByteOrder.LITTLE_ENDIAN);
-        // TODO Auto-generated method stub
+        
         this.width=b.getShort();
         this.height=b.getShort();
         this.leftoffset=b.getShort();
