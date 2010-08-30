@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.9 2010/08/23 14:36:08 velktron Exp $
+// $Id: WadLoader.java,v 1.10 2010/08/30 15:53:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,10 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.10  2010/08/30 15:53:19  velktron
+// Screen wipes work...Finale coded but untested.
+// GRID.WAD included for testing.
+//
 // Revision 1.9  2010/08/23 14:36:08  velktron
 // Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
 //
@@ -637,7 +641,7 @@ public class WadLoader {
     * If the class is not identified or is null, then a generic DoomBuffer object is left in the
     * lump cache and returned. 
     */
-    public Object CacheLumpNum(int lump, int tag, Class what)
+    public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what)
             throws IOException {
         // byte* ptr;
 

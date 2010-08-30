@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.8 2010/08/24 14:57:42 velktron Exp $
+// $Id: Renderer.java,v 1.9 2010/08/30 15:53:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,10 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.9  2010/08/30 15:53:19  velktron
+// Screen wipes work...Finale coded but untested.
+// GRID.WAD included for testing.
+//
 // Revision 1.8  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -207,53 +211,6 @@ Method spanfunc;
 
 //OPTIMIZE: closed two sided lines as single sided
 
-//True if any of the segs textures might be visible.
-boolean     segtextured;    
-
-//False if the back side is the same plane.
-boolean     markfloor;  
-boolean     markceiling;
-
-boolean     maskedtexture;
-int     toptexture;
-int     bottomtexture;
-int     midtexture;
-
-
-int     rw_normalangle;
-//angle to line origin
-int     rw_angle1;  
-
-//
-//regular wall
-//
-int     rw_x;
-int     rw_stopx;
-int     rw_centerangle;
-fixed_t     rw_offset;
-fixed_t     rw_distance;
-fixed_t     rw_scale;
-fixed_t     rw_scalestep;
-fixed_t     rw_midtexturemid;
-fixed_t     rw_toptexturemid;
-fixed_t     rw_bottomtexturemid;
-
-int     worldtop;
-int     worldbottom;
-int     worldhigh;
-int     worldlow;
-
-fixed_t     pixhigh;
-fixed_t     pixlow;
-fixed_t     pixhighstep;
-fixed_t     pixlowstep;
-
-fixed_t     topfrac;
-fixed_t     topstep;
-
-fixed_t     bottomfrac;
-fixed_t     bottomstep;
-
 // MAES: was **
 lighttable_t[]  walllights;
 
@@ -272,6 +229,12 @@ int     lastpatch;
 int     numpatches;
 
 int     firstspritelump;
+public int getFirstspritelump() {
+    return firstspritelump;
+}
+
+
+
 int     lastspritelump;
 int     numspritelumps;
 
@@ -1820,7 +1783,7 @@ public void GenerateComposite (int texnum)
     Z_ChangeTag (block, PU_CACHE);
 }
 
-// From r_sky.c
+////////////////////////////////// From r_sky.c /////////////////////////////////////
 
 
 

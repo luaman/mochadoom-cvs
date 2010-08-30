@@ -13,7 +13,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.7 2010/08/24 14:57:42 velktron Exp $
+// $Id: Defines.java,v 1.8 2010/08/30 15:53:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1643,10 +1643,7 @@ static public final int SAVESTRINGSIZE = 24;
 	    S_TECH2LAMP3,
 	    S_TECH2LAMP4,
 	    NUMSTATES;
-	    
-	    private statenum_t(){
-	    	
-	    }
+
 	    
 	};
 	
@@ -1745,5 +1742,5 @@ static public final int SAVESTRINGSIZE = 24;
     
  
 static final String
-rcsid = "$Id: Defines.java,v 1.7 2010/08/24 14:57:42 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.8 2010/08/30 15:53:19 velktron Exp $";
 }

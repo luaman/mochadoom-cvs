@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.4 2010/08/10 16:41:57 velktron Exp $
+// $Id: HU.java,v 1.5 2010/08/30 15:53:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,10 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.5  2010/08/30 15:53:19  velktron
+// Screen wipes work...Finale coded but untested.
+// GRID.WAD included for testing.
+//
 // Revision 1.4  2010/08/10 16:41:57  velktron
 // Threw some work into map loading.
 //
@@ -81,7 +85,7 @@ import doom.player_t;
 
 public class HU {
     public final static String rcsid =
-        "$Id: HU.java,v 1.4 2010/08/10 16:41:57 velktron Exp $";
+        "$Id: HU.java,v 1.5 2010/08/30 15:53:19 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader wd;
@@ -1176,5 +1180,10 @@ public class HU {
 
         }
 
+    }
+
+    public patch_t[] getHUFonts() {
+        
+        return this.hu_font;
     }
 }

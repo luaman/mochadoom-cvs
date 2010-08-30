@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: system.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: system.java,v 1.2 2010/08/30 15:53:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,10 @@
 // GNU General Public License for more details.
 //
 // $Log: system.java,v $
+// Revision 1.2  2010/08/30 15:53:19  velktron
+// Screen wipes work...Finale coded but untested.
+// GRID.WAD included for testing.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -36,7 +40,9 @@
 
 package i;
 
+import doom.ticcmd_t;
 import utils.PrintfFormat;
+import static data.Defines.TICRATE;
 
 public class system{
     
@@ -78,48 +84,47 @@ Tactile
   on = off = total = 0;
 }
 
-/*
-ticcmd_t	emptycmd;
-ticcmd_t*	I_BaseTiccmd(void)
+
+public ticcmd_t	emptycmd;
+
+ticcmd_t	BaseTiccmd()
 {
-    return &emptycmd;
+    return emptycmd;
 }
 
-*/
+
 
 public static int  GetHeapSize ()
 {
     return mb_used*1024*1024;
 }
 
-/*
-byte* I_ZoneBase (int*	size)
+
+public static byte[] ZoneBase (int	size)
 {
-    *size = mb_used*1024*1024;
-    return (byte *) malloc (*size);
+    return (new byte[mb_used*1024*1024]);
 }
-*/
+
 
 
 //
 // I_GetTime
 // returns time in 1/70th second tics
 //
-/*
-int  I_GetTime ()
+protected static long basetime=0;
+
+public static int  GetTime ()
 {
-    struct timeval	tp;
-    struct timezone	tzp;
+    long	tp;
+    //struct timezone	tzp;
     int			newtics;
-    static int		basetime=0;
-  
-    gettimeofday(&tp, &tzp);
-    if (!basetime)
-	basetime = tp.tv_sec;
-    newtics = (tp.tv_sec-basetime)*TICRATE + tp.tv_usec*TICRATE/1000000;
+    tp=System.nanoTime();
+    if (basetime==0)
+	basetime = tp;
+    newtics = (int) (((tp-basetime)*TICRATE)/1000000000);// + tp.tv_usec*TICRATE/1000000;
     return newtics;
 }
-*/
+
 
 
 //
