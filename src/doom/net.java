@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: net.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: net.java,v 1.2 2010/09/01 15:53:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: net.java,v $
+// Revision 1.2  2010/09/01 15:53:42  velktron
+// Graphics data loader implemented....still need to figure out how column caching works, though.
+//
 // Revision 1.1  2010/06/30 08:58:50  velktron
 // Let's see if this stuff will finally commit....
 //
@@ -38,7 +41,7 @@ package doom;
 //-----------------------------------------------------------------------------
 
 
-//static const char rcsid[] = "$Id: net.java,v 1.1 2010/06/30 08:58:50 velktron Exp $";
+//static const char rcsid[] = "$Id: net.java,v 1.2 2010/09/01 15:53:42 velktron Exp $";
 
 
 //#include "m_menu.h"
@@ -68,12 +71,9 @@ protected static int   	NCMD_CHECKSUM	= 	0x0fffffff;
 
 protected static int  DOOMCOM_ID =     0x12345678;
 
-//Max computers/players in a game.
-protected static int    MAXNETNODES   =  8;
 
-
-//Networking and tick handling related.
-protected static int    BACKUPTICS     = 12;
+//Networking and tick handling related. Moved to DEFINES
+//protected static int    BACKUPTICS     = 12;
 
 
 // commant_t

@@ -13,7 +13,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.8 2010/08/30 15:53:19 velktron Exp $
+// $Id: Defines.java,v 1.9 2010/09/01 15:53:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -299,24 +299,24 @@ public static final int  NUMCOLORMAPS   =     32;
 static public final String SKYFLATNAME  ="F_SKY1";
 
 // The sky map is 256*128*4 maps.
-static public final int ANGLETOSKYSHIFT   = 22;
+public static final int ANGLETOSKYSHIFT   = 22;
 
 
 // From r_draw.c
 
 //?
-static public final int  MAXWIDTH      =      1120;
-static public final int  MAXHEIGHT      =     832;
+public static final int  MAXWIDTH      =      1120;
+public static final int  MAXHEIGHT      =     832;
 
 // status bar height at bottom of screen
-static public final int  SBARHEIGHT     = 32;
+public static final int  SBARHEIGHT     = 32;
 
 
 // From wi_stuff
 
-static public final int NoState = -1;
-static public final int StatCount =0;
-static public final int ShowNextLoc=1; 
+public static final int NoState = -1;
+public static final int StatCount =0;
+public static final int ShowNextLoc=1; 
 
 // From stuff
 
@@ -333,8 +333,8 @@ static public final int ShowNextLoc=1;
 //This is supposedly ignored for commercial
 //release (aka DOOM II), which had 34 maps
 //in one episode. So there.
-static public final int NUMEPISODES=4;
-static public final int NUMMAPS     =9;
+public static final int NUMEPISODES=4;
+public static final int NUMMAPS     =9;
 
 
 //in tics
@@ -347,36 +347,40 @@ static public final int NUMMAPS     =9;
 
 
 //GLOBAL LOCATIONS
-static public final int WI_TITLEY       =2;
-static public final int WI_SPACINGY         =3;
+public static final int WI_TITLEY       =2;
+public static final int WI_SPACINGY         =3;
 
 //SINGPLE-PLAYER STUFF
-static public final int SP_STATSX       =50;
-static public final int SP_STATSY      = 50;
+public static final int SP_STATSX       =50;
+public static final int SP_STATSY      = 50;
 
-static public final int SP_TIMEX      =  16;
-static public final int SP_TIMEY      =  (SCREENHEIGHT-32);
+public static final int SP_TIMEX      =  16;
+public static final int SP_TIMEY      =  (SCREENHEIGHT-32);
 
 
 //NET GAME STUFF
-static public final int NG_STATSY       =50;
+public static final int NG_STATSY       =50;
 
 
-static public final int NG_SPACINGX        = 64;
+public static final int NG_SPACINGX        = 64;
 
+public static final int    BACKUPTICS     = 12;
+
+//Max computers/players in a game.
+public final static int    MAXNETNODES   =  8;
 
 //DEATHMATCH STUFF
-static public final int DM_MATRIXX = 42;
-static public final int DM_MATRIXY =     68;
+public static final int DM_MATRIXX = 42;
+public static final int DM_MATRIXY =     68;
 
-static public final int DM_SPACINGX =    40;
+public static final int DM_SPACINGX =    40;
 
-static public final int DM_TOTALSX =     269;
+public static final int DM_TOTALSX =     269;
 
-static public final int DM_KILLERSX  =   10;
-static public final int DM_KILLERSY   =  100;
-static public final int DM_VICTIMSX    =     5;
-static public final int DM_VICTIMSY    = 50;
+public static final int DM_KILLERSX  =   10;
+public static final int DM_KILLERSY   =  100;
+public static final int DM_VICTIMSX    =     5;
+public static final int DM_VICTIMSY    = 50;
 
 // static point_t lnodes[NUMEPISODES][NUMMAPS] 
 final static public point_t[][] lnodes =
@@ -491,29 +495,29 @@ public static anim_t[][] anims =
 //ZONE MEMORY
 //PU - purge tags.
 //Tags < 100 are not overwritten until freed.
-static public final int PU_STATIC   =    1;   // static entire execution time
-static public final int PU_SOUND    =    2;   // static while playing
-static public final int PU_MUSIC   =     3;   // static while playing
-static public final int PU_DAVE   =  4;   // anything else Dave wants static
-static public final int PU_LEVEL   =     50;  // static until level exited
-static public final int PU_LEVSPEC  =    51;    // a special thinker in a level
+public static final int PU_STATIC   =    1;   // static entire execution time
+public static final int PU_SOUND    =    2;   // static while playing
+public static final int PU_MUSIC   =     3;   // static while playing
+public static final int PU_DAVE   =  4;   // anything else Dave wants static
+public static final int PU_LEVEL   =     50;  // static until level exited
+public static final int PU_LEVSPEC  =    51;    // a special thinker in a level
 //Tags >= 100 are purgable whenever needed.
-static public final int PU_PURGELEVEL =  100;
-static public final int PU_CACHE     =   101;
+public static final int PU_PURGELEVEL =  100;
+public static final int PU_CACHE     =   101;
 
 
 // From hu_lib.h:
 
 //background and foreground screen numbers
 //different from other modules.
-static public final int BG     =     1;
-static public final int FG     =     0;
+public static final int BG     =     1;
+public static final int FG     =     0;
 
 //font stuff
 static public final char HU_CHARERASE  =  KEY_BACKSPACE;
 
-static public final int HU_MAXLINES  =   4;
-static public final int HU_MAXLINELENGTH  =  80;
+public static final int HU_MAXLINES  =   4;
+public static final int HU_MAXLINELENGTH  =  80;
 
 // From hu_stuff.h
 
@@ -524,7 +528,7 @@ static public final byte HU_FONTSTART  =  '!'; // the first font characters
 static public final byte HU_FONTEND  ='_'; // the last font characters
 
 //Calculate # of glyphs in font.
-static public final int HU_FONTSIZE = (HU_FONTEND - HU_FONTSTART + 1); 
+public static final int HU_FONTSIZE = (HU_FONTEND - HU_FONTSTART + 1); 
 
 static public final char HU_BROADCAST   = 5;
 
@@ -534,41 +538,41 @@ static public final char HU_MSGY     =0;
 static public final char HU_MSGWIDTH =64;  // in characters
 static public final char HU_MSGHEIGHT  =  1;   // in lines
 
-static public final int HU_MSGTIMEOUT =  (4*TICRATE);
+public static final int HU_MSGTIMEOUT =  (4*TICRATE);
 
-static public final int SAVESTRINGSIZE = 24;
+public static final int SAVESTRINGSIZE = 24;
 
 //
 // Button/action code definitions.
 // From d_event.h
 
      // Press "Fire".
-    static public final int BT_ATTACK       = 1;
+    public static final int BT_ATTACK       = 1;
      // Use button, to open doors, activate switches.
-    static public final int BT_USE      = 2;
+    public static final int BT_USE      = 2;
 
      // Flag: game events, not really buttons.
-    static public final int BT_SPECIAL      = 128;
-    static public final int BT_SPECIALMASK  = 3;
+    public static final int BT_SPECIAL      = 128;
+    public static final int BT_SPECIALMASK  = 3;
      
      // Flag, weapon change pending.
      // If true, the next 3 bits hold weapon num.
-    static public final int  BT_CHANGE       = 4;
+    public static final int  BT_CHANGE       = 4;
      // The 3bit weapon mask and shift, convenience.
-    static public final int  BT_WEAPONMASK   = (8+16+32);
-    static public final int   BT_WEAPONSHIFT  = 3;
+    public static final int  BT_WEAPONMASK   = (8+16+32);
+    public static final int   BT_WEAPONSHIFT  = 3;
 
      // Pause the game.
-    static public final int  BTS_PAUSE       = 1;
+    public static final int  BTS_PAUSE       = 1;
      // Save the game at each console.
-    static public final int  BTS_SAVEGAME    = 2;
+    public static final int  BTS_SAVEGAME    = 2;
 
      // Savegame slot numbers
      //  occupy the second byte of buttons.    
-    static public final int BTS_SAVEMASK    = (4+8+16);
-    static public final int BTS_SAVESHIFT   = 2;
+    public static final int BTS_SAVEMASK    = (4+8+16);
+    public static final int BTS_SAVESHIFT   = 2;
    
-    static public final int MAXEVENTS       =64;
+    public static final int MAXEVENTS       =64;
     
     
     //==================== Stuff from r_local.c =========================================
@@ -1742,5 +1746,5 @@ static public final int SAVESTRINGSIZE = 24;
     
  
 static final String
-rcsid = "$Id: Defines.java,v 1.8 2010/08/30 15:53:19 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.9 2010/09/01 15:53:42 velktron Exp $";
 }

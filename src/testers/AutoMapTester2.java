@@ -12,7 +12,7 @@ import java.awt.image.IndexColorModel;
 import javax.swing.JFrame;
 
 import m.random;
-import p.Playfield;
+import p.LevelLoader;
 import p.mobj_t;
 import st.StatusBar;
 import utils.C2JUtils;
@@ -114,9 +114,9 @@ public class AutoMapTester2 {
 
     StatusBar ST=new StatusBar(DC);
     ST.Start();
-    Playfield PL=new Playfield(DC);
+    LevelLoader PL=new LevelLoader(DC);
     PL.SetupLevel(1, 1, 0, skill_t.sk_hard);
-    DC.P=PL;
+    DC.LL=PL;
     DC.ST=ST;
     DoomAutoMap AM=new Map(DC);
     AM.Start();

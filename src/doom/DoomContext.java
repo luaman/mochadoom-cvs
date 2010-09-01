@@ -1,6 +1,6 @@
 package doom;
 
-import p.Playfield;
+import p.LevelLoader;
 import i.SystemInterface;
 import data.doomstat;
 import m.random;
@@ -30,5 +30,5 @@ public class DoomContext {
     public DoomSoundInterface S;
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
-    public Playfield P;
+    public LevelLoader LL;
 }

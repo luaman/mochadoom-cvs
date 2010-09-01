@@ -14,4 +14,10 @@ public class texpatch_t {
 int     originx;    
 int     originy;
 int     patch;
+
+public void copyFromMapPatch(mappatch_t mpp) {
+   this.originx=mpp.originx;
+   this.originy=mpp.originy;
+   this.patch=mpp.patch;
+    }
 }

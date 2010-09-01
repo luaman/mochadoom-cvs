@@ -39,7 +39,7 @@ public class DoomBuffer implements CacheableDoomObject  {
 
         if ((s==null)||(len==0)) return;
         
-        for (int i=0;i<Math.min(len,s.length);i++){           
+        for (int i=0;i<Math.min(len,s.length);i++){    
             s[i].unpack(buf);
         }
     }

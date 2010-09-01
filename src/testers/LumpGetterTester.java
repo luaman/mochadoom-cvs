@@ -10,7 +10,7 @@ import java.awt.image.IndexColorModel;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import p.Playfield;
+import p.LevelLoader;
 
 import m.FixedFloat;
 import m.random;

@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.9 2010/08/30 15:53:19 velktron Exp $
+// $Id: Renderer.java,v 1.10 2010/09/01 15:53:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.10  2010/09/01 15:53:42  velktron
+// Graphics data loader implemented....still need to figure out how column caching works, though.
+//
 // Revision 1.9  2010/08/30 15:53:19  velktron
 // Screen wipes work...Finale coded but untested.
 // GRID.WAD included for testing.
@@ -216,49 +219,6 @@ lighttable_t[]  walllights;
 
 // MAES: was *
 short[]      maskedtexturecol;
-
-
-// MAES: globish-status vars from r_data
-
-int     firstflat;
-int     lastflat;
-int     numflats;
-
-int     firstpatch;
-int     lastpatch;
-int     numpatches;
-
-int     firstspritelump;
-public int getFirstspritelump() {
-    return firstspritelump;
-}
-
-
-
-int     lastspritelump;
-int     numspritelumps;
-
-int     numtextures;
-texture_t[] textures;
-
-int            texturewidthmask;
-// needed for texture pegging
-fixed_t        textureheight;      
-int[]            texturecompositesize;
-short[][]         texturecolumnlump;
-char[]    texturecolumnofs;
-byte[][]          texturecomposite;
-
-// for global animation
-int        flattranslation;
-int        texturetranslation;
-
-// needed for pre rendering
-fixed_t    spritewidth;    
-fixed_t    spriteoffset;
-fixed_t    spritetopoffset;
-
-lighttable_t[]    colormaps;
 
 
 // MAES: Shit taken from things
@@ -1418,21 +1378,7 @@ public void InitTextures ()
  texturetranslation[i] = i;
 }
 
-//
-//R_FlatNumForName
-//Retrieval, get a flat number for a flat name.
-//
-public int FlatNumForName (String name)
-{
-int     i;
-i = W.CheckNumForName (name);
 
-if (i == -1)
-{
-system.Error ("R_FlatNumForName: %s not found",name);
-}
-return i - firstflat;
-}
 
 /*
 

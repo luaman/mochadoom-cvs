@@ -24,7 +24,7 @@ import w.DoomFile;
 import w.WadLoader; // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.9 2010/08/23 14:36:08 velktron Exp $
+// $Id: Menu.java,v 1.10 2010/09/01 15:53:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +39,9 @@ import w.WadLoader; // Emacs style mode select -*- C++ -*-
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.10  2010/09/01 15:53:42  velktron
+// Graphics data loader implemented....still need to figure out how column caching works, though.
+//
 // Revision 1.9  2010/08/23 14:36:08  velktron
 // Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
 //
@@ -990,6 +993,8 @@ public class Menu implements DoomMenu{
 
     }
 
+    // These belong to the responder.
+    
     private int joywait = 0;
 
     private int mousewait = 0;

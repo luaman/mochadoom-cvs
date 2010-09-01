@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.7 2010/08/27 23:46:57 velktron Exp $
+// $Id: Map.java,v 1.8 2010/09/01 15:53:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.8  2010/09/01 15:53:42  velktron
+// Graphics data loader implemented....still need to figure out how column caching works, though.
+//
 // Revision 1.7  2010/08/27 23:46:57  velktron
 // Introduced Buffered renderer, which makes tapping directly into byte[] screen buffers mapped to BufferedImages possible.
 //
@@ -65,7 +68,7 @@ import static m.fixed_t.*;
 import static doom.englsh.*;
 import static data.SineCosine.*;
 import static data.Tables.*;
-import p.Playfield;
+import p.LevelLoader;
 import p.mobj_t;
 import data.doomstat;
 import doom.DoomContext;
@@ -88,10 +91,10 @@ DoomStatusBarInterface ST;
 WadLoader W;
 doomstat DS;
 DoomVideoRenderer V;
-Playfield P;    
+LevelLoader P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.7 2010/08/27 23:46:57 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.8 2010/09/01 15:53:42 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -189,7 +192,7 @@ public static final int M_ZOOMOUT    =   ((int) (FRACUNIT/1.02));
 public Map(DoomContext dC) {
     this.V=dC.V;
     this.W=dC.W;
-    this.P=dC.P;
+    this.P=dC.LL;
     this.DS=dC.DS;
     this.ST=dC.ST;
     

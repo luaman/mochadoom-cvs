@@ -14,7 +14,7 @@ import java.awt.image.IndexColorModel;
 import javax.swing.JFrame;
 
 import m.random;
-import p.Playfield;
+import p.LevelLoader;
 import p.mobj_t;
 import rr.patch_t;
 import st.StatusBar;
@@ -123,7 +123,7 @@ public class AssWipeTester {
     //M_Drawer ();                            // menu is drawn even on top of wipes
     //System.out.println(i);
     
-    frame.update(frame.getGraphics());
+    //frame.update(frame.getGraphics());
     
     } while (!done);
     

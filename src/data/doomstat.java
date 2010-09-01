@@ -1,24 +1,32 @@
 package data;
 
-//We need globally shared data structures,
-//for defining the global state variables.
-//MAES: in pure OO style, this should be a global "Doom state" object to be passed along
-//various modules. No ugly globals here!!!
 import static data.Defines.*;
+import utils.C2JUtils;
+import doom.doomcom_t;
+import doom.doomdata_t;
 import doom.player_t;
+import doom.ticcmd_t;
 import doom.wbstartstruct_t;
 
-//#include "doomdata.h"
-//#include "d_net.h"
+/** We need globally shared data structures,
+  * for defining the global state variables.
+  * MAES: in pure OO style, this should be a global "Doom state" object to be passed along
+  * various modules. No ugly globals here!!!
+  * 
+  * Now, some of the variables that appear here were actually defined in separate modules.
+  * Pretty much, whatever needs to be shared with other modules was placed here, either
+  * as a local definition, or as an extern share.
+  *    
+  * The very least, I'll document where everything is supposed to come from/reside. 
+  * 
+  */
 
-// We need the playr data structure as well.
-//import d.player.*;
+
 
 public class doomstat{
 
-// ------------------------
-// Command line parameters.
-//
+/**  Command line parametersm, actually defined in d_main.c 
+*/
 public boolean nomonsters; // checkparm of -nomonsters
 public boolean respawnparm;    // checkparm of -respawn
 public boolean fastparm;   // checkparm of -fast
@@ -26,45 +34,45 @@ public  boolean devparm;    // DEBUG: launched with -devparm
 
 
 
-// -----------------------------------------------------
-// Game Mode - identify IWAD as shareware, retail etc.
-//
+/////////// Local to doomstat.c ////////////
+/** Game Mode - identify IWAD as shareware, retail etc. */
+
 public GameMode_t  gamemode;
 public GameMission_t  gamemission;
 
-// Set if homebrew PWAD stuff has been added.
+/** Set if homebrew PWAD stuff has been added. */
 public boolean modifiedgame;
 
 
-// -------------------------------------------
-// Language.
+/** Language. */
 public Language_t   language;
 
 
-// -------------------------------------------
-// Selected skill type, map etc.
-//
+///////////// Normally found in d_main.c ///////////////
 
-// Defaults for menu, methinks.
+// Selected skill type, map etc.
+
+
+/** Defaults for menu, methinks. */
 public skill_t     startskill;
 public int             startepisode;
 public int     startmap;
 
 public   boolean     autostart;
 
-// Selected by user. 
+/** Selected by user */ 
 public skill_t         gameskill;
 public int     gameepisode;
 public int     gamemap;
 
-// Nightmare mode flag, single player.
+/** Nightmare mode flag, single player. */
 public boolean         respawnmonsters;
 
-// Netgame? Only true if >1 player.
+/** Netgame? Only true if >1 player. */
 public boolean netgame;
 
-// Flag: true only if started as net deathmatch.
-// An enum might handle altdeath/cooperative better.
+/** Flag: true only if started as net deathmatch.
+    An enum might handle altdeath/cooperative better. */
 public boolean deathmatch; 
     
 // -------------------------
@@ -234,20 +242,25 @@ public  int      skyflatnum;
 // TODO: Netgame stuff (buffers and pointers, i.e. indices).
 
 // TODO: This is ???
-//public   doomcom_t*  doomcom;
+public   doomcom_t doomcom;
 
 // TODO: This points inside doomcom.
-//public   doomdata_t* netbuffer;  
-/*
+public   doomdata_t netbuffer;  
 
-public   ticcmd_t[] localcmds=ticcmd_t[BACKUPTICS];
+public   ticcmd_t[] localcmds=new ticcmd_t[BACKUPTICS];
 public   int     rndindex;
 
 public   int     maketic;
-public   int             nettics[MAXNETNODES];
+public   int[]             nettics=new int[MAXNETNODES];
 
-public   ticcmd_t        netcmds[MAXPLAYERS][BACKUPTICS];
+public   ticcmd_t[][]        netcmds;//[MAXPLAYERS][BACKUPTICS];
 public   int     ticdup;
-*/
+
+protected void initNetGameStuff(){
+    this.doomcom=new doomcom_t();
+    C2JUtils.initArrayOfObjects(localcmds, ticcmd_t.class);
+    
+}
+
 
 }

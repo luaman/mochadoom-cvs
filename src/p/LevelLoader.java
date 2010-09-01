@@ -47,7 +47,7 @@ import m.fixed_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Playfield.java,v 1.4 2010/08/19 23:14:49 velktron Exp $
+// $Id: LevelLoader.java,v 1.1 2010/09/01 15:53:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,7 +61,10 @@ import m.fixed_t;
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: Playfield.java,v $
+// $Log: LevelLoader.java,v $
+// Revision 1.1  2010/09/01 15:53:42  velktron
+// Graphics data loader implemented....still need to figure out how column caching works, though.
+//
 // Revision 1.4  2010/08/19 23:14:49  velktron
 // Automap
 //
@@ -81,7 +84,7 @@ import m.fixed_t;
 //
 //-----------------------------------------------------------------------------
 
-public class Playfield {
+public class LevelLoader {
 
 /////////////////// Status objects ///////////////////
     
@@ -91,7 +94,7 @@ public class Playfield {
     DoomVideoRenderer V;
     Renderer R;
 
-  public static final String  rcsid = "$Id: Playfield.java,v 1.4 2010/08/19 23:14:49 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.1 2010/09/01 15:53:42 velktron Exp $";
 
 /*
   #include <math.h>
@@ -844,7 +847,7 @@ public int bmaporgy;
       InitSprites (sprnames);*/
   }
 
-  public Playfield(DoomContext DC){
+  public LevelLoader(DoomContext DC){
       this.W=DC.W;
       this.DS=DC.DS;
    

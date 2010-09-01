@@ -31,11 +31,11 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
 	//public column_t[]      posts;    // This is quite tricky to read.
     /** The RAW data (includes initial header and padding, because no post gets preferential treatment). */
     public byte[] data; 
-    /** Actual number of posts. All guesswork is done while loading */
+    /** Actual number of posts inside this column. All guesswork is done while loading */
 	public int posts;
 	/** Positions of posts inside the raw data (point at headers) */
 	public int[] postofs; 
-	/** Posts lengths */
+	/** Posts lengths, intended as actual drawable pixels. Add +4 to get the whole post length */
 	public short[] postlen;
 	/** Vertical offset of each post. In theory it should be possible to quickly
 	 *  clip to the next visible post when drawing a column */
@@ -54,18 +54,20 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
 	        
 	        // Scan every byte until we encounter an 0xFF which definitively marks the end of a column.
 	        while((topdelta=C2JUtils.toUnsignedByte(buf.get()))!=0xFF){
+	        
 	        // First byte of a post should be its "topdelta"
-
             guesspostdeltas[postno]=(short)topdelta;
-	        guesspostofs[postno]=skipped;
+	        guesspostofs[postno]=skipped; // 0 for first post
 
 	        // Read one more byte...this should be the post length.
 	        postlen=(short)C2JUtils.toUnsignedByte(buf.get());
 	        guesspostlens[postno++]=postlen;
+	        
 	        // So, we already read 2 bytes (topdelta + length)
 	        // Two further bytes are padding so we can safely skip 2+2+postlen bytes until the next post
 	        skipped+=4+postlen;
 	        buf.position(buf.position()+2+postlen);
+	        
 	        // Obviously, this adds to the height of the column, which might not be equal to the patch that
 	        // contains it.
 	        colheight+=postlen;
@@ -76,7 +78,7 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
 	        
 	        len = finalizeStatus(skipped, colheight, postno);
 	        
-	        // Go back...
+	        // Go back...and read the raw data. That's what will actually be used in the renderer.
 	        buf.reset();
 	        buf.get(data, 0, len);
 	    }

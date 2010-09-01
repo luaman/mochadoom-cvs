@@ -2,6 +2,7 @@ package testers;
 
 import hu.HU;
 import p.LevelLoader;
+import rr.RendererData;
 import utils.C2JUtils;
 import w.WadLoader;
 import data.doomstat;
@@ -19,17 +20,14 @@ import doom.wbstartstruct_t;
  * 
  */
 
-public class LevelLoaderTester {
+public class RenderDataLoader {
 
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
     W.InitMultipleFiles(new String[] {"doom1.wad"});
-    //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
-    System.out.println("NUm for E1M1: "+W.GetNumForName("E1M1"));
-   int lump=W.GetNumForName("VERTEXES");
-   System.out.println("NUm for VERTEXES: "+W.GetNumForName("VERTEXES"));
+
     doomstat ds = new doomstat();
     ds.gameepisode=1;
     ds.gamemap=1;
@@ -37,17 +35,16 @@ public class LevelLoaderTester {
     ds.gamemode=GameMode_t.shareware;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
-    
     DoomContext DC=new DoomContext();
     DC.DS=ds;
     DC.W=W;
     
-    LevelLoader PF=new LevelLoader(DC);
+    LevelLoader LL=new LevelLoader(DC);
+    DC.LL=LL;
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     
-    HU hu=new HU(DC);
-    hu.Init();
-    
-    PF.SetupLevel(1, 1, 0, skill_t.sk_hard);
+    RendererData RD=new RendererData(DC);
+    RD.InitData();
     
         } catch (Exception e){
             e.printStackTrace();
