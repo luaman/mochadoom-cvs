@@ -1,6 +1,7 @@
 package p;
 
 import static data.SineCosine.*;
+import static data.Limits.*;
 import static data.Tables.*;
 import static data.info.*;
 import static m.fixed_t.*;

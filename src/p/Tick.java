@@ -7,7 +7,7 @@ import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tick.java,v 1.2 2010/08/25 00:50:59 velktron Exp $
+// $Id: Tick.java,v 1.3 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +22,11 @@ import static data.Defines.*;
 // GNU General Public License for more details.
 //
 // $Log: Tick.java,v $
+// Revision 1.3  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.2  2010/08/25 00:50:59  velktron
 // Some more work...
 //
@@ -48,9 +53,11 @@ import static data.Defines.*;
 //
 //-----------------------------------------------------------------------------
 
+import static data.Limits.*;
+
 public class Tick{
 
-public static final String rcsid = "$Id: Tick.java,v 1.2 2010/08/25 00:50:59 velktron Exp $";
+public static final String rcsid = "$Id: Tick.java,v 1.3 2010/09/02 15:56:54 velktron Exp $";
 
 doomstat DS;
 spec SPEC;

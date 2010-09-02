@@ -1,8 +1,7 @@
 package data;
 
 //import m.define;
-import static data.doomtype.MAXINT;
-import static data.doomtype.MININT;
+import static data.Limits.*;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import doom.weapontype_t;
@@ -13,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.9 2010/09/01 15:53:42 velktron Exp $
+// $Id: Defines.java,v 1.10 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -126,9 +125,6 @@ public static int SCREENWIDTH = 320;
 //SCREEN_MUL*BASE_WIDTH //320
 public static short SCREENHEIGHT= 200;
 //(int)(SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO) //200
-
-// The maximum number of players, multiplayer/networking.
-public static int MAXPLAYERS =     4;
 
 // State updates, number of tics / second.
 public static int TICRATE = 35;
@@ -276,7 +272,7 @@ public static final int SIL_BOTTOM     =1;
 public static final int SIL_TOP  =       2;
 public static final int SIL_BOTH    =    3;
 
-public static final int MAXDRAWSEGS  =   256;
+
 
 //
 //Move clipping aid for LineDefs.
@@ -304,9 +300,7 @@ public static final int ANGLETOSKYSHIFT   = 22;
 
 // From r_draw.c
 
-//?
-public static final int  MAXWIDTH      =      1120;
-public static final int  MAXHEIGHT      =     832;
+
 
 // status bar height at bottom of screen
 public static final int  SBARHEIGHT     = 32;
@@ -365,9 +359,6 @@ public static final int NG_STATSY       =50;
 public static final int NG_SPACINGX        = 64;
 
 public static final int    BACKUPTICS     = 12;
-
-//Max computers/players in a game.
-public final static int    MAXNETNODES   =  8;
 
 //DEATHMATCH STUFF
 public static final int DM_MATRIXX = 42;
@@ -572,15 +563,13 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int BTS_SAVEMASK    = (4+8+16);
     public static final int BTS_SAVESHIFT   = 2;
    
-    public static final int MAXEVENTS       =64;
+
     
     
     //==================== Stuff from r_local.c =========================================
 
     
     public static int FLOATSPEED        =(FRACUNIT*4);
-
-    public static int MAXHEALTH     =100;
 
     public static int VIEWHEIGHT    =   (41*FRACUNIT);
 
@@ -596,13 +585,10 @@ public static final int SAVESTRINGSIZE = 24;
     // player radius for movement checking
     public static int PLAYERRADIUS  =16*FRACUNIT;
 
-    // MAXRADIUS is for precalculated sector block boxes
-    // the spider demon is larger,
-    // but we do not have any moving sectors nearby
-    public static int MAXRADIUS =   32*FRACUNIT;
+
 
     public static int GRAVITY   =   FRACUNIT;
-    public static int MAXMOVE   =   (30*FRACUNIT);
+
 
     public static int USERANGE      =(64*FRACUNIT);
     public static int MELEERANGE    =   (64*FRACUNIT);
@@ -611,7 +597,7 @@ public static final int SAVESTRINGSIZE = 24;
     // follow a player exlusively for 3 seconds
     public static int   BASETHRESHOLD=      100;
 
-    public static int MAXINTERCEPTS   =128;
+
     
     public static int PT_ADDLINES     =1;
     public static int PT_ADDTHINGS    =2;
@@ -625,59 +611,7 @@ public static final int SAVESTRINGSIZE = 24;
 
  // Time interval for item respawning.
  public static int ITEMQUESIZE       =128;
-    
-    
-    
-    //
- // GLOBAL VARIABLES
- //
- //#define MAXEVENTS       64
-
- //extern  event_t     events[MAXEVENTS];
- //extern  int             eventhead;
- //extern  int     eventtail;
-
- //extern  gameaction_t    gameaction;
-    
-// DOOM basic types (boolean),
-//  and max/min values.
-//#include "doomtype.h"
-
-// Fixed point.
-//#include "m_fixed.h"
-
-// Endianess handling.
-//#include "m_swap.h"
-
-
-// Binary Angles, sine/cosine/atan lookups.
-//#include "tables.h"
-
-// Event type.
-//#include "d_event.h"
-
-// Game function, skills.
-//#include "g_game.h"
-
-// All external data is defined here.
-//#include "doomdata.h"
-
-// All important printed strings.
-// Language selection (message strings).
-//#include "dstrings.h"
-
-// Player is a special actor.
-//struct player_s;
-
-
-//#include "d_items.h"
-//#include "d_player.h"
-//#include "p_mobj.h"
-//#include "d_net.h"
-
-// PLAY
-//#include "p_tick.h"
-
+ 
  public static enum statenum_t {
 	    S_NULL,
 	    S_LIGHTDONE,
@@ -1734,17 +1668,21 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int ML_MAPPED = 256;
 
     /** Indicate a leaf. */
-    public static int NF_SUBSECTOR = 0x8000;
+    public static final int NF_SUBSECTOR = 0x8000;
 	
     
     /** Player states. */
     
-    public static int   PST_LIVE=0,     // Playing or camping.    
+    public static final int   PST_LIVE=0,     // Playing or camping.    
         PST_DEAD=1,        // Dead on the ground, view follows killer.
 
         PST_REBORN=2;            // Ready to restart/respawn???
+ 
+    public static final int  FF_FULLBRIGHT =  0x8000;  // flag in thing->frame
+    public static final int  FF_FRAMEMASK =   0x7fff;
+
     
  
 static final String
-rcsid = "$Id: Defines.java,v 1.9 2010/09/01 15:53:42 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.10 2010/09/02 15:56:54 velktron Exp $";
 }

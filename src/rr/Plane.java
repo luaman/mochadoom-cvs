@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Plane.java,v 1.3 2010/08/24 14:57:42 velktron Exp $
+// $Id: Plane.java,v 1.4 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,11 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Plane.java,v $
+// Revision 1.4  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.3  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -59,10 +64,11 @@ import static data.Tables.*;
 
 public class Plane{
 public static final String
-rcsid = "$Id: Plane.java,v 1.3 2010/08/24 14:57:42 velktron Exp $";
+rcsid = "$Id: Plane.java,v 1.4 2010/09/02 15:56:54 velktron Exp $";
 
 private Draw DR;
 private Renderer R;
+private RendererData RD;
 private doomstat DS;
 private BSP BSP;
 
@@ -95,13 +101,12 @@ short[]			openings=new short[MAXOPENINGS];
 short			lastopening;//=new Short((short) 0);
 
 
-//
-// Clip values are the solid pixel bounding the range.
-//  floorclip starts out SCREENHEIGHT
-//  ceilingclip starts out -1
-//
-short[]			floorclip=new short[SCREENWIDTH];
-short[]			ceilingclip=new short[SCREENWIDTH];
+/**
+ * Clip values are the solid pixel bounding the range.
+ *  floorclip starts out SCREENHEIGHT
+ *  ceilingclip starts out -1
+ */
+short[]			floorclip=new short[SCREENWIDTH],	ceilingclip=new short[SCREENWIDTH];
 
 //
 // spanstart holds the start of a plane span
@@ -449,8 +454,8 @@ if (RANGECHECK){
 	    //  i.e. colormaps[0] is used.
 	    // Because of this hack, sky is not affected
 	    //  by INVUL inverse mapping.
-	    DR.dc_colormap = R.colormaps;
-	    DR.dc_texturemid = R.kytexturemid;
+	    DR.dc_colormap = DR.colormaps;
+	    DR.dc_texturemid = R.skytexturemid;
 	    for (x=pln.minx ; x <= pln.maxx ; x++)
 	    {
 		DR.dc_yl = pln.top[x];

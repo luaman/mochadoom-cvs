@@ -3,7 +3,7 @@ package doom;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomInterface.java,v 1.1 2010/07/29 15:28:59 velktron Exp $
+// $Id: DoomInterface.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,11 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: DoomInterface.java,v $
+// Revision 1.2  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.1  2010/07/29 15:28:59  velktron
 // More work on menus...and digging some dependencies..
 //
@@ -29,8 +34,8 @@ package doom;
 
 
 public interface DoomInterface {
-	
-	public static final int MAXWADFILES=             20;
+
+
 	//extern char*		wadfiles[MAXWADFILES];
 
 	public void D_AddFile (String file);

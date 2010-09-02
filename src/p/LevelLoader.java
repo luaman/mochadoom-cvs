@@ -1,34 +1,35 @@
 package p;
 
-import static data.Defines.*;
-import static data.doomtype.*;
-import static m.fixed_t.*;
-import static m.BBox.*;
-
+import static data.Defines.MAPBLOCKSHIFT;
+import static data.Defines.ML_BLOCKMAP;
+import static data.Defines.ML_LINEDEFS;
+import static data.Defines.ML_NODES;
+import static data.Defines.ML_SECTORS;
+import static data.Defines.ML_SEGS;
+import static data.Defines.ML_SIDEDEFS;
+import static data.Defines.ML_SSECTORS;
+import static data.Defines.ML_THINGS;
+import static data.Defines.ML_TWOSIDED;
+import static data.Defines.ML_VERTEXES;
+import static data.Defines.PU_LEVEL;
+import static data.Defines.PU_STATIC;
+import static data.Limits.MAXPLAYERS;
+import static data.Limits.MAXRADIUS;
+import static m.BBox.BOXBOTTOM;
+import static m.BBox.BOXLEFT;
+import static m.BBox.BOXRIGHT;
+import static m.BBox.BOXTOP;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedDiv;
 import i.system;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import data.doomstat;
-
-import data.maplinedef_t;
-import data.mapnode_t;
-import data.mapsector_t;
-import data.mapseg_t;
-import data.mapsidedef_t;
-import data.mapsubsector_t;
-import data.mapthing_t;
-import data.mapvertex_t;
-import doom.DoomContext;
-import doom.event_t;
-import doom.evtype_t;
-import doom.player_t;
+import m.BBox;
 import rr.Renderer;
 import rr.line_t;
 import rr.node_t;
-import rr.patch_t;
 import rr.sector_t;
 import rr.seg_t;
 import rr.side_t;
@@ -39,15 +40,24 @@ import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
-import m.BBox;
-import m.FixedFloat;
-import m.cheatseq_t;
-import m.fixed_t;
+import data.doomstat;
+import data.maplinedef_t;
+import data.mapnode_t;
+import data.mapsector_t;
+import data.mapseg_t;
+import data.mapsidedef_t;
+import data.mapsubsector_t;
+import data.mapthing_t;
+import data.mapvertex_t;
+import data.Defines.GameMode_t;
+import data.Defines.skill_t;
+import data.Defines.slopetype_t;
+import doom.DoomContext;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.1 2010/09/01 15:53:42 velktron Exp $
+// $Id: LevelLoader.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,6 +72,11 @@ import m.fixed_t;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.2  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.1  2010/09/01 15:53:42  velktron
 // Graphics data loader implemented....still need to figure out how column caching works, though.
 //
@@ -94,7 +109,7 @@ public class LevelLoader {
     DoomVideoRenderer V;
     Renderer R;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.1 2010/09/01 15:53:42 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
 
 /*
   #include <math.h>

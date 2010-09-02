@@ -6,7 +6,7 @@ import rr.sector_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Enemy.java,v 1.1 2010/08/24 14:57:42 velktron Exp $
+// $Id: Enemy.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,11 @@ import rr.sector_t;
 // GNU General Public License for more details.
 //
 // $Log: Enemy.java,v $
+// Revision 1.2  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.1  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -35,7 +40,7 @@ import rr.sector_t;
 
 public class Enemy {
 
-  public static final String rcsid = "$Id: Enemy.java,v 1.1 2010/08/24 14:57:42 velktron Exp $";
+  public static final String rcsid = "$Id: Enemy.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
 
   enum dirtype_t
   {
@@ -253,7 +258,7 @@ public class Enemy {
   fixed_t xspeed[8] = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000};
   fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000};
 
-  #define MAXSPECIALCROSS 8
+
 
   extern  line_t* spechit[MAXSPECIALCROSS];
   extern  int numspechit;

@@ -152,6 +152,22 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
         this.posts=postno;
         return len;
     }
+    
+    /** based on raw data */
+    public int getTopDelta(){
+        return C2JUtils.toUnsignedByte(data[0]);
+    }
+    
+    /** based on raw data */
+    public int getLength(){
+        return C2JUtils.toUnsignedByte(data[1]);
+    }
+
+    public void setFromData(){
+        this.topdelta=(short) this.getTopDelta();
+        this.length=(short) this.getLength();
+    }
+    
 }
 
 

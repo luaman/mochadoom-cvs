@@ -1,6 +1,7 @@
 package data;
 
 import static data.Defines.*;
+import static data.Limits.*;
 import utils.C2JUtils;
 import doom.doomcom_t;
 import doom.doomdata_t;
@@ -185,8 +186,8 @@ public   player_t[]    players= new player_t[MAXPLAYERS];
 public   boolean[]  playeringame=new boolean[MAXPLAYERS];
 
 
-// Player spawn spots for deathmatch.
-public  int MAX_DM_STARTS =  10;
+
+
 public   mapthing_t[] deathmatchstarts=new mapthing_t[MAX_DM_STARTS];
 // Maes: we need no pointer/struct dichotomy here.
 public   mapthing_t deathmatch_p;

@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.3 2010/08/23 14:36:08 velktron Exp $
+// $Id: EndLevel.java,v 1.4 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,11 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.4  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.3  2010/08/23 14:36:08  velktron
 // Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
 //
@@ -47,6 +52,7 @@ package w;
 
 
 import static data.Defines.*;
+import static data.Limits.*;
 import data.doomstat;
 import data.Defines.GameMode_t;
 import data.sounds.sfxenum_t;
@@ -1435,7 +1441,7 @@ protected void loadData()
 	
 	lnames=new patch_t[NUMCMAPS];
     PrintfFormat xxx=new PrintfFormat("CWILV%2.2d");
-    String buffer;
+    //String buffer;
 	for (i=0 ; i<NUMCMAPS ; i++)
 	{								
 	    name=xxx.sprintf(i);

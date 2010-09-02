@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.10 2010/08/30 15:53:19 velktron Exp $
+// $Id: WadLoader.java,v 1.11 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,11 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.11  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.10  2010/08/30 15:53:19  velktron
 // Screen wipes work...Finale coded but untested.
 // GRID.WAD included for testing.
@@ -335,7 +340,7 @@ public class WadLoader {
                     LumpNameHash(lumpinfo[lump_p].name);
                 lumpinfo[lump_p].stringhash=name8.getLongHash(strupr(lumpinfo[lump_p].name)); 
                     //LumpNameHash(lumpinfo[lump_p].name);
-
+                lumpinfo[lump_p].intname=name8.getIntName(strupr(lumpinfo[lump_p].name));
             }
 
             if (reloadname != null)
@@ -785,7 +790,7 @@ try {
 }
 }
     
-    /** Specific method for loading cached patches, since it's by FAR the most common operation.
+    /** Specific method for loading cached patches by name, since it's by FAR the most common operation.
      * 
      * @param name
      * @return
@@ -814,6 +819,23 @@ try {
 try {
     return (patch_t) this.CacheLumpNum(this.GetNumForName(name), tag, patch_t.class);
 } catch (IOException e) {
+    e.printStackTrace();
+    return null;
+}
+}
+    
+    /** Specific method for loading cached patches by number.
+     * 
+     * @param name
+     * @return
+     */
+    
+    public patch_t CachePatchNum(int num)
+    {
+try {
+    return (patch_t) this.CacheLumpNum(num, PU_CACHE, patch_t.class);
+} catch (IOException e) {
+    // TODO Auto-generated catch block
     e.printStackTrace();
     return null;
 }

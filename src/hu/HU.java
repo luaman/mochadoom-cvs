@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.5 2010/08/30 15:53:19 velktron Exp $
+// $Id: HU.java,v 1.6 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,11 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.6  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.5  2010/08/30 15:53:19  velktron
 // Screen wipes work...Finale coded but untested.
 // GRID.WAD included for testing.
@@ -58,11 +63,10 @@ package hu;
 // -----------------------------------------------------------------------------
 
 import static data.Defines.*;
+import static data.Limits.*;
 import static doom.englsh.*;
 import utils.C2JUtils;
 import utils.PrintfFormat;
-
-import java.io.IOException;
 
 import m.Menu;
 import m.Swap;
@@ -85,7 +89,7 @@ import doom.player_t;
 
 public class HU {
     public final static String rcsid =
-        "$Id: HU.java,v 1.5 2010/08/30 15:53:19 velktron Exp $";
+        "$Id: HU.java,v 1.6 2010/09/02 15:56:54 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader wd;

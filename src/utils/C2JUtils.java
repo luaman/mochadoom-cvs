@@ -91,6 +91,8 @@ public class C2JUtils {
         }
     }
     
+    /** This method gets eventually inlined, becoming very fast */
+    
     public static int toUnsignedByte(byte b){
         return (0x000000FF&b);
     }

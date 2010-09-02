@@ -9,6 +9,8 @@ public class lumpinfo_t {
         public long hash;
         // A 64-bit hash that can be used for definitive comparisons.
         public long stringhash;
+        // Intepreting the first 32 bits of their name as an int.
+        public int intname;
         public int next;
         public int index;
         

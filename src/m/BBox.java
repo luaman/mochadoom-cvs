@@ -1,6 +1,6 @@
 package m;
 
-import static data.doomtype.*;
+import static data.Limits.*;
 
 /** A fucked-up bounding box class.
  *  Fucked-up  because it's supposed to wrap fixed_t's.... no fucking way I'm doing
@@ -17,12 +17,12 @@ public class BBox {
 	public static final int BOXLEFT = 2;
 	public static final int BOXRIGHT = 3;
 	/** (fixed_t) */
-	protected int[] pts;
+	public int[] bbox;
 
 	/** Points of the bbox as an object */
 
 	public BBox() {
-		pts = new int[4];
+		bbox = new int[4];
 	}
 
 	// Static method
@@ -37,10 +37,10 @@ public class BBox {
 	// Instance method
 
 	public void ClearBox() {
-		pts[BOXRIGHT]=(MININT);
-		pts[BOXTOP]=(MININT);
-		pts[BOXLEFT]=(MAXINT);
-		pts[BOXBOTTOM]=(MAXINT);
+		bbox[BOXRIGHT]=(MININT);
+		bbox[BOXTOP]=(MININT);
+		bbox[BOXLEFT]=(MAXINT);
+		bbox[BOXBOTTOM]=(MAXINT);
 	}
 
 	public static void AddToBox(fixed_t[] box, fixed_t x, fixed_t y) {
@@ -55,14 +55,14 @@ public class BBox {
 	}
 
 	public void AddToBox(fixed_t x, fixed_t y) {
-		if (x.compareTo(pts[BOXLEFT]) < 0)
-			pts[BOXLEFT]=x.val;
-		else if (x.compareTo(pts[BOXRIGHT]) > 0)
-			pts[BOXRIGHT]=x.val;
-		if (y.compareTo(pts[BOXBOTTOM]) < 0)
-			pts[BOXBOTTOM] = y.val;
-		else if (y.compareTo(pts[BOXTOP]) > 0)
-			pts[BOXTOP] = y.val;
+		if (x.compareTo(bbox[BOXLEFT]) < 0)
+			bbox[BOXLEFT]=x.val;
+		else if (x.compareTo(bbox[BOXRIGHT]) > 0)
+			bbox[BOXRIGHT]=x.val;
+		if (y.compareTo(bbox[BOXBOTTOM]) < 0)
+			bbox[BOXBOTTOM] = y.val;
+		else if (y.compareTo(bbox[BOXTOP]) > 0)
+			bbox[BOXTOP] = y.val;
 	}
 
 	/**
@@ -73,14 +73,14 @@ public class BBox {
 	 * @param y
 	 */
 	public void AddToBox(int x, int y) {
-		if (x < pts[BOXLEFT])
-			pts[BOXLEFT]=(x);
-		if (x > pts[BOXRIGHT])
-			pts[BOXRIGHT]=(x);
-		if (y < pts[BOXBOTTOM])
-			pts[BOXBOTTOM]=(y);
-		if (y > pts[BOXTOP])
-			pts[BOXTOP]=(y);
+		if (x < bbox[BOXLEFT])
+			bbox[BOXLEFT]=(x);
+		if (x > bbox[BOXRIGHT])
+			bbox[BOXRIGHT]=(x);
+		if (y < bbox[BOXBOTTOM])
+			bbox[BOXBOTTOM]=(y);
+		if (y > bbox[BOXTOP])
+			bbox[BOXTOP]=(y);
 	}
 
 	/**
@@ -111,22 +111,22 @@ public class BBox {
 	 */
 
 	public void AddPointToBox(int x, int y) {
-		if (x < pts[BOXLEFT])
-			pts[BOXLEFT]=x;
-		if (x > pts[BOXRIGHT])
-			pts[BOXRIGHT]=x;
-		if (y < pts[BOXBOTTOM])
-			pts[BOXBOTTOM]=y;
-		if (y > pts[BOXTOP])
-			pts[BOXTOP]=y;
+		if (x < bbox[BOXLEFT])
+			bbox[BOXLEFT]=x;
+		if (x > bbox[BOXRIGHT])
+			bbox[BOXRIGHT]=x;
+		if (y < bbox[BOXBOTTOM])
+			bbox[BOXBOTTOM]=y;
+		if (y > bbox[BOXTOP])
+			bbox[BOXTOP]=y;
 	}
 
 	public int get(int BOXCOORDS){
-	    return this.pts[BOXCOORDS];
+	    return this.bbox[BOXCOORDS];
 	}
 	
     public void set(int BOXCOORDS, int val){
-        this.pts[BOXCOORDS]=val;
+        this.bbox[BOXCOORDS]=val;
     }
 
     public static void ClearBox(int[] bbox) {

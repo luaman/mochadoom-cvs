@@ -20,7 +20,7 @@ import w.WadLoader;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: RendererData.java,v 1.1 2010/09/01 15:53:42 velktron Exp $
+// $Id: RendererData.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -35,6 +35,11 @@ import w.WadLoader;
 // GNU General Public License for more details.
 //
 // $Log: RendererData.java,v $
+// Revision 1.2  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.1  2010/09/01 15:53:42  velktron
 // Graphics data loader implemented....still need to figure out how column caching works, though.
 //
@@ -52,7 +57,7 @@ WadLoader W;
 DoomGame DG;
 LevelLoader LL;
 
-  public static final String rcsid = "$Id: RendererData.java,v 1.1 2010/09/01 15:53:42 velktron Exp $";
+  public static final String rcsid = "$Id: RendererData.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
 
   //
   // Graphics.
@@ -336,7 +341,7 @@ LevelLoader LL;
    * R_GetColumn
  * @throws IOException 
    */
-  public column_t GetColumn
+  public byte[] GetColumn
   ( int       tex,
     int       col ) throws IOException
   {
@@ -352,7 +357,7 @@ LevelLoader LL;
       if (lump > 0)
           // This will actually return a pointer to a patch's columns.
           // That is, to the ONE column exactly.
-      return ((patch_t)W.CacheLumpNum(lump,PU_CACHE,patch_t.class)).columns[idx];
+      return ((patch_t)W.CacheLumpNum(lump,PU_CACHE,patch_t.class)).columns[idx].data;
 
       if (texturecomposite[tex]==null)
       GenerateComposite (tex);

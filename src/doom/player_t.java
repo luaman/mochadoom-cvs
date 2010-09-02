@@ -3,6 +3,7 @@ package doom;
 import p.mobj_t;
 import p.pspdef_t;
 import m.fixed_t;
+import static data.Limits.*;
 import static data.Defines.*;
 import static p.SpriteAnimations.NUMPSPRITES;
 

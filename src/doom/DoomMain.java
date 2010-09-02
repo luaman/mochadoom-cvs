@@ -12,7 +12,7 @@ import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.1 2010/07/29 15:28:59 velktron Exp $
+// $Id: DoomMain.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,6 +27,11 @@ import static data.Defines.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.2  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.1  2010/07/29 15:28:59  velktron
 // More work on menus...and digging some dependencies..
 //
@@ -54,7 +59,7 @@ import static data.Defines.*;
 
 public class DoomMain implements DoomInterface{
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.1 2010/07/29 15:28:59 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -752,7 +757,7 @@ void IdentifyVersion (void)
 void FindResponseFile (void)
 {
     int             i;
-#define MAXARGVS        100
+
 	
     for (i = 1;i < myargc;i++)
 	if (myargv[i][0] == '@')

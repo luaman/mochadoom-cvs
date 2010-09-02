@@ -24,7 +24,9 @@ public class flat_t
     @Override
     public void unpack(ByteBuffer buf)
             throws IOException {
-            buf.get(this.data);
+        
+            //buf.get(this.data);
+            this.data=buf.array();
 
     }
 

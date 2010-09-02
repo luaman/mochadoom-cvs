@@ -1,6 +1,9 @@
 package rr;
 
+import static utils.C2JUtils.toUnsignedByte;
 import static data.Defines.*;
+import static data.Limits.*;
+
 import static p.mobj_t.*;
 import static data.SineCosine.finecosine;
 import static data.SineCosine.finesine;
@@ -9,13 +12,17 @@ import static m.fixed_t.*;
 import static m.BBox.*;
 
 
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import i.system;
 import p.LevelLoader;
 import p.mobj_t;
 import p.pspdef_t;
+import utils.C2JUtils;
 import w.WadLoader;
+import w.name8;
 import m.BBox;
 import m.fixed_t;
 import data.doomstat;
@@ -78,17 +85,44 @@ public class UnifiedRenderer {
     topfrac,    topstep,bottomfrac, bottomstep;
 
     /** lighttable_t */
-    short[]   walllights;
+    byte[]   walllights;
 
     short[]     maskedtexturecol;
     
     ///// FROM PLANES //////
     
+    /**
+     * Clip values are the solid pixel bounding the range.
+     *  floorclip starts out SCREENHEIGHT
+     *  ceilingclip starts out -1
+     */
+    short[]         floorclip=new short[SCREENWIDTH],   ceilingclip=new short[SCREENWIDTH];
+    
+    /** visplane_t*,  treat as indexes into visplanes */
+    public int       lastvisplane, floorplane,   ceilingplane;
+    
+
+    protected visplane_t[]      visplanes=new visplane_t[MAXVISPLANES];
+
+    short[]         openings=new short[MAXOPENINGS];
+    /** Maes: this is supposed to be a pointer inside openings */
+    int           lastopening;//=new Short((short) 0);
+
+    
     ///// FROM BSP /////////
     
-    /** pointer to drawseg */
+    /** pointer to drawsegs */
     public int   ds_p;
+    
+    public drawseg_t[]    drawsegs;
 
+    /** The sectors of the line currently being considered */
+    public sector_t    frontsector,backsector;
+
+    public seg_t       curline;
+    public side_t      sidedef;
+    public line_t      linedef;
+    
     
     ///// FROM R_DATA, R_MAIN ////
     
@@ -101,16 +135,6 @@ public class UnifiedRenderer {
     ///// FROM R_DRAW //////////
     
     byte[] screen;
-
-    /*
-     * #include "doomdef.h" #include "i_system.h" #include "z_zone.h" #include
-     * "w_wad.h" #include "r_local.h" // Needs access to LFB (guess what).
-     * #include "v_video.h" // State. #include "doomstat.h"
-     */
-    // ?
-    public static final int MAXWIDTH = 1120;
-
-    public static final int MAXHEIGT = 832;
 
     // status bar height at bottom of screen
     public static final int SBARHEIGHT = 32;
@@ -153,6 +177,10 @@ public class UnifiedRenderer {
      * bytes or shorts or chars is debatable.
      */
     byte[] dc_colormap;
+    
+    /** Offset. use as dc_colormap[dco+<shit>]. Also, when you set dc_colormap = crap[index],
+     *  set dc_colormap=crap and  dco=index */
+    int dco;
 
     int dc_x;
 
@@ -200,7 +228,7 @@ public class UnifiedRenderer {
    public static int           validcount = 1;     
 
    // TODO
-   short[]      fixedcolormap;
+   byte[]      fixedcolormap;
    //lighttable_t[][]  walllights;
 
    public int          centerx;
@@ -261,9 +289,9 @@ public class UnifiedRenderer {
    // int[]        finecosine = finesine[FINEANGLES/4];
 
    // TODO:
-   public short[][]     scalelight=new short[LIGHTLEVELS][MAXLIGHTSCALE];
-   public short[]       scalelightfixed=new short[MAXLIGHTSCALE];
-   public short[][]     zlight=new short[LIGHTLEVELS][MAXLIGHTZ];
+   public byte[][]     scalelight=new byte[LIGHTLEVELS][MAXLIGHTSCALE];
+   public byte[]       scalelightfixed=new byte[MAXLIGHTSCALE];
+   public byte[][]     zlight=new byte[LIGHTLEVELS][MAXLIGHTZ];
 
    // bumped light from gun blasts
    public static int           extralight;         
@@ -290,7 +318,7 @@ public class UnifiedRenderer {
 
    // MAES: Shit taken from things
 
-   public static final int MAXVISSPRITES = 128;
+
    public static final int MINZ=(FRACUNIT*4);
    public static final int BASEYCENTER     =   100;
 
@@ -306,7 +334,6 @@ public class UnifiedRenderer {
    int     pspritescale,pspriteiscale;
 
    lighttable_t[][]    spritelights;
-
     
    /** constant arrays
     *  used for psprite clipping and initializing clipping 
@@ -314,6 +341,11 @@ public class UnifiedRenderer {
    short[]     negonearray=new short[SCREENWIDTH];
    short[]     screenheightarray=new short[SCREENWIDTH];
 
+   int     spryscale;
+   int     sprtopscreen;
+   short[]      mfloorclip;
+   short[]      mceilingclip;
+   
    //
    // INITIALIZATION FUNCTIONS
    //
@@ -361,7 +393,8 @@ public class UnifiedRenderer {
    int ds_x2;
 
    /** DrawSpan colormap */
-   short[] ds_colormap;
+   byte[] ds_colormap;
+   int dso; // its index.
 
    /** fixed_t */
    int ds_xfrac;
@@ -384,14 +417,6 @@ public class UnifiedRenderer {
    int dscount;
    
   class BSP{
-
-     
-      public seg_t       curline;
-      
-      public line_t      linedef;
-      public sector_t    frontsector;
-      public sector_t    backsector;
-
       public int      rw_x;
       public int      rw_stopx;
 
@@ -402,8 +427,6 @@ public class UnifiedRenderer {
       public boolean      markceiling;
 
       public boolean      skymap;
-
-      public drawseg_t[]    drawsegs;
 
       /** light tables */
       public short[][]   hscalelight,vscalelight,dscalelight;
@@ -432,8 +455,6 @@ public class UnifiedRenderer {
             public int last;
         }
 
-  public static final int MAXSEGS=32;
-
   /** newend is one past the last valid seg (cliprange_t) */
   int newend;
   cliprange_t[]   solidsegs= new cliprange_t[MAXSEGS];
@@ -443,10 +464,11 @@ public class UnifiedRenderer {
    * Does handle solid walls,
    *  e.g. single sided LineDefs (middle texture)
    *  that entirely block the view.
+   * @throws IOException 
    */ 
 
   public void ClipSolidWallSegment (int   first,
-          int   last ){
+          int   last ) throws IOException{
       int next;
       int start;
 
@@ -540,7 +562,7 @@ public class UnifiedRenderer {
   //  e.g. LineDefs with upper and lower texture.
   //
   public void  ClipPassWallSegment (int   first,
-          int   last ){
+          int   last ) throws IOException{
       cliprange_t start;
 
       // Find the first range that touches the range
@@ -605,7 +627,7 @@ public class UnifiedRenderer {
   // Clips the given segment
   // and adds any visible pieces to the line list.
   //
-  public void AddLine (seg_t  line)
+  public void AddLine (seg_t  line) throws IOException
   {
       int         x1;
       int         x2;
@@ -850,9 +872,10 @@ public class UnifiedRenderer {
    * Determine floor/ceiling planes.
    * Add sprites of things in sector.
    * Draw one or more line segments.
+ * @throws IOException 
    */
   
-  public void Subsector (int num)
+  public void Subsector (int num) throws IOException
   {
       int         count;
       int        line; // pointer into a list of segs
@@ -875,22 +898,22 @@ public class UnifiedRenderer {
 
       if (frontsector.floorheight < viewz)
       {
-      MyPlanes.floorplane = MyPlanes.FindPlane (frontsector.floorheight,
+      floorplane = MyPlanes.FindPlane (frontsector.floorheight,
                     frontsector.floorpic,
                     frontsector.lightlevel);
       }
       else
-          MyPlanes.floorplane = -1; // in lieu of NULL
+          floorplane = -1; // in lieu of NULL
       
       if (frontsector.ceilingheight > viewz 
       || frontsector.ceilingpic == skyflatnum)
       {
-          MyPlanes. ceilingplane = MyPlanes.FindPlane (frontsector.ceilingheight,
+          ceilingplane = MyPlanes.FindPlane (frontsector.ceilingheight,
                       frontsector.ceilingpic,
                       frontsector.lightlevel);
       }
       else
-          MyPlanes.ceilingplane = -1;
+          ceilingplane = -1;
           
       // TODO: it's in THINGS AddSprites (frontsector); 
 
@@ -909,7 +932,7 @@ public class UnifiedRenderer {
   // Renders all subsectors below a given node,
   //  traversing subtree recursively.
   // Just call with BSP root.
-  public void RenderBSPNode (int bspnum)
+  public void RenderBSPNode (int bspnum) throws IOException
   {
       node_t  bsp;
       int     side;
@@ -927,7 +950,7 @@ public class UnifiedRenderer {
       bsp = LL.nodes[bspnum];
       
       // Decide which side the view point is on.
-      side = PointOnSide (viewx, viewy, bsp);
+      side = bsp.PointOnSide (viewx, viewy);
 
       // Recursively divide front space.
       RenderBSPNode (bsp.children[side]); 
@@ -942,19 +965,22 @@ public class UnifiedRenderer {
   
   class Segs{
 
-      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.1 2010/09/02 12:01:04 velktron Exp $";
+      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
 
       //
       // R_RenderMaskedSegRange
       //
+      
+      column_t    col=new column_t();
+      
       public void
       RenderMaskedSegRange
       ( drawseg_t ds,
         int       x1,
-        int       x2 )
+        int       x2 ) throws IOException
       {
           int index;
-          column_t    col;
+          
           int     lightnum;
           int     texnum;
           
@@ -962,12 +988,12 @@ public class UnifiedRenderer {
           // Use different light tables
           //   for horizontal / vertical / diagonal. Diagonal?
           // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-          seg_t curline=MyBSP.curline = ds.curline;
-          MyBSP.frontsector = curline.frontsector;
-          MyBSP.backsector = curline.backsector;
+          curline = ds.curline;
+          frontsector = curline.frontsector;
+          backsector = curline.backsector;
           texnum = RD.texturetranslation[curline.sidedef.midtexture];
           
-          lightnum = (MyBSP.frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
+          lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
           if (curline.v1.y == curline.v2.y)
           lightnum--;
@@ -981,19 +1007,25 @@ public class UnifiedRenderer {
           else
           walllights = scalelight[lightnum];
 
-          maskedtexturecol = ds.maskedtexturecol;
+          // Get the list
+          maskedtexturecol = ds.l_lmaskedtexturecol;
+          // And this is the pointer.
+          int pmtc=ds.maskedtexturecol;
 
           rw_scalestep = ds.scalestep;        
-          MyThings.spryscale = ds.scale1 + (x1 - ds.x1)*rw_scalestep;
-          mfloorclip = ds.sprbottomclip;
-          mceilingclip = ds.sprtopclip;
+          spryscale = ds.scale1 + (x1 - ds.x1)*rw_scalestep;
+          
+          // TODO: add the pointers for those somewhere
+          mfloorclip = ds.l_sprbottomclip;
+          
+          mceilingclip = ds.l_sprtopclip;
           
           // find positioning
-          if (curline.linedef.flags & ML_DONTPEGBOTTOM)
+          if ((curline.linedef.flags & ML_DONTPEGBOTTOM)!=0)
           {
           dc_texturemid = frontsector.floorheight > backsector.floorheight
               ? frontsector.floorheight : backsector.floorheight;
-          dc_texturemid = dc_texturemid + textureheight[texnum] - viewz;
+          dc_texturemid = dc_texturemid + RD.textureheight[texnum] - viewz;
           }
           else
           {
@@ -1003,34 +1035,36 @@ public class UnifiedRenderer {
           }
           dc_texturemid += curline.sidedef.rowoffset;
                   
-          if (fixedcolormap)
+          if (fixedcolormap!=null)
           dc_colormap = fixedcolormap;
+          dco=0;
           
           // draw the columns
           for (dc_x = x1 ; dc_x <= x2 ; dc_x++)
           {
           // calculate lighting
-          if (maskedtexturecol[dc_x] != MAXSHORT)
+          if (maskedtexturecol[dc_x] != Short.MAX_VALUE)
           {
-              if (!fixedcolormap)
+              if (fixedcolormap==null)
               {
               index = spryscale>>LIGHTSCALESHIFT;
 
               if (index >=  MAXLIGHTSCALE )
                   index = MAXLIGHTSCALE-1;
 
-              dc_colormap = walllights[index];
+              dc_colormap = walllights;
+              dco=index;
               }
                   
               sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
-              dc_iscale = 0xffffffffu / (unsigned)spryscale;
+              dc_iscale = (int) (0xffffffffL / spryscale);
               
               // draw the texture
-              col = (column_t *)( 
-              (byte *)R_GetColumn(texnum,maskedtexturecol[dc_x]) -3);
+              col.data = RD.GetColumn(texnum,maskedtexturecol[dc_x]);// -3);
+              col.setFromData();
                   
-              R_DrawMaskedColumn (col);
-              maskedtexturecol[dc_x] = MAXSHORT;
+              DrawMaskedColumn (col);
+              maskedtexturecol[dc_x] = Short.MAX_VALUE;
           }
           spryscale += rw_scalestep;
           }
@@ -1048,16 +1082,17 @@ public class UnifiedRenderer {
        * Can draw or mark the starting pixel of floor and ceiling
        *  textures.
        * CALLED: CORE LOOPING ROUTINE.
+     * @throws IOException 
        */
       
-      public void RenderSegLoop ()
+      public void RenderSegLoop () throws IOException
       {
           int     angle; // angle_t
           int     index;
           int         yl;
           int         yh;
           int         mid;
-          int     texturecolumn; // fixed_t
+          int     texturecolumn=0; // fixed_t
           int         top;
           int         bottom;
 
@@ -1082,8 +1117,8 @@ public class UnifiedRenderer {
 
               if (top <= bottom)
               {
-              ceilingplane.top[rw_x] = top;
-              ceilingplane.bottom[rw_x] = bottom;
+                  visplanes[ceilingplane].setTop(rw_x,(byte) top);
+                  visplanes[ceilingplane].setBottom(rw_x, (byte) bottom);
               }
           }
               
@@ -1100,8 +1135,8 @@ public class UnifiedRenderer {
               top = ceilingclip[rw_x]+1;
               if (top <= bottom)
               {
-              floorplane.top[rw_x] = top;
-              floorplane.bottom[rw_x] = bottom;
+              visplanes[floorplane].setTop(rw_x, (byte) top);
+              visplanes[floorplane].setBottom(rw_x, (byte) bottom);
               }
           }
           
@@ -1118,27 +1153,28 @@ public class UnifiedRenderer {
               if (index >=  MAXLIGHTSCALE )
               index = MAXLIGHTSCALE-1;
 
-              dc_colormap = walllights[index];
+              dc_colormap = walllights;
+              dco=index;
               dc_x = rw_x;
-              dc_iscale = 0xffffffff / (unsigned)rw_scale;
+              dc_iscale = (int) (0xffffffffL / rw_scale);
           }
           
           // draw the wall tiers
-          if (midtexture)
+          if (midtexture!=0)
           {
               // single sided line
               dc_yl = yl;
               dc_yh = yh;
               dc_texturemid = rw_midtexturemid;
-              dc_source = R_GetColumn(midtexture,texturecolumn);
+              dc_source = RD.GetColumn(midtexture,texturecolumn);
               colfunc.invoke();
-              ceilingclip[rw_x] = viewheight;
+              ceilingclip[rw_x] = DS.viewheight;
               floorclip[rw_x] = -1;
           }
           else
           {
               // two sided line
-              if (toptexture)
+              if (toptexture!=0)
               {
               // top wall
               mid = pixhigh>>HEIGHTBITS;
@@ -1152,21 +1188,21 @@ public class UnifiedRenderer {
                   dc_yl = yl;
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
-                  dc_source = R_GetColumn(toptexture,texturecolumn);
+                  dc_source = RD.GetColumn(toptexture,texturecolumn);
                   colfunc.invoke();
-                  ceilingclip[rw_x] = mid;
+                  ceilingclip[rw_x] = (short) mid;
               }
               else
-                  ceilingclip[rw_x] = yl-1;
+                  ceilingclip[rw_x] = (short) (yl-1);
               }
               else
               {
               // no top wall
               if (markceiling)
-                  ceilingclip[rw_x] = yl-1;
+                  ceilingclip[rw_x] = (short) (yl-1);
               }
                   
-              if (bottomtexture)
+              if (bottomtexture!=0)
               {
               // bottom wall
               mid = (pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
@@ -1181,26 +1217,26 @@ public class UnifiedRenderer {
                   dc_yl = mid;
                   dc_yh = yh;
                   dc_texturemid = rw_bottomtexturemid;
-                  dc_source = R_GetColumn(bottomtexture,
+                  dc_source = RD.GetColumn(bottomtexture,
                               texturecolumn);
-                  colfunc ();
-                  floorclip[rw_x] = mid;
+                  colfunc.invoke();
+                  floorclip[rw_x] = (short) mid;
               }
               else
-                  floorclip[rw_x] = yh+1;
+                  floorclip[rw_x] = (short) (yh+1);
               }
               else
               {
               // no bottom wall
               if (markfloor)
-                  floorclip[rw_x] = yh+1;
+                  floorclip[rw_x] = (short) (yh+1);
               }
                   
               if (maskedtexture)
               {
               // save texturecol
               //  for backdrawing of masked mid texture
-              maskedtexturecol[rw_x] = texturecolumn;
+              maskedtexturecol[rw_x] = (short) texturecolumn;
               }
           }
               
@@ -1213,32 +1249,36 @@ public class UnifiedRenderer {
 
 
 
-      //
-      // R_StoreWallRange
-      // A wall segment will be drawn
-      //  between start and stop pixels (inclusive).
-      //
+      /**
+       * R_StoreWallRange
+       * A wall segment will be drawn
+       *  between start and stop pixels (inclusive).
+     * @throws IOException 
+       */
       
       public void
       StoreWallRange
       ( int   start,
-        int   stop )
+        int   stop ) throws IOException
       {
           int     hyp; //fixed_t
           int     sineval; //fixed_t
           int     distangle, offsetangle; // angle_t
           int     vtop; // fixed_t
           int         lightnum;
+          drawseg_t seg;
 
           // don't overflow and crash
           if (ds_p == MAXDRAWSEGS)
           return;     
               
-      /*#ifdef RANGECHECK
+      if( RANGECHECK){
           if (start >=viewwidth || start > stop)
-          I_Error ("Bad R_RenderWallRange: %i to %i", start , stop);
-      #endif*/
+          system.Error ("Bad R_RenderWallRange: %i to %i", start , stop);
+      }
           
+          seg=drawsegs[ds_p];
+      
           sidedef = curline.sidedef;
           linedef = curline.linedef;
 
@@ -1247,13 +1287,13 @@ public class UnifiedRenderer {
           
           // calculate rw_distance for scale calculation
           rw_normalangle = curline.angle + ANG90;
-          offsetangle = abs(rw_normalangle-rw_angle1);
+          offsetangle = Math.abs(rw_normalangle-rw_angle1);
           
           if (offsetangle > ANG90)
           offsetangle = ANG90;
 
           distangle = ANG90 - offsetangle;
-          hyp = R_PointToDist (curline.v1.x, curline.v1.y);
+          hyp = PointToDist (curline.v1.x, curline.v1.y);
           sineval = finesine[distangle>>ANGLETOFINESHIFT];
           rw_distance = FixedMul (hyp, sineval);
               
@@ -1265,11 +1305,11 @@ public class UnifiedRenderer {
           
           // calculate scale at both ends and step
           seg.scale1 = rw_scale = 
-          R_ScaleFromGlobalAngle (viewangle + xtoviewangle[start]);
+          ScaleFromGlobalAngle (viewangle + xtoviewangle[start]);
           
           if (stop > start )
           {
-          seg.scale2 = R_ScaleFromGlobalAngle (viewangle + xtoviewangle[stop]);
+          seg.scale2 = ScaleFromGlobalAngle (viewangle + xtoviewangle[stop]);
           seg.scalestep = rw_scalestep = 
               (seg.scale2 - rw_scale) / (stop-start);
           }
@@ -1298,19 +1338,21 @@ public class UnifiedRenderer {
           worldtop = frontsector.ceilingheight - viewz;
           worldbottom = frontsector.floorheight - viewz;
           
-          midtexture = toptexture = bottomtexture = maskedtexture = 0;
-          seg.maskedtexturecol = NULL;
+          midtexture = toptexture = bottomtexture = 0;
+          maskedtexture = false;
+          seg.l_lmaskedtexturecol=null;
+          //seg.maskedtexturecol = null;
           
-          if (!backsector)
+          if (backsector==null)
           {
           // single sided line
-          midtexture = texturetranslation[sidedef.midtexture];
+          midtexture = RD.texturetranslation[sidedef.midtexture];
           // a single sided line is terminal, so it must mark ends
           markfloor = markceiling = true;
-          if (linedef.flags & ML_DONTPEGBOTTOM)
+          if ((linedef.flags & ML_DONTPEGBOTTOM)!=0)
           {
               vtop = frontsector.floorheight +
-              textureheight[sidedef.midtexture];
+              RD.textureheight[sidedef.midtexture];
               // bottom of texture at bottom
               rw_midtexturemid = vtop - viewz;    
           }
@@ -1322,15 +1364,17 @@ public class UnifiedRenderer {
           rw_midtexturemid += sidedef.rowoffset;
 
           seg.silhouette = SIL_BOTH;
-          seg.sprtopclip = screenheightarray;
-          seg.sprbottomclip = negonearray;
+          seg.sprtopclip = 0;
+          seg.l_sprtopclip=screenheightarray;
+          seg.sprbottomclip = 0;
+          seg.l_sprbottomclip=negonearray;
           seg.bsilheight = Integer.MAX_VALUE;
           seg.tsilheight = Integer.MIN_VALUE;
           }
           else
           {
           // two sided line
-          seg.sprtopclip = seg.sprbottomclip = NULL;
+          seg.l_sprtopclip = seg.l_sprbottomclip = null;
           seg.silhouette = 0;
           
           if (frontsector.floorheight > backsector.floorheight)
@@ -1359,14 +1403,16 @@ public class UnifiedRenderer {
               
           if (backsector.ceilingheight <= frontsector.floorheight)
           {
-              seg.sprbottomclip = negonearray;
+              seg.l_sprbottomclip = negonearray;
+              seg.sprbottomclip=0;
               seg.bsilheight = Integer.MAX_VALUE;
               seg.silhouette |= SIL_BOTTOM;
           }
           
           if (backsector.floorheight >= frontsector.ceilingheight)
           {
-              seg.sprtopclip = screenheightarray;
+              seg.sprtopclip = 0;
+              seg.l_sprtopclip=screenheightarray;
               seg.tsilheight = Integer.MIN_VALUE;
               seg.silhouette |= SIL_TOP;
           }
@@ -1418,8 +1464,8 @@ public class UnifiedRenderer {
           if (worldhigh < worldtop)
           {
               // top texture
-              toptexture = texturetranslation[sidedef.toptexture];
-              if (linedef.flags & ML_DONTPEGTOP)
+              toptexture = RD.texturetranslation[sidedef.toptexture];
+              if ((linedef.flags & ML_DONTPEGTOP)!=0)
               {
               // top of texture at top
               rw_toptexturemid = worldtop;
@@ -1428,7 +1474,7 @@ public class UnifiedRenderer {
               {
               vtop =
                   backsector.ceilingheight
-                  + textureheight[sidedef.toptexture];
+                  + RD.textureheight[sidedef.toptexture];
               
               // bottom of texture
               rw_toptexturemid = vtop - viewz;    
@@ -1437,9 +1483,9 @@ public class UnifiedRenderer {
           if (worldlow > worldbottom)
           {
               // bottom texture
-              bottomtexture = texturetranslation[sidedef.bottomtexture];
+              bottomtexture = RD.texturetranslation[sidedef.bottomtexture];
 
-              if (linedef.flags & ML_DONTPEGBOTTOM )
+              if ((linedef.flags & ML_DONTPEGBOTTOM )!=0)
               {
               // bottom of texture at bottom
               // top of texture at top
@@ -1452,17 +1498,18 @@ public class UnifiedRenderer {
           rw_bottomtexturemid += sidedef.rowoffset;
           
           // allocate space for masked texture tables
-          if (sidedef.midtexture)
+          if (sidedef.midtexture!=0)
           {
               // masked midtexture
               maskedtexture = true;
-              seg.maskedtexturecol = maskedtexturecol = lastopening - rw_x;
+              seg.maskedtexturecol=lastopening - rw_x;
+              seg.l_lmaskedtexturecol=maskedtexturecol;
               lastopening += rw_stopx - rw_x;
           }
           }
           
           // calculate rw_offset (only needed for textured lines)
-          segtextured = midtexture | toptexture | bottomtexture | maskedtexture;
+          segtextured =(((midtexture | toptexture | bottomtexture)!=0) | maskedtexture);
 
           if (segtextured)
           {
@@ -1487,7 +1534,7 @@ public class UnifiedRenderer {
           //  use different light tables
           //  for horizontal / vertical / diagonal
           // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-          if (!fixedcolormap)
+          if (fixedcolormap==null)
           {
               lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
@@ -1534,7 +1581,7 @@ public class UnifiedRenderer {
           bottomstep = -FixedMul (rw_scalestep,worldbottom);
           bottomfrac = (centeryfrac>>4) - FixedMul (worldbottom, rw_scale);
           
-          if (backsector)
+          if (backsector!=null)
           {   
           worldhigh >>= 4;
           worldlow >>= 4;
@@ -1554,37 +1601,41 @@ public class UnifiedRenderer {
           
           // render it
           if (markceiling)
-          ceilingplane = R_CheckPlane (ceilingplane, rw_x, rw_stopx-1);
+          ceilingplane = MyPlanes.CheckPlane(ceilingplane, rw_x, rw_stopx-1);
           
           if (markfloor)
-          floorplane = R_CheckPlane (floorplane, rw_x, rw_stopx-1);
+          floorplane = MyPlanes.CheckPlane (floorplane, rw_x, rw_stopx-1);
 
           RenderSegLoop ();
 
           
           // save sprite clipping info
-          if ( ((seg.silhouette & SIL_TOP) || maskedtexture)
-           && !seg.sprtopclip)
+          if ( ((seg.silhouette & SIL_TOP)!=0 || maskedtexture)
+           && seg.sprtopclip==0)
           {
-          memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
+              
+          //memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
+          System.arraycopy(ceilingclip, start, openings, lastopening,  2*(rw_stopx-start));
+              
           seg.sprtopclip = lastopening - start;
           lastopening += rw_stopx - start;
           }
           
-          if ( ((seg.silhouette & SIL_BOTTOM) || maskedtexture)
-           && !seg.sprbottomclip)
+          if ( ((seg.silhouette & SIL_BOTTOM)!=0 || maskedtexture)
+           && seg.sprbottomclip==0)
           {
-          memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
+          //memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
+              System.arraycopy(floorclip, start, openings, lastopening,  2*(rw_stopx-start));
           seg.sprbottomclip = lastopening - start;
           lastopening += rw_stopx - start;    
           }
 
-          if (maskedtexture && !(seg.silhouette&SIL_TOP))
+          if (maskedtexture && (seg.silhouette&SIL_TOP)==0)
           {
           seg.silhouette |= SIL_TOP;
           seg.tsilheight = Integer.MIN_VALUE;
           }
-          if (maskedtexture && !(seg.silhouette&SIL_BOTTOM))
+          if (maskedtexture && (seg.silhouette&SIL_BOTTOM)==0)
           {
           seg.silhouette |= SIL_BOTTOM;
           seg.bsilheight = Integer.MAX_VALUE;
@@ -1594,8 +1645,6 @@ public class UnifiedRenderer {
       }
   
   class Planes{
-      public static final String
-      rcsid = "$Id: UnifiedRenderer.java,v 1.1 2010/09/02 12:01:04 velktron Exp $";
 
       public Planes (){
       }
@@ -1603,33 +1652,8 @@ public class UnifiedRenderer {
       planefunction_t     floorfunc;
       planefunction_t     ceilingfunc;
 
-      //
-      // opening
-      //
-
-      // Here comes the obnoxious "visplane".
-      public static final int  MAXVISPLANES   =128;
-      protected visplane_t[]      visplanes=new visplane_t[MAXVISPLANES];
-      /** visplane_t*,  treat as indexes into visplanes */
-      public int       lastvisplane, floorplane,   ceilingplane;
-
-      // ?
-      private final int MAXOPENINGS =SCREENWIDTH*64;
-
       private final boolean RANGECHECK = false;
-      short[]         openings=new short[MAXOPENINGS];
-      /** Maes: this is supposed to be a pointer inside openings */
-      int           lastopening;//=new Short((short) 0);
-
-
-      //
-      // Clip values are the solid pixel bounding the range.
-      //  floorclip starts out SCREENHEIGHT
-      //  ceilingclip starts out -1
-      //
-      short[]         floorclip=new short[SCREENWIDTH];
-      short[]         ceilingclip=new short[SCREENWIDTH];
-
+      
       //
       // spanstart holds the start of a plane span
       // initialized to 0 at start
@@ -1640,7 +1664,7 @@ public class UnifiedRenderer {
       //
       // texture mapping
       //
-      short[]       planezlight;
+      byte[]       planezlight;
       /** To treat as fixed_t */
       int         planeheight;
       /** To treat at fixed_t */
@@ -1735,7 +1759,8 @@ public class UnifiedRenderer {
           if (index >= MAXLIGHTZ )
               index = MAXLIGHTZ-1;
 
-         //  TODO: ds_colormap = planezlight[index];
+          ds_colormap = planezlight;
+          dso=index;
           }
           
           ds_y = y;
@@ -1833,12 +1858,13 @@ public class UnifiedRenderer {
       }
 
 
-      //
-      // R_CheckPlane
-      //
-      public visplane_t
+      /**
+       * R_CheckPlane
+       */
+      
+      public int
       CheckPlane
-      ( visplane_t    pl,
+      ( int index,
         int       start,
         int       stop )
       {
@@ -1846,6 +1872,7 @@ public class UnifiedRenderer {
           int     intrh;
           int     unionl;
           int     unionh;
+          visplane_t pl=visplanes[index];
           int x;
           
           if (start < pl.minx)
@@ -1871,7 +1898,7 @@ public class UnifiedRenderer {
           }
 
           for (x=intrl ; x<= intrh ; x++)
-          if (pl.top[x] != 0xff)
+          if (pl.getTop(x) != 0xff)
               break;
 
           if (x > intrh)
@@ -1880,7 +1907,7 @@ public class UnifiedRenderer {
           pl.maxx = unionh;
 
           // use the same one
-          return pl;      
+          return index;      
           }
           
           // make a new visplane
@@ -1895,7 +1922,9 @@ public class UnifiedRenderer {
           //memset (pl.top,0xff,sizeof(pl.top));
           pl.clearTop();
               
-          return pl;
+          //return pl;
+          
+          return lastvisplane;
       }
 
 
@@ -1938,8 +1967,9 @@ public class UnifiedRenderer {
       /**
        * R_DrawPlanes
        * At the end of each frame.
+     * @throws IOException 
        */
-      public void DrawPlanes ()
+      public void DrawPlanes () throws IOException
       {
           visplane_t      pln=null; //visplane_t
           int         light;
@@ -1980,8 +2010,8 @@ public class UnifiedRenderer {
               dc_texturemid = skytexturemid;
               for (x=pln.minx ; x <= pln.maxx ; x++)
               {
-              dc_yl = pln.top[x];
-              dc_yh = pln.bottom[x];
+              dc_yl = pln.getTop(x);
+              dc_yh = pln.getBottom(x);
 
               if (dc_yl <= dc_yh)
               {
@@ -2010,17 +2040,17 @@ public class UnifiedRenderer {
 
           planezlight = zlight[light];
 
-          pln.top[pln.maxx+1] = (byte) 0xff;
-          pln.top[pln.minx-1] = (byte) 0xff;
-              
+          pln.setTop(pln.maxx+1,(byte) 0xff);
+          pln.setTop(pln.minx-1, (byte) 0xff);
+          
           stop = pln.maxx + 1;
 
           for (x=pln.minx ; x<= stop ; x++)
           {
-              MakeSpans(x,pln.top[x-1],
-                  pln.bottom[x-1],
-                  pln.top[x],
-                  pln.bottom[x]);
+              MakeSpans(x,pln.getTop(x-1),
+                  pln.getBottom(x-1),
+                  pln.getTop(x),
+                  pln.getBottom(x));
           }
           
           //Z_ChangeTag (ds_source, PU_CACHE);
@@ -2065,7 +2095,7 @@ public class UnifiedRenderer {
       int     pspritescale;
       int     pspriteiscale;
 
-      short[]  spritelights;
+      byte[]  spritelights;
 
       /** constant arrays
          used for psprite clipping and initializing clipping */
@@ -2082,7 +2112,7 @@ public class UnifiedRenderer {
       spritedef_t[]    sprites;
       int     numsprites;
 
-      spriteframe_t[]   sprtemp=new spriteframe_t[29];
+      spriteframe_t[]   sprtemp=new spriteframe_t[MAX_SPRITEFRAMES];
       int     maxframe;
       String       spritename;
 
@@ -2110,7 +2140,7 @@ public class UnifiedRenderer {
           {
           // the lump should be used for all rotations
           if (sprtemp[frame].rotate == false)
-              system.Error ("R_InitSprites: Sprite %s frame %c has multip rot=0 lump", spritename, 'A'+frame);
+              system.Error ("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump", spritename, 'A'+frame);
 
           if (sprtemp[frame].rotate == true)
               system.Error ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);
@@ -2176,41 +2206,52 @@ public class UnifiedRenderer {
               
           sprites = new spritedef_t[numsprites];
           
-          start = LL.firstspritelump-1;
-          end = LL.lastspritelump+1;
+          start = RD.firstspritelump-1;
+          end = RD.lastspritelump+1;
           
           // scan all the lump names for each of the names,
           //  noting the highest frame letter.
           // Just compare 4 characters as ints
-          for (i=0 ; i<numsprites ; i++)
+          for (int i=0 ; i<numsprites ; i++)
           {
           spritename = namelist[i];
-          memset (sprtemp,-1, sizeof(sprtemp));
+          
+          // FIXME: memset (sprtemp,-1, sizeof(sprtemp));
+          for (int j=0;j<sprtemp.length;j++){
+              Arrays.fill(sprtemp[j].flip,(byte)-1);
+              Arrays.fill(sprtemp[j].lump,(short)-1);
+              sprtemp[1].lrotate=-1;
+              }
               
           maxframe = -1;
-          intname = *(int *)namelist[i];
+          intname = name8.getIntName(namelist[i].toUpperCase());
           
           // scan the lumps,
           //  filling in the frames for whatever is found
-          for (l=start+1 ; l<end ; l++)
+          for (int l=start+1 ; l<end ; l++)
           {
-              if (*(int *)lumpinfo[l].name == intname)
+              // We HOPE it has 8 characters.
+              char[] cname=W.lumpinfo[l].name.toCharArray();
+              if (cname.length==6 || cname.length==8) // Sprite names must be this way
+              
+              if (W.lumpinfo[l].intname == intname)
               {
-              frame = lumpinfo[l].name[4] - 'A';
-              rotation = lumpinfo[l].name[5] - '0';
+              frame = cname[4] - 'A';
+              rotation = cname[5] - '0';
 
-              if (modifiedgame)
-                  patched = W_GetNumForName (lumpinfo[l].name);
+              if (DS.modifiedgame)
+                  patched = W.GetNumForName (W.lumpinfo[l].name);
               else
                   patched = l;
 
-              R_InstallSpriteLump (patched, frame, rotation, false);
-
-              if (lumpinfo[l].name[6])
+              InstallSpriteLump (patched, frame, rotation, false);
+              
+              // Second set of rotations?
+              if (cname.length>6 && cname[6]!=0)
               {
-                  frame = lumpinfo[l].name[6] - 'A';
-                  rotation = lumpinfo[l].name[7] - '0';
-                  R_InstallSpriteLump (l, frame, rotation, true);
+                  frame = cname[6] - 'A';
+                  rotation = cname[7] - '0';
+                  InstallSpriteLump (l, frame, rotation, true);
               }
               }
           }
@@ -2226,12 +2267,11 @@ public class UnifiedRenderer {
           
           for (frame = 0 ; frame < maxframe ; frame++)
           {
-              switch ((int)sprtemp[frame].rotate)
+              switch ((int)sprtemp[frame].lrotate)
               {
                 case -1:
               // no rotations were found for that frame at all
-              I_Error ("R_InitSprites: No patches found "
-                   "for %s frame %c", namelist[i], frame+'A');
+              system.Error ("R_InitSprites: No patches found for %s frame %c", namelist[i], frame+'A');
               break;
               
                 case 0:
@@ -2242,8 +2282,7 @@ public class UnifiedRenderer {
               // must have all 8 frames
               for (rotation=0 ; rotation<8 ; rotation++)
                   if (sprtemp[frame].lump[rotation] == -1)
-                  I_Error ("R_InitSprites: Sprite %s frame %c "
-                       "is missing rotations",
+                  system.Error ("R_InitSprites: Sprite %s frame %c is missing rotations",
                        namelist[i], frame+'A');
               break;
               }
@@ -2251,9 +2290,12 @@ public class UnifiedRenderer {
           
           // allocate space for the frames present and copy sprtemp to it
           sprites[i].numframes = maxframe;
-          sprites[i].spriteframes = 
-              Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
-          memcpy (sprites[i].spriteframes, sprtemp, maxframe*sizeof(spriteframe_t));
+          sprites[i].spriteframes = new spriteframe_t[maxframe];
+          C2JUtils.initArrayOfObjects(sprites[i].spriteframes,spriteframe_t.class);
+              
+          for (int j=0;j<)
+          System.arraycopy(src, srcPos, dest, destPos, length)
+          //memcpy (sprites[i].spriteframes, sprtemp, maxframe*sizeof(spriteframe_t));
           }
 
       }
@@ -2315,73 +2357,7 @@ public class UnifiedRenderer {
           return vissprites[vissprite_p-1];
       }
 
-
-
-      /**
-       * R_DrawMaskedColumn
-       * Used for sprites and masked mid textures.
-       * Masked means: partly transparent, i.e. stored
-       *  in posts/runs of opaque pixels.
-       */
-      
-      short[]      mfloorclip;
-      short[]      mceilingclip;
-
-      int     spryscale;
-      int     sprtopscreen;
     private boolean shadow;
-
-      public void DrawMaskedColumn (column_t column)
-      {
-          int     topscreen;
-          int     bottomscreen;
-          int basetexturemid; // fixed_t
-          
-          basetexturemid = dc_texturemid;
-          // That's true for the whole column.
-          dc_source = column.data;
-          
-          // for each post...
-          for (int i=0;i<column.posts;i++ ) 
-          {
-          // calculate unclipped screen coordinates
-          //  for post
-          topscreen = sprtopscreen + spryscale*column.postdeltas[i];
-          bottomscreen = topscreen + spryscale*column.postlen[i];
-
-          dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-          dc_yh = (bottomscreen-1)>>FRACBITS;
-              
-          if (dc_yh >= mfloorclip[dc_x])
-              dc_yh = mfloorclip[dc_x]-1;
-          if (dc_yl <= mceilingclip[dc_x])
-              dc_yl = mceilingclip[dc_x]+1;
-
-          if (dc_yl <= dc_yh)
-          {
-              // Set pointer inside column to current post's data
-              // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
-              dc_source_ofs = column.postofs[i] + 3;
-              dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
-              // dc_source = (byte *)column + 3 - column.topdelta;
-
-              // Drawn by either R_DrawColumn
-              //  or (SHADOW) R_DrawFuzzColumn.
-              if (shadow){
-                  DrawFuzzColumn();
-              } else {
-                  DrawColumn();
-              }
-              
-              // colfunc (); 
-          }
-          //column = (column_t *)(  (byte *)column + column.length + 4);
-          }
-          
-          dc_texturemid = basetexturemid;
-      }
-
-
 
       //
       // R_DrawVisSprite
@@ -2417,7 +2393,7 @@ public class UnifiedRenderer {
               ( (vis.mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
           }
           
-          dc_iscale = abs(vis.xiscale)>>detailshift;
+          dc_iscale = Math.abs(vis.xiscale)>>detailshift;
           dc_texturemid = vis.texturemid;
           frac = vis.startfrac;
           spryscale = vis.scale;
@@ -2427,7 +2403,7 @@ public class UnifiedRenderer {
           {
           texturecolumn = frac>>FRACBITS;
       if(RANGECHECK){
-          if (texturecolumn < 0 || texturecolumn >= SHORT(patch.width))
+          if (texturecolumn < 0 || texturecolumn >= patch.width)
               system.Error ("R_DrawSpriteRange: bad texturecolumn");
       }
           column = patch.columns[texturecolumn];
@@ -2494,7 +2470,7 @@ public class UnifiedRenderer {
           tx = -(gyt+gxt); 
 
           // too far off the side?
-          if (abs(tx)>(tz<<2))
+          if (Math.abs(tx)>(tz<<2))
           return;
           
           // decide which patch to use for sprite relative to player
@@ -2514,7 +2490,7 @@ public class UnifiedRenderer {
           if (sprframe.rotate)
           {
           // choose a different rotation based on player view
-          ang = R_PointToAngle (thing.x, thing.y);
+          ang = PointToAngle (thing.x, thing.y);
           rot = (ang-thing.angle+(unsigned)(ANG45/2)*9)>>29;
           lump = sprframe.lump[rot];
           flip = (boolean)sprframe.flip[rot];
@@ -2542,7 +2518,7 @@ public class UnifiedRenderer {
           return;
           
           // store information in a vissprite
-          vis = R_NewVisSprite ();
+          vis = NewVisSprite ();
           vis.mobjflags = thing.flags;
           vis.scale = xscale<<detailshift;
           vis.gx = thing.x;
@@ -2594,7 +2570,8 @@ public class UnifiedRenderer {
           if (index >= MAXLIGHTSCALE) 
               index = MAXLIGHTSCALE-1;
 
-          vis.colormap = spritelights[index];
+          vis.colormap = spritelights;
+          vis.co=index;
           }   
       }
 
@@ -2710,26 +2687,30 @@ public class UnifiedRenderer {
 
           vis.patch = lump;
 
-          if (viewplayer.powers[pw_invisibility] > 4*32
-          || viewplayer.powers[pw_invisibility] & 8)
+          if ((viewplayer.powers[pw_invisibility] > 4*32)
+          || (viewplayer.powers[pw_invisibility] & 8)!=0)
           {
           // shadow draw
-          vis.colormap = NULL;
+          vis.colormap = null;
+          
           }
-          else if (fixedcolormap)
+          else if (fixedcolormap!=null)
           {
           // fixed color
           vis.colormap = fixedcolormap;
+          vis.co=0;
           }
-          else if (psp.state.frame & FF_FULLBRIGHT)
+          else if ((psp.state.frame & FF_FULLBRIGHT)!=0)
           {
           // full bright
           vis.colormap = colormaps;
+          vis.co=0;
           }
           else
           {
           // local light
-          vis.colormap = spritelights[MAXLIGHTSCALE-1];
+          vis.colormap = spritelights;
+          vis.co=MAXLIGHTSCALE-1;
           }
           
           DrawVisSprite (vis, vis.x1, vis.x2);
@@ -2766,8 +2747,8 @@ public class UnifiedRenderer {
            i<NUMPSPRITES;
            i++,psp++)
           {
-          if (psp.state)
-              R_DrawPSprite (psp);
+          if (psp.state!=null)
+              DrawPSprite (psp);
           }
       }
 
@@ -2863,7 +2844,7 @@ public class UnifiedRenderer {
           for (ds=ds_p-1 ; ds >= 0 ; ds--)
           {
           // determine if the drawseg obscures the sprite
-              dss=MyBSP.drawsegs[ds];
+              dss=drawsegs[ds];
           if (dss.x1 > spr.x2
               || dss.x2 < spr.x1
               || ((dss.silhouette==0)
@@ -2889,11 +2870,11 @@ public class UnifiedRenderer {
               
           if (scale < spr.scale
               || ( lowscale < spr.scale
-               && !PointOnSegSide (spr.gx, spr.gy, dss.curline) ) )
+               && !R_PointOnSegSide (spr.gx, spr.gy, dss.curline) ) )
           {
               // masked mid texture?
-              if (ds.maskedtexturecol)   
-              RenderMaskedSegRange (ds, r1, r2);
+              if (dss.l_lmaskedtexturecol!=null)   
+              MySegs.RenderMaskedSegRange (dss, r1, r2);
               // seg is behind sprite
               continue;           
           }
@@ -2981,12 +2962,12 @@ public class UnifiedRenderer {
           
           // render any remaining masked mid textures
           for (ds=ds_p-1 ; ds >= drawsegs ; ds--)
-          if (ds.maskedtexturecol)
+          if (ds.maskedtexturecol!=0)
               R_RenderMaskedSegRange (ds, ds.x1, ds.x2);
           
           // draw the psprites on top of everything
           //  but does not draw on side views
-          if (!viewangleoffset)       
+          if (viewangleoffset==0)       
           DrawPlayerSprites ();
       }
   }
@@ -3351,70 +3332,7 @@ public class UnifiedRenderer {
       }
   }
   
-  /**
-   * R_PointOnSide
-   * Traverse BSP (sub) tree,
-   *  check point against partition plane.
-   * Returns side 0 (front) or 1 (back).
-   * @param x fixed
-   * @param y fixed
-   * 
-   */
-
-  public int PointOnSide
-  ( int   x,
-    int   y,
-    node_t    node )
-  {
-      // MAES: These are used mainly as ints, no need to use fixed_t internally.
-      // fixed_t will only be used as a "pass type", but calculations will be done with ints, preferably.
-      int dx; 
-      int dy;
-      int left;
-      int right;
-      
-      if (node.dx==0)
-      {
-      if (x <= node.x)
-          return (node.dy > 0)?1:0;
-      
-      return (node.dy < 0)?1:0;
-      }
-      if (node.dy==0)
-      {
-      if (y <= node.y)
-          return (node.dx < 0)?1:0;
-      
-      return (node.dx > 0)?1:0;
-      }
-      
-      dx = (x - node.x);
-      dy = (y - node.y);
-      
-      // Try to quickly decide by looking at sign bits.
-      if ( ((node.dy ^ node.dx ^ dx ^ dy)&0x80000000 )!=0)
-      {
-      if  ( ((node.dy ^ dx) & 0x80000000 )!=0)
-      {
-          // (left is negative)
-          return 1;
-      }
-      return 0;
-      }
-
-      left = FixedMul ( node.dy>>FRACBITS , dx );
-      right = FixedMul ( dy , node.dx>>FRACBITS );
-      
-      if (right < left)
-      {
-      // front side
-      return 0;
-      }
-      // back side
-      return 1;           
-  }
-
-  
+    
   /**
    * A column is a vertical slice/span from a wall texture that, given the
    * DOOM style restrictions on the view orientation, will always have
@@ -3696,6 +3614,126 @@ public void InitTranslationTables() {
         }
     }
 }
+
+/**
+ * R_DrawMaskedColumn
+ * Used for sprites and masked mid textures.
+ * Masked means: partly transparent, i.e. stored
+ *  in posts/runs of opaque pixels.
+ */
+
+public void DrawMaskedColumn (column_t column)
+{
+    int     topscreen;
+    int     bottomscreen;
+    int basetexturemid; // fixed_t
+    
+    basetexturemid = dc_texturemid;
+    // That's true for the whole column.
+    dc_source = column.data;
+    
+    // for each post...
+    for (int i=0;i<column.posts;i++ ) 
+    {
+    // calculate unclipped screen coordinates
+    //  for post
+    topscreen = sprtopscreen + spryscale*column.postdeltas[i];
+    bottomscreen = topscreen + spryscale*column.postlen[i];
+
+    dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+    dc_yh = (bottomscreen-1)>>FRACBITS;
+        
+    if (dc_yh >= mfloorclip[dc_x])
+        dc_yh = mfloorclip[dc_x]-1;
+    if (dc_yl <= mceilingclip[dc_x])
+        dc_yl = mceilingclip[dc_x]+1;
+
+    if (dc_yl <= dc_yh)
+    {
+        // Set pointer inside column to current post's data
+        // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
+        dc_source_ofs = column.postofs[i] + 3;
+        dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
+        // dc_source = (byte *)column + 3 - column.topdelta;
+
+        // Drawn by either R_DrawColumn
+        //  or (SHADOW) R_DrawFuzzColumn.
+        if (MyThings.shadow){
+            DrawFuzzColumn();
+        } else {
+            DrawColumn();
+        }
+        
+        // colfunc (); 
+    }
+    //column = (column_t *)(  (byte *)column + column.length + 4);
+    }
+    
+    dc_texturemid = basetexturemid;
+}
+
+/**
+ * R_DrawMaskedColumn
+ * Used for sprites and masked mid textures.
+ * Masked means: partly transparent, i.e. stored
+ *  in posts/runs of opaque pixels.
+ *  
+ *  NOTE: this version accepts raw bytes, in case you  know what you're doing.
+ */
+
+public void DrawMaskedColumn (byte[] column)
+{
+    int     topscreen;
+    int     bottomscreen;
+    int basetexturemid; // fixed_t
+    int topdelta;
+    
+    basetexturemid = dc_texturemid;
+    // That's true for the whole column.
+    dc_source = column;
+    int pointer=0;
+    
+    // for each post...
+    while(column[pointer]!=0xFF)
+    {
+    // calculate unclipped screen coordinates
+    //  for post
+        topdelta=toUnsignedByte(column[pointer+1]);
+    topscreen = sprtopscreen + spryscale*topdelta;
+    bottomscreen = topscreen + spryscale*toUnsignedByte(column[pointer+2]);
+
+    dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+    dc_yh = (bottomscreen-1)>>FRACBITS;
+        
+    if (dc_yh >= mfloorclip[dc_x])
+        dc_yh = mfloorclip[dc_x]-1;
+    if (dc_yl <= mceilingclip[dc_x])
+        dc_yl = mceilingclip[dc_x]+1;
+
+    if (dc_yl <= dc_yh)
+    {
+        // Set pointer inside column to current post's data
+        // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
+        dc_source_ofs = pointer+3;
+        dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
+        // dc_source = (byte *)column + 3 - column.topdelta;
+
+        // Drawn by either R_DrawColumn
+        //  or (SHADOW) R_DrawFuzzColumn.
+        if (MyThings.shadow){
+            DrawFuzzColumn();
+        } else {
+            DrawColumn();
+        }
+        
+        // colfunc (); 
+    }
+    //column = (column_t *)(  (byte *)column + column.length + 4);
+    }
+    
+    dc_texturemid = basetexturemid;
+}
+
 
 
   interface colfunc_t {

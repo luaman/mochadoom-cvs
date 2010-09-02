@@ -3,7 +3,7 @@ package rr;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Draw.java,v 1.5 2010/08/24 14:57:42 velktron Exp $
+// $Id: Draw.java,v 1.6 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,11 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Draw.java,v $
+// Revision 1.6  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.5  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -79,7 +84,7 @@ import static m.fixed_t.*;
 
 public class Draw {
     public static String rcsid =
-        "$Id: Draw.java,v 1.5 2010/08/24 14:57:42 velktron Exp $";
+        "$Id: Draw.java,v 1.6 2010/09/02 15:56:54 velktron Exp $";
 
     Renderer R;
 
@@ -117,7 +122,8 @@ public class Draw {
 
     int viewwindowy;
 
-    /** Probably a lookup inside a column to draw? */
+    /** These are actually offsets inside screen 0 (or any screen). Therefore anything using
+     * them should "draw" inside screen 0 */
     int[] ylookup = new int[MAXHEIGHT];
 
     /** Columns offset to set where?! */

@@ -30,6 +30,17 @@ public class name8 {
         return byteArrayToLong(ss,0);
     }
     
+    public static int getIntName(String name){
+        // in case the name was a full 8 chars
+        for (int i=0;i<ss.length;i++){
+            ss[i]=0;
+        }
+        
+        byte[] tmp=name.getBytes();
+        System.arraycopy(tmp, 0, ss, 0, Math.min(4,tmp.length));
+        return byteArrayToInt(ss,0);
+    }
+    
     public static int byteArrayToInt(byte[] src, int ofs){
         return (src[ofs]<<24)|(src[ofs+1]<<16)|(src[ofs+2]<<8)|src[ofs+3];
     }

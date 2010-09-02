@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: net.java,v 1.2 2010/09/01 15:53:42 velktron Exp $
+// $Id: net.java,v 1.3 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,11 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: net.java,v $
+// Revision 1.3  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.2  2010/09/01 15:53:42  velktron
 // Graphics data loader implemented....still need to figure out how column caching works, though.
 //
@@ -41,7 +46,7 @@ package doom;
 //-----------------------------------------------------------------------------
 
 
-//static const char rcsid[] = "$Id: net.java,v 1.2 2010/09/01 15:53:42 velktron Exp $";
+//static const char rcsid[] = "$Id: net.java,v 1.3 2010/09/02 15:56:54 velktron Exp $";
 
 
 //#include "m_menu.h"
@@ -50,7 +55,7 @@ package doom;
 //#include "i_net.h"
 //#include "g_game.h"
 import static data.Defines.*;
-import data.doomstat.*;
+import static data.Limits.*;
 
 //
 //Network play related stuff.

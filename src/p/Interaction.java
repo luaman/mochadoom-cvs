@@ -1,6 +1,7 @@
 package p;
 
 import static data.Defines.*;
+import static data.Limits.*;
 import static doom.items.*;
 import static p.mobj.*;
 import static m.fixed_t.*;
@@ -21,7 +22,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Interaction.java,v 1.1 2010/08/24 14:57:42 velktron Exp $
+// $Id: Interaction.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -36,6 +37,11 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: Interaction.java,v $
+// Revision 1.2  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.1  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -49,7 +55,7 @@ import doom.weapontype_t;
 public class Interaction {
 
 
-  public static final String rcsid = "$Id: Interaction.java,v 1.1 2010/08/24 14:57:42 velktron Exp $";
+  public static final String rcsid = "$Id: Interaction.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
 
 /////////////////// STATUS ///////////////////
   

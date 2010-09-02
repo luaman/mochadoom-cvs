@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BSP.java,v 1.4 2010/08/24 14:57:42 velktron Exp $
+// $Id: BSP.java,v 1.5 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,11 @@
 // GNU General Public License for more details.
 //
 // $Log: BSP.java,v $
+// Revision 1.5  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.4  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -45,6 +50,7 @@
 //-----------------------------------------------------------------------------
 package rr;
 
+import p.LevelLoader;
 import m.fixed_t;
 import data.doomstat;
 
@@ -66,9 +72,12 @@ import data.doomstat;
 
 public class BSP{
 
-// static const char rcsid[] = "$Id: BSP.java,v 1.4 2010/08/24 14:57:42 velktron Exp $";
+   public static final String rcsid = "$Id: BSP.java,v 1.5 2010/09/02 15:56:54 velktron Exp $";
 
-    private doomstat ds;
+    private doomstat DS;
+    private LevelLoader LL;
+    private Renderer R;
+    
     
     public seg_t       curline;
     public side_t      sidedef;
@@ -81,19 +90,19 @@ public class BSP{
 
     public boolean      segtextured;
 
-    // false if the back side is the same plane
+    /** false if the back side is the same plane */
     public boolean      markfloor;      
     public boolean      markceiling;
 
     public boolean      skymap;
 
     public drawseg_t[]    drawsegs;
+
     /** pointer to drawseg */
     public int   ds_p;
 
-    public lighttable_t[][]   hscalelight;
-    public lighttable_t[][]   vscalelight;
-    public lighttable_t[][]   dscalelight;
+    /** light tables */
+    public short[][]   hscalelight,vscalelight,dscalelight;
 
     /*
     public interface drawfunc_t {
@@ -132,6 +141,12 @@ public void ClearDrawSegs ()
 //
 class cliprange_t
 {
+    
+    public cliprange_t(int first, int last){
+        this.first=first;
+        this.last=last;
+    }
+    
     public int	first;
     public int last;
     
@@ -139,19 +154,21 @@ class cliprange_t
 
 public static final int MAXSEGS=32;
 
-// newend is one past the last valid seg
-cliprange_t	newend;
+/** newend is one past the last valid seg (cliprange_t) */
+int	newend;
 cliprange_t[]	solidsegs= new cliprange_t[MAXSEGS];
 
-//
-// R_ClipSolidWallSegment
-// Does handle solid walls,
-//  e.g. single sided LineDefs (middle texture)
-//  that entirely block the view.
-// 
+/**
+ * R_ClipSolidWallSegment
+ * Does handle solid walls,
+ *  e.g. single sided LineDefs (middle texture)
+ *  that entirely block the view.
+ */ 
 
-class R_ClipSolidWallSegment implements drawfunc_t{
-public void draw(int   first,
+class ClipSolidWallSegment implements drawfunc_t{
+    
+    @Override
+public void invoke(int   first,
         int   last ){
     int	next;
     int	start;
@@ -204,15 +221,15 @@ public void draw(int   first,
 	{
 	    // Bottom is contained in next.
 	    // Adjust the clip size.
-	    start->last = next->last;	
+	    start.last = next.last;	
 	    goto crunch;
 	}
     }
 	
     // There is a fragment after *next.
-    R_StoreWallRange (next->last + 1, last);
+    R_StoreWallRange (next.last + 1, last);
     // Adjust the clip size.
-    start->last = last;
+    start.last = last;
 	
     // Remove start+1 to next from the clip list,
     // because start now covers their area.
@@ -293,14 +310,15 @@ R_ClipPassWallSegment
 
 
 
-//
-// R_ClearClipSegs
-//
-public void R_ClearClipSegs ()
+/**
+ * R_ClearClipSegs
+ */
+
+public void ClearClipSegs ()
 {
     solidsegs[0].first = -0x7fffffff;
     solidsegs[0].last = -1;
-    solidsegs[1].first = ds.viewwidth;
+    solidsegs[1].first = DS.viewwidth;
     solidsegs[1].last = 0x7fffffff;
     newend = solidsegs[2];
 }
@@ -310,7 +328,7 @@ public void R_ClearClipSegs ()
 // Clips the given segment
 // and adds any visible pieces to the line list.
 //
-void R_AddLine (seg_t	line)
+public void AddLine (seg_t	line)
 {
     int			x1;
     int			x2;
@@ -322,8 +340,8 @@ void R_AddLine (seg_t	line)
     curline = line;
 
     // OPTIMIZE: quickly reject orthogonal back sides.
-    angle1 = R_PointToAngle (line.v1.x.val, line.v1.y.val);
-    angle2 = R_PointToAngle (line.v2.x.val, line.v2.y.val);
+    angle1 = R_PointToAngle (line.v1.x, line.v1.y);
+    angle2 = PointToAngle (line.v2.x, line.v2.y);
     
     // Clip to view edges.
     // OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
@@ -371,20 +389,20 @@ void R_AddLine (seg_t	line)
     if (x1 == x2)
 	return;				
 	
-    backsector = line->backsector;
+    backsector = line.backsector;
 
     // Single sided line?
     if (!backsector)
 	goto clipsolid;		
 
     // Closed door.
-    if (backsector->ceilingheight <= frontsector->floorheight
-	|| backsector->floorheight >= frontsector->ceilingheight)
+    if (backsector.ceilingheight <= frontsector.floorheight
+	|| backsector.floorheight >= frontsector.ceilingheight)
 	goto clipsolid;		
 
     // Window.
-    if (backsector->ceilingheight != frontsector->ceilingheight
-	|| backsector->floorheight != frontsector->floorheight)
+    if (backsector.ceilingheight != frontsector.ceilingheight
+	|| backsector.floorheight != frontsector.floorheight)
 	goto clippass;	
 		
     // Reject empty lines used for triggers
@@ -392,10 +410,10 @@ void R_AddLine (seg_t	line)
     // Identical floor and ceiling on both sides,
     // identical light levels on both sides,
     // and no middle texture.
-    if (backsector->ceilingpic == frontsector->ceilingpic
-	&& backsector->floorpic == frontsector->floorpic
-	&& backsector->lightlevel == frontsector->lightlevel
-	&& curline->sidedef->midtexture == 0)
+    if (backsector.ceilingpic == frontsector.ceilingpic
+	&& backsector.floorpic == frontsector.floorpic
+	&& backsector.lightlevel == frontsector.lightlevel
+	&& curline.sidedef.midtexture == 0)
     {
 	return;
     }
@@ -529,11 +547,11 @@ boolean R_CheckBBox (fixed_t	bspcoord)
     sx2--;
 	
     start = solidsegs;
-    while (start->last < sx2)
+    while (start.last < sx2)
 	start++;
     
-    if (sx1 >= start->first
-	&& sx2 <= start->last)
+    if (sx1 >= start.first
+	&& sx2 <= start.last)
     {
 	// The clippost contains the new span.
 	return false;
@@ -565,25 +583,25 @@ void R_Subsector (int num)
 
     sscount++;
     sub = &subsectors[num];
-    frontsector = sub->sector;
-    count = sub->numlines;
-    line = &segs[sub->firstline];
+    frontsector = sub.sector;
+    count = sub.numlines;
+    line = &segs[sub.firstline];
 
-    if (frontsector->floorheight < viewz)
+    if (frontsector.floorheight < viewz)
     {
-	floorplane = R_FindPlane (frontsector->floorheight,
-				  frontsector->floorpic,
-				  frontsector->lightlevel);
+	floorplane = R_FindPlane (frontsector.floorheight,
+				  frontsector.floorpic,
+				  frontsector.lightlevel);
     }
     else
 	floorplane = NULL;
     
-    if (frontsector->ceilingheight > viewz 
-	|| frontsector->ceilingpic == skyflatnum)
+    if (frontsector.ceilingheight > viewz 
+	|| frontsector.ceilingpic == skyflatnum)
     {
-	ceilingplane = R_FindPlane (frontsector->ceilingheight,
-				    frontsector->ceilingpic,
-				    frontsector->lightlevel);
+	ceilingplane = R_FindPlane (frontsector.ceilingheight,
+				    frontsector.ceilingpic,
+				    frontsector.lightlevel);
     }
     else
 	ceilingplane = NULL;

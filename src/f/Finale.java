@@ -2,11 +2,13 @@ package f;
 
 import static doom.englsh.*;
 import static data.Defines.*;
+import static data.Limits.*;
 import static data.info.*;
 
 import java.io.IOException;
 
 import rr.Renderer;
+import rr.RendererData;
 import rr.column_t;
 import rr.patch_t;
 import rr.spritedef_t;
@@ -29,7 +31,7 @@ import hu.HU;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.1 2010/08/30 15:53:19 velktron Exp $
+// $Id: Finale.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -50,14 +52,14 @@ import hu.HU;
 
 public class Finale {
 
-  public static final String rcsid = "$Id: Finale.java,v 1.1 2010/08/30 15:53:19 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
 
   DoomGameInterface G;
   doomstat DS;
   DoomVideoRenderer V;
   HU HU;
   WadLoader W;
-  Renderer R;
+  RendererData RD;
   
   int     finalestage;
 
@@ -627,7 +629,7 @@ protected void stopattack(){
               lump=0;
               
       try {
-        patch = (patch_t) W.CacheLumpNum (lump+R.getFirstspritelump(), PU_CACHE,patch_t.class);
+        patch = (patch_t) W.CacheLumpNum (lump+RD.firstspritelump, PU_CACHE,patch_t.class);
     } catch (IOException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();

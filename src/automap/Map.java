@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.8 2010/09/01 15:53:42 velktron Exp $
+// $Id: Map.java,v 1.9 2010/09/02 15:56:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,11 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.9  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
 // Revision 1.8  2010/09/01 15:53:42  velktron
 // Graphics data loader implemented....still need to figure out how column caching works, though.
 //
@@ -63,7 +68,7 @@ package automap;
 //-----------------------------------------------------------------------------
 
 import static data.Defines.*;
-import static data.doomtype.*;
+import static data.Limits.*;
 import static m.fixed_t.*;
 import static doom.englsh.*;
 import static data.SineCosine.*;
@@ -94,7 +99,7 @@ DoomVideoRenderer V;
 LevelLoader P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.8 2010/09/01 15:53:42 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.9 2010/09/02 15:56:54 velktron Exp $";
 
 /*
 #include <stdio.h>

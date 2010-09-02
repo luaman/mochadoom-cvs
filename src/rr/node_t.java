@@ -1,5 +1,7 @@
 package rr;
 
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FixedMul;
 import utils.C2JUtils;
 import m.BBox;
 import m.fixed_t;
@@ -41,6 +43,128 @@ public class node_t {
 
      /** If NF_SUBSECTOR its a subsector. MAES: was unsigned short...so char. */
      public char[] children;
+     
+     /**
+      * R_PointOnSide
+      * Traverse BSP (sub) tree,
+      *  check point against partition plane.
+      * Returns side 0 (front) or 1 (back).
+      * @param x fixed
+      * @param y fixed
+      * 
+      */
+
+     public static int PointOnSide
+     ( int   x,
+       int   y,
+       node_t    node )
+     {
+         // MAES: These are used mainly as ints, no need to use fixed_t internally.
+         // fixed_t will only be used as a "pass type", but calculations will be done with ints, preferably.
+         int dx; 
+         int dy;
+         int left;
+         int right;
+         
+         if (node.dx==0)
+         {
+         if (x <= node.x)
+             return (node.dy > 0)?1:0;
+         
+         return (node.dy < 0)?1:0;
+         }
+         if (node.dy==0)
+         {
+         if (y <= node.y)
+             return (node.dx < 0)?1:0;
+         
+         return (node.dx > 0)?1:0;
+         }
+         
+         dx = (x - node.x);
+         dy = (y - node.y);
+         
+         // Try to quickly decide by looking at sign bits.
+         if ( ((node.dy ^ node.dx ^ dx ^ dy)&0x80000000 )!=0)
+         {
+         if  ( ((node.dy ^ dx) & 0x80000000 )!=0)
+         {
+             // (left is negative)
+             return 1;
+         }
+         return 0;
+         }
+
+         left = FixedMul ( node.dy>>FRACBITS , dx );
+         right = FixedMul ( dy , node.dx>>FRACBITS );
+         
+         if (right < left)
+         {
+         // front side
+         return 0;
+         }
+         // back side
+         return 1;           
+     }
+     
+   /** Since no context is needed, this is perfect for an instance method 
+    *      
+    * @param x fixed
+    * @param y fixed
+    * @return
+    */
+     public int PointOnSide
+     ( int   x,
+       int   y
+       )
+     {
+         // MAES: These are used mainly as ints, no need to use fixed_t internally.
+         // fixed_t will only be used as a "pass type", but calculations will be done with ints, preferably.
+         int dx; 
+         int dy;
+         int left;
+         int right;
+         
+         if (this.dx==0)
+         {
+         if (x <= this.x)
+             return (this.dy > 0)?1:0;
+         
+         return (this.dy < 0)?1:0;
+         }
+         if (this.dy==0)
+         {
+         if (y <= this.y)
+             return (this.dx < 0)?1:0;
+         
+         return (this.dx > 0)?1:0;
+         }
+         
+         dx = (x - this.x);
+         dy = (y - this.y);
+         
+         // Try to quickly decide by looking at sign bits.
+         if ( ((this.dy ^ this.dx ^ dx ^ dy)&0x80000000 )!=0)
+         {
+         if  ( ((this.dy ^ dx) & 0x80000000 )!=0)
+         {
+             // (left is negative)
+             return 1;
+         }
+         return 0;
+         }
+
+         left = FixedMul ( this.dy>>FRACBITS , dx );
+         right = FixedMul ( dy , this.dx>>FRACBITS );
+         
+         if (right < left)
+         {
+         // front side
+         return 0;
+         }
+         // back side
+         return 1;           
+     }
      
  }
 
