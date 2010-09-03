@@ -14,7 +14,7 @@ package rr;
  * Some sprites will only have one picture used
  * for all views: NNNNF0
  */
-public class spriteframe_t {
+public class spriteframe_t implements Cloneable{
 
  public spriteframe_t(){
      lump=new short[8];
@@ -36,6 +36,16 @@ public class spriteframe_t {
 
  /** Flip bit (1 = flip) to use for view angles 0-7. */
  public byte[]    flip;
+ 
+ public spriteframe_t clone(){
+     spriteframe_t response=new spriteframe_t();
+     response.lrotate=lrotate;
+     response.rotate=rotate;     
+     System.arraycopy(this.lump, 0, response.lump, 0, lump.length);
+     System.arraycopy(this.flip, 0, response.flip, 0, flip.length);
+     return response;
+     
+ }
  
 
 }

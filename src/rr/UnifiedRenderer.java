@@ -1,6 +1,7 @@
 package rr;
 
 import static utils.C2JUtils.toUnsignedByte;
+import static p.SpriteAnimations.NUMPSPRITES;
 import static data.Defines.*;
 import static data.Limits.*;
 
@@ -21,11 +22,13 @@ import p.LevelLoader;
 import p.mobj_t;
 import p.pspdef_t;
 import utils.C2JUtils;
+import v.DoomVideoRenderer;
 import w.WadLoader;
 import w.name8;
 import m.BBox;
 import m.fixed_t;
 import data.doomstat;
+import data.Defines.GameMode_t;
 import doom.player_t;
 
 public class UnifiedRenderer {
@@ -38,6 +41,7 @@ public class UnifiedRenderer {
     private BSP MyBSP;
     private Planes MyPlanes;
     private Things MyThings;
+    private DoomVideoRenderer V;
     
     ///////////////// COMMON RENDERING GLOBALS ////////////////
     
@@ -227,8 +231,10 @@ public class UnifiedRenderer {
    /** increment every time a check is made */
    public static int           validcount = 1;     
 
-   // TODO
+   /** Use in conjunction with pfixedcolormap */
    byte[]      fixedcolormap;
+   /** Use in conjunction with fixedcolormap[] */
+   int pfixedcolormap;
    //lighttable_t[][]  walllights;
 
    public int          centerx;
@@ -251,8 +257,8 @@ public class UnifiedRenderer {
    //Plus I must use them as indexes. angle_t
    public int  viewangle;
 
-   public fixed_t          viewcos;
-   public fixed_t          viewsin;
+   /** fixed */
+   public int          viewcos,viewsin;
 
    public player_t     viewplayer;
 
@@ -305,7 +311,9 @@ public class UnifiedRenderer {
    void (*spanfunc) (void);
    */
 
-   // MAES: HIGHLY experimental. Could it be that easy? :-S
+   // Fuck that shit. Amma gonna do it the fastest way possible.
+   
+   
    colfunc_t colfunc;
    colfunc_t basecolfunc;
    colfunc_t fuzzcolfunc;
@@ -392,9 +400,10 @@ public class UnifiedRenderer {
 
    int ds_x2;
 
-   /** DrawSpan colormap */
+   /** DrawSpan colormap. Use along with dso */
    byte[] ds_colormap;
-   int dso; // its index.
+   /** pointer into colormap */
+   int pds_colormap; // its index.
 
    /** fixed_t */
    int ds_xfrac;
@@ -408,8 +417,8 @@ public class UnifiedRenderer {
    /** fixed_t */
    int ds_ystep;
 
-   /** start of a 64*64 tile image (treat as pointer) */
-   int ds_pointer;
+   /** start of a 64*64 tile image (treat as pointer inside ds_source) */
+   int pds_source;
 
    byte[] ds_source;
 
@@ -965,7 +974,7 @@ public class UnifiedRenderer {
   
   class Segs{
 
-      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
+      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.3 2010/09/03 15:30:34 velktron Exp $";
 
       //
       // R_RenderMaskedSegRange
@@ -977,7 +986,7 @@ public class UnifiedRenderer {
       RenderMaskedSegRange
       ( drawseg_t ds,
         int       x1,
-        int       x2 ) throws IOException
+        int       x2 ) 
       {
           int index;
           
@@ -1008,17 +1017,17 @@ public class UnifiedRenderer {
           walllights = scalelight[lightnum];
 
           // Get the list
-          maskedtexturecol = ds.l_lmaskedtexturecol;
+          maskedtexturecol = ds.getMaskedTextureColList();
           // And this is the pointer.
-          int pmtc=ds.maskedtexturecol;
+          int pmtc=ds.getMaskedTextureColPointer();
 
           rw_scalestep = ds.scalestep;        
           spryscale = ds.scale1 + (x1 - ds.x1)*rw_scalestep;
           
           // TODO: add the pointers for those somewhere
-          mfloorclip = ds.l_sprbottomclip;
+          mfloorclip = ds.getSprBottomClipList();
           
-          mceilingclip = ds.l_sprtopclip;
+          mceilingclip = ds.getSprTopClipList();
           
           // find positioning
           if ((curline.linedef.flags & ML_DONTPEGBOTTOM)!=0)
@@ -1340,7 +1349,7 @@ public class UnifiedRenderer {
           
           midtexture = toptexture = bottomtexture = 0;
           maskedtexture = false;
-          seg.l_lmaskedtexturecol=null;
+          seg.setMaskedTextureCol(null, 0);
           //seg.maskedtexturecol = null;
           
           if (backsector==null)
@@ -1364,17 +1373,16 @@ public class UnifiedRenderer {
           rw_midtexturemid += sidedef.rowoffset;
 
           seg.silhouette = SIL_BOTH;
-          seg.sprtopclip = 0;
-          seg.l_sprtopclip=screenheightarray;
-          seg.sprbottomclip = 0;
-          seg.l_sprbottomclip=negonearray;
+          seg.setSprTopClip(screenheightarray, 0);
+          seg.setSprBottomClip(negonearray, 0);
           seg.bsilheight = Integer.MAX_VALUE;
           seg.tsilheight = Integer.MIN_VALUE;
           }
           else
           {
           // two sided line
-          seg.l_sprtopclip = seg.l_sprbottomclip = null;
+          seg.setSprTopClip(null,0);
+          seg.setSprBottomClip(null,0);
           seg.silhouette = 0;
           
           if (frontsector.floorheight > backsector.floorheight)
@@ -1403,16 +1411,14 @@ public class UnifiedRenderer {
               
           if (backsector.ceilingheight <= frontsector.floorheight)
           {
-              seg.l_sprbottomclip = negonearray;
-              seg.sprbottomclip=0;
+              seg.setSprBottomClip(negonearray,0);
               seg.bsilheight = Integer.MAX_VALUE;
               seg.silhouette |= SIL_BOTTOM;
           }
           
           if (backsector.floorheight >= frontsector.ceilingheight)
           {
-              seg.sprtopclip = 0;
-              seg.l_sprtopclip=screenheightarray;
+              seg.setSprTopClip(screenheightarray, 0);
               seg.tsilheight = Integer.MIN_VALUE;
               seg.silhouette |= SIL_TOP;
           }
@@ -1502,8 +1508,7 @@ public class UnifiedRenderer {
           {
               // masked midtexture
               maskedtexture = true;
-              seg.maskedtexturecol=lastopening - rw_x;
-              seg.l_lmaskedtexturecol=maskedtexturecol;
+              seg.setMaskedTextureCol(maskedtexturecol, lastopening - rw_x);
               lastopening += rw_stopx - rw_x;
           }
           }
@@ -1609,24 +1614,24 @@ public class UnifiedRenderer {
           RenderSegLoop ();
 
           
-          // save sprite clipping info
+          // save sprite clipping info ... no top clipping?
           if ( ((seg.silhouette & SIL_TOP)!=0 || maskedtexture)
-           && seg.sprtopclip==0)
+           && seg.nullSprTopClip())
           {
               
           //memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
           System.arraycopy(ceilingclip, start, openings, lastopening,  2*(rw_stopx-start));
               
-          seg.sprtopclip = lastopening - start;
+          seg.setSprTopClipPointer(lastopening - start);
           lastopening += rw_stopx - start;
           }
-          
+          // no floor clipping?
           if ( ((seg.silhouette & SIL_BOTTOM)!=0 || maskedtexture)
-           && seg.sprbottomclip==0)
+           && seg.nullSprBottomClip())
           {
           //memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
               System.arraycopy(floorclip, start, openings, lastopening,  2*(rw_stopx-start));
-          seg.sprbottomclip = lastopening - start;
+          seg.setSprBottomClipPointer(lastopening - start);
           lastopening += rw_stopx - start;    
           }
 
@@ -1760,7 +1765,7 @@ public class UnifiedRenderer {
               index = MAXLIGHTZ-1;
 
           ds_colormap = planezlight;
-          dso=index;
+          pds_colormap=index;
           }
           
           ds_y = y;
@@ -2289,12 +2294,17 @@ public class UnifiedRenderer {
           }
           
           // allocate space for the frames present and copy sprtemp to it
-          sprites[i].numframes = maxframe;
-          sprites[i].spriteframes = new spriteframe_t[maxframe];
-          C2JUtils.initArrayOfObjects(sprites[i].spriteframes,spriteframe_t.class);
+          //  MAES: we can do that elegantly in one line.
+          
+          sprites[i]=new spritedef_t(sprtemp,maxframe);
+          
+          
+          //sprites[i].numframes = maxframe;
+          //sprites[i].spriteframes = new spriteframe_t[maxframe];
+          //C2JUtils.initArrayOfObjects(sprites[i].spriteframes,spriteframe_t.class);
               
-          for (int j=0;j<)
-          System.arraycopy(src, srcPos, dest, destPos, length)
+          //for (int j=0;j<)
+          //System.arraycopy(src, srcPos, dest, destPos, length)
           //memcpy (sprites[i].spriteframes, sprtemp, maxframe*sizeof(spriteframe_t));
           }
 
@@ -2389,7 +2399,8 @@ public class UnifiedRenderer {
           {
           shadow=false;
           //colfunc = R_DrawTranslatedColumn;
-          dc_translation = translationtables - 256 +
+          dc_translation = translationtables;
+          dcto=          - 256 +
               ( (vis.mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
           }
           
@@ -2475,11 +2486,11 @@ public class UnifiedRenderer {
           
           // decide which patch to use for sprite relative to player
       if(RANGECHECK){
-          if ((unsigned)thing.sprite >= numsprites)
+          if (thing.sprite.ordinal() >= numsprites)
           system.Error ("R_ProjectSprite: invalid sprite number %i ",
                thing.sprite);
       }
-          sprdef = sprites[thing.sprite];
+          sprdef = sprites[thing.sprite.ordinal()];
       if(RANGECHECK){
           if ( (thing.frame&FF_FRAMEMASK) >= sprdef.numframes )
           system.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
@@ -2491,26 +2502,26 @@ public class UnifiedRenderer {
           {
           // choose a different rotation based on player view
           ang = PointToAngle (thing.x, thing.y);
-          rot = (ang-thing.angle+(unsigned)(ANG45/2)*9)>>29;
+          rot = (ang-thing.angle+(ANG45/2)*9)>>29;
           lump = sprframe.lump[rot];
-          flip = (boolean)sprframe.flip[rot];
+          flip = (boolean)(sprframe.flip[rot]!=0);
           }
           else
           {
           // use single rotation for all views
           lump = sprframe.lump[0];
-          flip = (boolean)sprframe.flip[0];
+          flip = (boolean)(sprframe.flip[0]!=0);
           }
           
           // calculate edges of the shape
-          tx -= spriteoffset[lump];   
+          tx -= RD.spriteoffset[lump];   
           x1 = (centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS;
 
           // off the right side?
           if (x1 > viewwidth)
           return;
           
-          tx +=  spritewidth[lump];
+          tx +=  RD.spritewidth[lump];
           x2 = ((centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS) - 1;
 
           // off the left side
@@ -2524,7 +2535,7 @@ public class UnifiedRenderer {
           vis.gx = thing.x;
           vis.gy = thing.y;
           vis.gz = thing.z;
-          vis.gzt = thing.z + spritetopoffset[lump];
+          vis.gzt = thing.z + RD.spritetopoffset[lump];
           vis.texturemid = vis.gzt - viewz;
           vis.x1 = x1 < 0 ? 0 : x1;
           vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;   
@@ -2532,7 +2543,7 @@ public class UnifiedRenderer {
 
           if (flip)
           {
-          vis.startfrac = spritewidth[lump]-1;
+          vis.startfrac = RD.spritewidth[lump]-1;
           vis.xiscale = -iscale;
           }
           else
@@ -2546,20 +2557,22 @@ public class UnifiedRenderer {
           vis.patch = lump;
           
           // get light level
-          if (thing.flags & MF_SHADOW)
+          if ((thing.flags & MF_SHADOW)!=0)
           {
           // shadow draw
-          vis.colormap = NULL;
+          vis.colormap = null;
           }
-          else if (fixedcolormap)
+          else if (fixedcolormap!=null)
           {
           // fixed map
           vis.colormap = fixedcolormap;
+          vis.pcolormap=0;
           }
-          else if (thing.frame & FF_FULLBRIGHT)
+          else if ((thing.frame & FF_FULLBRIGHT)!=0)
           {
           // full bright
           vis.colormap = colormaps;
+          vis.pcolormap=0;
           }
           
           else
@@ -2571,7 +2584,7 @@ public class UnifiedRenderer {
               index = MAXLIGHTSCALE-1;
 
           vis.colormap = spritelights;
-          vis.co=index;
+          vis.pcolormap=index;
           }   
       }
 
@@ -2608,8 +2621,8 @@ public class UnifiedRenderer {
           spritelights = scalelight[lightnum];
 
           // Handle all things in sector.
-          for (thing = sec.thinglist ; thing!=null ; thing = thing.snext)
-          R_ProjectSprite (thing);
+          for (thing = sec.thinglist ; thing!=null ; thing = (mobj_t) thing.getSNext())
+          ProjectSprite (thing);
       }
 
 
@@ -2626,37 +2639,37 @@ public class UnifiedRenderer {
           spriteframe_t  sprframe;
           int         lump;
           boolean     flip;
-          vissprite_t    vis;
-          vissprite_t     avis;
+          
+          // vissprite_t     avis; ?
           
           // decide which patch to use
       if(RANGECHECK){
-          if ( (unsigned)psp.state.sprite >= numsprites)
+          if ( psp.state.sprite.ordinal() >= numsprites)
           system.Error ("R_ProjectSprite: invalid sprite number %i ",
                psp.state.sprite);
           }
-          sprdef = sprites[psp.state.sprite];
+          sprdef = sprites[psp.state.sprite.ordinal()];
       if(RANGECHECK){
           if ( (psp.state.frame & FF_FRAMEMASK)  >= sprdef.numframes)
-          I_Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
+          system.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
                psp.state.sprite, psp.state.frame);
       }
-          sprframe = sprdef.spriteframes[ psp.state.frame & FF_FRAMEMASK ];
+          sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK ];
 
           lump = sprframe.lump[0];
-          flip = (boolean)sprframe.flip[0];
+          flip = (boolean)(sprframe.flip[0]!=0);
           
           // calculate edges of the shape
           tx = psp.sx-160*FRACUNIT;
           
-          tx -= spriteoffset[lump];   
+          tx -= RD.spriteoffset[lump];   
           x1 = (centerxfrac + FixedMul (tx,pspritescale) ) >>FRACBITS;
 
           // off the right side
           if (x1 > viewwidth)
           return;     
 
-          tx +=  spritewidth[lump];
+          tx +=  RD.spritewidth[lump];
           x2 = ((centerxfrac + FixedMul (tx, pspritescale) ) >>FRACBITS) - 1;
 
           // off the left side
@@ -2664,9 +2677,9 @@ public class UnifiedRenderer {
           return;
           
           // store information in a vissprite
-          vis = avis;
+          //vis = avis;
           vis.mobjflags = 0;
-          vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp.sy-spritetopoffset[lump]);
+          vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp.sy-RD.spritetopoffset[lump]);
           vis.x1 = x1 < 0 ? 0 : x1;
           vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;   
           vis.scale = pspritescale<<detailshift;
@@ -2674,7 +2687,7 @@ public class UnifiedRenderer {
           if (flip)
           {
           vis.xiscale = -pspriteiscale;
-          vis.startfrac = spritewidth[lump]-1;
+          vis.startfrac = RD.spritewidth[lump]-1;
           }
           else
           {
@@ -2698,25 +2711,26 @@ public class UnifiedRenderer {
           {
           // fixed color
           vis.colormap = fixedcolormap;
-          vis.co=0;
+          vis.pcolormap=0;
           }
           else if ((psp.state.frame & FF_FULLBRIGHT)!=0)
           {
           // full bright
           vis.colormap = colormaps;
-          vis.co=0;
+          vis.pcolormap=0;
           }
           else
           {
           // local light
           vis.colormap = spritelights;
-          vis.co=MAXLIGHTSCALE-1;
+          vis.pcolormap=MAXLIGHTSCALE-1;
           }
           
           DrawVisSprite (vis, vis.x1, vis.x2);
       }
 
-
+      /** used inside DrawPSprite, better make this static */
+      protected vissprite_t    vis=new vissprite_t();
 
       /** R_DrawPlayerSprites */
       
@@ -2743,9 +2757,9 @@ public class UnifiedRenderer {
           mceilingclip = negonearray;
           
           // add all active psprites
-          for (i=0, psp=viewplayer.psprites;
+          for (i=0, psp=viewplayer.psprites[i];
            i<NUMPSPRITES;
-           i++,psp++)
+           i++)
           {
           if (psp.state!=null)
               DrawPSprite (psp);
@@ -2755,47 +2769,55 @@ public class UnifiedRenderer {
 
 
 
-      //
-      // R_SortVisSprites
-      //
-      vissprite_t vsprsortedhead;
 
+      vissprite_t vsprsortedhead;
+      // A dummy used as temp during sorting.
+      vissprite_t     unsorted=new vissprite_t();
+      
+      /**
+       * R_SortVisSprites
+       */
 
       public void SortVisSprites ()
       {
           int         count;
           vissprite_t    best;
-          vissprite_t     unsorted;
           int     bestscale; // fixed_t
 
           count = vissprite_p; //- vissprites;
           
-          // Short circuit it?
-          
+          // "breaks" unsorted from any previous linking.          
           unsorted.next = unsorted.prev = unsorted;
 
           if (count==0)
           return;
-              
+
+          // Tranverses the master visspite list, and "links"
+          // each sprite to one another in order of appearance. This is O(n)
           for (int ds=0 ; ds<vissprite_p ; ds++)
           {
               vissprites[ds].next = vissprites[ds+1];
               vissprites[ds].prev = vissprites[ds-1];
           }
           
+          // "unsorted" vissprite is inserted at the head.
           vissprites[0].prev = unsorted;
           unsorted.next = vissprites[0];
+          // ...and at the end.
           vissprites[vissprite_p-1].next = unsorted;
           unsorted.prev = vissprites[vissprite_p-1];
           
           // pull the vissprites out by scale
-          //best = 0;     // shut up the compiler warning
+          best = null;     // shut up the compiler warning
+          // "breaks" vsprsortedhead from any previous linking. 
           vsprsortedhead.next = vsprsortedhead.prev = vsprsortedhead;
+          
+          // For each vissprite...
           for (int i=0 ; i<count ; i++)
           {
           bestscale = Integer.MAX_VALUE;
           
-          // Try and find unsorted sprites?
+          // Transverses the linked list.
           for (vissprite_t ds=unsorted.next ; ds!= unsorted ; ds=ds.next)
           {
               if (ds.scale < bestscale)
@@ -2805,8 +2827,13 @@ public class UnifiedRenderer {
               }
           }
           
+          // Once the element with the SMALLER scale is found..
+          
+          // best is unlinked
           best.next.prev = best.prev;
           best.prev.next = best.next;
+          
+          // best is placed at the head of the list, sandwiched between whatever was before the head
           best.next = vsprsortedhead;
           best.prev = vsprsortedhead.prev;
           vsprsortedhead.prev.next = best;
@@ -2816,14 +2843,16 @@ public class UnifiedRenderer {
 
 
 
-      //
-      // R_DrawSprite
-      //
+
 
       protected short[]       clipbot=new short[SCREENWIDTH];
       protected short[]       cliptop=new short[SCREENWIDTH];
       
-      public void R_DrawSprite (vissprite_t spr)
+      /**
+       * R_DrawSprite
+       */
+      
+      public void DrawSprite (vissprite_t spr)
       {
           int      ds;
           drawseg_t dss;
@@ -2848,7 +2877,7 @@ public class UnifiedRenderer {
           if (dss.x1 > spr.x2
               || dss.x2 < spr.x1
               || ((dss.silhouette==0)
-              && (dss.maskedtexturecol==0)) )
+              && (dss.nullMaskedTextureCol())))
           {
               // does not cover sprite
               continue;
@@ -2870,10 +2899,10 @@ public class UnifiedRenderer {
               
           if (scale < spr.scale
               || ( lowscale < spr.scale
-               && !R_PointOnSegSide (spr.gx, spr.gy, dss.curline) ) )
+               && (dss.curline.PointOnSegSide (spr.gx, spr.gy)==0) ) )
           {
               // masked mid texture?
-              if (dss.l_lmaskedtexturecol!=null)   
+              if (!dss.nullMaskedTextureCol())   
               MySegs.RenderMaskedSegRange (dss, r1, r2);
               // seg is behind sprite
               continue;           
@@ -2881,12 +2910,12 @@ public class UnifiedRenderer {
 
           
           // clip this piece of the sprite
-          silhouette = ds.silhouette;
+          silhouette = dss.silhouette;
           
-          if (spr.gz >= ds.bsilheight)
+          if (spr.gz >= dss.bsilheight)
               silhouette &= ~SIL_BOTTOM;
 
-          if (spr.gzt <= ds.tsilheight)
+          if (spr.gzt <= dss.tsilheight)
               silhouette &= ~SIL_TOP;
                   
           if (silhouette == 1)
@@ -2894,14 +2923,15 @@ public class UnifiedRenderer {
               // bottom sil
               for (x=r1 ; x<=r2 ; x++)
               if (clipbot[x] == -2)
-                  clipbot[x] = ds.sprbottomclip[x];
+                  // clipbot[x] = ds->sprbottomclip[x];
+                  clipbot[x] = dss.getSprBottomClip(x);
           }
           else if (silhouette == 2)
           {
               // top sil
               for (x=r1 ; x<=r2 ; x++)
               if (cliptop[x] == -2)
-                  cliptop[x] = ds.sprtopclip[x];
+                  cliptop[x] = dss.getSprTopClip(x);
           }
           else if (silhouette == 3)
           {
@@ -2909,9 +2939,9 @@ public class UnifiedRenderer {
               for (x=r1 ; x<=r2 ; x++)
               {
               if (clipbot[x] == -2)
-                  clipbot[x] = ds.sprbottomclip[x];
+                  clipbot[x] = dss.getSprBottomClip(x);
               if (cliptop[x] == -2)
-                  cliptop[x] = ds.sprtopclip[x];
+                  cliptop[x] = dss.getSprTopClip(x);
               }
           }
               
@@ -2923,8 +2953,8 @@ public class UnifiedRenderer {
           for (x = spr.x1 ; x<=spr.x2 ; x++)
           {
           if (clipbot[x] == -2)       
-              clipbot[x] = viewheight;
-
+              clipbot[x] = (short) viewheight;
+          // ?? What's this bullshit?
           if (cliptop[x] == -2)
               cliptop[x] = -1;
           }
@@ -2943,7 +2973,8 @@ public class UnifiedRenderer {
       public void DrawMasked ()
       {
           vissprite_t    spr;
-          drawseg_t      ds;
+         int ds;
+         drawseg_t dss;
           
           SortVisSprites ();
 
@@ -2961,15 +2992,18 @@ public class UnifiedRenderer {
           }
           
           // render any remaining masked mid textures
-          for (ds=ds_p-1 ; ds >= drawsegs ; ds--)
-          if (ds.maskedtexturecol!=0)
-              R_RenderMaskedSegRange (ds, ds.x1, ds.x2);
+          for (ds=ds_p-1 ; ds >= 0 ; ds--) {
+              dss=drawsegs[ds];
+                        if (!dss.nullMaskedTextureCol())
+              MySegs.RenderMaskedSegRange (dss, dss.x1, dss.x2);
           
           // draw the psprites on top of everything
           //  but does not draw on side views
           if (viewangleoffset==0)       
           DrawPlayerSprites ();
       }
+  }
+      
   }
   
   /////////////////// Generic rendering methods /////////////////////
@@ -3010,6 +3044,39 @@ public class UnifiedRenderer {
       
       return dist;
   }
+  
+  /**
+   * R_PointInSubsector
+   * 
+   * @param x fixed
+   * @param y fixed
+   * 
+   */
+  public subsector_t
+  PointInSubsector
+  ( int   x,
+    int   y )
+  {
+      node_t  node;
+      int     side;
+      int     nodenum;
+
+      // single subsector is a special case
+      if (LL.numnodes==0)              
+      return LL.subsectors[0];
+          
+      nodenum = LL.numnodes-1;
+
+      while ((nodenum & NF_SUBSECTOR)==0 )
+      {
+      node = LL.nodes[nodenum];
+      side = node.PointOnSide (x, y);
+      nodenum = node.children[side];
+      }
+      
+      return LL.subsectors[nodenum & ~NF_SUBSECTOR];
+  }
+  
 
   /**
    * R_PointToAngle
@@ -3133,7 +3200,7 @@ public class UnifiedRenderer {
   }
   }
 
-
+  
   //
   // R_ScaleFromGlobalAngle
   // Returns the texture mapping scale
@@ -3531,10 +3598,15 @@ if(RANGECHECK){
    } while (count-->0); 
 } 
   
-
+/** use paired with dcto */
 byte[] dc_translation;
+/** DC Translation offset */
+int dcto;
 
+/** used paired with tto */
 byte[] translationtables;
+/** translation tables offset */
+int tto;
 
 public void DrawTranslatedColumn() {
     int count;
@@ -3734,6 +3806,409 @@ public void DrawMaskedColumn (byte[] column)
     dc_texturemid = basetexturemid;
 }
 
+/////////////////////////////// r_draw methods //////////////////////////////////////
+
+/**
+ * Copy a screen buffer.
+ *
+ *   LFB copy.
+ *   This might not be a good idea if memcpy
+ *   is not optiomal, e.g. byte by byte on
+ *   a 32bit CPU, as GNU GCC/Linux libc did
+ *    at one point.
+ */
+public void VideoErase(int ofs, int count) {
+
+    // memcpy (screens[0]+ofs, screens[1]+ofs, count);
+    System.arraycopy(V.getScreen(0), ofs, V.getScreen(1), ofs, count);
+
+}
+
+/*
+ * R_DrawViewBorder
+ * Draws the border around the view
+ * for different size windows?
+ */
+
+ public void DrawViewBorder() {
+     int top;
+     int side;
+     int ofs;
+     int i;
+
+     if (scaledviewwidth == SCREENWIDTH)
+         return;
+
+     top = ((SCREENHEIGHT - SBARHEIGHT) - viewheight) / 2;
+     side = (SCREENWIDTH - scaledviewwidth) / 2;
+
+     // copy top and one line of left side
+     this.VideoErase(0, top * SCREENWIDTH + side);
+
+     // copy one line of right side and bottom
+     ofs = (viewheight + top) * SCREENWIDTH - side;
+     this.VideoErase(ofs, top * SCREENWIDTH + side);
+
+     // copy sides using wraparound
+     ofs = top * SCREENWIDTH + SCREENWIDTH - side;
+     side <<= 1;
+
+     for (i = 1; i < viewheight; i++) {
+         this.VideoErase(ofs, side);
+         ofs += SCREENWIDTH;
+     }
+
+     // ?
+     V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT - SBARHEIGHT);
+ }
+
+ /**
+  * R_FillBackScreen
+  * Fills the back screen with a pattern
+  * for variable screen sizes
+  * Also draws a beveled edge.
+  */
+ 
+ public void FillBackScreen() {
+     byte[] src;
+     byte[] dest;
+     int x;
+     int y;
+     patch_t patch;
+
+     // DOOM border patch.
+     String name1 = "FLOOR7_2";
+
+     // DOOM II border patch.
+     String name2 = "GRNROCK";
+
+     String name;
+
+     if (scaledviewwidth == 320)
+         return;
+
+     if (DS.gamemode == GameMode_t.commercial)
+         name = name2;
+     else
+         name = name1;
+
+     // MAES: do a RAW get here? :-S
+     src = W.CacheLumpName(name, PU_CACHE).getBuffer().array();
+     dest = V.getScreen(1);
+     int destPos = 0;
+
+     for (y = 0; y < SCREENHEIGHT - SBARHEIGHT; y++) {
+         for (x = 0; x < SCREENWIDTH / 64; x++) {
+             // memcpy (dest, src+((y&63)<<6), 64);
+             System.arraycopy(src, ((y & 63) << 6), dest, destPos, 64);
+             destPos += 64;
+         }
+
+         if ((SCREENWIDTH & 63) != 0) {
+             // memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
+             System.arraycopy(src, ((y & 63) << 6), dest, destPos,
+                 SCREENWIDTH & 63);
+
+             destPos += (SCREENWIDTH & 63);
+         }
+     }
+
+     patch = (patch_t) W.CacheLumpName("brdr_t", PU_CACHE, patch_t.class);
+
+     for (x = 0; x < scaledviewwidth; x += 8)
+         V.DrawPatch(viewwindowx + x, viewwindowy - 8, 1, patch);
+     patch = (patch_t) W.CacheLumpName("brdr_b", PU_CACHE, patch_t.class);
+
+     for (x = 0; x < scaledviewwidth; x += 8)
+         V.DrawPatch(viewwindowx + x, viewwindowy + viewheight, 1, patch);
+     patch = (patch_t) W.CacheLumpName("brdr_l", PU_CACHE, patch_t.class);
+
+     for (y = 0; y < viewheight; y += 8)
+         V.DrawPatch(viewwindowx - 8, viewwindowy + y, 1, patch);
+     patch = (patch_t) W.CacheLumpName("brdr_r", PU_CACHE, patch_t.class);
+
+     for (y = 0; y < viewheight; y += 8)
+         V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + y, 1,
+             patch);
+
+     // Draw beveled edge. Top-left
+     V.DrawPatch(viewwindowx - 8, viewwindowy - 8, 1, (patch_t) W
+             .CacheLumpName("brdr_tl", PU_CACHE, patch_t.class));
+
+     // Top-right.
+     V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy - 8, 1,
+         (patch_t) W.CacheLumpName("brdr_tr", PU_CACHE, patch_t.class));
+
+     // Bottom-left
+     V.DrawPatch(viewwindowx - 8, viewwindowy + viewheight, 1,
+         (patch_t) W.CacheLumpName("brdr_bl", PU_CACHE, patch_t.class));
+     // Bottom-right.
+     V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
+         (patch_t) W.CacheLumpName("brdr_br", PU_CACHE, patch_t.class));
+ }
+
+ /**
+  * R_InitBuffer Creates lookup tables that avoid multiplies and other
+  * hazzles for getting the framebuffer address of a pixel to draw. MAES:
+  * this is "pinned" to screen[0] of a Video Renderer. We will handle this
+  * differently elsewhere...
+  */
+
+ public void InitBuffer(int width, int height) {
+     int i;
+
+     // Handle resize,
+     // e.g. smaller view windows
+     // with border and/or status bar.
+     viewwindowx = (SCREENWIDTH - width) >> 1;
+
+     // Column offset. For windows.
+     for (i = 0; i < width; i++)
+         columnofs[i] = viewwindowx + i;
+
+     // Samw with base row offset.
+     if (width == SCREENWIDTH)
+         viewwindowy = 0;
+     else
+         viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
+
+     // Preclaculate all row offsets.
+     for (i = 0; i < height; i++)
+         ylookup[i] = /* screens[0] + */(i + viewwindowy) * SCREENWIDTH;
+ }
+ 
+ /**
+  * Again..
+  */
+ 
+ public void DrawSpanLow() {
+     int f_xfrac;
+     int f_yfrac;
+     int dest;
+     int count;
+     int spot;
+
+     if (RANGECHECK) {
+         if ((ds_x2 < ds_x1) || (ds_x1 < 0) || ds_x2 >= SCREENWIDTH
+                 || ds_y > SCREENHEIGHT) {
+             system.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+         }
+         // dscount++;
+     }
+
+     f_xfrac = ds_xfrac;
+     f_yfrac = ds_yfrac;
+
+     // Blocky mode, need to multiply by 2.
+     ds_x1 <<= 1;
+     ds_x2 <<= 1;
+
+     dest = ylookup[ds_y] + columnofs[ds_x1];
+
+     count = ds_x2 - ds_x1;
+     do {
+         spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+         // Lowres/blocky mode does it twice,
+         // while scale is adjusted appropriately.
+         screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+         screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+
+         f_xfrac += ds_xstep;
+         f_yfrac += ds_ystep;
+
+     } while (count-- != 0);
+ }
+ 
+ /** UNUSED.
+  * Loop unrolled by 4.
+  */
+ 
+ public void R_DrawSpan() {
+     int position, step;
+     byte[] source;
+     byte[] colormap;
+     int dest;
+     int count;
+     int spot;
+     int xtemp;
+     int ytemp;
+     
+     position = ((ds_xfrac << 10) & 0xffff0000) | ((ds_yfrac >> 6) & 0xffff);
+     step = ((ds_xstep << 10) & 0xffff0000) | ((ds_ystep >> 6) & 0xffff);
+     source = ds_source;
+     colormap = ds_colormap;
+     dest = ylookup[ds_y] + columnofs[ds_x1];
+     count = ds_x2 - ds_x1 + 1;
+     while (count >= 4) {
+         ytemp = position >> 4;
+         ytemp = ytemp & 4032;
+         xtemp = position >> 26;
+         spot = xtemp | ytemp;
+         position += step;
+         screen[dest] = colormap[source[spot]];
+         ytemp = position >> 4;
+         ytemp = ytemp & 4032;
+         xtemp = position >> 26;
+         spot = xtemp | ytemp;
+         position += step;
+         screen[dest+1] = colormap[source[spot]];
+         ytemp = position >> 4;
+         ytemp = ytemp & 4032;
+         xtemp = position >> 26;
+         spot = xtemp | ytemp;
+         position += step;
+         screen[dest+2] = colormap[source[spot]];
+         ytemp = position >> 4;
+         ytemp = ytemp & 4032;
+         xtemp = position >> 26;
+         spot = xtemp | ytemp;
+         position += step;
+         screen[dest+3] = colormap[source[spot]];
+         count -= 4;
+         dest += 4;
+     }
+     
+     while (count > 0) {
+         ytemp = position >> 4;
+         ytemp = ytemp & 4032;
+         xtemp = position >> 26;
+         spot = xtemp | ytemp;
+         position += step;
+         screen[dest++] = colormap[source[spot]];
+         count--;
+     }
+ }
+ 
+ /**
+  * Draws the actual span.
+  */
+ public void DrawSpan() {
+     int f_xfrac; // fixed_t
+     int f_yfrac; // fixed_t
+     int dest;
+     int count;
+     int spot;
+
+     if (RANGECHECK) {
+         if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
+                 || ds_y > SCREENHEIGHT) {
+             system.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+         }
+         // dscount++;
+     }
+
+     f_xfrac = ds_xfrac;
+     f_yfrac = ds_yfrac;
+
+     dest = ylookup[ds_y] + columnofs[ds_x1];
+
+     // We do not check for zero spans here?
+     count = ds_x2 - ds_x1;
+
+     do {
+         // Current texture index in u,v.
+         spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+
+         // Lookup pixel from flat texture tile,
+         // re-index using light/colormap.
+         screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+
+         // Next step in u,v.
+         f_xfrac += ds_xstep;
+         f_yfrac += ds_ystep;
+
+     } while (count-- != 0);
+ }
+
+
+///////////////////////// The actual rendering calls ///////////////////////
+ 
+ //
+//R_RenderView
+//
+public void RenderPlayerView (player_t player)
+{   
+  SetupFrame (player);
+
+  // Clear buffers.
+  ClearClipSegs ();
+  MySegs.ClearDrawSegs ();
+  MyPlanes.ClearPlanes ();
+  MyThings.ClearSprites ();
+  
+  // TODO: check for new console commands.
+  //NetUpdate ();
+
+  // The head node is the last node output.
+  RenderBSPNode (numnodes-1);
+  
+  // Check for new console commands.
+  //NetUpdate ();
+  
+  MyPlanes.DrawPlanes ();
+  
+  // Check for new console commands.
+  //NetUpdate ();
+  
+  DrawMasked ();
+
+  // Check for new console commands.
+ // NetUpdate ();             
+}
+
+//
+//R_SetupFrame
+//
+public void SetupFrame (player_t player)
+{       
+ int     i;
+ 
+ viewplayer = player;
+ viewx = player.mo.x;
+ viewy = player.mo.y;
+ viewangle = player.mo.angle + viewangleoffset;
+ extralight = player.extralight;
+
+ viewz = player.viewz;
+ 
+ viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
+ viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
+ 
+ sscount = 0;
+ 
+ if (player.fixedcolormap!=0)
+ {
+ fixedcolormap =colormaps;
+ // Offset by fixedcolomap
+ pfixedcolormap =player.fixedcolormap*256;
+ 
+ walllights = scalelightfixed;
+
+ for (i=0 ; i<MAXLIGHTSCALE ; i++)
+     scalelightfixed[i] = fixedcolormap[pfixedcolormap];
+ }
+ else
+ fixedcolormap = 0;
+     
+ framecount++;
+ validcount++;
+}
+
+ 
+ 
+ 
+//////////////////////////////////From r_sky.c /////////////////////////////////////
+
+/**
+ * R_InitSkyMap
+ * Called whenever the view size changes.
+ */
+
+public void InitSkyMap ()
+{
+    skyflatnum = RD.FlatNumForName ( SKYFLATNAME );
+    skytexturemid = 100*FRACUNIT;
+}
 
 
   interface colfunc_t {

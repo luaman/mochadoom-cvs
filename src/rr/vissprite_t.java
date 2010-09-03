@@ -35,12 +35,14 @@ public int     texturemid;
 public int         patch;
 
 /** for color translation and shadow draw,
- * maxbright frames as well MAES: was *, make []?
+ * maxbright frames as well.
+ * 
+ * Use paired with colormapO;
  */ 
 public byte[]   colormap;
 
 /** pointer into colormap */
-public int co;
+public int pcolormap;
 
 public int         mobjflags;
 

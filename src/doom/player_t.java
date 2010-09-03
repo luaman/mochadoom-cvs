@@ -18,7 +18,7 @@ import static p.SpriteAnimations.NUMPSPRITES;
  */
 
 public class player_t
-        extends mobj_t {
+        /* extends mobj_t */ {
     
     public player_t(){
         powers = new int[NUMPOWERS];
@@ -126,9 +126,17 @@ public class player_t
     // So gun flashes light up areas.
     public int extralight;
 
-    // Current PLAYPAL, ???
-    // can be set to REDCOLORMAP for pain, etc.
+    /** Current PLAYPAL, ???
+        can be set to REDCOLORMAP for pain, etc.
+        MAES: "int" my ass. It's yet another pointer alias into colormaps.
+        Ergo, array and pointer.
+        
+    */
+    
+    
+    //public byte[] fixedcolormap;
     public int fixedcolormap;
+    
 
     // Player skin colorshift,
     // 0-3 for which color to draw player.

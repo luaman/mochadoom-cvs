@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.11 2010/09/02 15:56:54 velktron Exp $
+// $Id: WadLoader.java,v 1.12 2010/09/03 15:30:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.12  2010/09/03 15:30:34  velktron
+// More work on unified renderer
+//
 // Revision 1.11  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -600,7 +603,7 @@ public class WadLoader {
      * @throws IOException
      */
     public void ReadLump(int lump, ByteBuffer dest)
-            throws IOException {
+            {
         int c;
         lumpinfo_t l; // Maes: was *..probably not array.
         DoomFile handle = null;
@@ -624,7 +627,8 @@ public class WadLoader {
         } else
             handle = l.handle;
 
-        handle.seek(l.position);
+        try {
+            handle.seek(l.position);
         byte[] buf = new byte[(int) l.size];
         c = handle.read(buf);
         dest.put(buf);
@@ -637,6 +641,10 @@ public class WadLoader {
             handle.close();
 
         // ??? I_EndRead ();
+        } catch (Exception e) {
+            System.err.println("W_ReadLump: could not read lump "+ lump);
+            e.printStackTrace();
+        }
 
     }
 
@@ -647,9 +655,10 @@ public class WadLoader {
     * lump cache and returned. 
     */
     public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what)
-            throws IOException {
+             {
         // byte* ptr;
 
+        
         if (lump >= numlumps) {
             system.Error("W_CacheLumpNum: %i >= numlumps", lump);
         }
@@ -766,7 +775,21 @@ public class WadLoader {
         return false;
     }
 
+
+    /** Return a cached lump based on its name, as raw bytes, no matter what.
+     *  It's rare, but has its uses.
+     * 
+     * @param name
+     * @param tag
+     * @param what
+     * @return
+     */
     
+    public byte[] CacheLumpNameAsRawBytes(String name, int tag)
+    {
+    return ((DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag, null)).getBuffer().array();
+
+    }
     
 
     /** Return a cached lump based on its name, and for a specificc
@@ -781,14 +804,9 @@ public class WadLoader {
     
     public DoomBuffer CacheLumpName(String name, int tag)
     {
-try {
     return (DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag, DoomBuffer.class);
-} catch (IOException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-    return null;
-}
-}
+
+    }
     
     /** Specific method for loading cached patches by name, since it's by FAR the most common operation.
      * 
@@ -798,13 +816,9 @@ try {
     
     public patch_t CachePatchName(String name)
     {
-try {
+
     return (patch_t) this.CacheLumpNum(this.GetNumForName(name), PU_CACHE, patch_t.class);
-} catch (IOException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-    return null;
-}
+
 }
     
     /** Specific method for loading cached patches, since it's by FAR the most common operation.
@@ -816,13 +830,8 @@ try {
     
     public patch_t CachePatchName(String name,int tag)
     {
-try {
     return (patch_t) this.CacheLumpNum(this.GetNumForName(name), tag, patch_t.class);
-} catch (IOException e) {
-    e.printStackTrace();
-    return null;
-}
-}
+    }
     
     /** Specific method for loading cached patches by number.
      * 
@@ -832,25 +841,13 @@ try {
     
     public patch_t CachePatchNum(int num)
     {
-try {
     return (patch_t) this.CacheLumpNum(num, PU_CACHE, patch_t.class);
-} catch (IOException e) {
-    // TODO Auto-generated catch block
-    e.printStackTrace();
-    return null;
-}
-}
+    }
     
     public Object CacheLumpName(String name, int tag, Class what)
             {
-        try {
             return this.CacheLumpNum(this.GetNumForName(name), tag, what);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-            return null;
-        }
-    }
+            }
 
     //
     // W_Profile

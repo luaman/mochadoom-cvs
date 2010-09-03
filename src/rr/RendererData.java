@@ -20,7 +20,7 @@ import w.WadLoader;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: RendererData.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
+// $Id: RendererData.java,v 1.3 2010/09/03 15:30:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -35,6 +35,9 @@ import w.WadLoader;
 // GNU General Public License for more details.
 //
 // $Log: RendererData.java,v $
+// Revision 1.3  2010/09/03 15:30:34  velktron
+// More work on unified renderer
+//
 // Revision 1.2  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -57,7 +60,7 @@ WadLoader W;
 DoomGame DG;
 LevelLoader LL;
 
-  public static final String rcsid = "$Id: RendererData.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
+  public static final String rcsid = "$Id: RendererData.java,v 1.3 2010/09/03 15:30:34 velktron Exp $";
 
   //
   // Graphics.
@@ -182,7 +185,7 @@ LevelLoader LL;
  * @throws IOException 
    */
   
-  public void GenerateComposite (int texnum) throws IOException
+  public void GenerateComposite (int texnum) 
   {
       byte[]       block;
       texture_t      texture;
@@ -343,7 +346,7 @@ LevelLoader LL;
    */
   public byte[] GetColumn
   ( int       tex,
-    int       col ) throws IOException
+    int       col ) 
   {
       int     lump;
       int     ofs,idx;

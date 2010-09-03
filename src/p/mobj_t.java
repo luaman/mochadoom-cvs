@@ -43,10 +43,10 @@ public class mobj_t implements Interceptable, thinker_t  {
         /** used to find patch_t and flip value */
         public spritenum_t     sprite; 
         /** might be ORed with FF_FULLBRIGHT */
-        int         frame;  
+        public int         frame;  
 
         /** Interaction info, by BLOCKMAP. Links in blocks (if needed). */
-        public mobj_t  bnext, bprev;
+        public thinker_t  bnext, bprev;
         
         /** MAES: was actually struct subsector_s */ 
         public subsector_t subsector;
@@ -198,29 +198,53 @@ public class mobj_t implements Interceptable, thinker_t  {
         // TODO Auto-generated method stub
         return null;
     }
+    
     @Override
-    public thinker_t getNext() {
-        return this.snext;
+    public thinker_t getSNext() {
+        return snext;
     }
     @Override
-    public thinker_t getPrev() {
-        return this.sprev;
+    public void setSNext(thinker_t snext) {
+        this.snext = snext;
     }
+    @Override
+    public thinker_t getSPrev() {
+        return sprev;
+    }
+    @Override
+    public void setSPrev(thinker_t sprev) {
+        this.sprev = sprev;
+    }
+    
+    @Override
+    public thinker_t getBNext() {
+        return bnext;
+    }
+    
+    @Override
+    public void setBNext(thinker_t bnext) {
+        this.bnext = bnext;
+    }
+    
+    @Override
+    public thinker_t getBPrev() {
+        return bprev;
+    }
+    
+    @Override
+    public void setBPrev(thinker_t bprev) {
+        this.bprev = bprev;
+    }
+
     @Override
     public void setFunction(think_t acv) {
         // TODO Auto-generated method stub
         
     }
-    @Override
-    public void setNext(thinker_t t) {
-        // TODO Auto-generated method stub
-        
-    }
-    @Override
-    public void setPrev(thinker_t t) {
-        // TODO Auto-generated method stub
-        
-    }
+    
+    
+    
+    
 
    
     }

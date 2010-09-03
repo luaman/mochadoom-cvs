@@ -9,7 +9,7 @@ public class state_t {
 		
 	}
        
-        public state_t(spritenum_t sprite, long frame, long tics, think_t action,
+        public state_t(spritenum_t sprite, int frame, long tics, think_t action,
             statenum_t nextstate, long misc1, long misc2) {
         this.sprite = sprite;
         this.frame = frame;
@@ -20,7 +20,8 @@ public class state_t {
         this.misc2 = misc2;
     }
         public spritenum_t   sprite;
-        public long          frame;
+        /** was "unsigned" but wtf..*/
+        public int          frame;
         public long          tics;
         //TODO: proper implementation of (*action)
         // MAES: was actionp_t... which is typedeffed to think_t anyway,
