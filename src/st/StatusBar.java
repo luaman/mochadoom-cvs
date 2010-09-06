@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.7 2010/08/27 23:46:57 velktron Exp $
+// $Id: StatusBar.java,v 1.8 2010/09/06 10:23:24 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.8  2010/09/06 10:23:24  velktron
+// Alternative rendering method
+//
 // Revision 1.7  2010/08/27 23:46:57  velktron
 // Introduced Buffered renderer, which makes tapping directly into byte[] screen buffers mapped to BufferedImages possible.
 //
@@ -66,6 +69,7 @@ package st;
 //
 // -----------------------------------------------------------------------------
 
+import static data.Limits.MAXPLAYERS;
 import static data.Defines.*;
 import static doom.englsh.*;
 import static automap.DoomAutoMap.*;
@@ -88,12 +92,11 @@ import doom.weapontype_t;
 import rr.Renderer;
 import rr.patch_t;
 import v.DoomVideoRenderer;
-import v.SimpleRenderer;
 import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.7 2010/08/27 23:46:57 velktron Exp $";
+        "$Id: StatusBar.java,v 1.8 2010/09/06 10:23:24 velktron Exp $";
 
     // /// STATUS //////////
 

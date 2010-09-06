@@ -1,11 +1,11 @@
 package v;
 
 import java.awt.Color;
-import java.awt.GraphicsConfiguration;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
 import java.awt.image.IndexColorModel;
 import java.awt.image.Raster;
 import java.awt.image.VolatileImage;
@@ -14,7 +14,6 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
-import javax.swing.JPanel;
 
 import rr.column_t;
 import rr.patch_t;
@@ -26,7 +25,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: VolatileRenderer.java,v 1.1 2010/08/27 23:46:57 velktron Exp $
+// $Id: VolatileRenderer.java,v 1.2 2010/09/06 10:23:24 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -40,6 +39,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: VolatileRenderer.java,v $
+// Revision 1.2  2010/09/06 10:23:24  velktron
+// Alternative rendering method
+//
 // Revision 1.1  2010/08/27 23:46:57  velktron
 // Introduced Buffered renderer, which makes tapping directly into byte[] screen buffers mapped to BufferedImages possible.
 //
@@ -118,7 +120,7 @@ import static data.Defines.*;
 
 public class VolatileRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: VolatileRenderer.java,v 1.1 2010/08/27 23:46:57 velktron Exp $";
+static final String rcsid = "$Id: VolatileRenderer.java,v 1.2 2010/09/06 10:23:24 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -129,7 +131,7 @@ protected int height;
 // Each screen is [SCREENWIDTH*SCREENHEIGHT]; 
 public byte[][]			screens=new byte[5][];	
  
-public VolatileImage[] screenbuffer=new VolatileImage[5];
+public BufferedImage[] screenbuffer=new BufferedImage[5];
 
 //MAES: maybe this should be a bbox?
 
@@ -856,24 +858,20 @@ public byte[] getScreen(int index) {
 @Override
 public void setScreen(int index, int width, int height){
     
-    GraphicsConfiguration gc=this.getGraphicsConfiguration();
-    
-    
-    screenbuffer[index]=gc.createCompatibleVolatileImage(width, height);
-//    WritableRaster r=WritableRaster.createPackedRaster(dbb, screenbuffer[index].getWidth(),  screenbuffer[index].getHeight(), 8,
-//        new Point(0,0));
-    //screenbuffer[index].gsetData(r);
+    DataBufferByte dbb=new DataBufferByte(width*height);
+    if (this.icm==null)
+    screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED);
+    else
+        screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED,this.icm);
+        WritableRaster r=WritableRaster.createPackedRaster(dbb, screenbuffer[index].getWidth(),  screenbuffer[index].getHeight(), 8,
+        new Point(0,0));
+    screenbuffer[index].setData(r);
     // Hack: hotwire the screenbuffers directly to the images. T3h h4x, d00d.
-    screens[index]=((DataBufferByte)screenbuffer[index].getGraphics().getRaster().getDataBuffer()).getData();
+    screens[index]=((DataBufferByte)screenbuffer[index].getRaster().getDataBuffer()).getData();
     
     //return b;    
     
    // this.screens[index]=new byte[width*height];
-}
-
-private GraphicsConfiguration getGraphicsConfiguration() {
-     JPanel bogus=new JPanel();
-     return bogus.getGraphicsConfiguration();
 }
 
 @Override
@@ -908,19 +906,85 @@ public BufferedImage mapBufferedImageToScreen(int screen, IndexColorModel icm){
     
 }
 
-public void toDevice(int screen, BufferedImage b, IndexColorModel icm) throws IOException {
+
+public void mapInternalRasterToVolatileImage(BufferedImage b){
+    raster=new int[this.screens[0].length];
+    VolatileImage v=VolatileImage.get();
+    raster=((DataBufferInt)(b.getRaster().getDataBuffer())).getData();
     
-    //BufferedImage b=new BufferedImage(this.getWidth(),this.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, icm);
+}
+
+
+/** Creates a 256 color int palette
+ * 
+ * @param pal palette lump from IWAD
+ */
+
+public void setPalette(byte[] pal){
+
+    palette=new int[256];
     
-    //Raster r=Raster.createRaster(icm.createCompatibleSampleModel(this.getWidth(), this.getHeight()), dbb, new Point(0,0));
-    //b.setData(new Raster(dbb));
+    
+    
+    for(int i = 0; i < 256; i++) {
+        System.out.print(Integer.toHexString(pal[i*3])+" ");
+        System.out.print(Integer.toHexString(pal[1+i*3])+" ");
+        System.out.print(Integer.toHexString(pal[2+i*3])+" ");
+        
+        int r=C2JUtils.toUnsignedByte(pal[i * 3]);
+        int g=C2JUtils.toUnsignedByte(pal[1+i * 3]);
+        int b=C2JUtils.toUnsignedByte(pal[2+i * 3]);
+        
+        palette[i] = (r<<16|g<<8|b);
+        System.out.println(Integer.toHexString(palette[i]));
+    }
+
+}
+
+
+/** Bullshit. creates a new int array and "sticks" it inside a BufferedImage,
+ *  using a palette.
+ *  
+ * @param screen
+ * @param b
+ */
+public void toDevice(int screen, BufferedImage b)  {
+    
+
     int[] tmp=new int[this.screens[screen].length];
     for (int i=0;i<this.screens[screen].length;i++){
-        tmp[i]=this.screens[screen][i];
+        tmp[i]=palette[this.screens[screen][i]];
     }
     
     b.getRaster().setPixels(0, 0, this.getWidth(),this.getHeight(), tmp);
 }
 
+/** Update "canvas" to one of the internal screens.
+ *  
+ * @param screen
+ * @param b
+ */
+public void remap(int screen)  {
+    byte[] scr=this.screens[screen];
+    
+    for (int i=0;i<this.screens[screen].length;i+=4){
+        raster[i]=palette[(short)0x00FF&scr[i]];
+    raster[i+1]=palette[(short)0x00FF&scr[i+1]];
+    raster[i+2]=palette[(short)0x00FF&scr[i+2]];
+    raster[i+3]=palette[(short)0x00FF&scr[i+3]];
+    /*raster[i+4]=palette[(short)0x00FF&scr[i+4]];
+    raster[i+5]=palette[(short)0x00FF&scr[i+5]];
+    raster[i+6]=palette[(short)0x00FF&scr[i+6]];
+    raster[i+7]=palette[(short)0x00FF&scr[i+7]];*/
+
 }
+}
+int[] palette;
+int[] raster;
+
+
+
+}
+
+
 

@@ -1,6 +1,6 @@
 package doom;
 
-import static data.Defines.MAXPLAYERS;
+import static data.Limits.MAXPLAYERS;
 import utils.C2JUtils;
 
 public class wbstartstruct_t implements Cloneable{

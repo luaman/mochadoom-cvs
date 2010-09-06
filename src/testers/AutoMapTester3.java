@@ -35,7 +35,7 @@ import doom.weapontype_t;
 
 /** This is a very simple tester for the Automap. Combined with status bar + Level loader. */
 
-public class AutoMapTester2 {
+public class AutoMapTester3 {
     
     public static final int WIDTH=640;
 
@@ -49,10 +49,15 @@ public class AutoMapTester2 {
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     byte[] pal=palette.getBuffer().array();
-    IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-    
-    BufferedRenderer V=new BufferedRenderer(WIDTH,200,icm);
+    BufferedRenderer V=new BufferedRenderer(WIDTH,200);
     V.Init();
+    BufferedImage bi=new BufferedImage(V.getWidth(),V.getHeight(),BufferedImage.TYPE_INT_RGB);
+    V.setPalette(pal);
+    V.mapInternalRasterToBufferedImage(bi);
+    
+    
+    
+    
     
     doomstat ds = new doomstat();
     ds.gameepisode=1;
@@ -131,7 +136,6 @@ public class AutoMapTester2 {
     AM.Responder(new event_t(Map.AM_FOLLOWKEY));
     AM.Responder(new event_t(Map.AM_ZOOMOUTKEY));
     AM.Responder(new event_t(Map.AM_GRIDKEY));
-    BufferedImage bi=((BufferedRenderer)V).screenbuffer[0];
     
     JFrame frame = new JFrame("MochaDoom");
     CrappyDisplay shit = new CrappyDisplay(bi);
@@ -141,7 +145,7 @@ public class AutoMapTester2 {
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
-    frame.setBounds(frame.getX(), frame.getY(), 640, 240);
+    frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
     
     
     long a=System.nanoTime();
@@ -166,6 +170,7 @@ public class AutoMapTester2 {
     AM.Drawer();
     ST.Ticker();
     ST.Drawer(false,true);
+    V.remap(0);
     frame.update(frame.getGraphics());
     /*File outputFile =
         new File(
