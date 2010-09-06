@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.9 2010/09/02 15:56:54 velktron Exp $
+// $Id: Map.java,v 1.10 2010/09/06 16:02:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.10  2010/09/06 16:02:59  velktron
+// Implementation of palettes.
+//
 // Revision 1.9  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -99,7 +102,7 @@ DoomVideoRenderer V;
 LevelLoader P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.9 2010/09/02 15:56:54 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.10 2010/09/06 16:02:59 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -387,7 +390,7 @@ private boolean stopped = true;
  * @param is
  */
 
-public void
+public final  void
 getIslope
 ( mline_t  ml,
 islope_t is )
@@ -406,7 +409,7 @@ islope_t is )
 //
 //
 //
-public void activateNewScale()
+public final  void activateNewScale()
 {
     m_x += m_w/2;
     m_y += m_h/2;
@@ -422,7 +425,7 @@ public void activateNewScale()
 //
 //
 //
-public void saveScaleAndLoc()
+public final  void saveScaleAndLoc()
 {
     old_m_x = m_x;
     old_m_y = m_y;
@@ -455,7 +458,7 @@ private void restoreScaleAndLoc()
  * adds a marker at the current location
  */
 
-public void addMark()
+public final  void addMark()
 {
     markpoints[markpointnum].x = m_x + m_w/2;
     markpoints[markpointnum].y = m_y + m_h/2;
@@ -467,7 +470,7 @@ public void addMark()
  *  sets global variables controlling zoom range.
  */
 
-public void findMinMaxBoundaries()
+public final  void findMinMaxBoundaries()
 {
     int a; // fixed_t
     int b;
@@ -503,7 +506,7 @@ public void findMinMaxBoundaries()
 }
 
 
-public void changeWindowLoc()
+public final  void changeWindowLoc()
 {
     if (m_paninc.x!=0 || m_paninc.y!=0)
     {
@@ -530,7 +533,7 @@ public void changeWindowLoc()
 
 
 
-public void initVariables()
+public final  void initVariables()
 {
     int pnum;
 
@@ -573,7 +576,7 @@ public void initVariables()
 //
 // 
 //
-public void loadPics()
+public final  void loadPics()
 {
     int i;
     String namebuf;
@@ -586,7 +589,7 @@ public void loadPics()
 
 }
 
-public void unloadPics()
+public final  void unloadPics()
 {
     int i;
   
@@ -595,7 +598,7 @@ public void unloadPics()
     }
 }
 
-public void clearMarks()
+public final  void clearMarks()
 {
     int i;
 
@@ -608,7 +611,7 @@ public void clearMarks()
  * should be called at the start of every level
  * right now, i figure it out myself
  */
-public void LevelInit()
+public final  void LevelInit()
 {
     leveljuststarted = 0;
 
@@ -631,10 +634,10 @@ public void LevelInit()
 //
 //
 
-public event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
+public final  event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
 
 
-public void Stop ()
+public final  void Stop ()
 {
     // MAES: Was a "method static variable"...but what's the point? It's never modified.
     event_t st_notify_ex = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
@@ -653,7 +656,7 @@ public void Stop ()
 // More "static" stuff.
 protected int lastlevel = -1, lastepisode = -1;
 
-public void Start ()
+public final  void Start ()
 {
 
     if (!stopped) Stop();
@@ -671,7 +674,7 @@ public void Start ()
 /**
  * set the window scale to the maximum size
  */
-public void minOutWindowScale()
+public final  void minOutWindowScale()
 {
     scale_mtof = min_scale_mtof;
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -682,7 +685,7 @@ public void minOutWindowScale()
  * set the window scale to the minimum size
  */
 
-public void maxOutWindowScale()
+public final  void maxOutWindowScale()
 {
     scale_mtof = max_scale_mtof;
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -700,7 +703,7 @@ protected String buffer;
  * Handle events (user inputs) in automap mode
  */
 
-public boolean Responder ( event_t  ev )
+public final  boolean Responder ( event_t  ev )
 {
 
     boolean rc;
@@ -823,7 +826,7 @@ public boolean Responder ( event_t  ev )
 /**
  * Zooming
  */
-private void changeWindowScale()
+private final void changeWindowScale()
 {
 
     // Change the scaling multipliers
@@ -842,7 +845,7 @@ private void changeWindowScale()
 //
 //
 //
-public void doFollowPlayer()
+private final  void doFollowPlayer()
 {
 
     if (f_oldloc.x != plr.mo.x || f_oldloc.y != plr.mo.y)
@@ -872,7 +875,7 @@ protected int[] litelevels = { 0, 4, 7, 10, 12, 14, 15, 15 };
 protected int litelevelscnt = 0;
 
 
-public void updateLightLev()
+private final  void updateLightLev()
 {
    
     // Change light level
@@ -889,7 +892,7 @@ public void updateLightLev()
 /**
 * Updates on Game Tick
 */
-public void Ticker ()
+public final  void Ticker ()
 {
 
     if (!DS.automapactive)
@@ -926,7 +929,7 @@ private int lastcolor=-1;
 
 private byte[] scanline;
 
-public void clearFB(byte color)
+public final  void clearFB(byte color)
 {
     if (lastcolor==-1 || lastcolor !=color){
     // Buffer a whole scanline with the appropriate color.
@@ -956,7 +959,7 @@ public void clearFB(byte color)
 * use a hash algorithm to handle  the common cases.
 */
 
-public boolean
+private final  boolean
 clipMline
 ( mline_t ml
   ,fline_t fl)
@@ -1086,7 +1089,7 @@ TOP =8;
  * @param my
  */
 
-protected int DOOUTCODE(int mx,int my){
+private final int DOOUTCODE(int mx,int my){
     int oc = 0;
     if ((my) < 0) (oc) |= TOP;
     else if ((my) >= f_h) (oc) |= BOTTOM;
@@ -1101,7 +1104,7 @@ protected int fuck = 0;
 //
 // Classic Bresenham w/ whatever optimizations needed for speed
 //
-public void drawFline
+private final  void drawFline
 ( fline_t  fl,
   int       color )
 {
@@ -1177,7 +1180,7 @@ public void drawFline
     }
 }
 
-protected void PUTDOT(int xx,int yy, byte cc) {
+private final void PUTDOT(int xx,int yy, byte cc) {
     fb[(yy)*f_w+(xx)]=(cc);
 }
 
@@ -1187,7 +1190,7 @@ protected void PUTDOT(int xx,int yy, byte cc) {
  */
 protected int singlepixel=0;
 
-public void
+private final  void
 drawMline
 ( mline_t  ml,
   int       color )
@@ -1202,12 +1205,12 @@ drawMline
 }
 
 //protected fline_t fl=new fline_t();
-protected mline_t ml=new mline_t();
+private mline_t ml=new mline_t();
 
 /**
  * Draws flat (floor/ceiling tile) aligned grid lines.
  */
-public void drawGrid(int color)
+private final  void drawGrid(int color)
 {
     int x, y; // fixed_t
     int start, end; // fixed_t
@@ -1256,7 +1259,7 @@ protected  mline_t l=new mline_t();
  * This is LineDef based, not LineSeg based.
  */
 
-public void drawWalls()
+private final  void drawWalls()
 {
 
     for (int i=0;i<P.numlines;i++)
@@ -1314,7 +1317,7 @@ public void drawWalls()
 // Rotation in 2D.
 // Used to rotate player arrow line character.
 //
-protected int rotx, roty; 
+private int rotx, roty; 
 
 /**
 * Rotation in 2D.
@@ -1325,7 +1328,7 @@ protected int rotx, roty;
  * @param a fixed_t
  */
 
-public void rotate
+private final  void rotate
 ( int  x,
   int y,
   int   a )
@@ -1343,7 +1346,7 @@ public void rotate
     //rotx.val = tmpx;
 }
 
-void
+private final void
 drawLineCharacter
 ( mline_t[]  lineguy,
   int       lineguylines,
@@ -1402,7 +1405,7 @@ drawLineCharacter
 
 protected static int  their_colors[] = { GREENS, GRAYS, BROWNS, REDS };
 
-public void drawPlayers()
+public final  void drawPlayers()
 {
     player_t   p;
     
@@ -1445,7 +1448,7 @@ public void drawPlayers()
 
 }
 
-public void drawThings
+public final  void drawThings
 ( int   colors,
   int   colorrange)
 {
@@ -1465,7 +1468,7 @@ public void drawThings
     }
 }
 
-public void drawMarks()
+public final  void drawMarks()
 {
     int i, fx, fy, w, h;
 
@@ -1486,13 +1489,13 @@ public void drawMarks()
 
 }
 
-public void drawCrosshair(int color)
+public final  void drawCrosshair(int color)
 {
     fb[(f_w*(f_h+1))/2] = (byte)color; // single point for now
 
 }
 
-public void Drawer ()
+public final  void Drawer ()
 {
     if (!DS.automapactive) return;
 

@@ -37,7 +37,7 @@ import doom.weapontype_t;
 
 public class AutoMapTester3 {
     
-    public static final int WIDTH=640;
+    public static final int WIDTH=320;
 
     public static void main(String[] argv) {
         try {
@@ -170,6 +170,7 @@ public class AutoMapTester3 {
     AM.Drawer();
     ST.Ticker();
     ST.Drawer(false,true);
+    V.changePalette((i/(2000/14))%14);
     V.remap(0);
     frame.update(frame.getGraphics());
     /*File outputFile =

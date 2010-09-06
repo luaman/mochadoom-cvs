@@ -11,6 +11,7 @@ import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.io.File;
 import java.io.IOException;
+import java.util.Hashtable;
 
 import javax.imageio.ImageIO;
 
@@ -24,7 +25,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.2 2010/09/06 10:23:24 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.3 2010/09/06 16:02:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -38,6 +39,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.3  2010/09/06 16:02:59  velktron
+// Implementation of palettes.
+//
 // Revision 1.2  2010/09/06 10:23:24  velktron
 // Alternative rendering method
 //
@@ -119,7 +123,7 @@ import static data.Defines.*;
 
 public class BufferedRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.2 2010/09/06 10:23:24 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.3 2010/09/06 16:02:59 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -150,9 +154,9 @@ public BufferedRenderer(int w,int h){
     CENTERY=        (h/2);
 }
 
-public BufferedRenderer(int w, int h, IndexColorModel icm2) {
+public BufferedRenderer(int w, int h, IndexColorModel icm) {
     this(w,h);
-    this.icm=icm2;
+    this.icm=icm;
 }
 
 // Now where did these came from? /*[5][256]*/
@@ -244,16 +248,18 @@ public static short[][] gammatable =
 public int	usegamma;
 
 private IndexColorModel icm;
+
+private int usepalette=0xFF;
 			 
 //
 // V_MarkRect 
 // 
 
-public int getUsegamma() {
+public final int getUsegamma() {
 	return usegamma;
 }
 
-public void setUsegamma(int usegamma) {
+public final void setUsegamma(int usegamma) {
 	this.usegamma = usegamma;
 }
 
@@ -263,14 +269,14 @@ public void setUsegamma(int usegamma) {
  */
 
 @Override
-public void MarkRect ( int		x,  int		y,  int		width,  int		height ) 
+public final void MarkRect ( int		x,  int		y,  int		width,  int		height ) 
 { 
     dirtybox.AddToBox(x, y); 
     dirtybox.AddToBox(x+width-1, y+height-1); 
 } 
 
 @Override
-public void Init () 
+public final void Init () 
 { 
  int		i;
  //byte*	base;
@@ -295,7 +301,7 @@ public void Init ()
 //
 
 @Override
-public void CopyRect (int		srcx,
+public final void CopyRect (int		srcx,
         int		srcy,
         int		srcscrn,
         int		width,
@@ -346,7 +352,7 @@ public void CopyRect (int		srcx,
 // desttop, dest and source were byte*
 
 @Override
-public void DrawPatch
+public final void DrawPatch
 ( int		x,
 int		y,
 int		scrn,
@@ -409,7 +415,7 @@ if (RANGECHECK)
 	
 }
 
-public void DrawPatchFast
+public final void DrawPatchFast
 ( int       x,
 int     y,
 int     scrn,
@@ -481,7 +487,7 @@ if (RANGECHECK)
     
 }   
 
-public void DrawPatchFaster
+public final void DrawPatchFaster
 ( int       x,
 int     y,
 int     scrn,
@@ -566,7 +572,7 @@ private boolean doRangeCheck(int x, int y, int scrn){
 //
 
 @Override
-public void DrawPatchFlipped ( int		x,   int		y,    int		scrn,  patch_t	patch ) 
+public final void DrawPatchFlipped ( int		x,   int		y,    int		scrn,  patch_t	patch ) 
 { 
 
     column_t	column; 
@@ -701,7 +707,7 @@ V_DrawPatchDirect
 
 
 @Override
-public void
+public final void
 DrawBlock
 ( int		x,
   int		y,
@@ -741,7 +747,7 @@ if (doRangeCheck(x, y, scrn))
 //
 
 
-public void
+public final void
 GetBlock
 ( int		x,
   int		y,
@@ -777,7 +783,7 @@ public int getWidth() {
     return this.width;
 } 
 
-public void ColumnsFirstToRowsFirst(byte[] src, byte[] dest,int width,int height){
+public final void ColumnsFirstToRowsFirst(byte[] src, byte[] dest,int width,int height){
     for (int y=0;y<height;y++){
         //int tmp=x*height;
         int tmp2=y*width;
@@ -788,7 +794,7 @@ public void ColumnsFirstToRowsFirst(byte[] src, byte[] dest,int width,int height
     }
 }
 
-public void ColumnsFirstToRowsFirst2(byte[] src, byte[] dest,int width,int height){
+public final void ColumnsFirstToRowsFirst2(byte[] src, byte[] dest,int width,int height){
     for (int x=0;x<width;x++){
       int tmp=x*height;
     for (int y=0;y<height;y++){
@@ -808,7 +814,7 @@ public void ColumnsFirstToRowsFirst2(byte[] src, byte[] dest,int width,int heigh
  * @param height
  */
 
-public void InPlaceTranspose(byte[] src,int width,int height){
+public final void InPlaceTranspose(byte[] src,int width,int height){
     int tmp2=0;
     int tmp;
     byte t;
@@ -833,18 +839,18 @@ public void InPlaceTranspose(byte[] src,int width,int height){
     }
 }
 
-public void Unscramble(int screen, byte[] dest){
+public final void Unscramble(int screen, byte[] dest){
     this.ColumnsFirstToRowsFirst2(screens[screen], dest, this.getWidth(),this.getHeight());
 
     }
-public void Unscramble(int screen){
+public final void Unscramble(int screen){
     this.InPlaceTranspose(screens[screen],this.getWidth(),this.getHeight());
 
     }
 
 
 @Override
-public void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
+public final void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
     this.DrawPatch(x, y, scrn, patch);
     
 }
@@ -855,26 +861,32 @@ public byte[] getScreen(int index) {
 }
 
 @Override
-public void setScreen(int index, int width, int height){
+public final void setScreen(int index, int width, int height){
     
+    // Create a dummy databuffer....
     DataBufferByte dbb=new DataBufferByte(width*height);
     if (this.icm==null)
     screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED);
     else
         screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED,this.icm);
+    
+    // Create a raster, "linked" to dbb. It's actually a copy.
         WritableRaster r=WritableRaster.createPackedRaster(dbb, screenbuffer[index].getWidth(),  screenbuffer[index].getHeight(), 8,
         new Point(0,0));
+        
+        // However, r is actually "inserted" here.
     screenbuffer[index].setData(r);
     // Hack: hotwire the screenbuffers directly to the images. T3h h4x, d00d.
+    // We can actually tap r's backing array.
     screens[index]=((DataBufferByte)screenbuffer[index].getRaster().getDataBuffer()).getData();
-    
+
     //return b;    
     
    // this.screens[index]=new byte[width*height];
 }
 
 @Override
-public void takeScreenShot(int screen, String imagefile, IndexColorModel icm) throws IOException {
+public final void takeScreenShot(int screen, String imagefile, IndexColorModel icm) throws IOException {
     
     BufferedImage b=new BufferedImage(this.getWidth(),this.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, icm);
     
@@ -905,6 +917,13 @@ public BufferedImage mapBufferedImageToScreen(int screen, IndexColorModel icm){
     
 }
 
+public BufferedImage cloneScreen(int screen, IndexColorModel icm){
+    BufferedImage b=new BufferedImage(this.getWidth(),this.getHeight(),BufferedImage.TYPE_BYTE_INDEXED,icm);
+    b.setData(screenbuffer[0].getRaster());
+    return b;
+    
+}
+
 
 public void mapInternalRasterToBufferedImage(BufferedImage b){
     raster=new int[this.screens[0].length];
@@ -920,11 +939,11 @@ public void mapInternalRasterToBufferedImage(BufferedImage b){
 
 public void setPalette(byte[] pal){
 
-    palette=new int[256];
+    palette=new int[256*pal.length/768];
     
     
     
-    for(int i = 0; i < 256; i++) {
+    for(int i = 0; i < pal.length/3; i++) {
         System.out.print(Integer.toHexString(pal[i*3])+" ");
         System.out.print(Integer.toHexString(pal[1+i*3])+" ");
         System.out.print(Integer.toHexString(pal[2+i*3])+" ");
@@ -936,7 +955,16 @@ public void setPalette(byte[] pal){
         palette[i] = (r<<16|g<<8|b);
         System.out.println(Integer.toHexString(palette[i]));
     }
-
+/*
+    int[] tmp= new int[128];
+    for(int i = 0; i < palette.length/256; i++) {
+        // Swap signed/unsigned.
+        System.arraycopy(palette, 128+256*i, tmp,0, 128);
+        System.arraycopy(palette, 0+256*i, palette,128+256*i, 128);
+        System.arraycopy(tmp, 0, palette,256*i, 128);
+        
+    } */
+    
 }
 
 
@@ -946,7 +974,7 @@ public void setPalette(byte[] pal){
  * @param screen
  * @param b
  */
-public void toDevice(int screen, BufferedImage b)  {
+public final void toDevice(int screen, BufferedImage b)  {
     
 
     int[] tmp=new int[this.screens[screen].length];
@@ -962,25 +990,76 @@ public void toDevice(int screen, BufferedImage b)  {
  * @param screen
  * @param b
  */
-public void remap(int screen)  {
-    byte[] scr=this.screens[screen];
+public  final void remap(int screen)  {
     
-    for (int i=0;i<this.screens[screen].length;i+=4){
-        raster[i]=palette[(short)0x00FF&scr[i]];
-    raster[i+1]=palette[(short)0x00FF&scr[i+1]];
-    raster[i+2]=palette[(short)0x00FF&scr[i+2]];
-    raster[i+3]=palette[(short)0x00FF&scr[i+3]];
-    /*raster[i+4]=palette[(short)0x00FF&scr[i+4]];
+    byte[] scr=this.screens[screen];
+    int i1,i2,i3,i4;
+    for (int i=0;i<this.screens[screen].length;i+=8){
+        i1=i+1;
+        i2=i+2;
+        i3=i+3;
+        i4=i+4;
+        raster[i]=palette[this.usepalette&scr[i]];
+        raster[i1]=palette[this.usepalette&scr[i1]];
+        raster[i2]=palette[this.usepalette&scr[i2]];
+        raster[i3]=palette[this.usepalette&scr[i3]];
+        raster[i4]=palette[this.usepalette&scr[i4]];
+        raster[i+5]=palette[this.usepalette&scr[i+5]];
+        raster[i+6]=palette[this.usepalette&scr[i+6]];
+        raster[i+7]=palette[this.usepalette&scr[i+7]];
+        /*
+        raster[i]=palette[usepalette+scr[i]];
+    raster[i1]=palette[usepalette+scr[i1]];
+    raster[i2]=palette[usepalette+scr[i2]];
+    raster[i3]=palette[usepalette+scr[i3]];
+    raster[i4]=palette[usepalette+scr[i4]];
+    raster[i+5]=palette[usepalette+scr[i+5]];
+    raster[i+6]=palette[usepalette+scr[i+6]];
+    raster[i+7]=palette[usepalette+scr[i+7]];
+    /*
+    raster[i+4]=palette[(short)0x00FF&scr[i+4]];
     raster[i+5]=palette[(short)0x00FF&scr[i+5]];
     raster[i+6]=palette[(short)0x00FF&scr[i+6]];
     raster[i+7]=palette[(short)0x00FF&scr[i+7]];*/
 
 }
 }
+
+public final void changePalette(int pal){
+    //this.usepalette=128+(256*pal);
+    this.usepalette=pal<<8|0x00FF;
+    
+}
+
 int[] palette;
 int[] raster;
 
+/** Get a bunch of BufferedImages "pegged" on the same output buffered image,
+ *  but with different palettes, defines in icms[]. This is VERY speed efficient
+ *  assuming that an IndexedColorModel will be used, rather than a 24-bit canvas,
+ *  and memory overhead is minimal. 
+ * 
+ * @param screen
+ * @param icms
+ * @return
+ */
 
+public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
+        
+        BufferedImage[] b=new BufferedImage[icms.length];
+    // Map databuffer to one of the screens.
+
+        
+        // MEGA hack: all images share the same raster data.
+        WritableRaster r=    screenbuffer[screen].getRaster();
+        
+        for (int i=0;i<icms.length;i++){
+            b[i]=new BufferedImage(icms[i],r, false,null);
+        }
+        
+        return b;
+        
+    }
 
 }
 

@@ -37,7 +37,7 @@ import doom.weapontype_t;
 
 public class AutoMapTester2 {
     
-    public static final int WIDTH=640;
+    public static final int WIDTH=320;
 
     public static void main(String[] argv) {
         try {
@@ -49,10 +49,19 @@ public class AutoMapTester2 {
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     byte[] pal=palette.getBuffer().array();
-    IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-    
-    BufferedRenderer V=new BufferedRenderer(WIDTH,200,icm);
+    IndexColorModel[] icms=new IndexColorModel[palette.getBuffer().limit()/768];
+    BufferedImage[] pals=new BufferedImage[icms.length];
+    BufferedRenderer V=new BufferedRenderer(WIDTH,200);
     V.Init();
+
+    for (int i=0;i<icms.length;i++){
+     icms[i]=new IndexColorModel(8, 256,pal, i*768, false);
+         pals[i]=new BufferedImage(icms[i],V.screenbuffer[0].getRaster(), false, null);
+        }
+    
+    
+    //=V.getBufferedScreens(0,icm);
+    
     
     doomstat ds = new doomstat();
     ds.gameepisode=1;
@@ -131,17 +140,18 @@ public class AutoMapTester2 {
     AM.Responder(new event_t(Map.AM_FOLLOWKEY));
     AM.Responder(new event_t(Map.AM_ZOOMOUTKEY));
     AM.Responder(new event_t(Map.AM_GRIDKEY));
-    BufferedImage bi=((BufferedRenderer)V).screenbuffer[0];
+    //BufferedImage bi=((BufferedRenderer)V).screenbuffer[0];
+    //BufferedImage bi2=((BufferedRenderer)V).cloneScreen(0, icm2);
     
     JFrame frame = new JFrame("MochaDoom");
-    CrappyDisplay shit = new CrappyDisplay(bi);
+    CrappyDisplay shit = new CrappyDisplay(pals);
     frame.add(shit);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
-    frame.setBounds(frame.getX(), frame.getY(), 640, 240);
+    frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
     
     
     long a=System.nanoTime();
@@ -166,35 +176,15 @@ public class AutoMapTester2 {
     AM.Drawer();
     ST.Ticker();
     ST.Drawer(false,true);
+    //shit.setPalette((i/(100/14))%14);
     frame.update(frame.getGraphics());
-    /*File outputFile =
-        new File(
-            "tic"+i+".png");
-    ImageIO.write(bi, "PNG", outputFile); */
-//    V.takeScreenShot(0, "tic"+i,icm);    
-    //AM.Responder(new event_t(Map.AM_PANLEFTKEY));
-
+ 
     }
     
     long b=System.nanoTime();
     
     System.out.println(TICKS +" tics in " +((b-a)/1e09) +" = "+TICKS/((b-a)/1e09) + " fps");
-    /*
-    V.takeScreenShot(0, "tic1",icm);
-    for (int i=20;i<150;i++){
-        EL.Ticker();
-        EL.Drawer();
-        if (i==100){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
-        }
-        
-        if (i==120){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
-        }
-        V.takeScreenShot(0,( "tic"+i),icm);
-        } */
+    
        
         } catch (Exception e){
             e.printStackTrace();
