@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.12 2010/09/03 15:30:34 velktron Exp $
+// $Id: WadLoader.java,v 1.13 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.13  2010/09/07 16:23:00  velktron
+// *** empty log message ***
+//
 // Revision 1.12  2010/09/03 15:30:34  velktron
 // More work on unified renderer
 //
@@ -713,7 +716,13 @@ public class WadLoader {
     /**
      * Read a lump into an object array, if possible. The binary blob lump will still be
      * cached as usual, but as a ByteBuffer this time, and deserialization
-     * will be performed into the given Object[] array. Helps keep syntax compact. 
+     * will be performed into the given Object[] array. 
+     * 
+     * Upon a cache hit however, the objects will be deserialized a second time,
+     * thus there will be some time penalty (this, unless I devise a container
+     * class for arrays of CacheableDoomObjects).
+     * 
+     * Helps keep syntax compact. 
      * 
      */
      public void CacheLumpNumIntoArray(int lump, int tag, Object[] array, Class what)
@@ -729,7 +738,6 @@ public class WadLoader {
              // read the lump in
 
              System.out.println("cache miss on lump "+lump);
-             // ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[lump]);
              // Read as a byte buffer anyway.
              ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
              ReadLump(lump, thebuffer);
@@ -754,6 +762,7 @@ public class WadLoader {
                      ((CacheableDoomObject)array[i]).unpack(b);
                  }
                  }
+                 //lumpcache[lump]=array;
              } catch (Exception e) {
                  System.err.println("Could not auto-unpack lump "
                          + lump + " into an array of objects of class " + what);
@@ -839,9 +848,9 @@ public class WadLoader {
      * @return
      */
     
-    public patch_t CachePatchNum(int num)
+    public patch_t CachePatchNum(int num, int tag)
     {
-    return (patch_t) this.CacheLumpNum(num, PU_CACHE, patch_t.class);
+    return (patch_t) this.CacheLumpNum(num, tag, patch_t.class);
     }
     
     public Object CacheLumpName(String name, int tag, Class what)

@@ -12,8 +12,10 @@ public class ticcmd_t{
 
     /** checks for net game */
     public short consistancy;
+    
+    /** MAES: these are unsigned bytes :-( */
 
-    public char chatchar, buttons; // MAES: these are unsigned bytes :-/
+    public char chatchar, buttons; 
 
     /** replaces G_CmdChecksum (ticcmd_t cmd) */
 

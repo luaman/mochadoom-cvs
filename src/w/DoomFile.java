@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.5 2010/07/29 15:29:00 velktron Exp $
+//$Id: DoomFile.java,v 1.6 2010/09/07 16:23:00 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -96,6 +96,37 @@ public class DoomFile extends RandomAccessFile {
        return new String(bb, 0, len);
    }
    
+   /** MAES: Reads a specified number of bytes from a file into a new, NULL TERMINATED String.
+    *  With many lengths being implicit, we need to actually take the loader by the hand.
+    *  
+    * @param len
+    * @return
+    * @throws IOException
+    */
+      
+      public String readNullTerminatedString(int len) throws IOException {
+
+          if (len == -1)
+              return null;
+
+          if (len == 0)
+              return "";
+
+          byte bb[] = new byte[len];
+          int terminator=len;
+
+          super.read(bb, 0, len);
+          
+          for (int i=0;i<bb.length;i++){
+              if (bb[i]==0) {
+                  terminator=i;
+                  break; // stop on first null
+              }
+              
+          }
+          return new String(bb, 0, terminator);
+      }
+   
    /** MAES: Reads multiple strings with a specified number of bytes from a file.
     * If the array is not large enough, only partial reads will occur.
     *  
@@ -136,7 +167,9 @@ public class DoomFile extends RandomAccessFile {
            writeBytes(s);
    }
 
-   /** Writes a String with a specified len to a file. 
+   /** Writes a String with a specified len to a file.
+    *  This is useful for fixed-size String fields in 
+    *  files. Any leftover space will be filled with 0x00s. 
     * 
     * @param s
     * @param len
@@ -151,8 +184,8 @@ public class DoomFile extends RandomAccessFile {
            byte[] dest=s.getBytes();
            write(dest,0,Math.min(len,dest.length));
            // Fill in with 0s if something's left.
-           if (dest.length<8){
-               for (int i=0;i<8-dest.length;i++){
+           if (dest.length<len){
+               for (int i=0;i<len-dest.length;i++){
                    write((byte)0x00);
                }
            }

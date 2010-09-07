@@ -103,5 +103,11 @@ public class C2JUtils {
         }        
     }
 
+        /** Convenient alias for C-like memcpy */
+    
+    public static void memcpy(Object dest, Object src, int length ) {
+       System.arraycopy(src, 0, dest, 0, length);
+    }
+
     
 }

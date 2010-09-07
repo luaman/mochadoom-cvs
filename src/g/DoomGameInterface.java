@@ -8,7 +8,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGameInterface.java,v 1.2 2010/08/30 15:53:19 velktron Exp $
+// $Id: DoomGameInterface.java,v 1.3 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -76,4 +76,8 @@ public gameaction_t getGameAction();
 
 public void setGameAction(gameaction_t ga);
 
+public boolean getPaused();
+
+public void setPaused(boolean on);
+    
 }

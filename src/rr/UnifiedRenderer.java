@@ -477,7 +477,7 @@ public class UnifiedRenderer {
    */ 
 
   public void ClipSolidWallSegment (int   first,
-          int   last ) throws IOException{
+          int   last ) {
       int next;
       int start;
 
@@ -571,7 +571,7 @@ public class UnifiedRenderer {
   //  e.g. LineDefs with upper and lower texture.
   //
   public void  ClipPassWallSegment (int   first,
-          int   last ) throws IOException{
+          int   last ) {
       cliprange_t start;
 
       // Find the first range that touches the range
@@ -636,7 +636,7 @@ public class UnifiedRenderer {
   // Clips the given segment
   // and adds any visible pieces to the line list.
   //
-  public void AddLine (seg_t  line) throws IOException
+  public void AddLine (seg_t  line) 
   {
       int         x1;
       int         x2;
@@ -884,7 +884,7 @@ public class UnifiedRenderer {
  * @throws IOException 
    */
   
-  public void Subsector (int num) throws IOException
+  public void Subsector (int num)
   {
       int         count;
       int        line; // pointer into a list of segs
@@ -936,12 +936,13 @@ public class UnifiedRenderer {
 
 
 
-  //
-  // RenderBSPNode
-  // Renders all subsectors below a given node,
-  //  traversing subtree recursively.
-  // Just call with BSP root.
-  public void RenderBSPNode (int bspnum) throws IOException
+  /**
+   * RenderBSPNode
+   * Renders all subsectors below a given node,
+   *  traversing subtree recursively.
+   * Just call with BSP root.
+   */
+  public void RenderBSPNode (int bspnum)
   {
       node_t  bsp;
       int     side;
@@ -974,7 +975,7 @@ public class UnifiedRenderer {
   
   class Segs{
 
-      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.3 2010/09/03 15:30:34 velktron Exp $";
+      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.4 2010/09/07 16:23:00 velktron Exp $";
 
       //
       // R_RenderMaskedSegRange
@@ -1094,7 +1095,7 @@ public class UnifiedRenderer {
      * @throws IOException 
        */
       
-      public void RenderSegLoop () throws IOException
+      public void RenderSegLoop () 
       {
           int     angle; // angle_t
           int     index;
@@ -1268,7 +1269,7 @@ public class UnifiedRenderer {
       public void
       StoreWallRange
       ( int   start,
-        int   stop ) throws IOException
+        int   stop ) 
       {
           int     hyp; //fixed_t
           int     sineval; //fixed_t
@@ -1974,7 +1975,7 @@ public class UnifiedRenderer {
        * At the end of each frame.
      * @throws IOException 
        */
-      public void DrawPlanes () throws IOException
+      public void DrawPlanes () 
       {
           visplane_t      pln=null; //visplane_t
           int         light;
@@ -4131,8 +4132,8 @@ public void RenderPlayerView (player_t player)
   SetupFrame (player);
 
   // Clear buffers.
-  ClearClipSegs ();
-  MySegs.ClearDrawSegs ();
+  MyBSP.ClearClipSegs ();
+  MyBSP.ClearDrawSegs ();
   MyPlanes.ClearPlanes ();
   MyThings.ClearSprites ();
   
@@ -4140,7 +4141,7 @@ public void RenderPlayerView (player_t player)
   //NetUpdate ();
 
   // The head node is the last node output.
-  RenderBSPNode (numnodes-1);
+  MyBSP.RenderBSPNode (LL.numnodes-1);
   
   // Check for new console commands.
   //NetUpdate ();
@@ -4150,7 +4151,7 @@ public void RenderPlayerView (player_t player)
   // Check for new console commands.
   //NetUpdate ();
   
-  DrawMasked ();
+  MyThings.DrawMasked ();
 
   // Check for new console commands.
  // NetUpdate ();             
@@ -4188,12 +4189,137 @@ public void SetupFrame (player_t player)
      scalelightfixed[i] = fixedcolormap[pfixedcolormap];
  }
  else
- fixedcolormap = 0;
+ fixedcolormap = null;
      
  framecount++;
  validcount++;
 }
 
+/**
+ * R_SetViewSize
+ * Do not really change anything here,
+ * because it might be in the middle of a refresh.
+ * The change will take effect next refresh.
+ */
+
+public boolean      setsizeneeded;
+int     setblocks;
+int     setdetail;
+
+
+public void SetViewSize
+( int       blocks,
+int       detail )
+{
+ setsizeneeded = true;
+ setblocks = blocks;
+ setdetail = detail;
+}
+
+
+/**
+ * R_ExecuteSetViewSize
+ */
+
+public void ExecuteSetViewSize ()
+{
+    int cosadj;
+    int dy;
+    int     i;
+    int     j;
+    int     level;
+    int     startmap;   
+    int viewheight=DS.viewheight;
+    
+    setsizeneeded = false;
+
+    
+    
+    if (setblocks == 11)
+    {
+    DS.scaledviewwidth = SCREENWIDTH;
+    viewheight = SCREENHEIGHT;
+    }
+    else
+    {
+        DS.scaledviewwidth = setblocks*32;
+        viewheight = (short) ((setblocks*168/10)&~7);
+    }
+    
+    detailshift = setdetail;
+    viewwidth = DS.scaledviewwidth>>detailshift;
+    
+    centery = viewheight/2;
+    centerx = viewwidth/2;
+    centerxfrac=(centerx<<FRACBITS);
+    centeryfrac=(centery<<FRACBITS);
+    projection=centerxfrac;
+
+    
+    if (detailshift!=0)
+    {
+        /* TODO:
+    colfunc = basecolfunc = Draw.class.getDeclaredMethod("DrawColumn", Void.class);
+    fuzzcolfunc = Draw.class.getDeclaredMethod("DrawFuzzColumn", Void.class);
+    transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn", Void.class);
+    spanfunc = Draw.class.getDeclaredMethod("DrawSpan;", Void.class);
+    */
+    }
+    else
+    {/*
+    colfunc = basecolfunc = Draw.class.getDeclaredMethod("DrawColumnLow",Void.class);
+    fuzzcolfunc = Draw.class.getDeclaredMethod("DrawFuzzColumn",Void.class);
+    transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn",Void.class);
+    spanfunc = Draw.class.getDeclaredMethod("DrawSpanLow",Void.class);
+    */
+    }
+
+    InitBuffer (DS.scaledviewwidth, DS.viewheight);
+    
+    InitTextureMapping ();
+    
+    // psprite scales
+    pspritescale=(FRACUNIT*DS.viewwidth/SCREENWIDTH);
+    pspriteiscale=(FRACUNIT*SCREENWIDTH/DS.viewwidth);
+    
+    // thing clipping
+    for (i=0 ; i<DS.viewwidth ; i++)
+    screenheightarray[i] = (short) DS.viewheight;
+    
+    // planes
+    for (i=0 ; i<viewheight ; i++)
+    {
+    dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
+    dy = Math.abs(dy);
+    // MAES: yslope is a field in "r_plane.c" so it should really be in the Rendering Context.
+    MyPlanes.yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+    }
+    
+    for (i=0 ; i<viewwidth ; i++)
+    {
+    cosadj = Math.abs(finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
+    MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
+    }
+    
+    // Calculate the light levels to use
+    //  for each level / scale combination.
+    for (i=0 ; i< LIGHTLEVELS ; i++)
+    {
+    startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+    for (j=0 ; j<MAXLIGHTSCALE ; j++)
+    {
+        level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
+        
+        if (level < 0)
+        level = 0;
+
+        if (level >= NUMCOLORMAPS)
+        level = NUMCOLORMAPS-1;
+
+        scalelight[i][j] = colormaps[level*256];
+    }
+    }
+}
  
  
  

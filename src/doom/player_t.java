@@ -1,5 +1,7 @@
 package doom;
 
+import java.util.Arrays;
+
 import p.mobj_t;
 import p.pspdef_t;
 import m.fixed_t;
@@ -17,8 +19,12 @@ import static p.SpriteAnimations.NUMPSPRITES;
  * commands per game tick. #include "d_ticcmd.h"
  */
 
-public class player_t
+public class player_t implements Cloneable
         /* extends mobj_t */ {
+    public static player_t nullplayer;
+    static {
+        nullplayer=new player_t();
+    }
     
     public player_t(){
         powers = new int[NUMPOWERS];
@@ -147,5 +153,30 @@ public class player_t
 
     // True if secret level has been done.
     public boolean didsecret;
+
+    /** It's probably faster to clone the null player */
+    
+    public void reset() {
+        
+        Arrays.fill(this.ammo,0);
+        Arrays.fill(this.armorpoints,0);
+        Arrays.fill(this.cards,false);
+        Arrays.fill(this.frags, 0);
+        Arrays.fill(this.health,0);
+        Arrays.fill(this.maxammo,0);
+        Arrays.fill(this.powers,0);
+        Arrays.fill(this.weaponowned,false);
+        Arrays.fill(this.psprites,null);
+        this.armortype=0;
+        this.attackdown=false;
+        this.attacker=null;
+        this.backpack=false;
+        this.bob=0;
+        
+    }
+    @Override
+    public player_t clone() throws CloneNotSupportedException{
+        return (player_t) super.clone();
+    }
 
 }

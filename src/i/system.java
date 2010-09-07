@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: system.java,v 1.2 2010/08/30 15:53:19 velktron Exp $
+// $Id: system.java,v 1.3 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: system.java,v $
+// Revision 1.3  2010/09/07 16:23:00  velktron
+// *** empty log message ***
+//
 // Revision 1.2  2010/08/30 15:53:19  velktron
 // Screen wipes work...Finale coded but untested.
 // GRID.WAD included for testing.
@@ -125,6 +128,19 @@ public static int  GetTime ()
     return newtics;
 }
 
+//
+//I_Quit
+//
+public static void I_Quit ()
+{
+    // TODO:
+ //D_QuitNetGame ();
+ //I_ShutdownSound();
+ //I_ShutdownMusic();
+ //M.SaveDefaults ();
+ //I_ShutdownGraphics();
+ System.exit(0);
+}
 
 
 //
@@ -137,18 +153,7 @@ void I_Init (void)
     //  I_InitGraphics();
 }
 
-//
-// I_Quit
-//
-void I_Quit (void)
-{
-    D_QuitNetGame ();
-    I_ShutdownSound();
-    I_ShutdownMusic();
-    M_SaveDefaults ();
-    I_ShutdownGraphics();
-    exit(0);
-}
+
 
 void I_WaitVBL(int count)
 {

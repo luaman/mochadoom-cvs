@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.12 2010/09/03 15:30:34 velktron Exp $
+// $Id: Renderer.java,v 1.13 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.13  2010/09/07 16:23:00  velktron
+// *** empty log message ***
+//
 // Revision 1.12  2010/09/03 15:30:34  velktron
 // More work on unified renderer
 //
@@ -810,125 +813,10 @@ public void InitLightTables ()
 
 
 
-//
-// R_SetViewSize
-// Do not really change anything here,
-//  because it might be in the middle of a refresh.
-// The change will take effect next refresh.
-//
-public boolean		setsizeneeded;
-int		setblocks;
-int		setdetail;
 
 
-void
-SetViewSize
-( int		blocks,
-  int		detail )
-{
-    setsizeneeded = true;
-    setblocks = blocks;
-    setdetail = detail;
-}
 
 
-//
-// R_ExecuteSetViewSize
-//
-
-public void ExecuteSetViewSize ()
-{
-    int	cosadj;
-    int	dy;
-    int		i;
-    int		j;
-    int		level;
-    int		startmap; 	
-
-    setsizeneeded = false;
-
-    if (setblocks == 11)
-    {
-	ds.scaledviewwidth = SCREENWIDTH;
-	ds.viewheight = SCREENHEIGHT;
-    }
-    else
-    {
-	ds.scaledviewwidth = setblocks*32;
-	ds.viewheight = (short) ((setblocks*168/10)&~7);
-    }
-    
-    detailshift = setdetail;
-    ds.viewwidth = ds.scaledviewwidth>>detailshift;
-	
-    centery = ds.viewheight/2;
-    centerx = ds.viewwidth/2;
-    centerxfrac.set(centerx<<FRACBITS);
-    centeryfrac.set(centery<<FRACBITS);
-    projection.copy(centerxfrac);
-
-    
-    if (detailshift!=0)
-    {
-	colfunc = basecolfunc = Draw.class.getDeclaredMethod("DrawColumn", Void.class);
-	fuzzcolfunc = Draw.class.getDeclaredMethod("DrawFuzzColumn", Void.class);
-	transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn", Void.class);
-	spanfunc = Draw.class.getDeclaredMethod("DrawSpan;", Void.class);
-    }
-    else
-    {
-	colfunc = basecolfunc = Draw.class.getDeclaredMethod("DrawColumnLow",Void.class);
-	fuzzcolfunc = Draw.class.getDeclaredMethod("DrawFuzzColumn",Void.class);
-	transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn",Void.class);
-	spanfunc = Draw.class.getDeclaredMethod("DrawSpanLow",Void.class);
-    }
-
-    this.InitBuffer (ds.scaledviewwidth, ds.viewheight);
-	
-    this.InitTextureMapping ();
-    
-    // psprite scales
-    pspritescale.set(FRACUNIT*ds.viewwidth/SCREENWIDTH);
-    pspriteiscale.set(FRACUNIT*SCREENWIDTH/ds.viewwidth);
-    
-    // thing clipping
-    for (i=0 ; i<ds.viewwidth ; i++)
-	screenheightarray[i] = (short) ds.viewheight;
-    
-    // planes
-    for (i=0 ; i<ds.viewheight ; i++)
-    {
-	dy = ((i-ds.viewheight/2)<<FRACBITS)+FRACUNIT/2;
-	dy = Math.abs(dy);
-	// MAES: yslope is a field in "r_plane.c" so it should really be in the Rendering Context.
-	ds.yslope[i] = FixedDiv ( (ds.viewwidth<<detailshift)/2*FRACUNIT, dy);
-    }
-	
-    for (i=0 ; i<ds.viewwidth ; i++)
-    {
-	cosadj = abs(finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
-	distscale[i] = FixedDiv (FRACUNIT,cosadj);
-    }
-    
-    // Calculate the light levels to use
-    //  for each level / scale combination.
-    for (i=0 ; i< LIGHTLEVELS ; i++)
-    {
-	startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-	for (j=0 ; j<MAXLIGHTSCALE ; j++)
-	{
-	    level = startmap - j*SCREENWIDTH/(ds.viewwidth<<detailshift)/DISTMAP;
-	    
-	    if (level < 0)
-		level = 0;
-
-	    if (level >= NUMCOLORMAPS)
-		level = NUMCOLORMAPS-1;
-
-	    scalelight[i][j] = colormaps + level*256;
-	}
-    }
-}
 
 
 

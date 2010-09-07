@@ -12,6 +12,10 @@ public class doomdata_t {
      public byte        starttic;
      public byte        player;
      public byte        numtics;
-     public ticcmd_t[]        cmds=new ticcmd_t[net.BACKUPTICS];
+     public ticcmd_t[]        cmds;
+     
+    public doomdata_t(){
+        cmds=new ticcmd_t[net.BACKUPTICS];
+    }
 
  }

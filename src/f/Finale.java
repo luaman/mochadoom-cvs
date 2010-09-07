@@ -31,7 +31,7 @@ import hu.HU;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
+// $Id: Finale.java,v 1.3 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -52,7 +52,7 @@ import hu.HU;
 
 public class Finale {
 
-  public static final String rcsid = "$Id: Finale.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.3 2010/09/07 16:23:00 velktron Exp $";
 
   DoomGameInterface G;
   doomstat DS;
@@ -100,7 +100,7 @@ public class Finale {
   /**
   * F_StartFinale
   */
-public void F_StartFinale ()
+public void StartFinale ()
   {
       G.setGameAction(gameaction_t.ga_nothing);
       DS.gamestate = gamestate_t.GS_FINALE;
@@ -628,12 +628,8 @@ protected void stopattack(){
                flip=false;
               lump=0;
               
-      try {
-        patch = (patch_t) W.CacheLumpNum (lump+RD.firstspritelump, PU_CACHE,patch_t.class);
-    } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-    }
+        patch = W.CachePatchNum(lump+RD.firstspritelump, PU_CACHE);
+
       if (flip)
       V.DrawPatchFlipped (160,170,0,patch);
       else

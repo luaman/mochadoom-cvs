@@ -24,7 +24,7 @@ import w.DoomFile;
 import w.WadLoader; // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.10 2010/09/01 15:53:42 velktron Exp $
+// $Id: Menu.java,v 1.11 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +39,9 @@ import w.WadLoader; // Emacs style mode select -*- C++ -*-
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.11  2010/09/07 16:23:00  velktron
+// *** empty log message ***
+//
 // Revision 1.10  2010/09/01 15:53:42  velktron
 // Graphics data loader implemented....still need to figure out how column caching works, though.
 //
@@ -213,8 +216,6 @@ public class Menu implements DoomMenu{
     protected static final int SKULLXOFF = -32;
 
     protected static final int LINEHEIGHT = 16;
-
-    public boolean sendpause;
 
     char[][] savegamestrings = new char[10][SAVESTRINGSIZE];
 
@@ -1407,8 +1408,8 @@ public class Menu implements DoomMenu{
     //
     public void ClearMenus() {
         DS.menuactive = false;
-        // if (!netgame && usergame && paused)
-        // sendpause = true;
+        if (!DS.netgame && DS.usergame && DS.paused)
+         G.setPaused(true);
     }
 
     /**

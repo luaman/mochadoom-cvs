@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.6 2010/09/02 15:56:54 velktron Exp $
+// $Id: HU.java,v 1.7 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.7  2010/09/07 16:23:00  velktron
+// *** empty log message ***
+//
 // Revision 1.6  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -70,8 +73,7 @@ import utils.PrintfFormat;
 
 import m.Menu;
 import m.Swap;
-import rr.Draw;
-import rr.Renderer;
+import rr.UnifiedRenderer;
 import rr.patch_t;
 import w.WadLoader;
 import data.doomstat;
@@ -89,7 +91,7 @@ import doom.player_t;
 
 public class HU {
     public final static String rcsid =
-        "$Id: HU.java,v 1.6 2010/09/02 15:56:54 velktron Exp $";
+        "$Id: HU.java,v 1.7 2010/09/07 16:23:00 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader wd;
@@ -98,9 +100,7 @@ public class HU {
 
     Menu M;
 
-    Renderer R;
-
-    Draw DR;
+    UnifiedRenderer R;
 
     //
     // Locally used constants, shortcuts.
@@ -132,7 +132,8 @@ public class HU {
                 HUSTR_CHATMACRO6, HUSTR_CHATMACRO7, HUSTR_CHATMACRO8,
                 HUSTR_CHATMACRO9 };
 
-    protected String[] player_names =
+    /** Needs to be seen by DoomGame */
+    public final String[] player_names =
         { HUSTR_PLRGREEN, HUSTR_PLRINDIGO, HUSTR_PLRBROWN, HUSTR_PLRRED };
 
     char chat_char; // remove later.
@@ -1166,12 +1167,12 @@ public class HU {
                     // Stuff is probably in am_map??
                     if (y < ds.viewwindowy
                             || y >= ds.viewwindowy + ds.viewheight)
-                        DR.VideoErase(yoffset, SCREENWIDTH); // erase entire
+                        R.VideoErase(yoffset, SCREENWIDTH); // erase entire
                     // line
                     else {
-                        DR.VideoErase(yoffset, ds.viewwindowx); // erase left
+                        R.VideoErase(yoffset, ds.viewwindowx); // erase left
                         // border
-                        DR.VideoErase(yoffset + ds.viewwindowx + ds.viewwidth,
+                        R.VideoErase(yoffset + ds.viewwindowx + ds.viewwidth,
                             ds.viewwindowx);
                         // erase right border
                     }

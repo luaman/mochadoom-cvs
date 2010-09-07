@@ -1,24 +1,47 @@
 package g;
 
 import static data.Defines.*;
+import static data.Limits.*;
 import static m.fixed_t.*;
+import static data.Tables.*;
+import static data.SineCosine.*;
+import static data.dstrings.SAVEGAMENAME;
+import i.system;
+
+import java.util.Arrays;
+
+import automap.DoomAutoMap;
+
+import m.Menu;
+import m.random;
+
+import f.Finale;
 import hu.HU;
 import p.LevelLoader;
 import p.mobj_t;
 import rr.RendererData;
+import rr.UnifiedRenderer;
+import rr.subsector_t;
+import st.StatusBar;
+import utils.C2JUtils;
+import w.WadLoader;
 import data.doomstat;
+import data.mapthing_t;
 import data.Defines.gamestate_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.event_t;
+import doom.evtype_t;
 import doom.gameaction_t;
 import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
+import doom.weapontype_t;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGame.java,v 1.4 2010/09/01 15:53:42 velktron Exp $
+// $Id: DoomGame.java,v 1.5 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -33,6 +56,9 @@ import doom.wbstartstruct_t;
 // GNU General Public License for more details.
 //
 // $Log: DoomGame.java,v $
+// Revision 1.5  2010/09/07 16:23:00  velktron
+// *** empty log message ***
+//
 // Revision 1.4  2010/09/01 15:53:42  velktron
 // Graphics data loader implemented....still need to figure out how column caching works, though.
 //
@@ -44,12 +70,22 @@ import doom.wbstartstruct_t;
 public class DoomGame {
 
  
-  public static final String rcsid = "$Id: DoomGame.java,v 1.4 2010/09/01 15:53:42 velktron Exp $";
+  public static final String rcsid = "$Id: DoomGame.java,v 1.5 2010/09/07 16:23:00 velktron Exp $";
 
+  
+  ////////////////////////// STATUS /////////////////////////
+  
   doomstat DS;
   HU HU;
   RendererData RD;
   LevelLoader LL;
+  Menu M;
+  StatusBar ST;
+  DoomAutoMap AM;
+  Finale F;
+  WadLoader W;
+  UnifiedRenderer R;
+  random RND;
   
  /* #include <string.h>
   #include <stdlib.h>
@@ -98,25 +134,31 @@ public class DoomGame {
   #include "g_game.h"
 */
 
-  static int SAVEGAMESIZE  =  0x2c000;
-  static int SAVESTRINGSIZE = 24;
+
 
    
+  // Fields specific to DoomGame.
   public gameaction_t    gameaction; 
-  public gamestate_t     gamestate;
-  // peg from DS.
-  public GameMode_t gamemode;
-  public skill_t         gameskill; 
+  public boolean         sendpause;              // send a pause event next tic 
+  
+  // Most of these are actually in doomstat. Some can be "pegged" (those in arrays) but
+  // in order to keep references correctly updated, we must use them in DS.
+  // Objects not in arrays can be read correctly if "pegged", fields can be written to,  
+  // but not if they have value semantics.
+      
+  boolean paused;
+  boolean         sendsave; // send a save event next tic 
+  int starttime;
+  boolean         timingdemo;             // if true, exit with report on completion 
+  /*
   public boolean     respawnmonsters;
   public int             gameepisode; 
   public int             gamemap; 
    
   public boolean         paused; 
-  public boolean         sendpause;              // send a pause event next tic 
-  public boolean         sendsave;               // send a save event next tic 
   public boolean         usergame;               // ok to save / end game 
    
-  public boolean         timingdemo;             // if true, exit with report on completion 
+  
   public boolean         nodrawers;              // for comparative timing purposes 
   public boolean         noblit;                 // for comparative timing purposes 
   public int             starttime;              // for comparative timing purposes       
@@ -125,19 +167,30 @@ public class DoomGame {
    
   public boolean         deathmatch;             // only if started as net death 
   public boolean         netgame;                // only true if packets are broadcast 
+  */
   
-  /** peg to doomstat */
-  boolean[]         playeringame; 
-  /** peg to doomstat */
-  player_t[]        players; 
+  public boolean getPaused() {
+    return paused;
+}
+
+public void setPaused(boolean paused) {
+    this.paused = paused;
+}
+
+// These can be pegged to doomstat, because they are arrays.
+private boolean[]         playeringame; 
+private player_t[]        players; 
+private mapthing_t[] playerstarts; 
    
+  /*
   int             consoleplayer;          // player taking events and displaying 
   int             displayplayer;          // view being displayed 
   int             gametic; 
   int             levelstarttic;          // gametic at level start 
   int             totalkills, totalitems, totalsecret;    // for intermission 
-   
-  char[]            demoname=new char[32]; 
+  */
+  
+  String            demoname; 
   boolean         demorecording; 
   public boolean         demoplayback; 
   boolean     netdemo; 
@@ -203,8 +256,17 @@ public class DoomGame {
    
   boolean[]     mousearray=new boolean[4];
   
-  protected boolean mousebuttons(int i){
+  /** This is an alias for mousearray [1+i] */
+  private boolean mousebuttons(int i){
       return mousearray[1+i];      // allow [-1]
+  }
+  
+  private void mousebuttons(int i, boolean value){
+      mousearray[1+i]=value;      // allow [-1]
+  }
+  
+  private void mousebuttons(int i, int value){
+      mousearray[1+i]=value!=0;      // allow [-1]
   }
 
   /** mouse values are used once */ 
@@ -218,9 +280,17 @@ public class DoomGame {
   protected boolean joybuttons(int i){
       return joyarray[1+i];      // allow [-1]
   }
-   
+
+  protected void joybuttons(int i, boolean value){
+      joyarray[1+i]=value;      // allow [-1]
+  }
+  
+  protected void joybuttons(int i, int value){
+      joyarray[1+i]=value!=0;      // allow [-1]
+  }
+  
   int     savegameslot; 
-  char[]        savedescription=new char[32]; 
+  String        savedescription; 
    
    
   protected static final int BODYQUESIZE= 32;
@@ -253,7 +323,7 @@ public class DoomGame {
       base.copyTo(cmd);
       
       cmd.consistancy = 
-      consistancy[consoleplayer][DS.maketic%BACKUPTICS]; 
+      consistancy[DS.consoleplayer][DS.maketic%BACKUPTICS]; 
 
    
       strafe = gamekeydown[key_strafe] || mousebuttons(mousebstrafe) 
@@ -456,45 +526,47 @@ public class DoomGame {
 
       // DOOM determines the sky texture to be used
       // depending on the current episode, and the game version.
-      if (( gamemode == GameMode_t.commercial)
+      if (( DS.gamemode == GameMode_t.commercial)
        || ( DS.gamemission == GameMission_t.pack_tnt )
        || ( DS.gamemission == GameMission_t.pack_plut ) )
       {
       skytexture = RD.TextureNumForName ("SKY3");
-      if (gamemap < 12)
+      if (DS.gamemap < 12)
           skytexture = RD.TextureNumForName ("SKY1");
       else
-          if (gamemap < 21)
+          if (DS.gamemap < 21)
           skytexture = RD.TextureNumForName ("SKY2");
       }
 
-      levelstarttic = gametic;        // for time calculation
+      DS.levelstarttic = DS.gametic;        // for time calculation
       
-      if (DS.wipegamestate == GS_LEVEL) 
-      DS.wipegamestate = -1;             // force a wipe 
+      if (DS.wipegamestate == gamestate_t.GS_LEVEL) 
+      DS.wipegamestate = gamestate_t.GS_MINUS_ONE;             // force a wipe 
 
-      gamestate = GS_LEVEL; 
+      DS.gamestate = gamestate_t.GS_LEVEL; 
 
       for (i=0 ; i<MAXPLAYERS ; i++) 
       { 
       if (playeringame[i] && players[i].playerstate == PST_DEAD) 
           players[i].playerstate = PST_REBORN; 
-      memset (players[i].frags,0,sizeof(players[i].frags)); 
+          // I don't give a shit if it's not super-duper optimal. 
+      Arrays.fill(DS.players[i].frags, 0);
+ 
       } 
            
-      LL.SetupLevel (gameepisode, gamemap, 0, gameskill);    
-      displayplayer = consoleplayer;      // view the guy you are playing    
-      starttime = I_GetTime (); 
-      gameaction = ga_nothing; 
-      Z_CheckHeap ();
+      LL.SetupLevel (DS.gameepisode, DS.gamemap, 0, DS.gameskill);    
+      DS.displayplayer = DS.consoleplayer;      // view the guy you are playing    
+      starttime = system.GetTime (); 
+      gameaction = gameaction_t.ga_nothing; 
+      //Z_CheckHeap ();
       
       // clear cmd building stuff
-      memset (gamekeydown, 0, sizeof(gamekeydown)); 
+      Arrays.fill(gamekeydown, false); 
       joyxmove = joyymove = 0; 
       mousex = mousey = 0; 
       sendpause = sendsave = paused = false; 
-      memset (mousebuttons, 0, sizeof(mousebuttons)); 
-      memset (joybuttons, 0, sizeof(joybuttons)); 
+      Arrays.fill (mousearray, false);
+      Arrays.fill(joyarray, false); 
   } 
    
    
@@ -506,54 +578,54 @@ public class DoomGame {
   public boolean Responder (event_t ev) 
   { 
       // allow spy mode changes even during the demo
-      if (gamestate == GS_LEVEL && ev.type == ev_keydown 
-      && ev.data1 == KEY_F12 && (singledemo || !deathmatch) )
+      if (DS.gamestate == gamestate_t.GS_LEVEL && ev.type == evtype_t.ev_keydown 
+      && ev.data1 == KEY_F12 && (singledemo || !DS.deathmatch) )
       {
       // spy mode 
       do 
       { 
-          displayplayer++; 
-          if (displayplayer == MAXPLAYERS) 
-          displayplayer = 0; 
-      } while (!playeringame[displayplayer] && displayplayer != consoleplayer); 
+          DS.displayplayer++; 
+          if (DS.displayplayer == MAXPLAYERS) 
+          DS.displayplayer = 0; 
+      } while (!playeringame[DS.displayplayer] && DS.displayplayer != DS.consoleplayer); 
       return true; 
       }
       
       // any other key pops up menu if in demos
-      if (gameaction == ga_nothing && !singledemo && 
-      (demoplayback || gamestate == GS_DEMOSCREEN) 
+      if (gameaction == gameaction_t.ga_nothing && !singledemo && 
+      (demoplayback || DS.gamestate == gamestate_t.GS_DEMOSCREEN) 
       ) 
       { 
-      if (ev.type == ev_keydown ||  
-          (ev.type == ev_mouse && ev.data1) || 
-          (ev.type == ev_joystick && ev.data1) ) 
+      if (ev.type == evtype_t.ev_keydown ||  
+          (ev.type == evtype_t.ev_mouse && ev.data1!=0) || 
+          (ev.type == evtype_t.ev_joystick && ev.data1!=0) ) 
       { 
-          M_StartControlPanel (); 
+          M.StartControlPanel (); 
           return true; 
       } 
       return false; 
       } 
    
-      if (gamestate == GS_LEVEL) 
+      if (DS.gamestate == gamestate_t.GS_LEVEL) 
       { 
-  #if 0 
+  /** 
       if (devparm && ev.type == ev_keydown && ev.data1 == ';') 
       { 
           G_DeathMatchSpawnPlayer (0); 
           return true; 
       } 
-  #endif 
-      if (HU_Responder (ev)) 
+  */ 
+      if (HU.Responder (ev)) 
           return true;    // chat ate the event 
-      if (ST_Responder (ev)) 
+      if (ST.Responder (ev)) 
           return true;    // status window ate it 
-      if (AM_Responder (ev)) 
+      if (AM.Responder (ev)) 
           return true;    // automap ate it 
       } 
        
-      if (gamestate == GS_FINALE) 
+      if (DS.gamestate == gamestate_t.GS_FINALE) 
       { 
-      if (F_Responder (ev)) 
+      if (F.Responder (ev)) 
           return true;    // finale ate the event 
       } 
        
@@ -575,18 +647,18 @@ public class DoomGame {
       return false;   // always let key up events filter down 
            
         case ev_mouse: 
-      mousebuttons[0] = ev.data1 & 1; 
-      mousebuttons[1] = ev.data1 & 2; 
-      mousebuttons[2] = ev.data1 & 4; 
-      mousex = ev.data2*(mouseSensitivity+5)/10; 
-      mousey = ev.data3*(mouseSensitivity+5)/10; 
+      mousebuttons(0, ev.data1 & 1); 
+      mousebuttons(1, ev.data1 & 2); 
+      mousebuttons(2, ev.data1 & 4); 
+      mousex = ev.data2*(DS.mouseSensitivity+5)/10; 
+      mousey = ev.data3*(DS.mouseSensitivity+5)/10; 
       return true;    // eat events 
    
         case ev_joystick: 
-      joybuttons[0] = ev.data1 & 1; 
-      joybuttons[1] = ev.data1 & 2; 
-      joybuttons[2] = ev.data1 & 4; 
-      joybuttons[3] = ev.data1 & 8; 
+      joybuttons(0, ev.data1 & 1); 
+      joybuttons(1, ev.data1 & 2); 
+      joybuttons(2,ev.data1 & 4); 
+      joybuttons(3,ev.data1 & 8); 
       joyxmove = ev.data2; 
       joyymove = ev.data3; 
       return true;    // eat events 
@@ -599,12 +671,14 @@ public class DoomGame {
   } 
    
    
-   
-  //
-  // G_Ticker
-  // Make ticcmd_ts for the players.
-  //
-  public void G_Ticker () 
+  private final String turbomessage="is turbo!"; 
+  
+  /**
+   * G_Ticker
+   * Make ticcmd_ts for the players.
+   */
+  
+  public void Ticker () 
   { 
       int     i;
       int     buf; 
@@ -613,40 +687,40 @@ public class DoomGame {
       // do player reborns if needed
       for (i=0 ; i<MAXPLAYERS ; i++) 
       if (playeringame[i] && players[i].playerstate == PST_REBORN) 
-          G_DoReborn (i);
+          DoReborn (i);
       
       // do things to change the game state
-      while (gameaction != ga_nothing) 
+      while (gameaction != gameaction_t.ga_nothing) 
       { 
       switch (gameaction) 
       { 
         case ga_loadlevel: 
-          G_DoLoadLevel (); 
+          DoLoadLevel (); 
           break; 
         case ga_newgame: 
-          G_DoNewGame (); 
+          DoNewGame (); 
           break; 
         case ga_loadgame: 
-          G_DoLoadGame (); 
+          DoLoadGame (); 
           break; 
         case ga_savegame: 
-          G_DoSaveGame (); 
+          DoSaveGame (); 
           break; 
         case ga_playdemo: 
-          G_DoPlayDemo (); 
+          DoPlayDemo (); 
           break; 
         case ga_completed: 
-          G_DoCompleted (); 
+          DoCompleted (); 
           break; 
         case ga_victory: 
-          F_StartFinale (); 
+          F.StartFinale (); 
           break; 
         case ga_worlddone: 
-          G_DoWorldDone (); 
+          DoWorldDone (); 
           break; 
         case ga_screenshot: 
-          M_ScreenShot (); 
-          gameaction = ga_nothing; 
+          //TODO: M.ScreenShot (); 
+          gameaction = gameaction_t.ga_nothing; 
           break; 
         case ga_nothing: 
           break; 
@@ -655,43 +729,44 @@ public class DoomGame {
       
       // get commands, check consistancy,
       // and build new consistancy check
-      buf = (gametic/ticdup)%BACKUPTICS; 
+      buf = (DS.gametic/DS.ticdup)%BACKUPTICS; 
    
       for (i=0 ; i<MAXPLAYERS ; i++)
       {
       if (playeringame[i]) 
       { 
-          cmd = &players[i].cmd; 
+          cmd = players[i].cmd; 
    
-          memcpy (cmd, &netcmds[i][buf], sizeof(ticcmd_t)); 
+          //memcpy (cmd, &netcmds[i][buf], sizeof(ticcmd_t));
+          DS.netcmds[i][buf].copyTo(cmd);
    
           if (demoplayback) 
-          G_ReadDemoTiccmd (cmd); 
+          ReadDemoTiccmd (cmd); 
           if (demorecording) 
-          G_WriteDemoTiccmd (cmd);
+          WriteDemoTiccmd (cmd);
           
           // check for turbo cheats
           if (cmd.forwardmove > TURBOTHRESHOLD 
-          && !(gametic&31) && ((gametic>>5)&3) == i )
+          && ((DS.gametic&31)==0) && ((DS.gametic>>5)&3) == i )
           {
-          static char turbomessage[80];
-          extern char *player_names[4];
-          sprintf (turbomessage, "%s is turbo!",player_names[i]);
-          players[consoleplayer].message = turbomessage;
+          
+          //extern char *player_names[4];
+          //sprintf (turbomessage, "%s is turbo!",player_names[i]);
+          players[DS.consoleplayer].message = HU.player_names[i]+turbomessage;
           }
               
-          if (netgame && !netdemo && !(gametic%ticdup) ) 
+          if (DS.netgame && !netdemo && !(DS.gametic%DS.ticdup) ) 
           { 
-          if (gametic > BACKUPTICS 
+          if (DS.gametic > BACKUPTICS 
               && consistancy[i][buf] != cmd.consistancy) 
           { 
-              I_Error ("consistency failure (%i should be %i)",
+              system.Error ("consistency failure (%i should be %i)",
                    cmd.consistancy, consistancy[i][buf]); 
           } 
-          if (players[i].mo) 
-              consistancy[i][buf] = players[i].mo.x; 
+          if (players[i].mo!=null) 
+              consistancy[i][buf] = (short) players[i].mo.x; 
           else 
-              consistancy[i][buf] = rndindex; 
+              consistancy[i][buf] = RND.rndindex; 
           } 
       }
       }
@@ -701,21 +776,21 @@ public class DoomGame {
       {
       if (playeringame[i]) 
       { 
-          if (players[i].cmd.buttons & BT_SPECIAL) 
+          if ((players[i].cmd.buttons & BT_SPECIAL)!=0) 
           { 
           switch (players[i].cmd.buttons & BT_SPECIALMASK) 
           { 
             case BTS_PAUSE: 
-              paused ^= 1; 
-              if (paused) 
-              S_PauseSound (); 
-              else 
-              S_ResumeSound (); 
+              DS.paused ^= paused; 
+              if (paused) ;
+              // TODO S_PauseSound (); ; 
+              else ;
+              // TODO: S_ResumeSound (); 
               break; 
                        
             case BTS_SAVEGAME: 
-              if (!savedescription[0]) 
-              strcpy (savedescription, "NET GAME"); 
+              if (savedescription!=null) 
+              savedescription=new String( "NET GAME"); 
               savegameslot =  
               (players[i].cmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT; 
               gameaction = ga_savegame; 
@@ -755,20 +830,21 @@ public class DoomGame {
   // also see P_SpawnPlayer in P_Things
   //
 
-  //
-  // G_InitPlayer 
-  // Called at the start.
-  // Called by the game initialization functions.
-  //
-  void G_InitPlayer (int player) 
+  /**
+   * G_InitPlayer 
+   * Called at the start.
+   * Called by the game initialization functions.
+   */
+  
+  private void InitPlayer (int player) 
   { 
-      player_t*   p; 
+      player_t   p; 
    
       // set up the saved info         
-      p = &players[player]; 
+      p = players[player]; 
        
       // clear everything else to defaults 
-      G_PlayerReborn (player); 
+      PlayerReborn (player); 
        
   } 
    
@@ -778,15 +854,15 @@ public class DoomGame {
   // G_PlayerFinishLevel
   // Can when a player completes a level.
   //
-  void G_PlayerFinishLevel (int player) 
+  private void PlayerFinishLevel (int player) 
   { 
-      player_t*   p; 
+      player_t   p; 
        
-      p = &players[player]; 
+      p = players[player]; 
        
-      memset (p.powers, 0, sizeof (p.powers)); 
-      memset (p.cards, 0, sizeof (p.cards)); 
-      p.mo.flags &= ~MF_SHADOW;     // cancel invisibility 
+      Arrays.fill(p.powers, 0);
+      Arrays.fill(p.cards,false);       
+      p.mo.flags &= ~mobj_t.MF_SHADOW;     // cancel invisibility 
       p.extralight = 0;          // cancel gun flashes 
       p.fixedcolormap = 0;       // cancel ir gogles 
       p.damagecount = 0;         // no palette changes 
@@ -799,38 +875,44 @@ public class DoomGame {
   // Called after a player dies 
   // almost everything is cleared and initialized 
   //
-  void G_PlayerReborn (int player) 
+  private void PlayerReborn (int player) 
   { 
-      player_t*   p; 
+      player_t   p; 
       int     i; 
-      int     frags[MAXPLAYERS]; 
+      int[]     frags=new int [MAXPLAYERS]; 
       int     killcount;
       int     itemcount;
       int     secretcount; 
-       
-      memcpy (frags,players[player].frags,sizeof(frags)); 
+      
+     // System.arraycopy(players[player].frags, 0, frags, 0, frags.length);
+      C2JUtils.memcpy (frags,players[player].frags,frags.length); 
       killcount = players[player].killcount; 
       itemcount = players[player].itemcount; 
       secretcount = players[player].secretcount; 
-       
-      p = &players[player]; 
-      memset (p, 0, sizeof(*p)); 
+      // C2JUtils.memcpy();
+      
+       players[player]=(player_t) player_t.nullplayer.clone();
+      p=players[player];
+      //p.reset();
+      
+      //memset (p, 0, sizeof(*p)); 
    
-      memcpy (players[player].frags, frags, sizeof(players[player].frags)); 
+      C2JUtils.memcpy(players[player].frags, frags, players[player].frags.length); 
+      
       players[player].killcount = killcount; 
       players[player].itemcount = itemcount; 
       players[player].secretcount = secretcount; 
    
       p.usedown = p.attackdown = true;  // don't do anything immediately 
       p.playerstate = PST_LIVE;       
-      p.health = MAXHEALTH; 
-      p.readyweapon = p.pendingweapon = wp_pistol; 
-      p.weaponowned[wp_fist] = true; 
-      p.weaponowned[wp_pistol] = true; 
-      p.ammo[am_clip] = 50; 
+      p.health[0] = MAXHEALTH; 
+      p.readyweapon = p.pendingweapon = weapontype_t.wp_pistol; 
+      p.weaponowned[weapontype_t.wp_fist.ordinal()] = true; 
+      p.weaponowned[weapontype_t.wp_pistol.ordinal()] = true; 
+      p.ammo[ammotype_t.am_clip.ordinal()] = 50; 
        
       for (i=0 ; i<NUMAMMO ; i++) 
-      p.maxammo[i] = maxammo[i]; 
+      p.maxammo[i] = DS.maxammo[i]; 
            
   }
 
@@ -842,7 +924,7 @@ public class DoomGame {
   //
   //void P_SpawnPlayer (mapthing_t* mthing); 
    
-  protected boolean
+  private boolean
   CheckSpot
   ( int       playernum,
     mapthing_t   mthing ) 
@@ -853,7 +935,7 @@ public class DoomGame {
       mobj_t     mo; 
       
       
-      if (!players[playernum].mo)
+      if (players[playernum].mo==null)
       {
       // first spawn of level, before corpses
       for (int i=0 ; i<playernum ; i++)
@@ -866,24 +948,24 @@ public class DoomGame {
       x = mthing.x << FRACBITS; 
       y = mthing.y << FRACBITS; 
        
-      if (!P_CheckPosition (players[playernum].mo, x, y) ) 
-      return false; 
-   
+   //TODO:   if (!CheckPosition (players[playernum].mo, x, y) ) 
+ //      return false; 
+   // TODO: Requires implementation of Things
       // flush an old corpse if needed 
       if (bodyqueslot >= BODYQUESIZE) 
-      P_RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]); 
+      // TODO: P_RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]); 
       bodyque[bodyqueslot%BODYQUESIZE] = players[playernum].mo; 
       bodyqueslot++; 
       
       // spawn a teleport fog 
-      ss = R_PointInSubsector (x,y); 
+      ss = R.PointInSubsector (x,y); 
       an = ( ANG45 * (mthing.angle/45) ) >> ANGLETOFINESHIFT; 
    
       mo = P_SpawnMobj (x+20*finecosine[an], y+20*finesine[an] 
                 , ss.sector.floorheight 
                 , MT_TFOG); 
        
-      if (players[consoleplayer].viewz != 1) ; 
+      if (players[DS.consoleplayer].viewz != 1) ; 
       // TODO: S_StartSound (mo, sfx_telept);  // don't start sound on first frame 
    
       return true; 
@@ -895,7 +977,7 @@ public class DoomGame {
   // Spawns a player at one of the random death match spots 
   // called at level load and each death 
   //
-  void G_DeathMatchSpawnPlayer (int playernum) 
+  private void DeathMatchSpawnPlayer (int playernum) 
   { 
       int             i,j; 
       int             selections; 
@@ -916,67 +998,68 @@ public class DoomGame {
       } 
    
       // no good spot, so the player will probably get stuck 
-      P_SpawnPlayer (&playerstarts[playernum]); 
+      // TODO: SpawnPlayer (playerstarts[playernum]); 
   } 
 
   //
   // G_DoReborn 
   // 
-  void G_DoReborn (int playernum) 
+  
+  public void DoReborn (int playernum) 
   { 
       int                             i; 
        
-      if (!netgame)
+      if (!DS.netgame)
       {
       // reload the level from scratch
-      gameaction = ga_loadlevel;  
+      gameaction = gameaction_t.ga_loadlevel;  
       }
       else 
       {
       // respawn at the start
 
       // first dissasociate the corpse 
-      players[playernum].mo.player = NULL;   
+      players[playernum].mo.player = null;   
            
       // spawn at random spot if in death match 
-      if (deathmatch) 
+      if (DS.deathmatch) 
       { 
-          G_DeathMatchSpawnPlayer (playernum); 
+          DeathMatchSpawnPlayer (playernum); 
           return; 
       } 
            
-      if (G_CheckSpot (playernum, &playerstarts[playernum]) ) 
+      if (CheckSpot (playernum, DS.playerstarts[playernum]) ) 
       { 
-          P_SpawnPlayer (&playerstarts[playernum]); 
+          SpawnPlayer (DS.playerstarts[playernum]); 
           return; 
       }
       
       // try to spawn at one of the other players spots 
       for (i=0 ; i<MAXPLAYERS ; i++)
       {
-          if (G_CheckSpot (playernum, &playerstarts[i]) ) 
+          if (G_CheckSpot (playernum, DS.playerstarts[i]) ) 
           { 
-          playerstarts[i].type = playernum+1; // fake as other player 
+          DS.playerstarts[i].type = playernum+1; // fake as other player 
           P_SpawnPlayer (&playerstarts[i]); 
           playerstarts[i].type = i+1;     // restore 
           return; 
           }       
           // he's going to be inside something.  Too bad.
       }
-      P_SpawnPlayer (&playerstarts[playernum]); 
+     // TODO P_SpawnPlayer (playerstarts[playernum]); 
       } 
   } 
    
    
   private void ScreenShot () 
   { 
-      gameaction = ga_screenshot; 
+      gameaction = gameaction_t.ga_screenshot; 
   } 
    
 
 
-  // DOOM Par Times
-  int pars[4][10] = 
+ /** DOOM Par Times [4][10] */
+  final int[][] pars = 
   { 
       {0}, 
       {0,30,75,120,90,165,180,180,30,165}, 
@@ -984,8 +1067,8 @@ public class DoomGame {
       {0,90,45,90,150,90,90,165,30,135} 
   }; 
 
-  // DOOM II Par Times
-  int cpars[32] =
+  /** DOOM II Par Times */
+  final int[] cpars =
   {
       30,90,120,120,90,150,120,120,270,90,    //  1-10
       210,150,150,150,210,150,420,150,210,150,    // 11-20
@@ -998,44 +1081,43 @@ public class DoomGame {
   // G_DoCompleted 
   //
   boolean     secretexit; 
-  extern char*    pagename; 
    
-  void G_ExitLevel (void) 
+  private void ExitLevel () 
   { 
       secretexit = false; 
-      gameaction = ga_completed; 
+      gameaction = gameaction_t.ga_completed; 
   } 
 
   // Here's for the german edition.
-  void G_SecretExitLevel (void) 
+  private void SecretExitLevel () 
   { 
       // IF NO WOLF3D LEVELS, NO SECRET EXIT!
-      if ( (gamemode == commercial)
-        && (W_CheckNumForName("map31")<0))
+      if ( (DS.gamemode == GameMode_t.commercial)
+        && (W.CheckNumForName("map31")<0))
       secretexit = false;
       else
       secretexit = true; 
-      gameaction = ga_completed; 
+      gameaction =  gameaction_t.ga_completed; 
   } 
    
-  void G_DoCompleted (void) 
+  private void DoCompleted () 
   { 
       int             i; 
        
-      gameaction = ga_nothing; 
+      gameaction =  gameaction_t.ga_nothing; 
    
       for (i=0 ; i<MAXPLAYERS ; i++) 
       if (playeringame[i]) 
-          G_PlayerFinishLevel (i);        // take away cards and stuff 
+          PlayerFinishLevel (i);        // take away cards and stuff 
        
-      if (automapactive) 
-      AM_Stop (); 
+      if (DS.automapactive) 
+      AM.Stop (); 
       
-      if ( gamemode != commercial)
-      switch(gamemap)
+      if ( DS.gamemode != GameMode_t.commercial)
+      switch(DS.gamemap)
       {
         case 8:
-          gameaction = ga_victory;
+          gameaction =  gameaction_t.ga_victory;
           return;
         case 9: 
           for (i=0 ; i<MAXPLAYERS ; i++) 
@@ -1044,16 +1126,16 @@ public class DoomGame {
       }
           
   //#if 0  Hmmm - why?
-      if ( (gamemap == 8)
-       && (gamemode != commercial) ) 
+      if ( (DS.gamemap == 8)
+       && (DS.gamemode != GameMode_t.commercial) ) 
       {
       // victory 
-      gameaction = ga_victory; 
+      gameaction =  gameaction_t.ga_victory; 
       return; 
       } 
        
-      if ( (gamemap == 9)
-       && (gamemode != commercial) ) 
+      if ( (DS.gamemap == 9)
+       && (DS.gamemode != GameMode_t.commercial) ) 
       {
       // exit secret level 
       for (i=0 ; i<MAXPLAYERS ; i++) 
@@ -1062,35 +1144,35 @@ public class DoomGame {
   //#endif
       
        
-      wminfo.didsecret = players[consoleplayer].didsecret; 
-      wminfo.epsd = gameepisode -1; 
-      wminfo.last = gamemap -1;
+      wminfo.didsecret = players[DS.consoleplayer].didsecret; 
+      wminfo.epsd = DS.gameepisode -1; 
+      wminfo.last = DS.gamemap -1;
       
       // wminfo.next is 0 biased, unlike gamemap
-      if ( gamemode == commercial)
+      if ( DS.gamemode == GameMode_t.commercial)
       {
       if (secretexit)
-          switch(gamemap)
+          switch(DS.gamemap)
           {
             case 15: wminfo.next = 30; break;
             case 31: wminfo.next = 31; break;
           }
       else
-          switch(gamemap)
+          switch(DS.gamemap)
           {
             case 31:
             case 32: wminfo.next = 15; break;
-            default: wminfo.next = gamemap;
+            default: wminfo.next = DS.gamemap;
           }
       }
       else
       {
       if (secretexit) 
           wminfo.next = 8;    // go to secret level 
-      else if (gamemap == 9) 
+      else if (DS.gamemap == 9) 
       {
           // returning from secret level 
-          switch (gameepisode) 
+          switch (DS.gameepisode) 
           { 
             case 1: 
           wminfo.next = 3; 
@@ -1114,7 +1196,7 @@ public class DoomGame {
       wminfo.maxitems = totalitems; 
       wminfo.maxsecret = totalsecret; 
       wminfo.maxfrags = 0; 
-      if ( gamemode == commercial )
+      if ( DS.gamemode == commercial )
       wminfo.partime = 35*cpars[gamemap-1]; 
       else
       wminfo.partime = 35*pars[gameepisode][gamemap]; 
@@ -1145,16 +1227,16 @@ public class DoomGame {
   //
   // G_WorldDone 
   //
-  void G_WorldDone (void) 
+  private void WorldDone () 
   { 
-      gameaction = ga_worlddone; 
+      gameaction = gameaction_t.ga_worlddone; 
 
       if (secretexit) 
-      players[consoleplayer].didsecret = true; 
+      players[DS.consoleplayer].didsecret = true; 
 
-      if ( gamemode == commercial )
+      if ( DS.gamemode == GameMode_t.commercial )
       {
-      switch (gamemap)
+      switch (DS.gamemap)
       {
         case 15:
         case 31:
@@ -1164,19 +1246,19 @@ public class DoomGame {
         case 11:
         case 20:
         case 30:
-          F_StartFinale ();
+          F.StartFinale ();
           break;
       }
       }
   } 
    
-  void G_DoWorldDone (void) 
+  public void DoWorldDone () 
   {        
-      gamestate = GS_LEVEL; 
-      gamemap = wminfo.next+1; 
-      G_DoLoadLevel (); 
-      gameaction = ga_nothing; 
-      viewactive = true; 
+      DS.gamestate = gamestate_t.GS_LEVEL; 
+      DS.gamemap = wminfo.next+1; 
+      DoLoadLevel (); 
+      gameaction = gameaction_t.ga_nothing; 
+      DS.viewactive = true; 
   } 
    
 
@@ -1185,36 +1267,45 @@ public class DoomGame {
   // G_InitFromSavegame
   // Can be called by the startup code or the menu task. 
   //
-  extern boolean setsizeneeded;
-  void R_ExecuteSetViewSize (void);
+  //extern boolean setsizeneeded;
+  //void R_ExecuteSetViewSize (void);
 
-  char    savename[256];
+  String    savename;
 
-  void G_LoadGame (char* name) 
+  private void LoadGame (String name) 
   { 
-      strcpy (savename, name); 
-      gameaction = ga_loadgame; 
+      savename=new String(name); 
+      gameaction = gameaction_t.ga_loadgame; 
   } 
    
-  #define VERSIONSIZE     16 
+  
 
+  /** This is fugly. Making a "savegame object" will make at least certain comparisons
+   *  easier, and avoid writing code twice.
+   */
 
-  void G_DoLoadGame (void) 
+  private void DoLoadGame () 
   { 
       int     length; 
       int     i; 
       int     a,b,c; 
-      char    vcheck[VERSIONSIZE]; 
+      char[]    vcheck=new char[VERSIONSIZE]; 
+      StringBuffer buf=new StringBuffer();
+      DoomSaveGame dsg;
+      
+      gameaction = gameaction_t.ga_nothing; 
        
-      gameaction = ga_nothing; 
-       
-      length = M_ReadFile (savename, &savebuffer); 
-      save_p = savebuffer + SAVESTRINGSIZE;
+      length = M.ReadFile (savename, savebuffer); 
+      save_p = SAVESTRINGSIZE;
       
       // skip the description field 
-      memset (vcheck,0,sizeof(vcheck)); 
-      sprintf (vcheck,"version %i",VERSION); 
-      if (strcmp (save_p, vcheck)) 
+      //memset (vcheck,0,sizeof(vcheck));
+      //sprintf (vcheck,"version %i",VERSION);
+      buf.append("version ");
+      buf.append(VERSION);
+      buf.getChars(0, buf.length(), vcheck, 0);
+ 
+      if (C2JUtils.strcmp (save_p, vcheck)) 
       return;             // bad version 
       save_p += VERSIONSIZE; 
                
@@ -1258,26 +1349,26 @@ public class DoomGame {
   // Called by the menu task.
   // Description is a 24 byte text string 
   //
-  void
-  G_SaveGame
+  private void
+  SaveGame
   ( int   slot,
-    char* description ) 
+    String description ) 
   { 
       savegameslot = slot; 
-      strcpy (savedescription, description); 
+      savedescription=new String(description); 
       sendsave = true; 
   } 
    
-  void G_DoSaveGame (void) 
+  private void DoSaveGame () 
   { 
-      char    name[100]; 
-      char    name2[VERSIONSIZE]; 
-      char*   description; 
+      String    name; 
+      char[]    name2=new char[VERSIONSIZE]; 
+      String   description; 
       int     length; 
       int     i; 
       
       if (M_CheckParm("-cdrom"))
-      sprintf(name,"c:\\doomdata\\"SAVEGAMENAME"%d.dsg",savegameslot);
+      name="c:\\doomdata\\"+SAVEGAMENAME+"%d.dsg");
       else
       sprintf (name,SAVEGAMENAME"%d.dsg",savegameslot); 
       description = savedescription; 
@@ -1387,12 +1478,12 @@ public class DoomGame {
       if (episode < 1)
         episode = 1; 
 
-      if ( gamemode == retail )
+      if ( DS.gamemode == retail )
       {
         if (episode > 4)
       episode = 4;
       }
-      else if ( gamemode == shareware )
+      else if ( DS.gamemode == shareware )
       {
         if (episode > 1) 
          episode = 1; // only start episode 1 on shareware
@@ -1409,7 +1500,7 @@ public class DoomGame {
       map = 1;
       
       if ( (map > 9)
-       && ( gamemode != commercial) )
+       && ( DS.gamemode != commercial) )
         map = 9; 
            
       M_ClearRandom (); 
@@ -1453,7 +1544,7 @@ public class DoomGame {
       viewactive = true;
       
       // set the sky map for the episode
-      if ( gamemode == commercial)
+      if ( DS.gamemode == commercial)
       {
       skytexture = R_TextureNumForName ("SKY3");
       if (gamemap < 12)
@@ -1491,60 +1582,62 @@ public class DoomGame {
 public int skytexture;      
 
 
- public  void G_ReadDemoTiccmd (ticcmd_t cmd) 
+ public  void ReadDemoTiccmd (ticcmd_t cmd) 
   { 
-      if (*demo_p == DEMOMARKER) 
+      if (demobuffer[demo_p] == DEMOMARKER) 
       {
       // end of demo data stream 
-      G_CheckDemoStatus (); 
+      CheckDemoStatus (); 
       return; 
       } 
-      cmd.forwardmove = ((signed char)*demo_p++); 
-      cmd.sidemove = ((signed char)*demo_p++); 
-      cmd.angleturn = ((unsigned char)*demo_p++)<<8; 
-      cmd.buttons = (unsigned char)*demo_p++; 
+      cmd.forwardmove = (demobuffer[demo_p++]); 
+      cmd.sidemove = (demobuffer[demo_p++]); 
+      cmd.angleturn = (short) (C2JUtils.toUnsignedByte(demobuffer[demo_p++])<<8); 
+      cmd.buttons = (char) (C2JUtils.toUnsignedByte(demobuffer[demo_p++])); 
   } 
 
 
-  public void G_WriteDemoTiccmd (ticcmd_t cmd) 
+  public void WriteDemoTiccmd (ticcmd_t cmd) 
   { 
       if (gamekeydown['q'])           // press q to end demo recording 
-      G_CheckDemoStatus (); 
-      *demo_p++ = cmd.forwardmove; 
-      *demo_p++ = cmd.sidemove; 
-      *demo_p++ = (cmd.angleturn+128)>>8; 
-      *demo_p++ = cmd.buttons; 
+      CheckDemoStatus (); 
+      demobuffer[demo_p++] = cmd.forwardmove; 
+      demobuffer[demo_p++] = cmd.sidemove; 
+      demobuffer[demo_p++] = (byte) ((cmd.angleturn+128)>>8); 
+      demobuffer[demo_p++] = (byte) cmd.buttons; 
       demo_p -= 4; 
       if (demo_p > demoend - 16)
       {
       // no more space 
-      G_CheckDemoStatus (); 
+      CheckDemoStatus (); 
       return; 
       } 
       
-      G_ReadDemoTiccmd (cmd);         // make SURE it is exactly the same 
+      ReadDemoTiccmd (cmd);         // make SURE it is exactly the same 
   } 
    
    
    
-  //
-  // G_RecordDemo 
-  // 
-  public void G_RecordDemo (String name) 
+  /**
+  * G_RecordDemo 
+  */ 
+  public void RecordDemo (String name) 
   { 
       int             i; 
       int             maxsize;
       
-      usergame = false; 
-      strcpy (demoname, name); 
-      strcat (demoname, ".lmp"); 
+      StringBuffer buf=new StringBuffer();
+      DS.usergame = false; 
+      buf.append(name); 
+      buf.append(".lmp");
+      demoname=buf.toString();
       maxsize = 0x20000;
-      i = M_CheckParm ("-maxdemo");
-      if (i && i<myargc-1)
-      maxsize = atoi(myargv[i+1])*1024;
-      demobuffer = Z_Malloc (maxsize,PU_STATIC,NULL); 
-      demoend = demobuffer + maxsize;
-      
+      i = M.CheckParm ("-maxdemo");
+      if (i!=0 && i<M.myargc-1)
+      maxsize = Integer.parseInt(M.myargv[i+1])*1024;
+      demobuffer = new byte[maxsize]; 
+      demoend = maxsize;
+       
       demorecording = true; 
   } 
    
@@ -1553,69 +1646,75 @@ public int skytexture;
   { 
       int             i; 
           
-      demo_p = demobuffer;
+      demo_p = 0;
       
-      *demo_p++ = VERSION;
-      *demo_p++ = gameskill; 
-      *demo_p++ = gameepisode; 
-      *demo_p++ = gamemap; 
-      *demo_p++ = deathmatch; 
-      *demo_p++ = respawnparm;
-      *demo_p++ = fastparm;
-      *demo_p++ = nomonsters;
-      *demo_p++ = consoleplayer;
+      demobuffer[demo_p++] = (byte) VERSION;
+      demobuffer[demo_p++] = (byte) DS.gameskill.ordinal(); 
+      demobuffer[demo_p++] = (byte) DS.gameepisode; 
+      demobuffer[demo_p++] = (byte) DS.gamemap; 
+      demobuffer[demo_p++] = (byte) ((DS.deathmatch)?1:0); 
+      demobuffer[demo_p++] = (byte) (DS.respawnparm?1:0);
+      demobuffer[demo_p++] = (byte) (DS.fastparm?1:0);
+      demobuffer[demo_p++] = (byte) (DS.nomonsters?1:0);
+      demobuffer[demo_p++] = (byte) DS.consoleplayer;
        
       for (i=0 ; i<MAXPLAYERS ; i++) 
-      *demo_p++ = playeringame[i];         
+      demobuffer[demo_p++] = (byte) (playeringame[i]?1:0);         
   } 
    
 
-  //
-  // G_PlayDemo 
-  //
 
-  char*   defdemoname; 
+
+  String   defdemoname;
+
+
+
    
-  public void G_DeferedPlayDemo (String name) 
+  /**
+   * G_PlayDemo 
+   */
+  
+  public void DeferedPlayDemo (String name) 
   { 
       defdemoname = name; 
-      gameaction = ga_playdemo; 
+      gameaction = gameaction_t.ga_playdemo; 
   } 
    
-  public void G_DoPlayDemo () 
+  public void DoPlayDemo () 
   { 
       skill_t skill; 
       int             i, episode, map; 
        
-      gameaction = ga_nothing; 
-      demobuffer = demo_p = W_CacheLumpName (defdemoname, PU_STATIC); 
-      if ( *demo_p++ != VERSION)
+      gameaction = gameaction_t.ga_nothing; 
+      demobuffer = W.CacheLumpNameAsRawBytes(defdemoname, PU_STATIC);
+      demo_p = 0;
+      if ( demobuffer[demo_p]++ != VERSION)
       {
-        fprintf( stderr, "Demo is from a different game version!\n");
-        gameaction = ga_nothing;
+        System.err.println("Demo is from a different game version!\n");
+        gameaction = gameaction_t.ga_nothing;
         return;
       }
       
-      skill = *demo_p++; 
-      episode = *demo_p++; 
-      map = *demo_p++; 
-      deathmatch = *demo_p++;
-      respawnparm = *demo_p++;
-      fastparm = *demo_p++;
-      nomonsters = *demo_p++;
-      consoleplayer = *demo_p++;
+      skill = skill_t.values()[demobuffer[demo_p++]]; 
+      episode = demobuffer[demo_p++]; 
+      map = demobuffer[demo_p++]; 
+      DS.deathmatch = demobuffer[demo_p++]==0;
+      DS.respawnparm = demobuffer[demo_p++]==0;
+      DS.fastparm = demobuffer[demo_p++]==0;
+      DS.nomonsters = demobuffer[demo_p++]==0;
+      DS.consoleplayer = demobuffer[demo_p++];
       
       for (i=0 ; i<MAXPLAYERS ; i++) 
-      playeringame[i] = *demo_p++; 
+      playeringame[i] = demobuffer[demo_p++]==0; 
       if (playeringame[1]) 
       { 
-      netgame = true; 
+      DS.netgame = true; 
       netdemo = true; 
       }
 
       // don't spend a lot of time in loadlevel 
       precache = false;
-      G_InitNew (skill, episode, map); 
+      InitNew (skill, episode, map); 
       precache = true; 
 
       usergame = false; 
@@ -1625,15 +1724,15 @@ public int skytexture;
   //
   // G_TimeDemo 
   //
-  public void G_TimeDemo (String name) 
+  public void TimeDemo (String name) 
   {    
-      nodrawers = M_CheckParm ("-nodraw"); 
-      noblit = M_CheckParm ("-noblit"); 
+      DS.nodrawers = M.CheckParm ("-nodraw")!=0; 
+      DS.noblit = M.CheckParm ("-noblit")!=0; 
       timingdemo = true; 
-      singletics = true; 
+      DS.singletics = true; 
 
       defdemoname = name; 
-      gameaction = ga_playdemo; 
+      gameaction = gameaction_t.ga_playdemo; 
   } 
    
    
@@ -1653,33 +1752,33 @@ public int skytexture;
        
       if (timingdemo) 
       { 
-      endtime = I_GetTime (); 
-      I_Error ("timed %i gametics in %i realtics",gametic 
+      endtime = system.GetTime (); 
+      system.Error ("timed %i gametics in %i realtics",DS.gametic 
            , endtime-starttime); 
       } 
        
       if (demoplayback) 
       { 
       if (singledemo) 
-          I_Quit (); 
+          system.I_Quit (); 
                
-      Z_ChangeTag (demobuffer, PU_CACHE); 
+     // Z_ChangeTag (demobuffer, PU_CACHE); 
       demoplayback = false; 
       netdemo = false;
-      netgame = false;
-      deathmatch = false;
-      playeringame[1] = playeringame[2] = playeringame[3] = 0;
-      respawnparm = false;
-      fastparm = false;
-      nomonsters = false;
-      consoleplayer = 0;
-      D_AdvanceDemo (); 
+      DS.netgame = false;
+      DS.deathmatch = false;
+      playeringame[1] = playeringame[2] = playeringame[3] = false;
+      DS.respawnparm = false;
+      DS.fastparm = false;
+      DS.nomonsters = false;
+      DS.consoleplayer = 0;
+      AdvanceDemo (); 
       return true; 
       } 
    
       if (demorecording) 
       { 
-      *demo_p++ = DEMOMARKER; 
+      demobuffer[demo_p++] = DEMOMARKER; 
       M_WriteFile (demoname, demobuffer, demo_p - demobuffer); 
       Z_Free (demobuffer); 
       demorecording = false; 
@@ -1696,10 +1795,9 @@ public DoomGame(DoomContext DC){
     // Pegged for convenience... or viceversa
     this.playeringame=DS.playeringame;
     this.players=DS.players;
-    //this.gameaction=DS.gameaction;
-    this.gamemode=DS.gamemode;
-    
-    
+    this.playerstarts=DS.playerstarts;
+    this.de
+    //this.DS.DS.gamemode=DS.DS.gamemode;
 }
     
 }

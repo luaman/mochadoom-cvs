@@ -1,18 +1,22 @@
 package doom;
 
+import f.Wiper;
+import g.DoomGame;
 import m.Menu;
 import data.doomstat;
 import rr.Renderer;
+import rr.UnifiedRenderer;
 import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
 import w.DoomFile;
 import w.WadLoader;
 import static data.Defines.*;
+import static data.Limits.*;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
+// $Id: DoomMain.java,v 1.3 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,6 +31,9 @@ import static data.Defines.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.3  2010/09/07 16:23:00  velktron
+// *** empty log message ***
+//
 // Revision 1.2  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -59,7 +66,7 @@ import static data.Defines.*;
 
 public class DoomMain implements DoomInterface{
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.3 2010/09/07 16:23:00 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -69,47 +76,9 @@ WadLoader W;
 doomstat DS;
 Menu M;
 DoomSoundInterface S;
-Renderer R;
-
-/*
-#include "doomdef.h"
-#include "doomstat.h"
-#include "dstrings.h"
-#include "sounds.h"
-#include "z_zone.h"
-#include "w_wad.h"
-*/
-
-
-
-/*
-#include "s_sound.h"
-#include "v_video.h"
-
-#include "f_finale.h"
-#include "f_wipe.h"
-
-#include "m_argv.h"
-#include "m_misc.h"
-#include "m_menu.h"
-
-#include "i_system.h"
-#include "i_sound.h"
-#include "i_video.h"
-
-#include "g_game.h"
-
-#include "hu_stuff.h"
-#include "wi_stuff.h"
-#include "st_stuff.h"
-#include "am_map.h"
-
-#include "p_setup.h"
-#include "r_local.h"
-
-
-#include "d_main.h"
-*/
+UnifiedRenderer R;
+DoomGame G;
+Wiper wipe;
 
 
 /**
@@ -121,9 +90,7 @@ Renderer R;
  *  calls all ?_Responder, ?_Ticker, and ?_Drawer,
  *  calls I_GetTime, I_StartFrame, and I_StartTic
  */
-public void DoomLoop (){
-	;
-}
+
 
 
 public String[]		wadfiles=new String[MAXWADFILES];
@@ -157,11 +124,11 @@ DoomFile		debugfile;
 boolean		advancedemo;
 
 /** primary wad file */
-char[]		wadfile=new char[1024];
+String		wadfile;
 /**  directory of development maps */
-char[]		mapdir=new char[1024];           
+String		mapdir;           
 /** default file */
-char[]		basedefault=new char[1024];      
+String basedefault;      
 
 //
 // EVENT HANDLING
@@ -181,20 +148,21 @@ int 		eventtail;
 
 public void PostEvent (event_t ev)
 {
-    events[eventhead] = *ev;
+    events[eventhead] = ev;
     eventhead = (++eventhead)&(MAXEVENTS-1);
 }
 
 
-//
-// D_ProcessEvents
-// Send all the events of the given timestamp down the responder chain
+/**
+ * D_ProcessEvents
+ * Send all the events of the given timestamp down the responder chain
+ */ 
 public void ProcessEvents ()
 {
     event_t	ev;
 	
     // IF STORE DEMO, DO NOT ACCEPT INPUT
-    if ( ( gamemode == commercial )
+    if ( ( DS.gamemode == GameMode_t.commercial )
 	 && (W.CheckNumForName("map01")<0) )
       return;
 	
@@ -218,8 +186,8 @@ public void ProcessEvents ()
 // wipegamestate can be set to -1 to force a wipe on the next draw
 gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
 // Defined in Renderer.
-// extern  boolean setsizeneeded;
-extern  int             showMessages;
+boolean setsizeneeded;
+int             showMessages;
 
 //void R_ExecuteSetViewSize ();
 
@@ -227,10 +195,10 @@ private  boolean		viewactivestate = false;
 private  boolean		menuactivestate = false;
 private  boolean		inhelpscreensstate = false;
 private  boolean		fullscreen = false;
-private  gamestate_t		oldgamestate = -1;
+private  gamestate_t		oldgamestate = gamestate_t.GS_MINUS_ONE;
 private  int			borderdrawcount;
 
-public void D_Display ()
+public void Display ()
 {
 
     int				nowtime;
@@ -241,7 +209,7 @@ public void D_Display ()
     boolean			wipe;
     boolean			redrawsbar;
 
-    if (nodrawers)
+    if (DS.nodrawers)
 	return;                    // for comparative timing / profiling
 		
     redrawsbar = false;
@@ -249,7 +217,7 @@ public void D_Display ()
     // change the view size if needed
     if (setsizeneeded)
     {
-	R_ExecuteSetViewSize ();
+	R.ExecuteSetViewSize ();
 	oldgamestate = -1;                      // force background redraw
 	borderdrawcount = 3;
     }
@@ -381,41 +349,45 @@ public void D_Display ()
 
 
 
-//
-//  D_DoomLoop
-//
-extern  boolean         demorecording;
+/**
+ * D-DoomLoop()
+ * Not a globally visible function,
+ *  just included for source reference,
+ *  called by D_DoomMain, never exits.
+ * Manages timing and IO,
+ *  calls all ?_Responder, ?_Ticker, and ?_Drawer,
+ *  calls I_GetTime, I_StartFrame, and I_StartTic
+ */
 
-void D_DoomLoop (void)
+public void DoomLoop ()
 {
-    if (demorecording)
-	G_BeginRecording ();
+    if (DS.demorecording)
+	G.BeginRecording ();
 		
-    if (M_CheckParm ("-debugfile"))
+    if (M.CheckParm ("-debugfile"))
     {
-	char    filename[20];
-	sprintf (filename,"debug%i.txt",consoleplayer);
-	printf ("debug output to: %s\n",filename);
+	String    filename="debug"+DS.consoleplayer+".txt";
+	System.out.println("debug output to: "+filename);
 	debugfile = fopen (filename,"w");
     }
 	
-    I_InitGraphics ();
+    // TODO: I.InitGraphics ();
 
-    while (1)
+    while (true)
     {
 	// frame syncronous IO operations
-	I_StartFrame ();                
+	// TODO: I.StartFrame ();                
 	
 	// process one or more tics
 	if (singletics)
 	{
-	    I_StartTic ();
-	    D_ProcessEvents ();
-	    G_BuildTiccmd (&netcmds[consoleplayer][maketic%BACKUPTICS]);
+	    // TODO: I.StartTic ();
+	    ProcessEvents ();
+	    G.BuildTiccmd (netcmds[consoleplayer][maketic%BACKUPTICS]);
 	    if (advancedemo)
-		D_DoAdvanceDemo ();
-	    M_Ticker ();
-	    G_Ticker ();
+		DoAdvanceDemo ();
+	    M.Ticker ();
+	    G.Ticker ();
 	    gametic++;
 	    maketic++;
 	}
@@ -424,11 +396,11 @@ void D_DoomLoop (void)
 	    TryRunTics (); // will run at least one tic
 	}
 		
-	S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
+	// TODO: S.UpdateSounds (players[consoleplayer].mo);// move positional sounds
 
 	// Update display, next frame, with current state.
-	D_Display ();
-
+	Display ();
+/**
 #ifndef SNDSERV
 	// Sound mixing for the buffer is snychronous.
 	I_UpdateSound();
@@ -438,6 +410,7 @@ void D_DoomLoop (void)
 	// Update sound output.
 	I_SubmitSound();
 #endif
+*/
     }
 }
 
@@ -448,35 +421,37 @@ void D_DoomLoop (void)
 //
 int             demosequence;
 int             pagetic;
-char                    *pagename;
+String pagename;
 
 
 //
 // D_PageTicker
 // Handles timing for warped projection
 //
-void D_PageTicker (void)
+public final void PageTicker ()
 {
     if (--pagetic < 0)
-	D_AdvanceDemo ();
+	AdvanceDemo ();
 }
 
 
 
-//
-// D_PageDrawer
-//
-void D_PageDrawer (void)
+/**
+ * D_PageDrawer
+ */
+
+public void PageDrawer ()
 {
-    V_DrawPatch (0,0, 0, W_CacheLumpName(pagename, PU_CACHE));
+    V.DrawPatch (0,0, 0, W.CachePatchName(pagename, PU_CACHE));
 }
 
 
-//
-// D_AdvanceDemo
-// Called after each demo or intro demosequence finishes
-//
-void D_AdvanceDemo (void)
+/**
+ * D_AdvanceDemo
+ * Called after each demo or intro demosequence finishes
+ */
+
+public void AdvanceDemo ()
 {
     advancedemo = true;
 }
@@ -486,15 +461,15 @@ void D_AdvanceDemo (void)
 // This cycles through the demo sequences.
 // FIXME - version dependend demo numbers?
 //
- void D_DoAdvanceDemo (void)
+public void DoAdvanceDemo ()
 {
-    players[consoleplayer].playerstate = PST_LIVE;  // not reborn
+    DS.players[DS.consoleplayer].playerstate = PST_LIVE;  // not reborn
     advancedemo = false;
-    usergame = false;               // no save / end game here
-    paused = false;
-    gameaction = ga_nothing;
+    DS.usergame = false;               // no save / end game here
+    DS.paused = false;
+    G.gameaction = gameaction_t.ga_nothing;
 
-    if ( gamemode == retail )
+    if ( DS.gamemode == GameMode_t.retail )
       demosequence = (demosequence+1)%7;
     else
       demosequence = (demosequence+1)%6;
@@ -502,19 +477,21 @@ void D_AdvanceDemo (void)
     switch (demosequence)
     {
       case 0:
-	if ( gamemode == commercial )
+	if ( DS.gamemode == GameMode_t.commercial )
 	    pagetic = 35 * 11;
 	else
 	    pagetic = 170;
-	gamestate = GS_DEMOSCREEN;
+	G.gamestate = gamestate_t.GS_DEMOSCREEN;
 	pagename = "TITLEPIC";
-	if ( gamemode == commercial )
-	  S_StartMusic(mus_dm2ttl);
+	if ( DS.gamemode == GameMode_t.commercial )
+	  // TODO:  S_StartMusic(mus_dm2ttl);
+	    ;
 	else
-	  S_StartMusic (mus_intro);
+	    //TODO: S_StartMusic (mus_intro); 
+	    ;	  
 	break;
       case 1:
-	G_DeferedPlayDemo ("demo1");
+	G.DeferedPlayDemo ("demo1");
 	break;
       case 2:
 	pagetic = 200;
@@ -522,7 +499,7 @@ void D_AdvanceDemo (void)
 	pagename = "CREDIT";
 	break;
       case 3:
-	G_DeferedPlayDemo ("demo2");
+	G.DeferedPlayDemo ("demo2");
 	break;
       case 4:
 	gamestate = GS_DEMOSCREEN;
@@ -530,7 +507,7 @@ void D_AdvanceDemo (void)
 	{
 	    pagetic = 35 * 11;
 	    pagename = "TITLEPIC";
-	    S_StartMusic(mus_dm2ttl);
+	   // TODO: S_StartMusic(mus_dm2ttl);
 	}
 	else
 	{
@@ -754,12 +731,10 @@ void IdentifyVersion (void)
 //
 // Find a Response File
 //
-void FindResponseFile (void)
+public void FindResponseFile ()
 {
-    int             i;
-
-	
-    for (i = 1;i < myargc;i++)
+	// Args start from 0 in Java.
+    for (int i = 0;i < myargc;i++)
 	if (myargv[i][0] == '@')
 	{
 	    FILE *          handle;
@@ -828,10 +803,10 @@ void FindResponseFile (void)
 //
 // D_DoomMain
 //
-void D_DoomMain (void)
+public void DoomMain ()
 {
     int             p;
-    char                    file[256];
+    String                    file;
 
     FindResponseFile ();
 	

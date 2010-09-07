@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.10 2010/09/02 15:56:54 velktron Exp $
+// $Id: Defines.java,v 1.11 2010/09/07 16:23:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -43,7 +43,9 @@ import w.animenum_t;
 //
 // DOOM version
 public class Defines{
-public static int VERSION =  110 ;
+    
+    /** Seems to be 109 for shareware 1.9, wtf is this*/
+public static final int VERSION =  110 ;
 
 
 // Game mode handling - identify IWAD version
@@ -1684,5 +1686,5 @@ public static final int SAVESTRINGSIZE = 24;
     
  
 static final String
-rcsid = "$Id: Defines.java,v 1.10 2010/09/02 15:56:54 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.11 2010/09/07 16:23:00 velktron Exp $";
 }

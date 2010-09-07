@@ -25,8 +25,8 @@ public class Limits {
     public static final int MAXARGVS   =     100;
     
     // The maximum number of players, multiplayer/networking.
-    //Max computers/players in a game.
-    public static int MAXPLAYERS =     4;
+    //Max computers/players in a game. AFFECTS SAVEGAMES.
+    public static final int MAXPLAYERS =     4;
     public final static int    MAXNETNODES   =  8;
 
     // Some quirky engine limits
@@ -65,6 +65,11 @@ public class Limits {
     public static final int MININT=((int)0x80000000);
     public static final long MINLONG=((long)0x80000000);
     
+    // Buffering/memory limits.
+    public static final int SAVEGAMESIZE  =  0x2c000;
+
+    public static final int SAVESTRINGSIZE = 24;
+    public static final int VERSIONSIZE =    16; 
 
     
 }
