@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.10 2010/09/06 16:02:59 velktron Exp $
+// $Id: Map.java,v 1.11 2010/09/08 15:22:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.11  2010/09/08 15:22:18  velktron
+// x,y coords in some structs as value semantics. Possible speed increase?
+//
 // Revision 1.10  2010/09/06 16:02:59  velktron
 // Implementation of palettes.
 //
@@ -102,7 +105,7 @@ DoomVideoRenderer V;
 LevelLoader P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.10 2010/09/06 16:02:59 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.11 2010/09/08 15:22:18 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -214,13 +217,13 @@ public Map(DoomContext dC) {
 
 
 /** translates between frame-buffer and map distances */
-private int FTOM(int x){return FixedMul(((x)<<16),scale_ftom);}
+private final int FTOM(int x){return FixedMul(((x)<<16),scale_ftom);}
 /** translates between frame-buffer and map distances */
-private int MTOF(int x) {return FixedMul((x),scale_mtof)>>16;}
+private final int MTOF(int x) {return FixedMul((x),scale_mtof)>>16;}
 /** translates between frame-buffer and map coordinates */
-private int CXMTOF(int x){ return (f_x + MTOF((x)-m_x));}
+private final int CXMTOF(int x){ return (f_x + MTOF((x)-m_x));}
 /** translates between frame-buffer and map coordinates */
-private int CYMTOF(int y) {return (f_y + (f_h - MTOF((y)-m_y)));}
+private final int CYMTOF(int y) {return (f_y + (f_h - MTOF((y)-m_y)));}
 
 // the following is crap
 public static final short LINE_NEVERSEE =ML_DONTDRAW;
@@ -397,8 +400,8 @@ islope_t is )
 {
  int dx, dy;
 
- dy = ml.a.y - ml.b.y;
- dx = ml.b.x - ml.a.x;
+ dy = ml.ay - ml.by;
+ dx = ml.bx - ml.ax;
  if (dy==0) is.islp = (dx<0?-MAXINT:MAXINT);
  else is.islp = FixedDiv(dx, dy);
  if (dx==0) is.slp = (dy<0?-MAXINT:MAXINT);
@@ -958,6 +961,7 @@ public final  void clearFB(byte color)
 * faster reject and precalculated slopes.  If the speed is needed,
 * use a hash algorithm to handle  the common cases.
 */
+private int    tmpx,tmpy;//=new fpoint_t();
 
 private final  boolean
 clipMline
@@ -972,7 +976,7 @@ clipMline
     int    outcode2 = 0;
     int    outside;
     
-    fpoint_t    tmp=new fpoint_t();
+
     int     dx;
     int     dy;
     /*fl.a.x=0;
@@ -981,41 +985,41 @@ clipMline
     fl.b.y=0; */
     
     // do trivial rejects and outcodes
-    if (ml.a.y > m_y2)
+    if (ml.ay > m_y2)
     outcode1 = TOP;
-    else if (ml.a.y < m_y)
+    else if (ml.ay < m_y)
     outcode1 = BOTTOM;
 
-    if (ml.b.y > m_y2)
+    if (ml.by > m_y2)
     outcode2 = TOP;
-    else if (ml.b.y < m_y)
+    else if (ml.by < m_y)
     outcode2 = BOTTOM;
     
     if ((outcode1 & outcode2)!=0)
     return false; // trivially outside
 
-    if (ml.a.x < m_x)
+    if (ml.ax < m_x)
     outcode1 |= LEFT;
-    else if (ml.a.x > m_x2)
+    else if (ml.ax > m_x2)
     outcode1 |= RIGHT;
     
-    if (ml.b.x < m_x)
+    if (ml.bx < m_x)
     outcode2 |= LEFT;
-    else if (ml.b.x > m_x2)
+    else if (ml.bx > m_x2)
     outcode2 |= RIGHT;
     
     if ((outcode1 & outcode2)!=0)
     return false; // trivially outside
 
     // transform to frame-buffer coordinates.
-    fl.a.x = CXMTOF(ml.a.x);
-    fl.a.y = CYMTOF(ml.a.y);
-    fl.b.x = CXMTOF(ml.b.x);
-    fl.b.y = CYMTOF(ml.b.y);
+    fl.ax = CXMTOF(ml.ax);
+    fl.ay = CYMTOF(ml.ay);
+    fl.bx = CXMTOF(ml.bx);
+    fl.by = CYMTOF(ml.by);
 
     //System.out.println(">>>>>> ("+fl.a.x+" , "+fl.a.y+" ),("+fl.b.x+" , "+fl.b.y+" )");
-    outcode1= DOOUTCODE(fl.a.x, fl.a.y);
-    outcode2 =DOOUTCODE(fl.b.x, fl.b.y);
+    outcode1= DOOUTCODE(fl.ax, fl.ay);
+    outcode2 =DOOUTCODE(fl.bx, fl.by);
 
     if ((outcode1 & outcode2)!=0)
     return false;
@@ -1032,42 +1036,44 @@ clipMline
     // clip to each side
     if ((outside & TOP)!=0)
     {
-        dy = fl.a.y - fl.b.y;
-        dx = fl.b.x - fl.a.x;
-        tmp.x = fl.a.x + (dx*(fl.a.y))/dy;
-        tmp.y = 0;
+        dy = fl.ay - fl.by;
+        dx = fl.bx - fl.ax;
+        tmpx = fl.ax + (dx*(fl.ay))/dy;
+        tmpy = 0;
     }
     else if ((outside & BOTTOM)!=0)
     {
-        dy = fl.a.y - fl.b.y;
-        dx = fl.b.x - fl.a.x;
-        tmp.x = fl.a.x + (dx*(fl.a.y-f_h))/dy;
-        tmp.y = f_h-1;
+        dy = fl.ay - fl.by;
+        dx = fl.bx - fl.ax;
+        tmpx = fl.ax + (dx*(fl.ay-f_h))/dy;
+        tmpy = f_h-1;
     }
     else if ((outside & RIGHT)!=0)
     {
-        dy = fl.b.y - fl.a.y;
-        dx = fl.b.x - fl.a.x;
-        tmp.y = fl.a.y + (dy*(f_w-1 - fl.a.x))/dx;
-        tmp.x = f_w-1;
+        dy = fl.by - fl.ay;
+        dx = fl.bx - fl.ax;
+        tmpy = fl.ay + (dy*(f_w-1 - fl.ax))/dx;
+        tmpx = f_w-1;
     }
     else if ((outside & LEFT)!=0)
     {
-        dy = fl.b.y - fl.a.y;
-        dx = fl.b.x - fl.a.x;
-        tmp.y = fl.a.y + (dy*(-fl.a.x))/dx;
-        tmp.x = 0;
+        dy = fl.by - fl.ay;
+        dx = fl.bx - fl.ax;
+        tmpy = fl.ay + (dy*(-fl.ax))/dx;
+        tmpx = 0;
     }
 
     if (outside == outcode1)
     {
-        fl.a = tmp;
-        outcode1=DOOUTCODE( fl.a.x, fl.a.y);
+        fl.ax = tmpx;
+        fl.ay=tmpy;
+        outcode1=DOOUTCODE( fl.ax, fl.ay);
     }
     else
     {
-        fl.b = tmp;
-        outcode2=DOOUTCODE(fl.b.x, fl.b.y);
+        fl.bx = tmpx;
+        fl.by = tmpy;
+        outcode2=DOOUTCODE(fl.bx, fl.by);
     }
     
     if ((outcode1 & outcode2)!=0)
@@ -1122,25 +1128,25 @@ private final  void drawFline
     
 
     // For debugging only
-    if (      fl.a.x < 0 || fl.a.x >= f_w
-       || fl.a.y < 0 || fl.a.y >= f_h
-       || fl.b.x < 0 || fl.b.x >= f_w
-       || fl.b.y < 0 || fl.b.y >= f_h)
+    /*if (      fl.ax < 0 || fl.ax >= f_w
+       || fl.ay < 0 || fl.ay >= f_h
+       || fl.bx < 0 || fl.bx >= f_w
+       || fl.by < 0 || fl.by >= f_h)
     {
     System.err.println("fuck "+(fuck++)+" \r");
     return;
-    }
+    }*/
 
-    dx = fl.b.x - fl.a.x;
+    dx = fl.bx - fl.ax;
     ax = 2 * (dx<0 ? -dx : dx);
     sx = dx<0 ? -1 : 1;
 
-    dy = fl.b.y - fl.a.y;
+    dy = fl.by - fl.ay;
     ay = 2 * (dy<0 ? -dy : dy);
     sy = dy<0 ? -1 : 1;
 
-    x = fl.a.x;
-    y = fl.a.y;
+    x = fl.ax;
+    y = fl.ay;
     byte c=(byte)color;
     
     if (ax > ay)
@@ -1152,7 +1158,7 @@ private final  void drawFline
     while (true)
     {
         PUTDOT(x,y,c);
-        if (x == fl.b.x) return;
+        if (x == fl.bx) return;
         if (d>=0)
         {
         y += sy;
@@ -1168,7 +1174,7 @@ private final  void drawFline
     while (true)
     {
         PUTDOT(x, y, c);
-        if (y == fl.b.y) return;
+        if (y == fl.by) return;
         if (d >= 0)
         {
         x += sx;
@@ -1196,7 +1202,7 @@ drawMline
   int       color )
 {
 
-   fline_t fl=new fline_t();
+   //fl.reset();
 
     if (this.clipMline(ml,fl)){
       //  if ((fl.a.x==fl.b.x)&&(fl.a.y==fl.b.y)) singlepixel++;
@@ -1204,10 +1210,11 @@ drawMline
     }
 }
 
-//protected fline_t fl=new fline_t();
-private mline_t ml=new mline_t();
+private final fline_t fl=new fline_t();
+private final mline_t ml=new mline_t();
 
 /**
+
  * Draws flat (floor/ceiling tile) aligned grid lines.
  */
 private final  void drawGrid(int color)
@@ -1224,12 +1231,12 @@ private final  void drawGrid(int color)
     end = m_x + m_w;
 
     // draw vertical gridlines
-    ml.a.y = m_y;
-    ml.b.y = m_y+m_h;
+    ml.ay = m_y;
+    ml.by = m_y+m_h;
     for (x=start; x<end; x+=(MAPBLOCKUNITS<<FRACBITS))
     {
-    ml.a.x = x;
-    ml.b.x = x;
+    ml.ax = x;
+    ml.bx = x;
     drawMline(ml, color);
     }
 
@@ -1241,12 +1248,12 @@ private final  void drawGrid(int color)
     end = m_y + m_h;
 
     // draw horizontal gridlines
-    ml.a.x = m_x;
-    ml.b.x = m_x + m_w;
+    ml.ax = m_x;
+    ml.bx = m_x + m_w;
     for (y=start; y<end; y+=(MAPBLOCKUNITS<<FRACBITS))
     {
-    ml.a.y = y;
-    ml.b.y = y;
+    ml.ay = y;
+    ml.by = y;
     drawMline(ml, color);
     }
 
@@ -1264,10 +1271,10 @@ private final  void drawWalls()
 
     for (int i=0;i<P.numlines;i++)
     {
-    l.a.x = P.lines[i].v1.x;
-    l.a.y = P.lines[i].v1.y;
-    l.b.x = P.lines[i].v2.x;
-    l.b.y = P.lines[i].v2.y;
+    l.ax = P.lines[i].v1x;
+    l.ay = P.lines[i].v1y;
+    l.bx = P.lines[i].v2x;
+    l.by = P.lines[i].v2y;
     if ((cheating | (P.lines[i].flags/* & ML_MAPPED*/))!=0)
     {
         if (((P.lines[i].flags & LINE_NEVERSEE) & ~cheating)!=0)
@@ -1362,42 +1369,42 @@ drawLineCharacter
 
     for (i=0;i<lineguylines;i++)
     {
-    l.a.x = lineguy[i].a.x;
-    l.a.y = lineguy[i].a.y;
+    l.ax = lineguy[i].ax;
+    l.ay = lineguy[i].ay;
 
     if (scale!=0)
     {
-        l.a.x = FixedMul(scale, l.a.x);
-        l.a.y = FixedMul(scale, l.a.y);
+        l.ax = FixedMul(scale, l.ax);
+        l.ay = FixedMul(scale, l.ay);
     }
 
     if (angle!=0)
-        rotate(l.a.x, l.a.y, angle);
+        rotate(l.ax, l.ay, angle);
     // MAES: assign rotations
-    	l.a.x=rotx;
-    	l.a.y=roty;
+    	l.ax=rotx;
+    	l.ay=roty;
 
-    l.a.x += x;
-    l.a.y += y;
+    l.ax += x;
+    l.ay += y;
 
-    l.b.x = lineguy[i].b.x;
-    l.b.y = lineguy[i].b.y;
+    l.bx = lineguy[i].bx;
+    l.by = lineguy[i].by;
 
     if (scale!=0)
     {
-        l.b.x = FixedMul(scale, l.b.x);
-        l.b.y = FixedMul(scale, l.b.y);
+        l.bx = FixedMul(scale, l.bx);
+        l.by = FixedMul(scale, l.by);
     }
 
     if (angle!=0)
-        rotate(l.b.x, l.b.y, angle);
+        rotate(l.bx, l.by, angle);
     // MAES: assign rotations
-	l.a.x=rotx;
-	l.a.y=roty;
+	l.ax=rotx;
+	l.ay=roty;
 
     
-    l.b.x += x;
-    l.b.y += y;
+    l.bx += x;
+    l.by += y;
 
     drawMline(l, color);
     }

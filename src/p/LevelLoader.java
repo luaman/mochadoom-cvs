@@ -57,7 +57,7 @@ import doom.DoomContext;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
+// $Id: LevelLoader.java,v 1.3 2010/09/08 15:22:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +72,9 @@ import doom.DoomContext;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.3  2010/09/08 15:22:18  velktron
+// x,y coords in some structs as value semantics. Possible speed increase?
+//
 // Revision 1.2  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -109,7 +112,7 @@ public class LevelLoader {
     DoomVideoRenderer V;
     Renderer R;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.3 2010/09/08 15:22:18 velktron Exp $";
 
 /*
   #include <math.h>
@@ -484,6 +487,8 @@ public int bmaporgy;
       v2 = ld.v2 = vertexes[mld.v2];
       ld.dx = v2.x - v1.x;
       ld.dy = v2.y - v1.y;
+      // Map value semantics.
+      ld.assignVertexValues();
       
       if (ld.dx==0)
           ld.slopetype = slopetype_t.ST_VERTICAL;
@@ -786,9 +791,9 @@ public int bmaporgy;
       if ( DS.gamemode == GameMode_t.commercial)
       {
       if (map<10)
-          lumpname="map0"+map;
+          lumpname="MAP0"+map;
       else
-          lumpname="map"+map;
+          lumpname="MAP"+map;
       }
       else
       {
