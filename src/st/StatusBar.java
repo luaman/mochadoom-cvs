@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.8 2010/09/06 10:23:24 velktron Exp $
+// $Id: StatusBar.java,v 1.9 2010/09/08 21:09:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.9  2010/09/08 21:09:01  velktron
+// Better display "driver".
+//
 // Revision 1.8  2010/09/06 10:23:24  velktron
 // Alternative rendering method
 //
@@ -71,6 +74,7 @@ package st;
 
 import static data.Limits.MAXPLAYERS;
 import static data.Defines.*;
+import static data.Limits.*;
 import static doom.englsh.*;
 import static automap.DoomAutoMap.*;
 import static doom.player_t.*;
@@ -96,7 +100,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.8 2010/09/06 10:23:24 velktron Exp $";
+        "$Id: StatusBar.java,v 1.9 2010/09/08 21:09:01 velktron Exp $";
 
     // /// STATUS //////////
 

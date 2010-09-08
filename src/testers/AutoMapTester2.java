@@ -42,36 +42,42 @@ public class AutoMapTester2 {
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad", "c:\\gothic99.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"/*,"d:\\doomwad\\gothic99.wad"*/});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
 
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     byte[] pal=palette.getBuffer().array();
+
+    IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
+    Defines.SCREENWIDTH=320;
+    Defines.SCREENHEIGHT=200;
+    BufferedRenderer V=new BufferedRenderer(320,200,icm);
+    V.Init();
+
     IndexColorModel[] icms=new IndexColorModel[palette.getBuffer().limit()/768];
     BufferedImage[] pals=new BufferedImage[icms.length];
-    BufferedRenderer V=new BufferedRenderer(WIDTH,200);
-    V.Init();
+
 
     for (int i=0;i<icms.length;i++){
      icms[i]=new IndexColorModel(8, 256,pal, i*768, false);
          pals[i]=new BufferedImage(icms[i],V.screenbuffer[0].getRaster(), false, null);
         }
     
-    
-    //=V.getBufferedScreens(0,icm);
-    
+    //=V.getBufferedScreens(0,icm);>= numlumps
     
     doomstat ds = new doomstat();
     ds.gameepisode=1;
     ds.gamemap=1;
-    ds.gamemission=GameMission_t.doom2;
-    ds.gamemode=GameMode_t.commercial;
+    ds.gamemission=GameMission_t.doom;
+    ds.gamemode=GameMode_t.shareware;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
+
     Defines.SCREENWIDTH=WIDTH;
     Defines.SCREENHEIGHT=200;
+
     
     DoomContext DC=new DoomContext();
     DC.DS=ds;
@@ -151,7 +157,10 @@ public class AutoMapTester2 {
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
+
+
     frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
+
     
     
     long a=System.nanoTime();
@@ -176,8 +185,10 @@ public class AutoMapTester2 {
     AM.Drawer();
     ST.Ticker();
     ST.Drawer(false,true);
-    //shit.setPalette((i/(100/14))%14);
-    frame.update(frame.getGraphics());
+    shit.setPalette((i/(10000/14))%14);
+    shit.paint(shit.getGraphics());
+    //frame.update();
+    //frame.update(shit.getGraphics());
  
     }
     
@@ -190,16 +201,5 @@ public class AutoMapTester2 {
             e.printStackTrace();
         }
     }
-    
-    public static void initFullScreen(GraphicsDevice gd, Frame gf) {
-        // initialize the main app frame
-        gf = new Frame("Game Frame");
-        gf.setUndecorated(true);
-        // disable repaint mechanism
-        gf.setIgnoreRepaint(true);
-        // the next call shows the window
-        gd.setFullScreenWindow(gf);
-       }
-        
     
 }

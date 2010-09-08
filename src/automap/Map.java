@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.11 2010/09/08 15:22:18 velktron Exp $
+// $Id: Map.java,v 1.12 2010/09/08 21:09:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.12  2010/09/08 21:09:01  velktron
+// Better display "driver".
+//
 // Revision 1.11  2010/09/08 15:22:18  velktron
 // x,y coords in some structs as value semantics. Possible speed increase?
 //
@@ -105,7 +108,7 @@ DoomVideoRenderer V;
 LevelLoader P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.11 2010/09/08 15:22:18 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.12 2010/09/08 21:09:01 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -1128,14 +1131,23 @@ private final  void drawFline
     
 
     // For debugging only
+
+ /*   if (      fl.a.x < 0 || fl.a.x >= f_w
+       || fl.a.y < 0 || fl.a.y >= f_h
+       || fl.b.x < 0 || fl.b.x >= f_w
+       || fl.b.y < 0 || fl.b.y >= f_h)
+=======
     /*if (      fl.ax < 0 || fl.ax >= f_w
        || fl.ay < 0 || fl.ay >= f_h
        || fl.bx < 0 || fl.bx >= f_w
        || fl.by < 0 || fl.by >= f_h)
+>>>>>>> 1.11
     {
     System.err.println("fuck "+(fuck++)+" \r");
     return;
-    }*/
+<<<<<<< Map.java
+    } */
+
 
     dx = fl.bx - fl.ax;
     ax = 2 * (dx<0 ? -dx : dx);

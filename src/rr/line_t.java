@@ -9,7 +9,7 @@ import doom.thinker_t;
 public class line_t implements Interceptable{
 
         public line_t(){
-            sidenum=new short[2];
+            sidenum=new int[2];
             bbox=new int[4];
             slopetype=slopetype_t.ST_HORIZONTAL;
         }
@@ -29,7 +29,7 @@ public class line_t implements Interceptable{
 
         /** Visual appearance: SideDefs.
            sidenum[1] will be -1 if one sided */
-        public short[]   sidenum;         
+        public int[]   sidenum;         
 
         /** Neat. Another bounding box, for the extent
          of the LineDef.

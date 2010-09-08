@@ -1,5 +1,7 @@
 package testers;
 
+import java.awt.Canvas;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -9,17 +11,21 @@ import java.awt.image.BufferedImage;
 import java.awt.image.VolatileImage;
 
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 
-public class CrappyDisplay extends JPanel{
+public class CrappyDisplay extends Canvas{
 
-        VolatileImage voli;
+        /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+		VolatileImage voli;
         BufferedImage[] bi;
         int palette=0;
         Dimension size;
         Image crap;
 
         public CrappyDisplay(BufferedImage[] bi) {
+        	this.setBackground(Color.black);
         	JFrame bogus=new JFrame();
             GraphicsConfiguration gc=bogus.getGraphicsConfiguration();
             this.bi=bi;
@@ -27,7 +33,7 @@ public class CrappyDisplay extends JPanel{
             size = new Dimension();
             size.width = voli.getWidth();
             size.height = voli.getHeight();
-
+            this.setSize(size);
         }
         
         public CrappyDisplay(BufferedImage bi) {
