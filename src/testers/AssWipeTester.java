@@ -113,7 +113,7 @@ public class AssWipeTester {
     {
         nowtime = system.GetTime ();
         tics = nowtime - wipestart;
-    } while (tics==0);
+    } while (tics<1);
     wipestart = nowtime;
     V.DrawPatch(0, 0, 0, titlepic);
     V.DrawPatch(320, 0, 0, titlepic);
@@ -122,58 +122,20 @@ public class AssWipeTester {
     //I_UpdateNoBlit ();
     //M_Drawer ();                            // menu is drawn even on top of wipes
     //System.out.println(i);
-    
-    //frame.update(frame.getGraphics());
+    shit.update(shit.getGraphics());
+    frames++;
+   
     
     } while (!done);
     
-   // wipe.ScreenWipe(Wiper.wipe.Melt.ordinal(), 0, 0,  Defines.SCREENWIDTH, Defines.SCREENHEIGHT, TICKS-i);
-    
-    
-    
-    /*File outputFile =
-        new File(
-            "tic"+i+".png");
-    ImageIO.write(bi, "PNG", outputFile); */
-//    V.takeScreenShot(0, "tic"+i,icm);    
-    //AM.Responder(new event_t(Map.AM_PANLEFTKEY));
-
-    }
-    
     long b=System.nanoTime();
     
-    System.out.println(frames +" frames in " +((b-a)/1e09) +" = "+TICKS/((b-a)/1e09) + " fps");
-    /*
-    V.takeScreenShot(0, "tic1",icm);
-    for (int i=20;i<150;i++){
-        EL.Ticker();
-        EL.Drawer();
-        if (i==100){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
-        }
-        
-        if (i==120){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
-        }
-        V.takeScreenShot(0,( "tic"+i),icm);
-        } */
-       
+    System.out.println(frames +" frames in " +((b-a)/1e09) +" = "+frames/((b-a)/1e09) + " fps");
+    
+    }
         } catch (Exception e){
             e.printStackTrace();
         }
     }
-    
-    public static void initFullScreen(GraphicsDevice gd, Frame gf) {
-        // initialize the main app frame
-        gf = new Frame("Game Frame");
-        gf.setUndecorated(true);
-        // disable repaint mechanism
-        gf.setIgnoreRepaint(true);
-        // the next call shows the window
-        gd.setFullScreenWindow(gf);
-       }
-        
-    
+      
 }

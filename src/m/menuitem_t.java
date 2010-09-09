@@ -7,7 +7,6 @@ public class menuitem_t {
 	    	this.name=name;
 	    	this.routine= routine;
 	    	this.alphaKey=alphaKey;
-		// TODO Auto-generated constructor stub
 	}	
 
 		public menuitem_t(int status, String name, MenuRoutine routine) {
@@ -16,7 +15,7 @@ public class menuitem_t {
 	            this.routine= routine;
         }
 
-        // 0 = no cursor here, 1 = ok, 2 = arrows ok
+        /** 0 = no cursor here, 1 = ok, 2 = arrows ok */
 	    int	status;
 	    
 	    String	name;
@@ -28,6 +27,6 @@ public class menuitem_t {
 	    // void	(*routine)(int choice);
 	    MenuRoutine routine;
 	    
-	    // hotkey in menu
+	    /** hotkey in menu */
 	    char	alphaKey;			
 	} 

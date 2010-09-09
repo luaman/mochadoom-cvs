@@ -186,7 +186,7 @@ public class AutoMapTester2 {
     ST.Ticker();
     ST.Drawer(false,true);
     shit.setPalette((i/(10000/14))%14);
-    shit.paint(shit.getGraphics());
+    shit.update(shit.getGraphics());
     //frame.update();
     //frame.update(shit.getGraphics());
  

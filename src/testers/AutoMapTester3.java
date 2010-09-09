@@ -55,10 +55,6 @@ public class AutoMapTester3 {
     V.setPalette(pal);
     V.mapInternalRasterToBufferedImage(bi);
     
-    
-    
-    
-    
     doomstat ds = new doomstat();
     ds.gameepisode=1;
     ds.gamemap=1;
@@ -172,7 +168,7 @@ public class AutoMapTester3 {
     ST.Drawer(false,true);
     V.changePalette((i/(2000/14))%14);
     V.remap(0);
-    frame.update(frame.getGraphics());
+    shit.update(shit.getGraphics());
     /*File outputFile =
         new File(
             "tic"+i+".png");

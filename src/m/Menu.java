@@ -24,7 +24,7 @@ import w.DoomFile;
 import w.WadLoader; // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Menu.java,v 1.11 2010/09/07 16:23:00 velktron Exp $
+// $Id: Menu.java,v 1.12 2010/09/09 01:13:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +39,9 @@ import w.WadLoader; // Emacs style mode select -*- C++ -*-
 // GNU General Public License for more details.
 //
 // $Log: Menu.java,v $
+// Revision 1.12  2010/09/09 01:13:19  velktron
+// MUCH better rendering and testers.
+//
 // Revision 1.11  2010/09/07 16:23:00  velktron
 // *** empty log message ***
 //
@@ -1237,7 +1240,7 @@ public class Menu implements DoomMenu{
         if (!DS.menuactive) {
             if (ch == KEY_ESCAPE) {
                 StartControlPanel();
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+             //TODO:   S.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
             }
             return false;
@@ -1261,14 +1264,14 @@ public class Menu implements DoomMenu{
                     itemOn = (short) (currentMenu.numitems - 1);
                 else
                     itemOn--;
-                S.StartSound(null, sfxenum_t.sfx_pstop);
+              //TODO:  S.StartSound(null, sfxenum_t.sfx_pstop);
             } while (currentMenu.menuitems[itemOn].status == -1);
             return true;
 
         case KEY_LEFTARROW:
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && (currentMenu.menuitems[itemOn].status == 2)) {
-                S.StartSound(null, sfxenum_t.sfx_stnmov);
+             //TODO:   S.StartSound(null, sfxenum_t.sfx_stnmov);
                 currentMenu.menuitems[itemOn].routine.invoke(0);
             }
             return true;
@@ -1276,7 +1279,7 @@ public class Menu implements DoomMenu{
         case KEY_RIGHTARROW:
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && (currentMenu.menuitems[itemOn].status == 2)) {
-                S.StartSound(null, sfxenum_t.sfx_stnmov);
+             //TODO:   S.StartSound(null, sfxenum_t.sfx_stnmov);
                 currentMenu.menuitems[itemOn].routine.invoke(1);
             }
             return true;
@@ -1288,7 +1291,7 @@ public class Menu implements DoomMenu{
                 if (currentMenu.menuitems[itemOn].status == 2) {
                     currentMenu.menuitems[itemOn].routine.invoke(1); // right
                     // arrow
-                    S.StartSound(null, sfxenum_t.sfx_stnmov);
+              //TODO:      S.StartSound(null, sfxenum_t.sfx_stnmov);
                 } else {
                     currentMenu.menuitems[itemOn].routine.invoke(itemOn);
                     S.StartSound(null, sfxenum_t.sfx_pistol);
@@ -1391,7 +1394,7 @@ public class Menu implements DoomMenu{
             y = currentMenu.y;
             max = currentMenu.numitems;
             for (int i = 0; i < max; i++) {
-                if (currentMenu.menuitems[i].name != null)
+                if (currentMenu.menuitems[i].name != null && currentMenu.menuitems[i].name!="")
                     V.DrawPatchDirect(x, y, 0, W.CachePatchName(
                         currentMenu.menuitems[i].name, PU_CACHE));
                 y += LINEHEIGHT;
@@ -1697,7 +1700,7 @@ public class Menu implements DoomMenu{
                 break;
             case shareware:
             case registered:
-                V.DrawPatchDirect(0, 0, 0, (patch_t) W.CachePatchName("HELP2"));
+                V.DrawPatchDirect(0, 0, 0, W.CachePatchName("HELP2"));
                 break;
             default:
                 break;

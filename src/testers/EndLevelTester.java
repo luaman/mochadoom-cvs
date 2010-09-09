@@ -2,10 +2,16 @@ package testers;
 
 import static data.Defines.PU_STATIC;
 
+import i.system;
+
+import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
+
+import javax.swing.JFrame;
 
 import m.random;
 import utils.C2JUtils;
+import v.BufferedRenderer;
 import v.SimpleRenderer;
 import w.DoomBuffer;
 import w.EndLevel;
@@ -26,29 +32,38 @@ import doom.wbstartstruct_t;
 
 public class EndLevelTester {
 
+    public static final int WIDTH=320;
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"C:\\games\\iwads\\doom2.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
-    SimpleRenderer V=new SimpleRenderer(320,200);
-    V.Init();
-    
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     byte[] pal=palette.getBuffer().array();
+
     IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-        
+    Defines.SCREENWIDTH=WIDTH;
+    Defines.SCREENHEIGHT=200;
+    BufferedRenderer V=new BufferedRenderer(WIDTH,200,icm);
+    V.Init();
+    
+    IndexColorModel[] icms=new IndexColorModel[pal.length/768];
+    BufferedImage[] pals=new BufferedImage[icms.length];
+    
+    for (int i=0;i<icms.length;i++){
+        icms[i]=new IndexColorModel(8, 256,pal, i*768, false);
+            pals[i]=new BufferedImage(icms[i],V.screenbuffer[0].getRaster(), false, null);
+           }
+    
     doomstat ds = new doomstat();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;
-    ds.gamemode=GameMode_t.commercial;
+    ds.gamemode=GameMode_t.shareware;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
-    Defines.SCREENWIDTH=320;
-    Defines.SCREENHEIGHT=200;
-    
+
     DoomContext DC=new DoomContext();
     DC.DS=ds;
     DC.W=W;
@@ -71,21 +86,30 @@ public class EndLevelTester {
     ds.wminfo.maxkills=100;
     ds.wminfo.maxsecret=100;
     ds.wminfo.partime=28595;
+    JFrame frame = new JFrame("MochaDoom");
+    CrappyDisplay shit = new CrappyDisplay(pals);
+    frame.add(shit);
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    frame.pack();
+    frame.setLocationRelativeTo(null);
+    //frame.setUndecorated(true);
+    frame.setVisible(true);
 
+
+    frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
     EndLevel EL=new EndLevel(DC);
     
 
    // EL.Start(wbstartstruct);
-    
-    for (int i=0;i<20;i++){
+    int a,b;
+    a=system.GetTime();
+    b=a;
+    for (int i=0;i<2000;i++){
+    	
     EL.Ticker();
     EL.Drawer();
-    }
-    V.takeScreenShot(0, "tic1",icm);
-    for (int i=20;i<150;i++){
-        EL.Ticker();
-        EL.Drawer();
-        if (i==100){
+    shit.update(shit.getGraphics());
+    if (i==100){
             ds.players[0].cmd.buttons=1; // simulate attack
             ds.players[0].attackdown=false; // simulate attack
         }
@@ -94,10 +118,14 @@ public class EndLevelTester {
             ds.players[0].cmd.buttons=1; // simulate attack
             ds.players[0].attackdown=false; // simulate attack
         }
-        V.takeScreenShot(0,( "tic"+i),icm);
-        }
-       
-        } catch (Exception e){
+   // Do we still have time>
+        
+        while((b-a)==0) {
+        	b=system.GetTime();
+        	}
+       a=b;
+    }
+        }catch (Exception e){
             e.printStackTrace();
         }
     }

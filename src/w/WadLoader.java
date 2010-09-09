@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.13 2010/09/07 16:23:00 velktron Exp $
+// $Id: WadLoader.java,v 1.14 2010/09/09 01:13:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.14  2010/09/09 01:13:19  velktron
+// MUCH better rendering and testers.
+//
 // Revision 1.13  2010/09/07 16:23:00  velktron
 // *** empty log message ***
 //
@@ -582,8 +585,13 @@ public class WadLoader {
 
         i = CheckNumForName(name);
 
-        if (i == -1)
-            system.Error("W_GetNumForName: %s not found!", name);
+        if (i == -1){
+        	Exception e=new Exception();
+        		e.printStackTrace();
+        	System.err.println("Error:" +name+ "not found");
+        	System.err.println("Hash:" +Long.toHexString(name8.getLongHash(name)));
+        	system.Error("W_GetNumForName: %s not found!", name);
+        }
 
         return i;
     }
@@ -625,6 +633,7 @@ public class WadLoader {
             try {
                 handle = new DoomFile(this.reloadname, "r");
             } catch (Exception e) {
+            	e.printStackTrace();
                 system.Error("W_ReadLump: couldn't open %s", reloadname);
             }
         } else
@@ -671,7 +680,7 @@ public class WadLoader {
 
             // read the lump in
 
-            System.out.println("cache miss on lump "+lump);
+            //System.out.println("cache miss on lump "+lump);
             // ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[lump]);
             // Read as a byte buffer anyway.
             ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
@@ -706,7 +715,7 @@ public class WadLoader {
                 lumpcache[lump]=db;
             }
         } else {
-            System.out.println("cache hit on lump " + lump);
+            //System.out.println("cache hit on lump " + lump);
             // Z.ChangeTag (lumpcache[lump],tag);
         }
 

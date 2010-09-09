@@ -25,7 +25,7 @@ import static data.Defines.*;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.3 2010/09/06 16:02:59 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.4 2010/09/09 01:13:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +39,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.4  2010/09/09 01:13:19  velktron
+// MUCH better rendering and testers.
+//
 // Revision 1.3  2010/09/06 16:02:59  velktron
 // Implementation of palettes.
 //
@@ -123,7 +126,7 @@ import static data.Defines.*;
 
 public class BufferedRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.3 2010/09/06 16:02:59 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.4 2010/09/09 01:13:19 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -944,26 +947,27 @@ public void setPalette(byte[] pal){
     
     
     for(int i = 0; i < pal.length/3; i++) {
-        System.out.print(Integer.toHexString(pal[i*3])+" ");
-        System.out.print(Integer.toHexString(pal[1+i*3])+" ");
-        System.out.print(Integer.toHexString(pal[2+i*3])+" ");
+        System.out.print(Integer.toHexString(0xFF&pal[i*3])+" ");
+        System.out.print(Integer.toHexString(0xFF&pal[1+i*3])+" ");
+        System.out.print(Integer.toHexString(0xFF&pal[2+i*3])+" ");
         
         int r=C2JUtils.toUnsignedByte(pal[i * 3]);
         int g=C2JUtils.toUnsignedByte(pal[1+i * 3]);
         int b=C2JUtils.toUnsignedByte(pal[2+i * 3]);
         
         palette[i] = (r<<16|g<<8|b);
-        System.out.println(Integer.toHexString(palette[i]));
+        System.out.println(Integer.toHexString(0x00FFFFFF&palette[i]));
     }
-/*
+
     int[] tmp= new int[128];
+    
     for(int i = 0; i < palette.length/256; i++) {
         // Swap signed/unsigned.
         System.arraycopy(palette, 128+256*i, tmp,0, 128);
         System.arraycopy(palette, 0+256*i, palette,128+256*i, 128);
         System.arraycopy(tmp, 0, palette,256*i, 128);
         
-    } */
+    }
     
 }
 
@@ -993,20 +997,26 @@ public final void toDevice(int screen, BufferedImage b)  {
 public  final void remap(int screen)  {
     
     byte[] scr=this.screens[screen];
-    int i1,i2,i3,i4;
-    for (int i=0;i<this.screens[screen].length;i+=8){
-        i1=i+1;
-        i2=i+2;
-        i3=i+3;
-        i4=i+4;
+    int i1=0,i2=0,i3=0,i4=0;
+    for (int i=0;i<this.screens[screen].length;i+=16){
+
         raster[i]=palette[this.usepalette&scr[i]];
-        raster[i1]=palette[this.usepalette&scr[i1]];
-        raster[i2]=palette[this.usepalette&scr[i2]];
-        raster[i3]=palette[this.usepalette&scr[i3]];
-        raster[i4]=palette[this.usepalette&scr[i4]];
-        raster[i+5]=palette[this.usepalette&scr[i+5]];
-        raster[i+6]=palette[this.usepalette&scr[i+6]];
-        raster[i+7]=palette[this.usepalette&scr[i+7]];
+        raster[i+1]=palette[this.usepalette&scr[i+1]];
+        raster[i+2]=palette[/*this.usepalette+*/0xFF&scr[i+2]];
+        raster[i+3]=palette[/*this.usepalette+*/0xFF&scr[i+3]];
+        raster[i+4]=palette[/*this.usepalette+*/0xFF&scr[i+4]];
+        raster[i+5]=palette[/*this.usepalette+*/+0xFF&scr[i+5]];
+        raster[i+6]=palette[/*this.usepalette+*/+0xFF&scr[i+6]];
+        raster[i+7]=palette[/*this.usepalette+*/+0xFF&scr[i+7]];
+        raster[i+8]=palette[/*this.usepalette+*/0xFF&scr[i+8]];
+        raster[i+9]=palette[/*this.usepalette+*/0xFF&scr[i+9]];
+        raster[i+10]=palette[/*this.usepalette+*/0xFF&scr[i+10]];
+        raster[i+11]=palette[/*this.usepalette+*/+0xFF&scr[i+11]];
+        raster[i+12]=palette[/*this.usepalette+*/+0xFF&scr[i+12]];
+        raster[i+13]=palette[/*this.usepalette+*/+0xFF&scr[i+13]];
+        raster[i+14]=palette[/*this.usepalette+*/0xFF&scr[i+14]];
+        raster[i+15]=palette[/*this.usepalette+*/0xFF&scr[i+15]];
+
         /*
         raster[i]=palette[usepalette+scr[i]];
     raster[i1]=palette[usepalette+scr[i1]];
@@ -1026,8 +1036,8 @@ public  final void remap(int screen)  {
 }
 
 public final void changePalette(int pal){
-    //this.usepalette=128+(256*pal);
-    this.usepalette=pal<<8|0x00FF;
+    this.usepalette=(pal<<8);//+0x00FF;
+    //this.usepalette=/*(pal<<8)+*/0xFF;
     
 }
 

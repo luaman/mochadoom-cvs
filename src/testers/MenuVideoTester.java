@@ -8,14 +8,11 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
-import rr.patch_t;
-
 import m.DoomMenu;
 import m.Menu;
 import m.random;
 import utils.C2JUtils;
 import v.BufferedRenderer;
-import v.SimpleRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
 import data.Defines;
@@ -28,9 +25,13 @@ import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
 
-/** This is a very simple tester for Menu module  */
+/** This is a very simple tester for the End Level screen drawer.
+ * 
+ * 
+ */
 
-public class MenuTester {
+public class MenuVideoTester {
+
     public static final int WIDTH=320;
     public static void main(String[] argv) {
         try {
@@ -38,38 +39,32 @@ public class MenuTester {
     W.InitMultipleFiles(new String[] {"doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
-
-    doomstat ds = new doomstat();
-    patch_t help1=W.CachePatchName("TITLEPIC", PU_STATIC);
-    
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     byte[] pal=palette.getBuffer().array();
 
     IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-    Defines.SCREENWIDTH=320;
+    Defines.SCREENWIDTH=WIDTH;
     Defines.SCREENHEIGHT=200;
-    BufferedRenderer V=new BufferedRenderer(320,200,icm);
+    BufferedRenderer V=new BufferedRenderer(WIDTH,200,icm);
     V.Init();
-
-    IndexColorModel[] icms=new IndexColorModel[palette.getBuffer().limit()/768];
+    
+    IndexColorModel[] icms=new IndexColorModel[pal.length/768];
     BufferedImage[] pals=new BufferedImage[icms.length];
+    
     for (int i=0;i<icms.length;i++){
         icms[i]=new IndexColorModel(8, 256,pal, i*768, false);
             pals[i]=new BufferedImage(icms[i],V.screenbuffer[0].getRaster(), false, null);
            }
-        
-    DoomContext DC=new DoomContext();
-    DC.DS=ds;
-    DC.W=W;
-    DC.V=V;
     
+    doomstat ds = new doomstat();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;
     ds.gamemode=GameMode_t.shareware;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
-    
+
+    DoomContext DC=new DoomContext();
     DC.DS=ds;
     DC.W=W;
     DC.V=V;
@@ -91,9 +86,6 @@ public class MenuTester {
     ds.wminfo.maxkills=100;
     ds.wminfo.maxsecret=100;
     ds.wminfo.partime=28595;
-   
-    DoomMenu M=new Menu(DC);
-    M.Init();
     JFrame frame = new JFrame("MochaDoom");
     CrappyDisplay shit = new CrappyDisplay(pals);
     frame.add(shit);
@@ -102,74 +94,48 @@ public class MenuTester {
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
-    frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
-   
-    //V.takeScreenShot(0, "menutic19",icm);
-    ds.menuactive=true;        
-        for (int i=0;i<1500;i++){
 
+
+    frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
+    DoomMenu M=new Menu(DC);
+    M.Init();
+   
+    
+    for (int i=0;i<20;i++){
+        M.Ticker();
+        M.Drawer();
+        }
+   
+    V.takeScreenShot(0, "menutic19",icm);
+    ds.menuactive=true;        
+        for (int i=20;i<150;i++){
+            M.Ticker();
+            M.Drawer();
 
             if (i==40){
-            	System.out.println("Pressing enter");
                 M.Responder(new event_t(Defines.KEY_DOWNARROW));
             }
 
             if (i==60){
-            	System.out.println("Pressing down");
                 M.Responder(new event_t(Defines.KEY_DOWNARROW));
             }
             
             if (i==80){
-            	System.out.println("Pressing escape");
                 M.Responder(new event_t(Defines.KEY_ESCAPE));
             }
+            
             if (i==100){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
+                M.Responder(new event_t(KEY_F1));
             }
             
             if (i==120){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
-            }
-            
-            if (i==140){
-            	System.out.println("Pressing escape");
                 M.Responder(new event_t(Defines.KEY_ESCAPE));
             }
-            
-            if (i==160){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
+            V.takeScreenShot(0,( "menutic"+i),icm);
             }
-            
-            if (i==160){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
-            }
-            
-            if (i==300 || i==500|i==550|i==600){
-            	System.out.println("Pressing F1");
-                M.Responder(new event_t(KEY_F1));
-                System.out.println("pressed ");
-            }
-            
-            if (i==400 || i==650){
-            	System.out.println("Pressing escape");
-                M.Responder(new event_t(Defines.KEY_ESCAPE));
-            }
-            //V.takeScreenShot(0,( "menutic"+i),icm);
-            Thread.sleep(35);
-        V.DrawPatch(0,0,0,help1);
-        M.Ticker();
-        M.Drawer();
-        
-        shit.update(shit.getGraphics());
+        }catch (Exception e){
+            e.printStackTrace();
         }
-            } catch (Exception e){
-                e.printStackTrace();
-            }
-    
     }
     
 }

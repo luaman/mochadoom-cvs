@@ -51,11 +51,11 @@ public class CrappyDisplay extends Canvas{
             this.palette=pal;
         }
         
-        public void paint(Graphics g) {
+        public void update(Graphics g) {
            
            Graphics2D g2d = (Graphics2D)g;
            //voli.getGraphics().drawImage(bi,0,0,null);
-           g2d.drawImage(bi[palette],0,0,null);
+           g2d.drawImage(bi[palette],0,0,this);
            
         }
 
