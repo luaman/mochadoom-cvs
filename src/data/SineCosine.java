@@ -21,7 +21,7 @@ public class SineCosine {
      * MAES: WTF? -64 ~ 64K range... so 17-bit accuracy? heh.
      */
     
-    public static int[] finesine=
+    public static final int[] finesine=
     {
         25,75,125,175,226,276,326,376,
         427,477,527,578,628,678,728,779,
@@ -1067,10 +1067,6 @@ public class SineCosine {
 
   static{
   System.arraycopy(finesine, FINEANGLES/4,finecosine, 0, FINEANGLES);
-  }
-
-  private SineCosine(){
-      
   }
     
 }

@@ -3,6 +3,8 @@ package testers;
 import static data.Defines.KEY_F1;
 import static data.Defines.PU_STATIC;
 
+import i.InputListener;
+
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 
@@ -94,16 +96,17 @@ public class MenuTester {
    
     DoomMenu M=new Menu(DC);
     M.Init();
-    JFrame frame = new JFrame("MochaDoom");
-    CrappyDisplay shit = new CrappyDisplay(pals);
-    frame.add(shit);
+    CrappyDisplay frame = new CrappyDisplay(pals);
+    frame.setTitle("MochaDoom");
+    
+    InputListener in = new InputListener();
+    frame.addComponentListener(in);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
     frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
-   
     //V.takeScreenShot(0, "menutic19",icm);
     ds.menuactive=true;        
         for (int i=0;i<1500;i++){
@@ -164,7 +167,8 @@ public class MenuTester {
         M.Ticker();
         M.Drawer();
         
-        shit.update(shit.getGraphics());
+        frame.update(null);
+        System.out.print(frame.processEvents());
         }
             } catch (Exception e){
                 e.printStackTrace();

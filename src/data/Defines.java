@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.11 2010/09/07 16:23:00 velktron Exp $
+// $Id: Defines.java,v 1.12 2010/09/09 16:09:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -85,9 +85,8 @@ public enum Language_t
 } ;
 
 
-// If rangecheck is undefined,
-// most parameter validation debugging code will not be compiled
-//#define RANGECHECK
+/** If rangecheck is undefined,  ost parameter validation debugging code will not be compiled */
+public static final boolean RANGECHECK=false;
 
 // Do or do not use external soundserver.
 // The sndserver binary to be run separately
@@ -1686,5 +1685,5 @@ public static final int SAVESTRINGSIZE = 24;
     
  
 static final String
-rcsid = "$Id: Defines.java,v 1.11 2010/09/07 16:23:00 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.12 2010/09/09 16:09:09 velktron Exp $";
 }

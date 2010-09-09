@@ -4,6 +4,8 @@ import static data.Defines.*;
 import static data.Limits.*;
 import static m.fixed_t.FRACBITS;
 
+import i.InputListener;
+
 import java.awt.Frame;
 import java.awt.GraphicsDevice;
 import java.awt.image.BufferedImage;
@@ -11,6 +13,8 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
+import m.DoomMenu;
+import m.Menu;
 import m.random;
 import p.LevelLoader;
 import p.mobj_t;
@@ -51,9 +55,9 @@ public class AutoMapTester2 {
     byte[] pal=palette.getBuffer().array();
 
     IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-    Defines.SCREENWIDTH=320;
+    Defines.SCREENWIDTH=WIDTH;
     Defines.SCREENHEIGHT=200;
-    BufferedRenderer V=new BufferedRenderer(320,200,icm);
+    BufferedRenderer V=new BufferedRenderer(WIDTH,200,icm);
     V.Init();
 
     IndexColorModel[] icms=new IndexColorModel[palette.getBuffer().limit()/768];
@@ -74,9 +78,6 @@ public class AutoMapTester2 {
     ds.gamemode=GameMode_t.shareware;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
-
-    Defines.SCREENWIDTH=WIDTH;
-    Defines.SCREENHEIGHT=200;
 
     
     DoomContext DC=new DoomContext();
@@ -148,17 +149,16 @@ public class AutoMapTester2 {
     AM.Responder(new event_t(Map.AM_GRIDKEY));
     //BufferedImage bi=((BufferedRenderer)V).screenbuffer[0];
     //BufferedImage bi2=((BufferedRenderer)V).cloneScreen(0, icm2);
+
+    CrappyDisplay frame = new CrappyDisplay(pals);
+    frame.setTitle("MochaDoom");
     
-    JFrame frame = new JFrame("MochaDoom");
-    CrappyDisplay shit = new CrappyDisplay(pals);
-    frame.add(shit);
+
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
-
-
     frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
 
     
@@ -185,8 +185,9 @@ public class AutoMapTester2 {
     AM.Drawer();
     ST.Ticker();
     ST.Drawer(false,true);
-    shit.setPalette((i/(10000/14))%14);
-    shit.update(shit.getGraphics());
+    frame.setPalette((i/(10000/14))%14);
+    frame.processEvents();
+    frame.update(null);
     //frame.update();
     //frame.update(shit.getGraphics());
  

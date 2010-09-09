@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.1 2010/07/05 16:18:40 velktron Exp $
+// $Id: Tables.java,v 1.2 2010/09/09 16:09:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.2  2010/09/09 16:09:09  velktron
+// Yer more enhancements to the display system...
+//
 // Revision 1.1  2010/07/05 16:18:40  velktron
 // YOU DON'T WANNA KNOW
 //
@@ -56,7 +59,7 @@ import static m.fixed_t.*;
 //    
 //-----------------------------------------------------------------------------
 
-public class Tables{
+public final class Tables extends SineCosine{
 
     public static final String rcsid="$Id:";
 
@@ -93,7 +96,7 @@ public static final int DBITS=FRACBITS-SLOPEBITS;
 
 
 
-public static int SlopeDiv ( int	num, int den)
+public static final int SlopeDiv ( int	num, int den)
 {
     int 	ans;
     
@@ -106,7 +109,7 @@ public static int SlopeDiv ( int	num, int den)
 }
 
 
-public static int SlopeDiv2 ( int    num, int den)
+public static final int SlopeDiv2 ( int    num, int den)
 {
     int     ans;
     
@@ -902,6 +905,10 @@ public static final int[] tantoangle =
     535533216,535700704,535868128,536035456,536202720,536369888,536536992,536704000,
     536870912
 };
+
+private Tables(){
+    
+}
 
 }
 

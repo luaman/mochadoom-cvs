@@ -4,6 +4,8 @@ import static data.Defines.*;
 import static data.Limits.*;
 import static m.fixed_t.FRACBITS;
 
+import i.InputListener;
+
 import java.awt.Frame;
 import java.awt.GraphicsDevice;
 import java.awt.image.BufferedImage;
@@ -133,9 +135,10 @@ public class AutoMapTester3 {
     AM.Responder(new event_t(Map.AM_ZOOMOUTKEY));
     AM.Responder(new event_t(Map.AM_GRIDKEY));
     
-    JFrame frame = new JFrame("MochaDoom");
-    CrappyDisplay shit = new CrappyDisplay(bi);
-    frame.add(shit);
+    CrappyDisplay frame = new CrappyDisplay(bi);
+    frame.setTitle("MochaDoom");
+    InputListener in = new InputListener();
+    frame.addComponentListener(in);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
     frame.setLocationRelativeTo(null);
@@ -168,7 +171,7 @@ public class AutoMapTester3 {
     ST.Drawer(false,true);
     V.changePalette((i/(2000/14))%14);
     V.remap(0);
-    shit.update(shit.getGraphics());
+    frame.update(null);
     /*File outputFile =
         new File(
             "tic"+i+".png");
