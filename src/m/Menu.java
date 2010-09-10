@@ -59,7 +59,7 @@ import doom.DoomContext;
 import doom.event_t;
 import doom.evtype_t;
 
-public class Menu extends MenuMisc{
+public class Menu extends MenuMisc implements DoomMenu{
 
 
     ////////////////// CONSTRUCTOR ////////////////

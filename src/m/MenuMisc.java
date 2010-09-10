@@ -18,7 +18,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.3 2010/09/10 17:35:49 velktron Exp $
+// $Id: MenuMisc.java,v 1.4 2010/09/10 17:42:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -34,6 +34,9 @@ import w.WadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.4  2010/09/10 17:42:14  velktron
+// Added Applet
+//
 // Revision 1.3  2010/09/10 17:35:49  velktron
 // DoomGame, Menu, renderers
 //
@@ -69,7 +72,7 @@ import w.WadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.3 2010/09/10 17:35:49 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.4 2010/09/10 17:42:14 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 doomstat DS;
@@ -164,7 +167,7 @@ char*		mousedev;
 
 
 /** We really need a better way to do this... */
-
+/*
 public void applyDefaults(){
     for (default_t d:defaults){
         switch (d.name){
@@ -177,9 +180,9 @@ public void applyDefaults(){
     }
 }
 
+*/
 
-
-
+/*
 default_t[]	defaults =
 {
     new default_t("mouse_sensitivity",DS.mouseSensitivity, 5),
@@ -188,6 +191,7 @@ default_t[]	defaults =
     new default_t("show_messages",DS.showMessages, 1),
 // ifdef linux    
 }
+*/
 /*
 new default_t("key_right",&key_right, KEY_RIGHTARROW),
 new default_t("key_left",&key_left, KEY_LEFTARROW),
@@ -247,6 +251,8 @@ new default_t("key_straferight",&key_straferight, '.'),
 
 };
 */
+
+/*
 int	numdefaults;
 char*	defaultfile;
 
@@ -254,7 +260,7 @@ char*	defaultfile;
 //
 // M_SaveDefaults
 //
-void M_SaveDefaults (void)
+public void M_SaveDefaults ()
 {
     int		i;
     int		v;
@@ -387,6 +393,8 @@ typedef struct
 //
 // WritePCXfile
 //
+
+/*
 public void
 WritePCXfile
 ( String		filename,
@@ -447,11 +455,13 @@ WritePCXfile
 
     //Z_Free (pcx);
 }
-
+*/
 
 //
 // M_ScreenShot
 //
+/*
+
 public void ScreenShot ()
 {
     int		i;
@@ -482,7 +492,7 @@ public void ScreenShot ()
 	
     players[consoleplayer].message = "screen shot";
 }
-
+*/
 
 public boolean WriteFile(String name, byte[] source, int length) {
     DoomFile handle;
@@ -524,6 +534,14 @@ public int ReadFile(String name, byte[] buffer) {
     }
     buffer = buf;
     return length;
+}
+public int getShowMessages() {
+    // TODO Auto-generated method stub
+    return 0;
+}
+public void setShowMessages(int val) {
+    // TODO Auto-generated method stub
+    
 }
 
 }
