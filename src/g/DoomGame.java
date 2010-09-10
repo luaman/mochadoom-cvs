@@ -41,7 +41,7 @@ import doom.weapontype_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGame.java,v 1.5 2010/09/07 16:23:00 velktron Exp $
+// $Id: DoomGame.java,v 1.6 2010/09/10 17:35:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -56,6 +56,9 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: DoomGame.java,v $
+// Revision 1.6  2010/09/10 17:35:49  velktron
+// DoomGame, Menu, renderers
+//
 // Revision 1.5  2010/09/07 16:23:00  velktron
 // *** empty log message ***
 //
@@ -67,238 +70,13 @@ import doom.weapontype_t;
 //
 //-----------------------------------------------------------------------------
 
-public class DoomGame {
+public class DoomGame extends DoomGameStats {
 
  
-  public static final String rcsid = "$Id: DoomGame.java,v 1.5 2010/09/07 16:23:00 velktron Exp $";
-
-  
-  ////////////////////////// STATUS /////////////////////////
-  
-  doomstat DS;
-  HU HU;
-  RendererData RD;
-  LevelLoader LL;
-  Menu M;
-  StatusBar ST;
-  DoomAutoMap AM;
-  Finale F;
-  WadLoader W;
-  UnifiedRenderer R;
-  random RND;
-  
- /* #include <string.h>
-  #include <stdlib.h>
-
-  #include "doomdef.h" 
-  #include "doomstat.h"
-
-  #include "z_zone.h"
-  #include "f_finale.h"
-  #include "m_argv.h"
-  #include "m_misc.h"
-  #include "m_menu.h"
-  #include "m_random.h"
-  #include "i_system.h"
-
-  #include "p_setup.h"
-  #include "p_saveg.h"
-  #include "p_tick.h"
-
-  #include "d_main.h"
-
-  #include "wi_stuff.h"
-  #include "hu_stuff.h"
-  #include "st_stuff.h"
-  #include "am_map.h"
-
-  // Needs access to LFB.
-  #include "v_video.h"
-
-  #include "w_wad.h"
-
-  #include "p_local.h" 
-
-  #include "s_sound.h"
-
-  // Data.
-  #include "dstrings.h"
-  #include "sounds.h"
-
-  // SKY handling - still the wrong place.
-  #include "r_data.h"
-  #include "r_sky.h"
+  public static final String rcsid = "$Id: DoomGame.java,v 1.6 2010/09/10 17:35:49 velktron Exp $";
 
 
-
-  #include "g_game.h"
-*/
-
-
-
-   
-  // Fields specific to DoomGame.
-  public gameaction_t    gameaction; 
-  public boolean         sendpause;              // send a pause event next tic 
-  
-  // Most of these are actually in doomstat. Some can be "pegged" (those in arrays) but
-  // in order to keep references correctly updated, we must use them in DS.
-  // Objects not in arrays can be read correctly if "pegged", fields can be written to,  
-  // but not if they have value semantics.
-      
-  boolean paused;
-  boolean         sendsave; // send a save event next tic 
-  int starttime;
-  boolean         timingdemo;             // if true, exit with report on completion 
-  /*
-  public boolean     respawnmonsters;
-  public int             gameepisode; 
-  public int             gamemap; 
-   
-  public boolean         paused; 
-  public boolean         usergame;               // ok to save / end game 
-   
-  
-  public boolean         nodrawers;              // for comparative timing purposes 
-  public boolean         noblit;                 // for comparative timing purposes 
-  public int             starttime;              // for comparative timing purposes       
-   
-  public boolean         viewactive; 
-   
-  public boolean         deathmatch;             // only if started as net death 
-  public boolean         netgame;                // only true if packets are broadcast 
-  */
-  
-  public boolean getPaused() {
-    return paused;
-}
-
-public void setPaused(boolean paused) {
-    this.paused = paused;
-}
-
-// These can be pegged to doomstat, because they are arrays.
-private boolean[]         playeringame; 
-private player_t[]        players; 
-private mapthing_t[] playerstarts; 
-   
-  /*
-  int             consoleplayer;          // player taking events and displaying 
-  int             displayplayer;          // view being displayed 
-  int             gametic; 
-  int             levelstarttic;          // gametic at level start 
-  int             totalkills, totalitems, totalsecret;    // for intermission 
-  */
-  
-  String            demoname; 
-  boolean         demorecording; 
-  public boolean         demoplayback; 
-  boolean     netdemo; 
-  byte[]       demobuffer;
-  /** pointers */
-  int       demo_p, demoend; 
-  boolean         singledemo;             // quit after playing a demo from cmdline 
-   
-  boolean         precache = true;        // if true, load all graphics at start 
-   
-  /** parms for world map / intermission, peg to doomstat */
-  wbstartstruct_t wminfo;                 
-   
-  short[][]       consistancy=new short[MAXPLAYERS][BACKUPTICS]; 
-   
-  byte[]       savebuffer;
-   
-   
-  /** 
-   * controls (have defaults) 
-   */
-  
-  public int             key_right;
-  public int     key_left;
-
-  public int     key_up;
-  public int     key_down; 
-  public int             key_strafeleft;
-  public int     key_straferight; 
-  public int             key_fire;
-  public int     key_use;
-  public int     key_strafe;
-  public int     key_speed; 
-   
-  public int             mousebfire; 
-  public int             mousebstrafe; 
-  public int             mousebforward; 
-   
-  public int             joybfire; 
-  public int             joybstrafe; 
-  public int             joybuse; 
-  public int             joybspeed; 
-   
-   
-   
-  protected int MAXPLMOVE(){
-      return forwardmove[1];
-  }
-   
-  protected static final int TURBOTHRESHOLD = 0x32;
-
-   /** fixed_t */
-  int[]     forwardmove = {0x19, 0x32},
-              sidemove = {0x18, 0x28}, 
-   angleturn = {640, 1280, 320};    // + slow turn 
-
-  protected static final int SLOWTURNTICS    =6; 
-   
-  protected static final int NUMKEYS    = 256; 
-
-  boolean[]         gamekeydown=new boolean[NUMKEYS]; 
-  int             turnheld;               // for accelerative turning 
-   
-  boolean[]     mousearray=new boolean[4];
-  
-  /** This is an alias for mousearray [1+i] */
-  private boolean mousebuttons(int i){
-      return mousearray[1+i];      // allow [-1]
-  }
-  
-  private void mousebuttons(int i, boolean value){
-      mousearray[1+i]=value;      // allow [-1]
-  }
-  
-  private void mousebuttons(int i, int value){
-      mousearray[1+i]=value!=0;      // allow [-1]
-  }
-
-  /** mouse values are used once */ 
-  int     mousex, mousey, dclicktime, dclickstate,
-          dclicks,  dclicktime2, dclickstate2, dclicks2;
-
-  /** joystick values are repeated */ 
-  int             joyxmove, joyymove;
-  boolean[]         joyarray=new boolean[5]; 
-
-  protected boolean joybuttons(int i){
-      return joyarray[1+i];      // allow [-1]
-  }
-
-  protected void joybuttons(int i, boolean value){
-      joyarray[1+i]=value;      // allow [-1]
-  }
-  
-  protected void joybuttons(int i, int value){
-      joyarray[1+i]=value!=0;      // allow [-1]
-  }
-  
-  int     savegameslot; 
-  String        savedescription; 
-   
-   
-  protected static final int BODYQUESIZE= 32;
-
-  mobj_t[]     bodyque=new mobj_t[BODYQUESIZE]; 
-  int     bodyqueslot; 
-   
-  //void*       statcopy;               // for statistics driver
+ 
 
   /**
   * G_BuildTiccmd
@@ -755,7 +533,7 @@ private mapthing_t[] playerstarts;
           players[DS.consoleplayer].message = HU.player_names[i]+turbomessage;
           }
               
-          if (DS.netgame && !netdemo && !(DS.gametic%DS.ticdup) ) 
+          if (DS.netgame && !netdemo && (DS.gametic%DS.ticdup)==0 ) 
           { 
           if (DS.gametic > BACKUPTICS 
               && consistancy[i][buf] != cmd.consistancy) 
@@ -766,7 +544,7 @@ private mapthing_t[] playerstarts;
           if (players[i].mo!=null) 
               consistancy[i][buf] = (short) players[i].mo.x; 
           else 
-              consistancy[i][buf] = RND.rndindex; 
+              consistancy[i][buf] = (short) RND.rndindex; 
           } 
       }
       }
@@ -793,7 +571,7 @@ private mapthing_t[] playerstarts;
               savedescription=new String( "NET GAME"); 
               savegameslot =  
               (players[i].cmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT; 
-              gameaction = ga_savegame; 
+              gameaction = gameaction_t.ga_savegame; 
               break; 
           } 
           } 
@@ -801,25 +579,25 @@ private mapthing_t[] playerstarts;
       }
       
       // do main actions
-      switch (gamestate) 
+      switch (DS.gamestate) 
       { 
         case GS_LEVEL: 
-      P_Ticker (); 
-      ST_Ticker (); 
-      AM_Ticker (); 
-      HU_Ticker ();            
+      P.Ticker (); 
+      ST.Ticker (); 
+      AM.Ticker (); 
+      HU.Ticker ();            
       break; 
        
         case GS_INTERMISSION: 
-      WI_Ticker (); 
+      WI.Ticker (); 
       break; 
                
         case GS_FINALE: 
-      F_Ticker (); 
+      F.Ticker (); 
       break; 
    
         case GS_DEMOSCREEN: 
-      D_PageTicker (); 
+      D.PageTicker (); 
       break; 
       }        
   } 
@@ -982,17 +760,17 @@ private mapthing_t[] playerstarts;
       int             i,j; 
       int             selections; 
        
-      selections = deathmatch_p - deathmatchstarts; 
+      selections = DS.deathmatch_p; 
       if (selections < 4) 
-      I_Error ("Only %i deathmatch spots, 4 required", selections); 
+      system.Error ("Only %i deathmatch spots, 4 required", selections); 
    
       for (j=0 ; j<20 ; j++) 
       { 
-      i = P_Random() % selections; 
-      if (G_CheckSpot (playernum, &deathmatchstarts[i]) ) 
+      i = RND.P_Random() % selections; 
+      if (CheckSpot (playernum, DS.deathmatchstarts[i]) ) 
       { 
-          deathmatchstarts[i].type = playernum+1; 
-          P_SpawnPlayer (&deathmatchstarts[i]); 
+          DS.deathmatchstarts[i].type = (short) (playernum+1); 
+          P_SpawnPlayer (&DS.deathmatchstarts[i]); 
           return; 
       } 
       } 
@@ -1030,16 +808,16 @@ private mapthing_t[] playerstarts;
            
       if (CheckSpot (playernum, DS.playerstarts[playernum]) ) 
       { 
-          SpawnPlayer (DS.playerstarts[playernum]); 
+          P.SpawnPlayer (DS.playerstarts[playernum]); 
           return; 
       }
       
       // try to spawn at one of the other players spots 
       for (i=0 ; i<MAXPLAYERS ; i++)
       {
-          if (G_CheckSpot (playernum, DS.playerstarts[i]) ) 
+          if (CheckSpot (playernum, DS.playerstarts[i]) ) 
           { 
-          DS.playerstarts[i].type = playernum+1; // fake as other player 
+          DS.playerstarts[i].type = (short) (playernum+1); // fake as other player 
           P_SpawnPlayer (&playerstarts[i]); 
           playerstarts[i].type = i+1;     // restore 
           return; 
@@ -1189,18 +967,18 @@ private mapthing_t[] playerstarts;
           }                
       } 
       else 
-          wminfo.next = gamemap;          // go to next level 
+          wminfo.next = DS.gamemap;          // go to next level 
       }
            
-      wminfo.maxkills = totalkills; 
-      wminfo.maxitems = totalitems; 
-      wminfo.maxsecret = totalsecret; 
+      wminfo.maxkills = DS.totalkills; 
+      wminfo.maxitems = DS.totalitems; 
+      wminfo.maxsecret = DS.totalsecret; 
       wminfo.maxfrags = 0; 
-      if ( DS.gamemode == commercial )
-      wminfo.partime = 35*cpars[gamemap-1]; 
+      if ( DS.gamemode == GameMode_t.commercial )
+      wminfo.partime = 35*cpars[DS.gamemap-1]; 
       else
-      wminfo.partime = 35*pars[gameepisode][gamemap]; 
-      wminfo.pnum = consoleplayer; 
+      wminfo.partime = 35*pars[DS.gameepisode][DS.gamemap]; 
+      wminfo.pnum = DS.consoleplayer; 
    
       for (i=0 ; i<MAXPLAYERS ; i++) 
       { 
@@ -1208,19 +986,19 @@ private mapthing_t[] playerstarts;
       wminfo.plyr[i].skills = players[i].killcount; 
       wminfo.plyr[i].sitems = players[i].itemcount; 
       wminfo.plyr[i].ssecret = players[i].secretcount; 
-      wminfo.plyr[i].stime = leveltime; 
-      memcpy (wminfo.plyr[i].frags, players[i].frags 
-          , sizeof(wminfo.plyr[i].frags)); 
+      wminfo.plyr[i].stime = DS.leveltime;
+      C2JUtils.memcpy (wminfo.plyr[i].frags, players[i].frags 
+          , wminfo.plyr[i].frags.length); 
       } 
    
-      gamestate = GS_INTERMISSION; 
-      viewactive = false; 
-      automapactive = false; 
+      DS.gamestate = gamestate_t.GS_INTERMISSION; 
+      DS.viewactive = false; 
+      DS.automapactive = false; 
    
-      if (statcopy)
-      memcpy (statcopy, &wminfo, sizeof(wminfo));
+      if (statcopy!=null)
+          C2JUtils.memcpy (statcopy, wminfo,1);
       
-      WI_Start (&wminfo); 
+      WI.Start (wminfo); 
   } 
 
 

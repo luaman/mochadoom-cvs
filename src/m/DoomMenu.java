@@ -5,7 +5,7 @@ import doom.event_t;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: DoomMenu.java,v 1.1 2010/07/21 11:41:47 velktron Exp $
+// $Id: DoomMenu.java,v 1.2 2010/09/10 17:35:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,4 +61,8 @@ public interface DoomMenu {
      * menu is already up.
      */
     public void StartControlPanel();
+
+    int getShowMessages();
+
+    void setShowMessages(int val);
 }

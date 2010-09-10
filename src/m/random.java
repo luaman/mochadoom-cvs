@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: random.java,v 1.2 2010/07/06 16:32:38 velktron Exp $
+// $Id: random.java,v 1.3 2010/09/10 17:35:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: random.java,v $
+// Revision 1.3  2010/09/10 17:35:49  velktron
+// DoomGame, Menu, renderers
+//
 // Revision 1.2  2010/07/06 16:32:38  velktron
 // Threw some work in WI, now EndLevel. YEAH THERE'S GONNA BE A SEPARATE EndLevel OBJECT THAT'S HOW PIMP THE PROJECT IS!!!!11!!!
 //
@@ -68,7 +71,7 @@ public static short rndtable[] = {
     120, 163, 236, 249
 };
 
-protected int	rndindex = 0;
+public int	rndindex = 0;
 protected int	prndindex = 0;
 
 // Which one is deterministic?

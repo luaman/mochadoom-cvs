@@ -1,12 +1,24 @@
 package m;
 
+import g.DoomGameInterface;
+import i.SystemInterface;
+import i.system;
+
+import java.util.Arrays;
+
 import data.doomstat;
+import doom.DoomContext;
+import doom.DoomInterface;
 import rr.patch_t;
+import s.DoomSoundInterface;
+import v.DoomVideoRenderer;
+import w.DoomFile;
+import w.WadLoader;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.2 2010/09/01 15:53:42 velktron Exp $
+// $Id: MenuMisc.java,v 1.3 2010/09/10 17:35:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +34,9 @@ import rr.patch_t;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.3  2010/09/10 17:35:49  velktron
+// DoomGame, Menu, renderers
+//
 // Revision 1.2  2010/09/01 15:53:42  velktron
 // Graphics data loader implemented....still need to figure out how column caching works, though.
 //
@@ -52,11 +67,26 @@ import rr.patch_t;
 //
 //-----------------------------------------------------------------------------
 
-public class MenuMisc{
+public abstract class MenuMisc{
 
-public static final String rcsid[] = "$Id: MenuMisc.java,v 1.2 2010/09/01 15:53:42 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.3 2010/09/10 17:35:49 velktron Exp $";
+////////////////////// CONTEXT ///////////////////
 
 doomstat DS;
+
+DoomContext DC;
+
+WadLoader W;
+
+SystemInterface I;
+
+DoomVideoRenderer V;
+
+DoomGameInterface G;
+
+DoomInterface D;
+
+DoomSoundInterface S;
 
 
 //
@@ -133,76 +163,90 @@ char*		mousedev;
 //extern char*	chat_macros[];
 
 
+/** We really need a better way to do this... */
+
+public void applyDefaults(){
+    for (default_t d:defaults){
+        switch (d.name){
+        
+        
+        
+        }
+    
+            
+    }
+}
+
 
 
 
 default_t[]	defaults =
 {
-    {"mouse_sensitivity",&mouseSensitivity, 5},
-    {"sfx_volume",&snd_SfxVolume, 8},
-    {"music_volume",&snd_MusicVolume, 8},
-    {"show_messages",&showMessages, 1},
-    
+    new default_t("mouse_sensitivity",DS.mouseSensitivity, 5),
+    new default_t("sfx_volume",DS.snd_SfxVolume, 8),
+    new default_t("music_volume",DS.snd_MusicVolume, 8),
+    new default_t("show_messages",DS.showMessages, 1),
+// ifdef linux    
+}
+/*
+new default_t("key_right",&key_right, KEY_RIGHTARROW),
+new default_t("key_left",&key_left, KEY_LEFTARROW),
+new default_t("key_up",&key_up, KEY_UPARROW),
+new default_t("key_down",&key_down, KEY_DOWNARROW),
+new default_t("key_strafeleft",&key_strafeleft, ','),
+new default_t("key_straferight",&key_straferight, '.'),
 
-#ifdef NORMALUNIX
-    {"key_right",&key_right, KEY_RIGHTARROW},
-    {"key_left",&key_left, KEY_LEFTARROW},
-    {"key_up",&key_up, KEY_UPARROW},
-    {"key_down",&key_down, KEY_DOWNARROW},
-    {"key_strafeleft",&key_strafeleft, ','},
-    {"key_straferight",&key_straferight, '.'},
-
-    {"key_fire",&key_fire, KEY_RCTRL},
-    {"key_use",&key_use, ' '},
-    {"key_strafe",&key_strafe, KEY_RALT},
-    {"key_speed",&key_speed, KEY_RSHIFT},
+    new default_t("key_fire",&key_fire, KEY_RCTRL),
+    new default_t("key_use",&key_use, ' '),
+    new default_t("key_strafe",&key_strafe, KEY_RALT),
+    new default_t("key_speed",&key_speed, KEY_RSHIFT),
 
 // UNIX hack, to be removed. 
-#ifdef SNDSERV
-    {"sndserver", (int *) &sndserver_filename, (int) "sndserver"},
-    {"mb_used", &mb_used, 2},
-#endif
+//#ifdef SNDSERV
+    new default_t("sndserver", (int *) &sndserver_filename, (int) "sndserver"),
+    new default_t("mb_used", &mb_used, 2),
+//#endif
     
-#endif
+//#endif
 
-#ifdef LINUX
-    {"mousedev", (int*)&mousedev, (int)"/dev/ttyS0"},
-    {"mousetype", (int*)&mousetype, (int)"microsoft"},
-#endif
+//#ifdef LINUX
+    new default_t("mousedev", (int*)&mousedev, (int)"/dev/ttyS0"),
+    new default_t("mousetype", (int*)&mousetype, (int)"microsoft"),
+//#endif
 
-    {"use_mouse",&usemouse, 1},
-    {"mouseb_fire",&mousebfire,0},
-    {"mouseb_strafe",&mousebstrafe,1},
-    {"mouseb_forward",&mousebforward,2},
+    new default_t("use_mouse",&usemouse, 1),
+    new default_t("mouseb_fire",&mousebfire,0),
+    new default_t("mouseb_strafe",&mousebstrafe,1),
+    new default_t("mouseb_forward",&mousebforward,2),
 
-    {"use_joystick",&usejoystick, 0},
-    {"joyb_fire",&joybfire,0},
-    {"joyb_strafe",&joybstrafe,1},
-    {"joyb_use",&joybuse,3},
-    {"joyb_speed",&joybspeed,2},
+    new default_t("use_joystick",&usejoystick, 0),
+    new default_t("joyb_fire",&joybfire,0),
+    new default_t("joyb_strafe",&joybstrafe,1),
+    new default_t("joyb_use",&joybuse,3),
+    new default_t("joyb_speed",&joybspeed,2),
 
-    {"screenblocks",&screenblocks, 9},
-    {"detaillevel",&detailLevel, 0},
+    new default_t("screenblocks",&screenblocks, 9),
+    new default_t("detaillevel",&detailLevel, 0),
 
-    {"snd_channels",&numChannels, 3},
+    new default_t("snd_channels",&numChannels, 3),
 
 
 
-    {"usegamma",&usegamma, 0},
+    new default_t("usegamma",&usegamma, 0),
 
-    {"chatmacro0", (int *) &chat_macros[0], (int) HUSTR_CHATMACRO0 },
-    {"chatmacro1", (int *) &chat_macros[1], (int) HUSTR_CHATMACRO1 },
-    {"chatmacro2", (int *) &chat_macros[2], (int) HUSTR_CHATMACRO2 },
-    {"chatmacro3", (int *) &chat_macros[3], (int) HUSTR_CHATMACRO3 },
-    {"chatmacro4", (int *) &chat_macros[4], (int) HUSTR_CHATMACRO4 },
-    {"chatmacro5", (int *) &chat_macros[5], (int) HUSTR_CHATMACRO5 },
-    {"chatmacro6", (int *) &chat_macros[6], (int) HUSTR_CHATMACRO6 },
-    {"chatmacro7", (int *) &chat_macros[7], (int) HUSTR_CHATMACRO7 },
-    {"chatmacro8", (int *) &chat_macros[8], (int) HUSTR_CHATMACRO8 },
-    {"chatmacro9", (int *) &chat_macros[9], (int) HUSTR_CHATMACRO9 }
+    new default_t("chatmacro0", (int *) &chat_macros[0], (int) HUSTR_CHATMACRO0 ),
+    new default_t("chatmacro1", (int *) &chat_macros[1], (int) HUSTR_CHATMACRO1 ),
+    new default_t("chatmacro2", (int *) &chat_macros[2], (int) HUSTR_CHATMACRO2 ),
+    new default_t("chatmacro3", (int *) &chat_macros[3], (int) HUSTR_CHATMACRO3 ),
+    new default_t("chatmacro4", (int *) &chat_macros[4], (int) HUSTR_CHATMACRO4 ),
+    new default_t("chatmacro5", (int *) &chat_macros[5], (int) HUSTR_CHATMACRO5 ),
+    new default_t("chatmacro6", (int *) &chat_macros[6], (int) HUSTR_CHATMACRO6 ),
+    new default_t("chatmacro7", (int *) &chat_macros[7], (int) HUSTR_CHATMACRO7 ),
+    new default_t("chatmacro8", (int *) &chat_macros[8], (int) HUSTR_CHATMACRO8 ),
+    new default_t("chatmacro9", (int *) &chat_macros[9], (int) HUSTR_CHATMACRO9 )
 
 };
-
+*/
 int	numdefaults;
 char*	defaultfile;
 
@@ -242,7 +286,7 @@ void M_SaveDefaults (void)
 //
 extern byte	scantokey[128];
 
-void M_LoadDefaults (void)
+public void LoadDefaults ()
 {
     int		i;
     int		len;
@@ -312,7 +356,7 @@ void M_LoadDefaults (void)
 // SCREEN SHOTS
 //
 
-
+/*
 typedef struct
 {
     char		manufacturer;
@@ -338,81 +382,84 @@ typedef struct
     char		filler[58];
     unsigned char	data;		// unbounded
 } pcx_t;
-
+*/
 
 //
 // WritePCXfile
 //
-void
+public void
 WritePCXfile
 ( String		filename,
-  byte*		data,
+  byte[]		data,
   int		width,
   int		height,
-  byte*		palette )
+  byte[]		palette )
 {
     int		i;
     int		length;
-    pcx_t*	pcx;
-    byte*	pack;
+    pcx_t	pcx;
+    byte[]	pack=new byte[width*height*2];
+    int packlen;
 	
-    pcx = Z_Malloc (width*height*2+1000, PU_STATIC, NULL);
+//    pcx = new byteZ_Malloc (width*height*2+1000, PU_STATIC, NULL);
 
-    pcx->manufacturer = 0x0a;		// PCX id
-    pcx->version = 5;			// 256 color
-    pcx->encoding = 1;			// uncompressed
-    pcx->bits_per_pixel = 8;		// 256 color
-    pcx->xmin = 0;
-    pcx->ymin = 0;
-    pcx->xmax = SHORT(width-1);
-    pcx->ymax = SHORT(height-1);
-    pcx->hres = SHORT(width);
-    pcx->vres = SHORT(height);
-    memset (pcx->palette,0,sizeof(pcx->palette));
-    pcx->color_planes = 1;		// chunky image
-    pcx->bytes_per_line = SHORT(width);
-    pcx->palette_type = SHORT(2);	// not a grey scale
-    memset (pcx->filler,0,sizeof(pcx->filler));
+    pcx.manufacturer = 0x0a;		// PCX id
+    pcx.version = 5;			// 256 color
+    pcx.encoding = 1;			// uncompressed
+    pcx.bits_per_pixel = 8;		// 256 color
+    pcx.xmin = 0;
+    pcx.ymin = 0;
+    pcx.xmax = (char) (width-1);
+    pcx.ymax = (char) (height-1);
+    pcx.hres = (char) width;
+    pcx.vres = (char) height;
+    Arrays.fill(pcx.palette, (char)0);
+    //memset (pcx.palette,0,sizeof(pcx->palette));
+    pcx.color_planes = 1;		// chunky image
+    pcx.bytes_per_line = (char) width;
+    pcx.palette_type = 2;	// not a grey scale
+    Arrays.fill(pcx.filler,(char) 0);
+    //memset (pcx.filler,0,sizeof(pcx->filler));
 
 
     // pack the image
-    pack = &pcx->data;
+
 	
     for (i=0 ; i<width*height ; i++)
     {
-	if ( (*data & 0xc0) != 0xc0)
-	    *pack++ = *data++;
+	if ( (data[i] & 0xc0) != 0xc0)
+	    pack[packlen++] = data[i];
 	else
 	{
-	    *pack++ = 0xc1;
-	    *pack++ = *data++;
+	    pack[packlen++] = (byte) 0xc1;
+	    pack[packlen++] = data[i];
 	}
     }
     
     // write the palette
-    *pack++ = 0x0c;	// palette ID byte
+    pack[packlen++] = 0x0c;	// palette ID byte
     for (i=0 ; i<768 ; i++)
-	*pack++ = *palette++;
+        pack[packlen++] = palette[i];
     
     // write output file
-    length = pack - (byte *)pcx;
-    M_WriteFile (filename, pcx, length);
+    length = packlen;
+    WriteFile (filename, pcx, length);
 
-    Z_Free (pcx);
+    //Z_Free (pcx);
 }
 
 
 //
 // M_ScreenShot
 //
-void M_ScreenShot (void)
+public void ScreenShot ()
 {
     int		i;
-    byte*	linear;
-    char	lbmname[12];
+    byte[]	linear;
+    String	lbmname;
     
     // munge planar buffer to linear
-    linear = screens[2];
+    linear = V.screens[2];
     I_ReadScreen (linear);
     
     // find a file name to save it to
@@ -434,6 +481,49 @@ void M_ScreenShot (void)
 		  W_CacheLumpName ("PLAYPAL",PU_CACHE));
 	
     players[consoleplayer].message = "screen shot";
+}
+
+
+public boolean WriteFile(String name, byte[] source, int length) {
+    DoomFile handle;
+    try {
+        handle = new DoomFile(name, "rw");
+
+        if (handle == null)
+            return false;
+
+        handle.write(source, 0, length);
+        handle.close();
+    } catch (Exception e) {
+        return false;
+    }
+
+    return true;
+}
+
+/** M_ReadFile */
+public int ReadFile(String name, byte[] buffer) {
+    DoomFile handle;
+    int count, length;
+    // struct stat fileinfo;
+    byte[] buf;
+    try {
+        handle = new DoomFile(name, "rb");
+        length = (int) handle.length();
+        buf = new byte[length];
+        count = handle.read(buf);
+        handle.close();
+
+        if (count < length)
+            throw new Exception("Read only " + count + " bytes out of "
+                    + length);
+
+    } catch (Exception e) {
+        system.Error("Couldn't read file %s (%s)", name, e.getMessage());
+        return -1;
+    }
+    buffer = buf;
+    return length;
 }
 
 }

@@ -87,8 +87,11 @@ public boolean deathmatch;
 //  Sound FX volume has default, 0 - 15
 //  Music volume has default, 0 - 15
 // These are multiplied by 8.
-public  int snd_SfxVolume;      // maximum volume for sound
-public  int snd_MusicVolume;    // maximum volume for music
+/** maximum volume for sound */
+public  int snd_SfxVolume;    
+
+/** maximum volume for music */
+public  int snd_MusicVolume;    
 
 // Current music/sfx card - index useless
 //  w/o a reference LUT in a sound module.
@@ -190,7 +193,7 @@ public   boolean[]  playeringame=new boolean[MAXPLAYERS];
 
 public   mapthing_t[] deathmatchstarts=new mapthing_t[MAX_DM_STARTS];
 // Maes: we need no pointer/struct dichotomy here.
-public   mapthing_t deathmatch_p;
+public   int deathmatch_p;
 
 // Player spawn spots.
 public   mapthing_t[] playerstarts=new mapthing_t[MAXPLAYERS];
@@ -224,6 +227,7 @@ public   boolean         precache;
 //  to force a wipe on the next draw
 public   gamestate_t     wipegamestate;
 
+/** To be used as pointed value */
 public   int             mouseSensitivity;
 //?
 // debug flag to cancel adaptiveness

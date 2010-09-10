@@ -13,7 +13,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.5 2010/09/09 16:09:09 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.6 2010/09/10 17:35:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,6 +27,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.6  2010/09/10 17:35:49  velktron
+// DoomGame, Menu, renderers
+//
 // Revision 1.5  2010/09/09 16:09:09  velktron
 // Yer more enhancements to the display system...
 //
@@ -117,7 +120,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.5 2010/09/09 16:09:09 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.6 2010/09/10 17:35:49 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -154,30 +157,29 @@ public final void Init ()
 
 /** This implementation will "tie" a bufferedimage to the underlying byte raster.
  * 
+ * NOTE: thie relies on the ability to "tap" into a BufferedImage's backing array,
+ * in order to have fast writes without setpixel/getpixel. If that is not possible,
+ * then we'll need to use a special renderer.
+ * 
  */
 @Override
 public final void setScreen(int index, int width, int height){
+
+    // We must FIRST initialize the image, so that the (immutable) color model will be set.
     
-    // Create a dummy databuffer....
-    DataBufferByte dbb=new DataBufferByte(width*height);
     if (this.icm==null)
     screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED);
     else
-        screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED,this.icm);
+        screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED,this.icm);    
     
-    // Create a raster, "linked" to dbb. It's actually a copy.
-        WritableRaster r=WritableRaster.createPackedRaster(dbb, screenbuffer[index].getWidth(),  screenbuffer[index].getHeight(), 8,
-        new Point(0,0));
-        
-        // However, r is actually "inserted" here.
-    screenbuffer[index].setData(r);
-    // Hack: hotwire the screenbuffers directly to the images. T3h h4x, d00d.
-    // We can actually tap r's backing array.
+    // Hack: hotwire the screenbuffers directly to the image. T3h h4x, d00d.
+    // Now, HERE is where the magic happens. Once a BufferedImage is created, the internal raster is
+    // immutable, but its backing data array is accessible for read/write.
+    // Ergo, we can now "hardwire" the vlb to the raster's backing array. Whatever we write in there,
+    // will also appear in the image.
+    
     screens[index]=((DataBufferByte)screenbuffer[index].getRaster().getDataBuffer()).getData();
 
-    //return b;    
-    
-   // this.screens[index]=new byte[width*height];
 }
 
 public BufferedImage mapBufferedImageToScreen(int screen, IndexColorModel icm){
@@ -199,6 +201,12 @@ public BufferedImage cloneScreen(int screen, IndexColorModel icm){
     
 }
 
+/** Hotlinks a 32-bit "canvas" (the raster int[] array) to an externally supplied
+ *  buffered image. Now whatever we write into raster, will appear in the image as well,
+ *  without using drawing primitives. Necessary for fast rendering.
+ *  
+ * @param b
+ */
 
 public void mapInternalRasterToBufferedImage(BufferedImage b){
     raster=new int[this.screens[0].length];

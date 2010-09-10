@@ -1,137 +1,67 @@
 package m;
 
-import i.SystemInterface;
-import i.system;
+import static data.Defines.HU_FONTSIZE;
+import static data.Defines.HU_FONTSTART;
+import static data.Defines.KEY_BACKSPACE;
+import static data.Defines.KEY_DOWNARROW;
+import static data.Defines.KEY_ENTER;
+import static data.Defines.KEY_EQUALS;
+import static data.Defines.KEY_ESCAPE;
+import static data.Defines.KEY_F1;
+import static data.Defines.KEY_F10;
+import static data.Defines.KEY_F11;
+import static data.Defines.KEY_F2;
+import static data.Defines.KEY_F3;
+import static data.Defines.KEY_F4;
+import static data.Defines.KEY_F5;
+import static data.Defines.KEY_F6;
+import static data.Defines.KEY_F7;
+import static data.Defines.KEY_F8;
+import static data.Defines.KEY_F9;
+import static data.Defines.KEY_LEFTARROW;
+import static data.Defines.KEY_MINUS;
+import static data.Defines.KEY_RIGHTARROW;
+import static data.Defines.KEY_UPARROW;
+import static data.Defines.PU_CACHE;
+import static data.Defines.SAVESTRINGSIZE;
+import static data.Defines.SCREENWIDTH;
+import static data.dstrings.NUM_QUITMESSAGES;
+import static data.dstrings.SAVEGAMENAME;
+import static data.dstrings.endmsg;
+import static doom.englsh.DOSY;
+import static doom.englsh.EMPTYSTRING;
+import static doom.englsh.ENDGAME;
+import static doom.englsh.LOADNET;
+import static doom.englsh.MSGOFF;
+import static doom.englsh.MSGON;
+import static doom.englsh.NETEND;
+import static doom.englsh.NEWGAME;
+import static doom.englsh.NIGHTMARE;
+import static doom.englsh.QLOADNET;
+import static doom.englsh.QLPROMPT;
+import static doom.englsh.QSAVESPOT;
+import static doom.englsh.QSPROMPT;
+import static doom.englsh.SAVEDEAD;
+import static doom.englsh.SWSTRING;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import g.DoomGameInterface;
+
+import rr.patch_t;
+import utils.C2JUtils;
+import w.DoomFile;
 import data.Defines;
-import data.doomstat;
 import data.Defines.GameMode_t;
+import data.Defines.Language_t;
+import data.Defines.gamestate_t;
+import data.Defines.skill_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
-import doom.DoomInterface;
 import doom.event_t;
 import doom.evtype_t;
-import rr.patch_t;
-import s.DoomSoundInterface;
-import utils.C2JUtils;
-import v.DoomVideoRenderer;
-import w.DoomFile;
-import w.WadLoader; // Emacs style mode select -*- C++ -*-
-// -----------------------------------------------------------------------------
-//
-// $Id: Menu.java,v 1.12 2010/09/09 01:13:19 velktron Exp $
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// $Log: Menu.java,v $
-// Revision 1.12  2010/09/09 01:13:19  velktron
-// MUCH better rendering and testers.
-//
-// Revision 1.11  2010/09/07 16:23:00  velktron
-// *** empty log message ***
-//
-// Revision 1.10  2010/09/01 15:53:42  velktron
-// Graphics data loader implemented....still need to figure out how column caching works, though.
-//
-// Revision 1.9  2010/08/23 14:36:08  velktron
-// Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
-//
-// Revision 1.8 2010/08/10 16:41:57 velktron
-// Threw some work into map loading.
-//
-// Revision 1.7 2010/07/29 15:29:00 velktron
-// More work on menus...and digging some dependencies..
-//
-// Revision 1.6 2010/07/27 14:27:16 velktron
-// Menu system is almost complete! Tester coming soon...
-// Lots of additions to misc interfaces and C-like functions too.
-//
-// Revision 1.5 2010/07/26 20:17:39 velktron
-// Some work on menus...
-//
-// Revision 1.4 2010/07/22 15:37:53 velktron
-// MAJOR changes in Menu system.
-//
-// Revision 1.3 2010/07/21 11:41:47 velktron
-// Work on menus...
-//
-// Revision 1.2 2010/07/06 15:20:23 velktron
-// Several changes in the WAD loading routine. Now lumps are directly unpacked
-// as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer
-// reads.
-//
-// Makes caching more effective.
-//
-// Revision 1.1 2010/06/30 08:58:50 velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still being worked on. For a good place to start and get an
-// idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1 2010/06/29 11:07:34 velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete,
-// and there's still mixed C code in there. I suggest you load everything up in
-// Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you can get an idea of
-// how a few of the implemented stuff works.
-//
-//
-// DESCRIPTION:
-// DOOM selection menu, options, episode etc.
-// Sliders and icons. Kinda widget stuff.
-//
-// -----------------------------------------------------------------------------
 
-/*
- * #include "doomdef.h" #include "dstrings.h" #include "d_main.h" #include
- * "i_system.h" #include "i_video.h" #include "z_zone.h" #include "v_video.h"
- * #include "w_wad.h" #include "r_local.h" #include "hu_stuff.h" #include
- * "g_game.h" #include "m_argv.h" #include "m_swap.h" #include "s_sound.h"
- * #include "doomstat.h" // Data. #include "sounds.h" #include "m_menu.h"
- */
-import static data.Defines.*;
-import static doom.englsh.*;
-import static data.dstrings.*;
+public class Menu extends MenuMisc{
 
-public class Menu implements DoomMenu{
 
-    ////////////////////// CONTEXT ///////////////////
-    
-    doomstat DS;
-
-    DoomContext DC;
-
-    WadLoader W;
-
-    SystemInterface I;
-
-    DoomVideoRenderer V;
-
-    DoomGameInterface G;
-
-    DoomInterface D;
-
-    DoomSoundInterface S;
-    
     ////////////////// CONSTRUCTOR ////////////////
     
     public Menu(DoomContext DC){
@@ -168,11 +98,17 @@ public class Menu implements DoomMenu{
      * showMessages can be read outside of Menu, but not modified. Menu has the
      * actual C definition (not declaration)
      */
-
+    
+    @Override
     public int getShowMessages() {
         return showMessages;
     }
 
+    @Override
+    public void setShowMessages(int val) {
+        this.showMessages=val;
+    }
+    
     /** Blocky mode, has default, 0 = high, 1 = normal */
     int detailLevel;
 
@@ -1536,50 +1472,7 @@ public class Menu implements DoomMenu{
         return x;
     }
 
-    // //////////////////////////// misc functions
-    // ////////////////////////////////
-
-    public static boolean WriteFile(String name, byte[] source, int length) {
-        DoomFile handle;
-        try {
-            handle = new DoomFile(name, "rw");
-
-            if (handle == null)
-                return false;
-
-            handle.write(source, 0, length);
-            handle.close();
-        } catch (Exception e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /** M_ReadFile */
-    public static int ReadFile(String name, byte[] buffer) {
-        DoomFile handle;
-        int count, length;
-        // struct stat fileinfo;
-        byte[] buf;
-        try {
-            handle = new DoomFile(name, "rb");
-            length = (int) handle.length();
-            buf = new byte[length];
-            count = handle.read(buf);
-            handle.close();
-
-            if (count < length)
-                throw new Exception("Read only " + count + " bytes out of "
-                        + length);
-
-        } catch (Exception e) {
-            system.Error("Couldn't read file %s (%s)", name, e.getMessage());
-            return -1;
-        }
-        buffer = buf;
-        return length;
-    }
+    
 
     // ////////////////////////// DRAWROUTINES
     // //////////////////////////////////
