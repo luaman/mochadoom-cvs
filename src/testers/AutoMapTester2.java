@@ -41,12 +41,12 @@ import doom.weapontype_t;
 
 public class AutoMapTester2 {
     
-    public static final int WIDTH=320;
+    public static final int WIDTH=640;
 
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"/*,"d:\\doomwad\\gothic99.wad"*/});
+    W.InitMultipleFiles(new String[] {"doom1.wad","d:\\doomwad\\gothic99.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
 
@@ -74,8 +74,8 @@ public class AutoMapTester2 {
     doomstat ds = new doomstat();
     ds.gameepisode=1;
     ds.gamemap=1;
-    ds.gamemission=GameMission_t.doom;
-    ds.gamemode=GameMode_t.shareware;
+    ds.gamemission=GameMission_t.doom2;
+    ds.gamemode=GameMode_t.commercial;
     ds.wminfo=new wbstartstruct_t();
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
 
@@ -187,7 +187,7 @@ public class AutoMapTester2 {
     ST.Drawer(false,true);
     frame.setPalette((i/(10000/14))%14);
     frame.processEvents();
-    frame.update(null);
+    frame.update();
     //frame.update();
     //frame.update(shit.getGraphics());
  

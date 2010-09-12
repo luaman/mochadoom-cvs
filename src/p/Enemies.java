@@ -1,12 +1,23 @@
 package p;
 
+import i.system;
+import m.random;
+import data.doomstat;
+import doom.player_t;
+import static data.info.*;
+import static data.Defines.*;
+import static data.Limits.*;
+import static m.fixed_t.*;
+import static p.mobj_t.*;
+import rr.RendererState;
 import rr.line_t;
 import rr.sector_t;
+import rr.side_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Enemy.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
+// $Id: Enemies.java,v 1.1 2010/09/12 22:38:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,7 +31,10 @@ import rr.sector_t;
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: Enemy.java,v $
+// $Log: Enemies.java,v $
+// Revision 1.1  2010/09/12 22:38:37  velktron
+// Some work
+//
 // Revision 1.2  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -38,38 +52,38 @@ import rr.sector_t;
 //-----------------------------------------------------------------------------
 
 
-public class Enemy {
+public abstract class Enemies {
 
-  public static final String rcsid = "$Id: Enemy.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
+    doomstat DS;
+    RendererState R;
+    LevelLoader L;
+    random RND;
+	
+  public static final String rcsid = "$Id: Enemies.java,v 1.1 2010/09/12 22:38:37 velktron Exp $";
 
-  enum dirtype_t
-  {
-      DI_EAST,
-      DI_NORTHEAST,
-      DI_NORTH,
-      DI_NORTHWEST,
-      DI_WEST,
-      DI_SOUTHWEST,
-      DI_SOUTH,
-      DI_SOUTHEAST,
-      DI_NODIR,
-      NUMDIRS
-      
-  } ;
-
+  private static int DI_EAST=0;
+  private static int    DI_NORTHEAST=1;
+  private static int    DI_NORTH=2;
+  private static int    DI_NORTHWEST=3;
+  private static int    DI_WEST=4;
+  private static int    DI_SOUTHWEST=5;
+  private static int    DI_SOUTH=6;
+  private static int    DI_SOUTHEAST=7;
+  private static int    DI_NODIR=8;
+  private static int    NUMDIR=9;
 
   //
   // P_NewChaseDir related LUT.
   //
-  dirtype_t opposite[] =
+  private static final int opposite[] =
   {
-          dirtype_t.DI_WEST, dirtype_t.DI_SOUTHWEST, dirtype_t.DI_SOUTH, dirtype_t.DI_SOUTHEAST,
-          dirtype_t.DI_EAST, dirtype_t.DI_NORTHEAST, dirtype_t.DI_NORTH, dirtype_t.DI_NORTHWEST, dirtype_t.DI_NODIR
+          DI_WEST, DI_SOUTHWEST, DI_SOUTH, DI_SOUTHEAST,
+          DI_EAST, DI_NORTHEAST, DI_NORTH, DI_NORTHWEST, DI_NODIR
   };
 
-  dirtype_t diags[] =
+  private static final int diags[] =
   {
-          dirtype_t.DI_NORTHWEST, dirtype_t.DI_NORTHEAST, dirtype_t.DI_SOUTHWEST, dirtype_t.DI_SOUTHEAST
+          DI_NORTHWEST, DI_NORTHEAST, DI_SOUTHWEST, DI_SOUTHEAST
   };
 
 
@@ -106,20 +120,23 @@ public class Enemy {
       sector_t   other;
       
       // wake up all monsters in this sector
-      if (sec.validcount == validcount // Refers to mobj_t's "validcount".
+      if (sec.validcount == R.validcount
       && sec.soundtraversed <= soundblocks+1)
       {
       return;     // already flooded
       }
       
-      sec.validcount = validcount;
+      sec.validcount = R.validcount;
       sec.soundtraversed = soundblocks+1;
       sec.soundtarget = soundtarget;
+      
+      // "peg" to the level loader for syntactic sugar
+      side_t[] sides=L.sides;
       
       for (i=0 ;i<sec.linecount ; i++)
       {
       check = sec.lines[i];
-      if (! (check.flags & ML_TWOSIDED) )
+      if ((check.flags & ML_TWOSIDED) ==0)
           continue;
       
       P_LineOpening (check);
@@ -132,9 +149,9 @@ public class Enemy {
       else
           other = sides[ check.sidenum[0] ].sector;
       
-      if (check.flags & ML_SOUNDBLOCK)
+      if ((check.flags & ML_SOUNDBLOCK)!=0)
       {
-          if (!soundblocks)
+          if (soundblocks==0)
           P_RecursiveSound (other, 1);
       }
       else
@@ -151,11 +168,11 @@ public class Enemy {
   //
   void
   P_NoiseAlert
-  ( mobj_t*   target,
-    mobj_t*   emmiter )
+  ( mobj_t   target,
+    mobj_t   emmiter )
   {
       soundtarget = target;
-      validcount++;
+      R.validcount++;
       P_RecursiveSound (emmiter.subsector.sector, 0);
   }
 
@@ -165,12 +182,12 @@ public class Enemy {
   //
   // P_CheckMeleeRange
   //
-  boolean P_CheckMeleeRange (mobj_t*  actor)
+  boolean P_CheckMeleeRange (mobj_t actor)
   {
-      mobj_t* pl;
-      fixed_t dist;
+      mobj_t pl;
+      int dist; //fixed_t
       
-      if (!actor.target)
+      if (actor.target==null)
       return false;
           
       pl = actor.target;
@@ -188,14 +205,14 @@ public class Enemy {
   //
   // P_CheckMissileRange
   //
-  boolean P_CheckMissileRange (mobj_t* actor)
+  boolean P_CheckMissileRange (mobj_t actor)
   {
-      fixed_t dist;
+      int dist; //fixed_t
       
       if (! P_CheckSight (actor, actor.target) )
       return false;
       
-      if ( actor.flags & MF_JUSTHIT )
+      if ( (actor.flags & MF_JUSTHIT )!=0)
       {
       // the target just hit the enemy,
       // so fight back!
@@ -203,14 +220,14 @@ public class Enemy {
       return true;
       }
       
-      if (actor.reactiontime)
+      if (actor.reactiontime!=0)
       return false;   // do not attack yet
           
       // OPTIMIZE: get this from a global checksight
       dist = P_AproxDistance ( actor.x-actor.target.x,
                    actor.y-actor.target.y) - 64*FRACUNIT;
       
-      if (!actor.info.meleestate)
+      if (actor.info.meleestate==null)
       dist -= 128*FRACUNIT;   // no melee attack, so fire more
 
       dist >>= 16;
@@ -255,20 +272,21 @@ public class Enemy {
   // Move in the current direction,
   // returns false if the move is blocked.
   //
-  fixed_t xspeed[8] = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000};
-  fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000};
+  int[] xspeed = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000}; //all fixed
+  int[] yspeed = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000}; //all fixed
 
 
+  // Peg to map movement 
+    line_t[] spechitp=new line_t[MAXSPECIALCROSS];
+    int numspechit;
 
-  extern  line_t* spechit[MAXSPECIALCROSS];
-  extern  int numspechit;
-
-  boolean P_Move (mobj_t* actor)
+  boolean P_Move (mobj_t actor)
   {
-      fixed_t tryx;
-      fixed_t tryy;
+	  // fixed_t
+      int tryx;
+      int tryy;
       
-      line_t* ld;
+      line_t ld;
       
       // warning: 'catch', 'throw', and 'try'
       // are all C++ reserved words
@@ -278,8 +296,8 @@ public class Enemy {
       if (actor.movedir == DI_NODIR)
       return false;
           
-      if ((unsigned)actor.movedir >= 8)
-      I_Error ("Weird actor.movedir!");
+      if (actor.movedir >= 8)
+      system.Error ("Weird actor.movedir!");
           
       tryx = actor.x + actor.info.speed*xspeed[actor.movedir];
       tryy = actor.y + actor.info.speed*yspeed[actor.movedir];
@@ -301,12 +319,12 @@ public class Enemy {
           return true;
       }
           
-      if (!numspechit)
+      if (numspechit==0)
           return false;
               
       actor.movedir = DI_NODIR;
       good = false;
-      while (numspechit--)
+      while ((numspechit--)>0)
       {
           ld = spechit[numspechit];
           // if the special is not a door
@@ -340,21 +358,21 @@ public class Enemy {
   // If a door is in the way,
   // an OpenDoor call is made to start it opening.
   //
-  boolean P_TryWalk (mobj_t* actor)
+  boolean P_TryWalk (mobj_t actor)
   {   
       if (!P_Move (actor))
       {
       return false;
       }
 
-      actor.movecount = P_Random()&15;
+      actor.movecount = RND.P_Random()&15;
       return true;
   }
 
 
 
 
-  void P_NewChaseDir (mobj_t* actor)
+  void P_NewChaseDir (mobj_t actor)
   {
       fixed_t deltax;
       fixed_t deltay;
@@ -366,8 +384,8 @@ public class Enemy {
       
       dirtype_t   turnaround;
 
-      if (!actor.target)
-      I_Error ("P_NewChaseDir: called with no target");
+      if (actor.target==null)
+      system.Error ("P_NewChaseDir: called with no target");
           
       olddir = actor.movedir;
       turnaround=opposite[olddir];
@@ -491,15 +509,15 @@ public class Enemy {
   //
   boolean
   P_LookForPlayers
-  ( mobj_t*   actor,
+  ( mobj_t   actor,
     boolean   allaround )
   {
       int     c;
       int     stop;
-      player_t*   player;
-      sector_t*   sector;
-      angle_t an;
-      fixed_t dist;
+      player_t   player;
+      sector_t   sector;
+      int an; //angle
+      int dist; //fixed
           
       sector = actor.subsector.sector;
       
@@ -508,7 +526,7 @@ public class Enemy {
       
       for ( ; ; actor.lastlook = (actor.lastlook+1)&3 )
       {
-      if (!playeringame[actor.lastlook])
+      if (!DS.playeringame[actor.lastlook])
           continue;
               
       if (c++ == 2
@@ -518,7 +536,7 @@ public class Enemy {
           return false;   
       }
       
-      player = &players[actor.lastlook];
+      player = DS.players[actor.lastlook];
 
       if (player.health <= 0)
           continue;       // dead
@@ -528,7 +546,7 @@ public class Enemy {
               
       if (!allaround)
       {
-          an = R_PointToAngle2 (actor.x,
+          an = PointToAngle2 (actor.x,
                     actor.y, 
                     player.mo.x,
                     player.mo.y)
@@ -1985,13 +2003,13 @@ public class Enemy {
   }
 */
 
-class A_PlayerScream implements think_t {
-  void A_PlayerScream (mobj_t* mo)
+class A_PlayerScream implements acp1 {
+  void A_PlayerScream (mobj_t mo)
   {
       // Default death sound.
-      int     sound = sfx_pldeth;
+      sfxenum_t     sound = sfx_pldeth;
       
-      if ( (gamemode == commercial)
+      if ( (DS.gamemode == commercial)
       &&  (mo.health < -50))
       {
       // IF THE PLAYER DIES
@@ -1999,7 +2017,7 @@ class A_PlayerScream implements think_t {
       sound = sfx_pdiehi;
       }
       
-      S_StartSound (mo, sound);
+     // TODO: S_StartSound (mo, sound);
   }
 
 }

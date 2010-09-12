@@ -3,7 +3,7 @@ package p;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LocalPlay.java,v 1.1 2010/08/24 14:57:42 velktron Exp $
+// $Id: LocalPlay.java,v 1.2 2010/09/12 22:38:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,12 +23,13 @@ package p;
 //-----------------------------------------------------------------------------
 
 
-import static data.Defines.*;	
+import static data.Defines.*;
+import static data.Limits.*;	
 import rr.line_t;
 import data.mapthing_t;
 import doom.thinker_t;
 	
-public class LocalPlay{
+public abstract class LocalPlay{
 
 //
 // P_TICK

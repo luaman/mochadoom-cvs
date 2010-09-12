@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.13 2010/09/07 16:23:00 velktron Exp $
+// $Id: Renderer.java,v 1.14 2010/09/12 22:38:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.14  2010/09/12 22:38:37  velktron
+// Some work
+//
 // Revision 1.13  2010/09/07 16:23:00  velktron
 // *** empty log message ***
 //
@@ -528,89 +531,6 @@ PointToAngle
 }
 
 
-public int
-PointToAngle2
-( fixed_t	x1,
-  fixed_t	y1,
-  fixed_t	x2,
-  fixed_t	y2 )
-{	
-    // Careful with assignments...
-    viewx=x1.val;
-    viewy=y1.val;
-    
-    return PointToAngle (x2.val, y2.val);
-}
-
-public int
-PointToAngle2
-( int   x1,
-  int   y1,
-  int   x2,
-  int   y2 )
-{   
-    // Careful with assignments...
-    viewx=x1;
-    viewy=y1;
-    
-    return PointToAngle (x2, y2);
-}
-
-
-
-public int
-PointToDist
-( fixed_t	x,
-  fixed_t	y )
-{
-    int		angle;
-    int	dx;
-    int	dy;
-    int	temp;
-    int	dist;
-	
-    dx = Math.abs(x.val - viewx);
-    dy = Math.abs(y.val - viewy);
-	
-    if (dy>dx)
-    {
-	temp = dx;
-	dx = dy;
-	dy = temp;
-    }
-	
-    angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
-
-    // use as cosine
-    dist = FixedDiv (dx, finesine[angle] );	
-	
-    return dist;
-}
-
-
-
-
-//
-// R_InitPointToAngle
-//
-public void InitPointToAngle ()
-{
-    // UNUSED - now getting from tables.c
-if (false){
-    int	i;
-    long	t;
-    float	f;
-//
-// slope (tangent) to angle lookup
-//
-    for (i=0 ; i<=SLOPERANGE ; i++)
-    {
-	f = (float) Math.atan( (double)(i/SLOPERANGE )/(3.141592657*2));
-	t = (long) (0xffffffffL*f);
-	tantoangle[i] = (int) t;
-    }
-}
-}
 
 
 //

@@ -31,6 +31,11 @@ public class Limits {
 
     // Some quirky engine limits
     public static final int MAXEVENTS       =64;
+    
+ /** keep track of special lines as they are hit,
+  *  but don't process them until the move is proven valid
+  */
+    public static final int MAXSPECIALCROSS	=	8;
     public static final int MAXHEALTH     =100;
     
     /** There seems to be an arbitrary limit of 29 distinct frames per THING */

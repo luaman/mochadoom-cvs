@@ -2,6 +2,7 @@ package g;
 
 import static data.Defines.*;
 import static data.Limits.*;
+import static data.info.*;
 import static m.fixed_t.*;
 import static data.Tables.*;
 import static data.SineCosine.*;
@@ -41,7 +42,7 @@ import doom.weapontype_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGame.java,v 1.6 2010/09/10 17:35:49 velktron Exp $
+// $Id: DoomGame.java,v 1.7 2010/09/12 22:38:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -56,6 +57,9 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: DoomGame.java,v $
+// Revision 1.7  2010/09/12 22:38:37  velktron
+// Some work
+//
 // Revision 1.6  2010/09/10 17:35:49  velktron
 // DoomGame, Menu, renderers
 //
@@ -73,7 +77,7 @@ import doom.weapontype_t;
 public class DoomGame extends DoomGameStats {
 
  
-  public static final String rcsid = "$Id: DoomGame.java,v 1.6 2010/09/10 17:35:49 velktron Exp $";
+  public static final String rcsid = "$Id: DoomGame.java,v 1.7 2010/09/12 22:38:37 velktron Exp $";
 
 
  
@@ -93,7 +97,7 @@ public class DoomGame extends DoomGameStats {
       int     tspeed; 
       int     forward;
       int     side;
-      
+      FIELDOFVIEW
       ticcmd_t   base=new ticcmd_t();
 
       //base = I_BaseTiccmd ();     // empty, or external driver

@@ -5,8 +5,20 @@ import static data.Limits.MAXHEIGHT;
 import static data.Limits.MAXOPENINGS;
 import static data.Limits.MAXVISPLANES;
 import static data.Limits.MAXWIDTH;
+import static data.SineCosine.finesine;
+import static data.Tables.ANG180;
+import static data.Tables.ANG270;
+import static data.Tables.ANG90;
+import static data.Tables.ANGLETOFINESHIFT;
+import static data.Tables.DBITS;
 import static data.Tables.FINEANGLES;
+import static data.Tables.SLOPERANGE;
+import static data.Tables.SlopeDiv;
+import static data.Tables.tantoangle;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.FixedDiv;
+import static m.fixed_t.FixedMul;
+import m.fixed_t;
 import rr.UnifiedRenderer.colfunc_t;
 import doom.player_t;
 
@@ -14,7 +26,6 @@ public abstract class RendererState {
 
     
     ///////////////// COMMON RENDERING GLOBALS ////////////////
-    
     
     /** "peg" this to the one from RendererData */
     byte[] colormaps;
@@ -194,8 +205,9 @@ public abstract class RendererState {
    public static int FIELDOFVIEW   =   2048;   
    public static int           viewangleoffset;
 
-   /** increment every time a check is made */
-   public static int           validcount = 1;     
+   /** Increment every time a check is made 
+    *  For some reason, this needs to be visible even by enemies thinking :-S*/
+   public int           validcount = 1;     
 
    /** Use in conjunction with pfixedcolormap */
    byte[]      fixedcolormap;
@@ -391,5 +403,319 @@ public abstract class RendererState {
    /** just for profiling */
    int dscount;
 
-    
+   
+   ////////////// SOME UTILITY METHODS, THAT DON'T DEPEND ON STATE /////////////
+
+   public int
+   PointToAngle2
+   ( fixed_t	x1,
+     fixed_t	y1,
+     fixed_t	x2,
+     fixed_t	y2 )
+   {	
+       // Careful with assignments...
+       viewx=x1.val;
+       viewy=y1.val;
+       
+       return PointToAngle (x2.val, y2.val);
+   }
+
+   public int
+   PointToAngle2
+   ( int   x1,
+     int   y1,
+     int   x2,
+     int   y2 )
+   {   
+       // Careful with assignments...
+       viewx=x1;
+       viewy=y1;
+       
+       return PointToAngle (x2, y2);
+   }
+
+
+
+   public int
+   PointToDist
+   ( fixed_t	x,
+     fixed_t	y )
+   {
+       int		angle;
+       int	dx;
+       int	dy;
+       int	temp;
+       int	dist;
+   	
+       dx = Math.abs(x.val - viewx);
+       dy = Math.abs(y.val - viewy);
+   	
+       if (dy>dx)
+       {
+   	temp = dx;
+   	dx = dy;
+   	dy = temp;
+       }
+   	
+       angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
+
+       // use as cosine
+       dist = FixedDiv (dx, finesine[angle] );	
+   	
+       return dist;
+   }
+
+
+
+
+   //
+   // R_InitPointToAngle
+   //
+   public void InitPointToAngle ()
+   {
+       // UNUSED - now getting from tables.c
+   if (false){
+       int	i;
+       long	t;
+       float	f;
+   //
+   // slope (tangent) to angle lookup
+   //
+       for (i=0 ; i<=SLOPERANGE ; i++)
+       {
+   	f = (float) Math.atan( (double)(i/SLOPERANGE )/(3.141592657*2));
+   	t = (long) (0xffffffffL*f);
+   	tantoangle[i] = (int) t;
+       }
+   }
+   }
+   
+   /**
+    * R_PointToAngle
+    *  To get a global angle from cartesian coordinates,
+    *  the coordinates are flipped until they are in
+    *  the first octant of the coordinate system, then
+    *  the y (<=x) is scaled and divided by x to get a
+    *  tangent (slope) value which is looked up in the
+    *   tantoangle[] table.
+    *   
+    *   @param xx (fixed_t)
+    *   @param yy (fixed_t)
+    */
+
+   public int
+   PointToAngle
+   ( int   xx,
+     int   yy )
+   {   
+       int x=xx- viewx;
+       int y=yy- viewy;
+       
+       if ( (x==0) && (y==0) )
+       return 0;
+
+       if (x>= 0)
+       {
+       // x >=0
+       if (y>= 0)
+       {
+           // y>= 0
+
+           if (x>y)
+           {
+           // octant 0
+           return tantoangle[ SlopeDiv(y,x)];
+           }
+           else
+           {
+           // octant 1
+           return ANG90-1-tantoangle[ SlopeDiv(x,y)];
+           }
+       }
+       else
+       {
+           // y<0
+           y = -y;
+
+           if (x>y)
+           {
+           // octant 8
+           return -tantoangle[SlopeDiv(y,x)];
+           }
+           else
+           {
+           // octant 7
+           return ANG270+tantoangle[ SlopeDiv(x,y)];
+           }
+       }
+       }
+       else
+       {
+       // x<0
+       x = -x;
+
+       if (y>= 0)
+       {
+           // y>= 0
+           if (x>y)
+           {
+           // octant 3
+           return ANG180-1-tantoangle[ SlopeDiv(y,x)];
+           }
+           else
+           {
+           // octant 2
+           return ANG90+ tantoangle[ SlopeDiv(x,y)];
+           }
+       }
+       else
+       {
+           // y<0
+           y = -y;
+
+           if (x>y)
+           {
+           // octant 4
+           return ANG180+tantoangle[ SlopeDiv(y,x)];
+           }
+           else
+           {
+            // octant 5
+           return ANG270-1-tantoangle[ SlopeDiv(x,y)];
+           }
+       }
+       }
+       // FIXME: Unreachable?!
+       //return 0;
+   }
+   
+   //
+   // R_ScaleFromGlobalAngle
+   // Returns the texture mapping scale
+   //  for the current line (horizontal span)
+   //  at the given angle.
+   // rw_distance must be calculated first.
+   //
+   public int ScaleFromGlobalAngle (int visangle)
+   {
+       int         scale;
+       int         anglea;
+       int         angleb;
+       int         sinea;
+       int         sineb;
+       int         num;
+       int         den;
+
+       // UNUSED
+   /*
+   {
+       fixed_t     dist;
+       fixed_t     z;
+       fixed_t     sinv;
+       fixed_t     cosv;
+       
+       sinv = finesine[(visangle-rw_normalangle)>>ANGLETOFINESHIFT];   
+       dist = FixedDiv (rw_distance, sinv);
+       cosv = finecosine[(viewangle-visangle)>>ANGLETOFINESHIFT];
+       z = abs(FixedMul (dist, cosv));
+       scale = FixedDiv(projection, z);
+       return scale;
+   }
+   */
+
+       anglea = ANG90 + (visangle-viewangle);
+       angleb = ANG90 + (visangle-rw_normalangle);
+
+       // both sines are allways positive
+       sinea = finesine[anglea>>ANGLETOFINESHIFT]; 
+       sineb = finesine[angleb>>ANGLETOFINESHIFT];
+       num = FixedMul(projection,sineb)<<detailshift;
+       den = FixedMul(rw_distance,sinea);
+
+       if (den > num>>16)
+       {
+       scale = FixedDiv (num, den);
+
+       if (scale > 64*FRACUNIT)
+           scale = 64*FRACUNIT;
+       else if (scale < 256)
+           scale = 256;
+       }
+       else
+       scale = 64*FRACUNIT;
+       
+       return scale;
+   }
+
+
+
+   //
+   // R_InitTables
+   //
+   public void InitTables ()
+   {
+       // UNUSED: now getting from tables.c
+   /*
+       int     i;
+       float   a;
+       float   fv;
+       int     t;
+       
+       // viewangle tangent table
+       for (i=0 ; i<FINEANGLES/2 ; i++)
+       {
+       a = (i-FINEANGLES/4+0.5)*PI*2/FINEANGLES;
+       fv = FRACUNIT*tan (a);
+       t = fv;
+       finetangent[i] = t;
+       }
+       
+       // finesine table
+       for (i=0 ; i<5*FINEANGLES/4 ; i++)
+       {
+       // OPTIMIZE: mirro..
+       a = (i+0.5)*PI*2/FINEANGLES;
+       t = FRACUNIT*sin (a);
+       finesine[i] = t;
+       }
+   */
+
+   }
+
+   /** R_PointToDist
+    * 
+    * @param x fixed_t
+    * @param y fixed_t
+    * @return
+    */
+   
+   public int
+   PointToDist
+   ( int   x,
+     int   y )
+   {
+       int     angle;
+       int dx;
+       int dy;
+       int temp;
+       int dist;
+       
+       dx = Math.abs(x - viewx);
+       dy = Math.abs(y - viewy);
+       
+       if (dy>dx)
+       {
+       temp = dx;
+       dx = dy;
+       dy = temp;
+       }
+       
+       angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
+
+       // use as cosine
+       dist = FixedDiv (dx, finesine[angle] ); 
+       
+       return dist;
+   }
+   
 }

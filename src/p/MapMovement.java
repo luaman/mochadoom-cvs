@@ -13,7 +13,7 @@ import rr.subsector_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MapMovement.java,v 1.1 2010/08/24 14:57:42 velktron Exp $
+// $Id: MapMovement.java,v 1.2 2010/09/12 22:38:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,6 +28,9 @@ import rr.subsector_t;
 // GNU General Public License for more details.
 //
 // $Log: MapMovement.java,v $
+// Revision 1.2  2010/09/12 22:38:37  velktron
+// Some work
+//
 // Revision 1.1  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -44,7 +47,7 @@ import w.WadLoader;
 
 public class MapMovement{
 
-public static final String rcsid = "$Id: MapMovement.java,v 1.1 2010/08/24 14:57:42 velktron Exp $";
+public static final String rcsid = "$Id: MapMovement.java,v 1.2 2010/09/12 22:38:37 velktron Exp $";
 
 
 /////////////////// STATUS ///////////////////
@@ -75,9 +78,7 @@ int		tmfloorz, tmceilingz,	tmdropoffz;
 // so missiles don't explode against sky hack walls
 line_t		ceilingline;
 
-// keep track of special lines as they are hit,
-// but don't process them until the move is proven valid
-protected static final int MAXSPECIALCROSS	=	8;
+
 
 line_t[]		spechit=new line_t[MAXSPECIALCROSS];
 int		numspechit;

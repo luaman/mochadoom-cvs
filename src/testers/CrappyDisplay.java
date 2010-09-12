@@ -55,6 +55,7 @@ public class CrappyDisplay extends JFrame{
         Dimension size;
         Image crap;
         InputListener in;
+        Graphics2D g2d;
 
         public CrappyDisplay(BufferedImage[] bi) {
         	this.setBackground(Color.black);
@@ -70,6 +71,7 @@ public class CrappyDisplay extends JFrame{
             this.add(drawhere);
             in = new InputListener();
             this.addComponentListener(in);
+            g2d = (Graphics2D)drawhere.getGraphics();
         }
         
         public CrappyDisplay(BufferedImage bi) {
@@ -85,19 +87,29 @@ public class CrappyDisplay extends JFrame{
             this.add(drawhere);
             in = new InputListener();
             this.addComponentListener(in);
+            g2d = (Graphics2D)drawhere.getGraphics();
         }
         
         public void setPalette(int pal){
             this.palette=pal;
+            
         }
         
         public void update(Graphics g) {
            
-           Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
+           //Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
            //voli.getGraphics().drawImage(bi,0,0,null);
            g2d.drawImage(bi[palette],0,0,this);
            
         }
+        
+        public void update() {
+            
+            //Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
+            //voli.getGraphics().drawImage(bi,0,0,null);
+            g2d.drawImage(bi[palette],0,0,this);
+            
+         }
         
         public String processEvents(){
             StringBuffer tmp=new StringBuffer();

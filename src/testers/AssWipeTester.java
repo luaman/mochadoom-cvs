@@ -40,6 +40,8 @@ import f.Wiper;
 /** This is a very simple tester for the Automap. Combined with status bar + Level loader. */
 
 public class AssWipeTester {
+	
+	public static int WIDTH=320;
 
     public static void main(String[] argv) {
         try {
@@ -76,15 +78,16 @@ public class AssWipeTester {
     // "Hook" on screen 0.
     BufferedImage bi=((BufferedRenderer)V).screenbuffer[0];
     
-    JFrame frame = new JFrame("MochaDoom");
-    CrappyDisplay shit = new CrappyDisplay(bi);
-    frame.add(shit);
+    CrappyDisplay frame = new CrappyDisplay(bi);
+    frame.setTitle("MochaDoom");
+    
+
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
-    frame.setBounds(frame.getX(), frame.getY(), 640, 240);
+    frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
     
     int tck=system.GetTime();
     long a=System.nanoTime();
@@ -122,7 +125,7 @@ public class AssWipeTester {
     //I_UpdateNoBlit ();
     //M_Drawer ();                            // menu is drawn even on top of wipes
     //System.out.println(i);
-    shit.update(shit.getGraphics());
+    frame.update(null);
     frames++;
    
     
