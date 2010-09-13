@@ -30,7 +30,7 @@ actionf_p2	acp2;
 
 public interface think_t {
     public ActionType getType();
-    public void acp1(thinker_t actor);
+   /** public void acp1(thinker_t actor);
     public void acp2(player_t a, pspdef_t b);
-    public void acpv();
+    public void acpv();*/
 }

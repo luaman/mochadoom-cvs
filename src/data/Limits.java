@@ -13,6 +13,9 @@ public class Limits {
     public static final int MAXVISSPRITES = 128;
     public static final int MAXDRAWSEGS  =   256;
     public static final int MAXOPENINGS =SCREENWIDTH*64;
+    public static final int CEILSPEED = FRACUNIT ;
+    public static final int CEILWAIT =150;
+    public static final int MAXCEILINGS =30;
     
     // These are only used in the renderer, effectively putting 
     // a limit to the size of lookup tables for screen buffers.
@@ -31,6 +34,14 @@ public class Limits {
 
     // Some quirky engine limits
     public static final int MAXEVENTS       =64;
+	// max # of wall switches in a level
+	public static final int MAXSWITCHES = 50;
+
+	// 4 players, 4 buttons each at once, max.
+	public static final int MAXBUTTONS = 16;
+
+	// 1 second, in ticks.
+	public static final int BUTTONTIME = 35;
     
  /** keep track of special lines as they are hit,
   *  but don't process them until the move is proven valid
@@ -76,5 +87,8 @@ public class Limits {
     public static final int SAVESTRINGSIZE = 24;
     public static final int VERSIONSIZE =    16; 
 
+	public static final int PLATWAIT = 3;
+	public static final int PLATSPEED = FRACUNIT;
+	public static final int MAXPLATS = 30;
     
 }

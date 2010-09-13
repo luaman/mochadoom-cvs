@@ -26,7 +26,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Interaction.java,v 1.3 2010/09/13 15:39:17 velktron Exp $
+// $Id: Interaction.java,v 1.4 2010/09/13 23:09:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -41,6 +41,9 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: Interaction.java,v $
+// Revision 1.4  2010/09/13 23:09:51  velktron
+// More "unified game state" work
+//
 // Revision 1.3  2010/09/13 15:39:17  velktron
 // Moving towards an unified gameplay approach...
 //
@@ -62,7 +65,7 @@ import doom.weapontype_t;
 public class Interaction {
 
 
-  public static final String rcsid = "$Id: Interaction.java,v 1.3 2010/09/13 15:39:17 velktron Exp $";
+  public static final String rcsid = "$Id: Interaction.java,v 1.4 2010/09/13 23:09:51 velktron Exp $";
 
 /////////////////// STATUS ///////////////////
   
@@ -423,264 +426,12 @@ public class Interaction {
   }
 
 
-  //
-  // KillMobj
-  //
-  public void
-  KillMobj
-  ( mobj_t   source,
-    mobj_t   target )
-  {
-      mobjtype_t  item;
-      mobj_t mo;
-      
-      target.flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
-
-      if (target.type != mobjtype_t.MT_SKULL)
-      target.flags &= ~MF_NOGRAVITY;
-
-      target.flags |= MF_CORPSE|MF_DROPOFF;
-      target.height >>= 2;
-
-      if (source!=null && source.player!=null)
-      {
-      // count for intermission
-      if ((target.flags & MF_COUNTKILL)!=0)
-          source.player.killcount++;    
-
-      if (target.player!=null) ;
-         // TODO: source.player.frags[target.player-DS.players]++;
-         // It's probably intended to increment the frags of source player vs target player. Lookup? 
-      }
-      else if (!DS.netgame && ((target.flags & MF_COUNTKILL)!=0) )
-      {
-      // count all monster deaths,
-      // even those caused by other monsters
-      DS.players[0].killcount++;
-      }
-      
-      if (target.player!=null)
-      {
-      // count environment kills against you
-      if (source==null)    
-          // TODO: some way to indentify which one of the 
-          // four possiblelayers is the current player
-          
-          target.player.frags[target.player.identify()]++;
-              
-      target.flags &= ~MF_SOLID;
-      target.player.playerstate = PST_DEAD;
-      //TODO: DropWeapon (target.player); // in PSPR
-
-      if (target.player == DS.players[DS.consoleplayer]
-          && DS.automapactive)
-      {
-          // don't die in auto map,
-          // switch view prior to dying
-          AM.Stop ();
-      }
-      
-      }
-
-      if (target.health < -target.info.spawnhealth 
-      && target.info.xdeathstate!=null)
-      {
-          target.SetMobjState(target.info.xdeathstate);
-      }
-      else
-          target.SetMobjState (target.info.deathstate);
-      target.tics -= RND.P_Random()&3;
-
-      if (target.tics < 1)
-      target.tics = 1;
-          
-      //  I_StartSound (&actor.r, actor.info.deathsound);
-
-
-      // Drop stuff.
-      // This determines the kind of object spawned
-      // during the death frame of a thing.
-      switch (target.type)
-      {
-        case MT_WOLFSS:
-        case MT_POSSESSED:
-      item = mobjtype_t.MT_CLIP;
-      break;
-      
-        case MT_SHOTGUY:
-      item = mobjtype_t.MT_SHOTGUN;
-      break;
-      
-        case MT_CHAINGUY:
-      item = mobjtype_t.MT_CHAINGUN;
-      break;
-      
-        default:
-      return;
-      }
-
-      mo = P_SpawnMobj (target.x,target.y,ONFLOORZ, item);
-      mo.flags |= MF_DROPPED;    // special versions of items
-  }
+  
 
 
 
 
-  //
-  // P_DamageMobj
-  // Damages both enemies and players
-  // "inflictor" is the thing that caused the damage
-  //  creature or missile, can be NULL (slime, etc)
-  // "source" is the thing to target after taking damage
-  //  creature or NULL
-  // Source and inflictor are the same for melee attacks.
-  // Source can be NULL for slime, barrel explosions
-  // and other environmental stuff.
-  //
-  public void
-  P_DamageMobj
-  ( mobj_t   target,
-    mobj_t   inflictor,
-    mobj_t   source,
-    int       damage )
-  {
-      int    ang; // unsigned
-      int     saved;
-      player_t   player;
-      int thrust; // fixed_t
-      int     temp;
-      
-      if ( !flags(target.flags, MF_SHOOTABLE))
-      return; // shouldn't happen...
-          
-      if (target.health <= 0)
-      return;
-
-      if ( flags(target.flags , MF_SKULLFLY ))
-      {
-      target.momx = target.momy = target.momz = 0;
-      }
-      
-      player = target.player;
-      if ((player!=null) && DS.gameskill == skill_t.sk_baby)
-      damage >>= 1;   // take half damage in trainer mode
-          
-
-      // Some close combat weapons should not
-      // inflict thrust and push the victim out of reach,
-      // thus kick away unless using the chainsaw.
-      if ((inflictor !=null)
-      && !flags(target.flags, MF_NOCLIP)
-      && (source==null
-          || source.player==null
-          || source.player.readyweapon != weapontype_t.wp_chainsaw))
-      {
-      ang = R.PointToAngle2 ( inflictor.x,
-                  inflictor.y,
-                  target.x,
-                  target.y);
-          
-      thrust = damage*(FRACUNIT>>3)*100/target.info.mass;
-
-      // make fall forwards sometimes
-      if ( (damage < 40)
-           && (damage > target.health)
-           && (target.z - inflictor.z > 64*FRACUNIT)
-           && flags(RND.P_Random(),1) )
-      {
-          ang += ANG180;
-          thrust *= 4;
-      }
-          
-      ang >>= ANGLETOFINESHIFT;
-      target.momx += FixedMul (thrust, finecosine[ang]);
-      target.momy += FixedMul (thrust, finesine[ang]);
-      }
-      
-      // player specific
-      if (player!=null)
-      {
-      // end of game hell hack
-      if (target.subsector.sector.special == 11
-          && damage >= target.health)
-      {
-          damage = target.health - 1;
-      }
-      
-
-      // Below certain threshold,
-      // ignore damage in GOD mode, or with INVUL power.
-      if ( damage < 1000
-           && ( flags(player.cheats,player_t.CF_GODMODE))
-            || player.powers[pw_invulnerability]!=0 ) 
-      {
-          return;
-      }
-      
-      if (player.armortype!=0)
-      {
-          if (player.armortype == 1)
-          saved = damage/3;
-          else
-          saved = damage/2;
-          
-          if (player.armorpoints[0] <= saved)
-          {
-          // armor is used up
-          saved = player.armorpoints[0];
-          player.armortype = 0;
-          }
-          player.armorpoints[0] -= saved;
-          damage -= saved;
-      }
-      player.health[0] -= damage;   // mirror mobj health here for Dave
-      if (player.health[0] < 0)
-          player.health[0] = 0;
-      
-      player.attacker = source;
-      player.damagecount += damage;  // add damage after armor / invuln
-
-      if (player.damagecount > 100)
-          player.damagecount = 100;  // teleport stomp does 10k points...
-      
-      temp = damage < 100 ? damage : 100;
-
-      if (player == DS.players[DS.consoleplayer]) ;
-          // TODO: I_Tactile (40,10,40+temp*2);
-      }
-      
-      // do the damage    
-      target.health -= damage;   
-      if (target.health <= 0)
-      {
-      KillMobj (source, target);
-      return;
-      }
-
-      if ( (RND.P_Random () < target.info.painchance)
-       && !flags(target.flags,MF_SKULLFLY) )
-      {
-      target.flags |= MF_JUSTHIT;    // fight back!
-      
-      target.SetMobjState (target.info.painstate);
-      }
-              
-      target.reactiontime = 0;       // we're awake now...   
-
-      if ( ((target.threshold==0) || (target.type == mobjtype_t.MT_VILE))
-       && (source!=null) && (source != target)
-       && (source.type != mobjtype_t.MT_VILE))
-      {
-      // if not intent on another player,
-      // chase after this one
-      target.target = source;
-      target.threshold = BASETHRESHOLD;
-      if (target.state == states[target.info.spawnstate.ordinal()]
-          && target.info.seestate != statenum_t.S_NULL)
-          target.SetMobjState (target.info.seestate);
-      }
-              
-  }
+ 
 
 
 }

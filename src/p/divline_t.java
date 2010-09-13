@@ -1,9 +1,7 @@
 package p;
 
-import static m.fixed_t.FixedDiv;
-import static m.fixed_t.FixedMul;
+import static m.fixed_t.*;
 import rr.line_t;
-import m.fixed_t;
 
 //
 // P_MAPUTL
@@ -90,7 +88,55 @@ public class divline_t {
       this.dy = li.dy;
      }
 
+     /**
+ 	  * P_DivlineSide
+ 	  * Returns side 0 (front), 1 (back), or 2 (on).
+ 	 */
+ 	public int
+ 	DivlineSide
+ 	( int	x,
+ 	  int	y)
+ 	{
+ 	    int	dx; // fixed_t
+ 	    int	dy;
+ 	    int	left;
+ 	    int	right;
 
+ 	    if (this.dx==0)
+ 	    {
+ 		if (x==this.x)
+ 		    return 2;
+ 		
+ 		if (x <= this.x)
+ 		    return (this.dy > 0)?1:0;
+
+ 		return (this.dy < 0)?1:0;
+ 	    }
+ 	    
+ 	    if (this.dy==0)
+ 	    {
+ 		if (x==this.y)
+ 		    return 2;
+
+ 		if (y <= this.y)
+ 		    return (this.dx < 0)?1:0;
+
+ 		return (this.dx > 0)?1:0;
+ 	    }
+ 		
+ 	    dx = (x - this.x);
+ 	    dy = (y - this.y);
+
+ 	    left =  (this.dy>>FRACBITS) * (dx>>FRACBITS);
+ 	    right = (dy>>FRACBITS) * (this.dx>>FRACBITS);
+ 		
+ 	    if (right < left)
+ 		return 0;	// front side
+ 	    
+ 	    if (left == right)
+ 		return 2;
+ 	    return 1;		// back side
+ 	}
      
      
  }

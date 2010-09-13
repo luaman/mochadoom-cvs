@@ -72,7 +72,7 @@ public class line_t implements Interceptable{
  * @return 0 or 1 (false, true) - (front, back)
  */
       public boolean
-      P_PointOnLineSide
+      PointOnLineSide
       ( int   x,
       int   y)
 
@@ -113,7 +113,7 @@ public class line_t implements Interceptable{
        *@param line_t
        */
       public int
-      P_BoxOnLineSide
+      BoxOnLineSide
       ( int[]  tmbox)
       {
        boolean     p1=false;
@@ -142,13 +142,13 @@ public class line_t implements Interceptable{
        break;
        
          case ST_POSITIVE:
-       p1 = P_PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXTOP]);
-       p2 = P_PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
+       p1 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXTOP]);
+       p2 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
        break;
        
          case ST_NEGATIVE:
-       p1 = P_PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXTOP]);
-       p2 = P_PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
+       p1 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXTOP]);
+       p2 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
        break;
        }
 

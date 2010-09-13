@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.14 2010/09/12 22:38:37 velktron Exp $
+// $Id: Renderer.java,v 1.15 2010/09/13 23:09:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.15  2010/09/13 23:09:51  velktron
+// More "unified game state" work
+//
 // Revision 1.14  2010/09/12 22:38:37  velktron
 // Some work
 //
@@ -136,8 +139,7 @@ public class Renderer{
 public static int FIELDOFVIEW	=	2048;	
 public static int			viewangleoffset;
 
-// increment every time a check is made
-public static int			validcount = 1;		
+	
 
 // TODO
 lighttable_t[]		fixedcolormap;

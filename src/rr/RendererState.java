@@ -207,7 +207,7 @@ public abstract class RendererState {
 
    /** Increment every time a check is made 
     *  For some reason, this needs to be visible even by enemies thinking :-S*/
-   public int           validcount = 1;     
+   public int validcount = 1;     
 
    /** Use in conjunction with pfixedcolormap */
    byte[]      fixedcolormap;

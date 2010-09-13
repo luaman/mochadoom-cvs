@@ -3,7 +3,7 @@ package p;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LocalPlay.java,v 1.3 2010/09/13 15:39:17 velktron Exp $
+// $Id: LocalPlay.java,v 1.4 2010/09/13 23:09:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -525,7 +525,7 @@ public class MapObjects {
         if ( (mobj.z != mobj.floorz)
          || mobj.momz )
         {
-        P_ZMovement (mobj);
+        	mobj.ZMovement ();
         
         // FIXME: decent NOP/NULL/Nil function pointer please.
         if (mobj.thinker.function.acv == (actionf_v) (-1))

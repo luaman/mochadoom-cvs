@@ -165,6 +165,57 @@ public class node_t {
          // back side
          return 1;           
      }
+
+  /**
+   * Clone of divline_t's method. Same contract, but working on node_t's to avoid casts.
+   * P_DivlineSide
+   * Returns side 0 (front), 1 (back), or 2 (on).
+   */
+ 	public int
+ 	DivlineSide
+ 	( int	x,
+ 	  int	y)
+ 	{
+ 	    int	dx; // fixed_t
+ 	    int	dy;
+ 	    int	left;
+ 	    int	right;
+
+ 	    if (this.dx==0)
+ 	    {
+ 		if (x==this.x)
+ 		    return 2;
+ 		
+ 		if (x <= this.x)
+ 		    return (this.dy > 0)?1:0;
+
+ 		return (this.dy < 0)?1:0;
+ 	    }
+ 	    
+ 	    if (this.dy==0)
+ 	    {
+ 		if (x==this.y)
+ 		    return 2;
+
+ 		if (y <= this.y)
+ 		    return (this.dx < 0)?1:0;
+
+ 		return (this.dx > 0)?1:0;
+ 	    }
+ 		
+ 	    dx = (x - this.x);
+ 	    dy = (y - this.y);
+
+ 	    left =  (this.dy>>FRACBITS) * (dx>>FRACBITS);
+ 	    right = (dy>>FRACBITS) * (this.dx>>FRACBITS);
+ 		
+ 	    if (right < left)
+ 		return 0;	// front side
+ 	    
+ 	    if (left == right)
+ 		return 2;
+ 	    return 1;		// back side
+ 	}
      
  }
 

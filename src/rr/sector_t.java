@@ -50,4 +50,7 @@ public class sector_t {
      // MAES: make this line_t[] for now?
      public line_t[] lines;
      
+     /** Use for internal identification */
+     public int id;
+     
  }
