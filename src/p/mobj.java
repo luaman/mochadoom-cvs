@@ -1,104 +1,6 @@
 package p;
 
-import data.Defines.*;
-
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id: mobj.java,v 1.2 2010/08/25 00:50:59 velktron Exp $
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This program is free software; you can redistribute it and/or
-// modify it under the terms of the GNU General Public License
-// as published by the Free Software Foundation; either version 2
-// of the License, or (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// $Log: mobj.java,v $
-// Revision 1.2  2010/08/25 00:50:59  velktron
-// Some more work...
-//
-// Revision 1.1  2010/06/30 08:58:50  velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still  being worked on. For a good place to start and get an idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1  2010/06/29 11:07:34  velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete, and there's still mixed C code in there. I suggest you load everything up in Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you  can get an idea of how a few of the implemented stuff works.
-//
-//
-// DESCRIPTION:
-//	Moving object handling. Spawn functions.
-//
-//-----------------------------------------------------------------------------
-
-/*
-#include "i_system.h"
-#include "z_zone.h"
-#include "m_random.h"
-
-#include "doomdef.h"
-#include "p_local.h"
-#include "sounds.h"
-
-#include "st_stuff.h"
-#include "hu_stuff.h"
-
-#include "s_sound.h"
-
-#include "doomstat.h"
-*/
-
-
-//Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-//$Id: mobj.java,v 1.2 2010/08/25 00:50:59 velktron Exp $
-//
-//Copyright (C) 1993-1996 by id Software, Inc.
-//
-//This program is free software; you can redistribute it and/or
-//modify it under the terms of the GNU General Public License
-//as published by the Free Software Foundation; either version 2
-//of the License, or (at your option) any later version.
-//
-//This program is distributed in the hope that it will be useful,
-//but WITHOUT ANY WARRANTY; without even the implied warranty of
-//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//GNU General Public License for more details.
-//
-//DESCRIPTION:
-//Map Objects, MObj, definition and handling.
-//
-//-----------------------------------------------------------------------------
-
-
-//Basics.
-
-import static data.tables.*;
-import static m.fixed_t.*;
-
-//We need the thinker_t stuff.
-import doom.*;
-
-//We need the WAD data structure for Map things,
-//from the THINGS lump.
-import data.doomdata.*;
-
-//States are tied to finite states are
-//tied to animation frames.
-//Needs precompiled tables/data structures.
-import data.info.*;
+import doom.thinker_t;
 
 
 
@@ -170,7 +72,7 @@ import data.info.*;
 //
 //Misc. mobj flags
 //
-public class mobj implements thinker_t{
+public class mobj extends thinker_t{
 
   // Call P_SpecialThing when touched.
   public static int MF_SPECIAL        = 1;
@@ -255,37 +157,6 @@ public class mobj implements thinker_t{
   public static int    MF_TRANSLATION     = 0xc000000;
   // Hmm ???.
   public static int MF_TRANSSHIFT = 26;
-@Override
-public think_t getFunction() {
-	// TODO Auto-generated method stub
-	return null;
-}
-@Override
-public thinker_t getNext() {
-	// TODO Auto-generated method stub
-	return null;
-}
-@Override
-public thinker_t getPrev() {
-	// TODO Auto-generated method stub
-	return null;
-}
-@Override
-public void setFunction(think_t acv) {
-	// TODO Auto-generated method stub
-	
-}
-@Override
-public void setNext(thinker_t t) {
-	// TODO Auto-generated method stub
-	
-}
-@Override
-public void setPrev(thinker_t t) {
-	// TODO Auto-generated method stub
-	
-}
-  
   
 //MAES: mobjflag_t types are never instantiated or set as fields. No reason to exist as such.
 //} mobjflag_t;
@@ -296,9 +167,6 @@ public void setPrev(thinker_t t) {
 
     /*
     
-void G_PlayerReborn (int player);
-void P_SpawnMapThing (mapthing_t*	mthing);
-
 
 //
 // P_SetMobjState
@@ -339,26 +207,6 @@ P_SetMobjState
     return true;
 }
 
-
-//
-// P_ExplodeMissile  
-//
-void P_ExplodeMissile (mobj_t* mo)
-{
-    mo->momx = mo->momy = mo->momz = 0;
-
-    P_SetMobjState (mo, mobjinfo[mo->type].deathstate);
-
-    mo->tics -= P_Random()&3;
-
-    if (mo->tics < 1)
-	mo->tics = 1;
-
-    mo->flags &= ~MF_MISSILE;
-
-    if (mo->info->deathsound)
-	S_StartSound (mo, mo->info->deathsound);
-}
 
 
 //

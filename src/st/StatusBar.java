@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.9 2010/09/08 21:09:01 velktron Exp $
+// $Id: StatusBar.java,v 1.10 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.10  2010/09/13 15:39:17  velktron
+// Moving towards an unified gameplay approach...
+//
 // Revision 1.9  2010/09/08 21:09:01  velktron
 // Better display "driver".
 //
@@ -94,13 +97,14 @@ import doom.player_t;
 import doom.weapontype_t;
 
 import rr.Renderer;
+import rr.UnifiedRenderer;
 import rr.patch_t;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.9 2010/09/08 21:09:01 velktron Exp $";
+        "$Id: StatusBar.java,v 1.10 2010/09/13 15:39:17 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -108,7 +112,7 @@ public class StatusBar implements DoomStatusBarInterface {
 
     protected WadLoader W;
 
-    protected Renderer R;
+    protected UnifiedRenderer R;
 
     protected doomstat DS;
 

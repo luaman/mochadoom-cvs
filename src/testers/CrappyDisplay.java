@@ -105,7 +105,7 @@ public class CrappyDisplay extends JFrame{
         
         public void update() {
             
-            //Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
+            Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
             //voli.getGraphics().drawImage(bi,0,0,null);
             g2d.drawImage(bi[palette],0,0,this);
             

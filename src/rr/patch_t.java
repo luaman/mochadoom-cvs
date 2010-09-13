@@ -72,6 +72,7 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
         b.order(ByteOrder.LITTLE_ENDIAN);
         
         this.width=b.getShort();
+        
         this.height=b.getShort();
         this.leftoffset=b.getShort();
         this.topoffset=b.getShort();
@@ -96,4 +97,5 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
         }
 
     }
+   
 }

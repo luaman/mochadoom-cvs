@@ -13,7 +13,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.6 2010/09/10 17:35:49 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.7 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,6 +27,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.7  2010/09/13 15:39:17  velktron
+// Moving towards an unified gameplay approach...
+//
 // Revision 1.6  2010/09/10 17:35:49  velktron
 // DoomGame, Menu, renderers
 //
@@ -120,7 +123,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.6 2010/09/10 17:35:49 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.7 2010/09/13 15:39:17 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -339,19 +342,34 @@ public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
         BufferedImage[] b=new BufferedImage[icms.length];
     // Map databuffer to one of the screens.
 
+        // Create the first of the screens.
+        this.icm=icms[screen];
+        setScreen(0,this.getWidth(),this.getHeight());
+        b[screen]=this.screenbuffer[screen];
+            
         
         // MEGA hack: all images share the same raster data.
         WritableRaster r=    screenbuffer[screen].getRaster();
         
+        
+        
         for (int i=0;i<icms.length;i++){
+            if (i!=screen)
             b[i]=new BufferedImage(icms[i],r, false,null);
+            
         }
+        
+        this.report(b);
+        
         
         return b;
         
     }
 
+public void report(BufferedImage[] b){
+    System.out.println("Main video buffer "+screens[0]);
+    for (int i=0;i<b.length;i++){
+    System.out.println(((Object)b[i].getRaster()).toString()+" "+b[i].getRaster().hashCode()+" "+((DataBufferByte)(b[i].getRaster().getDataBuffer())).getData());
+    }
 }
-
-
-
+}

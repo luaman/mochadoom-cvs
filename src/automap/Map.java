@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.12 2010/09/08 21:09:01 velktron Exp $
+// $Id: Map.java,v 1.13 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.13  2010/09/13 15:39:17  velktron
+// Moving towards an unified gameplay approach...
+//
 // Revision 1.12  2010/09/08 21:09:01  velktron
 // Better display "driver".
 //
@@ -108,7 +111,7 @@ DoomVideoRenderer V;
 LevelLoader P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.12 2010/09/08 21:09:01 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.13 2010/09/13 15:39:17 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -1517,7 +1520,7 @@ public final  void drawCrosshair(int color)
 public final  void Drawer ()
 {
     if (!DS.automapactive) return;
-
+    
     clearFB((byte)BACKGROUND); // BACKGROUND
     if (grid)
     drawGrid(GRIDCOLORS);

@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.12 2010/09/09 16:09:09 velktron Exp $
+// $Id: Defines.java,v 1.13 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -570,25 +570,25 @@ public static final int SAVESTRINGSIZE = 24;
     //==================== Stuff from r_local.c =========================================
 
     
-    public static int FLOATSPEED        =(FRACUNIT*4);
+    public static final int FLOATSPEED        =(FRACUNIT*4);
 
-    public static int VIEWHEIGHT    =   (41*FRACUNIT);
+    public static final int VIEWHEIGHT    =   (41*FRACUNIT);
 
     // mapblocks are used to check movement
     // against lines and things
-    public static int MAPBLOCKUNITS=    128;
-    public static int MAPBLOCKSIZE  =(MAPBLOCKUNITS*FRACUNIT);
-    public static int MAPBLOCKSHIFT =(FRACBITS+7);
-    public static int MAPBMASK      =(MAPBLOCKSIZE-1);
-    public static int MAPBTOFRAC=       (MAPBLOCKSHIFT-FRACBITS);
+    public static final int MAPBLOCKUNITS=    128;
+    public static final int MAPBLOCKSIZE  =(MAPBLOCKUNITS*FRACUNIT);
+    public static final int MAPBLOCKSHIFT =(FRACBITS+7);
+    public static final int MAPBMASK      =(MAPBLOCKSIZE-1);
+    public static final int MAPBTOFRAC=       (MAPBLOCKSHIFT-FRACBITS);
 
 
     // player radius for movement checking
-    public static int PLAYERRADIUS  =16*FRACUNIT;
+    public static final int PLAYERRADIUS  =16*FRACUNIT;
 
 
 
-    public static int GRAVITY   =   FRACUNIT;
+    public static final int GRAVITY   =   FRACUNIT;
 
 
     public static int USERANGE      =(64*FRACUNIT);
@@ -1685,5 +1685,5 @@ public static final int SAVESTRINGSIZE = 24;
     
  
 static final String
-rcsid = "$Id: Defines.java,v 1.12 2010/09/09 16:09:09 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.13 2010/09/13 15:39:17 velktron Exp $";
 }

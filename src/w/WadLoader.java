@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.14 2010/09/09 01:13:19 velktron Exp $
+// $Id: WadLoader.java,v 1.15 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.15  2010/09/13 15:39:17  velktron
+// Moving towards an unified gameplay approach...
+//
 // Revision 1.14  2010/09/09 01:13:19  velktron
 // MUCH better rendering and testers.
 //
@@ -654,7 +657,7 @@ public class WadLoader {
 
         // ??? I_EndRead ();
         } catch (Exception e) {
-            System.err.println("W_ReadLump: could not read lump "+ lump);
+            system.Error("W_ReadLump: could not read lump "+ lump);
             e.printStackTrace();
         }
 

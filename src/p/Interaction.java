@@ -2,13 +2,17 @@ package p;
 
 import static data.Defines.*;
 import static data.Limits.*;
+import static p.MapUtils.flags;
 import static doom.items.*;
 import static p.mobj.*;
 import static m.fixed_t.*;
+import static data.Tables.*;
 import static doom.englsh.*;
+import static data.info.*;
 import m.random;
 import automap.DoomAutoMap;
 import rr.Renderer;
+import rr.RendererState;
 import st.DoomStatusBarInterface;
 import v.DoomVideoRenderer;
 import w.WadLoader;
@@ -22,7 +26,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Interaction.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
+// $Id: Interaction.java,v 1.3 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -37,6 +41,9 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: Interaction.java,v $
+// Revision 1.3  2010/09/13 15:39:17  velktron
+// Moving towards an unified gameplay approach...
+//
 // Revision 1.2  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -55,7 +62,7 @@ import doom.weapontype_t;
 public class Interaction {
 
 
-  public static final String rcsid = "$Id: Interaction.java,v 1.2 2010/09/02 15:56:54 velktron Exp $";
+  public static final String rcsid = "$Id: Interaction.java,v 1.3 2010/09/13 15:39:17 velktron Exp $";
 
 /////////////////// STATUS ///////////////////
   
@@ -63,6 +70,7 @@ public class Interaction {
   doomstat DS;
   DoomAutoMap AM;
   random RND;
+  RendererState R;
   
 /*
   // Data.
@@ -85,298 +93,6 @@ public class Interaction {
   #pragma implementation "p_inter.h"
   #endif
   #include "p_inter.h" */
-
-
-  public static final int BONUSADD =   6;
-
-
-
-
-  // a weapon is found with two clip loads,
-  // a big item has five clip loads
-  int[] maxammo = {200, 50, 300, 50};
-  int[] clipammo = {10, 4, 20, 1};
-
-
-  //
-  // GET STUFF
-  //
-
-
-  /**
-   *   //
-  // P_GiveAmmo
-  // Num is the number of clip loads,
-  // not the individual count (0= 1/2 clip).
-  // Returns false if the ammo can't be picked up at all
-   * @param player
-   * @param ammo intended to be ammotype_t.
-   */
-  public boolean
-  GiveAmmo
-  ( player_t player,
-    ammotype_t    amm,
-    int       num )
-  {
-      int     oldammo;
-      int ammo=amm.ordinal();
-      if (ammo == ammotype_t.am_noammo.ordinal())
-      return false;
-          
-      if (ammo < 0 || ammo > NUMAMMO)
-      system.Error ("P_GiveAmmo: bad type %i", ammo); 
-          
-      if ( player.ammo[ammo] == player.maxammo[ammo]  )
-      return false;
-          
-      if (num!=0)
-      num *= clipammo[ammo];
-      else
-      num = clipammo[ammo]/2;
-      
-      if (DS.gameskill == skill_t.sk_baby
-      || DS.gameskill == skill_t.sk_nightmare)
-      {
-      // give double ammo in trainer mode,
-      // you'll need in nightmare
-      num <<= 1;
-      }
-      
-          
-      oldammo = player.ammo[ammo];
-      player.ammo[ammo] += num;
-
-      if (player.ammo[ammo] > player.maxammo[ammo])
-      player.ammo[ammo] = player.maxammo[ammo];
-
-      // If non zero ammo, 
-      // don't change up weapons,
-      // player was lower on purpose.
-      if (oldammo!=0)
-      return true;    
-
-      // We were down to zero,
-      // so select a new weapon.
-      // Preferences are not user selectable.
-      switch (ammotype_t.values()[ammo])
-      {
-        case am_clip:
-      if (player.readyweapon == weapontype_t.wp_fist)
-      {
-          if (player.weaponowned[weapontype_t.wp_chaingun.ordinal()])
-          player.pendingweapon = weapontype_t.wp_chaingun;
-          else
-          player.pendingweapon = weapontype_t.wp_pistol;
-      }
-      break;
-      
-        case am_shell:
-      if (player.readyweapon == weapontype_t.wp_fist
-          || player.readyweapon == weapontype_t.wp_pistol)
-      {
-          if (player.weaponowned[weapontype_t.wp_shotgun.ordinal()])
-          player.pendingweapon = weapontype_t.wp_shotgun;
-      }
-      break;
-      
-        case am_cell:
-      if (player.readyweapon == weapontype_t.wp_fist
-          || player.readyweapon == weapontype_t.wp_pistol)
-      {
-          if (player.weaponowned[weapontype_t.wp_plasma.ordinal()])
-          player.pendingweapon = weapontype_t.wp_plasma;
-      }
-      break;
-      
-        case am_misl:
-      if (player.readyweapon == weapontype_t.wp_fist)
-      {
-          if (player.weaponowned[weapontype_t.wp_missile.ordinal()])
-          player.pendingweapon = weapontype_t.wp_missile;
-      }
-        default:
-      break;
-      }
-      
-      return true;
-  }
-
-
-  //
-  // P_GiveWeapon
-  // The weapon name may have a MF_DROPPED flag ored in.
-  //
-  public boolean
-  GiveWeapon
-  ( player_t player,
-    weapontype_t  weapn,
-    boolean   dropped )
-  {
-      boolean gaveammo;
-      boolean gaveweapon;
-      int weapon=weapn.ordinal();
-      
-      if (DS.netgame
-      && (DS.deathmatch!=true) // ???? was "2"
-       && !dropped )
-      {
-      // leave placed weapons forever on net games
-      if (player.weaponowned[weapon])
-          return false;
-
-      player.bonuscount += BONUSADD;
-      player.weaponowned[weapon] = true;
-
-      if (DS.deathmatch)
-          GiveAmmo (player, weaponinfo[weapon].ammo, 5);
-      else
-          GiveAmmo (player, weaponinfo[weapon].ammo, 2);
-      player.pendingweapon = weapn;
-
-      if (player == DS.players[DS.consoleplayer])
-          // TODO: S_StartSound (null, sfx_wpnup);
-      return false;
-      }
-      
-      if (weaponinfo[weapon].ammo != ammotype_t.am_noammo)
-      {
-      // give one clip with a dropped weapon,
-      // two clips with a found weapon
-      if (dropped)
-          gaveammo = GiveAmmo (player, weaponinfo[weapon].ammo, 1);
-      else
-          gaveammo = GiveAmmo (player, weaponinfo[weapon].ammo, 2);
-      }
-      else
-      gaveammo = false;
-      
-      if (player.weaponowned[weapon])
-      gaveweapon = false;
-      else
-      {
-      gaveweapon = true;
-      player.weaponowned[weapon] = true;
-      player.pendingweapon = weapn;
-      }
-      
-      return (gaveweapon || gaveammo);
-  }
-
-   
-
-  /**
-   * P_GiveBody
-   * Returns false if the body isn't needed at all
-   */
-  
-  public  boolean
-  GiveBody
-  ( player_t player,
-    int       num )
-  {
-      if (player.health >= MAXHEALTH)
-      return false;
-          
-      player.health += num;
-      if (player.health > MAXHEALTH)
-      player.health = MAXHEALTH;
-      player.mo.health = player.health;
-      
-      return true;
-  }
-
-
-
-  /**
-   * P_GiveArmor
-   * Returns false if the armor is worse
-   * than the current armor.
-   */
-  
-  public boolean
-  GiveArmor
-  ( player_t player,
-    int       armortype )
-  {
-      int     hits;
-      
-      hits = armortype*100;
-      if (player.armorpoints >= hits)
-      return false;   // don't pick up
-          
-      player.armortype = armortype;
-      player.armorpoints = hits;
-      
-      return true;
-  }
-
-
-
-  //
-  // P_GiveCard
-  //
-  public void
-  GiveCard
-  ( player_t player,
-    card_t    crd )
-  {
-      int card=crd.ordinal();
-      if (player.cards[card])
-      return;
-      
-      player.bonuscount = BONUSADD;
-      player.cards[card] = true;
-  }
-
-
-  //
-  // P_GivePower
-  //
-  public boolean
-  GivePower
-  ( player_t player,
-    int /*powertype_t*/   power ) // MAES: I didn't change this!
-  {
-      if (power == pw_invulnerability)
-      {
-      player.powers[power] = INVULNTICS;
-      return true;
-      }
-      
-      if (power == pw_invisibility)
-      {
-      player.powers[power] = INVISTICS;
-      player.mo.flags |= MF_SHADOW;
-      return true;
-      }
-      
-      if (power == pw_infrared)
-      {
-      player.powers[power] = INFRATICS;
-      return true;
-      }
-      
-      if (power == pw_ironfeet)
-      {
-      player.powers[power] = IRONTICS;
-      return true;
-      }
-      
-      if (power == pw_strength)
-      {
-      GiveBody (player, 100);
-      player.powers[power] = 1;
-      return true;
-      }
-      
-      if (player.powers[power]!=0)
-      return false;   // already got it
-          
-      player.powers[power] = 1;
-      return true;
-  }
-
-
 
   /**
    * P_TouchSpecialThing
@@ -414,40 +130,40 @@ public class Interaction {
       {
       // armor
         case SPR_ARM1:
-      if (!GiveArmor (player, 1))
+      if (!player.GiveArmor (1))
           return;
       player.message = GOTARMOR;
       break;
           
         case SPR_ARM2:
-      if (!GiveArmor (player, 2))
+      if (!player.GiveArmor (2))
           return;
       player.message = GOTMEGA;
       break;
       
       // bonus items
         case SPR_BON1:
-      player.health++;       // can go over 100%
-      if (player.health > 200)
-          player.health = 200;
-      player.mo.health = player.health;
+      player.health[0]++;       // can go over 100%
+      if (player.health[0] > 200)
+          player.health[0] = 200;
+      player.mo.health = player.health[0];
       player.message = GOTHTHBONUS;
       break;
       
         case SPR_BON2:
-      player.armorpoints++;      // can go over 100%
-      if (player.armorpoints > 200)
-          player.armorpoints = 200;
+      player.armorpoints[0]++;      // can go over 100%
+      if (player.armorpoints[0] > 200)
+          player.armorpoints[0] = 200;
       if (player.armortype==0)
           player.armortype = 1;
       player.message = GOTARMBONUS;
       break;
       
         case SPR_SOUL:
-      player.health += 100;
-      if (player.health > 200)
-          player.health = 200;
-      player.mo.health = player.health;
+      player.health[0] += 100;
+      if (player.health[0] > 200)
+          player.health[0] = 200;
+      player.mo.health = player.health[0];
       player.message = GOTSUPER;
       sound = sfxenum_t.sfx_getpow;
       break;
@@ -455,9 +171,9 @@ public class Interaction {
         case SPR_MEGA:
       if (DS.gamemode != GameMode_t.commercial)
           return;
-      player.health = 200;
-      player.mo.health = player.health;
-      GiveArmor (player,2);
+      player.health[0] = 200;
+      player.mo.health = player.health[0];
+      player.GiveArmor (2);
       player.message = GOTMSPHERE;
       sound = sfxenum_t.sfx_getpow;
       break;
@@ -467,7 +183,7 @@ public class Interaction {
         case SPR_BKEY:
       if (!player.cards[card_t.it_bluecard.ordinal()])
           player.message = GOTBLUECARD;
-      GiveCard (player, card_t.it_bluecard);
+      player.GiveCard (card_t.it_bluecard);
       if (!DS.netgame)
           break;
       return;
@@ -475,7 +191,7 @@ public class Interaction {
         case SPR_YKEY:
       if (!player.cards[card_t.it_yellowcard.ordinal()])
           player.message = GOTYELWCARD;
-      GiveCard (player, card_t.it_yellowcard);
+      player.GiveCard (card_t.it_yellowcard);
       if (!DS.netgame)
           break;
       return;
@@ -483,7 +199,7 @@ public class Interaction {
         case SPR_RKEY:
       if (!player.cards[card_t.it_redcard.ordinal()])
           player.message = GOTREDCARD;
-      GiveCard (player, card_t.it_redcard);
+      player.GiveCard (card_t.it_redcard);
       if (!DS.netgame)
           break;
       return;
@@ -491,7 +207,7 @@ public class Interaction {
         case SPR_BSKU:
       if (!player.cards[card_t.it_blueskull.ordinal()])
           player.message = GOTBLUESKUL;
-      GiveCard (player, card_t.it_blueskull);
+      player.GiveCard (card_t.it_blueskull);
       if (!DS.netgame)
           break;
       return;
@@ -499,7 +215,7 @@ public class Interaction {
         case SPR_YSKU:
       if (!player.cards[card_t.it_yellowskull.ordinal()])
           player.message = GOTYELWSKUL;
-      GiveCard (player, card_t.it_yellowskull);
+      player.GiveCard (card_t.it_yellowskull);
       if (!DS.netgame)
           break;
       return;
@@ -507,23 +223,23 @@ public class Interaction {
         case SPR_RSKU:
       if (!player.cards[card_t.it_redskull.ordinal()])
           player.message = GOTREDSKULL;
-      GiveCard (player, card_t.it_redskull);
+      player.GiveCard (card_t.it_redskull);
       if (!DS.netgame)
           break;
       return;
       
       // medikits, heals
         case SPR_STIM:
-      if (!GiveBody (player, 10))
+      if (!player.GiveBody (10))
           return;
       player.message = GOTSTIM;
       break;
       
         case SPR_MEDI:
-      if (!GiveBody (player, 25))
+      if (!player.GiveBody ( 25))
           return;
 
-      if (player.health < 25)
+      if (player.health[0] < 25)
           player.message = GOTMEDINEED;
       else
           player.message = GOTMEDIKIT;
@@ -532,14 +248,14 @@ public class Interaction {
       
       // power ups
         case SPR_PINV:
-      if (!GivePower (player, pw_invulnerability))
+      if (!player.GivePower(pw_invulnerability))
           return;
       player.message = GOTINVUL;
       sound = sfxenum_t.sfx_getpow;
       break;
       
         case SPR_PSTR:
-      if (!GivePower (player, pw_strength))
+      if (!player.GivePower (pw_strength))
           return;
       player.message = GOTBERSERK;
       if (player.readyweapon != weapontype_t.wp_fist)
@@ -548,28 +264,28 @@ public class Interaction {
       break;
       
         case SPR_PINS:
-      if (!GivePower (player, pw_invisibility))
+      if (!player.GivePower (pw_invisibility))
           return;
       player.message = GOTINVIS;
       sound = sfxenum_t.sfx_getpow;
       break;
       
         case SPR_SUIT:
-      if (!GivePower (player, pw_ironfeet))
+      if (!player.GivePower (pw_ironfeet))
           return;
       player.message = GOTSUIT;
       sound = sfxenum_t.sfx_getpow;
       break;
       
         case SPR_PMAP:
-      if (!GivePower (player, pw_allmap))
+      if (!player.GivePower (pw_allmap))
           return;
       player.message = GOTMAP;
       sound = sfxenum_t.sfx_getpow;
       break;
       
         case SPR_PVIS:
-      if (!GivePower (player, pw_infrared))
+      if (!player.GivePower (pw_infrared))
           return;
       player.message = GOTVISOR;
       sound = sfxenum_t.sfx_getpow;
@@ -579,55 +295,55 @@ public class Interaction {
         case SPR_CLIP:
       if ((special.flags & MF_DROPPED) !=0)
       {
-          if (!GiveAmmo (player,ammotype_t.am_clip,0))
+          if (!player.GiveAmmo (ammotype_t.am_clip,0))
           return;
       }
       else
       {
-          if (!GiveAmmo (player,ammotype_t.am_clip,1))
+          if (!player.GiveAmmo (ammotype_t.am_clip,1))
           return;
       }
       player.message = GOTCLIP;
       break;
       
         case SPR_AMMO:
-      if (!GiveAmmo (player, ammotype_t.am_clip,5))
+      if (!player.GiveAmmo ( ammotype_t.am_clip,5))
           return;
       player.message = GOTCLIPBOX;
       break;
       
         case SPR_ROCK:
-      if (!GiveAmmo (player, ammotype_t.am_misl,1))
+      if (!player.GiveAmmo ( ammotype_t.am_misl,1))
           return;
       player.message = GOTROCKET;
       break;
       
         case SPR_BROK:
-      if (!GiveAmmo (player, ammotype_t.am_misl,5))
+      if (!player.GiveAmmo ( ammotype_t.am_misl,5))
           return;
       player.message = GOTROCKBOX;
       break;
       
         case SPR_CELL:
-      if (!GiveAmmo (player, ammotype_t.am_cell,1))
+      if (!player.GiveAmmo ( ammotype_t.am_cell,1))
           return;
       player.message = GOTCELL;
       break;
       
         case SPR_CELP:
-      if (!GiveAmmo (player, ammotype_t.am_cell,5))
+      if (!player.GiveAmmo ( ammotype_t.am_cell,5))
           return;
       player.message = GOTCELLBOX;
       break;
       
         case SPR_SHEL:
-      if (!GiveAmmo (player, ammotype_t.am_shell,1))
+      if (!player.GiveAmmo ( ammotype_t.am_shell,1))
           return;
       player.message = GOTSHELLS;
       break;
       
         case SPR_SBOX:
-      if (!GiveAmmo (player, ammotype_t.am_shell,5))
+      if (!player.GiveAmmo ( ammotype_t.am_shell,5))
           return;
       player.message = GOTSHELLBOX;
       break;
@@ -640,55 +356,55 @@ public class Interaction {
           player.backpack = true;
       }
       for (i=0 ; i<NUMAMMO ; i++)
-          GiveAmmo (player, ammotype_t.values()[i], 1);
+          player.GiveAmmo ( ammotype_t.values()[i], 1);
       player.message = GOTBACKPACK;
       break;
       
       // weapons
         case SPR_BFUG:
-      if (!GiveWeapon (player, weapontype_t.wp_bfg, false) )
+      if (!player.GiveWeapon (weapontype_t.wp_bfg, false) )
           return;
       player.message = GOTBFG9000;
       sound = sfxenum_t.sfx_wpnup;  
       break;
       
         case SPR_MGUN:
-      if (!GiveWeapon (player, weapontype_t.wp_chaingun, (special.flags&MF_DROPPED)!=0 ))
+      if (!player.GiveWeapon (weapontype_t.wp_chaingun, (special.flags&MF_DROPPED)!=0 ))
           return;
       player.message = GOTCHAINGUN;
       sound = sfxenum_t.sfx_wpnup;  
       break;
       
         case SPR_CSAW:
-      if (!GiveWeapon (player, weapontype_t.wp_chainsaw, false) )
+      if (!player.GiveWeapon (weapontype_t.wp_chainsaw, false) )
           return;
       player.message = GOTCHAINSAW;
       sound = sfxenum_t.sfx_wpnup;  
       break;
       
         case SPR_LAUN:
-      if (!GiveWeapon (player, weapontype_t.wp_missile, false) )
+      if (!player.GiveWeapon (weapontype_t.wp_missile, false) )
           return;
       player.message = GOTLAUNCHER;
       sound = sfxenum_t.sfx_wpnup;  
       break;
       
         case SPR_PLAS:
-      if (!GiveWeapon (player, weapontype_t.wp_plasma, false) )
+      if (!player.GiveWeapon (weapontype_t.wp_plasma, false) )
           return;
       player.message = GOTPLASMA;
       sound = sfxenum_t.sfx_wpnup;  
       break;
       
         case SPR_SHOT:
-      if (!GiveWeapon (player, weapontype_t.wp_shotgun, (special.flags&MF_DROPPED) !=0  ) )
+      if (!player.GiveWeapon (weapontype_t.wp_shotgun, (special.flags&MF_DROPPED) !=0  ) )
           return;
       player.message = GOTSHOTGUN;
       sound = sfxenum_t.sfx_wpnup;  
       break;
           
         case SPR_SGN2:
-      if (!GiveWeapon (player, weapontype_t.wp_supershotgun, (special.flags&MF_DROPPED )!=0 ))
+      if (!player.GiveWeapon (weapontype_t.wp_supershotgun, (special.flags&MF_DROPPED )!=0 ))
           return;
       player.message = GOTSHOTGUN2;
       sound = sfxenum_t.sfx_wpnup;  
@@ -701,7 +417,7 @@ public class Interaction {
       if ((special.flags & MF_COUNTITEM)!=0)
       player.itemcount++;
       // TODO:RemoveMobj (special);
-      player.bonuscount += BONUSADD;
+      player.bonuscount += player_t.BONUSADD;
       if (player == DS.players[DS.consoleplayer]) ;
       // TODO: S_StartSound (NULL, sound);
   }
@@ -747,7 +463,10 @@ public class Interaction {
       {
       // count environment kills against you
       if (source==null)    
-          target.player.frags[target.player-players]++;
+          // TODO: some way to indentify which one of the 
+          // four possiblelayers is the current player
+          
+          target.player.frags[target.player.identify()]++;
               
       target.flags &= ~MF_SOLID;
       target.player.playerstate = PST_DEAD;
@@ -764,12 +483,12 @@ public class Interaction {
       }
 
       if (target.health < -target.info.spawnhealth 
-      && target.info.xdeathstate)
+      && target.info.xdeathstate!=null)
       {
-      P_SetMobjState (target, target.info.xdeathstate);
+          target.SetMobjState(target.info.xdeathstate);
       }
       else
-      P_SetMobjState (target, target.info.deathstate);
+          target.SetMobjState (target.info.deathstate);
       target.tics -= RND.P_Random()&3;
 
       if (target.tics < 1)
@@ -785,15 +504,15 @@ public class Interaction {
       {
         case MT_WOLFSS:
         case MT_POSSESSED:
-      item = MT_CLIP;
+      item = mobjtype_t.MT_CLIP;
       break;
       
         case MT_SHOTGUY:
-      item = MT_SHOTGUN;
+      item = mobjtype_t.MT_SHOTGUN;
       break;
       
         case MT_CHAINGUY:
-      item = MT_CHAINGUN;
+      item = mobjtype_t.MT_CHAINGUN;
       break;
       
         default:
@@ -818,45 +537,45 @@ public class Interaction {
   // Source can be NULL for slime, barrel explosions
   // and other environmental stuff.
   //
-  void
+  public void
   P_DamageMobj
-  ( mobj_t*   target,
-    mobj_t*   inflictor,
-    mobj_t*   source,
+  ( mobj_t   target,
+    mobj_t   inflictor,
+    mobj_t   source,
     int       damage )
   {
-      unsigned    ang;
+      int    ang; // unsigned
       int     saved;
-      player_t*   player;
-      fixed_t thrust;
+      player_t   player;
+      int thrust; // fixed_t
       int     temp;
       
-      if ( !(target.flags & MF_SHOOTABLE) )
+      if ( !flags(target.flags, MF_SHOOTABLE))
       return; // shouldn't happen...
           
       if (target.health <= 0)
       return;
 
-      if ( target.flags & MF_SKULLFLY )
+      if ( flags(target.flags , MF_SKULLFLY ))
       {
       target.momx = target.momy = target.momz = 0;
       }
       
       player = target.player;
-      if (player && gameskill == sk_baby)
+      if ((player!=null) && DS.gameskill == skill_t.sk_baby)
       damage >>= 1;   // take half damage in trainer mode
           
 
       // Some close combat weapons should not
       // inflict thrust and push the victim out of reach,
       // thus kick away unless using the chainsaw.
-      if (inflictor
-      && !(target.flags & MF_NOCLIP)
-      && (!source
-          || !source.player
+      if ((inflictor !=null)
+      && !flags(target.flags, MF_NOCLIP)
+      && (source==null
+          || source.player==null
           || source.player.readyweapon != weapontype_t.wp_chainsaw))
       {
-      ang = R_PointToAngle2 ( inflictor.x,
+      ang = R.PointToAngle2 ( inflictor.x,
                   inflictor.y,
                   target.x,
                   target.y);
@@ -864,10 +583,10 @@ public class Interaction {
       thrust = damage*(FRACUNIT>>3)*100/target.info.mass;
 
       // make fall forwards sometimes
-      if ( damage < 40
-           && damage > target.health
-           && target.z - inflictor.z > 64*FRACUNIT
-           && (P_Random ()&1) )
+      if ( (damage < 40)
+           && (damage > target.health)
+           && (target.z - inflictor.z > 64*FRACUNIT)
+           && flags(RND.P_Random(),1) )
       {
           ang += ANG180;
           thrust *= 4;
@@ -879,7 +598,7 @@ public class Interaction {
       }
       
       // player specific
-      if (player)
+      if (player!=null)
       {
       // end of game hell hack
       if (target.subsector.sector.special == 11
@@ -892,31 +611,31 @@ public class Interaction {
       // Below certain threshold,
       // ignore damage in GOD mode, or with INVUL power.
       if ( damage < 1000
-           && ( (player.cheats&CF_GODMODE)
-            || player.powers[pw_invulnerability] ) )
+           && ( flags(player.cheats,player_t.CF_GODMODE))
+            || player.powers[pw_invulnerability]!=0 ) 
       {
           return;
       }
       
-      if (player.armortype)
+      if (player.armortype!=0)
       {
           if (player.armortype == 1)
           saved = damage/3;
           else
           saved = damage/2;
           
-          if (player.armorpoints <= saved)
+          if (player.armorpoints[0] <= saved)
           {
           // armor is used up
-          saved = player.armorpoints;
+          saved = player.armorpoints[0];
           player.armortype = 0;
           }
-          player.armorpoints -= saved;
+          player.armorpoints[0] -= saved;
           damage -= saved;
       }
-      player.health -= damage;   // mirror mobj health here for Dave
-      if (player.health < 0)
-          player.health = 0;
+      player.health[0] -= damage;   // mirror mobj health here for Dave
+      if (player.health[0] < 0)
+          player.health[0] = 0;
       
       player.attacker = source;
       player.damagecount += damage;  // add damage after armor / invuln
@@ -926,39 +645,39 @@ public class Interaction {
       
       temp = damage < 100 ? damage : 100;
 
-      if (player == &players[consoleplayer])
-          I_Tactile (40,10,40+temp*2);
+      if (player == DS.players[DS.consoleplayer]) ;
+          // TODO: I_Tactile (40,10,40+temp*2);
       }
       
       // do the damage    
       target.health -= damage;   
       if (target.health <= 0)
       {
-      P_KillMobj (source, target);
+      KillMobj (source, target);
       return;
       }
 
-      if ( (P_Random () < target.info.painchance)
-       && !(target.flags&MF_SKULLFLY) )
+      if ( (RND.P_Random () < target.info.painchance)
+       && !flags(target.flags,MF_SKULLFLY) )
       {
       target.flags |= MF_JUSTHIT;    // fight back!
       
-      P_SetMobjState (target, target.info.painstate);
+      target.SetMobjState (target.info.painstate);
       }
               
       target.reactiontime = 0;       // we're awake now...   
 
-      if ( (!target.threshold || target.type == MT_VILE)
-       && source && source != target
-       && source.type != MT_VILE)
+      if ( ((target.threshold==0) || (target.type == mobjtype_t.MT_VILE))
+       && (source!=null) && (source != target)
+       && (source.type != mobjtype_t.MT_VILE))
       {
       // if not intent on another player,
       // chase after this one
       target.target = source;
       target.threshold = BASETHRESHOLD;
-      if (target.state == &states[target.info.spawnstate]
-          && target.info.seestate != S_NULL)
-          P_SetMobjState (target, target.info.seestate);
+      if (target.state == states[target.info.spawnstate.ordinal()]
+          && target.info.seestate != statenum_t.S_NULL)
+          target.SetMobjState (target.info.seestate);
       }
               
   }

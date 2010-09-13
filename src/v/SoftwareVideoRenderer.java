@@ -537,6 +537,13 @@ public abstract class SoftwareVideoRenderer
       ImageIO.write(b, "PNG", outputFile);
       
   }
+  
+  public final boolean isRasterNull(int screen){
+      for (int i=0;i<screens[screen].length;i++){
+          if (screens[screen][i]!=0) return false;
+      }
+      return true;
+  }
 
     
 }

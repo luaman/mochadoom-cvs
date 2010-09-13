@@ -16,7 +16,11 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.awt.image.IndexColorModel;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
 
 import m.DoomMenu;
 import m.Menu;
@@ -52,6 +56,7 @@ public class DoomApplet
     public static final int HEIGHT=200;
     public static final int TICKS=5000;
     
+    IndexColorModel[] icms;
     Canvas drawhere;
     BufferedImage[] bi;
     int palette=0;
@@ -59,6 +64,7 @@ public class DoomApplet
     Image crap;
     InputListener in;
     Graphics2D g2d;
+    BufferedImage[] pals;
     
     /**
      * 
@@ -70,8 +76,8 @@ public class DoomApplet
     doomstat ds;
     DoomContext DC;
     StatusBar ST;
-    DoomAutoMap AM;
-    DoomMenu M;
+    Map AM;
+    Menu M;
     EndLevel EL;
 
     
@@ -83,14 +89,21 @@ public class DoomApplet
     
     public void start(){
         
+    }
+    
+    public void doStuff(){
+        
        // Do a screen wipe 
        WipeYoAss();
+       /*
        DoMenu();
        doAutoMap();
-       doEndLevel();
+       doEndLevel();*/
     }
     
     private void doAutoMap() {
+        
+        V.screens[0]=((DataBufferByte)pals[0].getRaster().getDataBuffer()).getData();
         ST.Responder(new event_t('i'));
         ST.Responder(new event_t('d'));
         ST.Responder(new event_t('d'));
@@ -115,25 +128,29 @@ public class DoomApplet
                AM.Responder(new event_t(Map.AM_PANLEFTKEY));
                }
 
-            
+
+            V.DrawPatch(0, 0, 0, titlepic);
             AM.Ticker();
             AM.Drawer();
             ST.Ticker();
             ST.Drawer(false,true);
+
             this.setPalette((i/(TICKS/14))%14);
             this.processEvents();
-            this.update(null);
-            //frame.update();
-            //frame.update(shit.getGraphics());
-         
+            //System.out.println(V.isRasterNull(0));
+            this.update();
+        
             }
-        long b=System.nanoTime();
-        String shit=(TICKS +" tics in " +((b-a)/1e09) +" = "+TICKS/((b-a)/1e09) + " fps");
-        drawhere.getGraphics().setColor(Color.yellow);        
-        drawhere.getGraphics().setFont(Font.getFont("Times New Roman"));
-        drawhere.getGraphics().drawString(shit,20,20);
-        this.update(null);
-        System.out.println(shit);
+    }
+
+    private void dump(int i) {
+        try {
+            V.takeScreenShot(0, "C:\\SHIT"+i+".PNG",icms[0]);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        
     }
 
     public void init(){
@@ -164,31 +181,43 @@ public class DoomApplet
 
         W=new WadLoader();
         try {
-            W.InitMultipleFiles(new String[] {"DOOM1.WAD"});
+            W.InitMultipleFiles(new String[] {"doom.wad"});
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        titlepic=W.CachePatchName("TITLEPIC", PU_STATIC);
         help1=W.CachePatchName("HELP1", PU_STATIC);
+        System.out.println(help1.height);
+        System.out.println(help1.width);        
+        System.out.println(help1);
+        System.out.println(W.GetNumForName("TITLEPIC"));
+        System.out.println(W.lumpinfo[W.GetNumForName("TITLEPIC")].size);
+        titlepic=W.CachePatchName("HELP1", PU_STATIC);
+        System.out.println(titlepic.height);
+        System.out.println(titlepic.width);
+
+        System.out.println(help1);
+        System.out.println(W.GetNumForName("HELP1"));
+        System.out.println(W.lumpinfo[W.GetNumForName("HELP1")].size);
         DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
         byte[] pal=palette.getBuffer().array();
 
         IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
         Defines.SCREENWIDTH=WIDTH;
-        Defines.SCREENHEIGHT=200;
-        V=new BufferedRenderer(WIDTH,200,icm);
+        Defines.SCREENHEIGHT=HEIGHT;
+        V=new BufferedRenderer(WIDTH,HEIGHT,icm);
         V.Init();
-        
-        
-        IndexColorModel[] icms=new IndexColorModel[palette.getBuffer().limit()/768];
-        BufferedImage[] pals=new BufferedImage[icms.length];
-
-        
+        icms=new IndexColorModel[palette.getBuffer().limit()/768];
         for (int i=0;i<icms.length;i++){
+            icms[i]=new IndexColorModel(8, 256,pal, i*768, false);
+            }
+        pals=new BufferedImage[icms.length];
+        pals=V.getBufferedScreens(0, icms);
+        
+   /*     for (int i=0;i<icms.length;i++){
          icms[i]=new IndexColorModel(8, 256,pal, i*768, false);
              pals[i]=new BufferedImage(icms[i],V.screenbuffer[0].getRaster(), false, null);
             }
+            */
         this.Init(pals);
         
         ds=new doomstat();
@@ -217,6 +246,7 @@ public class DoomApplet
         EL=new EndLevel(DC);
         EL.Start(DC.DS.wminfo);
         
+        doStuff();
     }
 
     private static void initDoomState(doomstat ds) {
@@ -280,10 +310,13 @@ public class DoomApplet
     
     
     public void paint(Graphics g){
+        /*
         if (g==null)
             this.update(null);
         else super.paint(g);
-        //g2d.drawImage(bi[palette],0,0,this);        
+        //g2d.drawImage(bi[palette],0,0,this);
+         *         
+         */
     }
 
     
@@ -316,10 +349,16 @@ public class DoomApplet
         this.palette=pal;
     }
     
-    
+    public void update() {
+        g2d=(Graphics2D) drawhere.getGraphics();
+        g2d.drawImage(bi[palette],0,0,this);
+        
+        //drawhere.repaint();
+        //super.update(this.getGraphics());
+      }   
     
     public void update(Graphics g) {
-       g2d.drawImage(bi[palette],0,0,this);       
+      // g2d.drawImage(bi[palette],0,0,this);       
     }
     
     public String processEvents(){
@@ -336,6 +375,7 @@ public class DoomApplet
         int WIPES=1;
         for (int i=0;i<WIPES;i++){
             V.DrawPatch(0, 0, 0, help1);
+            // Grab "help"
             wipe.StartScreen(0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT);
                     V.DrawPatch(0, 0, 0, titlepic);
             wipe.EndScreen(0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT);
@@ -353,14 +393,15 @@ public class DoomApplet
             tics = nowtime - wipestart;
         } while (tics<1);
         wipestart = nowtime;
-        V.DrawPatch(0, 0, 0, titlepic);
+        //V.DrawPatch(0, 0, 0, titlepic);
+        V.DrawPatch(0, 0, 0, help1);
         //V.DrawPatch(320, 0, 0, titlepic);
         done = wipe.ScreenWipe(Wiper.wipe.Melt.ordinal()
                        , 0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT, tics);
         //I_UpdateNoBlit ();
         //M_Drawer ();                            // menu is drawn even on top of wipes
-        //System.out.println(i);
-        this.update(null);
+        //System.out.println(V.isRasterNull(0));
+        this.update();
        
         
         } while (!done);
@@ -430,8 +471,8 @@ public class DoomApplet
         V.DrawPatch(0,0,0,help1);
         M.Ticker();
         M.Drawer();
-        
-        this.update(null);
+        System.out.println(V.isRasterNull(0));
+        this.update();
         //System.out.print(frame.processEvents());
         }
     }
@@ -444,7 +485,7 @@ public class DoomApplet
             
         EL.Ticker();
         EL.Drawer();
-        this.update(null);
+        this.update();
         if (i==100){
                 ds.players[0].cmd.buttons=1; // simulate attack
                 ds.players[0].attackdown=false; // simulate attack

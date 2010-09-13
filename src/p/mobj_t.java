@@ -1,27 +1,93 @@
 package p;
 
+import static data.Defines.FLOATSPEED;
+import static data.Defines.GRAVITY;
+import static data.Defines.VIEWHEIGHT;
+import static data.info.mobjinfo;
+import static data.info.states;
+import static p.MapUtils.AproxDistance;
+import m.random;
 import rr.subsector_t;
-import static m.fixed_t.*;
-import data.mobjinfo_t;
-import data.state_t;
 import data.mapthing_t;
+import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.spritenum_t;
+import data.state_t;
 import data.Defines.statenum_t;
+import doom.ActionType;
 import doom.acp1;
-import doom.acp2;
 import doom.player_t;
-import doom.think_t;
 import doom.thinker_t;
-import static data.info.*;
-import static data.Tables.*;
-import static data.SineCosine.*;
 
-// Map Object definition.
-// typedef struct mobj_s
+/**
+ * 
+ * NOTES: mobj_t
+ * 
+ * mobj_ts are used to tell the refresh where to draw an image,
+ * tell the world simulation when objects are contacted,
+ * and tell the sound driver how to position a sound.
+ * 
+ * The refresh uses the next and prev links to follow
+ * lists of things in sectors as they are being drawn.
+ * The sprite, frame, and angle elements determine which patch_t
+ * is used to draw the sprite if it is visible.
+ * The sprite and frame values are allmost allways set
+ * from state_t structures.
+ * The statescr.exe utility generates the states.h and states.c
+ * files that contain the sprite/frame numbers from the
+ * statescr.txt source file.
+ * The xyz origin point represents a point at the bottom middle
+ * of the sprite (between the feet of a biped).
+ * This is the default origin position for patch_ts grabbed
+ * with lumpy.exe.
+ * A walking creature will have its z equal to the floor
+ * it is standing on.
+ * 
+ * The sound code uses the x,y, and subsector fields
+ * to do stereo positioning of any sound effited by the mobj_t.
+ * 
+ * The play simulation uses the blocklinks, x,y,z, radius, height
+ * to determine when mobj_ts are touching each other,
+ * touching lines in the map, or hit by trace lines (gunshots,
+ * lines of sight, etc).
+ * The mobj_t->flags element has various bit flags
+ * used by the simulation.
+ * 
+ * Every mobj_t is linked into a single sector
+ * based on its origin coordinates.
+ * The subsector_t is found with R_PointInSubsector(x,y),
+ * and the sector_t can be found with subsector->sector.
+ * The sector links are only used by the rendering code,
+ * the play simulation does not care about them at all.
+ * 
+ * Any mobj_t that needs to be acted upon by something else
+ * in the play world (block movement, be shot, etc) will also
+ * need to be linked into the blockmap.
+ * If the thing has the MF_NOBLOCK flag set, it will not use
+ * the block links. It can still interact with other things,
+ * but only as the instigator (missiles will run into other
+ * things, but nothing can run into a missile).
+ * Each block in the grid is 128*128 units, and knows about
+ * every line_t that it contains a piece of, and every
+ * interactable mobj_t that has its origin contained.  
+ * 
+ * A valid mobj_t is a mobj_t that has the proper subsector_t
+ * filled in for its xy coordinates and is linked into the
+ * sector from which the subsector was made, or has the
+ * MF_NOSECTOR flag set (the subsector_t needs to be valid
+ * even if MF_NOSECTOR is set), and is linked into a blockmap
+ * block or has the MF_NOBLOCKMAP flag set.
+ * Links should only be modified by the P_[Un]SetThingPosition()
+ * functions.
+ * Do not change the MF_NO? flags while a thing is valid.
+ * 
+ * Any questions?
+ * 
+ * @author admin
+ *
+ */
 
-
-public class mobj_t implements Interceptable, thinker_t  {
+public class mobj_t extends thinker_t implements Interceptable   {
     
         public mobj_t(){
             
@@ -193,58 +259,182 @@ public class mobj_t implements Interceptable, thinker_t  {
     public static int    MF_TRANSLATION     = 0xc000000;
     // Hmm ???.
     public static int MF_TRANSSHIFT = 26;
-    @Override
-    public think_t getFunction() {
-        // TODO Auto-generated method stub
-        return null;
-    }
     
-    @Override
-    public thinker_t getSNext() {
-        return snext;
-    }
-    @Override
-    public void setSNext(thinker_t snext) {
-        this.snext = snext;
-    }
-    @Override
-    public thinker_t getSPrev() {
-        return sprev;
-    }
-    @Override
-    public void setSPrev(thinker_t sprev) {
-        this.sprev = sprev;
-    }
     
-    @Override
-    public thinker_t getBNext() {
-        return bnext;
-    }
+    /* The following methods were for the most part "contextless" and instance-specific,
+     * so they were implemented here rather that being scattered all over
+     * the package.
+     */
     
-    @Override
-    public void setBNext(thinker_t bnext) {
-        this.bnext = bnext;
-    }
-    
-    @Override
-    public thinker_t getBPrev() {
-        return bprev;
-    }
-    
-    @Override
-    public void setBPrev(thinker_t bprev) {
-        this.bprev = bprev;
-    }
+    /**
+     * P_SetMobjState
+     * Returns true if the mobj is still present.
+     */
 
-    @Override
-    public void setFunction(think_t acv) {
-        // TODO Auto-generated method stub
+    public boolean
+    SetMobjState
+    (statenum_t    state )
+    {
+        state_t st;
+
+        do
+        {
+        if (state == statenum_t.S_NULL)
+        {
+            state = null;
+            // TODO:P_RemoveMobj (mobj);
+            return false;
+        }
+
+        st = states[state.ordinal()];
+        this.state = st;
+        tics = st.tics;
+        sprite = st.sprite;
+        frame = (int) st.frame;
+
+        // Modified handling.
+        // Call action functions when the state is set
+        if (st.action.getType()==ActionType.acp1)       
+            ((acp1)st.action).invoke(this); 
         
+        state = st.nextstate;
+        } while (tics==0);
+                    
+        return true;
     }
-    
-    
-    
-    
+     
 
-   
+    /**
+     * P_ExplodeMissile  
+     */
+    
+    public void P_ExplodeMissile ()
+    {
+        momx = momy = momz = 0;
+
+        this.SetMobjState (mobjinfo[type.ordinal()].deathstate);
+
+        tics -= RND.P_Random()&3;
+
+        if (tics < 1)
+        tics = 1;
+
+        flags &= ~MF_MISSILE;
+
+        if (info.deathsound!=null) ;
+        // TODO: S_StartSound (mo, mo.info.deathsound);
+    }
+
+    /**
+     * P_ZMovement
+     */
+    
+    public void ZMovement ()
+    {
+        // fixed_t
+        int dist;
+        int delta;
+        
+        // check for smooth step up
+        if ((player!=null) && z < floorz)
+        {
+        player.viewheight -= floorz-z;
+
+        player.deltaviewheight
+            = (VIEWHEIGHT - player.viewheight)>>3;
+        }
+        
+        // adjust height
+        z += momz;
+        
+        if ( ((flags & MF_FLOAT)!=0)
+         && target!=null)
+        {
+        // float down towards target if too close
+        if ( (flags & MF_SKULLFLY)==0
+             && (flags & MF_INFLOAT)==0 )
+        {
+            dist = AproxDistance (x - target.x,
+                        y - target.y);
+            
+            delta =(target.z + (height>>1)) - z;
+
+            if (delta<0 && dist < -(delta*3) )
+            z -= FLOATSPEED;
+            else if (delta>0 && dist < (delta*3) )
+            z += FLOATSPEED;            
+        }
+        
+        }
+        
+        // clip movement
+        if (z <= floorz)
+        {
+        // hit the floor
+
+        // Note (id):
+        //  somebody left this after the setting momz to 0,
+        //  kinda useless there.
+        if ((flags & MF_SKULLFLY)!=0)
+        {
+            // the skull slammed into something
+            momz = -momz;
+        }
+        
+        if (momz < 0)
+        {
+            if (player!=null
+            && (momz < -GRAVITY*8))   
+            {
+            // Squat down.
+            // Decrease viewheight for a moment
+            // after hitting the ground (hard),
+            // and utter appropriate sound.
+            player.deltaviewheight = momz>>3;
+           // TODO:  S_StartSound (mo, sfx_oof);
+            }
+            momz = 0;
+        }
+        z = floorz;
+
+        if ( (flags & MF_MISSILE)!=0
+             && (flags & MF_NOCLIP)==0 )
+        {
+            this.P_ExplodeMissile ();
+            return;
+        }
+        }
+        else if ((flags & MF_NOGRAVITY)==0 )
+        {
+        if (momz == 0)
+            momz = -GRAVITY*2;
+        else
+            momz -= GRAVITY;
+        }
+        
+        if (z + height > ceilingz)
+        {
+        // hit the ceiling
+        if (momz > 0)
+            momz = 0;
+        {
+            z = ceilingz - height;
+        }
+
+        if ((flags & MF_SKULLFLY)!=0)
+        {   // the skull slammed into something
+            momz = -momz;
+        }
+        
+        if ( (flags & MF_MISSILE)!=0
+             && (flags & MF_NOCLIP)==0 )
+        {
+            this.P_ExplodeMissile ();
+            return;
+        }
+        }
+    } 
+    
+    private random RND;
+    
     }

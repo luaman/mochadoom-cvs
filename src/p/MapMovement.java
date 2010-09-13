@@ -1,6 +1,7 @@
 package p;
 
 import static data.Defines.*;
+import static data.Limits.*;
 import static p.mobj.*;
 import static m.BBox.*;
 import m.random;
@@ -8,12 +9,13 @@ import automap.DoomAutoMap;
 import data.doomstat;
 
 import rr.Renderer;
+import rr.UnifiedRenderer;
 import rr.line_t;
 import rr.subsector_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MapMovement.java,v 1.2 2010/09/12 22:38:37 velktron Exp $
+// $Id: MapMovement.java,v 1.3 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,6 +30,9 @@ import rr.subsector_t;
 // GNU General Public License for more details.
 //
 // $Log: MapMovement.java,v $
+// Revision 1.3  2010/09/13 15:39:17  velktron
+// Moving towards an unified gameplay approach...
+//
 // Revision 1.2  2010/09/12 22:38:37  velktron
 // Some work
 //
@@ -44,10 +49,11 @@ import rr.subsector_t;
 //
 //-----------------------------------------------------------------------------
 import w.WadLoader;
+import static p.MapUtils.flags;
 
 public class MapMovement{
 
-public static final String rcsid = "$Id: MapMovement.java,v 1.2 2010/09/12 22:38:37 velktron Exp $";
+public static final String rcsid = "$Id: MapMovement.java,v 1.3 2010/09/13 15:39:17 velktron Exp $";
 
 
 /////////////////// STATUS ///////////////////
@@ -56,7 +62,8 @@ WadLoader W;
 doomstat DS;
 DoomAutoMap AM;
 random RND;
-Renderer R;
+UnifiedRenderer R;
+LevelLoader LL;
 
 //////////////////////////////////////////////
 
@@ -89,43 +96,12 @@ int		numspechit;
 // TELEPORT MOVE
 // 
 
-//
-// PIT_StompThing
-//
-public boolean PIT_StompThing (mobj_t thing)
-{
-    int	blockdist; // fixed_t
-		
-    if ((thing.flags & MF_SHOOTABLE)==0 )
-	return true;
-		
-    blockdist = thing.radius + tmthing.radius;
-    
-    if ( Math.abs(thing.x - tmx) >= blockdist
-	 || Math.abs(thing.y - tmy) >= blockdist )
-    {
-	// didn't hit it
-	return true;
-    }
-    
-    // don't clip against self
-    if (thing == tmthing)
-	return true;
-    
-    // monsters don't stomp things except on boss level
-    if ( (tmthing.player==null) && (DS.gamemap != 30))
-	return false;	
-		
-    // TODO: DamageMobj (thing, tmthing, tmthing, 10000); // in interaction
-	
-    return true;
-}
 
 
 //
 // P_TeleportMove
 //
-public boolean
+private boolean
 TeleportMove
 ( mobj_t	thing,
   int	x, //fixed
@@ -166,10 +142,10 @@ TeleportMove
     numspechit = 0;
     
     // stomp on any things contacted
-    xl = (tmbbox[BOXLEFT] - P.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-    xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-    yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-    yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+    xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+    xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+    yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+    yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
     for (bx=xl ; bx<=xh ; bx++)
 	for (by=yl ; by<=yh ; by++)
@@ -214,7 +190,7 @@ class PIT_CheckLine implements PIT_LineFunction {
 	|| tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP] )
 	return true;
 
-    if (P_BoxOnLineSide (tmbbox, ld) != -1)
+    if (ld.P_BoxOnLineSide (tmbbox) != -1)
 	return true;
 		
     // A line has been hit
@@ -228,20 +204,20 @@ class PIT_CheckLine implements PIT_LineFunction {
     // so two special lines that are only 8 pixels apart
     // could be crossed in either order.
     
-    if (!ld.backsector)
+    if (ld.backsector==null)
 	return false;		// one sided line
 		
-    if (!(tmthing.flags & MF_MISSILE) )
+    if (!flags(tmthing.flags, MF_MISSILE) )
     {
-	if ( ld.flags & ML_BLOCKING )
+	if ( flags(ld.flags, ML_BLOCKING) )
 	    return false;	// explicitly blocking everything
 
-	if ( !tmthing.player && ld.flags & ML_BLOCKMONSTERS )
+	if ( (tmthing.player==null) && flags(ld.flags, ML_BLOCKMONSTERS ))
 	    return false;	// block monsters only
     }
 
     // set openrange, opentop, openbottom
-    LineOpening (ld);	
+    P_LineOpening (ld);	
 	
     // adjust floor / ceiling heights
     if (opentop < tmceilingz)
@@ -270,7 +246,7 @@ class PIT_CheckLine implements PIT_LineFunction {
 
 
 interface PIT_MobjFunction {
-    public boolean invoke(mobj thing);
+    public boolean invoke(mobj_t thing);
 }
 
 
@@ -278,12 +254,12 @@ interface PIT_MobjFunction {
 
 class PIT_CheckThing implements PIT_MobjFunction {
     @Override
-    public boolean invoke(mobj thing) {
+    public boolean invoke(mobj_t thing) {
     int		blockdist; // fixed_t
     boolean		solid;
     int			damage;
 		
-    if (!(thing.flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE) ))
+    if ((thing.flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE) )==0)
 	return true;
     
     blockdist = thing.radius + tmthing.radius;
@@ -300,7 +276,7 @@ class PIT_CheckThing implements PIT_MobjFunction {
 	return true;
     
     // check for skulls slamming into things
-    if (tmthing.flags & MF_SKULLFLY)
+    if ((tmthing.flags & MF_SKULLFLY)!=0)
     {
 	damage = ((RND.P_Random()%8)+1)*tmthing.info.damage;
 	
@@ -371,40 +347,77 @@ class PIT_CheckThing implements PIT_MobjFunction {
 }
 }
 
+//
+//PIT_StompThing
+//
+
+class PIT_StompThing implements PIT_Iterator{
+
+public boolean invoke (mobj_t thing)
+{
+ int blockdist; // fixed_t
+     
+ if ((thing.flags & MF_SHOOTABLE)==0 )
+ return true;
+     
+ blockdist = thing.radius + tmthing.radius;
+ 
+ if ( Math.abs(thing.x - tmx) >= blockdist
+  || Math.abs(thing.y - tmy) >= blockdist )
+ {
+ // didn't hit it
+ return true;
+ }
+ 
+ // don't clip against self
+ if (thing == tmthing)
+ return true;
+ 
+ // monsters don't stomp things except on boss level
+ if ( (tmthing.player==null) && (DS.gamemap != 30))
+ return false;   
+     
+ // TODO: DamageMobj (thing, tmthing, tmthing, 10000); // in interaction
+ 
+ return true;
+}
+
+}
+
 
 //
 // MOVEMENT CLIPPING
 //
 
 /**
-// P_CheckPosition
-// This is purely informative, nothing is modified
-// (except things picked up).
-// 
-// in:
-//  a mobj_t (can be valid or invalid)
-//  a position to be checked
-//   (doesn't need to be related to the mobj_t.x,y)
-//
-// during:
-//  special things are touched if MF_PICKUP
-//  early out on solid lines?
-//
-// out:
-//  newsubsec
-//  floorz
-//  ceilingz
-//  tmdropoffz
-//   the lowest point contacted
-//   (monsters won't move to a dropoff)
-//  speciallines[]
-//  numspeciallines
+ * P_CheckPosition
+ *  This is purely informative, nothing is modified
+ *  (except things picked up).
+ *  
+ *  in:
+ *   a mobj_t (can be valid or invalid)
+ *   a position to be checked
+ *    (doesn't need to be related to the mobj_t.x,y)
+ * 
+ *  during:
+ *   special things are touched if MF_PICKUP
+ *   early out on solid lines?
+ * 
+ *  out:
+ *   newsubsec
+ *   floorz
+ *   ceilingz
+ *   tmdropoffz
+ *    the lowest point contacted
+ *    (monsters won't move to a dropoff)
+ *   speciallines[]
+ *   numspeciallines
  * @param thing
  * @param x fixed_t
  * @param y fixed_t
 */
 public boolean
-P_CheckPosition
+CheckPosition
 ( mobj_t	thing,
   int	x,
   int	y )
@@ -1371,256 +1384,10 @@ P_ChangeSector
     return nofit;
 }
 
-//
-//P_AproxDistance
-//Gives an estimation of distance (not exact)
-//
-
-fixed_t
-P_AproxDistance
-( fixed_t   dx,
-fixed_t   dy )
-{
- dx = abs(dx);
- dy = abs(dy);
- if (dx < dy)
- return dx+dy-(dx>>1);
- return dx+dy-(dy>>1);
-}
-
-
-//
-//P_PointOnLineSide
-//Returns 0 or 1
-//
-int
-P_PointOnLineSide
-( fixed_t   x,
-fixed_t   y,
-line_t*   line )
-{
- fixed_t dx;
- fixed_t dy;
- fixed_t left;
- fixed_t right;
- 
- if (!line.dx)
- {
- if (x <= line.v1.x)
-     return line.dy > 0;
- 
- return line.dy < 0;
- }
- if (!line.dy)
- {
- if (y <= line.v1.y)
-     return line.dx < 0;
- 
- return line.dx > 0;
- }
- 
- dx = (x - line.v1.x);
- dy = (y - line.v1.y);
- 
- left = FixedMul ( line.dy>>FRACBITS , dx );
- right = FixedMul ( dy , line.dx>>FRACBITS );
- 
- if (right < left)
- return 0;       // front side
- return 1;           // back side
-}
 
 ////////////////////// FROM p_maputl.c ////////////////////
 
-/**
- * P_BoxOnLineSide
- * Considers the line to be infinite
- *Returns side 0 or 1, -1 if box crosses the line.
- *
- *@param tmbox fixed_t
- *@param line_t
- */
-public int
-P_BoxOnLineSide
-( int  tmbox,
-line_t   ld )
-{
- int     p1;
- int     p2;
- 
- switch (ld.slopetype)
- {
-   case ST_HORIZONTAL:
- p1 = tmbox[BOXTOP] > ld.v1.y;
- p2 = tmbox[BOXBOTTOM] > ld.v1.y;
- if (ld.dx < 0)
- {
-     p1 ^= 1;
-     p2 ^= 1;
- }
- break;
- 
-   case ST_VERTICAL:
- p1 = tmbox[BOXRIGHT] < ld.v1.x;
- p2 = tmbox[BOXLEFT] < ld.v1.x;
- if (ld.dy < 0)
- {
-     p1 ^= 1;
-     p2 ^= 1;
- }
- break;
- 
-   case ST_POSITIVE:
- p1 = P_PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXTOP], ld);
- p2 = P_PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXBOTTOM], ld);
- break;
- 
-   case ST_NEGATIVE:
- p1 = P_PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXTOP], ld);
- p2 = P_PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXBOTTOM], ld);
- break;
- }
 
- if (p1 == p2)
- return p1;
- return -1;
-}
-
-
-/**
- *P_PointOnDivlineSide
- *Returns 0 or 1.
- *@param x fixed
- *@param y fixed
- *@param divline_t
- */
-public int
-PointOnDivlineSide
-( int   x,
-int   y,
-divline_t    line )
-{
- fixed_t dx;
- fixed_t dy;
- fixed_t left;
- fixed_t right;
- 
- if (!line.dx)
- {
- if (x <= line.x)
-     return line.dy > 0;
- 
- return line.dy < 0;
- }
- if (!line.dy)
- {
- if (y <= line.y)
-     return line.dx < 0;
-
- return line.dx > 0;
- }
- 
- dx = (x - line.x);
- dy = (y - line.y);
- 
- // try to quickly decide by looking at sign bits
- if ( (line.dy ^ line.dx ^ dx ^ dy)&0x80000000 )
- {
- if ( (line.dy ^ dx) & 0x80000000 )
-     return 1;       // (left is negative)
- return 0;
- }
- 
- left = FixedMul ( line.dy>>8, dx>>8 );
- right = FixedMul ( dy>>8 , line.dx>>8 );
- 
- if (right < left)
- return 0;       // front side
- return 1;           // back side
-}
-
-
-
-//
-//P_MakeDivline
-//
-public void
-MakeDivline
-( line_t   li,
-divline_t    dl )
-{
- dl.x = li.v1.x;
- dl.y = li.v1.y;
- dl.dx = li.dx;
- dl.dy = li.dy;
-}
-
-
-
-/**
- * P_InterceptVector
- * Returns the fractional intercept point
- * along the first divline.
- * This is only called by the addthings
- * and addlines traversers.
- * 
- * @return int to be treated as fixed_t
- */
-
-public int 
-InterceptVector
-( divline_t    v2,
-divline_t    v1 )
-{
- int frac, num,den; // fixed_t
- 
- den = FixedMul (v1.dy>>8,v2.dx) - FixedMul(v1.dx>>8,v2.dy);
-
- if (den == 0)
- return 0;
- //  I_Error ("P_InterceptVector: parallel");
- 
- num =
- FixedMul ( (v1.x - v2.x)>>8 ,v1.dy )
- +FixedMul ( (v2.y - v1.y)>>8, v1.dx );
-
- frac = FixedDiv (num , den);
-
- return frac;
-/*
- #else   // UNUSED, float debug.
- float   frac;
- float   num;
- float   den;
- float   v1x;
- float   v1y;
- float   v1dx;
- float   v1dy;
- float   v2x;
- float   v2y;
- float   v2dx;
- float   v2dy;
-
- v1x = (float)v1.x/FRACUNIT;
- v1y = (float)v1.y/FRACUNIT;
- v1dx = (float)v1.dx/FRACUNIT;
- v1dy = (float)v1.dy/FRACUNIT;
- v2x = (float)v2.x/FRACUNIT;
- v2y = (float)v2.y/FRACUNIT;
- v2dx = (float)v2.dx/FRACUNIT;
- v2dy = (float)v2.dy/FRACUNIT;
- 
- den = v1dy*v2dx - v1dx*v2dy;
-
- if (den == 0)
- return 0;   // parallel
- 
- num = (v1x - v2x)*v1dy + (v2y - v1y)*v1dx;
- frac = num / den;
-
- return frac*FRACUNIT;
-#endif */
-}
 
 
 /** fixed_t  */

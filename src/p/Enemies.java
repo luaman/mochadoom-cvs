@@ -17,7 +17,7 @@ import rr.side_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Enemies.java,v 1.1 2010/09/12 22:38:37 velktron Exp $
+// $Id: Enemies.java,v 1.2 2010/09/13 15:39:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,6 +32,9 @@ import rr.side_t;
 // GNU General Public License for more details.
 //
 // $Log: Enemies.java,v $
+// Revision 1.2  2010/09/13 15:39:17  velktron
+// Moving towards an unified gameplay approach...
+//
 // Revision 1.1  2010/09/12 22:38:37  velktron
 // Some work
 //
@@ -59,7 +62,7 @@ public abstract class Enemies {
     LevelLoader L;
     random RND;
 	
-  public static final String rcsid = "$Id: Enemies.java,v 1.1 2010/09/12 22:38:37 velktron Exp $";
+  public static final String rcsid = "$Id: Enemies.java,v 1.2 2010/09/13 15:39:17 velktron Exp $";
 
   private static int DI_EAST=0;
   private static int    DI_NORTHEAST=1;
@@ -85,10 +88,6 @@ public abstract class Enemies {
   {
           DI_NORTHWEST, DI_NORTHEAST, DI_SOUTHWEST, DI_SOUTHEAST
   };
-
-
-
-
 
   // void A_Fall (mobj_t *actor);
 
