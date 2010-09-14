@@ -6,7 +6,7 @@ import rr.line_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: spec.java,v 1.3 2010/09/14 15:34:01 velktron Exp $
+// $Id: spec.java,v 1.4 2010/09/14 23:49:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import rr.line_t;
 // GNU General Public License for more details.
 //
 // $Log: spec.java,v $
+// Revision 1.4  2010/09/14 23:49:39  velktron
+// action
+//
 // Revision 1.3  2010/09/14 15:34:01  velktron
 // The enormity of this commit is incredible (pun intended)
 //
@@ -42,7 +45,7 @@ import rr.line_t;
 
 /*
 static const char
-rcsid[] = "$Id: spec.java,v 1.3 2010/09/14 15:34:01 velktron Exp $";
+rcsid[] = "$Id: spec.java,v 1.4 2010/09/14 23:49:39 velktron Exp $";
 
 #include <stdlib.h>
 
@@ -89,7 +92,7 @@ public class spec{
     
     public static anim_t[]   anims=new anim_t[MAXANIMS];
     // MAES: was a pointer
-    public static anim_t  lastanim;
+    public static int  lastanim;
 
     
     
@@ -1359,7 +1362,7 @@ void P_SpawnSpecials ()
 
 class Ceilings{
 
-    public static final String rcsid = "$Id: spec.java,v 1.3 2010/09/14 15:34:01 velktron Exp $";
+    public static final String rcsid = "$Id: spec.java,v 1.4 2010/09/14 23:49:39 velktron Exp $";
 
     //
     // CEILINGS

@@ -39,6 +39,7 @@ import data.sounds.sfxenum_t;
 import doom.ActionType;
 import doom.acp1;
 import doom.player_t;
+import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
 
@@ -876,18 +877,18 @@ Teleport
          thinker = thinker.next)
         {
         // not a mobj
-        if (thinker.function.acp1 != (actionf_p1)P_MobjThinker)
+        if (thinker.function != think_t.P_MobjThinker)
             continue;   
 
         m = (mobj_t)thinker;
         
         // not a teleportman
-        if (m.type != MT_TELEPORTMAN )
+        if (m.type != mobjtype_t.MT_TELEPORTMAN )
             continue;       
 
         sector = m.subsector.sector;
         // wrong sector
-        if (sector-sectors != i )
+        if (sector.id != i )
             continue;   
 
         oldx = thing.x;
@@ -987,7 +988,7 @@ int     levelTimeCount;
 
 void UpdateSpecials ()
 {
-    anim_t anim;
+    int anim;
     int     pic;
     int     i;
     line_t line;
@@ -1002,7 +1003,8 @@ void UpdateSpecials ()
     }
     
     //  ANIMATE FLATS AND TEXTURES GLOBALLY
-    for (anim = anims ; anim < lastanim ; anim++)
+
+    for (anim = 0 ; anim < lastanim ; anim++)
     {
     for (i=anim.basepic ; i<anim.basepic+anim.numpics ; i++)
     {
@@ -6923,7 +6925,7 @@ class Lights{
      
      public anim_t[]   anims=new anim_t[MAXANIMS];
      // MAES: was a pointer
-     public anim_t  lastanim;
+     public int  lastanim;
 
      
      

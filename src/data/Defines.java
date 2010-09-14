@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.13 2010/09/13 15:39:17 velktron Exp $
+// $Id: Defines.java,v 1.14 2010/09/14 23:49:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -425,7 +425,7 @@ final static public point_t[][] lnodes =
 //Using patches saves a lot of space,
 //as they replace 320x200 full screen frames.
 //
-static public anim_t[] epsd0animinfo =
+static public final anim_t[] epsd0animinfo =
 {
  new anim_t(animenum_t.ANIM_ALWAYS, TICRATE/3, 3, new point_t( 224, 104 ) ),
   new anim_t( animenum_t.ANIM_ALWAYS, TICRATE/3, 3,  new point_t( 184, 160 ) ),
@@ -439,7 +439,7 @@ static public anim_t[] epsd0animinfo =
   new anim_t( animenum_t.ANIM_ALWAYS, TICRATE/3, 3,  new point_t( 64, 24 ) )
 };
 
-static public anim_t[] epsd1animinfo =
+static public final anim_t[] epsd1animinfo =
 {
   new anim_t( animenum_t.ANIM_LEVEL, TICRATE/3, 1,  new point_t( 128, 136 ), 1 ),
   new anim_t( animenum_t.ANIM_LEVEL, TICRATE/3, 1,  new point_t( 128, 136 ), 2 ),
@@ -452,7 +452,7 @@ static public anim_t[] epsd1animinfo =
   new anim_t( animenum_t.ANIM_LEVEL, TICRATE/3, 1,  new point_t( 128, 136 ), 8 )
 };
 
-static public anim_t[] epsd2animinfo =
+static public final anim_t[] epsd2animinfo =
 {
   new anim_t( animenum_t.ANIM_ALWAYS, TICRATE/3, 3,  new point_t( 104, 168 ) ),
   new anim_t( animenum_t.ANIM_ALWAYS, TICRATE/3, 3,  new point_t( 40, 136 ) ),
@@ -471,9 +471,9 @@ static public anim_t[] epsd2animinfo =
 
 // MAES: cute, but we can do it in a more Java-friendly way :-p
 
-public static int[] NUMANIMS={epsd0animinfo.length,epsd1animinfo.length,epsd2animinfo.length};
+public static final int[] NUMANIMS={epsd0animinfo.length,epsd1animinfo.length,epsd2animinfo.length};
 
-public static anim_t[][] anims =
+public static final anim_t[][] anims =
 {
  epsd0animinfo,
  epsd1animinfo,
@@ -1685,5 +1685,5 @@ public static final int SAVESTRINGSIZE = 24;
     
  
 static final String
-rcsid = "$Id: Defines.java,v 1.13 2010/09/13 15:39:17 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.14 2010/09/14 23:49:39 velktron Exp $";
 }
