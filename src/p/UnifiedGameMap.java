@@ -12,6 +12,8 @@ import static m.BBox.*;
 import static m.fixed_t.*;
 import static p.MapUtils.flags;
 import static p.mobj.*;
+import static p.mobj_t.MF_MISSILE;
+import g.DoomGame;
 import i.system;
 
 import m.random;
@@ -20,16 +22,20 @@ import rr.line_t;
 import rr.node_t;
 import rr.sector_t;
 import rr.seg_t;
+import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
 import w.WadLoader;
 import automap.DoomAutoMap;
 import data.doomstat;
+import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.state_t;
+import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import data.Defines.statenum_t;
+import data.sounds.sfxenum_t;
 import doom.ActionType;
 import doom.acp1;
 import doom.player_t;
@@ -51,20 +57,14 @@ public class UnifiedGameMap {
     random RND;
     UnifiedRenderer R;
     LevelLoader LL;
+    DoomGame DG;
     
     ////////////// Internal singletons //////////////
     
     Specials MySpec;
-	
-    ////////////// PIT INTERFACES ///////////////////
-	
-    interface PIT_LineFunction {
-        public boolean invoke(line_t ld);
-    }
- 
-    interface PIT_MobjFunction {
-        public boolean invoke(mobj_t thing);
-    }
+	DoorsFloors EV;
+	Plats PEV;
+	Lights LEV;
     
     //////////////////////////////////////////////
 
@@ -73,381 +73,7 @@ public class UnifiedGameMap {
 	public int		bottomslope;		// slopes to top and bottom of target
 	
 	int		attackrange;
-class Sight{
-	//
-	// P_CheckSight
-	//
-	int		sightzstart;		// eye z of looker
-
-
-	divline_t	strace;			// from t1 to t2
-	int		t2x;
-	int		t2y;
-
-	int[]		sightcounts=new int[2];
-
-	//
-	// P_InterceptVector2
-	// Returns the fractional intercept point
-	// along the first divline.
-	// This is only called by the addthings and addlines traversers.
-	//
-	private int
-	P_InterceptVector2
-	( divline_t	v2,
-	  divline_t	v1 )
-	{
-	    int	frac; 	// fixed_t
-	    int	num;	// fixed_t
-	    int	den;	// fixed_t
-		
-	    den = FixedMul (v1.dy>>8,v2.dx) - FixedMul(v1.dx>>8,v2.dy);
-
-	    if (den == 0)
-		return 0;
-	    //	I_Error ("P_InterceptVector: parallel");
-	    
-	    num = FixedMul ( (v1.x - v2.x)>>8 ,v1.dy) + 
-		FixedMul ( (v2.y - v1.y)>>8 , v1.dx);
-	    frac = FixedDiv (num , den);
-
-	    return frac;
-	}
-
-	//
-	// P_CrossSubsector
-	// Returns true
-	//  if strace crosses the given subsector successfully.
-	//
-	boolean P_CrossSubsector (int num)
-	{
-	    int		seg; // pointer inside segs
-	    line_t		line;
-	    int			s1;
-	    int			s2;
-	    int			count;
-	    subsector_t	sub;
-	    sector_t		front;
-	    sector_t		back;
-	    int		opentop; //fixed_t
-	    int		openbottom;
-	    divline_t		divl;
-	    vertex_t		v1;
-	    vertex_t		v2;
-	    int		frac; //fixed_t
-	    int		slope;
-		
-	if (RANGECHECK){
-	    if (num>=LL.numsubsectors)
-		system.Error ("P_CrossSubsector: ss %i with numss = %i",
-			 num,
-			 LL.numsubsectors);
-	}
-
-	    sub = LL.subsectors[num];
-	    
-	    // check lines
-	    count = sub.numlines;
-	    seg = sub.firstline;//LL.segs[sub.firstline];
-
-	    for ( ; count>0 ; seg++, count--)
-	    {
-		line = LL.segs[seg].linedef;
-
-		// allready checked other side?
-		if (line.validcount == R.validcount)
-		    continue;
-		
-		line.validcount = R.validcount;
-			
-		v1 = line.v1;
-		v2 = line.v2;
-		s1 = strace.DivlineSide (v1.x,v1.y);
-		s2 = strace.DivlineSide (v2.x, v2.y);
-
-		// line isn't crossed?
-		if (s1 == s2)
-		    continue;
-		
-		divl.x = v1.x;
-		divl.y = v1.y;
-		divl.dx = v2.x - v1.x;
-		divl.dy = v2.y - v1.y;
-		s1 = divl.DivlineSide (strace.x, strace.y);
-		s2 = divl.DivlineSide (t2x, t2y);
-
-		// line isn't crossed?
-		if (s1 == s2)
-		    continue;	
-
-		// stop because it is not two sided anyway
-		// might do this after updating validcount?
-		if ( !flags(line.flags, ML_TWOSIDED) )
-		    return false;
-		
-		// crosses a two sided line
-		front = LL.segs[seg].frontsector;
-		back = LL.segs[seg].backsector;
-
-		// no wall to block sight with?
-		if (front.floorheight == back.floorheight
-		    && front.ceilingheight == back.ceilingheight)
-		    continue;	
-
-		// possible occluder
-		// because of ceiling height differences
-		if (front.ceilingheight < back.ceilingheight)
-		    opentop = front.ceilingheight;
-		else
-		    opentop = back.ceilingheight;
-
-		// because of ceiling height differences
-		if (front.floorheight > back.floorheight)
-		    openbottom = front.floorheight;
-		else
-		    openbottom = back.floorheight;
-			
-		// quick test for totally closed doors
-		if (openbottom >= opentop)	
-		    return false;		// stop
-		
-		frac = P_InterceptVector2 (strace, divl);
-			
-		if (front.floorheight != back.floorheight)
-		{
-		    slope = FixedDiv (openbottom - sightzstart , frac);
-		    if (slope > bottomslope)
-			bottomslope = slope;
-		}
-			
-		if (front.ceilingheight != back.ceilingheight)
-		{
-		    slope = FixedDiv (opentop - sightzstart , frac);
-		    if (slope < topslope)
-			topslope = slope;
-		}
-			
-		if (topslope <= bottomslope)
-		    return false;		// stop				
-	    }
-	    // passed the subsector ok
-	    return true;		
-	}
-
-
-
-	//
-	// P_CrossBSPNode
-	// Returns true
-	//  if strace crosses the given node successfully.
-	//
-	boolean P_CrossBSPNode (int bspnum)
-	{
-	    node_t	bsp;
-	    int		side;
-
-	    if (flags(bspnum, NF_SUBSECTOR))
-	    {
-		if (bspnum == -1)
-		    return P_CrossSubsector (0);
-		else
-		    return P_CrossSubsector (bspnum&(~NF_SUBSECTOR));
-	    }
-			
-	    bsp = LL.nodes[bspnum];
-	    
-	    // decide which side the start point is on
-	    side = bsp.DivlineSide (strace.x, strace.y);
-	    if (side == 2)
-		side = 0;	// an "on" should cross both sides
-
-	    // cross the starting side
-	    if (!P_CrossBSPNode (bsp.children[side]) )
-		return false;
-		
-	    // the partition plane is crossed here
-	    if (side == bsp.DivlineSide (t2x, t2y))
-	    {
-		// the line doesn't touch the other side
-		return true;
-	    }
-	    
-	    // cross the ending side		
-	    return P_CrossBSPNode (bsp.children[side^1]);
-	}
-
-
-	//
-	// P_CheckSight
-	// Returns true
-	//  if a straight line between t1 and t2 is unobstructed.
-	// Uses REJECT.
-	//
-	private boolean
-	P_CheckSight
-	( mobj_t	t1,
-	  mobj_t	t2 )
-	{
-	    int		s1;
-	    int		s2;
-	    int		pnum;
-	    int		bytenum;
-	    int		bitnum;
-	    
-	    // First check for trivial rejection.
-
-	    // Determine subsector entries in REJECT table.
-	    s1 = t1.subsector.sector.id; //(t1.subsector.sector - sectors);
-	    s2 = t2.subsector.sector.id;// - sectors);
-	    pnum = s1*LL.numsectors + s2;
-	    bytenum = pnum>>3;
-	    bitnum = 1 << (pnum&7);
-
-	    // Check in REJECT table.
-	    if (flags(LL.rejectmatrix[bytenum],bitnum))
-	    {
-		sightcounts[0]++;
-
-		// can't possibly be connected
-		return false;	
-	    }
-
-	    // An unobstructed LOS is possible.
-	    // Now look from eyes of t1 to any part of t2.
-	    sightcounts[1]++;
-
-	    R.validcount++;
-		
-	    sightzstart = t1.z + t1.height - (t1.height>>2);
-	    topslope = (t2.z+t2.height) - sightzstart;
-	    bottomslope = (t2.z) - sightzstart;
-		
-	    strace.x = t1.x;
-	    strace.y = t1.y;
-	    t2x = t2.x;
-	    t2y = t2.y;
-	    strace.dx = t2.x - t1.x;
-	    strace.dy = t2.y - t1.y;
-
-	    // the head node is the last node output
-	    return P_CrossBSPNode (LL.numnodes-1);	
-	}
-}
-
-public class Specials{
-    public static enum typedef
-    {
-        ok,
-        crushed,
-        pastdest
-        
-    };
-
-    public static final int MAXANIMS =32;
-    //
-//  Animating line specials
-//
-    public static final int MAXLINEANIMS=64;
-
-    public static short   numlinespecials;
-    
-    public static anim_t[]   anims=new anim_t[MAXANIMS];
-    // MAES: was a pointer
-    public static anim_t  lastanim;
-
-    
-    
- //
- // P_InitPicAnims
- //
-
- // Floor/ceiling animation sequences,
- //  defined by first and last frame,
- //  i.e. the flat (64x64 tile) name to
- //  be used.
- // The full animation sequence is given
- //  using all the flats between the start
- //  and end entry, in the order found in
- //  the WAD file.
- //
-protected static animdef_t[]       animdefs =
- {
-     new animdef_t(false, "NUKAGE3",  "NUKAGE1",  8),
-     new animdef_t(false, "FWATER4",  "FWATER1",  8),
-     new animdef_t(false, "SWATER4",  "SWATER1",  8),
-     new animdef_t(false, "LAVA4",    "LAVA1",    8),
-     new animdef_t(false, "BLOOD3",   "BLOOD1",   8),
-
-     // DOOM II flat animations.
-     new animdef_t(false, "RROCK08",  "RROCK05",  8),     
-         new animdef_t(false, "SLIME04",  "SLIME01",  8),
-             new animdef_t(false, "SLIME08",  "SLIME05",  8),
-                 new animdef_t(false, "SLIME12",  "SLIME09",  8),
-
-     new animdef_t(true,  "BLODGR4",  "BLODGR1",  8),
-     new animdef_t(true,  "SLADRIP3", "SLADRIP1", 8),
-
-     new animdef_t(true,  "BLODRIP4", "BLODRIP1", 8),
-     new animdef_t(true,  "FIREWALL", "FIREWALA", 8),
-     new animdef_t(true,  "GSTFONT3", "GSTFONT1", 8),
-     new animdef_t(true,  "FIRELAVA", "FIRELAV3", 8),
-     new animdef_t(true,  "FIREMAG3", "FIREMAG1", 8),
-     new animdef_t(true,  "FIREBLU2", "FIREBLU1", 8),
-     new animdef_t(true,  "ROCKRED3", "ROCKRED1", 8),
-
-     new animdef_t(true,  "BFALL4",   "BFALL1",   8),
-     new animdef_t(true,  "SFALL4",   "SFALL1",   8),
-     new animdef_t(true,  "WFALL4",   "WFALL1",   8),
-     new animdef_t(true,  "DBRAIN4",  "DBRAIN1",  8),
-     // Maes: what bullshit. {-1}? Really?!
-     new animdef_t(false, "","",0)
- };
-
-public void InitPicAnims ()
-{
-    int     i;
-
-    
-    //  Init animation. MAES: sneaky base pointer conversion ;-)
-    lastanim = anims[0];
-    //MAES: for (i=0 ; animdefs[i].istexture != -1 ; i++)
-    for (i=0 ; animdefs[i].istexture ; i++)
-    {
-    if (animdefs[i].istexture)
-    {
-        // different episode ?
-        // TODO:
-        //if (R_CheckTextureNumForName(animdefs[i].startname) == -1)
-        //continue;   
-
-        lastanim.picnum = R_TextureNumForName (animdefs[i].endname);
-        lastanim.picnum = R_TextureNumForName (animdefs[i].startname);
-    }
-    else
-    {
-        if (W_CheckNumForName(animdefs[i].startname) == -1)
-        continue;
-
-        lastanim.picnum = R_FlatNumForName (animdefs[i].endname);
-        lastanim.basepic = R_FlatNumForName (animdefs[i].startname);
-    }
-
-    lastanim.istexture = animdefs[i].istexture;
-    lastanim.numpics = lastanim.picnum - lastanim.basepic + 1;
-
-    if (lastanim.numpics < 2)
-        I_Error ("P_InitPicAnims: bad cycle from %s to %s",
-             animdefs[i].startname,
-             animdefs[i].endname);
-    
-    lastanim.speed = animdefs[i].speed;
-    lastanim++;
-    }
-    
-}
-
-
-
+	
 //
 // UTILITIES
 //
@@ -466,23 +92,23 @@ getSide
   int       line,
   int       side )
 {
-    return sides[ (sectors[currentSector].lines[line]).sidenum[side] ];
+    return LL.sides[ (LL.sectors[currentSector].lines[line]).sidenum[side] ];
 }
 
 
 //
 // getSector()
-// Will return a sector_t*
+// Will return a sector_t
 //  given the number of the current sector,
 //  the line number and the side (0/1) that you want.
 //
-sector_t*
+sector_t
 getSector
 ( int       currentSector,
   int       line,
   int       side )
 {
-    return sides[ (sectors[currentSector].lines[line]).sidenum[side] ].sector;
+    return LL.sides[ (LL.sectors[currentSector].lines[line]).sidenum[side] ].sector;
 }
 
 
@@ -496,7 +122,7 @@ twoSided
 ( int   sector,
   int   line )
 {
-    return (sectors[sector].lines[line]).flags & ML_TWOSIDED;
+    return (LL.sectors[sector].lines[line]).flags & ML_TWOSIDED;
 }
 
 
@@ -507,13 +133,13 @@ twoSided
 // Return sector_t * of sector next to current.
 // NULL if not two-sided line
 //
-sector_t*
+sector_t
 getNextSector
-( line_t*   line,
-  sector_t* sec )
+( line_t   line,
+  sector_t sec )
 {
-    if (!(line.flags & ML_TWOSIDED))
-    return NULL;
+    if (!flags(line.flags ,ML_TWOSIDED))
+    return null;
         
     if (line.frontsector == sec)
     return line.backsector;
@@ -527,19 +153,19 @@ getNextSector
 // P_FindLowestFloorSurrounding()
 // FIND LOWEST FLOOR HEIGHT IN SURROUNDING SECTORS
 //
-fixed_t P_FindLowestFloorSurrounding(sector_t* sec)
+int FindLowestFloorSurrounding(sector_t sec)
 {
     int         i;
-    line_t*     check;
-    sector_t*       other;
-    fixed_t     floor = sec.floorheight;
+    line_t     check;
+    sector_t       other;
+    int     floor = sec.floorheight;
     
     for (i=0 ;i < sec.linecount ; i++)
     {
     check = sec.lines[i];
     other = getNextSector(check,sec);
 
-    if (!other)
+    if (other==null)
         continue;
     
     if (other.floorheight < floor)
@@ -550,23 +176,25 @@ fixed_t P_FindLowestFloorSurrounding(sector_t* sec)
 
 
 
-//
-// P_FindHighestFloorSurrounding()
-// FIND HIGHEST FLOOR HEIGHT IN SURROUNDING SECTORS
-//
-fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
+/** P_FindHighestFloorSurrounding()
+ *  FIND HIGHEST FLOOR HEIGHT IN SURROUNDING SECTORS
+ * 
+ * @param sec
+ * 
+ */
+int FindHighestFloorSurrounding(sector_t sec)
 {
     int         i;
-    line_t*     check;
-    sector_t*       other;
-    fixed_t     floor = -500*FRACUNIT;
+    line_t     check;
+    sector_t       other;
+    int     floor = -500*FRACUNIT;
     
     for (i=0 ;i < sec.linecount ; i++)
     {
     check = sec.lines[i];
     other = getNextSector(check,sec);
     
-    if (!other)
+    if (other==null)
         continue;
     
     if (other.floorheight > floor)
@@ -576,36 +204,37 @@ fixed_t P_FindHighestFloorSurrounding(sector_t *sec)
 }
 
 
+/**
+ * P_FindNextHighestFloor
+ * FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS
+ * Note: this should be doable w/o a fixed array.
+ * 
+ * @param sec
+ * @param currentheight
+ * @return fixed
+ */
 
-//
-// P_FindNextHighestFloor
-// FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS
-// Note: this should be doable w/o a fixed array.
-
-// 20 adjoining sectors max!
-#define MAX_ADJOINING_SECTORS       20
-
-fixed_t
+int
 P_FindNextHighestFloor
-( sector_t* sec,
+( sector_t sec,
   int       currentheight )
 {
     int         i;
     int         h;
     int         min;
-    line_t*     check;
-    sector_t*       other;
-    fixed_t     height = currentheight;
+    line_t     check;
+    sector_t       other;
+    int     height = currentheight;
 
     
-    fixed_t     heightlist[MAX_ADJOINING_SECTORS];      
+    int     heightlist[]=new int[MAX_ADJOINING_SECTORS];      
 
     for (i=0, h=0 ;i < sec.linecount ; i++)
     {
     check = sec.lines[i];
     other = getNextSector(check,sec);
 
-    if (!other)
+    if (other==null)
         continue;
     
     if (other.floorheight > height)
@@ -614,14 +243,13 @@ P_FindNextHighestFloor
     // Check for overflow. Exit.
     if ( h >= MAX_ADJOINING_SECTORS )
     {
-        fprintf( stderr,
-             "Sector with more than 20 adjoining sectors\n" );
+        System.err.print("Sector with more than 20 adjoining sectors\n" );
         break;
     }
     }
     
     // Find lowest height in list
-    if (!h)
+    if (h==0)
     return currentheight;
         
     min = heightlist[0];
@@ -638,20 +266,20 @@ P_FindNextHighestFloor
 //
 // FIND LOWEST CEILING IN THE SURROUNDING SECTORS
 //
-fixed_t
-P_FindLowestCeilingSurrounding(sector_t* sec)
+int
+FindLowestCeilingSurrounding(sector_t sec)
 {
     int         i;
-    line_t*     check;
-    sector_t*       other;
-    fixed_t     height = MAXINT;
+    line_t     check;
+    sector_t       other;
+    int     height = MAXINT;
     
     for (i=0 ;i < sec.linecount ; i++)
     {
     check = sec.lines[i];
     other = getNextSector(check,sec);
 
-    if (!other)
+    if (other==null)
         continue;
 
     if (other.ceilingheight < height)
@@ -664,19 +292,19 @@ P_FindLowestCeilingSurrounding(sector_t* sec)
 //
 // FIND HIGHEST CEILING IN THE SURROUNDING SECTORS
 //
-fixed_t P_FindHighestCeilingSurrounding(sector_t* sec)
+int FindHighestCeilingSurrounding(sector_t sec)
 {
     int     i;
-    line_t* check;
-    sector_t*   other;
-    fixed_t height = 0;
+    line_t check;
+    sector_t   other;
+    int height = 0;
     
     for (i=0 ;i < sec.linecount ; i++)
     {
     check = sec.lines[i];
     other = getNextSector(check,sec);
 
-    if (!other)
+    if (other==null)
         continue;
 
     if (other.ceilingheight > height)
@@ -691,14 +319,14 @@ fixed_t P_FindHighestCeilingSurrounding(sector_t* sec)
 // RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
 //
 int
-P_FindSectorFromLineTag
-( line_t*   line,
+FindSectorFromLineTag
+( line_t  line,
   int       start )
 {
     int i;
     
-    for (i=start+1;i<numsectors;i++)
-    if (sectors[i].tag == line.tag)
+    for (i=start+1;i<LL.numsectors;i++)
+    if (LL.sectors[i].tag == line.tag)
         return i;
     
     return -1;
@@ -711,14 +339,14 @@ P_FindSectorFromLineTag
 // Find minimum light from an adjacent sector
 //
 int
-P_FindMinSurroundingLight
-( sector_t* sector,
+FindMinSurroundingLight
+( sector_t sector,
   int       max )
 {
     int     i;
     int     min;
-    line_t* line;
-    sector_t*   check;
+    line_t line;
+    sector_t   check;
     
     min = max;
     for (i=0 ; i < sector.linecount ; i++)
@@ -726,7 +354,7 @@ P_FindMinSurroundingLight
     line = sector.lines[i];
     check = getNextSector(line,sector);
 
-    if (!check)
+    if (check==null)
         continue;
 
     if (check.lightlevel < min)
@@ -749,18 +377,18 @@ P_FindMinSurroundingLight
 //  to cross a line with a non 0 special.
 //
 void
-P_CrossSpecialLine
+CrossSpecialLine
 ( int       linenum,
   int       side,
   mobj_t  thing )
 {
     line_t line;
-    int     ok;
+    boolean     ok;
 
-    line = &lines[linenum];
+    line = LL.lines[linenum];
     
     //  Triggers that other things can activate
-    if (!thing.player)
+    if (thing.player==null)
     {
     // Things that should NOT trigger specials...
     switch(thing.type)
@@ -777,7 +405,7 @@ P_CrossSpecialLine
       default: break;
     }
         
-    ok = 0;
+    ok = false;
     switch(line.special)
     {
       case 39:  // TELEPORT TRIGGER
@@ -787,7 +415,7 @@ P_CrossSpecialLine
       case 4:   // RAISE DOOR
       case 10:  // PLAT DOWN-WAIT-UP-STAY TRIGGER
       case 88:  // PLAT DOWN-WAIT-UP-STAY RETRIGGER
-        ok = 1;
+        ok = true;
         break;
     }
     if (!ok)
@@ -802,413 +430,499 @@ P_CrossSpecialLine
     // All from here to RETRIGGERS.
       case 2:
     // Open Door
-    EV_DoDoor(line,open);
+    EV.DoDoor(line,vldoor_e.open);
     line.special = 0;
     break;
 
       case 3:
     // Close Door
-    EV_DoDoor(line,close);
+    EV.DoDoor(line,vldoor_e.close);
     line.special = 0;
     break;
 
       case 4:
     // Raise Door
-    EV_DoDoor(line,normal);
+    EV.DoDoor(line,vldoor_e.normal);
     line.special = 0;
     break;
     
       case 5:
     // Raise Floor
-    EV_DoFloor(line,raiseFloor);
+    EV.DoFloor(line,floor_e.raiseFloor);
     line.special = 0;
     break;
     
       case 6:
     // Fast Ceiling Crush & Raise
-    EV_DoCeiling(line,fastCrushAndRaise);
+    EV.DoCeiling(line,ceiling_e.fastCrushAndRaise);
     line.special = 0;
     break;
     
       case 8:
     // Build Stairs
-    EV_BuildStairs(line,build8);
+    EV.BuildStairs(line,stair_e.build8);
     line.special = 0;
     break;
     
       case 10:
     // PlatDownWaitUp
-    EV_DoPlat(line,downWaitUpStay,0);
+    PEV.DoPlat(line,plattype_e.downWaitUpStay,0);
     line.special = 0;
     break;
     
       case 12:
     // Light Turn On - brightest near
-    EV_LightTurnOn(line,0);
+    LEV.LightTurnOn(line,0);
     line.special = 0;
     break;
     
       case 13:
     // Light Turn On 255
-    EV_LightTurnOn(line,255);
+    LEV.LightTurnOn(line,255);
     line.special = 0;
     break;
     
       case 16:
     // Close Door 30
-    EV_DoDoor(line,close30ThenOpen);
+    EV.DoDoor(line,vldoor_e.close30ThenOpen);
     line.special = 0;
     break;
     
       case 17:
     // Start Light Strobing
-    EV_StartLightStrobing(line);
+    LEV.StartLightStrobing(line);
     line.special = 0;
     break;
     
       case 19:
     // Lower Floor
-    EV_DoFloor(line,lowerFloor);
+    EV.DoFloor(line,floor_e.lowerFloor);
     line.special = 0;
     break;
     
       case 22:
     // Raise floor to nearest height and change texture
-    EV_DoPlat(line,raiseToNearestAndChange,0);
+    PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0);
     line.special = 0;
     break;
     
       case 25:
     // Ceiling Crush and Raise
-    EV_DoCeiling(line,crushAndRaise);
+    EV.DoCeiling(line,ceiling_e.crushAndRaise);
     line.special = 0;
     break;
     
       case 30:
     // Raise floor to shortest texture height
     //  on either side of lines.
-    EV_DoFloor(line,raiseToTexture);
+    EV.DoFloor(line,floor_e.raiseToTexture);
     line.special = 0;
     break;
     
       case 35:
     // Lights Very Dark
-    EV_LightTurnOn(line,35);
+    LEV.LightTurnOn(line,35);
     line.special = 0;
     break;
     
       case 36:
     // Lower Floor (TURBO)
-    EV_DoFloor(line,turboLower);
+    EV.DoFloor(line,floor_e.turboLower);
     line.special = 0;
     break;
     
       case 37:
     // LowerAndChange
-    EV_DoFloor(line,lowerAndChange);
+    EV.DoFloor(line,floor_e.lowerAndChange);
     line.special = 0;
     break;
     
       case 38:
     // Lower Floor To Lowest
-    EV_DoFloor( line, lowerFloorToLowest );
+    EV.DoFloor( line, floor_e.lowerFloorToLowest );
     line.special = 0;
     break;
     
       case 39:
     // TELEPORT!
-    EV_Teleport( line, side, thing );
+    Teleport( line, side, thing );
     line.special = 0;
     break;
 
       case 40:
     // RaiseCeilingLowerFloor
-    EV_DoCeiling( line, raiseToHighest );
-    EV_DoFloor( line, lowerFloorToLowest );
+    EV.DoCeiling( line, ceiling_e.raiseToHighest );
+    EV.DoFloor( line, floor_e.lowerFloorToLowest );
     line.special = 0;
     break;
     
       case 44:
     // Ceiling Crush
-    EV_DoCeiling( line, lowerAndCrush );
+    EV.DoCeiling( line, ceiling_e.lowerAndCrush );
     line.special = 0;
     break;
     
       case 52:
     // EXIT!
-    G_ExitLevel ();
+    DG.ExitLevel ();
     break;
     
       case 53:
     // Perpetual Platform Raise
-    EV_DoPlat(line,perpetualRaise,0);
+    PEV.DoPlat(line,plattype_e.perpetualRaise,0);
     line.special = 0;
     break;
     
       case 54:
     // Platform Stop
-    EV_StopPlat(line);
+    PEV.StopPlat(line);
     line.special = 0;
     break;
 
       case 56:
     // Raise Floor Crush
-    EV_DoFloor(line,raiseFloorCrush);
+    EV.DoFloor(line,floor_e.raiseFloorCrush);
     line.special = 0;
     break;
 
       case 57:
     // Ceiling Crush Stop
-    EV_CeilingCrushStop(line);
+    EV.CeilingCrushStop(line);
     line.special = 0;
     break;
     
       case 58:
     // Raise Floor 24
-    EV_DoFloor(line,raiseFloor24);
+    EV.DoFloor(line,floor_e.raiseFloor24);
     line.special = 0;
     break;
 
       case 59:
     // Raise Floor 24 And Change
-    EV_DoFloor(line,raiseFloor24AndChange);
+    EV.DoFloor(line,floor_e.raiseFloor24AndChange);
     line.special = 0;
     break;
     
       case 104:
     // Turn lights off in sector(tag)
-    EV_TurnTagLightsOff(line);
+    LEV.TurnTagLightsOff(line);
     line.special = 0;
     break;
     
       case 108:
     // Blazing Door Raise (faster than TURBO!)
-    EV_DoDoor (line,blazeRaise);
+    EV.DoDoor (line,vldoor_e.blazeRaise);
     line.special = 0;
     break;
     
       case 109:
     // Blazing Door Open (faster than TURBO!)
-    EV_DoDoor (line,blazeOpen);
+          EV.DoDoor (line,vldoor_e.blazeOpen);
     line.special = 0;
     break;
     
       case 100:
     // Build Stairs Turbo 16
-    EV_BuildStairs(line,turbo16);
+    EV.BuildStairs(line,stair_e.turbo16);
     line.special = 0;
     break;
     
       case 110:
     // Blazing Door Close (faster than TURBO!)
-    EV_DoDoor (line,blazeClose);
+    EV.DoDoor (line,vldoor_e.blazeClose);
     line.special = 0;
     break;
 
       case 119:
     // Raise floor to nearest surr. floor
-    EV_DoFloor(line,raiseFloorToNearest);
+    EV.DoFloor(line,floor_e.raiseFloorToNearest);
     line.special = 0;
     break;
     
       case 121:
     // Blazing PlatDownWaitUpStay
-    EV_DoPlat(line,blazeDWUS,0);
+    PEV.DoPlat(line,plattype_e.blazeDWUS,0);
     line.special = 0;
     break;
     
       case 124:
     // Secret EXIT
-    G_SecretExitLevel ();
+    DG.SecretExitLevel ();
     break;
         
       case 125:
     // TELEPORT MonsterONLY
-    if (!thing.player)
+    if (thing.player==null)
     {
-        EV_Teleport( line, side, thing );
+        Teleport( line, side, thing );
         line.special = 0;
     }
     break;
     
       case 130:
     // Raise Floor Turbo
-    EV_DoFloor(line,raiseFloorTurbo);
+    EV.DoFloor(line,floor_e.raiseFloorTurbo);
     line.special = 0;
     break;
     
       case 141:
     // Silent Ceiling Crush & Raise
-    EV_DoCeiling(line,silentCrushAndRaise);
+    EV.DoCeiling(line,ceiling_e.silentCrushAndRaise);
     line.special = 0;
     break;
     
     // RETRIGGERS.  All from here till end.
       case 72:
     // Ceiling Crush
-    EV_DoCeiling( line, lowerAndCrush );
+    EV.DoCeiling( line, ceiling_e.lowerAndCrush );
     break;
 
       case 73:
     // Ceiling Crush and Raise
-    EV_DoCeiling(line,crushAndRaise);
+    EV.DoCeiling(line,ceiling_e.crushAndRaise);
     break;
 
       case 74:
     // Ceiling Crush Stop
-    EV_CeilingCrushStop(line);
+    EV.CeilingCrushStop(line);
     break;
     
       case 75:
     // Close Door
-    EV_DoDoor(line,close);
+    EV.DoDoor(line,vldoor_e.close);
     break;
     
       case 76:
     // Close Door 30
-    EV_DoDoor(line,close30ThenOpen);
+    EV.DoDoor(line,vldoor_e.close30ThenOpen);
     break;
     
       case 77:
     // Fast Ceiling Crush & Raise
-    EV_DoCeiling(line,fastCrushAndRaise);
+    EV.DoCeiling(line,ceiling_e.fastCrushAndRaise);
     break;
     
       case 79:
     // Lights Very Dark
-    EV_LightTurnOn(line,35);
+    LEV.LightTurnOn(line,35);
     break;
     
       case 80:
     // Light Turn On - brightest near
-    EV_LightTurnOn(line,0);
+    LEV.LightTurnOn(line,0);
     break;
     
       case 81:
     // Light Turn On 255
-    EV_LightTurnOn(line,255);
+    LEV.LightTurnOn(line,255);
     break;
     
       case 82:
     // Lower Floor To Lowest
-    EV_DoFloor( line, lowerFloorToLowest );
+    EV.DoFloor( line, floor_e.lowerFloorToLowest );
     break;
     
       case 83:
     // Lower Floor
-    EV_DoFloor(line,lowerFloor);
+    EV.DoFloor(line,floor_e.lowerFloor);
     break;
 
       case 84:
     // LowerAndChange
-    EV_DoFloor(line,lowerAndChange);
+    EV.DoFloor(line,floor_e.lowerAndChange);
     break;
 
       case 86:
     // Open Door
-    EV_DoDoor(line,open);
+    EV.DoDoor(line,vldoor_e.open);
     break;
     
       case 87:
     // Perpetual Platform Raise
-    EV_DoPlat(line,perpetualRaise,0);
+    PEV.DoPlat(line,plattype_e.perpetualRaise,0);
     break;
     
       case 88:
     // PlatDownWaitUp
-    EV_DoPlat(line,downWaitUpStay,0);
+    PEV.DoPlat(line,plattype_e.downWaitUpStay,0);
     break;
     
       case 89:
     // Platform Stop
-    EV_StopPlat(line);
+    PEV.StopPlat(line);
     break;
     
       case 90:
     // Raise Door
-    EV_DoDoor(line,normal);
+    EV.DoDoor(line,vldoor_e.normal);
     break;
     
       case 91:
     // Raise Floor
-    EV_DoFloor(line,raiseFloor);
+    EV.DoFloor(line,floor_e.raiseFloor);
     break;
     
       case 92:
     // Raise Floor 24
-    EV_DoFloor(line,raiseFloor24);
+    EV.DoFloor(line,floor_e.raiseFloor24);
     break;
     
       case 93:
     // Raise Floor 24 And Change
-    EV_DoFloor(line,raiseFloor24AndChange);
+    EV.DoFloor(line,floor_e.raiseFloor24AndChange);
     break;
     
       case 94:
     // Raise Floor Crush
-    EV_DoFloor(line,raiseFloorCrush);
+    EV.DoFloor(line,floor_e.raiseFloorCrush);
     break;
     
       case 95:
     // Raise floor to nearest height
     // and change texture.
-    EV_DoPlat(line,raiseToNearestAndChange,0);
+    PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0);
     break;
     
       case 96:
     // Raise floor to shortest texture height
     // on either side of lines.
-    EV_DoFloor(line,raiseToTexture);
+    EV.DoFloor(line,floor_e.raiseToTexture);
     break;
     
       case 97:
     // TELEPORT!
-    EV_Teleport( line, side, thing );
+    Teleport( line, side, thing );
     break;
     
       case 98:
     // Lower Floor (TURBO)
-    EV_DoFloor(line,turboLower);
+    EV.DoFloor(line,floor_e.turboLower);
     break;
 
       case 105:
     // Blazing Door Raise (faster than TURBO!)
-    EV_DoDoor (line,blazeRaise);
+    EV.DoDoor (line,vldoor_e.blazeRaise);
     break;
     
       case 106:
     // Blazing Door Open (faster than TURBO!)
-    EV_DoDoor (line,blazeOpen);
+    EV.DoDoor (line,vldoor_e.blazeOpen);
     break;
 
       case 107:
     // Blazing Door Close (faster than TURBO!)
-    EV_DoDoor (line,blazeClose);
+    EV.DoDoor (line,vldoor_e.blazeClose);
     break;
 
       case 120:
     // Blazing PlatDownWaitUpStay.
-    EV_DoPlat(line,blazeDWUS,0);
+    PEV.DoPlat(line,plattype_e.blazeDWUS,0);
     break;
     
       case 126:
     // TELEPORT MonsterONLY.
-    if (!thing.player)
-        EV_Teleport( line, side, thing );
+    if (thing.player==null)
+        Teleport( line, side, thing );
     break;
     
       case 128:
     // Raise To Nearest Floor
-    EV_DoFloor(line,raiseFloorToNearest);
+    EV.DoFloor(line,floor_e.raiseFloorToNearest);
     break;
     
       case 129:
     // Raise Floor Turbo
-    EV_DoFloor(line,raiseFloorTurbo);
+    EV.DoFloor(line,floor_e.raiseFloorTurbo);
     break;
     }
 }
 
+//
+// TELEPORTATION
+//
+int
+Teleport
+( line_t    line,
+  int       side,
+  mobj_t    thing )
+{
+    int     i;
+    int     tag;
+    mobj_t  m;
+    mobj_t  fog;
+    int an;
+    thinker_t   thinker;
+    sector_t    sector;
+    int oldx, oldy, oldz; // fixed_t
+
+    // don't teleport missiles
+    if ((thing.flags & MF_MISSILE)!=0)
+    return 0;       
+
+    // Don't teleport if hit back of line,
+    //  so you can get out of teleporter.
+    if (side == 1)      
+    return 0;   
+
+    
+    tag = line.tag;
+    for (i = 0; i < LL.numsectors; i++)
+    {
+    if (LL.sectors[ i ].tag == tag )
+    {
+        thinker = thinkercap.next;
+        for (thinker = thinkercap.next;
+         thinker != thinkercap;
+         thinker = thinker.next)
+        {
+        // not a mobj
+        if (thinker.function.acp1 != (actionf_p1)P_MobjThinker)
+            continue;   
+
+        m = (mobj_t)thinker;
+        
+        // not a teleportman
+        if (m.type != MT_TELEPORTMAN )
+            continue;       
+
+        sector = m.subsector.sector;
+        // wrong sector
+        if (sector-sectors != i )
+            continue;   
+
+        oldx = thing.x;
+        oldy = thing.y;
+        oldz = thing.z;
+                
+        if (!P_TeleportMove (thing, m.x, m.y))
+            return 0;
+        
+        thing.z = thing.floorz;  //fixme: not needed?
+        if (thing.player)
+            thing.player.viewz = thing.z+thing.player.viewheight;
+                
+        // spawn teleport fog at source and destination
+        fog = P_SpawnMobj (oldx, oldy, oldz, MT_TFOG);
+        S_StartSound (fog, sfx_telept);
+        an = m.angle >> ANGLETOFINESHIFT;
+        fog = P_SpawnMobj (m.x+20*finecosine[an], m.y+20*finesine[an]
+                   , thing.z, MT_TFOG);
+
+        // emit sound, where?
+        S_StartSound (fog, sfx_telept);
+        
+        // don't move for a bit
+        if (thing.player)
+            thing.reactiontime = 18;   
+
+        thing.angle = m.angle;
+        thing.momx = thing.momy = thing.momz = 0;
+        return 1;
+        }   
+    }
+    }
+    return 0;
+}
 
 
 /**
@@ -1220,17 +934,17 @@ ShootSpecialLine
 ( mobj_t   thing,
   line_t   line )
 {
-    int     ok;
+    boolean     ok;
     
     //  Impacts that other things can activate.
     if (thing.player==null)
     {
-    ok = 0;
+    ok = false;
     switch(line.special)
     {
       case 46:
         // OPEN DOOR IMPACT
-        ok = 1;
+        ok = true;
         break;
     }
     if (!ok)
@@ -1241,94 +955,25 @@ ShootSpecialLine
     {
       case 24:
     // RAISE FLOOR
-    EV_DoFloor(line,raiseFloor);
-    P_ChangeSwitchTexture(line,0);
+    EV.DoFloor(line,floor_e.raiseFloor);
+    ChangeSwitchTexture(line,0);
     break;
     
       case 46:
     // OPEN DOOR
-    EV_DoDoor(line,open);
-    P_ChangeSwitchTexture(line,1);
+    EV.DoDoor(line,open);
+    ChangeSwitchTexture(line,1);
     break;
     
       case 47:
     // RAISE FLOOR NEAR AND CHANGE
-    EV_DoPlat(line,raiseToNearestAndChange,0);
-    P_ChangeSwitchTexture(line,0);
+    EV.DoPlat(line,raiseToNearestAndChange,0);
+    ChangeSwitchTexture(line,0);
     break;
     }
 }
 
 
-
-//
-// P_PlayerInSpecialSector
-// Called every tic frame
-//  that the player origin is in a special sector
-//
-public void PlayerInSpecialSector (player_t player)
-{
-    sector_t   sector;
-    
-    sector = player.mo.subsector.sector;
-
-    // Falling, not all the way down yet?
-    if (player.mo.z != sector.floorheight)
-    return; 
-
-    // Has hitten ground.
-    switch (sector.special)
-    {
-      case 5:
-    // HELLSLIME DAMAGE
-    if (!player.powers[pw_ironfeet])
-        if (!(leveltime&0x1f))
-        DamageMobj (player.mo, NULL, NULL, 10);
-    break;
-    
-      case 7:
-    // NUKAGE DAMAGE
-    if (!player.powers[pw_ironfeet])
-        if (!(leveltime&0x1f))
-        P_DamageMobj (player.mo, NULL, NULL, 5);
-    break;
-    
-      case 16:
-    // SUPER HELLSLIME DAMAGE
-      case 4:
-    // STROBE HURT
-    if (!player.powers[pw_ironfeet]
-        || (P_Random()<5) )
-    {
-        if (!(leveltime&0x1f))
-        P_DamageMobj (player.mo, NULL, NULL, 20);
-    }
-    break;
-            
-      case 9:
-    // SECRET SECTOR
-    player.secretcount++;
-    sector.special = 0;
-    break;
-            
-      case 11:
-    // EXIT SUPER DAMAGE! (for E1M8 finale)
-    player.cheats &= ~CF_GODMODE;
-
-    if (!(leveltime&0x1f))
-        P_DamageMobj (player.mo, NULL, NULL, 20);
-
-    if (player.health <= 10)
-        G_ExitLevel();
-    break;
-            
-      default:
-    I_Error ("P_PlayerInSpecialSector: "
-         "unknown special %i",
-         sector.special);
-    break;
-    };
-}
 
 
 
@@ -1340,20 +985,20 @@ public void PlayerInSpecialSector (player_t player)
 boolean     levelTimer;
 int     levelTimeCount;
 
-void P_UpdateSpecials ()
+void UpdateSpecials ()
 {
-    anim_t* anim;
+    anim_t anim;
     int     pic;
     int     i;
-    line_t* line;
+    line_t line;
 
     
     //  LEVEL TIMER
     if (levelTimer == true)
     {
     levelTimeCount--;
-    if (!levelTimeCount)
-        G_ExitLevel();
+    if (levelTimeCount==0)
+        DG.ExitLevel();
     }
     
     //  ANIMATE FLATS AND TEXTURES GLOBALLY
@@ -1408,528 +1053,1505 @@ void P_UpdateSpecials ()
             buttonlist[i].btexture;
             break;
         }
-        S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
-        memset(&buttonlist[i],0,sizeof(button_t));
+        ; // TODO:S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
+        // TODO: memset(buttonlist[i],0,sizeof(button_t));
         }
     }
     
 }
 
+class Actions{
 
-
-//
-// Special Stuff that can not be categorized
-//
-int EV_DoDonut(line_t*  line)
-{
-    sector_t*       s1;
-    sector_t*       s2;
-    sector_t*       s3;
-    int         secnum;
-    int         rtn;
-    int         i;
-    floormove_t*    floor;
-    
-    secnum = -1;
-    rtn = 0;
-    while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
-    {
-    s1 = &sectors[secnum];
-        
-    // ALREADY MOVING?  IF SO, KEEP GOING...
-    if (s1.specialdata)
-        continue;
-            
-    rtn = 1;
-    s2 = getNextSector(s1.lines[0],s1);
-    for (i = 0;i < s2.linecount;i++)
-    {
-        if ((!s2.lines[i].flags & ML_TWOSIDED) ||
-        (s2.lines[i].backsector == s1))
-        continue;
-        s3 = s2.lines[i].backsector;
-        
-        //  Spawn rising slime
-        floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
-        P_AddThinker (&floor.thinker);
-        s2.specialdata = floor;
-        floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-        floor.type = donutRaise;
-        floor.crush = false;
-        floor.direction = 1;
-        floor.sector = s2;
-        floor.speed = FLOORSPEED / 2;
-        floor.texture = s3.floorpic;
-        floor.newspecial = 0;
-        floor.floordestheight = s3.floorheight;
-        
-        //  Spawn lowering donut-hole
-        floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
-        P_AddThinker (&floor.thinker);
-        s1.specialdata = floor;
-        floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-        floor.type = lowerFloor;
-        floor.crush = false;
-        floor.direction = -1;
-        floor.sector = s1;
-        floor.speed = FLOORSPEED / 2;
-        floor.floordestheight = s3.floorheight;
-        break;
-    }
-    }
-    return rtn;
-}
-
-
-
-//
-// SPECIAL SPAWNING
-//
-
-//
-// P_SpawnSpecials
-// After the map has been loaded, scan for specials
-//  that spawn thinkers
-//
-short       numlinespecials;
-line_t*     linespeciallist[MAXLINEANIMS];
-
-
-// Parses command line parameters.
-void P_SpawnSpecials ()
-{
-    sector_t*   sector;
-    int     i;
-    int     episode;
-
-    episode = 1;
-    if (W_CheckNumForName("texture2") >= 0)
-    episode = 2;
-
-    
-    // See if -TIMER needs to be used.
-    levelTimer = false;
-    
-    i = M_CheckParm("-avg");
-    if (i && deathmatch)
-    {
-    levelTimer = true;
-    levelTimeCount = 20 * 60 * 35;
-    }
-    
-    i = M_CheckParm("-timer");
-    if (i && deathmatch)
-    {
-    int time;
-    time = atoi(myargv[i+1]) * 60 * 35;
-    levelTimer = true;
-    levelTimeCount = time;
-    }
-    
-    //  Init special SECTORs.
-    sector = sectors;
-    for (i=0 ; i<numsectors ; i++, sector++)
-    {
-    if (!sector.special)
-        continue;
-    
-    switch (sector.special)
-    {
-      case 1:
-        // FLICKERING LIGHTS
-        P_SpawnLightFlash (sector);
-        break;
-
-      case 2:
-        // STROBE FAST
-        P_SpawnStrobeFlash(sector,FASTDARK,0);
-        break;
-        
-      case 3:
-        // STROBE SLOW
-        P_SpawnStrobeFlash(sector,SLOWDARK,0);
-        break;
-        
-      case 4:
-        // STROBE FAST/DEATH SLIME
-        P_SpawnStrobeFlash(sector,FASTDARK,0);
-        sector.special = 4;
-        break;
-        
-      case 8:
-        // GLOWING LIGHT
-        P_SpawnGlowingLight(sector);
-        break;
-      case 9:
-        // SECRET SECTOR
-        totalsecret++;
-        break;
-        
-      case 10:
-        // DOOR CLOSE IN 30 SECONDS
-        P_SpawnDoorCloseIn30 (sector);
-        break;
-        
-      case 12:
-        // SYNC STROBE SLOW
-        P_SpawnStrobeFlash (sector, SLOWDARK, 1);
-        break;
-
-      case 13:
-        // SYNC STROBE FAST
-        P_SpawnStrobeFlash (sector, FASTDARK, 1);
-        break;
-
-      case 14:
-        // DOOR RAISE IN 5 MINUTES
-        P_SpawnDoorRaiseIn5Mins (sector, i);
-        break;
-        
-      case 17:
-        P_SpawnFireFlicker(sector);
-        break;
-    }
-    }
-
-    
-    //  Init line EFFECTs
-    numlinespecials = 0;
-    for (i = 0;i < numlines; i++)
-    {
-    switch(lines[i].special)
-    {
-      case 48:
-        // EFFECT FIRSTCOL SCROLL+
-        linespeciallist[numlinespecials] = &lines[i];
-        numlinespecials++;
-        break;
-    }
-    }
-
-    
-    //  Init other misc stuff
-    for (i = 0;i < MAXCEILINGS;i++)
-    activeceilings[i] = NULL;
-
-    for (i = 0;i < MAXPLATS;i++)
-    activeplats[i] = NULL;
-    
-    for (i = 0;i < MAXBUTTONS;i++)
-    memset(&buttonlist[i],0,sizeof(button_t));
-
-    // UNUSED: no horizonal sliders.
-    //  P_InitSlidingDoorFrames();
-}
-
-
-}
-
-class Ceilings{
-
-    //
-    // CEILINGS
-    //
-
-
-    ceiling_t[]  activeceilings=new ceiling_t[MAXCEILINGS];
-
-
-    //
-    // T_MoveCeiling
-    //
-
-    void T_MoveCeiling (ceiling_t ceiling)
-    {
-        result_e    res;
-        
-        switch(ceiling.direction)
-        {
-          case 0:
-        // IN STASIS
-        break;
-          case 1:
-        // UP
-        res = T_MovePlane(ceiling.sector,
-                  ceiling.speed,
-                  ceiling.topheight,
-                  false,1,ceiling.direction);
-        
-        if (!(leveltime&7))
-        {
-            switch(ceiling.type)
-            {
-              case silentCrushAndRaise:
-            break;
-              default:
-            S_StartSound((mobj_t *)&ceiling.sector.soundorg,
-                     sfx_stnmov);
-            // ?
-            break;
-            }
-        }
-        
-        if (res == pastdest)
-        {
-            switch(ceiling.type)
-            {
-              case raiseToHighest:
-            P_RemoveActiveCeiling(ceiling);
-            break;
-            
-              case silentCrushAndRaise:
-            S_StartSound((mobj_t *)&ceiling.sector.soundorg,
-                     sfx_pstop);
-              case fastCrushAndRaise:
-              case crushAndRaise:
-            ceiling.direction = -1;
-            break;
-            
-              default:
-            break;
-            }
-            
-        }
-        break;
-        
-          case -1:
-        // DOWN
-        res = T_MovePlane(ceiling.sector,
-                  ceiling.speed,
-                  ceiling.bottomheight,
-                  ceiling.crush,1,ceiling.direction);
-        
-        if (!(leveltime&7))
-        {
-            switch(ceiling.type)
-            {
-              case silentCrushAndRaise: break;
-              default:
-            S_StartSound((mobj_t *)&ceiling.sector.soundorg,
-                     sfx_stnmov);
-            }
-        }
-        
-        if (res == pastdest)
-        {
-            switch(ceiling.type)
-            {
-              case silentCrushAndRaise:
-            S_StartSound((mobj_t *)&ceiling.sector.soundorg,
-                     sfx_pstop);
-              case crushAndRaise:
-            ceiling.speed = CEILSPEED;
-              case fastCrushAndRaise:
-            ceiling.direction = 1;
-            break;
-
-              case lowerAndCrush:
-              case lowerToFloor:
-            P_RemoveActiveCeiling(ceiling);
-            break;
-
-              default:
-            break;
-            }
-        }
-        else // ( res != pastdest )
-        {
-            if (res == crushed)
-            {
-            switch(ceiling.type)
-            {
-              case silentCrushAndRaise:
-              case crushAndRaise:
-              case lowerAndCrush:
-                ceiling.speed = CEILSPEED / 8;
+    public void dispatch(DoomActions action, Object a, Object b){
+        switch (action){
+            case A_KeenDie:
+                    A_KeenDie((mobj_t)a);
                 break;
-
-              default:
-                break;
-            }
-            }
+                
         }
-        break;
-        }
+        
     }
-
-
+    
     //
-    // EV_DoCeiling
-    // Move a ceiling up/down and all around!
+    // ACTION ROUTINES
     //
-    int
-    EV_DoCeiling
-    ( line_t   line,
-      ceiling_e type )
-    {
-        int     secnum;
-        int     rtn;
-        sector_t   sec;
-        ceiling_t  ceiling;
-        
-        secnum = -1;
-        rtn = 0;
-        
-        //  Reactivate in-stasis ceilings...for certain types.
-        switch(type)
-        {
-          case fastCrushAndRaise:
-          case silentCrushAndRaise:
-          case crushAndRaise:
-        P_ActivateInStasisCeiling(line);
-          default:
-        break;
-        }
-        
-        while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
-        {
-        sec = &sectors[secnum];
-        if (sec.specialdata)
-            continue;
-        
-        // new door thinker
-        rtn = 1;
-        ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, 0);
-        P_AddThinker (&ceiling.thinker);
-        sec.specialdata = ceiling;
-        ceiling.thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
-        ceiling.sector = sec;
-        ceiling.crush = false;
-        
-        switch(type)
-        {
-          case fastCrushAndRaise:
-            ceiling.crush = true;
-            ceiling.topheight = sec.ceilingheight;
-            ceiling.bottomheight = sec.floorheight + (8*FRACUNIT);
-            ceiling.direction = -1;
-            ceiling.speed = CEILSPEED * 2;
-            break;
 
-          case silentCrushAndRaise:
-          case crushAndRaise:
-            ceiling.crush = true;
-            ceiling.topheight = sec.ceilingheight;
-          case lowerAndCrush:
-          case lowerToFloor:
-            ceiling.bottomheight = sec.floorheight;
-            if (type != lowerToFloor)
-            ceiling.bottomheight += 8*FRACUNIT;
-            ceiling.direction = -1;
-            ceiling.speed = CEILSPEED;
-            break;
+   
+    public void A_KeenDie (mobj_t mo)
+      {
+          thinker_t  th;
+          mobj_t mo2;
+          line_t  junk;
 
-          case raiseToHighest:
-            ceiling.topheight = P_FindHighestCeilingSurrounding(sec);
-            ceiling.direction = 1;
-            ceiling.speed = CEILSPEED;
-            break;
-        }
+          A_Fall (mo);
+          
+          // scan the remaining thinkers
+          // to see if all Keens are dead
+          for (th = thinkercap.next ; th != thinkercap ; th=th.next)
+          {
+          if (th.function.acp1 != (actionf_p1)P_MobjThinker)
+              continue;
+
+          mo2 = (mobj_t)th;
+          if (mo2 != mo
+              && mo2.type == mo.type
+              && mo2.health > 0)
+          {
+              // other Keen not dead
+              return;     
+          }
+          }
+
+          junk.tag = 666;
+          EV_DoDoor(junk,open);
+      }
+
+
+
+      //
+      // A_Look
+      // Stay in state until a player is sighted.
+      //
+      void A_Look (mobj_t actor)
+      {
+          mobj_t targ;
+          
+          actor.threshold = 0;   // any shot will wake up
+          targ = actor.subsector.sector.soundtarget;
+
+          if (targ
+          && (targ.flags & MF_SHOOTABLE) )
+          {
+          actor.target = targ;
+
+          if ( actor.flags & MF_AMBUSH )
+          {
+              if (P_CheckSight (actor, actor.target))
+              goto seeyou;
+          }
+          else
+              goto seeyou;
+          }
+          
+          
+          if (!P_LookForPlayers (actor, false) )
+          return;
+              
+          // go into chase state
+        seeyou:
+          if (actor.info.seesound)
+          {
+          int     sound;
+              
+          switch (actor.info.seesound)
+          {
+            case sfx_posit1:
+            case sfx_posit2:
+            case sfx_posit3:
+              sound = sfx_posit1+RND.P_Random()%3;
+              break;
+
+            case sfx_bgsit1:
+            case sfx_bgsit2:
+              sound = sfx_bgsit1+RND.P_Random()%2;
+              break;
+
+            default:
+              sound = actor.info.seesound;
+              break;
+          }
+
+          if (actor.type==MT_SPIDER
+              || actor.type == MT_CYBORG)
+          {
+              // full volume
+              S_StartSound (NULL, sound);
+          }
+          else
+              S_StartSound (actor, sound);
+          }
+
+          P_SetMobjState (actor, actor.info.seestate);
+      }
+
+
+      //
+      // A_Chase
+      // Actor has a melee attack,
+      // so it tries to close as fast as possible
+      //
+      void A_Chase (mobj_t   actor)
+      {
+          int     delta;
+
+          if (actor.reactiontime)
+          actor.reactiontime--;
+                      
+
+          // modify target threshold
+          if  (actor.threshold)
+          {
+          if (!actor.target
+              || actor.target.health <= 0)
+          {
+              actor.threshold = 0;
+          }
+          else
+              actor.threshold--;
+          }
+          
+          // turn towards movement direction if not there yet
+          if (actor.movedir < 8)
+          {
+          actor.angle &= (7<<29);
+          delta = actor.angle - (actor.movedir << 29);
+          
+          if (delta > 0)
+              actor.angle -= ANG90/2;
+          else if (delta < 0)
+              actor.angle += ANG90/2;
+          }
+
+          if (!actor.target
+          || !(actor.target.flags&MF_SHOOTABLE))
+          {
+          // look for a new target
+          if (P_LookForPlayers(actor,true))
+              return;     // got a new target
+          
+          P_SetMobjState (actor, actor.info.spawnstate);
+          return;
+          }
+          
+          // do not attack twice in a row
+          if (actor.flags & MF_JUSTATTACKED)
+          {
+          actor.flags &= ~MF_JUSTATTACKED;
+          if (gameskill != sk_nightmare && !fastparm)
+              P_NewChaseDir (actor);
+          return;
+          }
+          
+          // check for melee attack
+          if (actor.info.meleestate
+          && P_CheckMeleeRange (actor))
+          {
+          if (actor.info.attacksound)
+              S_StartSound (actor, actor.info.attacksound);
+
+          P_SetMobjState (actor, actor.info.meleestate);
+          return;
+          }
+          
+          // check for missile attack
+          if (actor.info.missilestate)
+          {
+          if (gameskill < sk_nightmare
+              && !fastparm && actor.movecount)
+          {
+              goto nomissile;
+          }
+          
+          if (!P_CheckMissileRange (actor))
+              goto nomissile;
+          
+          P_SetMobjState (actor, actor.info.missilestate);
+          actor.flags |= MF_JUSTATTACKED;
+          return;
+          }
+
+          // ?
+        nomissile:
+          // possibly choose another target
+          if (netgame
+          && !actor.threshold
+          && !P_CheckSight (actor, actor.target) )
+          {
+          if (P_LookForPlayers(actor,true))
+              return; // got a new target
+          }
+          
+          // chase towards player
+          if (--actor.movecount<0
+          || !P_Move (actor))
+          {
+          P_NewChaseDir (actor);
+          }
+          
+          // make active sound
+          if (actor.info.activesound
+          && P_Random () < 3)
+          {
+          S_StartSound (actor, actor.info.activesound);
+          }
+      }
+
+
+      //
+      // A_FaceTarget
+      //
+      void A_FaceTarget (mobj_t  actor)
+      {   
+          if (!actor.target)
+          return;
+          
+          actor.flags &= ~MF_AMBUSH;
+          
+          actor.angle = R_PointToAngle2 (actor.x,
+                          actor.y,
+                          actor.target.x,
+                          actor.target.y);
+          
+          if (actor.target.flags & MF_SHADOW)
+          actor.angle += (RND.P_Random()-RND.P_Random())<<21;
+      }
+
+
+      //
+      // A_PosAttack
+      //
+      void A_PosAttack (mobj_t  actor)
+      {
+          int     angle;
+          int     damage;
+          int     slope;
+          
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+          angle = actor.angle;
+          slope = P_AimLineAttack (actor, angle, MISSILERANGE);
+
+          S_StartSound (actor, sfx_pistol);
+          angle += (RND.P_Random()-RND.P_Random())<<20;
+          damage = ((RND.P_Random()%5)+1)*3;
+          P_LineAttack (actor, angle, MISSILERANGE, slope, damage);
+      }
+
+      void A_SPosAttack (mobj_t  actor)
+      {
+          int     i;
+          int     angle;
+          int     bangle;
+          int     damage;
+          int     slope;
+          
+          if (!actor.target)
+          return;
+
+          S_StartSound (actor, sfx_shotgn);
+          A_FaceTarget (actor);
+          bangle = actor.angle;
+          slope = P_AimLineAttack (actor, bangle, MISSILERANGE);
+
+          for (i=0 ; i<3 ; i++)
+          {
+          angle = bangle + ((RND.P_Random()-RND.P_Random())<<20);
+          damage = ((RND.P_Random()%5)+1)*3;
+          P_LineAttack (actor, angle, MISSILERANGE, slope, damage);
+          }
+      }
+
+      void A_CPosAttack (mobj_t  actor)
+      {
+          int     angle;
+          int     bangle;
+          int     damage;
+          int     slope;
+          
+          if (!actor.target)
+          return;
+
+          S_StartSound (actor, sfx_shotgn);
+          A_FaceTarget (actor);
+          bangle = actor.angle;
+          slope = P_AimLineAttack (actor, bangle, MISSILERANGE);
+
+          angle = bangle + ((RND.P_Random()-RND.P_Random())<<20);
+          damage = ((RND.P_Random()%5)+1)*3;
+          P_LineAttack (actor, angle, MISSILERANGE, slope, damage);
+      }
+
+      void A_CPosRefire (mobj_t  actor)
+      {   
+          // keep firing unless target got out of sight
+          A_FaceTarget (actor);
+
+          if (P_Random () < 40)
+          return;
+
+          if (!actor.target
+          || actor.target.health <= 0
+          || !P_CheckSight (actor, actor.target) )
+          {
+          P_SetMobjState (actor, actor.info.seestate);
+          }
+      }
+
+
+      void A_SpidRefire (mobj_t  actor)
+      {   
+          // keep firing unless target got out of sight
+          A_FaceTarget (actor);
+
+          if (P_Random () < 10)
+          return;
+
+          if (!actor.target
+          || actor.target.health <= 0
+          || !P_CheckSight (actor, actor.target) )
+          {
+          P_SetMobjState (actor, actor.info.seestate);
+          }
+      }
+
+      void A_BspiAttack (mobj_t *actor)
+      {   
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+
+          // launch a missile
+          P_SpawnMissile (actor, actor.target, MT_ARACHPLAZ);
+      }
+
+
+      //
+      // A_TroopAttack
+      //
+      void A_TroopAttack (mobj_t  actor)
+      {
+          int     damage;
+          
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+          if (P_CheckMeleeRange (actor))
+          {
+          S_StartSound (actor, sfx_claw);
+          damage = (RND.P_Random()%8+1)*3;
+          P_DamageMobj (actor.target, actor, actor, damage);
+          return;
+          }
+
+          
+          // launch a missile
+          P_SpawnMissile (actor, actor.target, MT_TROOPSHOT);
+      }
+
+
+      void A_SargAttack (mobj_t  actor)
+      {
+          int     damage;
+
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+          if (P_CheckMeleeRange (actor))
+          {
+          damage = ((RND.P_Random()%10)+1)*4;
+          P_DamageMobj (actor.target, actor, actor, damage);
+          }
+      }
+
+      void A_HeadAttack (mobj_t  actor)
+      {
+          int     damage;
+          
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+          if (P_CheckMeleeRange (actor))
+          {
+          damage = (RND.P_Random()%6+1)*10;
+          P_DamageMobj (actor.target, actor, actor, damage);
+          return;
+          }
+          
+          // launch a missile
+          P_SpawnMissile (actor, actor.target, MT_HEADSHOT);
+      }
+
+      void A_CyberAttack (mobj_t  actor)
+      {   
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+          P_SpawnMissile (actor, actor.target, MT_ROCKET);
+      }
+
+
+      void A_BruisAttack (mobj_t  actor)
+      {
+          int     damage;
+          
+          if (!actor.target)
+          return;
+              
+          if (P_CheckMeleeRange (actor))
+          {
+          S_StartSound (actor, sfx_claw);
+          damage = (RND.P_Random()%8+1)*10;
+          P_DamageMobj (actor.target, actor, actor, damage);
+          return;
+          }
+          
+          // launch a missile
+          P_SpawnMissile (actor, actor.target, MT_BRUISERSHOT);
+      }
+
+
+      //
+      // A_SkelMissile
+      //
+      void A_SkelMissile (mobj_t  actor)
+      {   
+          mobj_t  mo;
+          
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+          actor.z += 16*FRACUNIT;    // so missile spawns higher
+          mo = P_SpawnMissile (actor, actor.target, MT_TRACER);
+          actor.z -= 16*FRACUNIT;    // back to normal
+
+          mo.x += mo.momx;
+          mo.y += mo.momy;
+          mo.tracer = actor.target;
+      }
+
+      int TRACEANGLE = 0xc000000;
+
+      void A_Tracer (mobj_t  actor)
+      {
+          angle_t exact;
+          fixed_t dist;
+          fixed_t slope;
+          mobj_t  dest;
+          mobj_t  th;
+              
+          if (gametic & 3)
+          return;
+          
+          // spawn a puff of smoke behind the rocket      
+          P_SpawnPuff (actor.x, actor.y, actor.z);
+          
+          th = P_SpawnMobj (actor.x-actor.momx,
+                    actor.y-actor.momy,
+                    actor.z, MT_SMOKE);
+          
+          th.momz = FRACUNIT;
+          th.tics -= RND.P_Random()&3;
+          if (th.tics < 1)
+          th.tics = 1;
+          
+          // adjust direction
+          dest = actor.tracer;
+          
+          if (!dest || dest.health <= 0)
+          return;
+          
+          // change angle 
+          exact = R_PointToAngle2 (actor.x,
+                       actor.y,
+                       dest.x,
+                       dest.y);
+
+          if (exact != actor.angle)
+          {
+          if (exact - actor.angle > 0x80000000)
+          {
+              actor.angle -= TRACEANGLE;
+              if (exact - actor.angle < 0x80000000)
+              actor.angle = exact;
+          }
+          else
+          {
+              actor.angle += TRACEANGLE;
+              if (exact - actor.angle > 0x80000000)
+              actor.angle = exact;
+          }
+          }
+          
+          exact = actor.angle>>ANGLETOFINESHIFT;
+          actor.momx = FixedMul (actor.info.speed, finecosine[exact]);
+          actor.momy = FixedMul (actor.info.speed, finesine[exact]);
+          
+          // change slope
+          dist = P_AproxDistance (dest.x - actor.x,
+                      dest.y - actor.y);
+          
+          dist = dist / actor.info.speed;
+
+          if (dist < 1)
+          dist = 1;
+          slope = (dest.z+40*FRACUNIT - actor.z) / dist;
+
+          if (slope < actor.momz)
+          actor.momz -= FRACUNIT/8;
+          else
+          actor.momz += FRACUNIT/8;
+      }
+
+
+      void A_SkelWhoosh (mobj_t   actor)
+      {
+          if (!actor.target)
+          return;
+          A_FaceTarget (actor);
+          S_StartSound (actor,sfx_skeswg);
+      }
+
+      void A_SkelFist (mobj_t     actor)
+      {
+          int     damage;
+
+          if (!actor.target)
+          return;
+              
+          A_FaceTarget (actor);
+          
+          if (P_CheckMeleeRange (actor))
+          {
+          damage = ((RND.P_Random()%10)+1)*6;
+          S_StartSound (actor, sfx_skepch);
+          P_DamageMobj (actor.target, actor, actor, damage);
+          }
+      }
+
+
+
+      //
+      // PIT_VileCheck
+      // Detect a corpse that could be raised.
+      //
+      mobj_t      corpsehit;
+      mobj_t      vileobj;
+      int     viletryx;
+      int     viletryy;
+
+      boolean PIT_VileCheck (mobj_t   thing)
+      {
+          int     maxdist;
+          boolean check;
+          
+          if (!(thing.flags & MF_CORPSE) )
+          return true;    // not a monster
+          
+          if (thing.tics != -1)
+          return true;    // not lying still yet
+          
+          if (thing.info.raisestate == S_NULL)
+          return true;    // monster doesn't have a raise state
+          
+          maxdist = thing.info.radius + mobjinfo[MT_VILE].radius;
+          
+          if ( abs(thing.x - viletryx) > maxdist
+           || abs(thing.y - viletryy) > maxdist )
+          return true;        // not actually touching
+              
+          corpsehit = thing;
+          corpsehit.momx = corpsehit.momy = 0;
+          corpsehit.height <<= 2;
+          check = P_CheckPosition (corpsehit, corpsehit.x, corpsehit.y);
+          corpsehit.height >>= 2;
+
+          if (!check)
+          return true;        // doesn't fit here
+              
+          return false;       // got one, so stop checking
+      }
+
+
+
+      //
+      // A_VileChase
+      // Check for ressurecting a body
+      //
+      void A_VileChase (mobj_t  actor)
+      {
+          int         xl;
+          int         xh;
+          int         yl;
+          int         yh;
+          
+          int         bx;
+          int         by;
+
+          mobjinfo_t*     info;
+          mobj_t      temp;
+          
+          if (actor.movedir != DI_NODIR)
+          {
+          // check for corpses to raise
+          viletryx =
+              actor.x + actor.info.speed*xspeed[actor.movedir];
+          viletryy =
+              actor.y + actor.info.speed*yspeed[actor.movedir];
+
+          xl = (viletryx - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          yl = (viletryy - bmaporgy - MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          yh = (viletryy - bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          
+          vileobj = actor;
+          for (bx=xl ; bx<=xh ; bx++)
+          {
+              for (by=yl ; by<=yh ; by++)
+              {
+              // Call PIT_VileCheck to check
+              // whether object is a corpse
+              // that canbe raised.
+              if (!P_BlockThingsIterator(bx,by,PIT_VileCheck))
+              {
+                  // got one!
+                  temp = actor.target;
+                  actor.target = corpsehit;
+                  A_FaceTarget (actor);
+                  actor.target = temp;
+                          
+                  P_SetMobjState (actor, S_VILE_HEAL1);
+                  S_StartSound (corpsehit, sfx_slop);
+                  info = corpsehit.info;
+                  
+                  P_SetMobjState (corpsehit,info.raisestate);
+                  corpsehit.height <<= 2;
+                  corpsehit.flags = info.flags;
+                  corpsehit.health = info.spawnhealth;
+                  corpsehit.target = NULL;
+
+                  return;
+              }
+              }
+          }
+          }
+
+          // Return to normal attack.
+          A_Chase (actor);
+      }
+
+
+      //
+      // A_VileStart
+      //
+      void A_VileStart (mobj_t  actor)
+      {
+          S_StartSound (actor, sfx_vilatk);
+      }
+
+
+      //
+      // A_Fire
+      // Keep fire in front of player unless out of sight
+      //
+      void A_Fire (mobj_t  actor);
+
+      void A_StartFire (mobj_t  actor)
+      {
+          S_StartSound(actor,sfx_flamst);
+          A_Fire(actor);
+      }
+
+      void A_FireCrackle (mobj_t  actor)
+      {
+          S_StartSound(actor,sfx_flame);
+          A_Fire(actor);
+      }
+
+      void A_Fire (mobj_t  actor)
+      {
+          mobj_t  dest;
+          unsigned    an;
+              
+          dest = actor.tracer;
+          if (!dest)
+          return;
+              
+          // don't move it if the vile lost sight
+          if (!P_CheckSight (actor.target, dest) )
+          return;
+
+          an = dest.angle >> ANGLETOFINESHIFT;
+
+          P_UnsetThingPosition (actor);
+          actor.x = dest.x + FixedMul (24*FRACUNIT, finecosine[an]);
+          actor.y = dest.y + FixedMul (24*FRACUNIT, finesine[an]);
+          actor.z = dest.z;
+          P_SetThingPosition (actor);
+      }
+
+
+
+      //
+      // A_VileTarget
+      // Spawn the hellfire
+      //
+      void A_VileTarget (mobj_t   actor)
+      {
+          mobj_t  fog;
+          
+          if (!actor.target)
+          return;
+
+          A_FaceTarget (actor);
+
+          fog = P_SpawnMobj (actor.target.x,
+                     actor.target.x,
+                     actor.target.z, MT_FIRE);
+          
+          actor.tracer = fog;
+          fog.target = actor;
+          fog.tracer = actor.target;
+          A_Fire (fog);
+      }
+
+
+
+
+      //
+      // A_VileAttack
+      //
+      void A_VileAttack (mobj_t  actor)
+      {   
+          mobj_t  fire;
+          int     an;
+          
+          if (!actor.target)
+          return;
+          
+          A_FaceTarget (actor);
+
+          if (!P_CheckSight (actor, actor.target) )
+          return;
+
+          S_StartSound (actor, sfx_barexp);
+          P_DamageMobj (actor.target, actor, actor, 20);
+          actor.target.momz = 1000*FRACUNIT/actor.target.info.mass;
+          
+          an = actor.angle >> ANGLETOFINESHIFT;
+
+          fire = actor.tracer;
+
+          if (!fire)
+          return;
+              
+          // move the fire between the vile and the player
+          fire.x = actor.target.x - FixedMul (24*FRACUNIT, finecosine[an]);
+          fire.y = actor.target.y - FixedMul (24*FRACUNIT, finesine[an]);  
+          P_RadiusAttack (fire, actor, 70 );
+      }
+
+
+
+
+      //
+      // Mancubus attack,
+      // firing three missiles (bruisers)
+      // in three different directions?
+      // Doesn't look like it. 
+      //
+      #define FATSPREAD   (ANG90/8)
+
+      void A_FatRaise (mobj_t *actor)
+      {
+          A_FaceTarget (actor);
+          S_StartSound (actor, sfx_manatk);
+      }
+
+
+      void A_FatAttack1 (mobj_t  actor)
+      {
+          mobj_t  mo;
+          int     an;
+          
+          A_FaceTarget (actor);
+          // Change direction  to ...
+          actor.angle += FATSPREAD;
+          P_SpawnMissile (actor, actor.target, MT_FATSHOT);
+
+          mo = P_SpawnMissile (actor, actor.target, MT_FATSHOT);
+          mo.angle += FATSPREAD;
+          an = mo.angle >> ANGLETOFINESHIFT;
+          mo.momx = FixedMul (mo.info.speed, finecosine[an]);
+          mo.momy = FixedMul (mo.info.speed, finesine[an]);
+      }
+
+      void A_FatAttack2 (mobj_t  actor)
+      {
+          mobj_t  mo;
+          int     an;
+
+          A_FaceTarget (actor);
+          // Now here choose opposite deviation.
+          actor.angle -= FATSPREAD;
+          P_SpawnMissile (actor, actor.target, MT_FATSHOT);
+
+          mo = P_SpawnMissile (actor, actor.target, MT_FATSHOT);
+          mo.angle -= FATSPREAD*2;
+          an = mo.angle >> ANGLETOFINESHIFT;
+          mo.momx = FixedMul (mo.info.speed, finecosine[an]);
+          mo.momy = FixedMul (mo.info.speed, finesine[an]);
+      }
+
+      void A_FatAttack3 (mobj_t   actor)
+      {
+          mobj_t  mo;
+          int     an;
+
+          A_FaceTarget (actor);
+          
+          mo = P_SpawnMissile (actor, actor.target, MT_FATSHOT);
+          mo.angle -= FATSPREAD/2;
+          an = mo.angle >> ANGLETOFINESHIFT;
+          mo.momx = FixedMul (mo.info.speed, finecosine[an]);
+          mo.momy = FixedMul (mo.info.speed, finesine[an]);
+
+          mo = P_SpawnMissile (actor, actor.target, MT_FATSHOT);
+          mo.angle += FATSPREAD/2;
+          an = mo.angle >> ANGLETOFINESHIFT;
+          mo.momx = FixedMul (mo.info.speed, finecosine[an]);
+          mo.momy = FixedMul (mo.info.speed, finesine[an]);
+      }
+
+
+      //
+      // SkullAttack
+      // Fly at the player like a missile.
+      //
+      #define SKULLSPEED      (20*FRACUNIT)
+
+      void A_SkullAttack (mobj_t  actor)
+      {
+          mobj_t      dest;
+          angle_t     an;
+          int         dist;
+
+          if (!actor.target)
+          return;
+              
+          dest = actor.target;   
+          actor.flags |= MF_SKULLFLY;
+
+          S_StartSound (actor, actor.info.attacksound);
+          A_FaceTarget (actor);
+          an = actor.angle >> ANGLETOFINESHIFT;
+          actor.momx = FixedMul (SKULLSPEED, finecosine[an]);
+          actor.momy = FixedMul (SKULLSPEED, finesine[an]);
+          dist = P_AproxDistance (dest.x - actor.x, dest.y - actor.y);
+          dist = dist / SKULLSPEED;
+          
+          if (dist < 1)
+          dist = 1;
+          actor.momz = (dest.z+(dest.height>>1) - actor.z) / dist;
+      }
+
+
+      //
+      // A_PainShootSkull
+      // Spawn a lost soul and launch it at the target
+      //
+      void
+      A_PainShootSkull
+      ( mobj_t    actor,
+        angle_t   angle )
+      {
+          fixed_t x;
+          fixed_t y;
+          fixed_t z;
+          
+          mobj_t  newmobj;
+          angle_t an;
+          int     prestep;
+          int     count;
+          thinker_t*  currentthinker;
+
+          // count total number of skull currently on the level
+          count = 0;
+
+          currentthinker = thinkercap.next;
+          while (currentthinker != &thinkercap)
+          {
+          if (   (currentthinker.function.acp1 == (actionf_p1)P_MobjThinker)
+              && ((mobj_t *)currentthinker).type == MT_SKULL)
+              count++;
+          currentthinker = currentthinker.next;
+          }
+
+          // if there are allready 20 skulls on the level,
+          // don't spit another one
+          if (count > 20)
+          return;
+
+
+          // okay, there's playe for another one
+          an = angle >> ANGLETOFINESHIFT;
+          
+          prestep =
+          4*FRACUNIT
+          + 3*(actor.info.radius + mobjinfo[MT_SKULL].radius)/2;
+          
+          x = actor.x + FixedMul (prestep, finecosine[an]);
+          y = actor.y + FixedMul (prestep, finesine[an]);
+          z = actor.z + 8*FRACUNIT;
+              
+          newmobj = P_SpawnMobj (x , y, z, MT_SKULL);
+
+          // Check for movements.
+          if (!P_TryMove (newmobj, newmobj.x, newmobj.y))
+          {
+          // kill it immediately
+          P_DamageMobj (newmobj,actor,actor,10000);   
+          return;
+          }
+              
+          newmobj.target = actor.target;
+          A_SkullAttack (newmobj);
+      }
+
+
+      //
+      // A_PainAttack
+      // Spawn a lost soul and launch it at the target
+      // 
+      void A_PainAttack (mobj_t  actor)
+      {
+          if (!actor.target)
+          return;
+
+          A_FaceTarget (actor);
+          A_PainShootSkull (actor, actor.angle);
+      }
+
+
+      void A_PainDie (mobj_t  actor)
+      {
+          A_Fall (actor);
+          A_PainShootSkull (actor, actor.angle+ANG90);
+          A_PainShootSkull (actor, actor.angle+ANG180);
+          A_PainShootSkull (actor, actor.angle+ANG270);
+      }
+
+
+
+
+
+
+      void A_Scream (mobj_t  actor)
+      {
+          int     sound;
+          
+          switch (actor.info.deathsound)
+          {
+            case 0:
+          return;
+              
+            case sfx_podth1:
+            case sfx_podth2:
+            case sfx_podth3:
+          sound = sfx_podth1 + P_Random ()%3;
+          break;
+              
+            case sfx_bgdth1:
+            case sfx_bgdth2:
+          sound = sfx_bgdth1 + P_Random ()%2;
+          break;
+          
+            default:
+          sound = actor.info.deathsound;
+          break;
+          }
+
+          // Check for bosses.
+          if (actor.type==MT_SPIDER
+          || actor.type == MT_CYBORG)
+          {
+          // full volume
+          S_StartSound (NULL, sound);
+          }
+          else
+          S_StartSound (actor, sound);
+      }
+
+
+      void A_XScream (mobj_t  actor)
+      {
+          S_StartSound (actor, sfx_slop); 
+      }
+
+      void A_Pain (mobj_t  actor)
+      {
+          if (actor.info.painsound)
+          S_StartSound (actor, actor.info.painsound);   
+      }
+
+
+
+      void A_Fall (mobj_t actor)
+      {
+          // actor is on ground, it can be walked over
+          actor.flags &= ~MF_SOLID;
+
+          // So change this if corpse objects
+          // are meant to be obstacles.
+      }
+
+
+      //
+      // A_Explode
+      //
+      void A_Explode (mobj_t  thingy)
+      {
+          P_RadiusAttack ( thingy, thingy.target, 128 );
+      }
+
+
+      //
+      // A_BossDeath
+      // Possibly trigger special effects
+      // if on first boss level
+      //
+      void A_BossDeath (mobj_t  mo)
+      {
+          thinker_t*  th;
+          mobj_t  mo2;
+          line_t  junk;
+          int     i;
+              
+          if ( gamemode == commercial)
+          {
+          if (gamemap != 7)
+              return;
+              
+          if ((mo.type != MT_FATSO)
+              && (mo.type != MT_BABY))
+              return;
+          }
+          else
+          {
+          switch(gameepisode)
+          {
+            case 1:
+              if (gamemap != 8)
+              return;
+
+              if (mo.type != MT_BRUISER)
+              return;
+              break;
+              
+            case 2:
+              if (gamemap != 8)
+              return;
+
+              if (mo.type != MT_CYBORG)
+              return;
+              break;
+              
+            case 3:
+              if (gamemap != 8)
+              return;
+              
+              if (mo.type != MT_SPIDER)
+              return;
+              
+              break;
+              
+            case 4:
+              switch(gamemap)
+              {
+                case 6:
+              if (mo.type != MT_CYBORG)
+                  return;
+              break;
+              
+                case 8: 
+              if (mo.type != MT_SPIDER)
+                  return;
+              break;
+              
+                default:
+              return;
+              break;
+              }
+              break;
+              
+            default:
+              if (gamemap != 8)
+              return;
+              break;
+          }
+              
+          }
+
+          
+          // make sure there is a player alive for victory
+          for (i=0 ; i<MAXPLAYERS ; i++)
+          if (playeringame[i] && players[i].health > 0)
+              break;
+          
+          if (i==MAXPLAYERS)
+          return; // no one left alive, so do not end game
+          
+          // scan the remaining thinkers to see
+          // if all bosses are dead
+          for (th = thinkercap.next ; th != &thinkercap ; th=th.next)
+          {
+          if (th.function.acp1 != (actionf_p1)P_MobjThinker)
+              continue;
+          
+          mo2 = (mobj_t *)th;
+          if (mo2 != mo
+              && mo2.type == mo.type
+              && mo2.health > 0)
+          {
+              // other boss not dead
+              return;
+          }
+          }
+          
+          // victory!
+          if ( gamemode == commercial)
+          {
+          if (gamemap == 7)
+          {
+              if (mo.type == MT_FATSO)
+              {
+              junk.tag = 666;
+              EV.DoFloor(&junk,lowerFloorToLowest);
+              return;
+              }
+              
+              if (mo.type == MT_BABY)
+              {
+              junk.tag = 667;
+              EV.DoFloor(&junk,raiseToTexture);
+              return;
+              }
+          }
+          }
+          else
+          {
+          switch(gameepisode)
+          {
+            case 1:
+              junk.tag = 666;
+              EV.DoFloor (&junk, lowerFloorToLowest);
+              return;
+              break;
+              
+            case 4:
+              switch(gamemap)
+              {
+                case 6:
+              junk.tag = 666;
+              EV_DoDoor (&junk, blazeOpen);
+              return;
+              break;
+              
+                case 8:
+              junk.tag = 666;
+              EV.DoFloor (&junk, lowerFloorToLowest);
+              return;
+              break;
+              }
+          }
+          }
+          
+          G_ExitLevel ();
+      }
+
+
+      void A_Hoof (mobj_t  mo)
+      {
+          S_StartSound (mo, sfx_hoof);
+          A_Chase (mo);
+      }
+
+      void A_Metal (mobj_t  mo)
+      {
+          S_StartSound (mo, sfx_metal);
+          A_Chase (mo);
+      }
+
+      void A_BabyMetal (mobj_t  mo)
+      {
+          S_StartSound (mo, sfx_bspwlk);
+          A_Chase (mo);
+      }
+
+      void
+      A_OpenShotgun2
+      ( player_t* player,
+        pspdef_t* psp )
+      {
+          S_StartSound (player.mo, sfx_dbopn);
+      }
+
+      void
+      A_LoadShotgun2
+      ( player_t* player,
+        pspdef_t* psp )
+      {
+          S_StartSound (player.mo, sfx_dbload);
+      }
+
+      void
+      A_ReFire
+      ( player_t* player,
+        pspdef_t* psp );
+
+      void
+      A_CloseShotgun2
+      ( player_t* player,
+        pspdef_t* psp )
+      {
+          S_StartSound (player.mo, sfx_dbcls);
+          A_ReFire(player,psp);
+      }
+
+
+
+      mobj_t      braintargets[32];
+      int     numbraintargets;
+      int     braintargeton;
+
+      void A_BrainAwake (mobj_t  mo)
+      {
+          thinker_t  thinker;
+          mobj_t  m;
+          
+          // find all the target spots
+          numbraintargets = 0;
+          braintargeton = 0;
+          
+          thinker = thinkercap.next;
+          for (thinker = thinkercap.next ;
+           thinker != &thinkercap ;
+           thinker = thinker.next)
+          {
+          if (thinker.function.acp1 != (actionf_p1)P_MobjThinker)
+              continue;   // not a mobj
+
+          m = (mobj_t *)thinker;
+
+          if (m.type == MT_BOSSTARGET )
+          {
+              braintargets[numbraintargets] = m;
+              numbraintargets++;
+          }
+          }
+          
+          S_StartSound (NULL,sfx_bossit);
+      }
+
+
+      void A_BrainPain (mobj_t    mo)
+      {
+       ;   //TODO: S_StartSound (null,sfx_bospn);
+      }
+
+
+      void A_BrainScream (mobj_t  mo)
+      {
+          int     x;
+          int     y;
+          int     z;
+          mobj_t  th;
+          
+          for (x=mo.x - 196*FRACUNIT ; x< mo.x + 320*FRACUNIT ; x+= FRACUNIT*8)
+          {
+          y = mo.y - 320*FRACUNIT;
+          z = 128 + RND.P_Random()*2*FRACUNIT;
+          th = P_SpawnMobj (x,y,z, MT_ROCKET);
+          th.momz = RND.P_Random()*512;
+
+          P_SetMobjState (th, S_BRAINEXPLODE1);
+
+          th.tics -= RND.P_Random()&7;
+          if (th.tics < 1)
+              th.tics = 1;
+          }
+          
+          S_StartSound (NULL,sfx_bosdth);
+      }
+
+
+
+      void A_BrainExplode (mobj_t  mo)
+      {
+          int     x;
+          int     y;
+          int     z;
+          mobj_t  th;
+          
+          x = mo.x + (RND.P_Random () - RND.P_Random ())*2048;
+          y = mo.y;
+          z = 128 + RND.P_Random()*2*FRACUNIT;
+          th = P_SpawnMobj (x,y,z, MT_ROCKET);
+          th.momz = RND.P_Random()*512;
+
+          P_SetMobjState (th, S_BRAINEXPLODE1);
+
+          th.tics -= RND.P_Random()&7;
+          if (th.tics < 1)
+          th.tics = 1;
+      }
+
+
+      void A_BrainDie (mobj_t     mo)
+      {
+          G_ExitLevel ();
+      }
+
+      private int  easy = 0;
+      
+      void A_BrainSpit (mobj_t    mo)
+      {
+          mobj_t  targ;
+          mobj_t  newmobj;
+          
+          easy ^= 1;
+          if (DS.gameskill.ordinal() <= skill_t.sk_easy.ordinal() && (easy==0))
+          return;
+              
+          // shoot a cube at current target
+          targ = braintargets[braintargeton];
+          braintargeton = (braintargeton+1)%numbraintargets;
+
+          // spawn brain missile
+          newmobj = P_SpawnMissile (mo, targ, MT_SPAWNSHOT);
+          newmobj.target = targ;
+          newmobj.reactiontime =
+          ((targ.y - mo.y)/newmobj.momy) / newmobj.state.tics;
+
+          S_StartSound(NULL, sfx_bospit);
+      }
+
+
+      // travelling cube sound
+      void A_SpawnSound (mobj_t  mo)  
+      {
+          S_StartSound (mo,sfx_boscub);
+          A_SpawnFly(mo);
+      }
+
+       
+      void A_SpawnFly (mobj_t  mo)
+      {
+          mobj_t  newmobj;
+          mobj_t  fog;
+          mobj_t  targ;
+          int     r;
+          mobjtype_t  type;
+          
+          if (--mo.reactiontime)
+          return; // still flying
+          
+          targ = mo.target;
+
+          // First spawn teleport fog.
+          fog = P_SpawnMobj (targ.x, targ.y, targ.z, MT_SPAWNFIRE);
+          S_StartSound (fog, sfx_telept);
+
+          // Randomly select monster to spawn.
+          r = P_Random ();
+
+          // Probability distribution (kind of :),
+          // decreasing likelihood.
+          if ( r<50 )
+          type = MT_TROOP;
+          else if (r<90)
+          type = MT_SERGEANT;
+          else if (r<120)
+          type = MT_SHADOWS;
+          else if (r<130)
+          type = MT_PAIN;
+          else if (r<160)
+          type = MT_HEAD;
+          else if (r<162)
+          type = MT_VILE;
+          else if (r<172)
+          type = MT_UNDEAD;
+          else if (r<192)
+          type = MT_BABY;
+          else if (r<222)
+          type = MT_FATSO;
+          else if (r<246)
+          type = MT_KNIGHT;
+          else
+          type = MT_BRUISER;      
+
+          newmobj = P_SpawnMobj (targ.x, targ.y, targ.z, type);
+          if (P_LookForPlayers (newmobj, true) )
+          P_SetMobjState (newmobj, newmobj.info.seestate);
+          
+          // telefrag anything in this spot
+          P_TeleportMove (newmobj, newmobj.x, newmobj.y);
+
+          // remove self (i.e., cube).
+          P_RemoveMobj (mo);
+      }
+    
+//
+// P_MobjThinker
+//
+    
+        public void A_PlayerScream (mobj_t mo)
+        {
+            // Default death sound.
+            sfxenum_t     sound = sfxenum_t.sfx_pldeth;
             
-        ceiling.tag = sec.tag;
-        ceiling.type = type;
-        P_AddActiveCeiling(ceiling);
+            if ( (DS.gamemode == GameMode_t.commercial)
+            &&  (mo.health < -50))
+            {
+            // IF THE PLAYER DIES
+            // LESS THAN -50% WITHOUT GIBBING
+            sound =  sfxenum_t.sfx_pdiehi;
+            }
+            
+           // TODO: S_StartSound (mo, sound);
         }
-        return rtn;
-    }
 
-
-    //
-    // Add an active ceiling
-    //
-    void P_AddActiveCeiling(ceiling_t c)
-    {
-        int     i;
+    
+    public void A_CloseShotgun2       ( player_t player,
+            pspdef_t psp ) {
+        // TODO: S_StartSound (((player_t)player).mo, sfxenum_t.sfx_dbcls);
+        A_ReFire(player,psp);
         
-        for (i = 0; i < MAXCEILINGS;i++)
-        {
-        if (activeceilings[i] == NULL)
-        {
-            activeceilings[i] = c;
-            return;
-        }
-        }
     }
 
-
-
+    
     //
-    // Remove a ceiling's thinker
-    //
-    void P_RemoveActiveCeiling(ceiling_t c)
-    {
-        int     i;
-        
-        for (i = 0;i < MAXCEILINGS;i++)
-        {
-        if (activeceilings[i] == c)
-        {
-            activeceilings[i].sector.specialdata = NULL;
-            P_RemoveThinker (&activeceilings[i].thinker);
-            activeceilings[i] = NULL;
-            break;
-        }
-        }
-    }
+ // A_ReFire
+ // The player can re-fire the weapon
+ // without lowering it entirely.
+ //
+ void A_ReFire( player_t player,
+             pspdef_t psp ) {
+     // check for fire
+     //  (if a weaponchange is pending, let it go through instead)
+     if ( flags(player.cmd.buttons,BT_ATTACK) 
+      && player.pendingweapon == wp_nochange
+      && player.health)
+     {
+     player.refire++;
+     player.P_FireWeapon (player);
+     }
+     else
+     {
+     player.refire = 0;
+     P_CheckAmmo (player);
+     }
+ }
+}
 
-
-
-    //
-    // Restart a ceiling that's in-stasis
-    //
-    void P_ActivateInStasisCeiling(line_t line)
-    {
-        int     i;
-        
-        for (i = 0;i < MAXCEILINGS;i++)
-        {
-        if (activeceilings[i]
-            && (activeceilings[i].tag == line.tag)
-            && (activeceilings[i].direction == 0))
-        {
-            activeceilings[i].direction = activeceilings[i].olddirection;
-            activeceilings[i].thinker.function.acp1
-              = (actionf_p1)T_MoveCeiling;
-        }
-        }
-    }
-
-
-
-    //
-    // EV_CeilingCrushStop
-    // Stop a ceiling from crushing!
-    //
-    int EV_CeilingCrushStop(line_t  line)
-    {
-        int     i;
-        int     rtn;
-        
-        rtn = 0;
-        for (i = 0;i < MAXCEILINGS;i++)
-        {
-        if (activeceilings[i]
-            && (activeceilings[i].tag == line.tag)
-            && (activeceilings[i].direction != 0))
-        {
-            activeceilings[i].olddirection = activeceilings[i].direction;
-            activeceilings[i].thinker.function.acv = (actionf_v)NULL;
-            activeceilings[i].direction = 0;       // in-stasis
-            rtn = 1;
-        }
-        }
-        
-
-        return rtn;
-    }
-
-    }
-
-
-    class MapMovement{
-
-        public static final String rcsid = "$Id: UnifiedGameMap.java,v 1.2 2010/09/13 23:09:51 velktron Exp $";
-
+    class Movement{
        
         /** fixed_t */
         int[]       tmbbox=new int[4];
@@ -1953,99 +2575,149 @@ class Ceilings{
 
         line_t[]        spechit=new line_t[MAXSPECIALCROSS];
         int     numspechit;
+        
+        /** Dispatch "PTR" Traverse function pointers */
 
-
-
-        //
-        // TELEPORT MOVE
-        // 
-
-
-
-        //
-        // P_TeleportMove
-        //
-        private boolean
-        TeleportMove
-        ( mobj_t    thing,
-          int   x, //fixed
-          int   y )
-        {
-            int         xl;
-            int         xh;
-            int         yl;
-            int         yh;
-            int         bx;
-            int         by;
-            
-            subsector_t newsubsec;
-            
-            // kill anything occupying the position
-            tmthing = thing;
-            tmflags = thing.flags;
-            
-            tmx = x;
-            tmy = y;
-            
-            tmbbox[BOXTOP] = y + tmthing.radius;
-            tmbbox[BOXBOTTOM] = y - tmthing.radius;
-            tmbbox[BOXRIGHT] = x + tmthing.radius;
-            tmbbox[BOXLEFT] = x - tmthing.radius;
-
-            newsubsec = R.PointInSubsector (x,y);
-            ceilingline = null;
-            
-            // The base floor/ceiling is from the subsector
-            // that contains the point.
-            // Any contacted lines the step closer together
-            // will adjust them.
-            tmfloorz = tmdropoffz = newsubsec.sector.floorheight;
-            tmceilingz = newsubsec.sector.ceilingheight;
-                    
-             // TODO: validcount++; // This is r_main's ?
-            numspechit = 0;
-            
-            // stomp on any things contacted
-            xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-            xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-            yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-            yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-
-            for (bx=xl ; bx<=xh ; bx++)
-            for (by=yl ; by<=yh ; by++)
-                if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
-                return false;
-            
-            // the move is ok,
-            // so link the thing into its new position
-            UnsetThingPosition (thing);
-
-            thing.floorz = tmfloorz;
-            thing.ceilingz = tmceilingz;    
-            thing.x = x;
-            thing.y = y;
-
-            SetThingPosition (thing);
-            
-            return true;
+        public boolean dispatch(PTR what, intercept_t arg){
+            switch(what){
+            case AimTraverse:
+                return AimTraverse(arg);
+                break;
+            case ShootTraverse:
+                return ShootTraverse(arg);
+                break;
+            case SlideTraverse:
+                return SlideTraverse(arg);
+                break;
+            case UseTraverse:
+                return UseTraverse(arg);
+                break;
+                
+            }
+            // Shouldn't happen
+            return false;
         }
-
-
+        
+        /** Dispatch "PIT" Iterators function pointers */
+        
+        public boolean dispatch(PIT what, Object arg){
+            switch(what){
+            case VileCheck:
+                return VileCheck((mobj_t)arg);
+                break;
+            case CheckThing:
+                return CheckThing((mobj_t)arg);
+                break;
+            case StompThing:
+                return StompThing((mobj_t)arg);
+                break;
+            case CheckLine:
+                return CheckLine((line_t)arg);
+                break;
+                
+            }
+         // Shouldn't happen
+            return false;
+        }
+        
         //
-        // MOVEMENT ITERATOR FUNCTIONS
+        // PIT_ChangeSector
         //
+        public boolean ChangeSector (mobj_t   thing)
+        {
+            mobj_t mo;
+            
+            if (P_ThingHeightClip (thing))
+            {
+            // keep checking
+            return true;
+            }
+            
 
+            // crunch bodies to giblets
+            if (thing.health <= 0)
+            {
+            thing.SetMobjState(statenum_t.S_GIBS);
 
+            thing.flags &= ~MF_SOLID;
+            thing.height = 0;
+            thing.radius = 0;
 
+            // keep checking
+            return true;        
+            }
 
+            // crunch dropped items
+            if (flags(thing.flags, MF_DROPPED))
+            {
+            P_RemoveMobj (thing);
+            
+            // keep checking
+            return true;        
+            }
+
+            if (! flags(thing.flags , MF_SHOOTABLE) )
+            {
+            // assume it is bloody gibs or something
+            return true;            
+            }
+            
+            nofit = true;
+
+            if (crushchange && !flags(leveltime,3) )
+            {
+            DamageMobj(thing,NULL,NULL,10);
+
+            // spray blood in a random direction
+            mo = P_SpawnMobj (thing.x,
+                      thing.y,
+                      thing.z + thing.height/2, MT_BLOOD);
+            
+            mo.momx = (P_Random() - P_Random ())<<12;
+            mo.momy = (P_Random() - P_Random ())<<12;
+            }
+
+            // keep checking (crush other things)   
+            return true;    
+        }
+        
+        public boolean VileCheck (mobj_t   thing)
+        {
+            int     maxdist;
+            boolean check;
+            
+            if (!(thing.flags & MF_CORPSE) )
+            return true;    // not a monster
+            
+            if (thing.tics != -1)
+            return true;    // not lying still yet
+            
+            if (thing.info.raisestate == S_NULL)
+            return true;    // monster doesn't have a raise state
+            
+            maxdist = thing.info.radius + mobjinfo[MT_VILE].radius;
+            
+            if ( Math.abs(thing.x - viletryx) > maxdist
+             || Math.abs(thing.y - viletryy) > maxdist )
+            return true;        // not actually touching
+                
+            corpsehit = thing;
+            corpsehit.momx = corpsehit.momy = 0;
+            corpsehit.height <<= 2;
+            check = P_CheckPosition (corpsehit, corpsehit.x, corpsehit.y);
+            corpsehit.height >>= 2;
+
+            if (!check)
+            return true;        // doesn't fit here
+                
+            return false;       // got one, so stop checking
+        }
+        
         /** PIT_CheckLine
          * Adjusts tmfloorz and tmceilingz as lines are contacted
          */
 
-        class PIT_CheckLine implements PIT_LineFunction {
-            
-            @Override
-            public boolean invoke(line_t ld){
+                public boolean CheckLine(line_t ld){
             if (tmbbox[BOXRIGHT] <= ld.bbox[BOXLEFT]
             || tmbbox[BOXLEFT] >= ld.bbox[BOXRIGHT]
             || tmbbox[BOXTOP] <= ld.bbox[BOXBOTTOM]
@@ -2103,18 +2775,10 @@ class Ceilings{
 
             return true;
             }
-        }
-
-
-
-
-
-
+                
         /**PIT_CheckThing  */
 
-        class PIT_CheckThing implements PIT_MobjFunction {
-            @Override
-            public boolean invoke(mobj_t thing) {
+            public boolean CheckThing(mobj_t thing) {
             int     blockdist; // fixed_t
             boolean     solid;
             int         damage;
@@ -2205,15 +2869,13 @@ class Ceilings{
             
             return !(thing.flags & MF_SOLID);
         }
-        }
 
-        //
-        //PIT_StompThing
-        //
 
-        class PIT_StompThing implements PIT_Iterator{
+        /**
+         *PIT_StompThing
+         */
 
-        public boolean invoke (mobj_t thing)
+        public boolean StompThing (mobj_t thing)
         {
          int blockdist; // fixed_t
              
@@ -2237,13 +2899,355 @@ class Ceilings{
          if ( (tmthing.player==null) && (DS.gamemap != 30))
          return false;   
              
-         // TODO: DamageMobj (thing, tmthing, tmthing, 10000); // in interaction
+         P_DamageMobj (thing, tmthing, tmthing, 10000); // in interaction
          
          return true;
         }
+        
+        //
+        // PIT_RadiusAttack
+        // "bombsource" is the creature
+        // that caused the explosion at "bombspot".
+        //
+        public boolean RadiusAttack (mobj_t thing)
+        {
+            int dx,dy,dist; // fixed_t
+            
+            if (!flags(thing.flags , MF_SHOOTABLE) )
+            return true;
 
+            // Boss spider and cyborg
+            // take no damage from concussion.
+            if (thing.type == MT_CYBORG
+            || thing.type == MT_SPIDER)
+            return true;    
+                
+            dx = abs(thing.x - bombspot.x);
+            dy = abs(thing.y - bombspot.y);
+            
+            dist = dx>dy ? dx : dy;
+            dist = (dist - thing.radius) >> FRACBITS;
+
+            if (dist < 0)
+            dist = 0;
+
+            if (dist >= bombdamage)
+            return true;    // out of range
+
+            if ( P_CheckSight (thing, bombspot) )
+            {
+            // must be in direct path
+            P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist);
+            }
+            
+            return true;
+        }
+        
+        //
+        // PTR_AimTraverse
+        // Sets linetaget and aimslope when a target is aimed at.
+        //
+        boolean
+        AimTraverse (intercept_t in)
+        {
+            line_t    li;
+            mobj_t     th;
+            int     slope;
+            int     thingtopslope;
+            int     thingbottomslope;
+            int     dist;
+                
+            if (in.isaline)
+            {
+            li = in.d.line;
+            
+            if ( !(li.flags & ML_TWOSIDED) )
+                return false;       // stop
+            
+            // Crosses a two sided line.
+            // A two sided line will restrict
+            // the possible target ranges.
+            P_LineOpening (li);
+            
+            if (openbottom >= opentop)
+                return false;       // stop
+            
+            dist = FixedMul (attackrange, in.frac);
+
+            if (li.frontsector.floorheight != li.backsector.floorheight)
+            {
+                slope = FixedDiv (openbottom - shootz , dist);
+                if (slope > bottomslope)
+                bottomslope = slope;
+            }
+                
+            if (li.frontsector.ceilingheight != li.backsector.ceilingheight)
+            {
+                slope = FixedDiv (opentop - shootz , dist);
+                if (slope < topslope)
+                topslope = slope;
+            }
+                
+            if (topslope <= bottomslope)
+                return false;       // stop
+                    
+            return true;            // shot continues
+            }
+            
+            // shoot a thing
+            th = in.d.thing;
+            if (th == shootthing)
+            return true;            // can't shoot self
+            
+            if (!(th.flags&MF_SHOOTABLE))
+            return true;            // corpse or something
+
+            // check angles to see if the thing can be aimed at
+            dist = FixedMul (attackrange, in.frac);
+            thingtopslope = FixedDiv (th.z+th.height - shootz , dist);
+
+            if (thingtopslope < bottomslope)
+            return true;            // shot over the thing
+
+            thingbottomslope = FixedDiv (th.z - shootz, dist);
+
+            if (thingbottomslope > topslope)
+            return true;            // shot under the thing
+            
+            // this thing can be hit!
+            if (thingtopslope > topslope)
+            thingtopslope = topslope;
+            
+            if (thingbottomslope < bottomslope)
+            thingbottomslope = bottomslope;
+
+            aimslope = (thingtopslope+thingbottomslope)/2;
+            linetarget = th;
+
+            return false;           // don't go any farther
         }
 
+        //
+        //P_BlockThingsIterator
+        //
+        boolean
+        BlockThingsIterator
+        ( int           x,
+        int           y,
+        PIT func)
+        {
+         mobj_t     mobj;
+         
+         if ( x<0
+          || y<0
+          || x>=LL.bmapwidth
+          || y>=LL.bmapheight)
+         {
+         return true;
+         }
+         
+
+         for (mobj = LL.blocklinks[y*LL.bmapwidth+x] ; mobj!=null ;
+          mobj = (mobj_t) mobj.bnext)
+         {
+         if (!dispatch(func, mobj ) )
+             return false;
+         }
+         return true;
+        }
+
+        //
+        // PTR_ShootTraverse
+        //
+        boolean ShootTraverse (intercept_t in)
+        {
+            int     x,y,z,frac; // fixed_t
+            line_t    li;
+            mobj_t     th;
+            boolean hitline=false;
+            
+            int     slope,dist,thingtopslope,thingbottomslope; // fixed_t
+                
+            if (in.isaline)
+            {
+            li = in.d.line;
+            
+            if (li.special)
+                P_ShootSpecialLine (shootthing, li);
+
+            if ( !flags(li.flags, ML_TWOSIDED) ) {
+                hitline=true;
+                break;
+                }
+            
+            // crosses a two sided line
+            P_LineOpening (li);
+                
+            dist = FixedMul (attackrange, in.frac);
+
+            if (li.frontsector.floorheight != li.backsector.floorheight)
+            {
+                slope = FixedDiv (openbottom - shootz , dist);
+                if (slope > aimslope){      
+                    hitline=true;
+                    break;
+                }
+            }
+                
+            if (li.frontsector.ceilingheight != li.backsector.ceilingheight)
+            {
+                slope = FixedDiv (opentop - shootz , dist);
+                if (slope < aimslope){      
+                    hitline=true;
+                    break;
+                }
+            }
+
+            // shot continues
+            if (!hitline)
+            return true;            
+            
+            // hit line
+              hitline:
+            // position a bit closer
+            frac = in.frac - FixedDiv (4*FRACUNIT,attackrange);
+            x = trace.x + FixedMul (trace.dx, frac);
+            y = trace.y + FixedMul (trace.dy, frac);
+            z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+
+            if (li.frontsector.ceilingpic == skyflatnum)
+            {
+                // don't shoot the sky!
+                if (z > li.frontsector.ceilingheight)
+                return false;
+                
+                // it's a sky hack wall
+                if  (li.backsector && li.backsector.ceilingpic == skyflatnum)
+                return false;       
+            }
+
+            // Spawn bullet puffs.
+            SpawnPuff (x,y,z);
+            
+            // don't go any farther
+            return false;   
+            }
+            
+            // shoot a thing
+            th = in.d.thing;
+            if (th == shootthing)
+            return true;        // can't shoot self
+            
+            if (!(th.flags&MF_SHOOTABLE))
+            return true;        // corpse or something
+                
+            // check angles to see if the thing can be aimed at
+            dist = FixedMul (attackrange, in.frac);
+            thingtopslope = FixedDiv (th.z+th.height - shootz , dist);
+
+            if (thingtopslope < aimslope)
+            return true;        // shot over the thing
+
+            thingbottomslope = FixedDiv (th.z - shootz, dist);
+
+            if (thingbottomslope > aimslope)
+            return true;        // shot under the thing
+
+            
+            // hit thing
+            // position a bit closer
+            frac = in.frac - FixedDiv (10*FRACUNIT,attackrange);
+
+            x = trace.x + FixedMul (trace.dx, frac);
+            y = trace.y + FixedMul (trace.dy, frac);
+            z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+
+            // Spawn bullet puffs or blod spots,
+            // depending on target type.
+            if (in.d.thing.flags & MF_NOBLOOD)
+            P_SpawnPuff (x,y,z);
+            else
+            P_SpawnBlood (x,y,z, la_damage);
+
+            if (la_damage)
+            P_DamageMobj (th, shootthing, shootthing, la_damage);
+
+            // don't go any farther
+            return false;
+            
+        }
+
+        //
+        // TELEPORT MOVE
+        // 
+
+        //
+        // P_TeleportMove
+        //
+        private boolean
+        TeleportMove
+        ( mobj_t    thing,
+          int   x, //fixed
+          int   y )
+        {
+            int         xl;
+            int         xh;
+            int         yl;
+            int         yh;
+            int         bx;
+            int         by;
+            
+            subsector_t newsubsec;
+            
+            // kill anything occupying the position
+            tmthing = thing;
+            tmflags = thing.flags;
+            
+            tmx = x;
+            tmy = y;
+            
+            tmbbox[BOXTOP] = y + tmthing.radius;
+            tmbbox[BOXBOTTOM] = y - tmthing.radius;
+            tmbbox[BOXRIGHT] = x + tmthing.radius;
+            tmbbox[BOXLEFT] = x - tmthing.radius;
+
+            newsubsec = R.PointInSubsector (x,y);
+            ceilingline = null;
+            
+            // The base floor/ceiling is from the subsector
+            // that contains the point.
+            // Any contacted lines the step closer together
+            // will adjust them.
+            tmfloorz = tmdropoffz = newsubsec.sector.floorheight;
+            tmceilingz = newsubsec.sector.ceilingheight;
+                    
+             // TODO: validcount++; // This is r_main's ?
+            numspechit = 0;
+            
+            // stomp on any things contacted
+            xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+            xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+            yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+            yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+
+            for (bx=xl ; bx<=xh ; bx++)
+            for (by=yl ; by<=yh ; by++)
+                if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
+                return false;
+            
+            // the move is ok,
+            // so link the thing into its new position
+            UnsetThingPosition (thing);
+
+            thing.floorz = tmfloorz;
+            thing.ceilingz = tmceilingz;    
+            thing.x = x;
+            thing.y = y;
+
+            SetThingPosition (thing);
+            
+            return true;
+        }
 
         //
         // MOVEMENT CLIPPING
@@ -2523,7 +3527,7 @@ class Ceilings{
 
             if (deltaangle > ANG180)
             deltaangle += ANG180;
-            //  I_Error ("SlideLine: ang>ANG180");
+            //  system.Error ("SlideLine: ang>ANG180");
 
             lineangle >>= ANGLETOFINESHIFT;
             deltaangle >>= ANGLETOFINESHIFT;
@@ -2539,12 +3543,12 @@ class Ceilings{
         //
         // PTR_SlideTraverse
         //
-        boolean PTR_SlideTraverse (intercept_t in)
+        boolean SlideTraverse (intercept_t in)
         {
             line_t li;
             
             if (!in.isaline)
-            I_Error ("PTR_SlideTraverse: not a line?");
+            system.Error ("PTR_SlideTraverse: not a line?");
                 
             li = in.d.line;
             
@@ -2709,217 +3713,7 @@ class Ceilings{
 
         int     aimslope; // fixed_t
 
-        // slopes to top and bottom of target
-        extern fixed_t  topslope;
-        extern fixed_t  bottomslope;    
-
-
-        //
-        // PTR_AimTraverse
-        // Sets linetaget and aimslope when a target is aimed at.
-        //
-        boolean
-        PTR_AimTraverse (intercept_t* in)
-        {
-            line_t*     li;
-            mobj_t     th;
-            fixed_t     slope;
-            fixed_t     thingtopslope;
-            fixed_t     thingbottomslope;
-            fixed_t     dist;
-                
-            if (in.isaline)
-            {
-            li = in.d.line;
-            
-            if ( !(li.flags & ML_TWOSIDED) )
-                return false;       // stop
-            
-            // Crosses a two sided line.
-            // A two sided line will restrict
-            // the possible target ranges.
-            P_LineOpening (li);
-            
-            if (openbottom >= opentop)
-                return false;       // stop
-            
-            dist = FixedMul (attackrange, in.frac);
-
-            if (li.frontsector.floorheight != li.backsector.floorheight)
-            {
-                slope = FixedDiv (openbottom - shootz , dist);
-                if (slope > bottomslope)
-                bottomslope = slope;
-            }
-                
-            if (li.frontsector.ceilingheight != li.backsector.ceilingheight)
-            {
-                slope = FixedDiv (opentop - shootz , dist);
-                if (slope < topslope)
-                topslope = slope;
-            }
-                
-            if (topslope <= bottomslope)
-                return false;       // stop
-                    
-            return true;            // shot continues
-            }
-            
-            // shoot a thing
-            th = in.d.thing;
-            if (th == shootthing)
-            return true;            // can't shoot self
-            
-            if (!(th.flags&MF_SHOOTABLE))
-            return true;            // corpse or something
-
-            // check angles to see if the thing can be aimed at
-            dist = FixedMul (attackrange, in.frac);
-            thingtopslope = FixedDiv (th.z+th.height - shootz , dist);
-
-            if (thingtopslope < bottomslope)
-            return true;            // shot over the thing
-
-            thingbottomslope = FixedDiv (th.z - shootz, dist);
-
-            if (thingbottomslope > topslope)
-            return true;            // shot under the thing
-            
-            // this thing can be hit!
-            if (thingtopslope > topslope)
-            thingtopslope = topslope;
-            
-            if (thingbottomslope < bottomslope)
-            thingbottomslope = bottomslope;
-
-            aimslope = (thingtopslope+thingbottomslope)/2;
-            linetarget = th;
-
-            return false;           // don't go any farther
-        }
-
-
-        //
-        // PTR_ShootTraverse
-        //
-        boolean PTR_ShootTraverse (intercept_t* in)
-        {
-            fixed_t     x;
-            fixed_t     y;
-            fixed_t     z;
-            fixed_t     frac;
-            
-            line_t*     li;
-            
-            mobj_t     th;
-
-            fixed_t     slope;
-            fixed_t     dist;
-            fixed_t     thingtopslope;
-            fixed_t     thingbottomslope;
-                
-            if (in.isaline)
-            {
-            li = in.d.line;
-            
-            if (li.special)
-                P_ShootSpecialLine (shootthing, li);
-
-            if ( !(li.flags & ML_TWOSIDED) )
-                goto hitline;
-            
-            // crosses a two sided line
-            P_LineOpening (li);
-                
-            dist = FixedMul (attackrange, in.frac);
-
-            if (li.frontsector.floorheight != li.backsector.floorheight)
-            {
-                slope = FixedDiv (openbottom - shootz , dist);
-                if (slope > aimslope)
-                goto hitline;
-            }
-                
-            if (li.frontsector.ceilingheight != li.backsector.ceilingheight)
-            {
-                slope = FixedDiv (opentop - shootz , dist);
-                if (slope < aimslope)
-                goto hitline;
-            }
-
-            // shot continues
-            return true;
-            
-            
-            // hit line
-              hitline:
-            // position a bit closer
-            frac = in.frac - FixedDiv (4*FRACUNIT,attackrange);
-            x = trace.x + FixedMul (trace.dx, frac);
-            y = trace.y + FixedMul (trace.dy, frac);
-            z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
-
-            if (li.frontsector.ceilingpic == skyflatnum)
-            {
-                // don't shoot the sky!
-                if (z > li.frontsector.ceilingheight)
-                return false;
-                
-                // it's a sky hack wall
-                if  (li.backsector && li.backsector.ceilingpic == skyflatnum)
-                return false;       
-            }
-
-            // Spawn bullet puffs.
-            P_SpawnPuff (x,y,z);
-            
-            // don't go any farther
-            return false;   
-            }
-            
-            // shoot a thing
-            th = in.d.thing;
-            if (th == shootthing)
-            return true;        // can't shoot self
-            
-            if (!(th.flags&MF_SHOOTABLE))
-            return true;        // corpse or something
-                
-            // check angles to see if the thing can be aimed at
-            dist = FixedMul (attackrange, in.frac);
-            thingtopslope = FixedDiv (th.z+th.height - shootz , dist);
-
-            if (thingtopslope < aimslope)
-            return true;        // shot over the thing
-
-            thingbottomslope = FixedDiv (th.z - shootz, dist);
-
-            if (thingbottomslope > aimslope)
-            return true;        // shot under the thing
-
-            
-            // hit thing
-            // position a bit closer
-            frac = in.frac - FixedDiv (10*FRACUNIT,attackrange);
-
-            x = trace.x + FixedMul (trace.dx, frac);
-            y = trace.y + FixedMul (trace.dy, frac);
-            z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
-
-            // Spawn bullet puffs or blod spots,
-            // depending on target type.
-            if (in.d.thing.flags & MF_NOBLOOD)
-            P_SpawnPuff (x,y,z);
-            else
-            P_SpawnBlood (x,y,z, la_damage);
-
-            if (la_damage)
-            P_DamageMobj (th, shootthing, shootthing, la_damage);
-
-            // don't go any farther
-            return false;
-            
-        }
+        
 
 
         //
@@ -2950,12 +3744,12 @@ class Ceilings{
             bottomslope = -100*FRACUNIT/160;
             
             attackrange = distance;
-            linetarget = NULL;
+            linetarget = null;
             
             P_PathTraverse ( t1.x, t1.y,
                      x2, y2,
                      PT_ADDLINES|PT_ADDTHINGS,
-                     PTR_AimTraverse );
+                     PTR.AimTraverse );
                 
             if (linetarget)
             return aimslope;
@@ -3008,7 +3802,7 @@ class Ceilings{
         //
         mobj_t     usething;
 
-        boolean PTR_UseTraverse (intercept_t in)
+        boolean UseTraverse (intercept_t in)
         {
             int     side;
             
@@ -3017,7 +3811,7 @@ class Ceilings{
             P_LineOpening (in.d.line);
             if (openrange <= 0)
             {
-                S_StartSound (usething, sfx_noway);
+                ; // TODO: (usething, sfx_noway);
                 
                 // can't use through a wall
                 return false;   
@@ -3069,44 +3863,7 @@ class Ceilings{
         int     bombdamage;
 
 
-        //
-        // PIT_RadiusAttack
-        // "bombsource" is the creature
-        // that caused the explosion at "bombspot".
-        //
-        boolean PIT_RadiusAttack (mobj_t thing)
-        {
-            int dx,dy,dist; // fixed_t
-            
-            if (!flags(thing.flags , MF_SHOOTABLE) )
-            return true;
-
-            // Boss spider and cyborg
-            // take no damage from concussion.
-            if (thing.type == MT_CYBORG
-            || thing.type == MT_SPIDER)
-            return true;    
-                
-            dx = abs(thing.x - bombspot.x);
-            dy = abs(thing.y - bombspot.y);
-            
-            dist = dx>dy ? dx : dy;
-            dist = (dist - thing.radius) >> FRACBITS;
-
-            if (dist < 0)
-            dist = 0;
-
-            if (dist >= bombdamage)
-            return true;    // out of range
-
-            if ( P_CheckSight (thing, bombspot) )
-            {
-            // must be in direct path
-            P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist);
-            }
-            
-            return true;
-        }
+        
 
 
         /**
@@ -3163,66 +3920,7 @@ class Ceilings{
         boolean     nofit;
 
 
-        //
-        // PIT_ChangeSector
-        //
-        boolean PIT_ChangeSector (mobj_t   thing)
-        {
-            mobj_t mo;
-            
-            if (P_ThingHeightClip (thing))
-            {
-            // keep checking
-            return true;
-            }
-            
-
-            // crunch bodies to giblets
-            if (thing.health <= 0)
-            {
-            P_SetMobjState (thing, S_GIBS);
-
-            thing.flags &= ~MF_SOLID;
-            thing.height = 0;
-            thing.radius = 0;
-
-            // keep checking
-            return true;        
-            }
-
-            // crunch dropped items
-            if (thing.flags & MF_DROPPED)
-            {
-            P_RemoveMobj (thing);
-            
-            // keep checking
-            return true;        
-            }
-
-            if (! flags(thing.flags , MF_SHOOTABLE) )
-            {
-            // assume it is bloody gibs or something
-            return true;            
-            }
-            
-            nofit = true;
-
-            if (crushchange && !(leveltime&3) )
-            {
-            P_DamageMobj(thing,NULL,NULL,10);
-
-            // spray blood in a random direction
-            mo = P_SpawnMobj (thing.x,
-                      thing.y,
-                      thing.z + thing.height/2, MT_BLOOD);
-            
-            mo.momx = (P_Random() - P_Random ())<<12;
-            mo.momy = (P_Random() - P_Random ())<<12;
-            }
-
-            // keep checking (crush other things)   
-            return true;    
-        }
+        
 
 
 
@@ -3230,7 +3928,7 @@ class Ceilings{
         // P_ChangeSector
         //
         boolean
-        P_ChangeSector
+        ChangeSector
         ( sector_t sector,
           boolean   crunch )
         {
@@ -3243,12 +3941,12 @@ class Ceilings{
             // re-check heights for all things near the moving sector
             for (x=sector.blockbox[BOXLEFT] ; x<= sector.blockbox[BOXRIGHT] ; x++)
             for (y=sector.blockbox[BOXBOTTOM];y<= sector.blockbox[BOXTOP] ; y++)
-                P_BlockThingsIterator (x, y, PIT_ChangeSector);
+                BlockThingsIterator (x, y, PIT.ChangeSector);
             
             
             return nofit;
         }
-
+    }
 
         ////////////////////// FROM p_maputl.c ////////////////////
 
@@ -3353,12 +4051,6 @@ class Ceilings{
          }
         }
 
-
-        
-        }
-
-
-
         //
         //BLOCK MAP ITERATORS
         //For each line/thing in the given mapblock,
@@ -3377,7 +4069,7 @@ class Ceilings{
          * to it.
          */
 
-        public boolean BlockLinesIterator ( int           x,int           y,PIT_LineFunction func )
+        public boolean BlockLinesIterator ( int           x,int           y,PIT func )
         {
          int         offset;
          short[]      list;
@@ -3395,59 +4087,33 @@ class Ceilings{
          
          //offset = *(blockmap+offset);
 
-         for ( list = blockmaplump[offset] ; *list != -1 ; list++)
-         {
-         ld = lines[*list];
+         //offset = *(blockmap+offset);
 
+         // for ( int list = blockmaplump[offset] ; *list != -1 ; list++)
+         {
+             for (int list=offset;blockmaplump[list]!=-1;list++){
+                 ld = lines[list];
          if (ld.validcount == validcount)
              continue;   // line has already been checked
 
          ld.validcount = validcount;
              
-         if ( !func.invoke(ld) )
+         if ( !dispatch(func,ld) )
              return false;
          }
          return true;    // everything was checked
         }
 
 
-        //
-        //P_BlockThingsIterator
-        //
-        boolean
-        P_BlockThingsIterator
-        ( int           x,
-        int           y,
-        boolean(*func)(mobj_t) )
-        {
-         mobj_t     mobj;
-         
-         if ( x<0
-          || y<0
-          || x>=bmapwidth
-          || y>=bmapheight)
-         {
-         return true;
-         }
-         
-
-         for (mobj = blocklinks[y*bmapwidth+x] ;
-          mobj ;
-          mobj = mobj.bnext)
-         {
-         if (!func( mobj ) )
-             return false;
-         }
-         return true;
-        }
+        
 
 
 
         //
         //INTERCEPT ROUTINES
         //
-        intercept_t intercepts[MAXINTERCEPTS];
-        intercept_t*    intercept_p;
+        intercept_t intercepts=new intercept_t[MAXINTERCEPTS];
+        int    intercept_p;
 
         divline_t   trace;
         boolean     earlyout;
@@ -3464,7 +4130,7 @@ class Ceilings{
         //Returns true if earlyout and a solid line hit.
         //
         boolean
-        PIT_AddLineIntercepts (line_t* ld)
+        PIT_AddLineIntercepts (line_t ld)
         {
          int         s1;
          int         s2;
@@ -3585,14 +4251,14 @@ class Ceilings{
         //for all lines.
         //
         boolean
-        P_TraverseIntercepts
-        ( traverser_t   func,
-        fixed_t   maxfrac )
+        TraverseIntercepts
+        ( PTR   func,
+        int   maxfrac )
         {
          int         count;
          fixed_t     dist;
-         intercept_t*    scan;
-         intercept_t*    in;
+         intercept_t    scan;
+         intercept_t    in;
          
          count = intercept_p - intercepts;
          
@@ -3613,7 +4279,7 @@ class Ceilings{
          if (dist > maxfrac)
              return true;    // checked everything in range      
 
-        #if 0  // UNUSED
+        /*  // UNUSED
          {
          // don't check these yet, there may be others inserted
          in = scan = intercepts;
@@ -3623,9 +4289,9 @@ class Ceilings{
          intercept_p = in;
          return false;
          }
-        #endif
+        */
 
-             if ( !func (in) )
+             if ( !dispatch(func,in) )
              return false;   // don't bother going farther
 
          in.frac = MAXINT;
@@ -3651,7 +4317,7 @@ class Ceilings{
         		int       x2,
         		int       y2,
         int           flags,
-        boolean (*trav) (intercept_t *))
+        PTR trav)
         {
          int xt1,yt1;
          int xt2, yt2;
@@ -3777,1199 +4443,1216 @@ class Ceilings{
              
          }
          // go through the sorted list
-         return P_TraverseIntercepts ( trav, FRACUNIT );
-        }
+         return TraverseIntercepts ( trav, FRACUNIT );
+        } // end method
+ // end class
 
 
-        }
-    
-    class MapObjects {
-
-
-int test;
-
-//
-// P_SetMobjState
-// Returns true if the mobj is still present.
-//
-
-public boolean
-SetMobjState
-(mobj_t mobj, statenum_t    state )
-{
-state_t st;
-
-do
-{
-if (state == statenum_t.S_NULL)
-{
-  mobj.state = null;
-  // TODO:P_RemoveMobj (mobj);
-  return false;
-}
-
-st = states[state.ordinal()];
-mobj.state = st;
-mobj.tics = st.tics;
-mobj.sprite = st.sprite;
-mobj.frame = (int) st.frame;
-
-// Modified handling.
-// Call action functions when the state is set
-if (st.action.getType()==ActionType.acp1)       
-  ((acp1)st.action).invoke(mobj); 
-
-state = st.nextstate;
-} while (mobj.tics==0);
-          
-return true;
-}
-
-
-
-
-
-
-//
-// P_ExplodeMissile  
-//
-public void P_ExplodeMissile (mobj_t mo)
-{
-mo.momx = mo.momy = mo.momz = 0;
-
-SetMobjState (mo, mobjinfo[mo.type.ordinal()].deathstate);
-
-mo.tics -= RND.P_Random()&3;
-
-if (mo.tics < 1)
-mo.tics = 1;
-
-mo.flags &= ~MF_MISSILE;
-
-if (mo.info.deathsound!=null) ;
-// TODO: S_StartSound (mo, mo.info.deathsound);
-}
-
-
-//
-// P_XYMovement  
-//
-protected final static int STOPSPEED =      0x1000;
-protected final static int FRICTION =       0xe800;
-
-public void XYMovement (mobj_t mo) 
-{   
-int     ptryx, ptryy; // pointers to fixed_t ???
-player_t   player;
-int  xmove, ymove; // fixed_t
-      
-if ((mo.momx==0) && (mo.momy==0))
-{
-if ((mo.flags & MF_SKULLFLY)!=0)
-{
-  // the skull slammed into something
-  mo.flags &= ~MF_SKULLFLY;
-  mo.momx = mo.momy = mo.momz = 0;
-
-  SetMobjState (mo, mo.info.spawnstate);
-}
-return;
-}
-
-player = mo.player;
-  
-if (mo.momx > MAXMOVE)
-mo.momx = MAXMOVE;
-else if (mo.momx < -MAXMOVE)
-mo.momx = -MAXMOVE;
-
-if (mo.momy > MAXMOVE)
-mo.momy = MAXMOVE;
-else if (mo.momy < -MAXMOVE)
-mo.momy = -MAXMOVE;
-  
-xmove = mo.momx;
-ymove = mo.momy;
-
-do
-{
-if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2)
-{
-  ptryx = mo.x + xmove/2;
-  ptryy = mo.y + ymove/2;
-  xmove >>= 1;
-  ymove >>= 1;
-}
-else
-{
-  ptryx = mo.x + xmove;
-  ptryy = mo.y + ymove;
-  xmove = ymove = 0;
-}
-  
-if (!P_TryMove (mo, ptryx, ptryy))
-{
-  // blocked move
-  if (mo.player)
-  {   // try to slide along it
-  P_SlideMove (mo);
-  }
-  else if (mo.flags & MF_MISSILE)
-  {
-  // explode a missile
-  if (ceilingline &&
-      ceilingline.backsector &&
-      ceilingline.backsector.ceilingpic == skyflatnum)
-  {
-      // Hack to prevent missiles exploding
-      // against the sky.
-      // Does not handle sky floors.
-      P_RemoveMobj (mo);
-      return;
-  }
-  P_ExplodeMissile (mo);
-  }
-  else
-  mo.momx = mo.momy = 0;
-}
-} while ((xmove | ymove)!=0);
-
-// slow down
-if (player && player.cheats & CF_NOMOMENTUM)
-{
-// debug option for no sliding at all
-mo.momx = mo.momy = 0;
-return;
-}
-
-if (mo.flags & (MF_MISSILE | MF_SKULLFLY) )
-return;     // no friction for missiles ever
-  
-if (mo.z > mo.floorz)
-return;     // no friction when airborne
-
-if (mo.flags & MF_CORPSE)
-{
-// do not stop sliding
-//  if halfway off a step with some momentum
-if (mo.momx > FRACUNIT/4
-  || mo.momx < -FRACUNIT/4
-  || mo.momy > FRACUNIT/4
-  || mo.momy < -FRACUNIT/4)
-{
-  if (mo.floorz != mo.subsector.sector.floorheight)
-  return;
-}
-}
-
-if (mo.momx > -STOPSPEED
-&& mo.momx < STOPSPEED
-&& mo.momy > -STOPSPEED
-&& mo.momy < STOPSPEED
-&& (!player
-  || (player.cmd.forwardmove== 0
-  && player.cmd.sidemove == 0 ) ) )
-{
-// if in a walking frame, stop moving
-if ( player&&(unsigned)((player.mo.state - states)- S_PLAY_RUN1) < 4)
-  P_SetMobjState (player.mo, S_PLAY);
-
-mo.momx = 0;
-mo.momy = 0;
-}
-else
-{
-mo.momx = FixedMul (mo.momx, FRICTION);
-mo.momy = FixedMul (mo.momy, FRICTION);
-}
-}
-
-//
-// P_NightmareRespawn
-//
-void
-P_NightmareRespawn (mobj_t mobj)
-{
-fixed_t     x;
-fixed_t     y;
-fixed_t     z; 
-subsector_t*    ss; 
-mobj_t     mo;
-mapthing_t*     mthing;
-  
-x = mobj.spawnpoint.x << FRACBITS; 
-y = mobj.spawnpoint.y << FRACBITS; 
-
-// somthing is occupying it's position?
-if (!P_CheckPosition (mobj, x, y) ) 
-return; // no respwan
-
-// spawn a teleport fog at old spot
-// because of removal of the body?
-mo = P_SpawnMobj (mobj.x,
-        mobj.y,
-        mobj.subsector.sector.floorheight , MT_TFOG); 
-// initiate teleport sound
-S_StartSound (mo, sfx_telept);
-
-// spawn a teleport fog at the new spot
-ss = R_PointInSubsector (x,y); 
-
-mo = P_SpawnMobj (x, y, ss.sector.floorheight , MT_TFOG); 
-
-S_StartSound (mo, sfx_telept);
-
-// spawn the new monster
-mthing = &mobj.spawnpoint;
-
-// spawn it
-if (mobj.info.flags & MF_SPAWNCEILING)
-z = ONCEILINGZ;
-else
-z = ONFLOORZ;
-
-// inherit attributes from deceased one
-mo = P_SpawnMobj (x,y,z, mobj.type);
-mo.spawnpoint = mobj.spawnpoint;  
-mo.angle = ANG45 * (mthing.angle/45);
-
-if (mthing.options & MTF_AMBUSH)
-mo.flags |= MF_AMBUSH;
-
-mo.reactiontime = 18;
-
-// remove the old monster,
-P_RemoveMobj (mobj);
-}
-
-
-/** Place ALL action functions here. Kinda hacky, but workable.
- *  If you feel fancy, use attribute maps, hashtables or whatever.
- *  Instantiate this as "A" and you have a sugary syntax, too.
- *    
- * @author Kaptain Zyklon
- *
- */
-class ActionFunctions {
-
-//
-// P_MobjThinker
-//
-}
-
-
-
-class P_MobjThinker implements acp1 {
-	
-		@Override
-		public void invoke (mobj_t mobj) {
-// momentum movement
-if (mobj.momx!=0
-|| mobj.momy!=0
-|| (flags(mobj.flags,MF_SKULLFLY)) )
-{
-	mobj.XYMovement ();
-
-// FIXME: decent NOP/NULL/Nil function pointer please.
-if (mobj.thinker.function == null)
-  return;     // mobj was removed
-}
-if ( (mobj.z != mobj.floorz)
-|| mobj.momz!=0 )
-{
-	mobj.ZMovement ();
-
-// FIXME: decent NOP/NULL/Nil function pointer please.
-if (mobj.thinker.function == null)
-  return;     // mobj was removed
-}
-
-
-// cycle through states,
-// calling action functions at transitions
-if (mobj.tics != -1)
-{
-mobj.tics--;
-  
-// you can cycle through multiple states in a tic
-if (!mobj.tics)
-  if (!P_SetMobjState (mobj, mobj.state.nextstate) )
-  return;     // freed itself
-}
-else
-{
-// check for nightmare respawn
-if (! (mobj.flags & MF_COUNTKILL) )
-  return;
-
-if (!respawnmonsters)
-  return;
-
-mobj.movecount++;
-
-if (mobj.movecount < 12*35)
-  return;
-
-if ( leveltime&31 )
-  return;
-
-if (P_Random () > 4)
-  return;
-
-P_NightmareRespawn (mobj);
-}
-
-}
-
-@Override
-public ActionType getType() {
-	return ActionType.acp1;
-}
-
-}
-
-
-//
-// P_RemoveMobj
-//
-mapthing_t  itemrespawnque[ITEMQUESIZE];
-int     itemrespawntime[ITEMQUESIZE];
-int     iquehead;
-int     iquetail;
-
-
-void P_RemoveMobj (mobj_t mobj)
-{
-if ((mobj.flags & MF_SPECIAL)
-&& !(mobj.flags & MF_DROPPED)
-&& (mobj.type != MT_INV)
-&& (mobj.type != MT_INS))
-{
-itemrespawnque[iquehead] = mobj.spawnpoint;
-itemrespawntime[iquehead] = leveltime;
-iquehead = (iquehead+1)&(ITEMQUESIZE-1);
-
-// lose one off the end?
-if (iquehead == iquetail)
-  iquetail = (iquetail+1)&(ITEMQUESIZE-1);
-}
-
-// unlink from sector and block lists
-P_UnsetThingPosition (mobj);
-
-// stop any playing sound
-S_StopSound (mobj);
-
-// free block
-P_RemoveThinker ((thinker_t*)mobj);
-}
-
-
-
-
-//
-// P_RespawnSpecials
-//
-void P_RespawnSpecials (void)
-{
-fixed_t     x;
-fixed_t     y;
-fixed_t     z;
-
-subsector_t*    ss; 
-mobj_t     mo;
-mapthing_t*     mthing;
-
-int         i;
-
-// only respawn items in deathmatch
-if (deathmatch != 2)
-return; // 
-
-// nothing left to respawn?
-if (iquehead == iquetail)
-return;     
-
-// wait at least 30 seconds
-if (leveltime - itemrespawntime[iquetail] < 30*35)
-return;         
-
-mthing = &itemrespawnque[iquetail];
-
-x = mthing.x << FRACBITS; 
-y = mthing.y << FRACBITS; 
-
-// spawn a teleport fog at the new spot
-ss = R_PointInSubsector (x,y); 
-mo = P_SpawnMobj (x, y, ss.sector.floorheight , MT_IFOG); 
-S_StartSound (mo, sfx_itmbk);
-
-// find which type to spawn
-for (i=0 ; i< NUMMOBJTYPES ; i++)
-{
-if (mthing.type == mobjinfo[i].doomednum)
-  break;
-}
-
-// spawn it
-if (mobjinfo[i].flags & MF_SPAWNCEILING)
-z = ONCEILINGZ;
-else
-z = ONFLOORZ;
-
-mo = P_SpawnMobj (x,y,z, i);
-mo.spawnpoint = *mthing;   
-mo.angle = ANG45 * (mthing.angle/45);
-
-// pull it from the que
-iquetail = (iquetail+1)&(ITEMQUESIZE-1);
-}
-
-
-
-
-//
-// P_SpawnPlayer
-// Called when a player is spawned on the level.
-// Most of the player structure stays unchanged
-//  between levels.
-//
-void P_SpawnPlayer (mapthing_t* mthing)
-{
-player_t*       p;
-fixed_t     x;
-fixed_t     y;
-fixed_t     z;
-
-mobj_t     mobj;
-
-int         i;
-
-// not playing?
-if (!playeringame[mthing.type-1])
-return;                 
-  
-p = &players[mthing.type-1];
-
-if (p.playerstate == PST_REBORN)
-G_PlayerReborn (mthing.type-1);
-
-x       = mthing.x << FRACBITS;
-y       = mthing.y << FRACBITS;
-z       = ONFLOORZ;
-mobj    = P_SpawnMobj (x,y,z, MT_PLAYER);
-
-// set color translations for player sprites
-if (mthing.type > 1)       
-mobj.flags |= (mthing.type-1)<<MF_TRANSSHIFT;
-  
-mobj.angle = ANG45 * (mthing.angle/45);
-mobj.player = p;
-mobj.health = p.health;
-
-p.mo = mobj;
-p.playerstate = PST_LIVE;  
-p.refire = 0;
-p.message = NULL;
-p.damagecount = 0;
-p.bonuscount = 0;
-p.extralight = 0;
-p.fixedcolormap = 0;
-p.viewheight = VIEWHEIGHT;
-
-// setup gun psprite
-P_SetupPsprites (p);
-
-// give all cards in death match mode
-if (deathmatch)
-for (i=0 ; i<NUMCARDS ; i++)
-  p.cards[i] = true;
-      
-if (mthing.type-1 == consoleplayer)
-{
-// wake up the status bar
-ST_Start ();
-// wake up the heads up text
-HU_Start ();        
-}
-}
-
-
-//
-// P_SpawnMapThing
-// The fields of the mapthing should
-// already be in host byte order.
-//
-void P_SpawnMapThing (mapthing_t* mthing)
-{
-int         i;
-int         bit;
-mobj_t     mobj;
-fixed_t     x;
-fixed_t     y;
-fixed_t     z;
-  
-// count deathmatch start positions
-if (mthing.type == 11)
-{
-if (deathmatch_p < &deathmatchstarts[10])
-{
-  memcpy (deathmatch_p, mthing, sizeof(*mthing));
-  deathmatch_p++;
-}
-return;
-}
-
-// check for players specially
-if (mthing.type <= 4)
-{
-// save spots for respawning in network games
-playerstarts[mthing.type-1] = *mthing;
-if (!deathmatch)
-  P_SpawnPlayer (mthing);
-
-return;
-}
-
-// check for apropriate skill level
-if (!netgame && (mthing.options & 16) )
-return;
-  
-if (gameskill == sk_baby)
-bit = 1;
-else if (gameskill == sk_nightmare)
-bit = 4;
-else
-bit = 1<<(gameskill-1);
-
-if (!(mthing.options & bit) )
-return;
-
-// find which type to spawn
-for (i=0 ; i< NUMMOBJTYPES ; i++)
-if (mthing.type == mobjinfo[i].doomednum)
-  break;
-
-if (i==NUMMOBJTYPES)
-I_Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
-   mthing.type,
-   mthing.x, mthing.y);
-  
-// don't spawn keycards and players in deathmatch
-if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
-return;
-  
-// don't spawn any monsters if -nomonsters
-if (nomonsters
-&& ( i == MT_SKULL
-   || (mobjinfo[i].flags & MF_COUNTKILL)) )
-{
-return;
-}
-
-// spawn it
-x = mthing.x << FRACBITS;
-y = mthing.y << FRACBITS;
-
-if (mobjinfo[i].flags & MF_SPAWNCEILING)
-z = ONCEILINGZ;
-else
-z = ONFLOORZ;
-
-mobj = P_SpawnMobj (x,y,z, i);
-mobj.spawnpoint = *mthing;
-
-if (mobj.tics > 0)
-mobj.tics = 1 + (P_Random () % mobj.tics);
-if (mobj.flags & MF_COUNTKILL)
-totalkills++;
-if (mobj.flags & MF_COUNTITEM)
-totalitems++;
-  
-mobj.angle = ANG45 * (mthing.angle/45);
-if (mthing.options & MTF_AMBUSH)
-mobj.flags |= MF_AMBUSH;
-}
-
-
-
-//
-// GAME SPAWN FUNCTIONS
-//
-
-
-//
-// P_SpawnPuff
-//
-extern fixed_t attackrange;
-
-void
-P_SpawnPuff
-( fixed_t   x,
-fixed_t   y,
-fixed_t   z )
-{
-mobj_t th;
-
-z += ((P_Random()-P_Random())<<10);
-
-th = P_SpawnMobj (x,y,z, MT_PUFF);
-th.momz = FRACUNIT;
-th.tics -= P_Random()&3;
-
-if (th.tics < 1)
-th.tics = 1;
-
-// don't make punches spark on the wall
-if (attackrange == MELEERANGE)
-P_SetMobjState (th, S_PUFF3);
-}
-
-
-
-//
-// P_SpawnBlood
-// 
-void
-P_SpawnBlood
-( fixed_t   x,
-fixed_t   y,
-fixed_t   z,
-int       damage )
-{
-mobj_t th;
-
-z += ((P_Random()-P_Random())<<10);
-th = P_SpawnMobj (x,y,z, MT_BLOOD);
-th.momz = FRACUNIT*2;
-th.tics -= P_Random()&3;
-
-if (th.tics < 1)
-th.tics = 1;
-  
-if (damage <= 12 && damage >= 9)
-P_SetMobjState (th,S_BLOOD2);
-else if (damage < 9)
-P_SetMobjState (th,S_BLOOD3);
-}
-
-
-
-//
-// P_CheckMissileSpawn
-// Moves the missile forward a bit
-//  and possibly explodes it right there.
-//
-void P_CheckMissileSpawn (mobj_t th)
-{
-th.tics -= P_Random()&3;
-if (th.tics < 1)
-th.tics = 1;
-
-// move a little forward so an angle can
-// be computed if it immediately explodes
-th.x += (th.momx>>1);
-th.y += (th.momy>>1);
-th.z += (th.momz>>1);
-
-if (!P_TryMove (th, th.x, th.y))
-P_ExplodeMissile (th);
-}
-
-
-//
-// P_SpawnMissile
-//
-private mobj_t
-P_SpawnMissile
-( mobj_t   source,
-mobj_t   dest,
-mobjtype_t    type )
-{
-mobj_t th;
-int an; // angle_t
-int     dist;
-
-th = P_SpawnMobj (source.x,
-        source.y,
-        source.z + 4*8*FRACUNIT, type);
-
-if (th.info.seesound)
-S_StartSound (th, th.info.seesound);
-
-th.target = source;    // where it came from
-an = R_PointToAngle2 (source.x, source.y, dest.x, dest.y);  
-
-// fuzzy player
-if (dest.flags & MF_SHADOW)
-an += (P_Random()-P_Random())<<20;  
-
-th.angle = an;
-an >>= ANGLETOFINESHIFT;
-th.momx = FixedMul (th.info.speed, finecosine[an]);
-th.momy = FixedMul (th.info.speed, finesine[an]);
-
-dist = P_AproxDistance (dest.x - source.x, dest.y - source.y);
-dist = dist / th.info.speed;
-
-if (dist < 1)
-dist = 1;
-
-th.momz = (dest.z - source.z) / dist;
-P_CheckMissileSpawn (th);
-
-return th;
-}
-
-
-/**
-* P_SpawnPlayerMissile
-* Tries to aim at a nearby monster
-*/
-
-public void
-SpawnPlayerMissile
-( mobj_t   source,
-mobjtype_t    type )
-{
-mobj_t th;
-int an; // angle_t
-int x, y, z,slope; // think_t
-
-// see which target is to be aimed at
-an = source.angle;
-slope = AimLineAttack (source, an, 16*64*FRACUNIT);
-
-if (!linetarget)
-{
-an += 1<<26;
-slope = AimLineAttack (source, an, 16*64*FRACUNIT);
-
-if (!linetarget)
-{
-  an -= 2<<26;
-  slope = AimLineAttack (source, an, 16*64*FRACUNIT);
-}
-
-if (!linetarget)
-{
-  an = source.angle;
-  slope = 0;
-}
-}
-  
-x = source.x;
-y = source.y;
-z = source.z + 4*8*FRACUNIT;
-
-th = P_SpawnMobj (x,y,z, type);
-
-if (th.info.seesound)
-S_StartSound (th, th.info.seesound);
-
-th.target = source;
-th.angle = an;
-th.momx = FixedMul( th.info.speed,
-       finecosine[an>>ANGLETOFINESHIFT]);
-th.momy = FixedMul( th.info.speed,
-       finesine[an>>ANGLETOFINESHIFT]);
-th.momz = FixedMul( th.info.speed, slope);
-
-P_CheckMissileSpawn (th);
-}
-
-}
-
+class Lights{
     //
-    // P_DamageMobj
-    // Damages both enemies and players
-    // "inflictor" is the thing that caused the damage
-    //  creature or missile, can be NULL (slime, etc)
-    // "source" is the thing to target after taking damage
-    //  creature or NULL
-    // Source and inflictor are the same for melee attacks.
-    // Source can be NULL for slime, barrel explosions
-    // and other environmental stuff.
-    //
-    public void
-    P_DamageMobj
-    ( mobj_t   target,
-      mobj_t   inflictor,
-      mobj_t   source,
-      int       damage )
-    {
-        int    ang; // unsigned
-        int     saved;
-        player_t   player;
-        int thrust; // fixed_t
-        int     temp;
-        
-        if ( !flags(target.flags, MF_SHOOTABLE))
-        return; // shouldn't happen...
-            
-        if (target.health <= 0)
-        return;
+ // FIRELIGHT FLICKER
+ //
 
-        if ( flags(target.flags , MF_SKULLFLY ))
-        {
-        target.momx = target.momy = target.momz = 0;
-        }
-        
-        player = target.player;
-        if ((player!=null) && DS.gameskill == skill_t.sk_baby)
-        damage >>= 1;   // take half damage in trainer mode
-            
-
-        // Some close combat weapons should not
-        // inflict thrust and push the victim out of reach,
-        // thus kick away unless using the chainsaw.
-        if ((inflictor !=null)
-        && !flags(target.flags, MF_NOCLIP)
-        && (source==null
-            || source.player==null
-            || source.player.readyweapon != weapontype_t.wp_chainsaw))
-        {
-        ang = R.PointToAngle2 ( inflictor.x,
-                    inflictor.y,
-                    target.x,
-                    target.y);
-            
-        thrust = damage*(FRACUNIT>>3)*100/target.info.mass;
-
-        // make fall forwards sometimes
-        if ( (damage < 40)
-             && (damage > target.health)
-             && (target.z - inflictor.z > 64*FRACUNIT)
-             && flags(RND.P_Random(),1) )
-        {
-            ang += ANG180;
-            thrust *= 4;
-        }
-            
-        ang >>= ANGLETOFINESHIFT;
-        target.momx += FixedMul (thrust, finecosine[ang]);
-        target.momy += FixedMul (thrust, finesine[ang]);
-        }
-        
-        // player specific
-        if (player!=null)
-        {
-        // end of game hell hack
-        if (target.subsector.sector.special == 11
-            && damage >= target.health)
-        {
-            damage = target.health - 1;
-        }
-        
-
-        // Below certain threshold,
-        // ignore damage in GOD mode, or with INVUL power.
-        if ( damage < 1000
-             && ( flags(player.cheats,player_t.CF_GODMODE))
-              || player.powers[pw_invulnerability]!=0 ) 
-        {
-            return;
-        }
-        
-        if (player.armortype!=0)
-        {
-            if (player.armortype == 1)
-            saved = damage/3;
-            else
-            saved = damage/2;
-            
-            if (player.armorpoints[0] <= saved)
-            {
-            // armor is used up
-            saved = player.armorpoints[0];
-            player.armortype = 0;
-            }
-            player.armorpoints[0] -= saved;
-            damage -= saved;
-        }
-        player.health[0] -= damage;   // mirror mobj health here for Dave
-        if (player.health[0] < 0)
-            player.health[0] = 0;
-        
-        player.attacker = source;
-        player.damagecount += damage;  // add damage after armor / invuln
-
-        if (player.damagecount > 100)
-            player.damagecount = 100;  // teleport stomp does 10k points...
-        
-        temp = damage < 100 ? damage : 100;
-
-        if (player == DS.players[DS.consoleplayer]) ;
-            // TODO: I_Tactile (40,10,40+temp*2);
-        }
-        
-        // do the damage    
-        target.health -= damage;   
-        if (target.health <= 0)
-        {
-        KillMobj (source, target);
-        return;
-        }
-
-        if ( (RND.P_Random () < target.info.painchance)
-         && !flags(target.flags,MF_SKULLFLY) )
-        {
-        target.flags |= MF_JUSTHIT;    // fight back!
-        
-        target.SetMobjState (target.info.painstate);
-        }
-                
-        target.reactiontime = 0;       // we're awake now...   
-
-        if ( ((target.threshold==0) || (target.type == mobjtype_t.MT_VILE))
-         && (source!=null) && (source != target)
-         && (source.type != mobjtype_t.MT_VILE))
-        {
-        // if not intent on another player,
-        // chase after this one
-        target.target = source;
-        target.threshold = BASETHRESHOLD;
-        if (target.state == states[target.info.spawnstate.ordinal()]
-            && target.info.seestate != statenum_t.S_NULL)
-            target.SetMobjState (target.info.seestate);
-        }
-                
-    }
-    
-    //
-    // KillMobj
-    //
-    public void
-    KillMobj
-    ( mobj_t   source,
-      mobj_t   target )
-    {
-        mobjtype_t  item;
-        mobj_t mo;
-        
-        target.flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
-
-        if (target.type != mobjtype_t.MT_SKULL)
-        target.flags &= ~MF_NOGRAVITY;
-
-        target.flags |= MF_CORPSE|MF_DROPOFF;
-        target.height >>= 2;
-
-        if (source!=null && source.player!=null)
-        {
-        // count for intermission
-        if ((target.flags & MF_COUNTKILL)!=0)
-            source.player.killcount++;    
-
-        if (target.player!=null) ;
-           // TODO: source.player.frags[target.player-DS.players]++;
-           // It's probably intended to increment the frags of source player vs target player. Lookup? 
-        }
-        else if (!DS.netgame && ((target.flags & MF_COUNTKILL)!=0) )
-        {
-        // count all monster deaths,
-        // even those caused by other monsters
-        DS.players[0].killcount++;
-        }
-        
-        if (target.player!=null)
-        {
-        // count environment kills against you
-        if (source==null)    
-            // TODO: some way to indentify which one of the 
-            // four possiblelayers is the current player
-            
-            target.player.frags[target.player.identify()]++;
-                
-        target.flags &= ~MF_SOLID;
-        target.player.playerstate = PST_DEAD;
-        //TODO: DropWeapon (target.player); // in PSPR
-
-        if (target.player == DS.players[DS.consoleplayer]
-            && DS.automapactive)
-        {
-            // don't die in auto map,
-            // switch view prior to dying
-            AM.Stop ();
-        }
-        
-        }
-
-        if (target.health < -target.info.spawnhealth 
-        && target.info.xdeathstate!=null)
-        {
-            target.SetMobjState(target.info.xdeathstate);
-        }
-        else
-            target.SetMobjState (target.info.deathstate);
-        target.tics -= RND.P_Random()&3;
-
-        if (target.tics < 1)
-        target.tics = 1;
-            
-        //  I_StartSound (&actor.r, actor.info.deathsound);
-
-
-        // Drop stuff.
-        // This determines the kind of object spawned
-        // during the death frame of a thing.
-        switch (target.type)
-        {
-          case MT_WOLFSS:
-          case MT_POSSESSED:
-        item = mobjtype_t.MT_CLIP;
-        break;
-        
-          case MT_SHOTGUY:
-        item = mobjtype_t.MT_SHOTGUN;
-        break;
-        
-          case MT_CHAINGUY:
-        item = mobjtype_t.MT_CHAINGUN;
-        break;
-        
-          default:
-        return;
-        }
-
-        mo = P_SpawnMobj (target.x,target.y,ONFLOORZ, item);
-        mo.flags |= MF_DROPPED;    // special versions of items
-    }
-    
- /** P_SpawnMobj
-  * 
-  * @param x fixed
-  * @param y fixed
-  * @param z fixed
-  * @param type
-  * @return
-  */
-
- public mobj_t
- P_SpawnMobj
- ( int   x,
-		 int   y,
-		 int   z,
- mobjtype_t    type )
+ //
+ // T_FireFlicker
+ //
+ void FireFlicker (fireflicker_t flick)
  {
- mobj_t mobj;
- state_t    st;
- mobjinfo_t info;
+     int amount;
+     
+     if (--flick.count)
+     return;
+     
+     amount = (P_Random()&3)*16;
+     
+     if (flick.sector.lightlevel - amount < flick.minlight)
+     flick.sector.lightlevel = flick.minlight;
+     else
+     flick.sector.lightlevel = flick.maxlight - amount;
 
- mobj = new mobj_t();
- info = mobjinfo[type.ordinal()];
-
- mobj.type = type;
- mobj.info = info;
- mobj.x = x;
- mobj.y = y;
- mobj.radius = info.radius;
- mobj.height = info.height;
- mobj.flags = info.flags;
- mobj.health = info.spawnhealth;
-
- if (DS.gameskill != skill_t.sk_nightmare)
- mobj.reactiontime = info.reactiontime;
-
- mobj.lastlook = RND.P_Random () % MAXPLAYERS;
- // do not set the state with P_SetMobjState,
- // because action routines can not be called yet
- st = states[info.spawnstate.ordinal()];
-
- mobj.state = st;
- mobj.tics = st.tics;
- mobj.sprite = st.sprite;
- mobj.frame = st.frame;
-
- // set subsector and/or block links
- SetThingPosition (mobj);
-
- mobj.floorz = mobj.subsector.sector.floorheight;
- mobj.ceilingz = mobj.subsector.sector.ceilingheight;
-
- if (z == ONFLOORZ)
- mobj.z = mobj.floorz;
- else if (z == ONCEILINGZ)
- mobj.z = mobj.ceilingz - mobj.info.height;
- else 
- mobj.z = z;
-
- mobj.thinker.function=P_MobjThinker;
-
- AddThinker (mobj.thinker);
-
- return mobj;
+     flick.count = 4;
  }
- 
- /** P_SetThingPosition
-  * Links a thing into both a block and a subsector
-  * based on it's x y.
-  * Sets thing.subsector properly
-  */
 
- public void SetThingPosition (mobj_t thing)
+
+
+ //
+ // P_SpawnFireFlicker
+ //
+ void SpawnFireFlicker (sector_t  sector)
  {
-  subsector_t    ss;
-  sector_t       sec;
-  int         blockx;
-  int         blocky;
-  mobj_t        link;
+     fireflicker_t  flick;
+     
+     // Note that we are resetting sector attributes.
+     // Nothing special about it during gameplay.
+     sector.special = 0; 
+     
+     flick = Z_Malloc ( sizeof(*flick), PU_LEVSPEC, 0);
 
-  
-  // link into subsector
-  ss = R.PointInSubsector (thing.x,thing.y);
-  thing.subsector = ss;
-  
-  if ( ! flags(thing.flags ,MF_NOSECTOR) )
-  {
-  // invisible things don't go into the sector links
-  sec = ss.sector;
-  
-  thing.sprev = null;
-  thing.snext = sec.thinglist;
+     P_AddThinker (&flick.thinker);
 
-  if (sec.thinglist!=null)
-      sec.thinglist.sprev = thing;
-
-  sec.thinglist = thing;
-  }
-
-  
-  // link into blockmap
-  if ( ! flags(thing.flags ,MF_NOBLOCKMAP) )
-  {
-  // inert things don't need to be in blockmap        
-  blockx = (thing.x - LL.bmaporgx)>>MAPBLOCKSHIFT;
-  blocky = (thing.y - LL.bmaporgy)>>MAPBLOCKSHIFT;
-
-  if (blockx>=0
-      && blockx < LL.bmapwidth
-      && blocky>=0
-      && blocky < LL.bmapheight)
-  {
- 	 
-      link = LL.blocklinks[blocky*LL.bmapwidth+blockx];
-      thing.bprev = null;
-      thing.bnext = link; // FIXME: will this work?
-      if (link!=null)
-      // This will work
-      link.bprev = thing;
-
-      // link=thing won't work, assignment should be made directly
-      LL.blocklinks[blocky*LL.bmapwidth+blockx]=thing;
-  }
-  else
-  {
-      // thing is off the map
-      thing.bnext = thing.bprev = null;
-  }
-  }
-
-    
+     flick.thinker.function.acp1 = (actionf_p1) T_FireFlicker;
+     flick.sector = sector;
+     flick.maxlight = sector.lightlevel;
+     flick.minlight = P_FindMinSurroundingLight(sector,sector.lightlevel)+16;
+     flick.count = 4;
  }
- 
- public class Doors{
 
+
+
+ //
+ // BROKEN LIGHT FLASHING
+ //
+
+
+ //
+ // T_LightFlash
+ // Do flashing lights.
+ //
+ void LightFlash (lightflash_t flash)
+ {
+     if (--flash.count)
+     return;
+     
+     if (flash.sector.lightlevel == flash.maxlight)
+     {
+     flash. sector.lightlevel = flash.minlight;
+     flash.count = (P_Random()&flash.mintime)+1;
+     }
+     else
+     {
+     flash. sector.lightlevel = flash.maxlight;
+     flash.count = (P_Random()&flash.maxtime)+1;
+     }
+
+ }
+
+
+
+
+ //
+ // P_SpawnLightFlash
+ // After the map has been loaded, scan each sector
+ // for specials that spawn thinkers
+ //
+ void SpawnLightFlash (sector_t   sector)
+ {
+     lightflash_t   flash;
+
+     // nothing special about it during gameplay
+     sector.special = 0;    
+     
+     flash = Z_Malloc ( sizeof(*flash), PU_LEVSPEC, 0);
+
+     P_AddThinker (&flash.thinker);
+
+     flash.thinker.function.acp1 = (actionf_p1) T_LightFlash;
+     flash.sector = sector;
+     flash.maxlight = sector.lightlevel;
+
+     flash.minlight = P_FindMinSurroundingLight(sector,sector.lightlevel);
+     flash.maxtime = 64;
+     flash.mintime = 7;
+     flash.count = (P_Random()&flash.maxtime)+1;
+ }
+
+
+
+ //
+ // STROBE LIGHT FLASHING
+ //
+
+
+ //
+ // T_StrobeFlash
+ //
+ void StrobeFlash (strobe_t       flash)
+ {
+     if (--flash.count)
+     return;
+     
+     if (flash.sector.lightlevel == flash.minlight)
+     {
+     flash. sector.lightlevel = flash.maxlight;
+     flash.count = flash.brighttime;
+     }
+     else
+     {
+     flash. sector.lightlevel = flash.minlight;
+     flash.count =flash.darktime;
+     }
+
+ }
+
+
+
+ //
+ // P_SpawnStrobeFlash
+ // After the map has been loaded, scan each sector
+ // for specials that spawn thinkers
+ //
+ void
+ SpawnStrobeFlash
+ ( sector_t sector,
+   int       fastOrSlow,
+   int       inSync )
+ {
+     strobe_t   flash;
+     
+     flash = Z_Malloc ( sizeof(*flash), PU_LEVSPEC, 0);
+
+     P_AddThinker (&flash.thinker);
+
+     flash.sector = sector;
+     flash.darktime = fastOrSlow;
+     flash.brighttime = STROBEBRIGHT;
+     flash.thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
+     flash.maxlight = sector.lightlevel;
+     flash.minlight = P_FindMinSurroundingLight(sector, sector.lightlevel);
+         
+     if (flash.minlight == flash.maxlight)
+     flash.minlight = 0;
+
+     // nothing special about it during gameplay
+     sector.special = 0;    
+
+     if (!inSync)
+     flash.count = (P_Random()&7)+1;
+     else
+     flash.count = 1;
+ }
+
+
+ //
+ // Start strobing lights (usually from a trigger)
+ //
+ void StartLightStrobing(line_t  line)
+ {
+     int     secnum;
+     sector_t*   sec;
+     
+     secnum = -1;
+     while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+     {
+     sec = &sectors[secnum];
+     if (sec.specialdata)
+         continue;
+     
+     P_SpawnStrobeFlash (sec,SLOWDARK, 0);
+     }
+ }
+
+
+
+ //
+ // TURN LINE'S TAG LIGHTS OFF
+ //
+ void TurnTagLightsOff(line_t line)
+ {
+     int         i;
+     int         j;
+     int         min;
+     sector_t       sector;
+     sector_t       tsec;
+     line_t     templine;
+     
+     sector = sectors;
+     
+     for (j = 0;j < numsectors; j++, sector++)
+     {
+     if (sector.tag == line.tag)
+     {
+         min = sector.lightlevel;
+         for (i = 0;i < sector.linecount; i++)
+         {
+         templine = sector.lines[i];
+         tsec = getNextSector(templine,sector);
+         if (!tsec)
+             continue;
+         if (tsec.lightlevel < min)
+             min = tsec.lightlevel;
+         }
+         sector.lightlevel = min;
+     }
+     }
+ }
+
+
+ //
+ // TURN LINE'S TAG LIGHTS ON
+ //
+ void
+ LightTurnOn
+ ( line_t   line,
+   int       bright )
+ {
+     int     i;
+     int     j;
+     sector_t   sector;
+     sector_t   temp;
+     line_t templine;
+     
+     sector = sectors;
+     
+     for (i=0;i<numsectors;i++, sector++)
+     {
+     if (sector.tag == line.tag)
+     {
+         // bright = 0 means to search
+         // for highest light level
+         // surrounding sector
+         if (!bright)
+         {
+         for (j = 0;j < sector.linecount; j++)
+         {
+             templine = sector.lines[j];
+             temp = getNextSector(templine,sector);
+
+             if (!temp)
+             continue;
+
+             if (temp.lightlevel > bright)
+             bright = temp.lightlevel;
+         }
+         }
+         sector. lightlevel = bright;
+     }
+     }
+ }
+
+     
+ //
+ // Spawn glowing light
+ //
+
+ void Glow(glow_t g)
+ {
+     switch(g.direction)
+     {
+       case -1:
+     // DOWN
+     g.sector.lightlevel -= GLOWSPEED;
+     if (g.sector.lightlevel <= g.minlight)
+     {
+         g.sector.lightlevel += GLOWSPEED;
+         g.direction = 1;
+     }
+     break;
+     
+       case 1:
+     // UP
+     g.sector.lightlevel += GLOWSPEED;
+     if (g.sector.lightlevel >= g.maxlight)
+     {
+         g.sector.lightlevel -= GLOWSPEED;
+         g.direction = -1;
+     }
+     break;
+     }
+ }
+
+
+ void SpawnGlowingLight(sector_t  sector)
+ {
+     glow_t g;
+     
+     g = Z_Malloc( sizeof(*g), PU_LEVSPEC, 0);
+
+     P_AddThinker(&g.thinker);
+
+     g.sector = sector;
+     g.minlight = P_FindMinSurroundingLight(sector,sector.lightlevel);
+     g.maxlight = sector.lightlevel;
+     g.thinker.function.acp1 = (actionf_p1) T_Glow;
+     g.direction = -1;
+
+     sector.special = 0;
+ }
+
+}
+
+ 
+ 
+ class DoorsFloors{
+
+     //
+     // CEILINGS
+     //
+
+
+     ceiling_t[]  activeceilings=new ceiling_t[MAXCEILINGS];
+
+
+     //
+     // T_MoveCeiling
+     //
+
+     void MoveCeiling (ceiling_t ceiling)
+     {
+         result_e    res;
+         
+         switch(ceiling.direction)
+         {
+           case 0:
+         // IN STASIS
+         break;
+           case 1:
+         // UP
+         res = T_MovePlane(ceiling.sector,
+                   ceiling.speed,
+                   ceiling.topheight,
+                   false,1,ceiling.direction);
+         
+         if (!(leveltime&7))
+         {
+             switch(ceiling.type)
+             {
+               case silentCrushAndRaise:
+             break;
+               default:
+             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
+                      sfx_stnmov);
+             // ?
+             break;
+             }
+         }
+         
+         if (res == pastdest)
+         {
+             switch(ceiling.type)
+             {
+               case raiseToHighest:
+             P_RemoveActiveCeiling(ceiling);
+             break;
+             
+               case silentCrushAndRaise:
+             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
+                      sfx_pstop);
+               case fastCrushAndRaise:
+               case crushAndRaise:
+             ceiling.direction = -1;
+             break;
+             
+               default:
+             break;
+             }
+             
+         }
+         break;
+         
+           case -1:
+         // DOWN
+         res = T_MovePlane(ceiling.sector,
+                   ceiling.speed,
+                   ceiling.bottomheight,
+                   ceiling.crush,1,ceiling.direction);
+         
+         if (!(leveltime&7))
+         {
+             switch(ceiling.type)
+             {
+               case silentCrushAndRaise: break;
+               default:
+             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
+                      sfx_stnmov);
+             }
+         }
+         
+         if (res == pastdest)
+         {
+             switch(ceiling.type)
+             {
+               case silentCrushAndRaise:
+             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
+                      sfx_pstop);
+               case crushAndRaise:
+             ceiling.speed = CEILSPEED;
+               case fastCrushAndRaise:
+             ceiling.direction = 1;
+             break;
+
+               case lowerAndCrush:
+               case lowerToFloor:
+             P_RemoveActiveCeiling(ceiling);
+             break;
+
+               default:
+             break;
+             }
+         }
+         else // ( res != pastdest )
+         {
+             if (res == crushed)
+             {
+             switch(ceiling.type)
+             {
+               case silentCrushAndRaise:
+               case crushAndRaise:
+               case lowerAndCrush:
+                 ceiling.speed = CEILSPEED / 8;
+                 break;
+
+               default:
+                 break;
+             }
+             }
+         }
+         break;
+         }
+     }
+
+
+     
+
+     //
+     // Add an active ceiling
+     //
+     void AddActiveCeiling(ceiling_t c)
+     {
+         int     i;
+         
+         for (i = 0; i < MAXCEILINGS;i++)
+         {
+         if (activeceilings[i] == NULL)
+         {
+             activeceilings[i] = c;
+             return;
+         }
+         }
+     }
+
+
+
+     //
+     // Remove a ceiling's thinker
+     //
+     void RemoveActiveCeiling(ceiling_t c)
+     {
+         int     i;
+         
+         for (i = 0;i < MAXCEILINGS;i++)
+         {
+         if (activeceilings[i] == c)
+         {
+             activeceilings[i].sector.specialdata = NULL;
+             P_RemoveThinker (&activeceilings[i].thinker);
+             activeceilings[i] = NULL;
+             break;
+         }
+         }
+     }
+
+
+
+     //
+     // Restart a ceiling that's in-stasis
+     //
+     void ActivateInStasisCeiling(line_t line)
+     {
+         int     i;
+         
+         for (i = 0;i < MAXCEILINGS;i++)
+         {
+         if (activeceilings[i]
+             && (activeceilings[i].tag == line.tag)
+             && (activeceilings[i].direction == 0))
+         {
+             activeceilings[i].direction = activeceilings[i].olddirection;
+             activeceilings[i].thinker.function.acp1
+               = (actionf_p1)T_MoveCeiling;
+         }
+         }
+     }
+     
+     //
+     // FLOORS
+     //
+
+     //
+     // Move a plane (floor or ceiling) and check for crushing
+     //
+     result_e
+     MovePlane
+     ( sector_t sector,
+       fixed_t   speed,
+       fixed_t   dest,
+       boolean   crush,
+       int       floorOrCeiling,
+       int       direction )
+     {
+         boolean flag;
+         fixed_t lastpos;
+         
+         switch(floorOrCeiling)
+         {
+           case 0:
+         // FLOOR
+         switch(direction)
+         {
+           case -1:
+             // DOWN
+             if (sector.floorheight - speed < dest)
+             {
+             lastpos = sector.floorheight;
+             sector.floorheight = dest;
+             flag = P_ChangeSector(sector,crush);
+             if (flag == true)
+             {
+                 sector.floorheight =lastpos;
+                 P_ChangeSector(sector,crush);
+                 //return crushed;
+             }
+             return pastdest;
+             }
+             else
+             {
+             lastpos = sector.floorheight;
+             sector.floorheight -= speed;
+             flag = P_ChangeSector(sector,crush);
+             if (flag == true)
+             {
+                 sector.floorheight = lastpos;
+                 P_ChangeSector(sector,crush);
+                 return crushed;
+             }
+             }
+             break;
+                             
+           case 1:
+             // UP
+             if (sector.floorheight + speed > dest)
+             {
+             lastpos = sector.floorheight;
+             sector.floorheight = dest;
+             flag = P_ChangeSector(sector,crush);
+             if (flag == true)
+             {
+                 sector.floorheight = lastpos;
+                 P_ChangeSector(sector,crush);
+                 //return crushed;
+             }
+             return pastdest;
+             }
+             else
+             {
+             // COULD GET CRUSHED
+             lastpos = sector.floorheight;
+             sector.floorheight += speed;
+             flag = P_ChangeSector(sector,crush);
+             if (flag == true)
+             {
+                 if (crush == true)
+                 return crushed;
+                 sector.floorheight = lastpos;
+                 P_ChangeSector(sector,crush);
+                 return crushed;
+             }
+             }
+             break;
+         }
+         break;
+                                         
+           case 1:
+         // CEILING
+         switch(direction)
+         {
+           case -1:
+             // DOWN
+             if (sector.ceilingheight - speed < dest)
+             {
+             lastpos = sector.ceilingheight;
+             sector.ceilingheight = dest;
+             flag = P_ChangeSector(sector,crush);
+
+             if (flag == true)
+             {
+                 sector.ceilingheight = lastpos;
+                 P_ChangeSector(sector,crush);
+                 //return crushed;
+             }
+             return pastdest;
+             }
+             else
+             {
+             // COULD GET CRUSHED
+             lastpos = sector.ceilingheight;
+             sector.ceilingheight -= speed;
+             flag = P_ChangeSector(sector,crush);
+
+             if (flag == true)
+             {
+                 if (crush == true)
+                 return crushed;
+                 sector.ceilingheight = lastpos;
+                 P_ChangeSector(sector,crush);
+                 return crushed;
+             }
+             }
+             break;
+                             
+           case 1:
+             // UP
+             if (sector.ceilingheight + speed > dest)
+             {
+             lastpos = sector.ceilingheight;
+             sector.ceilingheight = dest;
+             flag = P_ChangeSector(sector,crush);
+             if (flag == true)
+             {
+                 sector.ceilingheight = lastpos;
+                 P_ChangeSector(sector,crush);
+                 //return crushed;
+             }
+             return pastdest;
+             }
+             else
+             {
+             lastpos = sector.ceilingheight;
+             sector.ceilingheight += speed;
+             flag = P_ChangeSector(sector,crush);
+     // UNUSED
+     /*
+             if (flag == true)
+             {
+                 sector.ceilingheight = lastpos;
+                 P_ChangeSector(sector,crush);
+                 return crushed;
+             }
+     */
+             }
+             break;
+         }
+         break;
+             
+         }
+         return ok;
+     }
+
+
+     //
+     // MOVE A FLOOR TO IT'S DESTINATION (UP OR DOWN)
+     //
+     void MoveFloor(floormove_t floor)
+     {
+         result_e    res;
+         
+         res = T_MovePlane(floor.sector,
+                   floor.speed,
+                   floor.floordestheight,
+                   floor.crush,0,floor.direction);
+         
+         if (!(leveltime&7))
+             ;
+         // TODO: S_StartSound((mobj_t *)&floor.sector.soundorg,  sfx_stnmov);
+         
+         if (res == pastdest)
+         {
+         floor.sector.specialdata = NULL;
+
+         if (floor.direction == 1)
+         {
+             switch(floor.type)
+             {
+               case donutRaise:
+             floor.sector.special = floor.newspecial;
+             floor.sector.floorpic = floor.texture;
+               default:
+             break;
+             }
+         }
+         else if (floor.direction == -1)
+         {
+             switch(floor.type)
+             {
+               case lowerAndChange:
+             floor.sector.special = floor.newspecial;
+             floor.sector.floorpic = floor.texture;
+               default:
+             break;
+             }
+         }
+         P_RemoveThinker(floor.thinker);
+
+         ; //TODO: S_StartSound((mobj_t *)&floor.sector.soundorg, sfx_pstop);
+         }
+
+     }
+
+     //
+     // EV.DoCeiling
+     // Move a ceiling up/down and all around!
+     //
+     int
+     DoCeiling
+     ( line_t   line,
+       ceiling_e type )
+     {
+         int     secnum;
+         int     rtn;
+         sector_t   sec;
+         ceiling_t  ceiling;
+         
+         secnum = -1;
+         rtn = 0;
+         
+         //  Reactivate in-stasis ceilings...for certain types.
+         switch(type)
+         {
+           case fastCrushAndRaise:
+           case silentCrushAndRaise:
+           case crushAndRaise:
+         P_ActivateInStasisCeiling(line);
+           default:
+         break;
+         }
+         
+         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         {
+         sec = &sectors[secnum];
+         if (sec.specialdata)
+             continue;
+         
+         // new door thinker
+         rtn = 1;
+         ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, 0);
+         P_AddThinker (&ceiling.thinker);
+         sec.specialdata = ceiling;
+         ceiling.thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+         ceiling.sector = sec;
+         ceiling.crush = false;
+         
+         switch(type)
+         {
+           case fastCrushAndRaise:
+             ceiling.crush = true;
+             ceiling.topheight = sec.ceilingheight;
+             ceiling.bottomheight = sec.floorheight + (8*FRACUNIT);
+             ceiling.direction = -1;
+             ceiling.speed = CEILSPEED * 2;
+             break;
+
+           case silentCrushAndRaise:
+           case crushAndRaise:
+             ceiling.crush = true;
+             ceiling.topheight = sec.ceilingheight;
+           case lowerAndCrush:
+           case lowerToFloor:
+             ceiling.bottomheight = sec.floorheight;
+             if (type != lowerToFloor)
+             ceiling.bottomheight += 8*FRACUNIT;
+             ceiling.direction = -1;
+             ceiling.speed = CEILSPEED;
+             break;
+
+           case raiseToHighest:
+             ceiling.topheight = P_FindHighestCeilingSurrounding(sec);
+             ceiling.direction = 1;
+             ceiling.speed = CEILSPEED;
+             break;
+         }
+             
+         ceiling.tag = sec.tag;
+         ceiling.type = type;
+         P_AddActiveCeiling(ceiling);
+         }
+         return rtn;
+     }
+
+     
+     /**
+      * Special Stuff that can not be categorized
+      * 
+      * (I'm sure it has something to do with John Romero's obsession
+      *  with fucking stuff and making them his bitches).
+      *
+      *@param line
+      * 
+      */
+     int DoDonut(line_t  line)
+     {
+         sector_t       s1;
+         sector_t       s2;
+         sector_t       s3;
+         int         secnum;
+         int         rtn;
+         int         i;
+         floormove_t    floor;
+         
+         secnum = -1;
+         rtn = 0;
+         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         {
+         s1 = LL.sectors[secnum];
+             
+         // ALREADY MOVING?  IF SO, KEEP GOING...
+         if (s1.specialdata)
+             continue;
+                 
+         rtn = 1;
+         s2 = getNextSector(s1.lines[0],s1);
+         for (i = 0;i < s2.linecount;i++)
+         {
+             if ((!s2.lines[i].flags & ML_TWOSIDED) ||
+             (s2.lines[i].backsector == s1))
+             continue;
+             s3 = s2.lines[i].backsector;
+             
+             //  Spawn rising slime
+             floor = new floormove_t();
+             P_AddThinker (floor.thinker);
+             s2.specialdata = floor;
+             floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+             floor.type = donutRaise;
+             floor.crush = false;
+             floor.direction = 1;
+             floor.sector = s2;
+             floor.speed = FLOORSPEED / 2;
+             floor.texture = s3.floorpic;
+             floor.newspecial = 0;
+             floor.floordestheight = s3.floorheight;
+             
+             //  Spawn lowering donut-hole
+             floor = new floormove_t();
+             P_AddThinker (floor.thinker);
+             s1.specialdata = floor;
+             floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+             floor.type = lowerFloor;
+             floor.crush = false;
+             floor.direction = -1;
+             floor.sector = s1;
+             floor.speed = FLOORSPEED / 2;
+             floor.floordestheight = s3.floorheight;
+             break;
+         }
+         }
+         return rtn;
+     }
+     
+     //
+     // HANDLE FLOOR TYPES
+     //
+     int
+     DoFloor
+     ( line_t   line,
+       floor_e   floortype )
+     {
+         int         secnum;
+         int         rtn;
+         int         i;
+         sector_t       sec;
+         floormove_t    floor;
+
+         secnum = -1;
+         rtn = 0;
+         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         {
+         sec = LL.sectors[secnum];
+             
+         // ALREADY MOVING?  IF SO, KEEP GOING...
+         if (sec.specialdata)
+             continue;
+         
+         // new floor thinker
+         rtn = 1;
+         floor = new floormove_t();
+         P_AddThinker (floor.thinker);
+         sec.specialdata = floor;
+         floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+         floor.type = floortype;
+         floor.crush = false;
+
+         switch(floortype)
+         {
+           case lowerFloor:
+             floor.direction = -1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = 
+             P_FindHighestFloorSurrounding(sec);
+             break;
+
+           case lowerFloorToLowest:
+             floor.direction = -1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = 
+             P_FindLowestFloorSurrounding(sec);
+             break;
+
+           case turboLower:
+             floor.direction = -1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED * 4;
+             floor.floordestheight = 
+             P_FindHighestFloorSurrounding(sec);
+             if (floor.floordestheight != sec.floorheight)
+             floor.floordestheight += 8*FRACUNIT;
+             break;
+
+           case raiseFloorCrush:
+             floor.crush = true;
+           case raiseFloor:
+             floor.direction = 1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = 
+             P_FindLowestCeilingSurrounding(sec);
+             if (floor.floordestheight > sec.ceilingheight)
+             floor.floordestheight = sec.ceilingheight;
+             floor.floordestheight -= (8*FRACUNIT)*
+             (floortype == raiseFloorCrush);
+             break;
+
+           case raiseFloorTurbo:
+             floor.direction = 1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED*4;
+             floor.floordestheight = 
+             P_FindNextHighestFloor(sec,sec.floorheight);
+             break;
+
+           case raiseFloorToNearest:
+             floor.direction = 1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = 
+             P_FindNextHighestFloor(sec,sec.floorheight);
+             break;
+
+           case raiseFloor24:
+             floor.direction = 1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = floor.sector.floorheight +
+             24 * FRACUNIT;
+             break;
+           case raiseFloor512:
+             floor.direction = 1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = floor.sector.floorheight +
+             512 * FRACUNIT;
+             break;
+
+           case raiseFloor24AndChange:
+             floor.direction = 1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = floor.sector.floorheight +
+             24 * FRACUNIT;
+             sec.floorpic = line.frontsector.floorpic;
+             sec.special = line.frontsector.special;
+             break;
+
+           case raiseToTexture:
+           {
+               int   minsize = MAXINT;
+               side_t   side;
+                     
+               floor.direction = 1;
+               floor.sector = sec;
+               floor.speed = FLOORSPEED;
+               for (i = 0; i < sec.linecount; i++)
+               {
+               if (twoSided (secnum, i) )
+               {
+                   side = getSide(secnum,i,0);
+                   if (side.bottomtexture >= 0)
+                   if (textureheight[side.bottomtexture] < 
+                       minsize)
+                       minsize = 
+                       textureheight[side.bottomtexture];
+                   side = getSide(secnum,i,1);
+                   if (side.bottomtexture >= 0)
+                   if (textureheight[side.bottomtexture] < 
+                       minsize)
+                       minsize = 
+                       textureheight[side.bottomtexture];
+               }
+               }
+               floor.floordestheight =
+               floor.sector.floorheight + minsize;
+           }
+           break;
+           
+           case lowerAndChange:
+             floor.direction = -1;
+             floor.sector = sec;
+             floor.speed = FLOORSPEED;
+             floor.floordestheight = 
+             P_FindLowestFloorSurrounding(sec);
+             floor.texture = sec.floorpic;
+
+             for (i = 0; i < sec.linecount; i++)
+             {
+             if ( twoSided(secnum, i) )
+             {
+                 if (getSide(secnum,i,0).sector-sectors == secnum)
+                 {
+                 sec = getSector(secnum,i,1);
+
+                 if (sec.floorheight == floor.floordestheight)
+                 {
+                     floor.texture = sec.floorpic;
+                     floor.newspecial = sec.special;
+                     break;
+                 }
+                 }
+                 else
+                 {
+                 sec = getSector(secnum,i,0);
+
+                 if (sec.floorheight == floor.floordestheight)
+                 {
+                     floor.texture = sec.floorpic;
+                     floor.newspecial = sec.special;
+                     break;
+                 }
+                 }
+             }
+             }
+           default:
+             break;
+         }
+         }
+         return rtn;
+     }
+
+     //
+     // EV_CeilingCrushStop
+     // Stop a ceiling from crushing!
+     //
+     int CeilingCrushStop(line_t  line)
+     {
+         int     i;
+         int     rtn;
+         
+         rtn = 0;
+         for (i = 0;i < MAXCEILINGS;i++)
+         {
+         if (activeceilings[i]
+             && (activeceilings[i].tag == line.tag)
+             && (activeceilings[i].direction != 0))
+         {
+             activeceilings[i].olddirection = activeceilings[i].direction;
+             activeceilings[i].thinker.function.acv = (actionf_v)NULL;
+             activeceilings[i].direction = 0;       // in-stasis
+             rtn = 1;
+         }
+         }
+         
+
+         return rtn;
+     }
+
+
+     //
+     // BUILD A STAIRCASE!
+     //
+     int
+     BuildStairs
+     ( line_t   line,
+       stair_e   type )
+     {
+         int         secnum;
+         int         height;
+         int         i;
+         int         newsecnum;
+         int         texture;
+         int         ok;
+         int         rtn;
+         
+         sector_t       sec;
+         sector_t       tsec;
+
+         floormove_t    floor;
+         
+         int     stairsize;
+         int     speed;
+
+         secnum = -1;
+         rtn = 0;
+         while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
+         {
+         sec = LL.sectors[secnum];
+             
+         // ALREADY MOVING?  IF SO, KEEP GOING...
+         if (sec.specialdata)
+             continue;
+         
+         // new floor thinker
+         rtn = 1;
+         floor = new floormove_t ();
+         P_AddThinker (floor.thinker);
+         sec.specialdata = floor;
+         floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+         floor.direction = 1;
+         floor.sector = sec;
+         switch(type)
+         {
+           case build8:
+             speed = FLOORSPEED/4;
+             stairsize = 8*FRACUNIT;
+             break;
+           case turbo16:
+             speed = FLOORSPEED*4;
+             stairsize = 16*FRACUNIT;
+             break;
+         }
+         floor.speed = speed;
+         height = sec.floorheight + stairsize;
+         floor.floordestheight = height;
+             
+         texture = sec.floorpic;
+         
+         // Find next sector to raise
+         // 1.   Find 2-sided line with same sector side[0]
+         // 2.   Other side is the next sector to raise
+         do
+         {
+             ok = 0;
+             for (i = 0;i < sec.linecount;i++)
+             {
+             if ( !((sec.lines[i]).flags & ML_TWOSIDED) )
+                 continue;
+                         
+             tsec = (sec.lines[i]).frontsector;
+             newsecnum = tsec-sectors;
+             
+             if (secnum != newsecnum)
+                 continue;
+
+             tsec = (sec.lines[i]).backsector;
+             newsecnum = tsec - sectors;
+
+             if (tsec.floorpic != texture)
+                 continue;
+                         
+             height += stairsize;
+
+             if (tsec.specialdata)
+                 continue;
+                         
+             sec = tsec;
+             secnum = newsecnum;
+             floor = new floormove_t();
+
+             P_AddThinker (floor.thinker);
+
+             sec.specialdata = floor;
+             floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+             floor.direction = 1;
+             floor.sector = sec;
+             floor.speed = speed;
+             floor.floordestheight = height;
+             ok = 1;
+             break;
+             }
+         } while(ok);
+         }
+         return rtn;
+     }
+     
+     
 	 /**
 	 //
 	 // Sliding door frame information
@@ -4991,7 +5674,7 @@ P_CheckMissileSpawn (th);
 	 //
 	 // T_VerticalDoor
 	 //
-	 public void T_VerticalDoor (vldoor_t door)
+	 public void VerticalDoor (vldoor_t door)
 	 {
 	     result_e	res;
 	 	
@@ -5005,19 +5688,19 @@ P_CheckMissileSpawn (th);
 	 	    {
 	 	      case blazeRaise:
 	 		door.direction = -1; // time to go back down
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_bdcls);
 	 		break;
 	 		
 	 	      case normal:
 	 		door.direction = -1; // time to go back down
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_dorcls);
 	 		break;
 	 		
 	 	      case close30ThenOpen:
 	 		door.direction = 1;
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_doropn);
 	 		break;
 	 		
@@ -5036,7 +5719,7 @@ P_CheckMissileSpawn (th);
 	 	      case raiseIn5Mins:
 	 		door.direction = 1;
 	 		door.type = normal;
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_doropn);
 	 		break;
 	 		
@@ -5060,7 +5743,7 @@ P_CheckMissileSpawn (th);
 	 	      case blazeClose:
 	 		door.sector.specialdata = NULL;
 	 		P_RemoveThinker (&door.thinker);  // unlink and free
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_bdcls);
 	 		break;
 	 		
@@ -5089,7 +5772,7 @@ P_CheckMissileSpawn (th);
 	 		
 	 	      default:
 	 		door.direction = 1;
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_doropn);
 	 		break;
 	 	    }
@@ -5135,10 +5818,10 @@ P_CheckMissileSpawn (th);
 	 //
 
 	 int
-	 EV_DoLockedDoor
-	 ( line_t*	line,
+	 DoLockedDoor
+	 ( line_t	line,
 	   vldoor_e	type,
-	   mobj_t*	thing )
+	   mobj_t	thing )
 	 {
 	     player_t*	p;
 	 	
@@ -5156,7 +5839,7 @@ P_CheckMissileSpawn (th);
 	 	if (!p.cards[it_bluecard] && !p.cards[it_blueskull])
 	 	{
 	 	    p.message = PD_BLUEO;
-	 	    S_StartSound(NULL,sfx_oof);
+	 	    ; // TODO:(NULL,sfx_oof);
 	 	    return 0;
 	 	}
 	 	break;
@@ -5168,7 +5851,7 @@ P_CheckMissileSpawn (th);
 	 	if (!p.cards[it_redcard] && !p.cards[it_redskull])
 	 	{
 	 	    p.message = PD_REDO;
-	 	    S_StartSound(NULL,sfx_oof);
+	 	    ; // TODO:(NULL,sfx_oof);
 	 	    return 0;
 	 	}
 	 	break;
@@ -5181,31 +5864,31 @@ P_CheckMissileSpawn (th);
 	 	    !p.cards[it_yellowskull])
 	 	{
 	 	    p.message = PD_YELLOWO;
-	 	    S_StartSound(NULL,sfx_oof);
+	 	    ; // TODO:(NULL,sfx_oof);
 	 	    return 0;
 	 	}
 	 	break;	
 	     }
 
-	     return EV_DoDoor(line,type);
+	     return DoDoor(line,type);
 	 }
 
 
 	 int
-	 EV_DoDoor
-	 ( line_t*	line,
+	 DoDoor
+	 ( line_t	line,
 	   vldoor_e	type )
 	 {
 	     int		secnum,rtn;
-	     sector_t*	sec;
-	     vldoor_t*	door;
+	     sector_t	sec;
+	     vldoor_t	door;
 	 	
 	     secnum = -1;
 	     rtn = 0;
 	     
 	     while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
 	     {
-	 	sec = &sectors[secnum];
+	 	sec = sectors[secnum];
 	 	if (sec.specialdata)
 	 	    continue;
 	 		
@@ -5229,7 +5912,7 @@ P_CheckMissileSpawn (th);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    door.direction = -1;
 	 	    door.speed = VDOORSPEED * 4;
-	 	    S_StartSound((mobj_t *)&door.sector.soundorg,
+	 	    ; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			 sfx_bdcls);
 	 	    break;
 	 	    
@@ -5237,14 +5920,14 @@ P_CheckMissileSpawn (th);
 	 	    door.topheight = P_FindLowestCeilingSurrounding(sec);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    door.direction = -1;
-	 	    S_StartSound((mobj_t *)&door.sector.soundorg,
+	 	    ; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			 sfx_dorcls);
 	 	    break;
 	 	    
 	 	  case close30ThenOpen:
 	 	    door.topheight = sec.ceilingheight;
 	 	    door.direction = -1;
-	 	    S_StartSound((mobj_t *)&door.sector.soundorg,
+	 	    ; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			 sfx_dorcls);
 	 	    break;
 	 	    
@@ -5255,7 +5938,7 @@ P_CheckMissileSpawn (th);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    door.speed = VDOORSPEED * 4;
 	 	    if (door.topheight != sec.ceilingheight)
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_bdopn);
 	 	    break;
 	 	    
@@ -5265,7 +5948,7 @@ P_CheckMissileSpawn (th);
 	 	    door.topheight = P_FindLowestCeilingSurrounding(sec);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    if (door.topheight != sec.ceilingheight)
-	 		S_StartSound((mobj_t *)&door.sector.soundorg,
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,
 	 			     sfx_doropn);
 	 	    break;
 	 	    
@@ -5282,14 +5965,14 @@ P_CheckMissileSpawn (th);
 	 // EV_VerticalDoor : open a door manually, no tag value
 	 //
 	 void
-	 EV_VerticalDoor
-	 ( line_t*	line,
-	   mobj_t*	thing )
+	 VerticalDoor
+	 ( line_t	line,
+	   mobj_t	thing )
 	 {
-	     player_t*	player;
+	     player_t	player;
 	     int		secnum;
-	     sector_t*	sec;
-	     vldoor_t*	door;
+	     sector_t	sec;
+	     vldoor_t	door;
 	     int		side;
 	 	
 	     side = 0;	// only front sides can be used
@@ -5307,7 +5990,7 @@ P_CheckMissileSpawn (th);
 	 	if (!player.cards[it_bluecard] && !player.cards[it_blueskull])
 	 	{
 	 	    player.message = PD_BLUEK;
-	 	    S_StartSound(NULL,sfx_oof);
+	 	    ; // TODO:(NULL,sfx_oof);
 	 	    return;
 	 	}
 	 	break;
@@ -5321,7 +6004,7 @@ P_CheckMissileSpawn (th);
 	 	    !player.cards[it_yellowskull])
 	 	{
 	 	    player.message = PD_YELLOWK;
-	 	    S_StartSound(NULL,sfx_oof);
+	 	    ; // TODO:(NULL,sfx_oof);
 	 	    return;
 	 	}
 	 	break;
@@ -5334,7 +6017,7 @@ P_CheckMissileSpawn (th);
 	 	if (!player.cards[it_redcard] && !player.cards[it_redskull])
 	 	{
 	 	    player.message = PD_REDK;
-	 	    S_StartSound(NULL,sfx_oof);
+	 	    ; // TODO:(NULL,sfx_oof);
 	 	    return;
 	 	}
 	 	break;
@@ -5372,16 +6055,16 @@ P_CheckMissileSpawn (th);
 	     {
 	       case 117:	// BLAZING DOOR RAISE
 	       case 118:	// BLAZING DOOR OPEN
-	 	S_StartSound((mobj_t *)&sec.soundorg,sfx_bdopn);
+	 	; // TODO:((mobj_t *)&sec.soundorg,sfx_bdopn);
 	 	break;
 	 	
 	       case 1:	// NORMAL DOOR SOUND
 	       case 31:
-	 	S_StartSound((mobj_t *)&sec.soundorg,sfx_doropn);
+	 	; // TODO:((mobj_t *)&sec.soundorg,sfx_doropn);
 	 	break;
 	 	
 	       default:	// LOCKED DOOR SOUND
-	 	S_StartSound((mobj_t *)&sec.soundorg,sfx_doropn);
+	 	; // TODO:((mobj_t *)&sec.soundorg,sfx_doropn);
 	 	break;
 	     }
 	 	
@@ -5433,13 +6116,13 @@ P_CheckMissileSpawn (th);
 	 //
 	 // Spawn a door that closes after 30 seconds
 	 //
-	 public void P_SpawnDoorCloseIn30 (sector_t sec)
+	 public void SpawnDoorCloseIn30 (sector_t sec)
 	 {
 	     vldoor_t	door;
 	 	
 	     door = new vldoor_t();
 
-	     P_AddThinker (door.thinker);
+	     AddThinker (door.thinker);
 
 	     sec.specialdata = door;
 	     sec.special = 0;
@@ -5456,7 +6139,7 @@ P_CheckMissileSpawn (th);
 	 // Spawn a door that opens after 5 minutes
 	 //
 	 public void
-	 P_SpawnDoorRaiseIn5Mins
+	 SpawnDoorRaiseIn5Mins
 	 ( sector_t	sec,
 	   int		secnum )
 	 {
@@ -5464,7 +6147,7 @@ P_CheckMissileSpawn (th);
 	 	
 	     door = new vldoor_t();
 	     
-	     P_AddThinker (door.thinker);
+	     AddThinker (door.thinker);
 
 	     sec.specialdata = door;
 	     sec.special = 0;
@@ -5646,11 +6329,11 @@ P_CheckMissileSpawn (th);
 	 ( line_t*	line,
 	   mobj_t*	thing )
 	 {
-	     sector_t*		sec;
+	     sector_t		sec;
 	     slidedoor_t*	door;
 	 	
 	     // DOOM II ONLY...
-	     if (gamemode != commercial)
+	     if (DS.gamemode != commercial)
 	 	return;
 	     
 	     // Make sure door isn't already being animated
@@ -5683,7 +6366,7 @@ P_CheckMissileSpawn (th);
 	 	door.whichDoorIndex = P_FindSlidingDoorType(line);
 
 	 	if (door.whichDoorIndex < 0)
-	 	    I_Error("EV_SlidingDoor: Can't use texture for sliding door!");
+	 	    system.Error("EV_SlidingDoor: Can't use texture for sliding door!");
 	 			
 	 	door.frontsector = sec;
 	 	door.backsector = line.backsector;
@@ -5695,6 +6378,788 @@ P_CheckMissileSpawn (th);
 	 }
 	 */
 }
+ 
+ class Plats{
+     
+     public Plats(){
+         activeplats=new plat_t[MAXPLATS];
+     }
+     plat_t[]        activeplats;
+
+     //
+     // Move a plat up and down
+     //
+     void PlatRaise(plat_t plat)
+     {
+         result_e    res;
+         
+         switch(plat.status)
+         {
+           case up:
+         res = T_MovePlane(plat.sector,
+                   plat.speed,
+                   plat.high,
+                   plat.crush,0,1);
+                         
+         if (plat.type == raiseAndChange
+             || plat.type == raiseToNearestAndChange)
+         {
+             if (!(leveltime&7))
+             S_StartSound((mobj_t *)&plat.sector.soundorg,
+                      sfx_stnmov);
+         }
+         
+                     
+         if (res == crushed && (!plat.crush))
+         {
+             plat.count = plat.wait;
+             plat.status = down;
+             S_StartSound((mobj_t *)&plat.sector.soundorg,
+                  sfx_pstart);
+         }
+         else
+         {
+             if (res == pastdest)
+             {
+             plat.count = plat.wait;
+             plat.status = waiting;
+             S_StartSound((mobj_t *)&plat.sector.soundorg,
+                      sfx_pstop);
+
+             switch(plat.type)
+             {
+               case blazeDWUS:
+               case downWaitUpStay:
+                 P_RemoveActivePlat(plat);
+                 break;
+                 
+               case raiseAndChange:
+               case raiseToNearestAndChange:
+                 P_RemoveActivePlat(plat);
+                 break;
+                 
+               default:
+                 break;
+             }
+             }
+         }
+         break;
+         
+           case  down:
+         res = T_MovePlane(plat.sector,plat.speed,plat.low,false,0,-1);
+
+         if (res == pastdest)
+         {
+             plat.count = plat.wait;
+             plat.status = waiting;
+             S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstop);
+         }
+         break;
+         
+           case  waiting:
+         if (!--plat.count)
+         {
+             if (plat.sector.floorheight == plat.low)
+             plat.status = up;
+             else
+             plat.status = down;
+             S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstart);
+         }
+           case  in_stasis:
+         break;
+         }
+     }
+
+
+     //
+     // Do Platforms
+     //  "amount" is only used for SOME platforms.
+     //
+     int
+     DoPlat
+     ( line_t   line,
+       plattype_e    type,
+       int       amount )
+     {
+         plat_t plat;
+         int     secnum;
+         int     rtn;
+         sector_t   sec;
+         
+         secnum = -1;
+         rtn = 0;
+
+         
+         //  Activate all <type> plats that are in_stasis
+         switch(type)
+         {
+           case perpetualRaise:
+         ActivateInStasis(line.tag);
+         break;
+         
+           default:
+         break;
+         }
+         
+         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         {
+         sec = LL.sectors[secnum];
+
+         if (sec.specialdata)
+             continue;
+         
+         // Find lowest & highest floors around sector
+         rtn = 1;
+         plat = new plat_t();
+         AddThinker(plat.thinker);
+             
+         plat.type = type;
+         plat.sector = sec;
+         plat.sector.specialdata = plat;
+         plat.thinker.function.acp1 = (actionf_p1) T_PlatRaise;
+         plat.crush = false;
+         plat.tag = line.tag;
+         
+         switch(type)
+         {
+           case raiseToNearestAndChange:
+             plat.speed = PLATSPEED/2;
+             sec.floorpic = sides[line.sidenum[0]].sector.floorpic;
+             plat.high = P_FindNextHighestFloor(sec,sec.floorheight);
+             plat.wait = 0;
+             plat.status = up;
+             // NO MORE DAMAGE, IF APPLICABLE
+             sec.special = 0;       
+
+             S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
+             break;
+             
+           case raiseAndChange:
+             plat.speed = PLATSPEED/2;
+             sec.floorpic = sides[line.sidenum[0]].sector.floorpic;
+             plat.high = sec.floorheight + amount*FRACUNIT;
+             plat.wait = 0;
+             plat.status = up;
+
+             S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
+             break;
+             
+           case downWaitUpStay:
+             plat.speed = PLATSPEED * 4;
+             plat.low = P_FindLowestFloorSurrounding(sec);
+
+             if (plat.low > sec.floorheight)
+             plat.low = sec.floorheight;
+
+             plat.high = sec.floorheight;
+             plat.wait = 35*PLATWAIT;
+             plat.status = down;
+             //TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
+             break;
+             
+           case blazeDWUS:
+             plat.speed = PLATSPEED * 8;
+             plat.low = P_FindLowestFloorSurrounding(sec);
+
+             if (plat.low > sec.floorheight)
+             plat.low = sec.floorheight;
+
+             plat.high = sec.floorheight;
+             plat.wait = 35*PLATWAIT;
+             plat.status = down;
+             //TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
+             break;
+             
+           case perpetualRaise:
+             plat.speed = PLATSPEED;
+             plat.low = P_FindLowestFloorSurrounding(sec);
+
+             if (plat.low > sec.floorheight)
+             plat.low = sec.floorheight;
+
+             plat.high = P_FindHighestFloorSurrounding(sec);
+
+             if (plat.high < sec.floorheight)
+             plat.high = sec.floorheight;
+
+             plat.wait = 35*PLATWAIT;
+             plat.status = P_Random()&1;
+
+             //TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
+             break;
+         }
+         AddActivePlat(plat);
+         }
+         return rtn;
+     }
+
+
+
+     void ActivateInStasis(int tag)
+     {
+         int     i;
+         
+         for (i = 0;i < MAXPLATS;i++)
+         if ((activeplats[i]!=null)
+             && (activeplats[i].tag == tag)
+             && (activeplats[i].status == plat_e.in_stasis))
+         {
+             (activeplats[i]).status = (activeplats[i]).oldstatus;
+             (activeplats[i]).thinker.function.acp1
+               = (actionf_p1) T_PlatRaise;
+         }
+     }
+
+     void StopPlat(line_t line)
+     {
+         int     j;
+         
+         for (j = 0;j < MAXPLATS;j++)
+         if ((activeplats[j]!=null)
+             && (activeplats[j].status != plat_e.in_stasis)
+             && (activeplats[j].tag == line.tag))
+         {
+             (activeplats[j]).oldstatus = (activeplats[j]).status;
+             (activeplats[j]).status = plat_e.in_stasis;
+             (activeplats[j]).thinker.function.acv = (actionf_v)NULL;
+         }
+     }
+
+     void AddActivePlat(plat_t plat)
+     {
+         int     i;
+         
+         for (i = 0;i < MAXPLATS;i++)
+         if (activeplats[i] == null)
+         {
+             activeplats[i] = plat;
+             return;
+         }
+         system.Error ("P_AddActivePlat: no more plats!");
+     }
+
+     void RemoveActivePlat(plat_t plat)
+     {
+         int     i;
+         for (i = 0;i < MAXPLATS;i++)
+         if (plat == activeplats[i])
+         {
+             (activeplats[i]).sector.specialdata = null;
+             RemoveThinker((activeplats[i]).thinker);
+             activeplats[i] = NULL;
+             
+             return;
+         }
+         system.Error ("P_RemoveActivePlat: can't find plat!");
+     }
+
+ }
+ class Sight{
+     //
+     // P_CheckSight
+     //
+     int     sightzstart;        // eye z of looker
+
+
+     divline_t   strace;         // from t1 to t2
+     int     t2x;
+     int     t2y;
+
+     int[]       sightcounts=new int[2];
+
+     //
+     // P_InterceptVector2
+     // Returns the fractional intercept point
+     // along the first divline.
+     // This is only called by the addthings and addlines traversers.
+     //
+     private int
+     P_InterceptVector2
+     ( divline_t v2,
+       divline_t v1 )
+     {
+         int frac;   // fixed_t
+         int num;    // fixed_t
+         int den;    // fixed_t
+         
+         den = FixedMul (v1.dy>>8,v2.dx) - FixedMul(v1.dx>>8,v2.dy);
+
+         if (den == 0)
+         return 0;
+         //  I_Error ("P_InterceptVector: parallel");
+         
+         num = FixedMul ( (v1.x - v2.x)>>8 ,v1.dy) + 
+         FixedMul ( (v2.y - v1.y)>>8 , v1.dx);
+         frac = FixedDiv (num , den);
+
+         return frac;
+     }
+
+     //
+     // P_CrossSubsector
+     // Returns true
+     //  if strace crosses the given subsector successfully.
+     //
+     boolean P_CrossSubsector (int num)
+     {
+         int     seg; // pointer inside segs
+         line_t      line;
+         int         s1;
+         int         s2;
+         int         count;
+         subsector_t sub;
+         sector_t        front;
+         sector_t        back;
+         int     opentop; //fixed_t
+         int     openbottom;
+         divline_t       divl;
+         vertex_t        v1;
+         vertex_t        v2;
+         int     frac; //fixed_t
+         int     slope;
+         
+     if (RANGECHECK){
+         if (num>=LL.numsubsectors)
+         system.Error ("P_CrossSubsector: ss %i with numss = %i",
+              num,
+              LL.numsubsectors);
+     }
+
+         sub = LL.subsectors[num];
+         
+         // check lines
+         count = sub.numlines;
+         seg = sub.firstline;//LL.segs[sub.firstline];
+
+         for ( ; count>0 ; seg++, count--)
+         {
+         line = LL.segs[seg].linedef;
+
+         // allready checked other side?
+         if (line.validcount == R.validcount)
+             continue;
+         
+         line.validcount = R.validcount;
+             
+         v1 = line.v1;
+         v2 = line.v2;
+         s1 = strace.DivlineSide (v1.x,v1.y);
+         s2 = strace.DivlineSide (v2.x, v2.y);
+
+         // line isn't crossed?
+         if (s1 == s2)
+             continue;
+         
+         divl.x = v1.x;
+         divl.y = v1.y;
+         divl.dx = v2.x - v1.x;
+         divl.dy = v2.y - v1.y;
+         s1 = divl.DivlineSide (strace.x, strace.y);
+         s2 = divl.DivlineSide (t2x, t2y);
+
+         // line isn't crossed?
+         if (s1 == s2)
+             continue;   
+
+         // stop because it is not two sided anyway
+         // might do this after updating validcount?
+         if ( !flags(line.flags, ML_TWOSIDED) )
+             return false;
+         
+         // crosses a two sided line
+         front = LL.segs[seg].frontsector;
+         back = LL.segs[seg].backsector;
+
+         // no wall to block sight with?
+         if (front.floorheight == back.floorheight
+             && front.ceilingheight == back.ceilingheight)
+             continue;   
+
+         // possible occluder
+         // because of ceiling height differences
+         if (front.ceilingheight < back.ceilingheight)
+             opentop = front.ceilingheight;
+         else
+             opentop = back.ceilingheight;
+
+         // because of ceiling height differences
+         if (front.floorheight > back.floorheight)
+             openbottom = front.floorheight;
+         else
+             openbottom = back.floorheight;
+             
+         // quick test for totally closed doors
+         if (openbottom >= opentop)  
+             return false;       // stop
+         
+         frac = P_InterceptVector2 (strace, divl);
+             
+         if (front.floorheight != back.floorheight)
+         {
+             slope = FixedDiv (openbottom - sightzstart , frac);
+             if (slope > bottomslope)
+             bottomslope = slope;
+         }
+             
+         if (front.ceilingheight != back.ceilingheight)
+         {
+             slope = FixedDiv (opentop - sightzstart , frac);
+             if (slope < topslope)
+             topslope = slope;
+         }
+             
+         if (topslope <= bottomslope)
+             return false;       // stop             
+         }
+         // passed the subsector ok
+         return true;        
+     }
+
+
+
+     //
+     // P_CrossBSPNode
+     // Returns true
+     //  if strace crosses the given node successfully.
+     //
+     boolean P_CrossBSPNode (int bspnum)
+     {
+         node_t  bsp;
+         int     side;
+
+         if (flags(bspnum, NF_SUBSECTOR))
+         {
+         if (bspnum == -1)
+             return P_CrossSubsector (0);
+         else
+             return P_CrossSubsector (bspnum&(~NF_SUBSECTOR));
+         }
+             
+         bsp = LL.nodes[bspnum];
+         
+         // decide which side the start point is on
+         side = bsp.DivlineSide (strace.x, strace.y);
+         if (side == 2)
+         side = 0;   // an "on" should cross both sides
+
+         // cross the starting side
+         if (!P_CrossBSPNode (bsp.children[side]) )
+         return false;
+         
+         // the partition plane is crossed here
+         if (side == bsp.DivlineSide (t2x, t2y))
+         {
+         // the line doesn't touch the other side
+         return true;
+         }
+         
+         // cross the ending side        
+         return P_CrossBSPNode (bsp.children[side^1]);
+     }
+
+
+     //
+     // P_CheckSight
+     // Returns true
+     //  if a straight line between t1 and t2 is unobstructed.
+     // Uses REJECT.
+     //
+     private boolean
+     P_CheckSight
+     ( mobj_t    t1,
+       mobj_t    t2 )
+     {
+         int     s1;
+         int     s2;
+         int     pnum;
+         int     bytenum;
+         int     bitnum;
+         
+         // First check for trivial rejection.
+
+         // Determine subsector entries in REJECT table.
+         s1 = t1.subsector.sector.id; //(t1.subsector.sector - sectors);
+         s2 = t2.subsector.sector.id;// - sectors);
+         pnum = s1*LL.numsectors + s2;
+         bytenum = pnum>>3;
+         bitnum = 1 << (pnum&7);
+
+         // Check in REJECT table.
+         if (flags(LL.rejectmatrix[bytenum],bitnum))
+         {
+         sightcounts[0]++;
+
+         // can't possibly be connected
+         return false;   
+         }
+
+         // An unobstructed LOS is possible.
+         // Now look from eyes of t1 to any part of t2.
+         sightcounts[1]++;
+
+         R.validcount++;
+         
+         sightzstart = t1.z + t1.height - (t1.height>>2);
+         topslope = (t2.z+t2.height) - sightzstart;
+         bottomslope = (t2.z) - sightzstart;
+         
+         strace.x = t1.x;
+         strace.y = t1.y;
+         t2x = t2.x;
+         t2y = t2.y;
+         strace.dx = t2.x - t1.x;
+         strace.dy = t2.y - t1.y;
+
+         // the head node is the last node output
+         return P_CrossBSPNode (LL.numnodes-1);  
+     }
+ }
+ 
+ class Specials{
+     private static final int ok=0, crushed=1,pastdest=2;
+
+
+     public short   numlinespecials;
+     
+     public anim_t[]   anims=new anim_t[MAXANIMS];
+     // MAES: was a pointer
+     public anim_t  lastanim;
+
+     
+     
+  //
+  // P_InitPicAnims
+  //
+
+  // Floor/ceiling animation sequences,
+  //  defined by first and last frame,
+  //  i.e. the flat (64x64 tile) name to
+  //  be used.
+  // The full animation sequence is given
+  //  using all the flats between the start
+  //  and end entry, in the order found in
+  //  the WAD file.
+  //
+ protected static animdef_t[]       animdefs =
+  {
+      new animdef_t(false, "NUKAGE3",  "NUKAGE1",  8),
+      new animdef_t(false, "FWATER4",  "FWATER1",  8),
+      new animdef_t(false, "SWATER4",  "SWATER1",  8),
+      new animdef_t(false, "LAVA4",    "LAVA1",    8),
+      new animdef_t(false, "BLOOD3",   "BLOOD1",   8),
+
+      // DOOM II flat animations.
+      new animdef_t(false, "RROCK08",  "RROCK05",  8),     
+          new animdef_t(false, "SLIME04",  "SLIME01",  8),
+              new animdef_t(false, "SLIME08",  "SLIME05",  8),
+                  new animdef_t(false, "SLIME12",  "SLIME09",  8),
+
+      new animdef_t(true,  "BLODGR4",  "BLODGR1",  8),
+      new animdef_t(true,  "SLADRIP3", "SLADRIP1", 8),
+
+      new animdef_t(true,  "BLODRIP4", "BLODRIP1", 8),
+      new animdef_t(true,  "FIREWALL", "FIREWALA", 8),
+      new animdef_t(true,  "GSTFONT3", "GSTFONT1", 8),
+      new animdef_t(true,  "FIRELAVA", "FIRELAV3", 8),
+      new animdef_t(true,  "FIREMAG3", "FIREMAG1", 8),
+      new animdef_t(true,  "FIREBLU2", "FIREBLU1", 8),
+      new animdef_t(true,  "ROCKRED3", "ROCKRED1", 8),
+
+      new animdef_t(true,  "BFALL4",   "BFALL1",   8),
+      new animdef_t(true,  "SFALL4",   "SFALL1",   8),
+      new animdef_t(true,  "WFALL4",   "WFALL1",   8),
+      new animdef_t(true,  "DBRAIN4",  "DBRAIN1",  8),
+      // Maes: what bullshit. {-1}? Really?!
+      new animdef_t(false, "","",0)
+  };
+
+ public void InitPicAnims ()
+ {
+     int     i;
+
+     
+     //  Init animation. MAES: sneaky base pointer conversion ;-)
+     lastanim = anims[0];
+     //MAES: for (i=0 ; animdefs[i].istexture != -1 ; i++)
+     for (i=0 ; animdefs[i].istexture ; i++)
+     {
+     if (animdefs[i].istexture)
+     {
+         // different episode ?
+         // TODO:
+         //if (R_CheckTextureNumForName(animdefs[i].startname) == -1)
+         //continue;   
+
+         lastanim.picnum = R.TextureNumForName (animdefs[i].endname);
+         lastanim.picnum = R.TextureNumForName (animdefs[i].startname);
+     }
+     else
+     {
+         if (W.CheckNumForName(animdefs[i].startname) == -1)
+         continue;
+
+         lastanim.picnum = R.FlatNumForName (animdefs[i].endname);
+         lastanim.basepic = R.FlatNumForName (animdefs[i].startname);
+     }
+
+     lastanim.istexture = animdefs[i].istexture;
+     lastanim.numpics = lastanim.picnum - lastanim.basepic + 1;
+
+     if (lastanim.numpics < 2)
+         system.Error ("P_InitPicAnims: bad cycle from %s to %s",
+              animdefs[i].startname,
+              animdefs[i].endname);
+     
+     lastanim.speed = animdefs[i].speed;
+     lastanim++;
+     }
+ }
+     
+     
+
+
+
+     //
+     // SPECIAL SPAWNING
+     //
+
+     //
+
+
+     line_t[]     linespeciallist=new line_t[MAXLINEANIMS];
+
+
+     /** P_SpawnSpecials
+      * After the map has been loaded, scan for specials
+      * that spawn thinkers
+     */
+
+     void P_SpawnSpecials ()
+     {
+         sector_t   sector;
+         int     i;
+         int     episode;
+
+         episode = 1;
+         if (W.CheckNumForName("texture2") >= 0)
+         episode = 2;
+
+         
+         // See if -TIMER needs to be used.
+         levelTimer = false;
+         
+         i = M_CheckParm("-avg");
+         if (i && deathmatch)
+         {
+         levelTimer = true;
+         levelTimeCount = 20 * 60 * 35;
+         }
+         
+         i = M_CheckParm("-timer");
+         if (i && deathmatch)
+         {
+         int time;
+         time = atoi(myargv[i+1]) * 60 * 35;
+         levelTimer = true;
+         levelTimeCount = time;
+         }
+         
+         //  Init special SECTORs.
+         sector = sectors;
+         for (i=0 ; i<numsectors ; i++, sector++)
+         {
+         if (!sector.special)
+             continue;
+         
+         switch (sector.special)
+         {
+           case 1:
+             // FLICKERING LIGHTS
+             P_SpawnLightFlash (sector);
+             break;
+
+           case 2:
+             // STROBE FAST
+             P_SpawnStrobeFlash(sector,FASTDARK,0);
+             break;
+             
+           case 3:
+             // STROBE SLOW
+             P_SpawnStrobeFlash(sector,SLOWDARK,0);
+             break;
+             
+           case 4:
+             // STROBE FAST/DEATH SLIME
+             P_SpawnStrobeFlash(sector,FASTDARK,0);
+             sector.special = 4;
+             break;
+             
+           case 8:
+             // GLOWING LIGHT
+             P_SpawnGlowingLight(sector);
+             break;
+           case 9:
+             // SECRET SECTOR
+             totalsecret++;
+             break;
+             
+           case 10:
+             // DOOR CLOSE IN 30 SECONDS
+             P_SpawnDoorCloseIn30 (sector);
+             break;
+             
+           case 12:
+             // SYNC STROBE SLOW
+             P_SpawnStrobeFlash (sector, SLOWDARK, 1);
+             break;
+
+           case 13:
+             // SYNC STROBE FAST
+             P_SpawnStrobeFlash (sector, FASTDARK, 1);
+             break;
+
+           case 14:
+             // DOOR RAISE IN 5 MINUTES
+             P_SpawnDoorRaiseIn5Mins (sector, i);
+             break;
+             
+           case 17:
+             P_SpawnFireFlicker(sector);
+             break;
+         }
+         }
+
+         
+         //  Init line EFFECTs
+         numlinespecials = 0;
+         for (i = 0;i < numlines; i++)
+         {
+         switch(lines[i].special)
+         {
+           case 48:
+             // EFFECT FIRSTCOL SCROLL+
+             linespeciallist[numlinespecials] = &lines[i];
+             numlinespecials++;
+             break;
+         }
+         }
+
+         
+         //  Init other misc stuff
+         for (i = 0;i < MAXCEILINGS;i++)
+         activeceilings[i] = NULL;
+
+         for (i = 0;i < MAXPLATS;i++)
+         activeplats[i] = NULL;
+         
+         for (i = 0;i < MAXBUTTONS;i++)
+         memset(&buttonlist[i],0,sizeof(button_t));
+
+         // UNUSED: no horizonal sliders.
+         //  P_InitSlidingDoorFrames();
+     }
+     
+ }
  
  class Switches {
 
@@ -5754,13 +7219,13 @@ P_CheckMissileSpawn (th);
 
 	 int[]		switchlist=new int[MAXSWITCHES * 2];
 	 int		numswitches;
-	 button_t[]        buttonlist=button_t[MAXBUTTONS];
+	 button_t[]        buttonlist=new button_t[MAXBUTTONS];
 
 	 //
 	 // P_InitSwitchList
 	 // Only called at game initialization.
 	 //
-	 public void P_InitSwitchList()
+	 void InitSwitchList()
 	 {
 	     int		i;
 	     int		index;
@@ -5768,15 +7233,15 @@ P_CheckMissileSpawn (th);
 	 	
 	     episode = 1;
 
-	     if (gamemode == registered)
+	     if (DS.gamemode == GameMode_t.registered)
 	 	episode = 2;
 	     else
-	 	if ( gamemode == commercial )
+	 	if ( DS.gamemode == GameMode_t.commercial )
 	 	    episode = 3;
 	 		
 	     for (index = 0,i = 0;i < MAXSWITCHES;i++)
 	     {
-	 	if (!alphSwitchList[i].episode)
+	 	if (alphSwitchList[i].episode==0)
 	 	{
 	 	    numswitches = index/2;
 	 	    switchlist[index] = -1;
@@ -5790,7 +7255,7 @@ P_CheckMissileSpawn (th);
 	 			
 	 	    if (R_CheckTextureNumForName(alphSwitchList[i].name1) < 0)
 	 	    {
-	 		I_Error("Can't find switch texture '%s'!",
+	 		system.Error("Can't find switch texture '%s'!",
 	 			alphSwitchList[i].name1);
 	 		continue;
 	 	    }
@@ -5808,7 +7273,7 @@ P_CheckMissileSpawn (th);
 	 // Start a button counting down till it turns off.
 	 //
 	 void
-	 P_StartButton
+	 StartButton
 	 ( line_t line,
 	   bwhere_e	w,
 	   int		texture,
@@ -5831,13 +7296,13 @@ P_CheckMissileSpawn (th);
 	     
 	     for (i = 0;i < MAXBUTTONS;i++)
 	     {
-	 	if (!buttonlist[i].btimer)
+	 	if (buttonlist[i].btimer==0)
 	 	{
 	 	    buttonlist[i].line = line;
 	 	    buttonlist[i].where = w;
 	 	    buttonlist[i].btexture = texture;
 	 	    buttonlist[i].btimer = time;
-	 	    buttonlist[i].soundorg = (mobj_t *)&line.frontsector.soundorg;
+	 	    buttonlist[i].soundorg = line.frontsector.soundorg;
 	 	    return;
 	 	}
 	     }
@@ -5850,7 +7315,7 @@ P_CheckMissileSpawn (th);
 	 // Tell it if switch is ok to use again (1=yes, it's a button).
 	 //
 	 void
-	 P_ChangeSwitchTexture
+	 ChangeSwitchTexture
 	 ( line_t	line,
 	   int 		useAgain )
 	 {
@@ -5860,24 +7325,24 @@ P_CheckMissileSpawn (th);
 	     int     i;
 	     int     sound;
 	 	
-	     if (!useAgain)
+	     if (useAgain==0)
 	 	line.special = 0;
 
-	     texTop = sides[line.sidenum[0]].toptexture;
-	     texMid = sides[line.sidenum[0]].midtexture;
-	     texBot = sides[line.sidenum[0]].bottomtexture;
+	     texTop = LL.sides[line.sidenum[0]].toptexture;
+	     texMid = LL.sides[line.sidenum[0]].midtexture;
+	     texBot = LL.sides[line.sidenum[0]].bottomtexture;
 	 	
-	     sound = sfx_swtchn;
+	     sound = sfxenum_t.sfx_swtchn.ordinal();
 
 	     // EXIT SWITCH?
 	     if (line.special == 11)                
-	 	sound = sfx_swtchx;
+	 	sound = sfxenum_t.sfx_swtchx.ordinal();
 	 	
 	     for (i = 0;i < numswitches*2;i++)
 	     {
 	 	if (switchlist[i] == texTop)
 	 	{
-	 	    S_StartSound(buttonlist.soundorg,sound);
+	 	    // TODO: ; // TODO:(buttonlist[0].soundorg,sound);
 	 	    sides[line.sidenum[0]].toptexture = switchlist[i^1];
 
 	 	    if (useAgain)
@@ -5889,7 +7354,7 @@ P_CheckMissileSpawn (th);
 	 	{
 	 	    if (switchlist[i] == texMid)
 	 	    {
-	 		S_StartSound(buttonlist.soundorg,sound);
+	 		; // TODO:(buttonlist.soundorg,sound);
 	 		sides[line.sidenum[0]].midtexture = switchlist[i^1];
 
 	 		if (useAgain)
@@ -5901,7 +7366,7 @@ P_CheckMissileSpawn (th);
 	 	    {
 	 		if (switchlist[i] == texBot)
 	 		{
-	 		    S_StartSound(buttonlist.soundorg,sound);
+	 		    ; // TODO:(buttonlist.soundorg,sound);
 	 		    sides[line.sidenum[0]].bottomtexture = switchlist[i^1];
 
 	 		    if (useAgain)
@@ -5925,9 +7390,9 @@ P_CheckMissileSpawn (th);
 	 // Only the front sides of lines are usable.
 	 //
 	 boolean
-	 P_UseSpecialLine
-	 ( mobj_t*	thing,
-	   line_t*	line,
+	 UseSpecialLine
+	 ( mobj_t	thing,
+	   line_t	line,
 	   int		side )
 	 {               
 
@@ -5953,7 +7418,7 @@ P_CheckMissileSpawn (th);
 	     if (!thing.player)
 	     {
 	 	// never open secret doors
-	 	if (line.flags & ML_SECRET)
+	 	if (flags(line.flags, ML_SECRET))
 	 	    return false;
 	 	
 	 	switch(line.special)
@@ -6016,67 +7481,67 @@ P_CheckMissileSpawn (th);
 	 	
 	       case 14:
 	 	// Raise Floor 32 and change texture
-	 	if (EV_DoPlat(line,raiseAndChange,32))
+	 	if (PEV.DoPlat(line,raiseAndChange,32))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 15:
 	 	// Raise Floor 24 and change texture
-	 	if (EV_DoPlat(line,raiseAndChange,24))
+	 	if (PEV.DoPlat(line,raiseAndChange,24))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 18:
 	 	// Raise Floor to next highest floor
-	 	if (EV_DoFloor(line, raiseFloorToNearest))
+	 	if (EV.DoFloor(line, raiseFloorToNearest))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 20:
 	 	// Raise Plat next highest floor and change texture
-	 	if (EV_DoPlat(line,raiseToNearestAndChange,0))
+	 	if (PEV.DoPlat(line,raiseToNearestAndChange,0))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 21:
 	 	// PlatDownWaitUpStay
-	 	if (EV_DoPlat(line,downWaitUpStay,0))
+	 	if (PEV.DoPlat(line,downWaitUpStay,0))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 23:
 	 	// Lower Floor to Lowest
-	 	if (EV_DoFloor(line,lowerFloorToLowest))
+	 	if (EV.DoFloor(line,lowerFloorToLowest))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 29:
 	 	// Raise Door
-	 	if (EV_DoDoor(line,normal))
+	 	if (EV.DoDoor(line,normal))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 41:
 	 	// Lower Ceiling to Floor
-	 	if (EV_DoCeiling(line,lowerToFloor))
+	 	if (EV.DoCeiling(line,lowerToFloor))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 71:
 	 	// Turbo Lower Floor
-	 	if (EV_DoFloor(line,turboLower))
+	 	if (EV.DoFloor(line,turboLower))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 49:
 	 	// Ceiling Crush And Raise
-	 	if (EV_DoCeiling(line,crushAndRaise))
+	 	if (EV.DoCeiling(line,crushAndRaise))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 50:
 	 	// Close Door
-	 	if (EV_DoDoor(line,close))
+	 	if (EV.DoDoor(line,close))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
@@ -6088,49 +7553,49 @@ P_CheckMissileSpawn (th);
 	 	
 	       case 55:
 	 	// Raise Floor Crush
-	 	if (EV_DoFloor(line,raiseFloorCrush))
+	 	if (EV.DoFloor(line,raiseFloorCrush))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 101:
 	 	// Raise Floor
-	 	if (EV_DoFloor(line,raiseFloor))
+	 	if (EV.DoFloor(line,raiseFloor))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 102:
 	 	// Lower Floor to Surrounding floor height
-	 	if (EV_DoFloor(line,lowerFloor))
+	 	if (EV.DoFloor(line,lowerFloor))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 103:
 	 	// Open Door
-	 	if (EV_DoDoor(line,open))
+	 	if (EV.DoDoor(line,open))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 111:
 	 	// Blazing Door Raise (faster than TURBO!)
-	 	if (EV_DoDoor (line,blazeRaise))
+	 	if (EV.DoDoor (line,blazeRaise))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 112:
 	 	// Blazing Door Open (faster than TURBO!)
-	 	if (EV_DoDoor (line,blazeOpen))
+	 	if (EV.DoDoor (line,blazeOpen))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 113:
 	 	// Blazing Door Close (faster than TURBO!)
-	 	if (EV_DoDoor (line,blazeClose))
+	 	if (EV.DoDoor (line,blazeClose))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 122:
 	 	// Blazing PlatDownWaitUpStay
-	 	if (EV_DoPlat(line,blazeDWUS,0))
+	 	if (PEV.DoPlat(line,blazeDWUS,0))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
@@ -6142,7 +7607,7 @@ P_CheckMissileSpawn (th);
 	 	
 	       case 131:
 	 	// Raise Floor Turbo
-	 	if (EV_DoFloor(line,raiseFloorTurbo))
+	 	if (EV.DoFloor(line,raiseFloorTurbo))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
@@ -6158,123 +7623,123 @@ P_CheckMissileSpawn (th);
 	 	
 	       case 140:
 	 	// Raise Floor 512
-	 	if (EV_DoFloor(line,raiseFloor512))
+	 	if (EV.DoFloor(line,raiseFloor512))
 	 	    P_ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	 	// BUTTONS
 	       case 42:
 	 	// Close Door
-	 	if (EV_DoDoor(line,close))
+	 	if (EV.DoDoor(line,close))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 43:
 	 	// Lower Ceiling to Floor
-	 	if (EV_DoCeiling(line,lowerToFloor))
+	 	if (EV.DoCeiling(line,lowerToFloor))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 45:
 	 	// Lower Floor to Surrounding floor height
-	 	if (EV_DoFloor(line,lowerFloor))
+	 	if (EV.DoFloor(line,lowerFloor))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 60:
 	 	// Lower Floor to Lowest
-	 	if (EV_DoFloor(line,lowerFloorToLowest))
+	 	if (EV.DoFloor(line,lowerFloorToLowest))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 61:
 	 	// Open Door
-	 	if (EV_DoDoor(line,open))
+	 	if (EV.DoDoor(line,open))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 62:
 	 	// PlatDownWaitUpStay
-	 	if (EV_DoPlat(line,downWaitUpStay,1))
+	 	if (PEV.DoPlat(line,downWaitUpStay,1))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 63:
 	 	// Raise Door
-	 	if (EV_DoDoor(line,normal))
+	 	if (EV.DoDoor(line,normal))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 64:
 	 	// Raise Floor to ceiling
-	 	if (EV_DoFloor(line,raiseFloor))
+	 	if (EV.DoFloor(line,raiseFloor))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 66:
 	 	// Raise Floor 24 and change texture
-	 	if (EV_DoPlat(line,raiseAndChange,24))
+	 	if (PEV.DoPlat(line,raiseAndChange,24))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 67:
 	 	// Raise Floor 32 and change texture
-	 	if (EV_DoPlat(line,raiseAndChange,32))
+	 	if (PEV.DoPlat(line,raiseAndChange,32))
 	 	    P_ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 65:
 	 	// Raise Floor Crush
-	 	if (EV_DoFloor(line,raiseFloorCrush))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoFloor(line,raiseFloorCrush))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 68:
 	 	// Raise Plat to next highest floor and change texture
-	 	if (EV_DoPlat(line,raiseToNearestAndChange,0))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (PEV.DoPlat(line,raiseToNearestAndChange,0))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 69:
 	 	// Raise Floor to next highest floor
-	 	if (EV_DoFloor(line, raiseFloorToNearest))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoFloor(line, raiseFloorToNearest))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 70:
 	 	// Turbo Lower Floor
-	 	if (EV_DoFloor(line,turboLower))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoFloor(line,turboLower))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 114:
 	 	// Blazing Door Raise (faster than TURBO!)
-	 	if (EV_DoDoor (line,blazeRaise))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoDoor (line,blazeRaise))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 115:
 	 	// Blazing Door Open (faster than TURBO!)
-	 	if (EV_DoDoor (line,blazeOpen))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoDoor (line,blazeOpen))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 116:
 	 	// Blazing Door Close (faster than TURBO!)
-	 	if (EV_DoDoor (line,blazeClose))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoDoor (line,blazeClose))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 123:
 	 	// Blazing PlatDownWaitUpStay
-	 	if (EV_DoPlat(line,blazeDWUS,0))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (PEV.DoPlat(line,blazeDWUS,0))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 132:
 	 	// Raise Floor Turbo
-	 	if (EV_DoFloor(line,raiseFloorTurbo))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoFloor(line,raiseFloorTurbo))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 99:
@@ -6283,26 +7748,1348 @@ P_CheckMissileSpawn (th);
 	 	// BlzOpenDoor RED
 	       case 136:
 	 	// BlzOpenDoor YELLOW
-	 	if (EV_DoLockedDoor (line,blazeOpen,thing))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoLockedDoor (line,blazeOpen,thing))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 138:
 	 	// Light Turn On
-	 	EV_LightTurnOn(line,255);
-	 	P_ChangeSwitchTexture(line,1);
+	 	LEV.LightTurnOn(line,255);
+	 	ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 139:
 	 	// Light Turn Off
-	 	EV_LightTurnOn(line,35);
-	 	P_ChangeSwitchTexture(line,1);
+	 	LEV.LightTurnOn(line,35);
+	 	ChangeSwitchTexture(line,1);
 	 	break;
 	 			
 	     }
 	 	
 	     return true;
 	 }
+	 
+	 
+ }
+ 
+ 
+ 
+ enum PIT{
+     ChangeSector,
+     CheckLine,     
+     CheckThing,
+     StompThing,     
+     RadiusAttack,
+     VileCheck
+ }
+ 
+ enum PTR{
+     SlideTraverse,
+     AimTraverse,
+     ShootTraverse,
+     UseTraverse
+ }
+ 
+ /////////////////// BEGIN MAP OBJECT CODE, USE AS BASIC ///////////////////////
+ 
+ int test;
+
+ //
+ // P_SetMobjState
+ // Returns true if the mobj is still present.
+ //
+
+ public boolean
+ SetMobjState
+ (mobj_t mobj, statenum_t    state )
+ {
+ state_t st;
+
+ do
+ {
+ if (state == statenum_t.S_NULL)
+ {
+   mobj.state = null;
+   // TODO:P_RemoveMobj (mobj);
+   return false;
+ }
+
+ st = states[state.ordinal()];
+ mobj.state = st;
+ mobj.tics = st.tics;
+ mobj.sprite = st.sprite;
+ mobj.frame = (int) st.frame;
+
+ // Modified handling.
+ // Call action functions when the state is set
+ if (st.action.getType()==ActionType.acp1)       
+   ((acp1)st.action).invoke(mobj); 
+
+ state = st.nextstate;
+ } while (mobj.tics==0);
+           
+ return true;
  }
 
 
+
+
+
+
+ //
+ // P_ExplodeMissile  
+ //
+ public void ExplodeMissile (mobj_t mo)
+ {
+ mo.momx = mo.momy = mo.momz = 0;
+
+ SetMobjState (mo, mobjinfo[mo.type.ordinal()].deathstate);
+
+ mo.tics -= RND.P_Random()&3;
+
+ if (mo.tics < 1)
+ mo.tics = 1;
+
+ mo.flags &= ~MF_MISSILE;
+
+ if (mo.info.deathsound!=null) ;
+ // TODO: ; // TODO: (mo, mo.info.deathsound);
+ }
+
+
+ //
+ // P_XYMovement  
+ //
+ protected final static int STOPSPEED =      0x1000;
+ protected final static int FRICTION =       0xe800;
+
+ public void XYMovement (mobj_t mo) 
+ {   
+ int     ptryx, ptryy; // pointers to fixed_t ???
+ player_t   player;
+ int  xmove, ymove; // fixed_t
+       
+ if ((mo.momx==0) && (mo.momy==0))
+ {
+ if ((mo.flags & MF_SKULLFLY)!=0)
+ {
+   // the skull slammed into something
+   mo.flags &= ~MF_SKULLFLY;
+   mo.momx = mo.momy = mo.momz = 0;
+
+   SetMobjState (mo, mo.info.spawnstate);
+ }
+ return;
+ }
+
+ player = mo.player;
+   
+ if (mo.momx > MAXMOVE)
+ mo.momx = MAXMOVE;
+ else if (mo.momx < -MAXMOVE)
+ mo.momx = -MAXMOVE;
+
+ if (mo.momy > MAXMOVE)
+ mo.momy = MAXMOVE;
+ else if (mo.momy < -MAXMOVE)
+ mo.momy = -MAXMOVE;
+   
+ xmove = mo.momx;
+ ymove = mo.momy;
+
+ do
+ {
+ if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2)
+ {
+   ptryx = mo.x + xmove/2;
+   ptryy = mo.y + ymove/2;
+   xmove >>= 1;
+   ymove >>= 1;
+ }
+ else
+ {
+   ptryx = mo.x + xmove;
+   ptryy = mo.y + ymove;
+   xmove = ymove = 0;
+ }
+   
+ if (!P_TryMove (mo, ptryx, ptryy))
+ {
+   // blocked move
+   if (mo.player)
+   {   // try to slide along it
+   P_SlideMove (mo);
+   }
+   else if (mo.flags & MF_MISSILE)
+   {
+   // explode a missile
+   if (ceilingline &&
+       ceilingline.backsector &&
+       ceilingline.backsector.ceilingpic == skyflatnum)
+   {
+       // Hack to prevent missiles exploding
+       // against the sky.
+       // Does not handle sky floors.
+       P_RemoveMobj (mo);
+       return;
+   }
+   P_ExplodeMissile (mo);
+   }
+   else
+   mo.momx = mo.momy = 0;
+ }
+ } while ((xmove | ymove)!=0);
+
+ // slow down
+ if (player && player.cheats & CF_NOMOMENTUM)
+ {
+ // debug option for no sliding at all
+ mo.momx = mo.momy = 0;
+ return;
+ }
+
+ if (mo.flags & (MF_MISSILE | MF_SKULLFLY) )
+ return;     // no friction for missiles ever
+   
+ if (mo.z > mo.floorz)
+ return;     // no friction when airborne
+
+ if (mo.flags & MF_CORPSE)
+ {
+ // do not stop sliding
+ //  if halfway off a step with some momentum
+ if (mo.momx > FRACUNIT/4
+   || mo.momx < -FRACUNIT/4
+   || mo.momy > FRACUNIT/4
+   || mo.momy < -FRACUNIT/4)
+ {
+   if (mo.floorz != mo.subsector.sector.floorheight)
+   return;
+ }
+ }
+
+ if (mo.momx > -STOPSPEED
+ && mo.momx < STOPSPEED
+ && mo.momy > -STOPSPEED
+ && mo.momy < STOPSPEED
+ && (!player
+   || (player.cmd.forwardmove== 0
+   && player.cmd.sidemove == 0 ) ) )
+ {
+ // if in a walking frame, stop moving
+ if ( player&&(unsigned)((player.mo.state - states)- S_PLAY_RUN1) < 4)
+   P_SetMobjState (player.mo, S_PLAY);
+
+ mo.momx = 0;
+ mo.momy = 0;
+ }
+ else
+ {
+ mo.momx = FixedMul (mo.momx, FRICTION);
+ mo.momy = FixedMul (mo.momy, FRICTION);
+ }
+ }
+
+ //
+ // P_NightmareRespawn
+ //
+ void
+ NightmareRespawn (mobj_t mobj)
+ {
+ fixed_t     x;
+ fixed_t     y;
+ fixed_t     z; 
+ subsector_t    ss; 
+ mobj_t     mo;
+ mapthing_t*     mthing;
+   
+ x = mobj.spawnpoint.x << FRACBITS; 
+ y = mobj.spawnpoint.y << FRACBITS; 
+
+ // somthing is occupying it's position?
+ if (!P_CheckPosition (mobj, x, y) ) 
+ return; // no respwan
+
+ // spawn a teleport fog at old spot
+ // because of removal of the body?
+ mo = P_SpawnMobj (mobj.x,
+         mobj.y,
+         mobj.subsector.sector.floorheight , MT_TFOG); 
+ // initiate teleport sound
+ ; // TODO: (mo, sfx_telept);
+
+ // spawn a teleport fog at the new spot
+ ss = R_PointInSubsector (x,y); 
+
+ mo = P_SpawnMobj (x, y, ss.sector.floorheight , MT_TFOG); 
+
+ ; // TODO: (mo, sfx_telept);
+
+ // spawn the new monster
+ mthing = &mobj.spawnpoint;
+
+ // spawn it
+ if (mobj.info.flags & MF_SPAWNCEILING)
+ z = ONCEILINGZ;
+ else
+ z = ONFLOORZ;
+
+ // inherit attributes from deceased one
+ mo = P_SpawnMobj (x,y,z, mobj.type);
+ mo.spawnpoint = mobj.spawnpoint;  
+ mo.angle = ANG45 * (mthing.angle/45);
+
+ if (mthing.options & MTF_AMBUSH)
+ mo.flags |= MF_AMBUSH;
+
+ mo.reactiontime = 18;
+
+ // remove the old monster,
+ P_RemoveMobj (mobj);
+ }
+
+
+
+
+
+
+ class P_MobjThinker implements acp1 {
+     
+         @Override
+         public void invoke (mobj_t mobj) {
+ // momentum movement
+ if (mobj.momx!=0
+ || mobj.momy!=0
+ || (flags(mobj.flags,MF_SKULLFLY)) )
+ {
+     mobj.XYMovement ();
+
+ // FIXME: decent NOP/NULL/Nil function pointer please.
+ if (mobj.thinker.function == null)
+   return;     // mobj was removed
+ }
+ if ( (mobj.z != mobj.floorz)
+ || mobj.momz!=0 )
+ {
+     mobj.ZMovement ();
+
+ // FIXME: decent NOP/NULL/Nil function pointer please.
+ if (mobj.thinker.function == null)
+   return;     // mobj was removed
+ }
+
+
+ // cycle through states,
+ // calling action functions at transitions
+ if (mobj.tics != -1)
+ {
+ mobj.tics--;
+   
+ // you can cycle through multiple states in a tic
+ if (!mobj.tics)
+   if (!P_SetMobjState (mobj, mobj.state.nextstate) )
+   return;     // freed itself
+ }
+ else
+ {
+ // check for nightmare respawn
+ if (! (mobj.flags & MF_COUNTKILL) )
+   return;
+
+ if (!respawnmonsters)
+   return;
+
+ mobj.movecount++;
+
+ if (mobj.movecount < 12*35)
+   return;
+
+ if ( leveltime&31 )
+   return;
+
+ if (P_Random () > 4)
+   return;
+
+ P_NightmareRespawn (mobj);
+ }
+
+ }
+
+ @Override
+ public ActionType getType() {
+     return ActionType.acp1;
+ }
+
+ }
+
+
+ //
+ // P_RemoveMobj
+ //
+ mapthing_t[]  itemrespawnque=new mapthing_t[ITEMQUESIZE];
+ int[]     itemrespawntime=new int[ITEMQUESIZE];
+ int     iquehead;
+ int     iquetail;
+
+
+ void RemoveMobj (mobj_t mobj)
+ {
+ if ((mobj.flags & MF_SPECIAL)
+ && !(mobj.flags & MF_DROPPED)
+ && (mobj.type != MT_INV)
+ && (mobj.type != MT_INS))
+ {
+ itemrespawnque[iquehead] = mobj.spawnpoint;
+ itemrespawntime[iquehead] = leveltime;
+ iquehead = (iquehead+1)&(ITEMQUESIZE-1);
+
+ // lose one off the end?
+ if (iquehead == iquetail)
+   iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+ }
+
+ // unlink from sector and block lists
+ P_UnsetThingPosition (mobj);
+
+ // stop any playing sound
+ S_StopSound (mobj);
+
+ // free block
+ P_RemoveThinker ((thinker_t)mobj);
+ }
+
+
+
+
+ //
+ // P_RespawnSpecials
+ //
+ void RespawnSpecials ()
+ {
+ fixed_t     x;
+ fixed_t     y;
+ fixed_t     z;
+
+ subsector_t    ss; 
+ mobj_t     mo;
+ mapthing_t*     mthing;
+
+ int         i;
+
+ // only respawn items in deathmatch
+ if (deathmatch != 2)
+ return; // 
+
+ // nothing left to respawn?
+ if (iquehead == iquetail)
+ return;     
+
+ // wait at least 30 seconds
+ if (leveltime - itemrespawntime[iquetail] < 30*35)
+ return;         
+
+ mthing = &itemrespawnque[iquetail];
+
+ x = mthing.x << FRACBITS; 
+ y = mthing.y << FRACBITS; 
+
+ // spawn a teleport fog at the new spot
+ ss = R_PointInSubsector (x,y); 
+ mo = P_SpawnMobj (x, y, ss.sector.floorheight , MT_IFOG); 
+ ; // TODO: (mo, sfx_itmbk);
+
+ // find which type to spawn
+ for (i=0 ; i< NUMMOBJTYPES ; i++)
+ {
+ if (mthing.type == mobjinfo[i].doomednum)
+   break;
+ }
+
+ // spawn it
+ if (flags(mobjinfo[i].flags ,MF_SPAWNCEILING))
+ z = ONCEILINGZ;
+ else
+ z = ONFLOORZ;
+
+ mo = P_SpawnMobj (x,y,z, i);
+ mo.spawnpoint = mthing;   
+ mo.angle = ANG45 * (mthing.angle/45);
+
+ // pull it from the que
+ iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+ }
+
+
+
+
+ /**
+  * P_SpawnPlayer
+  * Called when a player is spawned on the level.
+  * Most of the player structure stays unchanged
+  *  between levels.
+  */
+ void SpawnPlayer (mapthing_t mthing)
+ {
+ player_t       p;
+ int     x;
+ int     y;
+ int     z;
+
+ mobj_t     mobj;
+
+ int         i;
+
+ // not playing?
+ if (!playeringame[mthing.type-1])
+ return;                 
+   
+ p = &players[mthing.type-1];
+
+ if (p.playerstate == PST_REBORN)
+ G_PlayerReborn (mthing.type-1);
+
+ x       = mthing.x << FRACBITS;
+ y       = mthing.y << FRACBITS;
+ z       = ONFLOORZ;
+ mobj    = P_SpawnMobj (x,y,z, MT_PLAYER);
+
+ // set color translations for player sprites
+ if (mthing.type > 1)       
+ mobj.flags |= (mthing.type-1)<<MF_TRANSSHIFT;
+   
+ mobj.angle = ANG45 * (mthing.angle/45);
+ mobj.player = p;
+ mobj.health = p.health;
+
+ p.mo = mobj;
+ p.playerstate = PST_LIVE;  
+ p.refire = 0;
+ p.message = NULL;
+ p.damagecount = 0;
+ p.bonuscount = 0;
+ p.extralight = 0;
+ p.fixedcolormap = 0;
+ p.viewheight = VIEWHEIGHT;
+
+ // setup gun psprite
+ P_SetupPsprites (p);
+
+ // give all cards in death match mode
+ if (deathmatch)
+ for (i=0 ; i<NUMCARDS ; i++)
+   p.cards[i] = true;
+       
+ if (mthing.type-1 == consoleplayer)
+ {
+ // wake up the status bar
+ ST_Start ();
+ // wake up the heads up text
+ HU_Start ();        
+ }
+ }
+
+
+ //
+ // P_SpawnMapThing
+ // The fields of the mapthing should
+ // already be in host byte order.
+ //
+ void SpawnMapThing (mapthing_t mthing)
+ {
+ int         i;
+ int         bit;
+ mobj_t     mobj;
+ int     x;
+ int     y;
+ int     z;
+   
+ // count deathmatch start positions
+ if (mthing.type == 11)
+ {
+ if (deathmatch_p < &deathmatchstarts[10])
+ {
+   memcpy (deathmatch_p, mthing, sizeof(*mthing));
+   deathmatch_p++;
+ }
+ return;
+ }
+
+ // check for players specially
+ if (mthing.type <= 4)
+ {
+ // save spots for respawning in network games
+ playerstarts[mthing.type-1] = *mthing;
+ if (!deathmatch)
+   P_SpawnPlayer (mthing);
+
+ return;
+ }
+
+ // check for apropriate skill level
+ if (!netgame && (mthing.options & 16) )
+ return;
+   
+ if (gameskill == sk_baby)
+ bit = 1;
+ else if (gameskill == sk_nightmare)
+ bit = 4;
+ else
+ bit = 1<<(gameskill-1);
+
+ if (!(mthing.options & bit) )
+ return;
+
+ // find which type to spawn
+ for (i=0 ; i< NUMMOBJTYPES ; i++)
+ if (mthing.type == mobjinfo[i].doomednum)
+   break;
+
+ if (i==NUMMOBJTYPES)
+ system.Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
+    mthing.type,
+    mthing.x, mthing.y);
+   
+ // don't spawn keycards and players in deathmatch
+ if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
+ return;
+   
+ // don't spawn any monsters if -nomonsters
+ if (nomonsters
+ && ( i == MT_SKULL
+    || (mobjinfo[i].flags & MF_COUNTKILL)) )
+ {
+ return;
+ }
+
+ // spawn it
+ x = mthing.x << FRACBITS;
+ y = mthing.y << FRACBITS;
+
+ if (mobjinfo[i].flags & MF_SPAWNCEILING)
+ z = ONCEILINGZ;
+ else
+ z = ONFLOORZ;
+
+ mobj = P_SpawnMobj (x,y,z, i);
+ mobj.spawnpoint = *mthing;
+
+ if (mobj.tics > 0)
+ mobj.tics = 1 + (P_Random () % mobj.tics);
+ if (mobj.flags & MF_COUNTKILL)
+ totalkills++;
+ if (mobj.flags & MF_COUNTITEM)
+ totalitems++;
+   
+ mobj.angle = ANG45 * (mthing.angle/45);
+ if (mthing.options & MTF_AMBUSH)
+ mobj.flags |= MF_AMBUSH;
+ }
+
+
+
+ //
+ // GAME SPAWN FUNCTIONS
+ //
+
+
+ //
+ // P_SpawnPuff
+ //
+ // TODO: extern fixed_t attackrange;
+
+ /** P_SpawnPuff
+  * 
+  * @param x fixed
+  * @param y fixed
+  * @param z fixed
+  * 
+  */
+
+ void
+ SpawnPuff
+ ( int   x,
+ int   y,
+ int   z )
+ {
+ mobj_t th;
+
+ z += ((RND.P_Random()-RND.P_Random())<<10);
+
+ th = P_SpawnMobj (x,y,z, MT_PUFF);
+ th.momz = FRACUNIT;
+ th.tics -= P_Random()&3;
+
+ if (th.tics < 1)
+ th.tics = 1;
+
+ // don't make punches spark on the wall
+ if (attackrange == MELEERANGE)
+     th.SetMobjState (statenum_t.S_PUFF3);
+ }
+
+
+
+ /** P_SpawnBlood
+  * 
+  * @param x fixed
+  * @param y fixed
+  * @param z fixed
+  * @param damage
+  */
+
+ void
+ SpawnBlood
+ ( int   x,
+         int   y,
+         int   z,
+ int       damage )
+ {
+ mobj_t th;
+
+ z += ((P_Random()-P_Random())<<10);
+ th = P_SpawnMobj (x,y,z, MT_BLOOD);
+ th.momz = FRACUNIT*2;
+ th.tics -= P_Random()&3;
+
+ if (th.tics < 1)
+ th.tics = 1;
+   
+ if (damage <= 12 && damage >= 9)
+ P_SetMobjState (th,S_BLOOD2);
+ else if (damage < 9)
+ P_SetMobjState (th,S_BLOOD3);
+ }
+
+
+
+ /** P_CheckMissileSpawn
+  * Moves the missile forward a bit
+  * and possibly explodes it right there.
+  * 
+  * @param th
+  */
+
+ void CheckMissileSpawn (mobj_t th)
+ {
+ th.tics -= P_Random()&3;
+ if (th.tics < 1)
+ th.tics = 1;
+
+ // move a little forward so an angle can
+ // be computed if it immediately explodes
+ th.x += (th.momx>>1);
+ th.y += (th.momy>>1);
+ th.z += (th.momz>>1);
+
+ if (!P_TryMove (th, th.x, th.y))
+ P_ExplodeMissile (th);
+ }
+
+
+ //
+ // P_SpawnMissile
+ //
+ private mobj_t
+ SpawnMissile
+ ( mobj_t   source,
+ mobj_t   dest,
+ mobjtype_t    type )
+ {
+ mobj_t th;
+ int an; // angle_t
+ int     dist;
+
+ th = P_SpawnMobj (source.x,
+         source.y,
+         source.z + 4*8*FRACUNIT, type);
+
+ if (th.info.seesound)
+ ; // TODO: (th, th.info.seesound);
+
+ th.target = source;    // where it came from
+ an = R_PointToAngle2 (source.x, source.y, dest.x, dest.y);  
+
+ // fuzzy player
+ if (dest.flags & MF_SHADOW)
+ an += (P_Random()-P_Random())<<20;  
+
+ th.angle = an;
+ an >>= ANGLETOFINESHIFT;
+ th.momx = FixedMul (th.info.speed, finecosine[an]);
+ th.momy = FixedMul (th.info.speed, finesine[an]);
+
+ dist = P_AproxDistance (dest.x - source.x, dest.y - source.y);
+ dist = dist / th.info.speed;
+
+ if (dist < 1)
+ dist = 1;
+
+ th.momz = (dest.z - source.z) / dist;
+ P_CheckMissileSpawn (th);
+
+ return th;
+ }
+
+
+ /**
+ * P_SpawnPlayerMissile
+ * Tries to aim at a nearby monster
+ */
+
+ public void
+ SpawnPlayerMissile
+ ( mobj_t   source,
+ mobjtype_t    type )
+ {
+ mobj_t th;
+ int an; // angle_t
+ int x, y, z,slope; // think_t
+
+ // see which target is to be aimed at
+ an = source.angle;
+ slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+
+ if (!linetarget)
+ {
+ an += 1<<26;
+ slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+
+ if (!linetarget)
+ {
+   an -= 2<<26;
+   slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+ }
+
+ if (!linetarget)
+ {
+   an = source.angle;
+   slope = 0;
+ }
+ }
+   
+ x = source.x;
+ y = source.y;
+ z = source.z + 4*8*FRACUNIT;
+
+ th = P_SpawnMobj (x,y,z, type);
+
+ if (th.info.seesound)
+ ; // TODO: (th, th.info.seesound);
+
+ th.target = source;
+ th.angle = an;
+ th.momx = FixedMul( th.info.speed,
+        finecosine[an>>ANGLETOFINESHIFT]);
+ th.momy = FixedMul( th.info.speed,
+        finesine[an>>ANGLETOFINESHIFT]);
+ th.momz = FixedMul( th.info.speed, slope);
+
+ P_CheckMissileSpawn (th);
+ }
+
+     //
+     // P_DamageMobj
+     // Damages both enemies and players
+     // "inflictor" is the thing that caused the damage
+     //  creature or missile, can be NULL (slime, etc)
+     // "source" is the thing to target after taking damage
+     //  creature or NULL
+     // Source and inflictor are the same for melee attacks.
+     // Source can be NULL for slime, barrel explosions
+     // and other environmental stuff.
+     //
+     public void
+     DamageMobj
+     ( mobj_t   target,
+       mobj_t   inflictor,
+       mobj_t   source,
+       int       damage )
+     {
+         int    ang; // unsigned
+         int     saved;
+         player_t   player;
+         int thrust; // fixed_t
+         int     temp;
+         
+         if ( !flags(target.flags, MF_SHOOTABLE))
+         return; // shouldn't happen...
+             
+         if (target.health <= 0)
+         return;
+
+         if ( flags(target.flags , MF_SKULLFLY ))
+         {
+         target.momx = target.momy = target.momz = 0;
+         }
+         
+         player = target.player;
+         if ((player!=null) && DS.gameskill == skill_t.sk_baby)
+         damage >>= 1;   // take half damage in trainer mode
+             
+
+         // Some close combat weapons should not
+         // inflict thrust and push the victim out of reach,
+         // thus kick away unless using the chainsaw.
+         if ((inflictor !=null)
+         && !flags(target.flags, MF_NOCLIP)
+         && (source==null
+             || source.player==null
+             || source.player.readyweapon != weapontype_t.wp_chainsaw))
+         {
+         ang = R.PointToAngle2 ( inflictor.x,
+                     inflictor.y,
+                     target.x,
+                     target.y);
+             
+         thrust = damage*(FRACUNIT>>3)*100/target.info.mass;
+
+         // make fall forwards sometimes
+         if ( (damage < 40)
+              && (damage > target.health)
+              && (target.z - inflictor.z > 64*FRACUNIT)
+              && flags(RND.P_Random(),1) )
+         {
+             ang += ANG180;
+             thrust *= 4;
+         }
+             
+         ang >>= ANGLETOFINESHIFT;
+         target.momx += FixedMul (thrust, finecosine[ang]);
+         target.momy += FixedMul (thrust, finesine[ang]);
+         }
+         
+         // player specific
+         if (player!=null)
+         {
+         // end of game hell hack
+         if (target.subsector.sector.special == 11
+             && damage >= target.health)
+         {
+             damage = target.health - 1;
+         }
+         
+
+         // Below certain threshold,
+         // ignore damage in GOD mode, or with INVUL power.
+         if ( damage < 1000
+              && ( flags(player.cheats,player_t.CF_GODMODE))
+               || player.powers[pW.invulnerability]!=0 ) 
+         {
+             return;
+         }
+         
+         if (player.armortype!=0)
+         {
+             if (player.armortype == 1)
+             saved = damage/3;
+             else
+             saved = damage/2;
+             
+             if (player.armorpoints[0] <= saved)
+             {
+             // armor is used up
+             saved = player.armorpoints[0];
+             player.armortype = 0;
+             }
+             player.armorpoints[0] -= saved;
+             damage -= saved;
+         }
+         player.health[0] -= damage;   // mirror mobj health here for Dave
+         if (player.health[0] < 0)
+             player.health[0] = 0;
+         
+         player.attacker = source;
+         player.damagecount += damage;  // add damage after armor / invuln
+
+         if (player.damagecount > 100)
+             player.damagecount = 100;  // teleport stomp does 10k points...
+         
+         temp = damage < 100 ? damage : 100;
+
+         if (player == DS.players[DS.consoleplayer]) ;
+             // TODO: I_Tactile (40,10,40+temp*2);
+         }
+         
+         // do the damage    
+         target.health -= damage;   
+         if (target.health <= 0)
+         {
+         KillMobj (source, target);
+         return;
+         }
+
+         if ( (RND.P_Random () < target.info.painchance)
+          && !flags(target.flags,MF_SKULLFLY) )
+         {
+         target.flags |= MF_JUSTHIT;    // fight back!
+         
+         target.SetMobjState (target.info.painstate);
+         }
+                 
+         target.reactiontime = 0;       // we're awake now...   
+
+         if ( ((target.threshold==0) || (target.type == mobjtype_t.MT_VILE))
+          && (source!=null) && (source != target)
+          && (source.type != mobjtype_t.MT_VILE))
+         {
+         // if not intent on another player,
+         // chase after this one
+         target.target = source;
+         target.threshold = BASETHRESHOLD;
+         if (target.state == states[target.info.spawnstate.ordinal()]
+             && target.info.seestate != statenum_t.S_NULL)
+             target.SetMobjState (target.info.seestate);
+         }
+                 
+     }
+     
+     //
+     // KillMobj
+     //
+     public void
+     KillMobj
+     ( mobj_t   source,
+       mobj_t   target )
+     {
+         mobjtype_t  item;
+         mobj_t mo;
+         
+         target.flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
+
+         if (target.type != mobjtype_t.MT_SKULL)
+         target.flags &= ~MF_NOGRAVITY;
+
+         target.flags |= MF_CORPSE|MF_DROPOFF;
+         target.height >>= 2;
+
+         if (source!=null && source.player!=null)
+         {
+         // count for intermission
+         if ((target.flags & MF_COUNTKILL)!=0)
+             source.player.killcount++;    
+
+         if (target.player!=null) ;
+            // TODO: source.player.frags[target.player-DS.players]++;
+            // It's probably intended to increment the frags of source player vs target player. Lookup? 
+         }
+         else if (!DS.netgame && ((target.flags & MF_COUNTKILL)!=0) )
+         {
+         // count all monster deaths,
+         // even those caused by other monsters
+         DS.players[0].killcount++;
+         }
+         
+         if (target.player!=null)
+         {
+         // count environment kills against you
+         if (source==null)    
+             // TODO: some way to indentify which one of the 
+             // four possiblelayers is the current player
+             
+             target.player.frags[target.player.identify()]++;
+                 
+         target.flags &= ~MF_SOLID;
+         target.player.playerstate = PST_DEAD;
+         //TODO: DropWeapon (target.player); // in PSPR
+
+         if (target.player == DS.players[DS.consoleplayer]
+             && DS.automapactive)
+         {
+             // don't die in auto map,
+             // switch view prior to dying
+             AM.Stop ();
+         }
+         
+         }
+
+         if (target.health < -target.info.spawnhealth 
+         && target.info.xdeathstate!=null)
+         {
+             target.SetMobjState(target.info.xdeathstate);
+         }
+         else
+             target.SetMobjState (target.info.deathstate);
+         target.tics -= RND.P_Random()&3;
+
+         if (target.tics < 1)
+         target.tics = 1;
+             
+         //  I_StartSound (&actor.r, actor.info.deathsound);
+
+
+         // Drop stuff.
+         // This determines the kind of object spawned
+         // during the death frame of a thing.
+         switch (target.type)
+         {
+           case MT_WOLFSS:
+           case MT_POSSESSED:
+         item = mobjtype_t.MT_CLIP;
+         break;
+         
+           case MT_SHOTGUY:
+         item = mobjtype_t.MT_SHOTGUN;
+         break;
+         
+           case MT_CHAINGUY:
+         item = mobjtype_t.MT_CHAINGUN;
+         break;
+         
+           default:
+         return;
+         }
+
+         mo = P_SpawnMobj (target.x,target.y,ONFLOORZ, item);
+         mo.flags |= MF_DROPPED;    // special versions of items
+     }
+     
+  /** P_SpawnMobj
+   * 
+   * @param x fixed
+   * @param y fixed
+   * @param z fixed
+   * @param type
+   * @return
+   */
+
+  public mobj_t
+  SpawnMobj
+  ( int   x,
+          int   y,
+          int   z,
+  mobjtype_t    type )
+  {
+  mobj_t mobj;
+  state_t    st;
+  mobjinfo_t info;
+
+  mobj = new mobj_t();
+  info = mobjinfo[type.ordinal()];
+
+  mobj.type = type;
+  mobj.info = info;
+  mobj.x = x;
+  mobj.y = y;
+  mobj.radius = info.radius;
+  mobj.height = info.height;
+  mobj.flags = info.flags;
+  mobj.health = info.spawnhealth;
+
+  if (DS.gameskill != skill_t.sk_nightmare)
+  mobj.reactiontime = info.reactiontime;
+
+  mobj.lastlook = RND.P_Random () % MAXPLAYERS;
+  // do not set the state with P_SetMobjState,
+  // because action routines can not be called yet
+  st = states[info.spawnstate.ordinal()];
+
+  mobj.state = st;
+  mobj.tics = st.tics;
+  mobj.sprite = st.sprite;
+  mobj.frame = st.frame;
+
+  // set subsector and/or block links
+  SetThingPosition (mobj);
+
+  mobj.floorz = mobj.subsector.sector.floorheight;
+  mobj.ceilingz = mobj.subsector.sector.ceilingheight;
+
+  if (z == ONFLOORZ)
+  mobj.z = mobj.floorz;
+  else if (z == ONCEILINGZ)
+  mobj.z = mobj.ceilingz - mobj.info.height;
+  else 
+  mobj.z = z;
+
+  mobj.thinker.function=P_MobjThinker;
+
+  AddThinker (mobj.thinker);
+
+  return mobj;
+  }
+  
+  /** P_SetThingPosition
+   * Links a thing into both a block and a subsector
+   * based on it's x y.
+   * Sets thing.subsector properly
+   */
+
+  public void SetThingPosition (mobj_t thing)
+  {
+   subsector_t    ss;
+   sector_t       sec;
+   int         blockx;
+   int         blocky;
+   mobj_t        link;
+
+   
+   // link into subsector
+   ss = R.PointInSubsector (thing.x,thing.y);
+   thing.subsector = ss;
+   
+   if ( ! flags(thing.flags ,MF_NOSECTOR) )
+   {
+   // invisible things don't go into the sector links
+   sec = ss.sector;
+   
+   thing.sprev = null;
+   thing.snext = sec.thinglist;
+
+   if (sec.thinglist!=null)
+       sec.thinglist.sprev = thing;
+
+   sec.thinglist = thing;
+   }
+
+   
+   // link into blockmap
+   if ( ! flags(thing.flags ,MF_NOBLOCKMAP) )
+   {
+   // inert things don't need to be in blockmap        
+   blockx = (thing.x - LL.bmaporgx)>>MAPBLOCKSHIFT;
+   blocky = (thing.y - LL.bmaporgy)>>MAPBLOCKSHIFT;
+
+   if (blockx>=0
+       && blockx < LL.bmapwidth
+       && blocky>=0
+       && blocky < LL.bmapheight)
+   {
+      
+       link = LL.blocklinks[blocky*LL.bmapwidth+blockx];
+       thing.bprev = null;
+       thing.bnext = link; // FIXME: will this work?
+       if (link!=null)
+       // This will work
+       link.bprev = thing;
+
+       // link=thing won't work, assignment should be made directly
+       LL.blocklinks[blocky*LL.bmapwidth+blockx]=thing;
+   }
+   else
+   {
+       // thing is off the map
+       thing.bnext = thing.bprev = null;
+   }
+   }
+
+     
+  }
+  
+  ////////////////////////////////// THINKER CODE, GLOBALLY VISIBLE /////////////////
+  
+  //
+//THINKERS
+//All thinkers should be allocated by Z_Malloc
+//so they can be operated on uniformly.
+//The actual structures will vary in size,
+//but the first element must be thinker_t.
+//
+
+/** Both the head and the tail of the thinkers list */
+public thinker_t    thinkercap; 
+
+//
+//P_InitThinkers
+//
+public void InitThinkers ()
+{
+   thinkercap.next=thinkercap;
+   thinkercap.prev=thinkercap;
+}
+
+//
+//P_AddThinker
+//Adds a new thinker at the end of the list.
+//
+public void AddThinker (thinker_t thinker)
+{
+   thinkercap.prev.next=thinker;
+   thinker.next=thinkercap;
+   thinker.prev=thinkercap.prev;
+   thinkercap.prev=thinker;
+}
+
+
+
+//
+//P_RemoveThinker
+//Deallocation is lazy -- it will not actually be freed
+//until its thinking turn comes up.
+//
+public void RemoveThinker (thinker_t thinker)
+{
+ // FIXME: NOP.
+ thinker.function=null;
+}
+
+
+
+//
+//P_AllocateThinker
+//Allocates memory and adds a new thinker at the end of the list.
+//
+public void AllocateThinker (thinker_t  thinker)
+{
+}
+
+//
+//P_RunThinkers
+//
+public void RunThinkers ()
+{
+thinker_t   currentthinker;
+
+currentthinker = thinkercap.next;
+while (currentthinker != thinkercap)
+{
+if ( currentthinker.function == null )
+{
+    // time to remove it
+    currentthinker.next.prev=currentthinker.prev;
+    currentthinker.prev.next=currentthinker.next;
+}
+else
+{
+    if (currentthinker.function.getType()==ActionType.acp1)
+    currentthinker.function.acp1(currentthinker);
+}
+currentthinker = currentthinker.next;
+}
+}
+//
+//P_Ticker
+//
+
+public void Ticker ()
+{
+   int     i;
+   
+   // run the tic
+   if (DS.paused)
+   return;
+       
+   // pause if in menu and at least one tic has been run
+   if ( !DS.netgame
+    && DS.menuactive
+    && !DS.demoplayback
+    && DS.players[DS.consoleplayer].viewz != 1)
+   {
+   return;
+   }
+   
+       
+   for (i=0 ; i<MAXPLAYERS ; i++)
+   if (DS.playeringame[i])
+       GAME.PlayerThink (DS.players[i]);
+           
+   RunThinkers ();
+   UpdateSpecials (); // In specials. Merge?
+   RespawnSpecials ();
+
+   // for par times
+   DS.leveltime++;    
+}
+
+ 
+ 
+ } // End unified map 

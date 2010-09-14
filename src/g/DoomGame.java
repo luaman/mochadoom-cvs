@@ -20,7 +20,6 @@ import f.Finale;
 import hu.HU;
 import p.LevelLoader;
 import p.mobj_t;
-import rr.RendererData;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import st.StatusBar;
@@ -42,7 +41,7 @@ import doom.weapontype_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGame.java,v 1.7 2010/09/12 22:38:37 velktron Exp $
+// $Id: DoomGame.java,v 1.8 2010/09/14 15:34:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -57,6 +56,9 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: DoomGame.java,v $
+// Revision 1.8  2010/09/14 15:34:01  velktron
+// The enormity of this commit is incredible (pun intended)
+//
 // Revision 1.7  2010/09/12 22:38:37  velktron
 // Some work
 //
@@ -77,7 +79,7 @@ import doom.weapontype_t;
 public class DoomGame extends DoomGameStats {
 
  
-  public static final String rcsid = "$Id: DoomGame.java,v 1.7 2010/09/12 22:38:37 velktron Exp $";
+  public static final String rcsid = "$Id: DoomGame.java,v 1.8 2010/09/14 15:34:01 velktron Exp $";
 
 
  
@@ -864,14 +866,14 @@ public class DoomGame extends DoomGameStats {
   //
   boolean     secretexit; 
    
-  private void ExitLevel () 
+  public void ExitLevel () 
   { 
       secretexit = false; 
       gameaction = gameaction_t.ga_completed; 
   } 
 
   // Here's for the german edition.
-  private void SecretExitLevel () 
+  public void SecretExitLevel () 
   { 
       // IF NO WOLF3D LEVELS, NO SECRET EXIT!
       if ( (DS.gamemode == GameMode_t.commercial)

@@ -11,11 +11,11 @@ public class switchlist_t {
     public String    name2;
     public short   episode;
     
-	public switchlist_t(String name1, String name2, short episode) {
+	public switchlist_t(String name1, String name2, int episode) {
 		super();
 		this.name1 = name1;
 		this.name2 = name2;
-		this.episode = episode;
+		this.episode = (short)episode;
 	}
      
  };

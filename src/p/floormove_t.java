@@ -1,20 +1,25 @@
 package p;
 
-import m.fixed_t;
 import rr.sector_t;
 import doom.thinker_t;
 
 public class floormove_t {
 
-    thinker_t   thinker;
-    floor_e type;
-    boolean crush;
+    public floormove_t(){
+        
+    }
+    
+    public thinker_t   thinker;
+    public floor_e type;
+    public boolean crush;
     // MAES: was *
-    sector_t[]   sector;
-    int     direction;
-    int     newspecial;
-    short   texture;
-    fixed_t floordestheight;
-    fixed_t speed;
+    public sector_t   sector;
+    public int     direction;
+    public int     newspecial;
+    public short   texture;
+    /** fixed_t */
+    public int floordestheight;
+    /** fixed_t */
+    public int speed;
 
 }

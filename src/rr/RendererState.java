@@ -404,7 +404,7 @@ public abstract class RendererState {
    int dscount;
 
    
-   ////////////// SOME UTILITY METHODS, THAT DON'T DEPEND ON STATE /////////////
+   ////////////// SOME UTILITY METHODS /////////////
 
    public int
    PointToAngle2
@@ -420,6 +420,8 @@ public abstract class RendererState {
        return PointToAngle (x2.val, y2.val);
    }
 
+   /** Assigns a point of view before calling PointToAngle */
+   
    public int
    PointToAngle2
    ( int   x1,

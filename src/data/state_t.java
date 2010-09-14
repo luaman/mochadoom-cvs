@@ -26,6 +26,12 @@ public class state_t {
         //TODO: proper implementation of (*action)
         // MAES: was actionp_t... which is typedeffed to think_t anyway,
         // and this is the only place it's invoked explicitly.
+        /** OK...this is the most infamous part of Doom to implement in Java.
+         *  We can't have proper "function pointers" in java without either losing a LOT
+         *  of speed (through reflection) or cluttering syntax and heap significantly
+         *  (action objects, which also need to be aware of context).
+         *  Therefore, I decided to implement an "action dispatcher". There, I said it.
+         */
         public think_t         action;
         public statenum_t            nextstate;
         public long          misc1, misc2;

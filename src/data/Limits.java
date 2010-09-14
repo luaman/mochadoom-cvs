@@ -5,7 +5,7 @@ import static m.fixed_t.FRACUNIT;
 
 /** Everything that constitutes a removable limit should go here */
 
-public class Limits {
+public final class Limits {
 
     // Obvious rendering limits
     public static final int  MAXVISPLANES   =128;
@@ -16,6 +16,12 @@ public class Limits {
     public static final int CEILSPEED = FRACUNIT ;
     public static final int CEILWAIT =150;
     public static final int MAXCEILINGS =30;
+    
+    public static final int MAXANIMS =32;
+
+   /**  Animating line specials */
+    public static final int MAXLINEANIMS=64;
+
     
     // These are only used in the renderer, effectively putting 
     // a limit to the size of lookup tables for screen buffers.
@@ -34,9 +40,12 @@ public class Limits {
 
     // Some quirky engine limits
     public static final int MAXEVENTS       =64;
-	// max # of wall switches in a level
+	/** max # of wall switches in a level */
 	public static final int MAXSWITCHES = 50;
 
+	/** 20 adjoining sectors max! */
+	public static final int MAX_ADJOINING_SECTORS    =   20;
+	
 	// 4 players, 4 buttons each at once, max.
 	public static final int MAXBUTTONS = 16;
 

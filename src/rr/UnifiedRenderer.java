@@ -15,14 +15,18 @@ import static m.BBox.*;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
+import g.DoomGame;
 import i.system;
 import p.LevelLoader;
 import p.mobj_t;
 import p.pspdef_t;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import w.DoomBuffer;
 import w.WadLoader;
 import w.name8;
 import m.BBox;
@@ -30,18 +34,19 @@ import m.fixed_t;
 import data.doomstat;
 import data.Defines.GameMode_t;
 import doom.player_t;
+import doom.thinker_t;
 
 public class UnifiedRenderer extends RendererState{
 
     private doomstat DS;
     private LevelLoader LL;
-    private RendererData RD;
     private WadLoader W;
     private Segs MySegs;
     private BSP MyBSP;
     private Planes MyPlanes;
     private Things MyThings;
     private DoomVideoRenderer V;
+    private DoomGame DG;
     
   class BSP{
       public int      rw_x;
@@ -593,7 +598,7 @@ public class UnifiedRenderer extends RendererState{
   
   class Segs{
 
-      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.6 2010/09/12 22:38:37 velktron Exp $";
+      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.7 2010/09/14 15:34:01 velktron Exp $";
 
       //
       // R_RenderMaskedSegRange
@@ -619,7 +624,7 @@ public class UnifiedRenderer extends RendererState{
           curline = ds.curline;
           frontsector = curline.frontsector;
           backsector = curline.backsector;
-          texnum = RD.texturetranslation[curline.sidedef.midtexture];
+          texnum = texturetranslation[curline.sidedef.midtexture];
           
           lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
@@ -653,7 +658,7 @@ public class UnifiedRenderer extends RendererState{
           {
           dc_texturemid = frontsector.floorheight > backsector.floorheight
               ? frontsector.floorheight : backsector.floorheight;
-          dc_texturemid = dc_texturemid + RD.textureheight[texnum] - viewz;
+          dc_texturemid = dc_texturemid + textureheight[texnum] - viewz;
           }
           else
           {
@@ -688,7 +693,7 @@ public class UnifiedRenderer extends RendererState{
               dc_iscale = (int) (0xffffffffL / spryscale);
               
               // draw the texture
-              col.data = RD.GetColumn(texnum,maskedtexturecol[dc_x]);// -3);
+              col.data = GetColumn(texnum,maskedtexturecol[dc_x]);// -3);
               col.setFromData();
                   
               DrawMaskedColumn (col);
@@ -794,7 +799,7 @@ public class UnifiedRenderer extends RendererState{
               dc_yl = yl;
               dc_yh = yh;
               dc_texturemid = rw_midtexturemid;
-              dc_source = RD.GetColumn(midtexture,texturecolumn);
+              dc_source = GetColumn(midtexture,texturecolumn);
               colfunc.invoke();
               ceilingclip[rw_x] = DS.viewheight;
               floorclip[rw_x] = -1;
@@ -816,7 +821,7 @@ public class UnifiedRenderer extends RendererState{
                   dc_yl = yl;
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
-                  dc_source = RD.GetColumn(toptexture,texturecolumn);
+                  dc_source = GetColumn(toptexture,texturecolumn);
                   colfunc.invoke();
                   ceilingclip[rw_x] = (short) mid;
               }
@@ -845,7 +850,7 @@ public class UnifiedRenderer extends RendererState{
                   dc_yl = mid;
                   dc_yh = yh;
                   dc_texturemid = rw_bottomtexturemid;
-                  dc_source = RD.GetColumn(bottomtexture,
+                  dc_source = GetColumn(bottomtexture,
                               texturecolumn);
                   colfunc.invoke();
                   floorclip[rw_x] = (short) mid;
@@ -974,13 +979,13 @@ public class UnifiedRenderer extends RendererState{
           if (backsector==null)
           {
           // single sided line
-          midtexture = RD.texturetranslation[sidedef.midtexture];
+          midtexture = texturetranslation[sidedef.midtexture];
           // a single sided line is terminal, so it must mark ends
           markfloor = markceiling = true;
           if ((linedef.flags & ML_DONTPEGBOTTOM)!=0)
           {
               vtop = frontsector.floorheight +
-              RD.textureheight[sidedef.midtexture];
+              textureheight[sidedef.midtexture];
               // bottom of texture at bottom
               rw_midtexturemid = vtop - viewz;    
           }
@@ -1089,7 +1094,7 @@ public class UnifiedRenderer extends RendererState{
           if (worldhigh < worldtop)
           {
               // top texture
-              toptexture = RD.texturetranslation[sidedef.toptexture];
+              toptexture = texturetranslation[sidedef.toptexture];
               if ((linedef.flags & ML_DONTPEGTOP)!=0)
               {
               // top of texture at top
@@ -1099,7 +1104,7 @@ public class UnifiedRenderer extends RendererState{
               {
               vtop =
                   backsector.ceilingheight
-                  + RD.textureheight[sidedef.toptexture];
+                  + textureheight[sidedef.toptexture];
               
               // bottom of texture
               rw_toptexturemid = vtop - viewz;    
@@ -1108,7 +1113,7 @@ public class UnifiedRenderer extends RendererState{
           if (worldlow > worldbottom)
           {
               // bottom texture
-              bottomtexture = RD.texturetranslation[sidedef.bottomtexture];
+              bottomtexture = texturetranslation[sidedef.bottomtexture];
 
               if ((linedef.flags & ML_DONTPEGBOTTOM )!=0)
               {
@@ -1641,7 +1646,7 @@ public class UnifiedRenderer extends RendererState{
               {
                   angle = (viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
                   dc_x = x;
-                  dc_source = RD.GetColumn(skytexture, angle);
+                  dc_source = GetColumn(skytexture, angle);
                   colfunc.invoke();
               }
               }
@@ -1649,8 +1654,8 @@ public class UnifiedRenderer extends RendererState{
           }
           
           // regular flat
-          ds_source = ((flat_t)W.CacheLumpNum(RD.firstflat +
-                         RD.flattranslation[pln.picnum],
+          ds_source = ((flat_t)W.CacheLumpNum(firstflat +
+                         flattranslation[pln.picnum],
                          PU_STATIC,flat_t.class)).data;
           
           planeheight = Math.abs(pln.height-viewz);
@@ -1772,7 +1777,7 @@ public class UnifiedRenderer extends RendererState{
           sprtemp[frame].rotate = false;
           for (r=0 ; r<8 ; r++)
           {
-              sprtemp[frame].lump[r] = (short) (lump - RD.firstspritelump);
+              sprtemp[frame].lump[r] = (short) (lump - firstspritelump);
               sprtemp[frame].flip[r] = (byte) (flipped?1:0);
           }
           return;
@@ -1790,7 +1795,7 @@ public class UnifiedRenderer extends RendererState{
               system.Error  ("R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it",
                spritename, 'A'+frame, '1'+rotation);
               
-          sprtemp[frame].lump[rotation] = (short) (lump - RD.firstspritelump);
+          sprtemp[frame].lump[rotation] = (short) (lump - firstspritelump);
           sprtemp[frame].flip[rotation] = (byte) (flipped?1:0);
       }
 
@@ -1830,8 +1835,8 @@ public class UnifiedRenderer extends RendererState{
               
           sprites = new spritedef_t[numsprites];
           
-          start = RD.firstspritelump-1;
-          end = RD.lastspritelump+1;
+          start = firstspritelump-1;
+          end = lastspritelump+1;
           
           // scan all the lump names for each of the names,
           //  noting the highest frame letter.
@@ -2004,7 +2009,7 @@ public class UnifiedRenderer extends RendererState{
           patch_t        patch;
           
           
-          patch = W.CachePatchNum (vis.patch+RD.firstspritelump,PU_CACHE);
+          patch = W.CachePatchNum (vis.patch+firstspritelump,PU_CACHE);
 
           dc_colormap = vis.colormap;
           
@@ -2133,14 +2138,14 @@ public class UnifiedRenderer extends RendererState{
           }
           
           // calculate edges of the shape
-          tx -= RD.spriteoffset[lump];   
+          tx -= spriteoffset[lump];   
           x1 = (centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS;
 
           // off the right side?
           if (x1 > viewwidth)
           return;
           
-          tx +=  RD.spritewidth[lump];
+          tx +=  spritewidth[lump];
           x2 = ((centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS) - 1;
 
           // off the left side
@@ -2154,7 +2159,7 @@ public class UnifiedRenderer extends RendererState{
           vis.gx = thing.x;
           vis.gy = thing.y;
           vis.gz = thing.z;
-          vis.gzt = thing.z + RD.spritetopoffset[lump];
+          vis.gzt = thing.z + spritetopoffset[lump];
           vis.texturemid = vis.gzt - viewz;
           vis.x1 = x1 < 0 ? 0 : x1;
           vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;   
@@ -2162,7 +2167,7 @@ public class UnifiedRenderer extends RendererState{
 
           if (flip)
           {
-          vis.startfrac = RD.spritewidth[lump]-1;
+          vis.startfrac = spritewidth[lump]-1;
           vis.xiscale = -iscale;
           }
           else
@@ -2240,7 +2245,7 @@ public class UnifiedRenderer extends RendererState{
           spritelights = scalelight[lightnum];
 
           // Handle all things in sector.
-          for (thing = sec.thinglist ; thing!=null ; thing = (mobj_t) thing.getSNext())
+          for (thing = sec.thinglist ; thing!=null ; thing = (mobj_t) thing.snext)
           ProjectSprite (thing);
       }
 
@@ -2281,14 +2286,14 @@ public class UnifiedRenderer extends RendererState{
           // calculate edges of the shape
           tx = psp.sx-160*FRACUNIT;
           
-          tx -= RD.spriteoffset[lump];   
+          tx -= spriteoffset[lump];   
           x1 = (centerxfrac + FixedMul (tx,pspritescale) ) >>FRACBITS;
 
           // off the right side
           if (x1 > viewwidth)
           return;     
 
-          tx +=  RD.spritewidth[lump];
+          tx +=  spritewidth[lump];
           x2 = ((centerxfrac + FixedMul (tx, pspritescale) ) >>FRACBITS) - 1;
 
           // off the left side
@@ -2298,7 +2303,7 @@ public class UnifiedRenderer extends RendererState{
           // store information in a vissprite
           //vis = avis;
           vis.mobjflags = 0;
-          vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp.sy-RD.spritetopoffset[lump]);
+          vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp.sy-spritetopoffset[lump]);
           vis.x1 = x1 < 0 ? 0 : x1;
           vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;   
           vis.scale = pspritescale<<detailshift;
@@ -2306,7 +2311,7 @@ public class UnifiedRenderer extends RendererState{
           if (flip)
           {
           vis.xiscale = -pspriteiscale;
-          vis.startfrac = RD.spritewidth[lump]-1;
+          vis.startfrac = spritewidth[lump]-1;
           }
           else
           {
@@ -2760,7 +2765,7 @@ public class UnifiedRenderer extends RendererState{
           if (level >= NUMCOLORMAPS)
           level = NUMCOLORMAPS-1;
 
-          zlight[i][j] = RD.colormaps[level*256];
+          zlight[i][j] = colormaps[level*256];
       }
       }
   }
@@ -3489,9 +3494,10 @@ public void VideoErase(int ofs, int count) {
 
 ///////////////////////// The actual rendering calls ///////////////////////
  
- //
-//R_RenderView
-//
+ /**
+  * R_RenderView
+  */
+ 
 public void RenderPlayerView (player_t player)
 {   
   SetupFrame (player);
@@ -3697,7 +3703,7 @@ public void ExecuteSetViewSize ()
 
 public void InitSkyMap ()
 {
-    skyflatnum = RD.FlatNumForName ( SKYFLATNAME );
+    skyflatnum = FlatNumForName ( SKYFLATNAME );
     skytexturemid = 100*FRACUNIT;
 }
 
@@ -3705,6 +3711,773 @@ public void InitSkyMap ()
   interface colfunc_t {
       public void invoke();
   }
+  
+  ///////////////////// Renderer Data ////////////////////////
+  
+  //
+  // Graphics.
+  // DOOM graphics for walls and sprites
+  // is stored in vertical runs of opaque pixels (posts).
+  // A column is composed of zero or more posts,
+  // a patch or sprite is composed of zero or more columns.
+  // 
+
+  public int     firstflat;
+  public int     lastflat;
+  public int     numflats;
+  /** HACK */
+  public flat_t[] flats;
+
+  
+  public int     firstpatch;
+  public int     lastpatch;
+  public int     numpatches;
+
+  public int     firstspritelump;
+  public int     lastspritelump;
+  public int     numspritelumps;
+
+  public int     numtextures;
+  public texture_t[] textures;
+
+
+  int[]            texturewidthmask;
+  /** fixed_t[] needed for texture pegging */
+  int[]        textureheight;      
+  int[]            texturecompositesize;
+  /** Tells us which patch lump covers which column of which texture */
+  short[][]         texturecolumnlump;
+  /** This is supposed to store indexes into a patch_t lump which point to the columns themselves 
+   *  Instead, we're going to return indexes to columns inside a particular patch.
+   * */
+  short[][]    texturecolumnofs;
+  short[][]    texturecolumnindexes;
+  byte[][]          texturecomposite;
+
+  // for global animation
+  int[]        flattranslation;
+  int[]        texturetranslation;
+
+  /** needed for pre rendering (fixed_t[]) */
+  int[]    spritewidth,spriteoffset,spritetopoffset;
+
+  /** The underlying data type would be unsigned bytes. Promote to char/short? */
+  public byte[]    colormaps;
+
+
+  /**
+  // MAPTEXTURE_T CACHING
+  // When a texture is first needed,
+  //  it counts the number of composite columns
+  //  required in the texture and allocates space
+  //  for a column directory and any new columns.
+  // The directory will simply point inside other patches
+  //  if there is only one patch in a given column,
+  //  but any columns with multiple patches
+  //  will have new column_ts generated.
+  //
+
+  /**
+   *  R_DrawColumnInCache
+   *  Clip and draw a column
+   *  from a patch into a cached post.
+   *  
+   *  This means that columns are effectively "uncompressed" into cache, here,
+   *  and that composite textures are uncompressed...right?
+   *  
+   */
+  
+  public void
+  DrawColumnInCache
+  ( column_t patch,
+    byte[]     cache,
+    int offset,
+    int       originy,
+    int       cacheheight )
+  {
+      int     count;
+      int     position;
+      int  source=0; // treat as pointers
+      int   dest=3; // Inside raw data cache
+      
+      // Iterate inside column
+      for (int i=0;i<patch.posts;i++){
+
+          source += 3; // Relative to patch's data.
+          count = patch.postlen[i]; // in this particular post
+      position = originy + patch.postdeltas[i];
+
+      // Post would be drawn outside of screen. Fuck it.
+      if (position < 0)
+      {
+          count += position;
+          position = 0;
+      }
+
+      if (position + count > cacheheight)
+          count = cacheheight - position;
+
+      if (count > 0) // Draw this post.
+          //memcpy (cache + position, source, count)
+          System.arraycopy( patch.data, source, cache, offset+position,count);
+          
+      // patch = (column_t *)(  (byte *)patch + patch.length + 4);
+          // This should position us at the beginning of the next post
+          source=patch.postofs[i]+patch.postlen[i]+4;
+      }
+  }
+
+
+
+  /**
+   * R_GenerateComposite
+   * Using the texture definition,
+   *  the composite texture is created from the patches,
+   *  and each column is cached.
+ * @throws IOException 
+   */
+  
+  public void GenerateComposite (int texnum) 
+  {
+      byte[]       block;
+      texture_t      texture;
+      texpatch_t[]     patch;  
+      patch_t        realpatch;
+      int         x;
+      int         x1;
+      int         x2;
+      column_t       patchcol;
+      short[]      collump;
+      short[] colofs; // unsigned short
+      short[] colidxs; // unsigned short
+      
+      texture = textures[texnum];
+
+      // Allocate both the composite and assign it to block.
+      // Z_Malloc (texturecompositesize[texnum], PU_STATIC, &texturecomposite[texnum]);
+      block = texturecomposite[texnum]=new byte[texturecompositesize[texnum]];
+   
+      collump = texturecolumnlump[texnum];
+      colofs = texturecolumnofs[texnum];
+      colidxs = texturecolumnindexes[texnum];
+      
+      // Composite the columns together.
+      patch = texture.patches;
+          
+      for (int i=0 ;i<texture.patchcount; i++)
+      {
+      realpatch = (patch_t) W.CacheLumpNum(patch[i].patch, PU_CACHE, patch_t.class);
+      x1 = patch[i].originx;
+      x2 = x1 + realpatch.width;
+
+      if (x1<0)
+          x = 0;
+      else
+          x = x1;
+      
+      if (x2 > texture.width)
+          x2 = texture.width;
+
+      for ( ; x<x2 ; x++)
+      {
+          // Column does not have multiple patches?
+          if (collump[x] >= 0)
+          continue;
+          
+         // patchcol = (column_t *)((byte *)realpatch
+          //            + LONG(realpatch.columnofs[x-x1]));
+          
+          patchcol=realpatch.columns[x-x1];
+          DrawColumnInCache (patchcol,
+                   block, colofs[x],
+                   patch[i].originy,
+                   texture.height);
+      }
+                          
+      }
+  }
+
+  /**
+   * R_GenerateLookup
+ * @throws IOException 
+   */
+  
+  protected void GenerateLookup (int texnum) throws IOException
+  {
+      texture_t      texture;
+      short[]       patchcount; // patchcount[texture.width]
+      texpatch_t[]     patch;  
+      patch_t        realpatch;
+      int         x;
+      int         x1;
+      int         x2;
+
+      short[]      collump;
+       short[] colofs;
+      
+      texture = textures[texnum];
+
+      // Composited texture not created yet.
+      texturecomposite[texnum] = null;
+      
+      texturecompositesize[texnum] = 0;
+      collump = texturecolumnlump[texnum];
+      colofs = texturecolumnofs[texnum];
+      
+      // Now count the number of columns
+      //  that are covered by more than one patch.
+      // Fill in the lump / offset, so columns
+      //  with only a single patch are all done.
+
+      patchcount = new short[texture.width];
+      patch = texture.patches;
+          
+      // for each patch in a texture...
+      for (int i=0; i<texture.patchcount;i++)
+      {
+      realpatch = (patch_t) W.CacheLumpNum (patch[i].patch, PU_CACHE,patch_t.class);
+      x1 = patch[i].originx;
+      x2 = x1 + realpatch.width;
+      
+      if (x1 < 0)
+          x = 0;
+      else
+          x = x1;
+
+      if (x2 > texture.width)
+          x2 = texture.width;
+      for ( ; x<x2 ; x++)
+      {
+          // Obviously, if a patch starts at x it does cover the x-th column
+          // of a texture, even if transparent.
+          patchcount[x]++;
+          // Column "x" of composite texture "texnum" is covered by this patch.
+          collump[x] = (short) patch[i].patch;
+          // This is supposed to be a raw pointer to the beginning of the column
+          // data, as it appears inside the PATCH.
+          // 
+          // Instead, we can return the actual column index (x-x1)
+          colofs[x] = (short) (realpatch.columnofs[x-x1]+3);
+          // This implies that colofs[x] is 0 for a void column?
+              
+      }
+      }
+      
+      for ( x=0 ; x<texture.width ; x++)
+      {
+      if (patchcount[x]==0)
+      {
+          System.err.print ("R_GenerateLookup: column without a patch ("+texture.name+")\n");
+          return;
+      }
+      // I_Error ("R_GenerateLookup: column without a patch");
+      
+      if (patchcount[x] > 1)
+      {
+          // Use the cached block.
+          collump[x] = -1;    
+          colofs[x] = (short) texturecompositesize[texnum];
+          
+          if (texturecompositesize[texnum] > 0x10000-texture.height)
+          {
+          system.Error ("R_GenerateLookup: texture %i is >64k",
+               texnum);
+          }
+          
+          texturecompositesize[texnum] += texture.height;
+      }
+      }   
+  }
+
+
+
+
+  /**
+   * R_GetColumn
+ * @throws IOException 
+   */
+  public byte[] GetColumn
+  ( int       tex,
+    int       col ) 
+  {
+      int     lump;
+      int     ofs,idx;
+      
+      col &= texturewidthmask[tex];
+      lump = texturecolumnlump[tex][col];
+      ofs = texturecolumnofs[tex][col];
+      idx = texturecolumnindexes[tex][col];
+      
+      // So if this is zero, texture is not composite?
+      if (lump > 0)
+          // This will actually return a pointer to a patch's columns.
+          // That is, to the ONE column exactly.
+      return ((patch_t)W.CacheLumpNum(lump,PU_CACHE,patch_t.class)).columns[idx].data;
+
+      if (texturecomposite[tex]==null)
+      GenerateComposite (tex);
+
+      // This implies that texturecomposite actually stores raw, compressed columns,
+      // or else those "ofs" would go in-between.
+      return null;// TODO: texturecomposite[tex] + ofs;
+  }
+
+
+
+
+  //
+  // R_InitTextures
+  // Initializes the texture list
+  //  with the textures from the world map.
+  //
+  public void InitTextures () throws IOException
+  {
+      maptexture_t   mtexture=new maptexture_t();
+      texture_t      texture;
+      mappatch_t[]     mpatch;
+      texpatch_t[]    patch;
+
+      ByteBuffer        maptex, maptex2, maptex1;
+      
+      String        name;
+      ByteBuffer       names;
+      int       name_p;
+      
+      int[]        patchlookup;
+      
+      int         totalwidth;
+      int         nummappatches;
+      int         offset;
+      int         maxoff;
+      int         maxoff2;
+      int         numtextures1;
+      int         numtextures2;
+
+      int        directory;
+      
+      int         temp1;
+      int         temp2;
+      int         temp3;
+
+      
+      // Load the patch names from pnames.lmp.
+      //name[8] = 0;    
+      names = W.CacheLumpName ("PNAMES", PU_STATIC).getBuffer();
+      names.order(ByteOrder.LITTLE_ENDIAN);
+      
+      // Number of patches.
+      names.rewind();
+      nummappatches = names.getInt();
+      
+      patchlookup = new int[nummappatches];
+      
+      for (int i=0 ; i<nummappatches ; i++)
+      {
+      // Get a size limited string;
+      name=DoomBuffer.getString(names, 8).toUpperCase();
+      patchlookup[i] = W.CheckNumForName (name);
+      }
+      
+      names=null;
+      
+      // Load the map texture definitions from textures.lmp.
+      // The data is contained in one or two lumps,
+      //  TEXTURE1 for shareware, plus TEXTURE2 for commercial.
+      maptex = maptex1 = W.CacheLumpName ("TEXTURE1", PU_STATIC).getBuffer();
+      maptex.rewind();
+      maptex.order(ByteOrder.LITTLE_ENDIAN);
+      numtextures1 = maptex.getInt();
+      maxoff = W.LumpLength (W.GetNumForName ("TEXTURE1"));
+      directory = 1;
+      
+      if (W.CheckNumForName ("TEXTURE2") != -1)
+      {
+      maptex2 = W.CacheLumpName ("TEXTURE2", PU_STATIC).getBuffer();
+      maptex2.order(ByteOrder.LITTLE_ENDIAN);
+      numtextures2 = maptex2.getInt();
+      maxoff2 = W.LumpLength (W.GetNumForName ("TEXTURE2"));
+      }
+      else
+      {
+      maptex2 = null;
+      numtextures2 = 0;
+      maxoff2 = 0;
+      }
+      
+      numtextures = numtextures1 + numtextures2;
+      
+      textures = new texture_t[numtextures];
+      texturecolumnlump = new short[numtextures][];
+      texturecolumnofs = new short[numtextures][];
+      texturecolumnindexes = new short[numtextures][];
+      texturecomposite = new byte[numtextures][];
+      texturecompositesize = new int[numtextures];
+      texturewidthmask = new int[numtextures];
+      textureheight = new int[numtextures];
+
+      totalwidth = 0;
+      
+      //  Really complex printing shit...
+      temp1 = W.GetNumForName ("S_START");  // P_???????
+      temp2 = W.GetNumForName ("S_END") - 1;
+      temp3 = ((temp2-temp1+63)/64) + ((numtextures+63)/64);
+      System.out.print("[");
+      for (int i = 0; i < temp3; i++)
+      System.out.print(" ");
+      System.out.print("         ]");
+      
+      char BKSPC=0x08;
+      for (int i = 0; i < temp3; i++)
+          
+      for (int bs=0;bs<11;bs++){
+          System.out.print(BKSPC);
+      }
+      
+      for (int i=0 ; i<numtextures ; i++,directory++)
+      {
+      if ((i&63)==0)
+          System.out.print ('.');
+
+      if (i == numtextures1)
+      {
+          // Start looking in second texture file.
+          maptex = maptex2;
+          maxoff = maxoff2;
+          directory = 0; // offset "1" inside maptex buffer
+      }
+      //System.out.print("Directory "+directory);
+      offset = maptex.getInt(directory*4);
+      if (offset > maxoff)
+          system.Error("R_InitTextures: bad texture directory");
+     // System.out.print("offset "+offset+" \n");
+      
+      maptex.position(offset);
+      // Read "maptexture", which is the on-disk form.
+      mtexture.unpack(maptex);
+      System.out.println(mtexture.name+ " @"+offset);
+      
+      // We don't need to manually copy trivial fields.
+      textures[i]=new texture_t();
+      textures[i].copyFromMapTexture(mtexture);
+      texture = textures[i];
+      //System.out.println("Patches: "+textures[i].patchcount);
+      
+      // However we do need to correct the "patch.patch" field through the patchlookup
+      mpatch = mtexture.patches;
+      patch = texture.patches;
+
+      for (int j=0 ; j<texture.patchcount ; j++)
+      {
+          patch[j].patch = patchlookup[mpatch[j].patch];
+          if (patch[j].patch == -1)
+          {
+          system.Error ("R_InitTextures: Missing patch in texture %s",
+               texture.name);
+          }
+      }       
+      
+      // Columns and offsets of taxture = textures[i]
+      texturecolumnlump[i] = new short[texture.width];
+      //C2JUtils.initArrayOfObjects( texturecolumnlump[i], column_t.class);
+      texturecolumnofs[i] = new short[texture.width];
+      texturecolumnindexes[i] = new short[texture.width];
+      
+      int j = 1;
+      while (j*2 <= texture.width)
+          j<<=1;
+
+      texturewidthmask[i] = j-1;
+      textureheight[i] = texture.height<<FRACBITS;
+          
+      totalwidth += texture.width;
+      }
+
+      maptex1=null;
+      if (maptex2!=null)
+      maptex2=null;
+      
+      // Precalculate whatever possible.  
+      for (int i=0 ; i<numtextures ; i++)
+      GenerateLookup (i);
+      
+      // Create translation table for global animation.
+      texturetranslation = new int[numtextures];
+      
+      for (int i=0 ; i<numtextures ; i++)
+          texturetranslation[i] = i;
+  }
+
+
+
+  //
+  // R_InitFlats
+  //
+  protected void InitFlats ()
+  {
+      int     i;
+      
+      firstflat = W.GetNumForName ("F_START") + 1;
+      lastflat = W.GetNumForName ("F_END") - 1;
+      numflats = lastflat - firstflat + 1;
+      
+      // Create translation table for global animation.
+      flattranslation = new int[numflats+1];
+      
+      for (i=0 ; i<numflats ; i++)
+          flattranslation[i] = i;
+  }
+
+
+  //
+  // R_InitSpriteLumps
+  // Finds the width and hoffset of all sprites in the wad,
+  //  so the sprite does not need to be cached completely
+  //  just for having the header info ready during rendering.
+  //
+  protected void InitSpriteLumps () throws IOException
+  {
+      int     i;
+      patch_t patch;
+      
+      firstspritelump = W.GetNumForName ("S_START") + 1;
+      lastspritelump = W.GetNumForName ("S_END") - 1;
+      
+      numspritelumps = lastspritelump - firstspritelump + 1;
+      spritewidth = new int[numspritelumps];
+      spriteoffset = new int[numspritelumps];
+      spritetopoffset = new int[numspritelumps];
+      
+      for (i=0 ; i< numspritelumps ; i++)
+      {
+      if ((i&63)==0)
+          System.out.print (".");
+
+      patch = (patch_t)W.CacheLumpNum (firstspritelump+i, PU_CACHE,patch_t.class);
+      spritewidth[i] = patch.width<<FRACBITS;
+      spriteoffset[i] = patch.leftoffset<<FRACBITS;
+      spritetopoffset[i] = patch.topoffset<<FRACBITS;
+      }
+  }
+
+
+
+  /**
+  * R_InitColormaps
+ * @throws IOException 
+  */
+  protected void InitColormaps () throws IOException
+  {
+      int lump, length;
+      
+      // Load in the light tables, 
+      //  256 byte align tables.
+      lump = W.GetNumForName("COLORMAP"); 
+      length = W.LumpLength (lump) + 255; 
+      colormaps = new byte[length];
+      ByteBuffer b=ByteBuffer.wrap(colormaps);
+      W.ReadLump (lump,b);
+     // colormaps = (byte *)( ((int)colormaps + 255)&~0xff); 
+       
+  }
+
+
+
+  /**
+   * R_InitData
+   * Locates all the lumps
+   *  that will be used by all views
+   * Must be called after W_Init.
+   */
+  
+  public void InitData ()
+  {
+      try {
+        InitTextures ();
+      System.out.print ("\nInitTextures");
+      InitFlats ();
+      System.out.print ("\nInitFlats");
+      InitSpriteLumps ();
+      System.out.print ("\nInitSprites");
+      InitColormaps ();
+      System.out.print ("\nInitColormaps");
+      } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+      }
+
+  }
+
+
+
+    /**
+     * R_FlatNumForName
+     * Retrieval, get a flat number for a flat name.
+     */
+     
+    public int FlatNumForName(String name) {
+        int i;
+
+        i = W.CheckNumForName(name);
+
+        if (i == -1) {
+            system.Error("R_FlatNumForName: %s not found", name);
+        }
+        return i - firstflat;
+    }
+
+
+
+
+    /**
+     * R_CheckTextureNumForName Check whether texture is available. Filter out
+     * NoTexture indicator. Seems shit-slow to me...
+     */
+    public int CheckTextureNumForName(String name) {
+        int i;
+        // "NoTexture" marker.
+        if (name.charAt(0) == '-')
+            return 0;
+
+        for (i = 0; i < numtextures; i++)
+            if (textures[i].name.compareToIgnoreCase(name) == 0)
+                return i;
+
+        return -1;
+    }
+
+
+
+    /**
+     * R_TextureNumForName
+     * Calls R_CheckTextureNumForName,
+     * aborts with error message.
+     */
+  
+    public int TextureNumForName(String name) {
+        int i;
+
+        i = CheckTextureNumForName(name);
+
+        if (i == -1) {
+            system.Error("R_TextureNumForName: %s not found", name);
+        }
+        return i;
+    }
+
+
+
+
+  //
+  // R_PrecacheLevel
+  // Preloads all relevant graphics for the level.
+  //
+  int     flatmemory;
+  int     texturememory;
+  int     spritememory;
+
+  public void PrecacheLevel () throws IOException
+  {
+      boolean[]       flatpresent;
+      boolean []      texturepresent;
+      boolean []     spritepresent;
+
+      int         i;
+      int         j;
+      int         k;
+      int         lump;
+      
+      texture_t      texture;
+      thinker_t      th;
+      spriteframe_t  sf;
+
+      if (DG.demoplayback)
+      return;
+      
+      // Precache flats.
+      flatpresent = new boolean[numflats];
+      flats=new flat_t[numflats];
+      
+      for (i=0 ; i<LL.numsectors ; i++)
+      {
+      flatpresent[LL.sectors[i].floorpic] = true;
+      flatpresent[LL.sectors[i].ceilingpic] = true;
+      }
+      
+      flatmemory = 0;
+
+      for (i=0 ; i<numflats ; i++)
+      {
+      if (flatpresent[i])
+      {
+          lump = firstflat + i;
+          flatmemory += W.lumpinfo[lump].size;
+          flats[i]=(flat_t) W.CacheLumpNum(lump, PU_CACHE,flat_t.class);
+      }
+      }
+      
+      // Precache textures.
+      texturepresent = new boolean[numtextures];
+      
+      for (i=0 ; i<LL.numsides ; i++)
+      {
+      texturepresent[LL.sides[i].toptexture] = true;
+      texturepresent[LL.sides[i].midtexture] = true;
+      texturepresent[LL.sides[i].bottomtexture] = true;
+      }
+
+      // Sky texture is always present.
+      // Note that F_SKY1 is the name used to
+      //  indicate a sky floor/ceiling as a flat,
+      //  while the sky texture is stored like
+      //  a wall texture, with an episode dependend
+      //  name.
+      texturepresent[DG.skytexture] = true;
+      
+      texturememory = 0;
+      for (i=0 ; i<numtextures ; i++)
+      {
+      if (!texturepresent[i])
+          continue;
+
+      texture = textures[i];
+      
+      for (j=0 ; j<texture.patchcount ; j++)
+      {
+          lump = texture.patches[j].patch;
+          texturememory += W.lumpinfo[lump].size;
+          W.CacheLumpNum(lump , PU_CACHE,patch_t.class);
+      }
+      }
+      
+      // TODO: Precache sprites.
+      // spritepresent = new boolean[LL.numsprites];
+      
+      /*
+      for (th = thinkercap.next ; th != &thinkercap ; th=th.next)
+      {
+      if (th.function.acp1 == (actionf_p1)P_MobjThinker)
+          spritepresent[((mobj_t *)th).sprite] = 1;
+      }
+      
+      spritememory = 0;
+      for (i=0 ; i<numsprites ; i++)
+      {
+      if (!spritepresent[i])
+          continue;
+
+      for (j=0 ; j<sprites[i].numframes ; j++)
+      {
+          sf = &sprites[i].spriteframes[j];
+          for (k=0 ; k<8 ; k++)
+          {
+          lump = firstspritelump + sf.lump[k];
+          spritememory += lumpinfo[lump].size;
+          W_CacheLumpNum(lump , PU_CACHE);
+          }
+      }
+      }*/
+  }
+
  
   
   

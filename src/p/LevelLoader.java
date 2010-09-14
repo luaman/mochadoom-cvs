@@ -57,7 +57,7 @@ import doom.DoomContext;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.3 2010/09/08 15:22:18 velktron Exp $
+// $Id: LevelLoader.java,v 1.4 2010/09/14 15:34:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +72,9 @@ import doom.DoomContext;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.4  2010/09/14 15:34:01  velktron
+// The enormity of this commit is incredible (pun intended)
+//
 // Revision 1.3  2010/09/08 15:22:18  velktron
 // x,y coords in some structs as value semantics. Possible speed increase?
 //
@@ -112,7 +115,7 @@ public class LevelLoader {
     DoomVideoRenderer V;
     Renderer R;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.3 2010/09/08 15:22:18 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.4 2010/09/14 15:34:01 velktron Exp $";
 
 /*
   #include <math.h>
@@ -181,7 +184,7 @@ public class LevelLoader {
   public int     bmaporgx;
 public int bmaporgy;
   /** for thing chains */
-  mobj_t[]    blocklinks;     
+  public mobj_t[]    blocklinks;     
 
 
   // REJECT

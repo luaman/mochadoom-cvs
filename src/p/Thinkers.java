@@ -7,7 +7,7 @@ import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tick.java,v 1.3 2010/09/02 15:56:54 velktron Exp $
+// $Id: Thinkers.java,v 1.1 2010/09/14 15:34:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,7 +21,10 @@ import static data.Defines.*;
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: Tick.java,v $
+// $Log: Thinkers.java,v $
+// Revision 1.1  2010/09/14 15:34:01  velktron
+// The enormity of this commit is incredible (pun intended)
+//
 // Revision 1.3  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -55,13 +58,14 @@ import static data.Defines.*;
 
 import static data.Limits.*;
 
-public class Tick{
+public class Thinkers{
 
-public static final String rcsid = "$Id: Tick.java,v 1.3 2010/09/02 15:56:54 velktron Exp $";
+public static final String rcsid = "$Id: Thinkers.java,v 1.1 2010/09/14 15:34:01 velktron Exp $";
 
 doomstat DS;
 spec SPEC;
 int	leveltime;
+UnifiedGameMap GAME;
 
 //
 // THINKERS
@@ -79,8 +83,8 @@ public thinker_t    thinkercap;
 //
 public void InitThinkers ()
 {
-    thinkercap.setNext(thinkercap);
-    thinkercap.setPrev(thinkercap);
+    thinkercap.next=thinkercap;
+    thinkercap.prev=thinkercap;
 }
 
 
@@ -92,10 +96,10 @@ public void InitThinkers ()
 //
 public void AddThinker (thinker_t thinker)
 {
-    thinkercap.getPrev().setNext(thinker);
-    thinker.setNext(thinkercap);
-    thinker.setPrev(thinkercap.getPrev());
-    thinkercap.setPrev(thinker);
+    thinkercap.prev.next=thinker;
+    thinker.next=thinkercap;
+    thinker.prev=thinkercap.prev;
+    thinkercap.prev=thinker;
 }
 
 
@@ -108,7 +112,7 @@ public void AddThinker (thinker_t thinker)
 public void RemoveThinker (thinker_t thinker)
 {
   // FIXME: NOP.
-  thinker.setFunction(null);
+  thinker.function=null;
 }
 
 
@@ -126,30 +130,30 @@ public void AllocateThinker (thinker_t	thinker)
 //
 // P_RunThinkers
 //
+//
+//P_RunThinkers
+//
 public void RunThinkers ()
 {
-    thinker_t	currentthinker;
+ thinker_t   currentthinker;
 
-    currentthinker = thinkercap.getNext();
-    while (currentthinker != thinkercap)
-    {
-	if ( currentthinker.getFunction() == null )
-	{
-	    // time to remove it
-	    currentthinker.getNext().setPrev( currentthinker.getPrev());
-	    currentthinker.getNext().setNext(currentthinker.getNext());
-	}
-	else
-	{
-	    if (currentthinker.getFunction().getType()==ActionType.acp1)
-		currentthinker.getFunction().acp1(currentthinker);
-	}
-	currentthinker = currentthinker.getNext();
-    }
+ currentthinker = thinkercap.next;
+ while (currentthinker != thinkercap)
+ {
+ if ( currentthinker.function == null )
+ {
+     // time to remove it
+     currentthinker.next.prev=currentthinker.prev;
+     currentthinker.prev.next=currentthinker.next;
+ }
+ else
+ {
+     if (currentthinker.function.getType()==ActionType.acp1)
+     currentthinker.function.acp1(currentthinker);
+ }
+ currentthinker = currentthinker.next;
+ }
 }
-
-
-
 //
 // P_Ticker
 //
@@ -174,11 +178,11 @@ public void Ticker ()
 		
     for (i=0 ; i<MAXPLAYERS ; i++)
 	if (DS.playeringame[i])
-	    PlayerThink (DS.players[i]);
+	    GAME.PlayerThink (DS.players[i]);
 			
     RunThinkers ();
-    SPEC.UpdateSpecials (); // In specials. Merge?
-    SPEC.RespawnSpecials ();
+    GAME.UpdateSpecials (); // In specials. Merge?
+    GAME.RespawnSpecials ();
 
     // for par times
     leveltime++;	

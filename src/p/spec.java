@@ -6,7 +6,7 @@ import rr.line_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: spec.java,v 1.2 2010/08/24 14:57:42 velktron Exp $
+// $Id: spec.java,v 1.3 2010/09/14 15:34:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import rr.line_t;
 // GNU General Public License for more details.
 //
 // $Log: spec.java,v $
+// Revision 1.3  2010/09/14 15:34:01  velktron
+// The enormity of this commit is incredible (pun intended)
+//
 // Revision 1.2  2010/08/24 14:57:42  velktron
 // A lot but inconclusive work today.
 //
@@ -39,7 +42,7 @@ import rr.line_t;
 
 /*
 static const char
-rcsid[] = "$Id: spec.java,v 1.2 2010/08/24 14:57:42 velktron Exp $";
+rcsid[] = "$Id: spec.java,v 1.3 2010/09/14 15:34:01 velktron Exp $";
 
 #include <stdlib.h>
 
@@ -535,19 +538,19 @@ P_CrossSpecialLine
     // All from here to RETRIGGERS.
       case 2:
     // Open Door
-    EV_DoDoor(line,open);
+    MyDoors.DoDoor(line,open);
     line.special = 0;
     break;
 
       case 3:
     // Close Door
-    EV_DoDoor(line,close);
+    MyDoors.DoDoor(line,close);
     line.special = 0;
     break;
 
       case 4:
     // Raise Door
-    EV_DoDoor(line,normal);
+    MyDoors.DoDoor(line,normal);
     line.special = 0;
     break;
     
@@ -589,7 +592,7 @@ P_CrossSpecialLine
     
       case 16:
     // Close Door 30
-    EV_DoDoor(line,close30ThenOpen);
+    MyDoors.DoDoor(line,close30ThenOpen);
     line.special = 0;
     break;
     
@@ -716,13 +719,13 @@ P_CrossSpecialLine
     
       case 108:
     // Blazing Door Raise (faster than TURBO!)
-    EV_DoDoor (line,blazeRaise);
+    MyDoors.DoDoor (line,blazeRaise);
     line.special = 0;
     break;
     
       case 109:
     // Blazing Door Open (faster than TURBO!)
-    EV_DoDoor (line,blazeOpen);
+    MyDoors.DoDoor (line,blazeOpen);
     line.special = 0;
     break;
     
@@ -734,7 +737,7 @@ P_CrossSpecialLine
     
       case 110:
     // Blazing Door Close (faster than TURBO!)
-    EV_DoDoor (line,blazeClose);
+    MyDoors.DoDoor (line,blazeClose);
     line.special = 0;
     break;
 
@@ -794,12 +797,12 @@ P_CrossSpecialLine
     
       case 75:
     // Close Door
-    EV_DoDoor(line,close);
+    MyDoors.DoDoor(line,close);
     break;
     
       case 76:
     // Close Door 30
-    EV_DoDoor(line,close30ThenOpen);
+    MyDoors.DoDoor(line,close30ThenOpen);
     break;
     
       case 77:
@@ -839,7 +842,7 @@ P_CrossSpecialLine
 
       case 86:
     // Open Door
-    EV_DoDoor(line,open);
+    MyDoors.DoDoor(line,open);
     break;
     
       case 87:
@@ -859,7 +862,7 @@ P_CrossSpecialLine
     
       case 90:
     // Raise Door
-    EV_DoDoor(line,normal);
+    MyDoors.DoDoor(line,normal);
     break;
     
       case 91:
@@ -906,17 +909,17 @@ P_CrossSpecialLine
 
       case 105:
     // Blazing Door Raise (faster than TURBO!)
-    EV_DoDoor (line,blazeRaise);
+    MyDoors.DoDoor (line,blazeRaise);
     break;
     
       case 106:
     // Blazing Door Open (faster than TURBO!)
-    EV_DoDoor (line,blazeOpen);
+    MyDoors.DoDoor (line,blazeOpen);
     break;
 
       case 107:
     // Blazing Door Close (faster than TURBO!)
-    EV_DoDoor (line,blazeClose);
+    MyDoors.DoDoor (line,blazeClose);
     break;
 
       case 120:
@@ -980,7 +983,7 @@ ShootSpecialLine
     
       case 46:
     // OPEN DOOR
-    EV_DoDoor(line,open);
+    MyDoors.DoDoor(line,open);
     P_ChangeSwitchTexture(line,1);
     break;
     
@@ -1356,7 +1359,7 @@ void P_SpawnSpecials ()
 
 class Ceilings{
 
-    public static final String rcsid = "$Id: spec.java,v 1.2 2010/08/24 14:57:42 velktron Exp $";
+    public static final String rcsid = "$Id: spec.java,v 1.3 2010/09/14 15:34:01 velktron Exp $";
 
     //
     // CEILINGS
