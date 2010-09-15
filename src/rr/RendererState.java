@@ -253,12 +253,12 @@ public abstract class RendererState {
    // flattening the arc to a flat projection plane.
    // There will be many angles mapped to the same X. 
 
-   public static int[]         viewangletox=new int[FINEANGLES/2];
+   public static final int[]         viewangletox=new int[FINEANGLES/2];
 
    // The xtoviewangleangle[] table maps a screen pixel
    // to the lowest viewangle that maps back to x ranges
    // from clipangle to -clipangle.
-   public static int[]         xtoviewangle=new int[SCREENWIDTH+1];
+   public static final int[]         xtoviewangle=new int[SCREENWIDTH+1];
 
 
    // UNUSED.

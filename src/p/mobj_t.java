@@ -1,5 +1,6 @@
 package p;
 
+import static data.Defines.acp1;
 import static data.Defines.FLOATSPEED;
 import static data.Defines.GRAVITY;
 import static data.Defines.VIEWHEIGHT;
@@ -89,6 +90,11 @@ import doom.thinker_t;
 
 public class mobj_t extends thinker_t implements Interceptable   {
     
+    UnifiedGameMap.Actions A;
+    public mobj_t(UnifiedGameMap.Actions A){
+        this.A=A;
+    }
+    
         public mobj_t(){
             
         }
@@ -103,8 +109,8 @@ public class mobj_t extends thinker_t implements Interceptable   {
         public thinker_t  snext, sprev;
 
         //More drawing info: to determine current sprite.
-        /** orientation */
-        public int     angle;  
+        /** orientation. This needs to be long or else certain checks will fail*/
+        public long     angle;  
         
         /** used to find patch_t and flip value */
         public spritenum_t     sprite; 
@@ -294,8 +300,8 @@ public class mobj_t extends thinker_t implements Interceptable   {
 
         // Modified handling.
         // Call action functions when the state is set
-        if (st.action.getType()==ActionType.acp1)       
-            ((acp1)st.action).invoke(this); 
+        if (st.action.getType()==acp1)       
+            {A.dispatch(st.action, this, null);} 
         
         state = st.nextstate;
         } while (tics==0);

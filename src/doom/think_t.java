@@ -30,7 +30,7 @@ actionf_p2	acp2;
 
 public enum think_t {
 	
-	A_Light0,
+	A_Light0(0),
     A_WeaponReady,
     A_Lower,
     A_Raise,
@@ -104,5 +104,21 @@ public enum think_t {
     A_SpawnSound,
     A_SpawnFly,
     A_BrainExplode,
-    P_MobjThinker
+    P_MobjThinker(1);
+    
+    think_t(){
+	    type=0;
+	}
+	
+    think_t(int type){
+        this.type=type;
+    }
+
+    /** 0 for void, 1 for acp1, 2 for acp2 */
+    public int getType() {
+        return type;
+    }
+
+    private int type;
+	
 }

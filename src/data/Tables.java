@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.2 2010/09/09 16:09:09 velktron Exp $
+// $Id: Tables.java,v 1.3 2010/09/15 16:17:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.3  2010/09/15 16:17:38  velktron
+// Arithmetic
+//
 // Revision 1.2  2010/09/09 16:09:09  velktron
 // Yer more enhancements to the display system...
 //
@@ -51,7 +54,7 @@ import static m.fixed_t.*;
 //
 //	int finesine[10240]		- Sine lookup.
 //	 Guess what, serves as cosine, too.
-//	 Remarkable thing is, how to use BAMs with this? 
+//	 Remarkable thing is, how to use BAMs with this?
 //
 //	int tantoangle[2049]	- ArcTan LUT,
 //	  maps tan(angle) to angle fast. Gotta search.
@@ -72,14 +75,31 @@ public final class Tables extends SineCosine{
   // Either that, or I split the files. Guess what I did.
  // public static int PRECISION = 10240 ;
 
-  // 0x100000000 to 0x2000
-  public static final int ANGLETOFINESHIFT =   19;      
-  // Binary Angle Measument, BAM.
-public static final int ANG45 =  0x20000000;
-public static final int ANG90  =     0x40000000;
-public static final int ANG180 =     0x80000000;
-public static final int ANG270 =     0xc0000000;
-
+  /** 0x100000000 to 0x2000 */
+  public static final int ANGLETOFINESHIFT =   19;
+  
+/** Binary Angle Measurement.
+ * Some maths: their definition means that a range of 2pi is actually
+ * mapped to 2^32 values!!! But the lookup tables are only 8K (2^13)
+ * long (for sine/cosine), which means that we're 19 bits too precise
+ * -> ergo, >>ANGLETOFINESHIFT must be applied.
+ * 
+ * Also, the original angle_t type was "unsigned int", so we should be
+ * using longs here. However, as BAM is used only after shifting, using ints
+ * doesn't cause a problem for LUT access.
+ *  
+ * Some problems may arise with comparisons: ANG270 is supposed to be larger not
+ * only than ANG180, but also from ANG45, which is clearly a problem since Doom 
+ * doesn't use signed angles.
+ * 
+ *  So, no adaptation needed?
+ * 
+ */
+  
+public static final int ANG45 =  0x20000000,
+                        ANG90  =     0x40000000,
+                        ANG180 =     0x80000000,
+                        ANG270 =     0xc0000000;
 
 public static final int SLOPERANGE =    2048;
 public static final int SLOPEBITS  =     11;
@@ -95,7 +115,10 @@ public static final int DBITS=FRACBITS-SLOPEBITS;
 
 
 
-
+/** Any denominator smaller than 512 will result in 
+ *  maximum slope (90 degrees, or a "tan" of 2048)
+ * 
+ */
 public static final int SlopeDiv ( int	num, int den)
 {
     int 	ans;
@@ -107,21 +130,6 @@ public static final int SlopeDiv ( int	num, int den)
 
     return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
-
-
-public static final int SlopeDiv2 ( int    num, int den)
-{
-    int     ans;
-    
-    if (den < 512)
-    return SLOPERANGE;
-
-    ans = (num<<3)/(den>>>8);
-
-    return ans <= SLOPERANGE ? ans : SLOPERANGE;
-}
-
-
 
 public final static int[] finetangent =
 {
@@ -643,7 +651,24 @@ public final static int[] finetangent =
 
 
 // MAES: original range 2049
+// This obviously 
 // Range goes from 0x00000000 to 0x2000000, so in theory plain ints should be enough...
+
+/** This maps a value 0-2048 to a fixed point number ranging from 0 to 8192 in value
+ * some of the first values:
+ * 
+ * 0.0
+ * 5.0929565
+ * 10.185913
+ * 15.278854
+ * 20.371796
+ * ...
+ * 8192 (presumably for an angle of 90 degrees).
+ * 
+ * These values are valid BAM measurements in the first quadrant
+ * 
+ * 
+ */
 
 public static final int[] tantoangle =
 {
@@ -905,6 +930,24 @@ public static final int[] tantoangle =
     535533216,535700704,535868128,536035456,536202720,536369888,536536992,536704000,
     536870912
 };
+
+/** Use this to get a value from the finesine table. It will be automatically shifte, 
+ * 
+ * @param angle in BAM units
+ * @return
+ */
+public static final int finesine(int angle){
+    return finesine[angle>>>ANGLETOFINESHIFT];
+}
+
+/** Use this to get a value from the finecosine table. It will be automatically shifte, 
+ * 
+ * @param angle in BAM units
+ * @return
+ */
+public static final int finecosine(int angle){
+    return finecosine[angle>>>ANGLETOFINESHIFT];
+}
 
 private Tables(){
     

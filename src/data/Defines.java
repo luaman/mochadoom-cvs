@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.14 2010/09/14 23:49:39 velktron Exp $
+// $Id: Defines.java,v 1.15 2010/09/15 16:17:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1682,8 +1682,11 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int  FF_FULLBRIGHT =  0x8000;  // flag in thing->frame
     public static final int  FF_FRAMEMASK =   0x7fff;
 
-    
+    public static final int acpv=0;
+    public static final int acp1=1;
+    public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.14 2010/09/14 23:49:39 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.15 2010/09/15 16:17:38 velktron Exp $";
 }
+

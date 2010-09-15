@@ -17,7 +17,7 @@ import rr.side_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Enemies.java,v 1.3 2010/09/14 15:34:01 velktron Exp $
+// $Id: Enemies.java,v 1.4 2010/09/15 16:17:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,6 +32,9 @@ import rr.side_t;
 // GNU General Public License for more details.
 //
 // $Log: Enemies.java,v $
+// Revision 1.4  2010/09/15 16:17:38  velktron
+// Arithmetic
+//
 // Revision 1.3  2010/09/14 15:34:01  velktron
 // The enormity of this commit is incredible (pun intended)
 //
@@ -58,14 +61,9 @@ import rr.side_t;
 //-----------------------------------------------------------------------------
 
 
-public abstract class Enemies {
+public class Enemies {
 
-    doomstat DS;
-    RendererState R;
-    LevelLoader L;
-    random RND;
-	
-  public static final String rcsid = "$Id: Enemies.java,v 1.3 2010/09/14 15:34:01 velktron Exp $";
+  public static final String rcsid = "$Id: Enemies.java,v 1.4 2010/09/15 16:17:38 velktron Exp $";
 
   private static int DI_EAST=0;
   private static int    DI_NORTHEAST=1;
@@ -181,92 +179,7 @@ public abstract class Enemies {
 
 
 
-  //
-  // P_CheckMeleeRange
-  //
-  boolean P_CheckMeleeRange (mobj_t actor)
-  {
-      mobj_t pl;
-      int dist; //fixed_t
-      
-      if (actor.target==null)
-      return false;
-          
-      pl = actor.target;
-      dist = P_AproxDistance (pl.x-actor.x, pl.y-actor.y);
-
-      if (dist >= MELEERANGE-20*FRACUNIT+pl.info.radius)
-      return false;
-      
-      if (! P_CheckSight (actor, actor.target) )
-      return false;
-                              
-      return true;        
-  }
-
-  //
-  // P_CheckMissileRange
-  //
-  boolean P_CheckMissileRange (mobj_t actor)
-  {
-      int dist; //fixed_t
-      
-      if (! P_CheckSight (actor, actor.target) )
-      return false;
-      
-      if ( (actor.flags & MF_JUSTHIT )!=0)
-      {
-      // the target just hit the enemy,
-      // so fight back!
-      actor.flags &= ~MF_JUSTHIT;
-      return true;
-      }
-      
-      if (actor.reactiontime!=0)
-      return false;   // do not attack yet
-          
-      // OPTIMIZE: get this from a global checksight
-      dist = P_AproxDistance ( actor.x-actor.target.x,
-                   actor.y-actor.target.y) - 64*FRACUNIT;
-      
-      if (actor.info.meleestate==null)
-      dist -= 128*FRACUNIT;   // no melee attack, so fire more
-
-      dist >>= 16;
-
-      if (actor.type == MT_VILE)
-      {
-      if (dist > 14*64)   
-          return false;   // too far away
-      }
-      
-
-      if (actor.type == MT_UNDEAD)
-      {
-      if (dist < 196) 
-          return false;   // close for fist attack
-      dist >>= 1;
-      }
-      
-
-      if (actor.type == MT_CYBORG
-      || actor.type == MT_SPIDER
-      || actor.type == MT_SKULL)
-      {
-      dist >>= 1;
-      }
-      
-      if (dist > 200)
-      dist = 200;
-          
-      if (actor.type == MT_CYBORG && dist > 160)
-      dist = 160;
-          
-      if (P_Random () < dist)
-      return false;
-          
-      return true;
-  }
+  
 
 
   //
@@ -461,7 +374,7 @@ public abstract class Enemies {
       }
 
       // randomly determine direction of search
-      if (P_Random()&1)   
+      if (RND.P_Random()&1)   
       {
       for ( tdir=DI_EAST;
             tdir<=DI_SOUTHEAST;
@@ -504,72 +417,6 @@ public abstract class Enemies {
 
 
 
-  //
-  // P_LookForPlayers
-  // If allaround is false, only look 180 degrees in front.
-  // Returns true if a player is targeted.
-  //
-  boolean
-  P_LookForPlayers
-  ( mobj_t   actor,
-    boolean   allaround )
-  {
-      int     c;
-      int     stop;
-      player_t   player;
-      sector_t   sector;
-      int an; //angle
-      int dist; //fixed
-          
-      sector = actor.subsector.sector;
-      
-      c = 0;
-      stop = (actor.lastlook-1)&3;
-      
-      for ( ; ; actor.lastlook = (actor.lastlook+1)&3 )
-      {
-      if (!DS.playeringame[actor.lastlook])
-          continue;
-              
-      if (c++ == 2
-          || actor.lastlook == stop)
-      {
-          // done looking
-          return false;   
-      }
-      
-      player = DS.players[actor.lastlook];
-
-      if (player.health <= 0)
-          continue;       // dead
-
-      if (!P_CheckSight (actor, player.mo))
-          continue;       // out of sight
-              
-      if (!allaround)
-      {
-          an = PointToAngle2 (actor.x,
-                    actor.y, 
-                    player.mo.x,
-                    player.mo.y)
-          - actor.angle;
-          
-          if (an > ANG90 && an < ANG270)
-          {
-          dist = P_AproxDistance (player.mo.x - actor.x,
-                      player.mo.y - actor.y);
-          // if real close, react anyway
-          if (dist > MELEERANGE)
-              continue;   // behind back
-          }
-      }
-          
-      actor.target = player.mo;
-      return true;
-      }
-
-      return false;
-  }
 
 
 }
