@@ -73,9 +73,13 @@ public boolean         respawnmonsters;
 public boolean netgame;
 
 /** Flag: true only if started as net deathmatch.
-    An enum might handle altdeath/cooperative better. */
+ *  An enum might handle altdeath/cooperative better. 
+ *  Use altdeath for the "2" value */
 public boolean deathmatch; 
-    
+
+/** Use this instead of "deathmatch=2" which is bullshit. */
+public boolean altdeath;
+
 // -------------------------
 // Internal parameters for sound rendering.
 // These have been taken from the DOS version,

@@ -598,7 +598,7 @@ public class UnifiedRenderer extends RendererState{
   
   class Segs{
 
-      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.7 2010/09/14 15:34:01 velktron Exp $";
+      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.8 2010/09/16 16:39:25 velktron Exp $";
 
       //
       // R_RenderMaskedSegRange
@@ -3743,7 +3743,7 @@ public void InitSkyMap ()
 
   int[]            texturewidthmask;
   /** fixed_t[] needed for texture pegging */
-  int[]        textureheight;      
+  public int[]        textureheight;      
   int[]            texturecompositesize;
   /** Tells us which patch lump covers which column of which texture */
   short[][]         texturecolumnlump;
@@ -3755,8 +3755,8 @@ public void InitSkyMap ()
   byte[][]          texturecomposite;
 
   // for global animation
-  int[]        flattranslation;
-  int[]        texturetranslation;
+  public int[]        flattranslation;
+  public int[]        texturetranslation;
 
   /** needed for pre rendering (fixed_t[]) */
   int[]    spritewidth,spriteoffset,spritetopoffset;

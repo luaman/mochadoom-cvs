@@ -107,8 +107,12 @@ public enum think_t {
     P_MobjThinker(1),
     T_FireFlicker(1),
 	T_LightFlash(1),
-	T_StrobeFlash(1);
-    
+	T_StrobeFlash(1),
+	T_Glow(1),
+	T_MoveCeiling(1),
+	T_MoveFloor(1),
+	T_VerticalDoor(1),
+	T_PlatRaise(1);
     think_t(){
 	    type=0;
 	}

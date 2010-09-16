@@ -41,7 +41,7 @@ import doom.weapontype_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGame.java,v 1.8 2010/09/14 15:34:01 velktron Exp $
+// $Id: DoomGame.java,v 1.9 2010/09/16 16:39:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -56,6 +56,9 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: DoomGame.java,v $
+// Revision 1.9  2010/09/16 16:39:25  velktron
+// Lots of shit.
+//
 // Revision 1.8  2010/09/14 15:34:01  velktron
 // The enormity of this commit is incredible (pun intended)
 //
@@ -79,7 +82,7 @@ import doom.weapontype_t;
 public class DoomGame extends DoomGameStats {
 
  
-  public static final String rcsid = "$Id: DoomGame.java,v 1.8 2010/09/14 15:34:01 velktron Exp $";
+  public static final String rcsid = "$Id: DoomGame.java,v 1.9 2010/09/16 16:39:25 velktron Exp $";
 
 
  
@@ -659,7 +662,7 @@ public class DoomGame extends DoomGameStats {
   // Called after a player dies 
   // almost everything is cleared and initialized 
   //
-  private void PlayerReborn (int player) 
+  public void PlayerReborn (int player) 
   { 
       player_t   p; 
       int     i; 

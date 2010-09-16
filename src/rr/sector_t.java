@@ -14,6 +14,7 @@ public class sector_t {
 
     public sector_t(){
         soundorg =new degenmobj_t();
+        blockbox=new int[4];
     }
     
         /** (fixed_t) */
@@ -31,7 +32,7 @@ public class sector_t {
      public mobj_t soundtarget;
 
      /** mapblock bounding box for height changes */
-     public int[]  blockbox=new int[4];
+     public int[]  blockbox;
 
      /** origin for any sounds played by the sector */
      public degenmobj_t soundorg;
@@ -42,8 +43,9 @@ public class sector_t {
      /** list of mobjs in sector (MAES: it's used as a linked list) */
      public mobj_t thinglist;
 
-     /** thinker_t for reversable actions */
-     public thinker_t specialdata;
+     /** thinker_t for reversable actions. This actually was a void*, 
+      *  and in practice it could store doors, plats, floors and ceiling objects. */
+     public SectorAction specialdata;
 
      public int         linecount;
      //struct line_s** lines;  // [linecount] size

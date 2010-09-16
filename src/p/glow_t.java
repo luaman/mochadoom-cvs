@@ -1,13 +1,18 @@
 package p;
 
+import rr.SectorAction;
 import rr.sector_t;
 import doom.thinker_t;
 
-public class glow_t {
-       thinker_t   thinker;
-        sector_t   sector;
-        int     minlight;
-        int     maxlight;
-        int     direction;
+public class glow_t extends SectorAction{
+    
+        public glow_t(){
+            this.thinker=new thinker_t();
+        }
+    
+        public sector_t   sector;
+        public int     minlight;
+        public int     maxlight;
+        public int     direction;
 
     }

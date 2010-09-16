@@ -1,26 +1,33 @@
 package p;
 
+import rr.SectorAction;
 import rr.sector_t;
 import doom.thinker_t;
 import m.fixed_t;
 
-public class ceiling_t {
+public class ceiling_t extends SectorAction{
 
-        thinker_t   thinker;
-        ceiling_e   type;
+        public ceiling_t(){
+            this.thinker=new thinker_t();
+        }    
+
+        public ceiling_e   type;
         // MAES: was *
-        sector_t[]   sector;
-        fixed_t bottomheight;
-        fixed_t topheight;
-        fixed_t speed;
+        public sector_t   sector;
+        /** fixed_t */
+        int bottomheight;
+        /** fixed_t */
+        int topheight;
+        /** fixed_t */
+        int speed;
         boolean crush;
 
         // 1 = up, 0 = waiting, -1 = down
-        int     direction;
+        public int     direction;
 
         // ID
-        int     tag;                   
-        int     olddirection;
+        public int     tag;                   
+        public int     olddirection;
         
     }
 

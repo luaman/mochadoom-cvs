@@ -5,43 +5,7 @@ import static data.Limits.*;
 import static data.SineCosine.*;
 import static data.Tables.*;
 import static data.info.*;
-import static doom.englsh.GOTARMBONUS;
-import static doom.englsh.GOTARMOR;
-import static doom.englsh.GOTBACKPACK;
-import static doom.englsh.GOTBERSERK;
-import static doom.englsh.GOTBFG9000;
-import static doom.englsh.GOTBLUECARD;
-import static doom.englsh.GOTBLUESKUL;
-import static doom.englsh.GOTCELL;
-import static doom.englsh.GOTCELLBOX;
-import static doom.englsh.GOTCHAINGUN;
-import static doom.englsh.GOTCHAINSAW;
-import static doom.englsh.GOTCLIP;
-import static doom.englsh.GOTCLIPBOX;
-import static doom.englsh.GOTHTHBONUS;
-import static doom.englsh.GOTINVIS;
-import static doom.englsh.GOTINVUL;
-import static doom.englsh.GOTLAUNCHER;
-import static doom.englsh.GOTMAP;
-import static doom.englsh.GOTMEDIKIT;
-import static doom.englsh.GOTMEDINEED;
-import static doom.englsh.GOTMEGA;
-import static doom.englsh.GOTMSPHERE;
-import static doom.englsh.GOTPLASMA;
-import static doom.englsh.GOTREDCARD;
-import static doom.englsh.GOTREDSKULL;
-import static doom.englsh.GOTROCKBOX;
-import static doom.englsh.GOTROCKET;
-import static doom.englsh.GOTSHELLBOX;
-import static doom.englsh.GOTSHELLS;
-import static doom.englsh.GOTSHOTGUN;
-import static doom.englsh.GOTSHOTGUN2;
-import static doom.englsh.GOTSTIM;
-import static doom.englsh.GOTSUIT;
-import static doom.englsh.GOTSUPER;
-import static doom.englsh.GOTVISOR;
-import static doom.englsh.GOTYELWCARD;
-import static doom.englsh.GOTYELWSKUL;
+import static doom.englsh.*;
 import static doom.items.weaponinfo;
 import static m.BBox.*;
 import static m.fixed_t.*;
@@ -52,8 +16,11 @@ import static p.mobj_t.MF_INFLOAT;
 import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import g.DoomGame;
+import hu.HU;
 import i.system;
 
+import m.DoomMenu;
+import m.Menu;
 import m.random;
 import rr.UnifiedRenderer;
 import rr.line_t;
@@ -63,6 +30,7 @@ import rr.seg_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
+import st.StatusBar;
 import w.WadLoader;
 import automap.DoomAutoMap;
 import data.doomstat;
@@ -99,6 +67,9 @@ public class UnifiedGameMap {
     UnifiedRenderer R;
     LevelLoader LL;
     DoomGame DG;
+    Menu M;
+    StatusBar ST;
+    HU HU;
     
     ////////////// Internal singletons //////////////
     Actions A;
@@ -162,12 +133,12 @@ getSector
 // Given the sector number and the line number,
 //  it will tell you whether the line is two-sided or not.
 //
-int
+boolean
 twoSided
 ( int   sector,
   int   line )
 {
-    return (LL.sectors[sector].lines[line]).flags & ML_TWOSIDED;
+    return flags((LL.sectors[sector].lines[line]).flags ,ML_TWOSIDED);
 }
 
 
@@ -2522,19 +2493,19 @@ class Actions{
 
         /** If "floatok" true, move would be ok
             if within "tmfloorz - tmceilingz". */
-        boolean     floatok;
+        public boolean     floatok;
 
         /** fixed_t */
-        int     tmfloorz, tmceilingz,   tmdropoffz;
+        public int     tmfloorz, tmceilingz,   tmdropoffz;
 
         // keep track of the line that lowers the ceiling,
         // so missiles don't explode against sky hack walls
-        line_t      ceilingline;
+        public line_t      ceilingline;
 
 
 
-        line_t[]        spechit=new line_t[MAXSPECIALCROSS];
-        int     numspechit;
+        public line_t[]        spechit=new line_t[MAXSPECIALCROSS];
+        public int     numspechit;
         
         /** Dispatch "PTR" Traverse function pointers */
 
@@ -4707,29 +4678,29 @@ class Lights{
  void TurnTagLightsOff(line_t line)
  {
      int         i;
-     int         j;
      int         min;
      sector_t       sector;
      sector_t       tsec;
      line_t     templine;
      
-     sector = sectors;
      
-     for (j = 0;j < numsectors; j++, sector++)
+     for (int j = 0;j < LL.numsectors; j++)
      {
+         sector=LL.sectors[j];
      if (sector.tag == line.tag)
      {
+         
          min = sector.lightlevel;
          for (i = 0;i < sector.linecount; i++)
          {
          templine = sector.lines[i];
          tsec = getNextSector(templine,sector);
-         if (!tsec)
+         if (tsec==null)
              continue;
          if (tsec.lightlevel < min)
              min = tsec.lightlevel;
          }
-         sector.lightlevel = min;
+         sector.lightlevel = (short) min;
      }
      }
  }
@@ -4743,36 +4714,34 @@ class Lights{
  ( line_t   line,
    int       bright )
  {
-     int     i;
-     int     j;
+     
      sector_t   sector;
      sector_t   temp;
      line_t templine;
      
-     sector = sectors;
-     
-     for (i=0;i<numsectors;i++, sector++)
+     for (int i = 0; i < LL.numsectors; i++)
      {
+         sector=LL.sectors[i];     
      if (sector.tag == line.tag)
      {
          // bright = 0 means to search
          // for highest light level
          // surrounding sector
-         if (!bright)
+         if (bright==0)
          {
-         for (j = 0;j < sector.linecount; j++)
+         for (int j = 0;j < sector.linecount; j++)
          {
              templine = sector.lines[j];
              temp = getNextSector(templine,sector);
 
-             if (!temp)
+             if (temp==null)
              continue;
 
              if (temp.lightlevel > bright)
              bright = temp.lightlevel;
          }
          }
-         sector. lightlevel = bright;
+         sector.lightlevel = (short) bright;
      }
      }
  }
@@ -4813,14 +4782,14 @@ class Lights{
  {
      glow_t g;
      
-     g = Z_Malloc( sizeof(*g), PU_LEVSPEC, 0);
+     g = new glow_t();
 
-     P_AddThinker(&g.thinker);
+     AddThinker(g.thinker);
 
      g.sector = sector;
-     g.minlight = P_FindMinSurroundingLight(sector,sector.lightlevel);
+     g.minlight = FindMinSurroundingLight(sector,sector.lightlevel);
      g.maxlight = sector.lightlevel;
-     g.thinker.function.acp1 = (actionf_p1) T_Glow;
+     g.thinker.function = think_t.T_Glow;
      g.direction = -1;
 
      sector.special = 0;
@@ -4832,6 +4801,9 @@ class Lights{
  
  class DoorsFloors{
 
+     public static final int VDOORSPEED = FRACUNIT * 2;
+     public static final int VDOORWAIT = 150;
+     
      //
      // CEILINGS
      //
@@ -4855,36 +4827,35 @@ class Lights{
          break;
            case 1:
          // UP
-         res = T_MovePlane(ceiling.sector,
+         res = MovePlane(ceiling.sector,
                    ceiling.speed,
                    ceiling.topheight,
                    false,1,ceiling.direction);
          
-         if (!(leveltime&7))
+         if (!flags(DS.leveltime,7))
          {
              switch(ceiling.type)
              {
                case silentCrushAndRaise:
              break;
                default:
-             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
-                      sfx_stnmov);
+             ; // TODO: S_StartSound((mobj_t *)&ceiling.sector.soundorg,sfx_stnmov);
+                      
              // ?
              break;
              }
          }
          
-         if (res == pastdest)
+         if (res == result_e.pastdest)
          {
              switch(ceiling.type)
              {
                case raiseToHighest:
-             P_RemoveActiveCeiling(ceiling);
+             RemoveActiveCeiling(ceiling);
              break;
              
                case silentCrushAndRaise:
-             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
-                      sfx_pstop);
+             ; // TODO:((mobj_t *)&ceiling.sector.soundorg, sfx_pstop);
                case fastCrushAndRaise:
                case crushAndRaise:
              ceiling.direction = -1;
@@ -4899,29 +4870,28 @@ class Lights{
          
            case -1:
          // DOWN
-         res = T_MovePlane(ceiling.sector,
+         res = MovePlane(ceiling.sector,
                    ceiling.speed,
                    ceiling.bottomheight,
                    ceiling.crush,1,ceiling.direction);
          
-         if (!(leveltime&7))
+         if (!flags(DS.leveltime,7))
          {
              switch(ceiling.type)
              {
                case silentCrushAndRaise: break;
                default:
-             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
-                      sfx_stnmov);
+             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,  sfx_stnmov);
+                    
              }
          }
          
-         if (res == pastdest)
+         if (res == result_e.pastdest)
          {
              switch(ceiling.type)
              {
                case silentCrushAndRaise:
-             ; // TODO:((mobj_t *)&ceiling.sector.soundorg,
-                      sfx_pstop);
+             ; // TODO:((mobj_t *)&ceiling.sector.soundorg, sfx_pstop);
                case crushAndRaise:
              ceiling.speed = CEILSPEED;
                case fastCrushAndRaise:
@@ -4930,16 +4900,16 @@ class Lights{
 
                case lowerAndCrush:
                case lowerToFloor:
-             P_RemoveActiveCeiling(ceiling);
+             RemoveActiveCeiling(ceiling);
              break;
 
                default:
              break;
              }
          }
-         else // ( res != pastdest )
+         else // ( res != result_e.pastdest )
          {
-             if (res == crushed)
+             if (res == result_e.crushed)
              {
              switch(ceiling.type)
              {
@@ -4970,7 +4940,7 @@ class Lights{
          
          for (i = 0; i < MAXCEILINGS;i++)
          {
-         if (activeceilings[i] == NULL)
+         if (activeceilings[i] == null)
          {
              activeceilings[i] = c;
              return;
@@ -4991,9 +4961,9 @@ class Lights{
          {
          if (activeceilings[i] == c)
          {
-             activeceilings[i].sector.specialdata = NULL;
-             P_RemoveThinker (&activeceilings[i].thinker);
-             activeceilings[i] = NULL;
+             activeceilings[i].sector.specialdata = null;
+             RemoveThinker (activeceilings[i].thinker);
+             activeceilings[i] = null;
              break;
          }
          }
@@ -5010,13 +4980,13 @@ class Lights{
          
          for (i = 0;i < MAXCEILINGS;i++)
          {
-         if (activeceilings[i]
+         if (activeceilings[i]!=null
              && (activeceilings[i].tag == line.tag)
              && (activeceilings[i].direction == 0))
          {
              activeceilings[i].direction = activeceilings[i].olddirection;
-             activeceilings[i].thinker.function.acp1
-               = (actionf_p1)T_MoveCeiling;
+             activeceilings[i].thinker.function
+               = think_t.T_MoveCeiling;
          }
          }
      }
@@ -5024,21 +4994,28 @@ class Lights{
      //
      // FLOORS
      //
+     
+     private static final int FLOORSPEED= FRACUNIT;
 
-     //
-     // Move a plane (floor or ceiling) and check for crushing
-     //
+     /** Move a plane (floor or ceiling) and check for crushing
+      *  @param sector
+      *  @param speed fixed
+      *  @param dest fixed
+      *  @param crush
+      *  @param floorOrCeiling
+      *  @param direction
+      */
      result_e
      MovePlane
      ( sector_t sector,
-       fixed_t   speed,
-       fixed_t   dest,
+       int   speed,
+       int   dest,
        boolean   crush,
        int       floorOrCeiling,
        int       direction )
      {
          boolean flag;
-         fixed_t lastpos;
+         int lastpos; // fixed_t
          
          switch(floorOrCeiling)
          {
@@ -5052,25 +5029,25 @@ class Lights{
              {
              lastpos = sector.floorheight;
              sector.floorheight = dest;
-             flag = P_ChangeSector(sector,crush);
+             flag = MV.ChangeSector(sector,crush);
              if (flag == true)
              {
                  sector.floorheight =lastpos;
-                 P_ChangeSector(sector,crush);
+                 MV.ChangeSector(sector,crush);
                  //return crushed;
              }
-             return pastdest;
+             return result_e.pastdest;
              }
              else
              {
              lastpos = sector.floorheight;
              sector.floorheight -= speed;
-             flag = P_ChangeSector(sector,crush);
+             flag = MV.ChangeSector(sector,crush);
              if (flag == true)
              {
                  sector.floorheight = lastpos;
-                 P_ChangeSector(sector,crush);
-                 return crushed;
+                 MV.ChangeSector(sector,crush);
+                 return result_e.crushed;
              }
              }
              break;
@@ -5081,28 +5058,28 @@ class Lights{
              {
              lastpos = sector.floorheight;
              sector.floorheight = dest;
-             flag = P_ChangeSector(sector,crush);
+             flag = MV.ChangeSector(sector,crush);
              if (flag == true)
              {
                  sector.floorheight = lastpos;
-                 P_ChangeSector(sector,crush);
+                 MV.ChangeSector(sector,crush);
                  //return crushed;
              }
-             return pastdest;
+             return result_e.pastdest;
              }
              else
              {
              // COULD GET CRUSHED
              lastpos = sector.floorheight;
              sector.floorheight += speed;
-             flag = P_ChangeSector(sector,crush);
+             flag =MV.ChangeSector(sector,crush);
              if (flag == true)
              {
                  if (crush == true)
-                 return crushed;
+                 return result_e.crushed;
                  sector.floorheight = lastpos;
-                 P_ChangeSector(sector,crush);
-                 return crushed;
+                 MV.ChangeSector(sector,crush);
+                 return result_e.crushed;
              }
              }
              break;
@@ -5119,30 +5096,30 @@ class Lights{
              {
              lastpos = sector.ceilingheight;
              sector.ceilingheight = dest;
-             flag = P_ChangeSector(sector,crush);
+             flag = MV.ChangeSector(sector,crush);
 
              if (flag == true)
              {
                  sector.ceilingheight = lastpos;
-                 P_ChangeSector(sector,crush);
+                 MV.ChangeSector(sector,crush);
                  //return crushed;
              }
-             return pastdest;
+             return result_e.pastdest;
              }
              else
              {
              // COULD GET CRUSHED
              lastpos = sector.ceilingheight;
              sector.ceilingheight -= speed;
-             flag = P_ChangeSector(sector,crush);
+             flag = MV.ChangeSector(sector,crush);
 
              if (flag == true)
              {
                  if (crush == true)
-                 return crushed;
+                 return result_e.crushed;
                  sector.ceilingheight = lastpos;
-                 P_ChangeSector(sector,crush);
-                 return crushed;
+                 MV.ChangeSector(sector,crush);
+                 return result_e.crushed;
              }
              }
              break;
@@ -5153,20 +5130,20 @@ class Lights{
              {
              lastpos = sector.ceilingheight;
              sector.ceilingheight = dest;
-             flag = P_ChangeSector(sector,crush);
+             flag =MV.ChangeSector(sector,crush);
              if (flag == true)
              {
                  sector.ceilingheight = lastpos;
-                 P_ChangeSector(sector,crush);
+                 MV.ChangeSector(sector,crush);
                  //return crushed;
              }
-             return pastdest;
+             return result_e.pastdest;
              }
              else
              {
              lastpos = sector.ceilingheight;
              sector.ceilingheight += speed;
-             flag = P_ChangeSector(sector,crush);
+             flag = MV.ChangeSector(sector,crush);
      // UNUSED
      /*
              if (flag == true)
@@ -5182,7 +5159,7 @@ class Lights{
          break;
              
          }
-         return ok;
+         return result_e.ok;
      }
 
 
@@ -5193,25 +5170,25 @@ class Lights{
      {
          result_e    res;
          
-         res = T_MovePlane(floor.sector,
+         res = MovePlane(floor.sector,
                    floor.speed,
                    floor.floordestheight,
                    floor.crush,0,floor.direction);
          
-         if (!(leveltime&7))
-             ;
+         if (!flags(DS.leveltime,7))
+             
          ; // TODO: S_StartSound((mobj_t *)&floor.sector.soundorg,  sfx_stnmov);
          
-         if (res == pastdest)
+         if (res == result_e.pastdest)
          {
-         floor.sector.specialdata = NULL;
+         floor.sector.specialdata = null;
 
          if (floor.direction == 1)
          {
              switch(floor.type)
              {
                case donutRaise:
-             floor.sector.special = floor.newspecial;
+             floor.sector.special = (short) floor.newspecial;
              floor.sector.floorpic = floor.texture;
                default:
              break;
@@ -5222,13 +5199,13 @@ class Lights{
              switch(floor.type)
              {
                case lowerAndChange:
-             floor.sector.special = floor.newspecial;
+             floor.sector.special = (short) floor.newspecial;
              floor.sector.floorpic = floor.texture;
                default:
              break;
              }
          }
-         P_RemoveThinker(floor.thinker);
+         RemoveThinker(floor.thinker);
 
          ; //TODO: S_StartSound((mobj_t *)&floor.sector.soundorg, sfx_pstop);
          }
@@ -5239,42 +5216,39 @@ class Lights{
      // EV.DoCeiling
      // Move a ceiling up/down and all around!
      //
-     int
+     boolean
      DoCeiling
      ( line_t   line,
        ceiling_e type )
      {
-         int     secnum;
-         int     rtn;
+         int     secnum=-1;
+         boolean     rtn=false;
          sector_t   sec;
          ceiling_t  ceiling;
-         
-         secnum = -1;
-         rtn = 0;
-         
+                  
          //  Reactivate in-stasis ceilings...for certain types.
          switch(type)
          {
            case fastCrushAndRaise:
            case silentCrushAndRaise:
            case crushAndRaise:
-         P_ActivateInStasisCeiling(line);
+         ActivateInStasisCeiling(line);
            default:
          break;
          }
          
-         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
          {
-         sec = &sectors[secnum];
-         if (sec.specialdata)
+         sec = LL.sectors[secnum];
+         if (sec.specialdata!=null)
              continue;
          
          // new door thinker
-         rtn = 1;
-         ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, 0);
-         P_AddThinker (&ceiling.thinker);
+         rtn = true;
+         ceiling = new ceiling_t();
+         AddThinker (ceiling.thinker);
          sec.specialdata = ceiling;
-         ceiling.thinker.function.acp1 = (actionf_p1)T_MoveCeiling;
+         ceiling.thinker.function = think_t.T_MoveCeiling;
          ceiling.sector = sec;
          ceiling.crush = false;
          
@@ -5295,14 +5269,14 @@ class Lights{
            case lowerAndCrush:
            case lowerToFloor:
              ceiling.bottomheight = sec.floorheight;
-             if (type != lowerToFloor)
+             if (type != ceiling_e.lowerToFloor)
              ceiling.bottomheight += 8*FRACUNIT;
              ceiling.direction = -1;
              ceiling.speed = CEILSPEED;
              break;
 
            case raiseToHighest:
-             ceiling.topheight = P_FindHighestCeilingSurrounding(sec);
+             ceiling.topheight = FindHighestCeilingSurrounding(sec);
              ceiling.direction = 1;
              ceiling.speed = CEILSPEED;
              break;
@@ -5310,7 +5284,7 @@ class Lights{
              
          ceiling.tag = sec.tag;
          ceiling.type = type;
-         P_AddActiveCeiling(ceiling);
+         AddActiveCeiling(ceiling);
          }
          return rtn;
      }
@@ -5325,41 +5299,41 @@ class Lights{
       *@param line
       * 
       */
-     int DoDonut(line_t  line)
+     boolean DoDonut(line_t  line)
      {
          sector_t       s1;
          sector_t       s2;
          sector_t       s3;
          int         secnum;
-         int         rtn;
+         boolean         rtn;
          int         i;
          floormove_t    floor;
          
          secnum = -1;
-         rtn = 0;
-         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         rtn = false;
+         while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
          {
          s1 = LL.sectors[secnum];
              
          // ALREADY MOVING?  IF SO, KEEP GOING...
-         if (s1.specialdata)
+         if (s1.specialdata!=null)
              continue;
                  
-         rtn = 1;
+         rtn = true;
          s2 = getNextSector(s1.lines[0],s1);
          for (i = 0;i < s2.linecount;i++)
          {
-             if ((!s2.lines[i].flags & ML_TWOSIDED) ||
+             if ((!flags(s2.lines[i].flags , ML_TWOSIDED)) ||
              (s2.lines[i].backsector == s1))
              continue;
              s3 = s2.lines[i].backsector;
              
              //  Spawn rising slime
              floor = new floormove_t();
-             P_AddThinker (floor.thinker);
+             AddThinker (floor.thinker);
              s2.specialdata = floor;
-             floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-             floor.type = donutRaise;
+             floor.thinker.function = think_t.T_MoveFloor;
+             floor.type = floor_e.donutRaise;
              floor.crush = false;
              floor.direction = 1;
              floor.sector = s2;
@@ -5370,10 +5344,10 @@ class Lights{
              
              //  Spawn lowering donut-hole
              floor = new floormove_t();
-             P_AddThinker (floor.thinker);
+             AddThinker (floor.thinker);
              s1.specialdata = floor;
-             floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-             floor.type = lowerFloor;
+             floor.thinker.function = think_t.T_MoveFloor;
+             floor.type = floor_e.lowerFloor;
              floor.crush = false;
              floor.direction = -1;
              floor.sector = s1;
@@ -5388,33 +5362,31 @@ class Lights{
      //
      // HANDLE FLOOR TYPES
      //
-     int
+     boolean
      DoFloor
      ( line_t   line,
        floor_e   floortype )
      {
-         int         secnum;
-         int         rtn;
+         int         secnum=-1;
+         boolean         rtn=false;
          int         i;
          sector_t       sec;
          floormove_t    floor;
 
-         secnum = -1;
-         rtn = 0;
-         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
          {
          sec = LL.sectors[secnum];
              
          // ALREADY MOVING?  IF SO, KEEP GOING...
-         if (sec.specialdata)
+         if (sec.specialdata!=null)
              continue;
          
          // new floor thinker
-         rtn = 1;
+         rtn = true;
          floor = new floormove_t();
-         P_AddThinker (floor.thinker);
+         AddThinker (floor.thinker);
          sec.specialdata = floor;
-         floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+         floor.thinker.function = think_t.T_MoveFloor;
          floor.type = floortype;
          floor.crush = false;
 
@@ -5425,7 +5397,7 @@ class Lights{
              floor.sector = sec;
              floor.speed = FLOORSPEED;
              floor.floordestheight = 
-             P_FindHighestFloorSurrounding(sec);
+             FindHighestFloorSurrounding(sec);
              break;
 
            case lowerFloorToLowest:
@@ -5433,7 +5405,7 @@ class Lights{
              floor.sector = sec;
              floor.speed = FLOORSPEED;
              floor.floordestheight = 
-             P_FindLowestFloorSurrounding(sec);
+             FindLowestFloorSurrounding(sec);
              break;
 
            case turboLower:
@@ -5441,7 +5413,7 @@ class Lights{
              floor.sector = sec;
              floor.speed = FLOORSPEED * 4;
              floor.floordestheight = 
-             P_FindHighestFloorSurrounding(sec);
+             FindHighestFloorSurrounding(sec);
              if (floor.floordestheight != sec.floorheight)
              floor.floordestheight += 8*FRACUNIT;
              break;
@@ -5453,11 +5425,11 @@ class Lights{
              floor.sector = sec;
              floor.speed = FLOORSPEED;
              floor.floordestheight = 
-             P_FindLowestCeilingSurrounding(sec);
+             FindLowestCeilingSurrounding(sec);
              if (floor.floordestheight > sec.ceilingheight)
              floor.floordestheight = sec.ceilingheight;
              floor.floordestheight -= (8*FRACUNIT)*
-             (floortype == raiseFloorCrush);
+             eval(floortype == floor_e.raiseFloorCrush);
              break;
 
            case raiseFloorTurbo:
@@ -5465,7 +5437,7 @@ class Lights{
              floor.sector = sec;
              floor.speed = FLOORSPEED*4;
              floor.floordestheight = 
-             P_FindNextHighestFloor(sec,sec.floorheight);
+             FindNextHighestFloor(sec,sec.floorheight);
              break;
 
            case raiseFloorToNearest:
@@ -5473,7 +5445,7 @@ class Lights{
              floor.sector = sec;
              floor.speed = FLOORSPEED;
              floor.floordestheight = 
-             P_FindNextHighestFloor(sec,sec.floorheight);
+             FindNextHighestFloor(sec,sec.floorheight);
              break;
 
            case raiseFloor24:
@@ -5515,16 +5487,16 @@ class Lights{
                {
                    side = getSide(secnum,i,0);
                    if (side.bottomtexture >= 0)
-                   if (textureheight[side.bottomtexture] < 
+                   if (R.textureheight[side.bottomtexture] < 
                        minsize)
                        minsize = 
-                       textureheight[side.bottomtexture];
+                       R.textureheight[side.bottomtexture];
                    side = getSide(secnum,i,1);
                    if (side.bottomtexture >= 0)
-                   if (textureheight[side.bottomtexture] < 
+                   if (R.textureheight[side.bottomtexture] < 
                        minsize)
                        minsize = 
-                       textureheight[side.bottomtexture];
+                       R.textureheight[side.bottomtexture];
                }
                }
                floor.floordestheight =
@@ -5537,14 +5509,14 @@ class Lights{
              floor.sector = sec;
              floor.speed = FLOORSPEED;
              floor.floordestheight = 
-             P_FindLowestFloorSurrounding(sec);
+             FindLowestFloorSurrounding(sec);
              floor.texture = sec.floorpic;
 
              for (i = 0; i < sec.linecount; i++)
              {
              if ( twoSided(secnum, i) )
              {
-                 if (getSide(secnum,i,0).sector-sectors == secnum)
+                 if (getSide(secnum,i,0).sector.id == secnum)
                  {
                  sec = getSector(secnum,i,1);
 
@@ -5587,12 +5559,12 @@ class Lights{
          rtn = 0;
          for (i = 0;i < MAXCEILINGS;i++)
          {
-         if (activeceilings[i]
+         if (activeceilings[i]!=null
              && (activeceilings[i].tag == line.tag)
              && (activeceilings[i].direction != 0))
          {
              activeceilings[i].olddirection = activeceilings[i].direction;
-             activeceilings[i].thinker.function.acv = (actionf_v)NULL;
+             activeceilings[i].thinker.function = null;
              activeceilings[i].direction = 0;       // in-stasis
              rtn = 1;
          }
@@ -5606,7 +5578,7 @@ class Lights{
      //
      // BUILD A STAIRCASE!
      //
-     int
+     boolean
      BuildStairs
      ( line_t   line,
        stair_e   type )
@@ -5616,8 +5588,8 @@ class Lights{
          int         i;
          int         newsecnum;
          int         texture;
-         int         ok;
-         int         rtn;
+         boolean         ok;
+         boolean         rtn;
          
          sector_t       sec;
          sector_t       tsec;
@@ -5628,21 +5600,21 @@ class Lights{
          int     speed;
 
          secnum = -1;
-         rtn = 0;
+         rtn = false;
          while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
          {
          sec = LL.sectors[secnum];
              
          // ALREADY MOVING?  IF SO, KEEP GOING...
-         if (sec.specialdata)
+         if (sec.specialdata!=null)
              continue;
          
          // new floor thinker
-         rtn = 1;
+         rtn = true;
          floor = new floormove_t ();
-         P_AddThinker (floor.thinker);
+         AddThinker (floor.thinker);
          sec.specialdata = floor;
-         floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+         floor.thinker.function = think_t.T_MoveFloor;
          floor.direction = 1;
          floor.sector = sec;
          switch(type)
@@ -5667,42 +5639,42 @@ class Lights{
          // 2.   Other side is the next sector to raise
          do
          {
-             ok = 0;
+             ok = false;
              for (i = 0;i < sec.linecount;i++)
              {
-             if ( !((sec.lines[i]).flags & ML_TWOSIDED) )
+             if ( !flags((sec.lines[i]).flags , ML_TWOSIDED) )
                  continue;
                          
              tsec = (sec.lines[i]).frontsector;
-             newsecnum = tsec-sectors;
+             newsecnum = tsec.id;
              
              if (secnum != newsecnum)
                  continue;
 
              tsec = (sec.lines[i]).backsector;
-             newsecnum = tsec - sectors;
+             newsecnum = tsec.id;
 
              if (tsec.floorpic != texture)
                  continue;
                          
              height += stairsize;
 
-             if (tsec.specialdata)
+             if (tsec.specialdata!=null)
                  continue;
                          
              sec = tsec;
              secnum = newsecnum;
              floor = new floormove_t();
 
-             P_AddThinker (floor.thinker);
+             AddThinker (floor.thinker);
 
              sec.specialdata = floor;
-             floor.thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+             floor.thinker.function = think_t.T_MoveFloor;
              floor.direction = 1;
              floor.sector = sec;
              floor.speed = speed;
              floor.floordestheight = height;
-             ok = 1;
+             ok = true;
              break;
              }
          } while(ok);
@@ -5740,26 +5712,23 @@ class Lights{
 	     {
 	       case 0:
 	 	// WAITING
-	 	if (!--door.topcountdown)
+	 	if (!eval(--door.topcountdown))
 	 	{
 	 	    switch(door.type)
 	 	    {
 	 	      case blazeRaise:
 	 		door.direction = -1; // time to go back down
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_bdcls);
+	 		; // TODO:((mobj_t *)&door.sector.soundorg,sfx_bdcls);
 	 		break;
 	 		
 	 	      case normal:
 	 		door.direction = -1; // time to go back down
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_dorcls);
+	 		; // TODO:((mobj_t *)&door.sector.soundorg, sfx_dorcls);
 	 		break;
 	 		
 	 	      case close30ThenOpen:
 	 		door.direction = 1;
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_doropn);
+	 		; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
 	 		break;
 	 		
 	 	      default:
@@ -5770,15 +5739,14 @@ class Lights{
 	 	
 	       case 2:
 	 	//  INITIAL WAIT
-	 	if (!--door.topcountdown)
+	 	if (!eval(--door.topcountdown))
 	 	{
 	 	    switch(door.type)
 	 	    {
 	 	      case raiseIn5Mins:
 	 		door.direction = 1;
-	 		door.type = normal;
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_doropn);
+	 		door.type = vldoor_e.normal;
+	 		; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
 	 		break;
 	 		
 	 	      default:
@@ -5789,26 +5757,25 @@ class Lights{
 	 	
 	       case -1:
 	 	// DOWN
-	 	res = T_MovePlane(door.sector,
+	 	res = MovePlane(door.sector,
 	 			  door.speed,
 	 			  door.sector.floorheight,
 	 			  false,1,door.direction);
-	 	if (res == pastdest)
+	 	if (res == result_e.pastdest)
 	 	{
 	 	    switch(door.type)
 	 	    {
 	 	      case blazeRaise:
 	 	      case blazeClose:
-	 		door.sector.specialdata = NULL;
-	 		P_RemoveThinker (&door.thinker);  // unlink and free
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_bdcls);
+	 		door.sector.specialdata = null;
+	 		RemoveThinker (door.thinker);  // unlink and free
+	 		; // TODO:((mobj_t *)&door.sector.soundorg, sfx_bdcls);
 	 		break;
 	 		
 	 	      case normal:
 	 	      case close:
-	 		door.sector.specialdata = NULL;
-	 		P_RemoveThinker (&door.thinker);  // unlink and free
+	 		door.sector.specialdata = null;
+	 		RemoveThinker (door.thinker);  // unlink and free
 	 		break;
 	 		
 	 	      case close30ThenOpen:
@@ -5820,7 +5787,7 @@ class Lights{
 	 		break;
 	 	    }
 	 	}
-	 	else if (res == crushed)
+	 	else if (res == result_e.crushed)
 	 	{
 	 	    switch(door.type)
 	 	    {
@@ -5830,8 +5797,7 @@ class Lights{
 	 		
 	 	      default:
 	 		door.direction = 1;
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_doropn);
+	 		; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
 	 		break;
 	 	    }
 	 	}
@@ -5839,12 +5805,12 @@ class Lights{
 	 	
 	       case 1:
 	 	// UP
-	 	res = T_MovePlane(door.sector,
+	 	res = MovePlane(door.sector,
 	 			  door.speed,
 	 			  door.topheight,
 	 			  false,1,door.direction);
 	 	
-	 	if (res == pastdest)
+	 	if (res == result_e.pastdest)
 	 	{
 	 	    switch(door.type)
 	 	    {
@@ -5857,8 +5823,8 @@ class Lights{
 	 	      case close30ThenOpen:
 	 	      case blazeOpen:
 	 	      case open:
-	 		door.sector.specialdata = NULL;
-	 		P_RemoveThinker (&door.thinker);  // unlink and free
+	 		door.sector.specialdata = null;
+	 		RemoveThinker (door.thinker);  // unlink and free
 	 		break;
 	 		
 	 	      default:
@@ -5875,55 +5841,55 @@ class Lights{
 	 // Move a locked door up/down
 	 //
 
-	 int
+	 boolean
 	 DoLockedDoor
 	 ( line_t	line,
 	   vldoor_e	type,
 	   mobj_t	thing )
 	 {
-	     player_t*	p;
+	     player_t	p;
 	 	
 	     p = thing.player;
 	 	
-	     if (!p)
-	 	return 0;
+	     if (p==null)
+	 	return false;
 	 		
 	     switch(line.special)
 	     {
 	       case 99:	// Blue Lock
 	       case 133:
-	 	if ( !p )
-	 	    return 0;
-	 	if (!p.cards[it_bluecard] && !p.cards[it_blueskull])
+	 	if ( p==null )
+	 	    return false;
+	 	if (!p.cards[card_t.it_bluecard.ordinal()] && !p.cards[card_t.it_blueskull.ordinal()])
 	 	{
 	 	    p.message = PD_BLUEO;
 	 	    ; // TODO:(NULL,sfx_oof);
-	 	    return 0;
+	 	    return false;
 	 	}
 	 	break;
 	 	
 	       case 134: // Red Lock
 	       case 135:
-	 	if ( !p )
-	 	    return 0;
-	 	if (!p.cards[it_redcard] && !p.cards[it_redskull])
+	 	if ( p==null )
+	 	    return false;
+	 	if (!p.cards[card_t.it_redcard.ordinal()] && !p.cards[card_t.it_redskull.ordinal()])
 	 	{
 	 	    p.message = PD_REDO;
 	 	    ; // TODO:(NULL,sfx_oof);
-	 	    return 0;
+	 	    return false;
 	 	}
 	 	break;
 	 	
 	       case 136:	// Yellow Lock
 	       case 137:
-	 	if ( !p )
-	 	    return 0;
-	 	if (!p.cards[it_yellowcard] &&
-	 	    !p.cards[it_yellowskull])
+	 	if ( p==null )
+	 	    return false;
+	 	if (!p.cards[card_t.it_yellowcard.ordinal()] &&
+	 	    !p.cards[card_t.it_yellowskull.ordinal()])
 	 	{
 	 	    p.message = PD_YELLOWO;
 	 	    ; // TODO:(NULL,sfx_oof);
-	 	    return 0;
+	 	    return false;
 	 	}
 	 	break;	
 	     }
@@ -5932,32 +5898,32 @@ class Lights{
 	 }
 
 
-	 int
+	 boolean
 	 DoDoor
 	 ( line_t	line,
 	   vldoor_e	type )
 	 {
-	     int		secnum,rtn;
+	     int		secnum;
+	     boolean rtn=false;
 	     sector_t	sec;
 	     vldoor_t	door;
 	 	
 	     secnum = -1;
-	     rtn = 0;
 	     
-	     while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+	     while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
 	     {
-	 	sec = sectors[secnum];
-	 	if (sec.specialdata)
+	 	sec = LL.sectors[secnum];
+	 	if (sec.specialdata!=null)
 	 	    continue;
 	 		
 	 	
 	 	// new door thinker
-	 	rtn = 1;
-	 	door = Z_Malloc (sizeof(*door), PU_LEVSPEC, 0);
-	 	P_AddThinker (&door.thinker);
+	 	rtn = true;
+	 	door = new vldoor_t();
+	 	AddThinker (door.thinker);
 	 	sec.specialdata = door;
 
-	 	door.thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
+	 	door.thinker.function = think_t.T_VerticalDoor;
 	 	door.sector = sec;
 	 	door.type = type;
 	 	door.topwait = VDOORWAIT;
@@ -5966,48 +5932,43 @@ class Lights{
 	 	switch(type)
 	 	{
 	 	  case blazeClose:
-	 	    door.topheight = P_FindLowestCeilingSurrounding(sec);
+	 	    door.topheight = FindLowestCeilingSurrounding(sec);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    door.direction = -1;
 	 	    door.speed = VDOORSPEED * 4;
-	 	    ; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			 sfx_bdcls);
+	 	    ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_bdcls);
 	 	    break;
 	 	    
 	 	  case close:
-	 	    door.topheight = P_FindLowestCeilingSurrounding(sec);
+	 	    door.topheight = FindLowestCeilingSurrounding(sec);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    door.direction = -1;
-	 	    ; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			 sfx_dorcls);
+	 	    ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_dorcls);
 	 	    break;
 	 	    
 	 	  case close30ThenOpen:
 	 	    door.topheight = sec.ceilingheight;
 	 	    door.direction = -1;
-	 	    ; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			 sfx_dorcls);
+	 	    ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_dorcls);
 	 	    break;
 	 	    
 	 	  case blazeRaise:
 	 	  case blazeOpen:
 	 	    door.direction = 1;
-	 	    door.topheight = P_FindLowestCeilingSurrounding(sec);
+	 	    door.topheight = FindLowestCeilingSurrounding(sec);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    door.speed = VDOORSPEED * 4;
 	 	    if (door.topheight != sec.ceilingheight)
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_bdopn);
+	 		; // TODO:((mobj_t *)&door.sector.soundorg, sfx_bdopn);
 	 	    break;
 	 	    
 	 	  case normal:
 	 	  case open:
 	 	    door.direction = 1;
-	 	    door.topheight = P_FindLowestCeilingSurrounding(sec);
+	 	    door.topheight = FindLowestCeilingSurrounding(sec);
 	 	    door.topheight -= 4*FRACUNIT;
 	 	    if (door.topheight != sec.ceilingheight)
-	 		; // TODO:((mobj_t *)&door.sector.soundorg,
-	 			     sfx_doropn);
+	 		; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
 	 	    break;
 	 	    
 	 	  default:
@@ -6042,10 +6003,10 @@ class Lights{
 	     {
 	       case 26: // Blue Lock
 	       case 32:
-	 	if ( !player )
+	 	if ( player ==null)
 	 	    return;
 	 	
-	 	if (!player.cards[it_bluecard] && !player.cards[it_blueskull])
+	 	if (!player.cards[card_t.it_bluecard.ordinal()] && !player.cards[card_t.it_blueskull.ordinal()])
 	 	{
 	 	    player.message = PD_BLUEK;
 	 	    ; // TODO:(NULL,sfx_oof);
@@ -6055,11 +6016,11 @@ class Lights{
 	 	
 	       case 27: // Yellow Lock
 	       case 34:
-	 	if ( !player )
+	 	if ( player ==null)
 	 	    return;
 	 	
-	 	if (!player.cards[it_yellowcard] &&
-	 	    !player.cards[it_yellowskull])
+	 	if (!player.cards[card_t.it_yellowcard.ordinal()] &&
+	 	    !player.cards[card_t.it_yellowskull.ordinal()])
 	 	{
 	 	    player.message = PD_YELLOWK;
 	 	    ; // TODO:(NULL,sfx_oof);
@@ -6069,10 +6030,10 @@ class Lights{
 	 	
 	       case 28: // Red Lock
 	       case 33:
-	 	if ( !player )
+	 	if ( player ==null)
 	 	    return;
 	 	
-	 	if (!player.cards[it_redcard] && !player.cards[it_redskull])
+	 	if (!player.cards[card_t.it_redcard.ordinal()] && !player.cards[card_t.it_redskull.ordinal()])
 	 	{
 	 	    player.message = PD_REDK;
 	 	    ; // TODO:(NULL,sfx_oof);
@@ -6082,12 +6043,12 @@ class Lights{
 	     }
 	 	
 	     // if the sector has an active thinker, use it
-	     sec = sides[ line.sidenum[side^1]] .sector;
-	     secnum = sec-sectors;
+	     sec = LL.sides[ line.sidenum[side^1]].sector;
+	     secnum = sec.id;
 
-	     if (sec.specialdata)
+	     if (sec.specialdata!=null)
 	     {
-	 	door = sec.specialdata;
+	 	door = (vldoor_t) sec.specialdata;
 	 	switch(line.special)
 	 	{
 	 	  case	1: // ONLY FOR "RAISE" DOORS, NOT "OPEN"s
@@ -6099,7 +6060,7 @@ class Lights{
 	 		door.direction = 1;	// go back up
 	 	    else
 	 	    {
-	 		if (!thing.player)
+	 		if (thing.player==null)
 	 		    return;		// JDC: bad guys never close doors
 	 		
 	 		door.direction = -1;	// start going down immediately
@@ -6128,10 +6089,10 @@ class Lights{
 	 	
 	     
 	     // new door thinker
-	     door = Z_Malloc (sizeof(*door), PU_LEVSPEC, 0);
-	     P_AddThinker (&door.thinker);
+	     door = new vldoor_t();
+	     AddThinker (door.thinker);
 	     sec.specialdata = door;
-	     door.thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
+	     door.thinker.function = think_t.T_VerticalDoor;
 	     door.sector = sec;
 	     door.direction = 1;
 	     door.speed = VDOORSPEED;
@@ -6143,30 +6104,30 @@ class Lights{
 	       case 26:
 	       case 27:
 	       case 28:
-	 	door.type = normal;
+	 	door.type = vldoor_e.normal;
 	 	break;
 	 	
 	       case 31:
 	       case 32:
 	       case 33:
 	       case 34:
-	 	door.type = open;
+	 	door.type = vldoor_e.open;
 	 	line.special = 0;
 	 	break;
 	 	
 	       case 117:	// blazing door raise
-	 	door.type = blazeRaise;
+	 	door.type = vldoor_e.blazeRaise;
 	 	door.speed = VDOORSPEED*4;
 	 	break;
 	       case 118:	// blazing door open
-	 	door.type = blazeOpen;
+	 	door.type = vldoor_e.blazeOpen;
 	 	line.special = 0;
 	 	door.speed = VDOORSPEED*4;
 	 	break;
 	     }
 	     
 	     // find the top and bottom of the movement range
-	     door.topheight = P_FindLowestCeilingSurrounding(sec);
+	     door.topheight = FindLowestCeilingSurrounding(sec);
 	     door.topheight -= 4*FRACUNIT;
 	 }
 
@@ -6185,17 +6146,18 @@ class Lights{
 	     sec.specialdata = door;
 	     sec.special = 0;
 
-	     door.thinker.function.acp1 = (actionf_p1)T_VerticalDoor;
+	     door.thinker.function = think_t.T_VerticalDoor;
 	     door.sector = sec;
 	     door.direction = 0;
-	     door.type = normal;
+	     door.type = vldoor_e.normal;
 	     door.speed = VDOORSPEED;
 	     door.topcountdown = 30 * 35;
 	 }
 
-	 //
-	 // Spawn a door that opens after 5 minutes
-	 //
+	 /**
+	  * Spawn a door that opens after 5 minutes
+	  */
+	 
 	 public void
 	 SpawnDoorRaiseIn5Mins
 	 ( sector_t	sec,
@@ -6210,12 +6172,12 @@ class Lights{
 	     sec.specialdata = door;
 	     sec.special = 0;
 
-	     door.thinker.function.acp1 = (actionf_p1)T_VerticalDoor;
+	     door.thinker.function = think_t.T_VerticalDoor;
 	     door.sector = sec;
 	     door.direction = 2;
-	     door.type = raiseIn5Mins;
+	     door.type = vldoor_e.raiseIn5Mins;
 	     door.speed = VDOORSPEED;
-	     door.topheight = P_FindLowestCeilingSurrounding(sec);
+	     door.topheight = FindLowestCeilingSurrounding(sec);
 	     door.topheight -= 4*FRACUNIT;
 	     door.topwait = VDOORWAIT;
 	     door.topcountdown = 5 * 60 * 35;
@@ -6491,12 +6453,12 @@ class Lights{
          return false;
              
          pl = actor.target;
-         dist = P_AproxDistance (pl.x-actor.x, pl.y-actor.y);
+         dist = AproxDistance (pl.x-actor.x, pl.y-actor.y);
 
          if (dist >= MELEERANGE-20*FRACUNIT+pl.info.radius)
          return false;
          
-         if (! P_CheckSight (actor, actor.target) )
+         if (! EN.CheckSight (actor, actor.target) )
          return false;
                                  
          return true;        
@@ -6621,7 +6583,7 @@ class Lights{
          See.strace.dy = t2.y - t1.y;
 
          // the head node is the last node output
-         return CrossBSPNode (LL.numnodes-1);  
+         return See.CrossBSPNode (LL.numnodes-1);  
      }
      
      //
@@ -6655,7 +6617,7 @@ class Lights{
          sec.soundtarget = soundtarget;
          
          // "peg" to the level loader for syntactic sugar
-         side_t[] sides=L.sides;
+         side_t[] sides=LL.sides;
          
          for (i=0 ;i<sec.linecount ; i++)
          {
@@ -6663,7 +6625,7 @@ class Lights{
          if ((check.flags & ML_TWOSIDED) ==0)
              continue;
          
-         P_LineOpening (check);
+         LineOpening (check);
 
          if (openrange <= 0)
              continue;   // closed door
@@ -6676,10 +6638,10 @@ class Lights{
          if ((check.flags & ML_SOUNDBLOCK)!=0)
          {
              if (soundblocks==0)
-             P_RecursiveSound (other, 1);
+             RecursiveSound (other, 1);
          }
          else
-             P_RecursiveSound (other, soundblocks);
+             RecursiveSound (other, soundblocks);
          }
      }
 
@@ -6770,12 +6732,12 @@ class Lights{
            if (player.health[0] <= 0)
                continue;       // dead
 
-           if (!P_CheckSight (actor, player.mo))
+           if (!CheckSight (actor, player.mo))
                continue;       // out of sight
                    
            if (!allaround)
            {
-               an = PointToAngle2 (actor.x,
+               an = R.PointToAngle2 (actor.x,
                          actor.y, 
                          player.mo.x,
                          player.mo.y)
@@ -6783,7 +6745,7 @@ class Lights{
                
                if (an > ANG90 && an < ANG270)
                {
-               dist = P_AproxDistance (player.mo.x - actor.x,
+               dist = AproxDistance (player.mo.x - actor.x,
                            player.mo.y - actor.y);
                // if real close, react anyway
                if (dist > MELEERANGE)
@@ -6821,15 +6783,15 @@ class Lights{
          tryx = actor.x + actor.info.speed*xspeed[actor.movedir];
          tryy = actor.y + actor.info.speed*yspeed[actor.movedir];
 
-         try_ok = P_TryMove (actor, tryx, tryy);
+         try_ok = MV.TryMove (actor, tryx, tryy);
 
          if (!try_ok)
          {
          // open any specials
-         if (actor.flags & MF_FLOAT && floatok)
+         if (flags(actor.flags , MF_FLOAT) && MV.floatok)
          {
              // must adjust height
-             if (actor.z < tmfloorz)
+             if (actor.z < MV.tmfloorz)
              actor.z += FLOATSPEED;
              else
              actor.z -= FLOATSPEED;
@@ -6845,11 +6807,11 @@ class Lights{
          good = false;
          while ((numspechit--)>0)
          {
-             ld = spechit[numspechit];
+             ld = MV.spechit[numspechit];
              // if the special is not a door
              // that can be opened,
              // return false
-             if (P_UseSpecialLine (actor, ld,0))
+             if (UseSpecialLine (actor, ld,0))
              good = true;
          }
          return good;
@@ -6860,7 +6822,7 @@ class Lights{
          }
          
          
-         if (! (actor.flags & MF_FLOAT) )   
+         if (! flags(actor.flags , MF_FLOAT) )   
          actor.z = actor.floorz;
          return true; 
      }
@@ -6893,15 +6855,16 @@ class Lights{
 
      void NewChaseDir (mobj_t actor)
      {
-         fixed_t deltax;
-         fixed_t deltay;
+         // fixed_t
+         int deltax,deltay;
          
-         dirtype_t   d[3];
+         //dirtype
+         int   d[]=new int[3];
          
          int     tdir;
-         dirtype_t   olddir;
-         
-         dirtype_t   turnaround;
+         int   olddir;
+         // dirtypes
+         int   turnaround;
 
          if (actor.target==null)
          system.Error ("P_NewChaseDir: called with no target");
@@ -6930,14 +6893,14 @@ class Lights{
          if (d[1] != DI_NODIR
          && d[2] != DI_NODIR)
          {
-         actor.movedir = diags[((deltay<0)<<1)+(deltax>0)];
-         if (actor.movedir != turnaround && P_TryWalk(actor))
+         actor.movedir = diags[(eval(deltay<0)<<1)+eval(deltax>0)];
+         if (actor.movedir != turnaround && TryWalk(actor))
              return;
          }
 
          // try other directions
-         if (P_Random() > 200
-         ||  abs(deltay)>abs(deltax))
+         if (RND.P_Random() > 200
+         ||  Math.abs(deltay)>Math.abs(deltax))
          {
          tdir=d[1];
          d[1]=d[2];
@@ -6952,7 +6915,7 @@ class Lights{
          if (d[1]!=DI_NODIR)
          {
          actor.movedir = d[1];
-         if (P_TryWalk(actor))
+         if (TryWalk(actor))
          {
              // either moved forward or attacked
              return;
@@ -6963,7 +6926,7 @@ class Lights{
          {
          actor.movedir =d[2];
 
-         if (P_TryWalk(actor))
+         if (TryWalk(actor))
              return;
          }
 
@@ -6973,12 +6936,12 @@ class Lights{
          {
          actor.movedir =olddir;
 
-         if (P_TryWalk(actor))
+         if (TryWalk(actor))
              return;
          }
 
          // randomly determine direction of search
-         if (RND.P_Random()&1)   
+         if (flags(RND.P_Random(),1))   
          {
          for ( tdir=DI_EAST;
                tdir<=DI_SOUTHEAST;
@@ -6988,7 +6951,7 @@ class Lights{
              {
              actor.movedir =tdir;
              
-             if ( P_TryWalk(actor) )
+             if ( TryWalk(actor) )
                  return;
              }
          }
@@ -7003,7 +6966,7 @@ class Lights{
              {
              actor.movedir =tdir;
              
-             if ( P_TryWalk(actor) )
+             if ( TryWalk(actor) )
                  return;
              }
          }
@@ -7012,7 +6975,7 @@ class Lights{
          if (turnaround !=  DI_NODIR)
          {
          actor.movedir =turnaround;
-         if ( P_TryWalk(actor) )
+         if ( TryWalk(actor) )
              return;
          }
 
@@ -7043,46 +7006,43 @@ class Lights{
          switch(plat.status)
          {
            case up:
-         res = T_MovePlane(plat.sector,
+         res = MovePlane(plat.sector,
                    plat.speed,
                    plat.high,
                    plat.crush,0,1);
                          
-         if (plat.type == raiseAndChange
-             || plat.type == raiseToNearestAndChange)
+         if (plat.type == plattype_e.raiseAndChange
+             || plat.type == plattype_e.raiseToNearestAndChange)
          {
-             if (!(leveltime&7))
-             S_StartSound((mobj_t *)&plat.sector.soundorg,
-                      sfx_stnmov);
+             if (!flags(DS.leveltime,7))
+             ; //TODO: S_StartSound((mobj_t *)&plat.sector.soundorg, sfx_stnmov);
          }
          
                      
-         if (res == crushed && (!plat.crush))
+         if (res == result_e.crushed && (!plat.crush))
          {
              plat.count = plat.wait;
-             plat.status = down;
-             S_StartSound((mobj_t *)&plat.sector.soundorg,
-                  sfx_pstart);
+             plat.status = plat_e.down;
+             ;// TODO: S_StartSound((mobj_t *)&plat.sector.soundorg, sfx_pstart);
          }
          else
          {
-             if (res == pastdest)
+             if (res == result_e.pastdest)
              {
              plat.count = plat.wait;
-             plat.status = waiting;
-             S_StartSound((mobj_t *)&plat.sector.soundorg,
-                      sfx_pstop);
+             plat.status = plat_e.waiting;
+             ; // TODO: S_StartSound((mobj_t *)&plat.sector.soundorg,  sfx_pstop);
 
              switch(plat.type)
              {
                case blazeDWUS:
                case downWaitUpStay:
-                 P_RemoveActivePlat(plat);
+                 RemoveActivePlat(plat);
                  break;
                  
                case raiseAndChange:
                case raiseToNearestAndChange:
-                 P_RemoveActivePlat(plat);
+                 RemoveActivePlat(plat);
                  break;
                  
                default:
@@ -7095,22 +7055,22 @@ class Lights{
            case  down:
          res = T_MovePlane(plat.sector,plat.speed,plat.low,false,0,-1);
 
-         if (res == pastdest)
+         if (res == result_e.pastdest)
          {
              plat.count = plat.wait;
-             plat.status = waiting;
-             S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstop);
+             plat.status = plat_e.waiting;
+             //TODO: S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstop);
          }
          break;
          
            case  waiting:
-         if (!--plat.count)
+         if (--plat.count==0)
          {
              if (plat.sector.floorheight == plat.low)
-             plat.status = up;
+             plat.status = plat_e.up;
              else
-             plat.status = down;
-             S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstart);
+             plat.status = plat_e.down;
+             //TODO: S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstart);
          }
            case  in_stasis:
          break;
@@ -7122,20 +7082,16 @@ class Lights{
      // Do Platforms
      //  "amount" is only used for SOME platforms.
      //
-     int
+     boolean
      DoPlat
      ( line_t   line,
        plattype_e    type,
        int       amount )
      {
          plat_t plat;
-         int     secnum;
-         int     rtn;
+         int     secnum=-1;
+         boolean     rtn=false;
          sector_t   sec;
-         
-         secnum = -1;
-         rtn = 0;
-
          
          //  Activate all <type> plats that are in_stasis
          switch(type)
@@ -7148,22 +7104,22 @@ class Lights{
          break;
          }
          
-         while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+         while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
          {
          sec = LL.sectors[secnum];
 
-         if (sec.specialdata)
+         if (sec.specialdata!=null)
              continue;
          
          // Find lowest & highest floors around sector
-         rtn = 1;
+         rtn = true;
          plat = new plat_t();
          AddThinker(plat.thinker);
              
          plat.type = type;
          plat.sector = sec;
          plat.sector.specialdata = plat;
-         plat.thinker.function.acp1 = (actionf_p1) T_PlatRaise;
+         plat.thinker.function = think_t.T_PlatRaise;
          plat.crush = false;
          plat.tag = line.tag;
          
@@ -7171,66 +7127,67 @@ class Lights{
          {
            case raiseToNearestAndChange:
              plat.speed = PLATSPEED/2;
-             sec.floorpic = sides[line.sidenum[0]].sector.floorpic;
-             plat.high = P_FindNextHighestFloor(sec,sec.floorheight);
+             sec.floorpic = LL.sides[line.sidenum[0]].sector.floorpic;
+             plat.high = FindNextHighestFloor(sec,sec.floorheight);
              plat.wait = 0;
-             plat.status = up;
+             plat.status = plat_e.up;
              // NO MORE DAMAGE, IF APPLICABLE
              sec.special = 0;       
 
-             S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
+             // TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
              break;
              
            case raiseAndChange:
              plat.speed = PLATSPEED/2;
-             sec.floorpic = sides[line.sidenum[0]].sector.floorpic;
+             sec.floorpic = LL.sides[line.sidenum[0]].sector.floorpic;
              plat.high = sec.floorheight + amount*FRACUNIT;
              plat.wait = 0;
-             plat.status = up;
+             plat.status = plat_e.up;
 
-             S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
+             //TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
              break;
              
            case downWaitUpStay:
              plat.speed = PLATSPEED * 4;
-             plat.low = P_FindLowestFloorSurrounding(sec);
+             plat.low = FindLowestFloorSurrounding(sec);
 
              if (plat.low > sec.floorheight)
              plat.low = sec.floorheight;
 
              plat.high = sec.floorheight;
              plat.wait = 35*PLATWAIT;
-             plat.status = down;
+             plat.status = plat_e.down;
              //TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
              break;
              
            case blazeDWUS:
              plat.speed = PLATSPEED * 8;
-             plat.low = P_FindLowestFloorSurrounding(sec);
+             plat.low = FindLowestFloorSurrounding(sec);
 
              if (plat.low > sec.floorheight)
              plat.low = sec.floorheight;
 
              plat.high = sec.floorheight;
              plat.wait = 35*PLATWAIT;
-             plat.status = down;
+             plat.status = plat_e.down;
              //TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
              break;
              
            case perpetualRaise:
              plat.speed = PLATSPEED;
-             plat.low = P_FindLowestFloorSurrounding(sec);
+             plat.low = FindLowestFloorSurrounding(sec);
 
              if (plat.low > sec.floorheight)
              plat.low = sec.floorheight;
 
-             plat.high = P_FindHighestFloorSurrounding(sec);
+             plat.high = FindHighestFloorSurrounding(sec);
 
              if (plat.high < sec.floorheight)
              plat.high = sec.floorheight;
 
              plat.wait = 35*PLATWAIT;
-             plat.status = P_Random()&1;
+             // Guaranteed to be 0 or 1.
+             plat.status = plat_e.values()[RND.P_Random()&1];
 
              //TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
              break;
@@ -7252,8 +7209,7 @@ class Lights{
              && (activeplats[i].status == plat_e.in_stasis))
          {
              (activeplats[i]).status = (activeplats[i]).oldstatus;
-             (activeplats[i]).thinker.function.acp1
-               = (actionf_p1) T_PlatRaise;
+             (activeplats[i]).thinker.function=think_t.T_PlatRaise;
          }
      }
 
@@ -7268,7 +7224,7 @@ class Lights{
          {
              (activeplats[j]).oldstatus = (activeplats[j]).status;
              (activeplats[j]).status = plat_e.in_stasis;
-             (activeplats[j]).thinker.function.acv = (actionf_v)NULL;
+             (activeplats[j]).thinker.function = null;
          }
      }
 
@@ -7293,7 +7249,7 @@ class Lights{
          {
              (activeplats[i]).sector.specialdata = null;
              RemoveThinker((activeplats[i]).thinker);
-             activeplats[i] = NULL;
+             activeplats[i] = null;
              
              return;
          }
@@ -7450,7 +7406,7 @@ class Lights{
          if (openbottom >= opentop)  
              return false;       // stop
          
-         frac = P_InterceptVector2 (strace, divl);
+         frac = InterceptVector2 (strace, divl);
              
          if (front.floorheight != back.floorheight)
          {
@@ -7489,9 +7445,9 @@ class Lights{
          if (flags(bspnum, NF_SUBSECTOR))
          {
          if (bspnum == -1)
-             return P_CrossSubsector (0);
+             return CrossSubsector (0);
          else
-             return P_CrossSubsector (bspnum&(~NF_SUBSECTOR));
+             return CrossSubsector (bspnum&(~NF_SUBSECTOR));
          }
              
          bsp = LL.nodes[bspnum];
@@ -7502,7 +7458,7 @@ class Lights{
          side = 0;   // an "on" should cross both sides
 
          // cross the starting side
-         if (!P_CrossBSPNode (bsp.children[side]) )
+         if (!CrossBSPNode (bsp.children[side]) )
          return false;
          
          // the partition plane is crossed here
@@ -7513,7 +7469,7 @@ class Lights{
          }
          
          // cross the ending side        
-         return P_CrossBSPNode (bsp.children[side^1]);
+         return CrossBSPNode (bsp.children[side^1]);
      }
 
 
@@ -7521,7 +7477,7 @@ class Lights{
  }
  
  class Specials{
-     private static final int ok=0, crushed=1,pastdest=2;
+     public static final int ok=0, crushed=1,pastdest=2;
 
 
      public short   numlinespecials;
@@ -7541,7 +7497,7 @@ class Lights{
   {
       int     pic;
       line_t line;
-
+      anim_t anim;
       
       //  LEVEL TIMER
       if (levelTimer == true)
@@ -7553,61 +7509,64 @@ class Lights{
       
       //  ANIMATE FLATS AND TEXTURES GLOBALLY
 
-      for (int anim = 0 ; anim < lastanim ; anim++)
+      for (int j = 0 ; j < lastanim ; j++)
       {
+          anim=anims[j];
+          
       for (int i=anim.basepic ; i<anim.basepic+anim.numpics ; i++)
       {
-          pic = anim.basepic + ( (leveltime/anim.speed + i)%anim.numpics );
+          pic = anim.basepic + ( (DS.leveltime/anim.speed + i)%anim.numpics );
           if (anim.istexture)
-          texturetranslation[i] = pic;
+          R.texturetranslation[i] = pic;
           else
-          flattranslation[i] = pic;
+          R.flattranslation[i] = pic;
       }
       }
 
       
       //  ANIMATE LINE SPECIALS
-      for (i = 0; i < numlinespecials; i++)
+      for (int i = 0; i < numlinespecials; i++)
       {
       line = linespeciallist[i];
       switch(line.special)
       {
         case 48:
           // EFFECT FIRSTCOL SCROLL +
-          sides[line.sidenum[0]].textureoffset += FRACUNIT;
+          LL.sides[line.sidenum[0]].textureoffset += FRACUNIT;
           break;
       }
       }
 
       
       //  DO BUTTONS
-      for (i = 0; i < MAXBUTTONS; i++)
-      if (buttonlist[i].btimer)
+      for (int i = 0; i < MAXBUTTONS; i++)
+      if (eval(SW.buttonlist[i].btimer))
       {
-          buttonlist[i].btimer--;
-          if (!buttonlist[i].btimer)
+          SW.buttonlist[i].btimer--;
+          if (!eval(SW.buttonlist[i].btimer))
           {
-          switch(buttonlist[i].where)
+          switch(SW.buttonlist[i].where)
           {
             case top:
-              sides[buttonlist[i].line.sidenum[0]].toptexture =
-              buttonlist[i].btexture;
+              LL.sides[SW.buttonlist[i].line.sidenum[0]].toptexture =
+              (short) SW.buttonlist[i].btexture;
               break;
               
             case middle:
-              sides[buttonlist[i].line.sidenum[0]].midtexture =
-              buttonlist[i].btexture;
+              LL.sides[SW.buttonlist[i].line.sidenum[0]].midtexture =
+              (short) SW.buttonlist[i].btexture;
               break;
               
             case bottom:
-              sides[buttonlist[i].line.sidenum[0]].bottomtexture =
-              buttonlist[i].btexture;
+              LL.sides[SW.buttonlist[i].line.sidenum[0]].bottomtexture =
+              (short) SW.buttonlist[i].btexture;
               break;
           }
           ; // TODO:S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
           // TODO: memset(buttonlist[i],0,sizeof(button_t));
           }
       }
+  }
       
      
      
@@ -7615,15 +7574,16 @@ class Lights{
   // P_InitPicAnims
   //
 
-  // Floor/ceiling animation sequences,
-  //  defined by first and last frame,
-  //  i.e. the flat (64x64 tile) name to
-  //  be used.
-  // The full animation sequence is given
-  //  using all the flats between the start
-  //  and end entry, in the order found in
-  //  the WAD file.
-  //
+  /** Floor/ceiling animation sequences,
+   *  defined by first and last frame,
+   *  i.e. the flat (64x64 tile) name to
+   *  be used.
+   *  The full animation sequence is given
+   *  using all the flats between the start
+   *  and end entry, in the order found in
+   *  the WAD file.
+   */
+  
  protected static animdef_t[]       animdefs =
   {
       new animdef_t(false, "NUKAGE3",  "NUKAGE1",  8),
@@ -7659,42 +7619,41 @@ class Lights{
 
  public void InitPicAnims ()
  {
-     int     i;
-
-     
+     anim_t lstanim;
      //  Init animation. MAES: sneaky base pointer conversion ;-)
-     lastanim = anims[0];
+     lastanim = 0;
      //MAES: for (i=0 ; animdefs[i].istexture != -1 ; i++)
-     for (i=0 ; animdefs[i].istexture ; i++)
+     for (int i=0 ; animdefs[i].istexture ; i++)
      {
+         
      if (animdefs[i].istexture)
      {
          // different episode ?
          // TODO:
-         //if (R_CheckTextureNumForName(animdefs[i].startname) == -1)
-         //continue;   
-
-         lastanim.picnum = R.TextureNumForName (animdefs[i].endname);
-         lastanim.picnum = R.TextureNumForName (animdefs[i].startname);
+         if(R.CheckTextureNumForName(animdefs[i].startname) == -1)
+         continue;   
+         lstanim=anims[lastanim];
+         lstanim.picnum = R.TextureNumForName (animdefs[i].endname);
+         lstanim.picnum = R.TextureNumForName (animdefs[i].startname);
      }
      else
      {
          if (W.CheckNumForName(animdefs[i].startname) == -1)
          continue;
 
-         lastanim.picnum = R.FlatNumForName (animdefs[i].endname);
-         lastanim.basepic = R.FlatNumForName (animdefs[i].startname);
+         lstanim.picnum = R.FlatNumForName (animdefs[i].endname);
+         lstanim.basepic = R.FlatNumForName (animdefs[i].startname);
      }
 
-     lastanim.istexture = animdefs[i].istexture;
-     lastanim.numpics = lastanim.picnum - lastanim.basepic + 1;
+     lstanim.istexture = animdefs[i].istexture;
+     lstanim.numpics = lstanim.picnum - lstanim.basepic + 1;
 
-     if (lastanim.numpics < 2)
+     if (lstanim.numpics < 2)
          system.Error ("P_InitPicAnims: bad cycle from %s to %s",
               animdefs[i].startname,
               animdefs[i].endname);
      
-     lastanim.speed = animdefs[i].speed;
+     lstanim.speed = animdefs[i].speed;
      lastanim++;
      }
  }
@@ -7711,14 +7670,14 @@ class Lights{
 
 
      line_t[]     linespeciallist=new line_t[MAXLINEANIMS];
-
+     
 
      /** P_SpawnSpecials
       * After the map has been loaded, scan for specials
       * that spawn thinkers
      */
 
-     void P_SpawnSpecials ()
+     void SpawnSpecials ()
      {
          sector_t   sector;
          int     i;
@@ -7732,83 +7691,84 @@ class Lights{
          // See if -TIMER needs to be used.
          levelTimer = false;
          
-         i = M_CheckParm("-avg");
-         if (i && deathmatch)
+         i = M.CheckParm("-avg");
+         if (eval(i) && DS.deathmatch)
          {
          levelTimer = true;
          levelTimeCount = 20 * 60 * 35;
          }
          
-         i = M_CheckParm("-timer");
-         if (i && deathmatch)
+         i = M.CheckParm("-timer");
+         if (eval(i) && DS.deathmatch)
          {
          int time;
-         time = atoi(myargv[i+1]) * 60 * 35;
+         time = Integer.parseInt(M.myargv[i+1]) * 60 * 35;
          levelTimer = true;
          levelTimeCount = time;
          }
          
          //  Init special SECTORs.
-         sector = sectors;
-         for (i=0 ; i<numsectors ; i++, sector++)
+         //sector = LL.sectors;
+         for (i=0 ; i<LL.numsectors ; i++)
          {
-         if (!sector.special)
+             sector=LL.sectors[i];
+         if (!eval(sector.special))
              continue;
          
          switch (sector.special)
          {
            case 1:
              // FLICKERING LIGHTS
-             P_SpawnLightFlash (sector);
+             LEV.SpawnLightFlash (sector);
              break;
 
            case 2:
              // STROBE FAST
-             P_SpawnStrobeFlash(sector,FASTDARK,0);
+               LEV.SpawnStrobeFlash(sector,LEV.FASTDARK,0);
              break;
              
            case 3:
              // STROBE SLOW
-             P_SpawnStrobeFlash(sector,SLOWDARK,0);
+               LEV.SpawnStrobeFlash(sector,LEV.SLOWDARK,0);
              break;
              
            case 4:
              // STROBE FAST/DEATH SLIME
-             P_SpawnStrobeFlash(sector,FASTDARK,0);
+               LEV.SpawnStrobeFlash(sector,LEV.FASTDARK,0);
              sector.special = 4;
              break;
              
            case 8:
              // GLOWING LIGHT
-             P_SpawnGlowingLight(sector);
+               LEV.SpawnGlowingLight(sector);
              break;
            case 9:
              // SECRET SECTOR
-             totalsecret++;
+             DS.totalsecret++;
              break;
              
            case 10:
              // DOOR CLOSE IN 30 SECONDS
-             P_SpawnDoorCloseIn30 (sector);
+             EV.SpawnDoorCloseIn30 (sector);
              break;
              
            case 12:
              // SYNC STROBE SLOW
-             P_SpawnStrobeFlash (sector, SLOWDARK, 1);
+               LEV.SpawnStrobeFlash (sector, LEV.SLOWDARK, 1);
              break;
 
            case 13:
              // SYNC STROBE FAST
-             P_SpawnStrobeFlash (sector, FASTDARK, 1);
+               LEV.SpawnStrobeFlash (sector, LEV.FASTDARK, 1);
              break;
 
            case 14:
              // DOOR RAISE IN 5 MINUTES
-             P_SpawnDoorRaiseIn5Mins (sector, i);
+               EV.SpawnDoorRaiseIn5Mins (sector, i);
              break;
              
            case 17:
-             P_SpawnFireFlicker(sector);
+               LEV.SpawnFireFlicker(sector);
              break;
          }
          }
@@ -7816,13 +7776,13 @@ class Lights{
          
          //  Init line EFFECTs
          numlinespecials = 0;
-         for (i = 0;i < numlines; i++)
+         for (i = 0;i < LL.numlines; i++)
          {
-         switch(lines[i].special)
+         switch(LL.lines[i].special)
          {
            case 48:
              // EFFECT FIRSTCOL SCROLL+
-             linespeciallist[numlinespecials] = &lines[i];
+             linespeciallist[numlinespecials] = LL.lines[i];
              numlinespecials++;
              break;
          }
@@ -7831,13 +7791,13 @@ class Lights{
          
          //  Init other misc stuff
          for (i = 0;i < MAXCEILINGS;i++)
-         activeceilings[i] = NULL;
+         EV.activeceilings[i] = null;
 
          for (i = 0;i < MAXPLATS;i++)
-         activeplats[i] = NULL;
+         PEV.activeplats[i] = null;
          
          for (i = 0;i < MAXBUTTONS;i++)
-         memset(&buttonlist[i],0,sizeof(button_t));
+             SW.buttonlist[i].reset();
 
          // UNUSED: no horizonal sliders.
          //  P_InitSlidingDoorFrames();
@@ -8009,7 +7969,7 @@ class Lights{
 	     int     i;
 	     int     sound;
 	 	
-	     if (useAgain==0)
+	     if (!eval(useAgain))
 	 	line.special = 0;
 
 	     texTop = LL.sides[line.sidenum[0]].toptexture;
@@ -8029,8 +7989,8 @@ class Lights{
 	 	    // TODO: ; // TODO:(buttonlist[0].soundorg,sound);
 	 	    LL.sides[line.sidenum[0]].toptexture = (short) switchlist[i^1];
 
-	 	    if (useAgain!=0)
-	 		StartButton(line,top,switchlist[i],BUTTONTIME);
+	 	    if (eval(useAgain))
+	 		StartButton(line,bwhere_e.top,switchlist[i],BUTTONTIME);
 
 	 	    return;
 	 	}
@@ -8039,10 +7999,10 @@ class Lights{
 	 	    if (switchlist[i] == texMid)
 	 	    {
 	 		; // TODO:(buttonlist.soundorg,sound);
-	 		sides[line.sidenum[0]].midtexture = switchlist[i^1];
+	 		LL.sides[line.sidenum[0]].midtexture = (short) switchlist[i^1];
 
-	 		if (useAgain)
-	 		    P_StartButton(line, middle,switchlist[i],BUTTONTIME);
+	 		if (eval(useAgain))
+	 		    StartButton(line, bwhere_e.middle,switchlist[i],BUTTONTIME);
 
 	 		return;
 	 	    }
@@ -8051,10 +8011,10 @@ class Lights{
 	 		if (switchlist[i] == texBot)
 	 		{
 	 		    ; // TODO:(buttonlist.soundorg,sound);
-	 		    sides[line.sidenum[0]].bottomtexture = switchlist[i^1];
+	 		    LL.sides[line.sidenum[0]].bottomtexture = (short) switchlist[i^1];
 
-	 		    if (useAgain)
-	 			P_StartButton(line, bottom,switchlist[i],BUTTONTIME);
+	 		    if (eval(useAgain))
+	 			StartButton(line, bwhere_e.bottom,switchlist[i],BUTTONTIME);
 
 	 		    return;
 	 		}
@@ -8136,7 +8096,7 @@ class Lights{
 
 	       case 117:		// Blazing door raise
 	       case 118:		// Blazing door open
-	 	EV_VerticalDoor (line, thing);
+	 	EV.VerticalDoor (line, thing);
 	 	break;
 	 	
 	 	//UNUSED - Door Slide Open&Close
@@ -8147,152 +8107,152 @@ class Lights{
 	 	// SWITCHES
 	       case 7:
 	 	// Build Stairs
-	 	if (EV_BuildStairs(line,build8))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.BuildStairs(line,stair_e.build8))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 
 	       case 9:
 	 	// Change Donut
-	 	if (EV_DoDonut(line))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoDonut(line))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 11:
 	 	// Exit level
-	 	P_ChangeSwitchTexture(line,0);
-	 	G_ExitLevel ();
+	 	ChangeSwitchTexture(line,0);
+	 	DG.ExitLevel ();
 	 	break;
 	 	
 	       case 14:
 	 	// Raise Floor 32 and change texture
-	 	if (PEV.DoPlat(line,raiseAndChange,32))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 15:
 	 	// Raise Floor 24 and change texture
-	 	if (PEV.DoPlat(line,raiseAndChange,24))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 18:
 	 	// Raise Floor to next highest floor
-	 	if (EV.DoFloor(line, raiseFloorToNearest))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line, floor_e.raiseFloorToNearest))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 20:
 	 	// Raise Plat next highest floor and change texture
-	 	if (PEV.DoPlat(line,raiseToNearestAndChange,0))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 21:
 	 	// PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,downWaitUpStay,0))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (PEV.DoPlat(line,plattype_e.downWaitUpStay,0))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 23:
 	 	// Lower Floor to Lowest
-	 	if (EV.DoFloor(line,lowerFloorToLowest))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line,floor_e.lowerFloorToLowest))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 29:
 	 	// Raise Door
-	 	if (EV.DoDoor(line,normal))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoDoor(line,vldoor_e.normal))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 41:
 	 	// Lower Ceiling to Floor
-	 	if (EV.DoCeiling(line,lowerToFloor))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoCeiling(line,ceiling_e.lowerToFloor))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 71:
 	 	// Turbo Lower Floor
-	 	if (EV.DoFloor(line,turboLower))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line,floor_e.turboLower))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 49:
 	 	// Ceiling Crush And Raise
-	 	if (EV.DoCeiling(line,crushAndRaise))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoCeiling(line,ceiling_e.crushAndRaise))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 50:
 	 	// Close Door
-	 	if (EV.DoDoor(line,close))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoDoor(line,vldoor_e.close))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 51:
 	 	// Secret EXIT
-	 	P_ChangeSwitchTexture(line,0);
-	 	G_SecretExitLevel ();
+	 	ChangeSwitchTexture(line,0);
+	 	DG.SecretExitLevel ();
 	 	break;
 	 	
 	       case 55:
 	 	// Raise Floor Crush
-	 	if (EV.DoFloor(line,raiseFloorCrush))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line,floor_e.raiseFloorCrush))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 101:
 	 	// Raise Floor
-	 	if (EV.DoFloor(line,raiseFloor))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line,floor_e.raiseFloor))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 102:
 	 	// Lower Floor to Surrounding floor height
-	 	if (EV.DoFloor(line,lowerFloor))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line,floor_e.lowerFloor))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 103:
 	 	// Open Door
-	 	if (EV.DoDoor(line,open))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoDoor(line,vldoor_e.open))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 111:
 	 	// Blazing Door Raise (faster than TURBO!)
-	 	if (EV.DoDoor (line,blazeRaise))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoDoor (line,vldoor_e.blazeRaise))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 112:
 	 	// Blazing Door Open (faster than TURBO!)
-	 	if (EV.DoDoor (line,blazeOpen))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoDoor (line,vldoor_e.blazeOpen))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 113:
 	 	// Blazing Door Close (faster than TURBO!)
-	 	if (EV.DoDoor (line,blazeClose))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoDoor (line,vldoor_e.blazeClose))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 122:
 	 	// Blazing PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,blazeDWUS,0))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 127:
 	 	// Build Stairs Turbo 16
-	 	if (EV_BuildStairs(line,turbo16))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.BuildStairs(line,stair_e.turbo16))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 131:
 	 	// Raise Floor Turbo
-	 	if (EV.DoFloor(line,raiseFloorTurbo))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line,floor_e.raiseFloorTurbo))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 133:
@@ -8301,128 +8261,128 @@ class Lights{
 	 	// BlzOpenDoor RED
 	       case 137:
 	 	// BlzOpenDoor YELLOW
-	 	if (EV_DoLockedDoor (line,blazeOpen,thing))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoLockedDoor (line,vldoor_e.blazeOpen,thing))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	       case 140:
 	 	// Raise Floor 512
-	 	if (EV.DoFloor(line,raiseFloor512))
-	 	    P_ChangeSwitchTexture(line,0);
+	 	if (EV.DoFloor(line,floor_e.raiseFloor512))
+	 	    ChangeSwitchTexture(line,0);
 	 	break;
 	 	
 	 	// BUTTONS
 	       case 42:
 	 	// Close Door
-	 	if (EV.DoDoor(line,close))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoDoor(line,vldoor_e.close))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 43:
 	 	// Lower Ceiling to Floor
-	 	if (EV.DoCeiling(line,lowerToFloor))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoCeiling(line,ceiling_e.lowerToFloor))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 45:
 	 	// Lower Floor to Surrounding floor height
-	 	if (EV.DoFloor(line,lowerFloor))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoFloor(line,floor_e.lowerFloor))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 60:
 	 	// Lower Floor to Lowest
-	 	if (EV.DoFloor(line,lowerFloorToLowest))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoFloor(line,floor_e.lowerFloorToLowest))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 61:
 	 	// Open Door
-	 	if (EV.DoDoor(line,open))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoDoor(line,vldoor_e.open))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 62:
 	 	// PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,downWaitUpStay,1))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (PEV.DoPlat(line,plattype_e.downWaitUpStay,1))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 63:
 	 	// Raise Door
-	 	if (EV.DoDoor(line,normal))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoDoor(line,vldoor_e.normal))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 64:
 	 	// Raise Floor to ceiling
-	 	if (EV.DoFloor(line,raiseFloor))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (EV.DoFloor(line,floor_e.raiseFloor))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 66:
 	 	// Raise Floor 24 and change texture
-	 	if (PEV.DoPlat(line,raiseAndChange,24))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 67:
 	 	// Raise Floor 32 and change texture
-	 	if (PEV.DoPlat(line,raiseAndChange,32))
-	 	    P_ChangeSwitchTexture(line,1);
+	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
+	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 65:
 	 	// Raise Floor Crush
-	 	if (EV.DoFloor(line,raiseFloorCrush))
+	 	if (EV.DoFloor(line,floor_e.raiseFloorCrush))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 68:
 	 	// Raise Plat to next highest floor and change texture
-	 	if (PEV.DoPlat(line,raiseToNearestAndChange,0))
+	 	if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 69:
 	 	// Raise Floor to next highest floor
-	 	if (EV.DoFloor(line, raiseFloorToNearest))
+	 	if (EV.DoFloor(line, floor_e.raiseFloorToNearest))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 70:
 	 	// Turbo Lower Floor
-	 	if (EV.DoFloor(line,turboLower))
+	 	if (EV.DoFloor(line,floor_e.turboLower))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 114:
 	 	// Blazing Door Raise (faster than TURBO!)
-	 	if (EV.DoDoor (line,blazeRaise))
+	 	if (EV.DoDoor (line,vldoor_e.blazeRaise))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 115:
 	 	// Blazing Door Open (faster than TURBO!)
-	 	if (EV.DoDoor (line,blazeOpen))
+	 	if (EV.DoDoor (line,vldoor_e.blazeOpen))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 116:
 	 	// Blazing Door Close (faster than TURBO!)
-	 	if (EV.DoDoor (line,blazeClose))
+	 	if (EV.DoDoor (line,vldoor_e.blazeClose))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 123:
 	 	// Blazing PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,blazeDWUS,0))
+	 	if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
 	       case 132:
 	 	// Raise Floor Turbo
-	 	if (EV.DoFloor(line,raiseFloorTurbo))
+	 	if (EV.DoFloor(line,floor_e.raiseFloorTurbo))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
@@ -8432,7 +8392,7 @@ class Lights{
 	 	// BlzOpenDoor RED
 	       case 136:
 	 	// BlzOpenDoor YELLOW
-	 	if (EV.DoLockedDoor (line,blazeOpen,thing))
+	 	if (EV.DoLockedDoor (line,vldoor_e.blazeOpen,thing))
 	 	    ChangeSwitchTexture(line,1);
 	 	break;
 	 	
@@ -8551,62 +8511,55 @@ class Lights{
  void
  NightmareRespawn (mobj_t mobj)
  {
- fixed_t     x;
- fixed_t     y;
- fixed_t     z; 
+ int     x,y, z; // fixed 
  subsector_t    ss; 
  mobj_t     mo;
- mapthing_t*     mthing;
+ mapthing_t     mthing;
    
  x = mobj.spawnpoint.x << FRACBITS; 
  y = mobj.spawnpoint.y << FRACBITS; 
 
  // somthing is occupying it's position?
- if (!P_CheckPosition (mobj, x, y) ) 
+ if (!MV.CheckPosition (mobj, x, y) ) 
  return; // no respwan
 
  // spawn a teleport fog at old spot
  // because of removal of the body?
- mo = P_SpawnMobj (mobj.x,
+ mo = SpawnMobj (mobj.x,
          mobj.y,
          mobj.subsector.sector.floorheight , mobjtype_t.MT_TFOG); 
  // initiate teleport sound
  ; // TODO: (mo, sfx_telept);
 
  // spawn a teleport fog at the new spot
- ss = R_PointInSubsector (x,y); 
+ ss = R.PointInSubsector (x,y); 
 
- mo = P_SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_TFOG); 
+ mo = SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_TFOG); 
 
  ; // TODO: (mo, sfx_telept);
 
  // spawn the new monster
- mthing = &mobj.spawnpoint;
+ mthing = mobj.spawnpoint;
 
  // spawn it
- if (mobj.info.flags & MF_SPAWNCEILING)
+ if (flags(mobj.info.flags , MF_SPAWNCEILING))
  z = ONCEILINGZ;
  else
  z = ONFLOORZ;
 
  // inherit attributes from deceased one
- mo = P_SpawnMobj (x,y,z, mobj.type);
+ mo = SpawnMobj (x,y,z, mobj.type);
  mo.spawnpoint = mobj.spawnpoint;  
  mo.angle = ANG45 * (mthing.angle/45);
 
- if (mthing.options & MTF_AMBUSH)
+ if (flags(mthing.options , MTF_AMBUSH))
  mo.flags |= MF_AMBUSH;
 
  mo.reactiontime = 18;
 
  // remove the old monster,
- P_RemoveMobj (mobj);
+ RemoveMobj (mobj);
  }
-
-
-
-
-
 
  class P_MobjThinker implements acp1 {
      
@@ -8617,7 +8570,7 @@ class Lights{
  || mobj.momy!=0
  || (flags(mobj.flags,MF_SKULLFLY)) )
  {
-     mobj.XYMovement ();
+     MV.XYMovement(mobj);
 
  // FIXME: decent NOP/NULL/Nil function pointer please.
  if (mobj.thinker.function == null)
@@ -8641,17 +8594,17 @@ class Lights{
  mobj.tics--;
    
  // you can cycle through multiple states in a tic
- if (!mobj.tics)
-   if (!P_SetMobjState (mobj, mobj.state.nextstate) )
+ if (!eval(mobj.tics))
+   if (!mobj.SetMobjState (mobj.state.nextstate) )
    return;     // freed itself
  }
  else
  {
  // check for nightmare respawn
- if (! (mobj.flags & MF_COUNTKILL) )
+ if (! flags(mobj.flags ,MF_COUNTKILL) )
    return;
 
- if (!respawnmonsters)
+ if (!DS.respawnmonsters)
    return;
 
  mobj.movecount++;
@@ -8659,21 +8612,17 @@ class Lights{
  if (mobj.movecount < 12*35)
    return;
 
- if ( leveltime&31 )
+ if ( flags(DS.leveltime,31 ))
    return;
 
  if (RND.P_Random () > 4)
    return;
 
- P_NightmareRespawn (mobj);
+ NightmareRespawn (mobj);
  }
 
  }
 
- @Override
- public ActionType getType() {
-     return ActionType.acp1;
- }
 
  }
 
@@ -8689,13 +8638,13 @@ class Lights{
 
  void RemoveMobj (mobj_t mobj)
  {
- if ((mobj.flags & MF_SPECIAL)
- && !(mobj.flags & MF_DROPPED)
+ if (flags(mobj.flags , MF_SPECIAL)
+ && !flags(mobj.flags , MF_DROPPED)
  && (mobj.type != mobjtype_t.MT_INV)
  && (mobj.type != mobjtype_t.MT_INS))
  {
  itemrespawnque[iquehead] = mobj.spawnpoint;
- itemrespawntime[iquehead] = leveltime;
+ itemrespawntime[iquehead] = DS.leveltime;
  iquehead = (iquehead+1)&(ITEMQUESIZE-1);
 
  // lose one off the end?
@@ -8704,13 +8653,13 @@ class Lights{
  }
 
  // unlink from sector and block lists
- P_UnsetThingPosition (mobj);
+ UnsetThingPosition (mobj);
 
  // stop any playing sound
- S_StopSound (mobj);
+ //TODO: S_StopSound (mobj);
 
  // free block
- P_RemoveThinker ((thinker_t)mobj);
+ RemoveThinker ((thinker_t)mobj);
  }
 
 
@@ -8721,18 +8670,16 @@ class Lights{
  //
  void RespawnSpecials ()
  {
- fixed_t     x;
- fixed_t     y;
- fixed_t     z;
+ int     x, y,z; // fixed
 
  subsector_t    ss; 
  mobj_t     mo;
- mapthing_t*     mthing;
+ mapthing_t     mthing;
 
  int         i;
 
- // only respawn items in deathmatch
- if (deathmatch != 2)
+ // only respawn items in deathmatch (deathmatch!=2)
+ if (!DS.altdeath)
  return; // 
 
  // nothing left to respawn?
@@ -8740,21 +8687,21 @@ class Lights{
  return;     
 
  // wait at least 30 seconds
- if (leveltime - itemrespawntime[iquetail] < 30*35)
+ if (DS.leveltime - itemrespawntime[iquetail] < 30*35)
  return;         
 
- mthing = &itemrespawnque[iquetail];
+ mthing = itemrespawnque[iquetail];
 
  x = mthing.x << FRACBITS; 
  y = mthing.y << FRACBITS; 
 
  // spawn a teleport fog at the new spot
- ss = R_PointInSubsector (x,y); 
- mo = P_SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_IFOG); 
+ ss = R.PointInSubsector (x,y); 
+ mo = SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_IFOG); 
  ; // TODO: (mo, sfx_itmbk);
 
  // find which type to spawn
- for (i=0 ; i< NUMMOBJTYPES ; i++)
+ for (i=0 ; i< mobjtype_t.NUMMOBJTYPES.ordinal() ; i++)
  {
  if (mthing.type == mobjinfo[i].doomednum)
    break;
@@ -8766,7 +8713,7 @@ class Lights{
  else
  z = ONFLOORZ;
 
- mo = P_SpawnMobj (x,y,z, i);
+ mo = SpawnMobj (x,y,z, mobjtype_t.values()[i]);
  mo.spawnpoint = mthing;   
  mo.angle = ANG45 * (mthing.angle/45);
 
@@ -8795,18 +8742,18 @@ class Lights{
  int         i;
 
  // not playing?
- if (!playeringame[mthing.type-1])
+ if (!DS.playeringame[mthing.type-1])
  return;                 
    
- p = &players[mthing.type-1];
+ p = DS.players[mthing.type-1];
 
  if (p.playerstate == PST_REBORN)
- G_PlayerReborn (mthing.type-1);
+ DG.PlayerReborn (mthing.type-1);
 
  x       = mthing.x << FRACBITS;
  y       = mthing.y << FRACBITS;
  z       = ONFLOORZ;
- mobj    = P_SpawnMobj (x,y,z, mobjtype_t.MT_PLAYER);
+ mobj    = SpawnMobj (x,y,z, mobjtype_t.MT_PLAYER);
 
  // set color translations for player sprites
  if (mthing.type > 1)       
@@ -8827,19 +8774,19 @@ class Lights{
  p.viewheight = VIEWHEIGHT;
 
  // setup gun psprite
- P_SetupPsprites (p);
+ SetupPsprites (p);
 
  // give all cards in death match mode
- if (deathmatch)
+ if (DS.deathmatch)
  for (i=0 ; i<NUMCARDS ; i++)
    p.cards[i] = true;
        
- if (mthing.type-1 == consoleplayer)
+ if (mthing.type-1 == DS.consoleplayer)
  {
  // wake up the status bar
- ST_Start ();
+ ST.Start ();
  // wake up the heads up text
- HU_Start ();        
+ HU.Start ();        
  }
  }
 
@@ -8861,7 +8808,7 @@ class Lights{
  // count deathmatch start positions
  if (mthing.type == 11)
  {
- if (deathmatch_p < &deathmatchstarts[10])
+ if (LL.deathmatch_p < LL.deathmatchstarts[10])
  {
    memcpy (deathmatch_p, mthing, sizeof(*mthing));
    deathmatch_p++;

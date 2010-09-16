@@ -1,15 +1,15 @@
 package p;
 
+import rr.SectorAction;
 import rr.sector_t;
 import doom.thinker_t;
 
-public class floormove_t {
+public class floormove_t extends SectorAction{
 
     public floormove_t(){
-        
+        super();
     }
     
-    public thinker_t   thinker;
     public floor_e type;
     public boolean crush;
     // MAES: was *
