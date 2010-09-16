@@ -8,11 +8,15 @@ import doom.thinker_t;
 //
 
 public class fireflicker_t {
-
-     thinker_t   thinker;
-     sector_t   sector;
-     int     count;
-     int     maxlight;
-     int     minlight;
+	
+	public fireflicker_t(){
+		this.thinker=new thinker_t();
+	}
+		
+     public thinker_t   thinker;
+     public sector_t   sector;
+     public int     count;
+     public int     maxlight;
+     public int     minlight;
      
  } 

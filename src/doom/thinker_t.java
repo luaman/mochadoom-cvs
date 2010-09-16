@@ -1,6 +1,6 @@
 package doom;
 
-public abstract class thinker_t {
+public class thinker_t {
    
    /*
    public thinker_t   getSPrev(); 

@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.3 2010/09/15 16:17:38 velktron Exp $
+// $Id: Tables.java,v 1.4 2010/09/16 00:16:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.4  2010/09/16 00:16:27  velktron
+// Velvet FM 96.8
+//
 // Revision 1.3  2010/09/15 16:17:38  velktron
 // Arithmetic
 //
@@ -932,6 +935,7 @@ public static final int[] tantoangle =
 };
 
 /** Use this to get a value from the finesine table. It will be automatically shifte, 
+ *  Equivalent to finesine[angle>>>ANGLETOFINESHIFT]
  * 
  * @param angle in BAM units
  * @return
@@ -941,7 +945,7 @@ public static final int finesine(int angle){
 }
 
 /** Use this to get a value from the finecosine table. It will be automatically shifte, 
- * 
+ * Equivalent to finecosine[angle>>>ANGLETOFINESHIFT]
  * @param angle in BAM units
  * @return
  */

@@ -9,8 +9,12 @@ import doom.thinker_t;
 
 public class lightflash_t {
 
-    thinker_t   thinker;
-    sector_t   sector;
+	public lightflash_t(){
+		thinker=new thinker_t();
+	}
+	
+    public thinker_t   thinker;
+    public sector_t   sector;
     int     count;
     int     maxlight;
     int     minlight;

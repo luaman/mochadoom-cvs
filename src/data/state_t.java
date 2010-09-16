@@ -35,4 +35,6 @@ public class state_t {
         public think_t         action;
         public statenum_t            nextstate;
         public long          misc1, misc2;
+        // relative index in state array. Needed sometimes.
+        public int id;
 }

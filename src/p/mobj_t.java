@@ -109,8 +109,9 @@ public class mobj_t extends thinker_t implements Interceptable   {
         public thinker_t  snext, sprev;
 
         //More drawing info: to determine current sprite.
-        /** orientation. This needs to be long or else certain checks will fail*/
-        public long     angle;  
+        /** orientation. This needs to be long or else certain checks will fail...but
+         * I need to see it working in order to confirm */
+        public int     angle;  
         
         /** used to find patch_t and flip value */
         public spritenum_t     sprite; 

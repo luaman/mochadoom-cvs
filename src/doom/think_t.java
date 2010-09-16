@@ -104,7 +104,10 @@ public enum think_t {
     A_SpawnSound,
     A_SpawnFly,
     A_BrainExplode,
-    P_MobjThinker(1);
+    P_MobjThinker(1),
+    T_FireFlicker(1),
+	T_LightFlash(1),
+	T_StrobeFlash(1);
     
     think_t(){
 	    type=0;

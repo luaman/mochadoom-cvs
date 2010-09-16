@@ -5,6 +5,44 @@ import static data.Limits.*;
 import static data.SineCosine.*;
 import static data.Tables.*;
 import static data.info.*;
+import static doom.englsh.GOTARMBONUS;
+import static doom.englsh.GOTARMOR;
+import static doom.englsh.GOTBACKPACK;
+import static doom.englsh.GOTBERSERK;
+import static doom.englsh.GOTBFG9000;
+import static doom.englsh.GOTBLUECARD;
+import static doom.englsh.GOTBLUESKUL;
+import static doom.englsh.GOTCELL;
+import static doom.englsh.GOTCELLBOX;
+import static doom.englsh.GOTCHAINGUN;
+import static doom.englsh.GOTCHAINSAW;
+import static doom.englsh.GOTCLIP;
+import static doom.englsh.GOTCLIPBOX;
+import static doom.englsh.GOTHTHBONUS;
+import static doom.englsh.GOTINVIS;
+import static doom.englsh.GOTINVUL;
+import static doom.englsh.GOTLAUNCHER;
+import static doom.englsh.GOTMAP;
+import static doom.englsh.GOTMEDIKIT;
+import static doom.englsh.GOTMEDINEED;
+import static doom.englsh.GOTMEGA;
+import static doom.englsh.GOTMSPHERE;
+import static doom.englsh.GOTPLASMA;
+import static doom.englsh.GOTREDCARD;
+import static doom.englsh.GOTREDSKULL;
+import static doom.englsh.GOTROCKBOX;
+import static doom.englsh.GOTROCKET;
+import static doom.englsh.GOTSHELLBOX;
+import static doom.englsh.GOTSHELLS;
+import static doom.englsh.GOTSHOTGUN;
+import static doom.englsh.GOTSHOTGUN2;
+import static doom.englsh.GOTSTIM;
+import static doom.englsh.GOTSUIT;
+import static doom.englsh.GOTSUPER;
+import static doom.englsh.GOTVISOR;
+import static doom.englsh.GOTYELWCARD;
+import static doom.englsh.GOTYELWSKUL;
+import static doom.items.weaponinfo;
 import static m.BBox.*;
 import static m.fixed_t.*;
 import static p.MapUtils.*;
@@ -33,6 +71,8 @@ import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.state_t;
 import data.Defines.GameMode_t;
+import data.Defines.ammotype_t;
+import data.Defines.card_t;
 import data.Defines.skill_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
@@ -61,7 +101,7 @@ public class UnifiedGameMap {
     DoomGame DG;
     
     ////////////// Internal singletons //////////////
-    
+    Actions A;
     Specials MySpec;
 	DoorsFloors EV;
 	Plats PEV;
@@ -376,21 +416,22 @@ FindMinSurroundingLight
 // or shooting special lines, or by timed thinkers.
 //
 
-//
-// P_CrossSpecialLine - TRIGGER
-// Called every time a thing origin is about
-//  to cross a line with a non 0 special.
-//
+/**
+ * P_CrossSpecialLine - TRIGGER
+ * Called every time a thing origin is about
+ *  to cross a line with a non 0 special.
+ */
+
 void
 CrossSpecialLine
-( int       linenum,
+( line_t       line,
   int       side,
   mobj_t  thing )
 {
-    line_t line;
+    //line_t line;
     boolean     ok;
 
-    line = LL.lines[linenum];
+    //line = LL.lines[linenum];
     
     //  Triggers that other things can activate
     if (thing.player==null)
@@ -405,7 +446,7 @@ CrossSpecialLine
       case MT_HEADSHOT:
       case MT_BRUISERSHOT:
         return;
-        break;
+       // break;
         
       default: break;
     }
@@ -1022,7 +1063,7 @@ class Actions{
       {
           thinker_t  th;
           mobj_t mo2;
-          line_t  junk;
+          line_t  junk = null;
 
           A_Fall (mo);
           
@@ -1259,7 +1300,6 @@ class Actions{
           
           if (actor.target==null)
           return;
-              BAM
           A_FaceTarget (actor);
           angle = (int) actor.angle;
           slope = MV.AimLineAttack (actor, angle, MISSILERANGE);
@@ -1415,7 +1455,7 @@ class Actions{
           }
           
           // launch a missile
-          P_SpawnMissile (actor, actor.target, mobjtype_t.MT_HEADSHOT);
+          SpawnMissile (actor, actor.target, mobjtype_t.MT_HEADSHOT);
       }
 
       void A_CyberAttack (mobj_t  actor)
@@ -1468,7 +1508,7 @@ class Actions{
           mo.tracer = actor.target;
       }
 
-      int TRACEANGLE = 0xc000000;
+      private static final int TRACEANGLE = 0xc000000;
 
       void A_Tracer (mobj_t  actor)
       {
@@ -1558,11 +1598,11 @@ class Actions{
               
           A_FaceTarget (actor);
           
-          if (P_CheckMeleeRange (actor))
+          if (EN.CheckMeleeRange (actor))
           {
           damage = ((RND.P_Random()%10)+1)*6;
           ; // TODO: S_StartSound (actor, sfx_skepch);
-          P_DamageMobj (actor.target, actor, actor, damage);
+          DamageMobj (actor.target, actor, actor, damage);
           }
       }
 
@@ -1577,30 +1617,30 @@ class Actions{
       int     viletryx;
       int     viletryy;
 
-      boolean PIT_VileCheck (mobj_t   thing)
+      boolean VileCheck (mobj_t   thing)
       {
           int     maxdist;
           boolean check;
           
-          if (!(thing.flags & MF_CORPSE) )
+          if (!flags(thing.flags ,MF_CORPSE) )
           return true;    // not a monster
           
           if (thing.tics != -1)
           return true;    // not lying still yet
           
-          if (thing.info.raisestate == S_NULL)
+          if (thing.info.raisestate == statenum_t.S_NULL)
           return true;    // monster doesn't have a raise state
           
-          maxdist = thing.info.radius + mobjinfo[mobjtype_t.MT_VILE].radius;
+          maxdist = thing.info.radius + mobjinfo[mobjtype_t.MT_VILE.ordinal()].radius;
           
-          if ( abs(thing.x - viletryx) > maxdist
-           || abs(thing.y - viletryy) > maxdist )
+          if ( Math.abs(thing.x - viletryx) > maxdist
+           || Math.abs(thing.y - viletryy) > maxdist )
           return true;        // not actually touching
               
           corpsehit = thing;
           corpsehit.momx = corpsehit.momy = 0;
           corpsehit.height <<= 2;
-          check = P_CheckPosition (corpsehit, corpsehit.x, corpsehit.y);
+          check = MV.CheckPosition (corpsehit, corpsehit.x, corpsehit.y);
           corpsehit.height >>= 2;
 
           if (!check)
@@ -1625,21 +1665,21 @@ class Actions{
           int         bx;
           int         by;
 
-          mobjinfo_t*     info;
+          mobjinfo_t     info;
           mobj_t      temp;
           
-          if (actor.movedir != DI_NODIR)
+          if (actor.movedir != Enemies.DI_NODIR)
           {
           // check for corpses to raise
           viletryx =
-              actor.x + actor.info.speed*xspeed[actor.movedir];
+              actor.x + actor.info.speed*Enemies.xspeed[actor.movedir];
           viletryy =
-              actor.y + actor.info.speed*yspeed[actor.movedir];
+              actor.y + actor.info.speed*Enemies.yspeed[actor.movedir];
 
-          xl = (viletryx - bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
-          xh = (viletryx - bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
-          yl = (viletryy - bmaporgy - MAXRADIUS*2)>>MAPBLOCKSHIFT;
-          yh = (viletryy - bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          xl = (viletryx - LL.bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          xh = (viletryx - LL.bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          yl = (viletryy - LL.bmaporgy - MAXRADIUS*2)>>MAPBLOCKSHIFT;
+          yh = (viletryy - LL.bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
           
           vileobj = actor;
           for (bx=xl ; bx<=xh ; bx++)
@@ -1649,7 +1689,7 @@ class Actions{
               // Call PIT_VileCheck to check
               // whether object is a corpse
               // that canbe raised.
-              if (!P_BlockThingsIterator(bx,by,PIT_VileCheck))
+              if (!MV.BlockThingsIterator(bx,by,PIT.VileCheck))
               {
                   // got one!
                   temp = actor.target;
@@ -1657,15 +1697,15 @@ class Actions{
                   A_FaceTarget (actor);
                   actor.target = temp;
                           
-                  actor.SetMobjState ( S_VILE_HEAL1);
+                  actor.SetMobjState ( statenum_t.S_VILE_HEAL1);
                   ; // TODO: S_StartSound (corpsehit, sfx_slop);
                   info = corpsehit.info;
                   
-                  P_SetMobjState (corpsehit,info.raisestate);
+                  corpsehit.SetMobjState (info.raisestate);
                   corpsehit.height <<= 2;
                   corpsehit.flags = info.flags;
                   corpsehit.health = info.spawnhealth;
-                  corpsehit.target = NULL;
+                  corpsehit.target = null;
 
                   return;
               }
@@ -1691,40 +1731,39 @@ class Actions{
       // A_Fire
       // Keep fire in front of player unless out of sight
       //
-      void A_Fire (mobj_t  actor);
-
+      
       void A_StartFire (mobj_t  actor)
       {
-          S_StartSound(actor,sfx_flamst);
+          // TODO: S_StartSound(actor,sfx_flamst);
           A_Fire(actor);
       }
 
       void A_FireCrackle (mobj_t  actor)
       {
-          S_StartSound(actor,sfx_flame);
+    	// TODO: S_StartSound(actor,sfx_flame);
           A_Fire(actor);
       }
 
       void A_Fire (mobj_t  actor)
       {
           mobj_t  dest;
-          unsigned    an;
+          //long    an;
               
           dest = actor.tracer;
-          if (!dest)
+          if (dest==null)
           return;
               
           // don't move it if the vile lost sight
-          if (!P_CheckSight (actor.target, dest) )
+          if (!EN.CheckSight (actor.target, dest) )
           return;
 
-          an = dest.angle >> ANGLETOFINESHIFT;
+          // an = dest.angle >>> ANGLETOFINESHIFT;
 
-          P_UnsetThingPosition (actor);
-          actor.x = dest.x + FixedMul (24*FRACUNIT, finecosine[an]);
-          actor.y = dest.y + FixedMul (24*FRACUNIT, finesine[an]);
+          UnsetThingPosition (actor);
+          actor.x = dest.x + FixedMul (24*FRACUNIT, finecosine(dest.angle));
+          actor.y = dest.y + FixedMul (24*FRACUNIT, finesine(dest.angle));
           actor.z = dest.z;
-          P_SetThingPosition (actor);
+          SetThingPosition (actor);
       }
 
 
@@ -1742,7 +1781,7 @@ class Actions{
 
           A_FaceTarget (actor);
 
-          fog = P_SpawnMobj (actor.target.x,
+          fog = SpawnMobj (actor.target.x,
                      actor.target.x,
                      actor.target.z, mobjtype_t.MT_FIRE);
           
@@ -1761,31 +1800,31 @@ class Actions{
       void A_VileAttack (mobj_t  actor)
       {   
           mobj_t  fire;
-          int     an;
+          //int     an;
           
           if (actor.target==null)
           return;
           
           A_FaceTarget (actor);
 
-          if (!P_CheckSight (actor, actor.target) )
+          if (!EN.CheckSight (actor, actor.target) )
           return;
 
           ; // TODO: S_StartSound (actor, sfx_barexp);
-          P_DamageMobj (actor.target, actor, actor, 20);
+          DamageMobj (actor.target, actor, actor, 20);
           actor.target.momz = 1000*FRACUNIT/actor.target.info.mass;
           
-          an = actor.angle >> ANGLETOFINESHIFT;
+         // an = actor.angle >> ANGLETOFINESHIFT;
 
           fire = actor.tracer;
 
-          if (!fire)
+          if (fire==null)
           return;
               
           // move the fire between the vile and the player
-          fire.x = actor.target.x - FixedMul (24*FRACUNIT, finecosine[an]);
-          fire.y = actor.target.y - FixedMul (24*FRACUNIT, finesine[an]);  
-          P_RadiusAttack (fire, actor, 70 );
+          fire.x = actor.target.x - FixedMul (24*FRACUNIT, finecosine(actor.angle));
+          fire.y = actor.target.y - FixedMul (24*FRACUNIT, finesine(actor.angle));  
+          MV.RadiusAttack (fire, actor, 70 );
       }
 
 
@@ -1797,9 +1836,9 @@ class Actions{
       // in three different directions?
       // Doesn't look like it. 
       //
-      #define FATSPREAD   (ANG90/8)
+      private static final int FATSPREAD =  (ANG90/8);
 
-      void A_FatRaise (mobj_t *actor)
+      void A_FatRaise (mobj_t actor)
       {
           A_FaceTarget (actor);
           ; // TODO: S_StartSound (actor, sfx_manatk);
@@ -1818,7 +1857,7 @@ class Actions{
 
           mo = SpawnMissile (actor, actor.target, mobjtype_t.MT_FATSHOT);
           mo.angle += FATSPREAD;
-          an = mo.angle >> ANGLETOFINESHIFT;
+          an = mo.angle >>> ANGLETOFINESHIFT;
           mo.momx = FixedMul (mo.info.speed, finecosine[an]);
           mo.momy = FixedMul (mo.info.speed, finesine[an]);
       }
@@ -1835,7 +1874,7 @@ class Actions{
 
           mo = SpawnMissile (actor, actor.target, mobjtype_t.MT_FATSHOT);
           mo.angle -= FATSPREAD*2;
-          an = mo.angle >> ANGLETOFINESHIFT;
+          an = mo.angle >>> ANGLETOFINESHIFT;
           mo.momx = FixedMul (mo.info.speed, finecosine[an]);
           mo.momy = FixedMul (mo.info.speed, finesine[an]);
       }
@@ -1861,16 +1900,16 @@ class Actions{
       }
 
 
-      //
-      // SkullAttack
-      // Fly at the player like a missile.
-      //
-      #define SKULLSPEED      (20*FRACUNIT)
-
+ 
+      private static final int SKULLSPEED  =    (20*FRACUNIT);
+      /**      
+       * SkullAttack
+       * Fly at the player like a missile.
+       */
       void A_SkullAttack (mobj_t  actor)
       {
           mobj_t      dest;
-          angle_t     an;
+          int     an;
           int         dist;
 
           if (actor.target==null)
@@ -1881,10 +1920,10 @@ class Actions{
 
           ; // TODO: S_StartSound (actor, actor.info.attacksound);
           A_FaceTarget (actor);
-          an = actor.angle >> ANGLETOFINESHIFT;
+          an = actor.angle >>> ANGLETOFINESHIFT;
           actor.momx = FixedMul (SKULLSPEED, finecosine[an]);
           actor.momy = FixedMul (SKULLSPEED, finesine[an]);
-          dist = P_AproxDistance (dest.x - actor.x, dest.y - actor.y);
+          dist = AproxDistance (dest.x - actor.x, dest.y - actor.y);
           dist = dist / SKULLSPEED;
           
           if (dist < 1)
@@ -1915,17 +1954,17 @@ class Actions{
           count = 0;
 
           currentthinker = thinkercap.next;
-          while (currentthinker != &thinkercap)
+          while (currentthinker != thinkercap)
           {
-          if (   (currentthinker.function.acp1 == (actionf_p1)P_MobjThinker)
-              && ((mobj_t *)currentthinker).type == mobjtype_t.MT_SKULL)
+          if (   (currentthinker.function == think_t.P_MobjThinker)
+              && ((mobj_t)currentthinker).type == mobjtype_t.MT_SKULL)
               count++;
           currentthinker = currentthinker.next;
           }
 
           // if there are allready 20 skulls on the level,
           // don't spit another one
-          if (count > 20)
+          if (count > MAXSKULLS)
           return;
 
 
@@ -1934,19 +1973,19 @@ class Actions{
           
           prestep =
           4*FRACUNIT
-          + 3*(actor.info.radius + mobjinfo[mobjtype_t.MT_SKULL].radius)/2;
+          + 3*(actor.info.radius + mobjinfo[mobjtype_t.MT_SKULL.ordinal()].radius)/2;
           
           x = actor.x + FixedMul (prestep, finecosine[an]);
           y = actor.y + FixedMul (prestep, finesine[an]);
           z = actor.z + 8*FRACUNIT;
               
-          newmobj = P_SpawnMobj (x , y, z, mobjtype_t.MT_SKULL);
+          newmobj = SpawnMobj (x , y, z, mobjtype_t.MT_SKULL);
 
           // Check for movements.
-          if (!P_TryMove (newmobj, newmobj.x, newmobj.y))
+          if (!MV.TryMove (newmobj, newmobj.x, newmobj.y))
           {
           // kill it immediately
-          P_DamageMobj (newmobj,actor,actor,10000);   
+          DamageMobj (newmobj,actor,actor,10000);   
           return;
           }
               
@@ -1988,22 +2027,22 @@ class Actions{
           
           switch (actor.info.deathsound)
           {
-            case 0:
+            case sfx_None:
           return;
               
             case sfx_podth1:
             case sfx_podth2:
             case sfx_podth3:
-          sound = sfx_podth1 + P_Random ()%3;
+          sound = sfxenum_t.sfx_podth1.ordinal() + RND.P_Random ()%3;
           break;
               
             case sfx_bgdth1:
             case sfx_bgdth2:
-          sound = sfx_bgdth1 + P_Random ()%2;
+          sound = sfxenum_t.sfx_bgdth1.ordinal() + RND.P_Random ()%2;
           break;
           
             default:
-          sound = actor.info.deathsound;
+          sound = actor.info.deathsound.ordinal();
           break;
           }
 
@@ -2026,7 +2065,7 @@ class Actions{
 
       void A_Pain (mobj_t  actor)
       {
-          if (actor.info.painsound)
+          if (actor.info.painsound!=null)
           ; // TODO: S_StartSound (actor, actor.info.painsound);   
       }
 
@@ -2047,7 +2086,7 @@ class Actions{
       //
       void A_Explode (mobj_t  thingy)
       {
-          P_RadiusAttack ( thingy, thingy.target, 128 );
+          MV.RadiusAttack ( thingy, thingy.target, 128 );
       }
 
 
@@ -2058,14 +2097,14 @@ class Actions{
       //
       void A_BossDeath (mobj_t  mo)
       {
-          thinker_t*  th;
+          thinker_t  th;
           mobj_t  mo2;
-          line_t  junk;
+          line_t  junk = null;
           int     i;
               
-          if ( gamemode == commercial)
+          if ( DS.gamemode == GameMode_t.commercial)
           {
-          if (gamemap != 7)
+          if (DS.gamemap != 7)
               return;
               
           if ((mo.type != mobjtype_t.MT_FATSO)
@@ -2074,10 +2113,10 @@ class Actions{
           }
           else
           {
-          switch(gameepisode)
+          switch(DS.gameepisode)
           {
             case 1:
-              if (gamemap != 8)
+              if (DS.gamemap != 8)
               return;
 
               if (mo.type != mobjtype_t.MT_BRUISER)
@@ -2085,7 +2124,7 @@ class Actions{
               break;
               
             case 2:
-              if (gamemap != 8)
+              if (DS.gamemap != 8)
               return;
 
               if (mo.type != mobjtype_t.MT_CYBORG)
@@ -2093,7 +2132,7 @@ class Actions{
               break;
               
             case 3:
-              if (gamemap != 8)
+              if (DS.gamemap != 8)
               return;
               
               if (mo.type != mobjtype_t.MT_SPIDER)
@@ -2102,7 +2141,7 @@ class Actions{
               break;
               
             case 4:
-              switch(gamemap)
+              switch(DS.gamemap)
               {
                 case 6:
               if (mo.type != mobjtype_t.MT_CYBORG)
@@ -2116,12 +2155,11 @@ class Actions{
               
                 default:
               return;
-              break;
               }
               break;
               
             default:
-              if (gamemap != 8)
+              if (DS.gamemap != 8)
               return;
               break;
           }
@@ -2131,7 +2169,7 @@ class Actions{
           
           // make sure there is a player alive for victory
           for (i=0 ; i<MAXPLAYERS ; i++)
-          if (playeringame[i] && players[i].health > 0)
+          if (DS.playeringame[i] && DS.players[i].health[0] > 0)
               break;
           
           if (i==MAXPLAYERS)
@@ -2139,12 +2177,12 @@ class Actions{
           
           // scan the remaining thinkers to see
           // if all bosses are dead
-          for (th = thinkercap.next ; th != &thinkercap ; th=th.next)
+          for (th = thinkercap.next ; th != thinkercap ; th=th.next)
           {
-          if (th.function.acp1 != (actionf_p1)P_MobjThinker)
+          if (th.function != think_t.P_MobjThinker)
               continue;
           
-          mo2 = (mobj_t *)th;
+          mo2 = (mobj_t)th;
           if (mo2 != mo
               && mo2.type == mo.type
               && mo2.health > 0)
@@ -2155,54 +2193,51 @@ class Actions{
           }
           
           // victory!
-          if ( gamemode == commercial)
+          if ( DS.gamemode == GameMode_t.commercial)
           {
-          if (gamemap == 7)
+          if (DS.gamemap == 7)
           {
               if (mo.type == mobjtype_t.MT_FATSO)
               {
               junk.tag = 666;
-              EV.DoFloor(&junk,lowerFloorToLowest);
+              EV.DoFloor(junk,floor_e.lowerFloorToLowest);
               return;
               }
               
               if (mo.type == mobjtype_t.MT_BABY)
               {
               junk.tag = 667;
-              EV.DoFloor(&junk,raiseToTexture);
+              EV.DoFloor(junk,floor_e.raiseToTexture);
               return;
               }
           }
           }
           else
           {
-          switch(gameepisode)
+          switch(DS.gameepisode)
           {
             case 1:
               junk.tag = 666;
-              EV.DoFloor (&junk, lowerFloorToLowest);
+              EV.DoFloor (junk, floor_e.lowerFloorToLowest);
               return;
-              break;
               
             case 4:
-              switch(gamemap)
+              switch(DS.gamemap)
               {
                 case 6:
               junk.tag = 666;
-              EV_DoDoor (&junk, blazeOpen);
+              EV.DoDoor (junk, vldoor_e.blazeOpen);
               return;
-              break;
               
                 case 8:
               junk.tag = 666;
-              EV.DoFloor (&junk, lowerFloorToLowest);
+              EV.DoFloor (junk, floor_e.lowerFloorToLowest);
               return;
-              break;
               }
           }
           }
           
-          G_ExitLevel ();
+          DG.ExitLevel ();
       }
 
 
@@ -2226,29 +2261,24 @@ class Actions{
 
       void
       A_OpenShotgun2
-      ( player_t* player,
-        pspdef_t* psp )
+      ( player_t player,
+        pspdef_t psp )
       {
           ; // TODO: S_StartSound (player.mo, sfx_dbopn);
       }
 
       void
       A_LoadShotgun2
-      ( player_t* player,
-        pspdef_t* psp )
+      ( player_t player,
+        pspdef_t psp )
       {
           ; // TODO: S_StartSound (player.mo, sfx_dbload);
       }
 
       void
-      A_ReFire
-      ( player_t* player,
-        pspdef_t* psp );
-
-      void
       A_CloseShotgun2
-      ( player_t* player,
-        pspdef_t* psp )
+      ( player_t player,
+        pspdef_t psp )
       {
           ; // TODO: S_StartSound (player.mo, sfx_dbcls);
           A_ReFire(player,psp);
@@ -2256,7 +2286,7 @@ class Actions{
 
 
 
-      mobj_t      braintargets[32];
+      mobj_t[]      braintargets=new mobj_t[NUMBRAINTARGETS];
       int     numbraintargets;
       int     braintargeton;
 
@@ -2271,13 +2301,13 @@ class Actions{
           
           thinker = thinkercap.next;
           for (thinker = thinkercap.next ;
-           thinker != &thinkercap ;
+           thinker != thinkercap ;
            thinker = thinker.next)
           {
-          if (thinker.function.acp1 != (actionf_p1)P_MobjThinker)
+          if (thinker.function != think_t.P_MobjThinker)
               continue;   // not a mobj
 
-          m = (mobj_t *)thinker;
+          m = (mobj_t)thinker;
 
           if (m.type == mobjtype_t.MT_BOSSTARGET )
           {
@@ -2307,10 +2337,10 @@ class Actions{
           {
           y = mo.y - 320*FRACUNIT;
           z = 128 + RND.P_Random()*2*FRACUNIT;
-          th = P_SpawnMobj (x,y,z, mobjtype_t.MT_ROCKET);
+          th = SpawnMobj (x,y,z, mobjtype_t.MT_ROCKET);
           th.momz = RND.P_Random()*512;
 
-          P_SetMobjState (th, S_BRAINEXPLODE1);
+          th.SetMobjState (statenum_t.S_BRAINEXPLODE1);
 
           th.tics -= RND.P_Random()&7;
           if (th.tics < 1)
@@ -2332,10 +2362,10 @@ class Actions{
           x = mo.x + (RND.P_Random () - RND.P_Random ())*2048;
           y = mo.y;
           z = 128 + RND.P_Random()*2*FRACUNIT;
-          th = P_SpawnMobj (x,y,z, mobjtype_t.MT_ROCKET);
+          th = SpawnMobj (x,y,z, mobjtype_t.MT_ROCKET);
           th.momz = RND.P_Random()*512;
 
-          P_SetMobjState (th, S_BRAINEXPLODE1);
+          th.SetMobjState (statenum_t.S_BRAINEXPLODE1);
 
           th.tics -= RND.P_Random()&7;
           if (th.tics < 1)
@@ -2345,7 +2375,7 @@ class Actions{
 
       void A_BrainDie (mobj_t     mo)
       {
-          G_ExitLevel ();
+          DG.ExitLevel ();
       }
 
       private int  easy = 0;
@@ -2367,9 +2397,9 @@ class Actions{
           newmobj = SpawnMissile (mo, targ, mobjtype_t.MT_SPAWNSHOT);
           newmobj.target = targ;
           newmobj.reactiontime =
-          ((targ.y - mo.y)/newmobj.momy) / newmobj.state.tics;
+          (int) (((targ.y - mo.y)/newmobj.momy) / newmobj.state.tics);
 
-          S_StartSound(NULL, sfx_bospit);
+          // TODO: S_StartSound(NULL, sfx_bospit);
       }
 
 
@@ -2389,17 +2419,17 @@ class Actions{
           int     r;
           mobjtype_t  type;
           
-          if (--mo.reactiontime)
+          if (--mo.reactiontime!=0)
           return; // still flying
           
           targ = mo.target;
 
           // First spawn teleport fog.
-          fog = P_SpawnMobj (targ.x, targ.y, targ.z, mobjtype_t.MT_SPAWNFIRE);
+          fog = SpawnMobj (targ.x, targ.y, targ.z, mobjtype_t.MT_SPAWNFIRE);
           ; // TODO: S_StartSound (fog, sfx_telept);
 
           // Randomly select monster to spawn.
-          r = P_Random ();
+          r = RND.P_Random ();
 
           // Probability distribution (kind of :),
           // decreasing likelihood.
@@ -2426,15 +2456,15 @@ class Actions{
           else
           type = mobjtype_t.MT_BRUISER;      
 
-          newmobj = P_SpawnMobj (targ.x, targ.y, targ.z, type);
-          if (P_LookForPlayers (newmobj, true) )
-          P_SetMobjState (newmobj, newmobj.info.seestate);
+          newmobj = SpawnMobj (targ.x, targ.y, targ.z, type);
+          if (EN.LookForPlayers (newmobj, true) )
+          SetMobjState (newmobj, newmobj.info.seestate);
           
           // telefrag anything in this spot
-          P_TeleportMove (newmobj, newmobj.x, newmobj.y);
+          MV.TeleportMove (newmobj, newmobj.x, newmobj.y);
 
           // remove self (i.e., cube).
-          P_RemoveMobj (mo);
+          RemoveMobj (mo);
       }
     
 //
@@ -2456,15 +2486,6 @@ class Actions{
             
            // TODO:  S_StartSound (mo, sound);
         }
-
-    
-    public void A_CloseShotgun2       ( player_t player,
-            pspdef_t psp ) {
-        // TODO:  S_StartSound (((player_t)player).mo, sfxenum_t.sfx_dbcls);
-        A_ReFire(player,psp);
-        
-    }
-
     
     //
  // A_ReFire
@@ -2476,16 +2497,16 @@ class Actions{
      // check for fire
      //  (if a weaponchange is pending, let it go through instead)
      if ( flags(player.cmd.buttons,BT_ATTACK) 
-      && player.pendingweapon == wp_nochange
-      && player.health)
+      && player.pendingweapon == weapontype_t.wp_nochange
+      && player.health[0]!=0)
      {
      player.refire++;
-     player.P_FireWeapon (player);
+     EN.FireWeapon (player);
      }
      else
      {
      player.refire = 0;
-     P_CheckAmmo (player);
+     player.CheckAmmo();
      }
  }
 }
@@ -2521,17 +2542,12 @@ class Actions{
             switch(what){
             case AimTraverse:
                 return AimTraverse(arg);
-                break;
             case ShootTraverse:
                 return ShootTraverse(arg);
-                break;
             case SlideTraverse:
                 return SlideTraverse(arg);
-                break;
             case UseTraverse:
-                return UseTraverse(arg);
-                break;
-                
+                return UseTraverse(arg);                
             }
             // Shouldn't happen
             return false;
@@ -2546,18 +2562,13 @@ class Actions{
         public boolean dispatch(PIT what, Object arg){
             switch(what){
             case VileCheck:
-                return VileCheck((mobj_t)arg);
-                break;
+                return A.VileCheck((mobj_t)arg);
             case CheckThing:
-                return CheckThing((mobj_t)arg);
-                break;
+                return CheckThing((mobj_t)arg);                
             case StompThing:
-                return StompThing((mobj_t)arg);
-                break;
+                return StompThing((mobj_t)arg);                
             case CheckLine:
                 return CheckLine((line_t)arg);
-                break;
-                
             }
          // Shouldn't happen
             return false;
@@ -2570,7 +2581,7 @@ class Actions{
         {
             mobj_t mo;
             
-            if (P_ThingHeightClip (thing))
+            if (ThingHeightClip (thing))
             {
             // keep checking
             return true;
@@ -2593,7 +2604,7 @@ class Actions{
             // crunch dropped items
             if (flags(thing.flags, MF_DROPPED))
             {
-            P_RemoveMobj (thing);
+            RemoveMobj (thing);
             
             // keep checking
             return true;        
@@ -2607,55 +2618,24 @@ class Actions{
             
             nofit = true;
 
-            if (crushchange && !flags(leveltime,3) )
+            if (crushchange && !flags(DS.leveltime,3) )
             {
-            DamageMobj(thing,NULL,NULL,10);
+            DamageMobj(	thing,null,null,10);
 
             // spray blood in a random direction
-            mo = P_SpawnMobj (thing.x,
+            mo = SpawnMobj (thing.x,
                       thing.y,
                       thing.z + thing.height/2, mobjtype_t.MT_BLOOD);
             
-            mo.momx = (RND.P_Random() - P_Random ())<<12;
-            mo.momy = (RND.P_Random() - P_Random ())<<12;
+            mo.momx = (RND.P_Random() - RND.P_Random ())<<12;
+            mo.momy = (RND.P_Random() - RND.P_Random ())<<12;
             }
 
             // keep checking (crush other things)   
             return true;    
         }
         
-        public boolean VileCheck (mobj_t   thing)
-        {
-            int     maxdist;
-            boolean check;
-            
-            if (!(thing.flags & MF_CORPSE) )
-            return true;    // not a monster
-            
-            if (thing.tics != -1)
-            return true;    // not lying still yet
-            
-            if (thing.info.raisestate == S_NULL)
-            return true;    // monster doesn't have a raise state
-            
-            maxdist = thing.info.radius + mobjinfo[mobjtype_t.MT_VILE].radius;
-            
-            if ( Math.abs(thing.x - viletryx) > maxdist
-             || Math.abs(thing.y - viletryy) > maxdist )
-            return true;        // not actually touching
                 
-            corpsehit = thing;
-            corpsehit.momx = corpsehit.momy = 0;
-            corpsehit.height <<= 2;
-            check = P_CheckPosition (corpsehit, corpsehit.x, corpsehit.y);
-            corpsehit.height >>= 2;
-
-            if (!check)
-            return true;        // doesn't fit here
-                
-            return false;       // got one, so stop checking
-        }
-        
         /** PIT_CheckLine
          * Adjusts tmfloorz and tmceilingz as lines are contacted
          */
@@ -2667,7 +2647,7 @@ class Actions{
             || tmbbox[BOXBOTTOM] >= ld.bbox[BOXTOP] )
             return true;
 
-            if (ld.P_BoxOnLineSide (tmbbox) != -1)
+            if (ld.BoxOnLineSide (tmbbox) != -1)
             return true;
                 
             // A line has been hit
@@ -2694,7 +2674,7 @@ class Actions{
             }
 
             // set openrange, opentop, openbottom
-            P_LineOpening (ld); 
+            LineOpening (ld); 
             
             // adjust floor / ceiling heights
             if (opentop < tmceilingz)
@@ -2710,7 +2690,7 @@ class Actions{
             tmdropoffz = lowfloor;
                 
             // if contacted a special line, add it to the list
-            if (ld.special)
+            if (ld.special!=0)
             {
             spechit[numspechit] = ld;
             numspechit++;
@@ -2759,7 +2739,7 @@ class Actions{
 
             
             // missiles can hit other things
-            if (tmthing.flags & MF_MISSILE)
+            if (flags(tmthing.flags , MF_MISSILE))
             {
             // see if it went over / under
             if (tmthing.z > thing.z + thing.height)
@@ -2767,7 +2747,7 @@ class Actions{
             if (tmthing.z+tmthing.height < thing.z)
                 return true;        // underneath
                 
-            if (tmthing.target && (
+            if (tmthing.target!=null && (
                 tmthing.target.type == thing.type || 
                 (tmthing.target.type == mobjtype_t.MT_KNIGHT && thing.type == mobjtype_t.MT_BRUISER)||
                 (tmthing.target.type == mobjtype_t.MT_BRUISER && thing.type == mobjtype_t.MT_KNIGHT) ) )
@@ -2784,10 +2764,10 @@ class Actions{
                 }
             }
             
-            if (! (thing.flags & MF_SHOOTABLE) )
+            if (! flags(thing.flags ,MF_SHOOTABLE) )
             {
                 // didn't do any damage
-                return !(thing.flags & MF_SOLID);   
+                return !flags(thing.flags , MF_SOLID);   
             }
             
             // damage / explode
@@ -2799,10 +2779,10 @@ class Actions{
             }
             
             // check for special pickup
-            if (thing.flags & MF_SPECIAL)
+            if (flags(thing.flags , MF_SPECIAL))
             {
-            solid = thing.flags&MF_SOLID;
-            if (tmflags&MF_PICKUP)
+            solid = flags(thing.flags,MF_SOLID);
+            if (flags(tmflags,MF_PICKUP))
             {
                 // can remove thing
                 TouchSpecialThing (thing, tmthing);
@@ -2810,7 +2790,7 @@ class Actions{
             return !solid;
             }
             
-            return !(thing.flags & MF_SOLID);
+            return !flags(thing.flags ,MF_SOLID);
         }
 
 
@@ -2842,7 +2822,7 @@ class Actions{
          if ( (tmthing.player==null) && (DS.gamemap != 30))
          return false;   
              
-         P_DamageMobj (thing, tmthing, tmthing, 10000); // in interaction
+         DamageMobj (thing, tmthing, tmthing, 10000); // in interaction
          
          return true;
         }
@@ -2865,8 +2845,8 @@ class Actions{
             || thing.type == mobjtype_t.MT_SPIDER)
             return true;    
                 
-            dx = abs(thing.x - bombspot.x);
-            dy = abs(thing.y - bombspot.y);
+            dx = Math.abs(thing.x - bombspot.x);
+            dy = Math.abs(thing.y - bombspot.y);
             
             dist = dx>dy ? dx : dy;
             dist = (dist - thing.radius) >> FRACBITS;
@@ -2877,10 +2857,10 @@ class Actions{
             if (dist >= bombdamage)
             return true;    // out of range
 
-            if ( P_CheckSight (thing, bombspot) )
+            if ( EN.CheckSight (thing, bombspot) )
             {
             // must be in direct path
-            P_DamageMobj (thing, bombspot, bombsource, bombdamage - dist);
+            DamageMobj (thing, bombspot, bombsource, bombdamage - dist);
             }
             
             return true;
@@ -2902,15 +2882,15 @@ class Actions{
                 
             if (in.isaline)
             {
-            li = in.d.line;
+            li = (line_t) in.d();
             
-            if ( !(li.flags & ML_TWOSIDED) )
+            if ( !flags(li.flags , ML_TWOSIDED) )
                 return false;       // stop
             
             // Crosses a two sided line.
             // A two sided line will restrict
             // the possible target ranges.
-            P_LineOpening (li);
+            LineOpening (li);
             
             if (openbottom >= opentop)
                 return false;       // stop
@@ -2938,11 +2918,11 @@ class Actions{
             }
             
             // shoot a thing
-            th = in.d.thing;
+            th = (mobj_t) in.d();
             if (th == shootthing)
             return true;            // can't shoot self
             
-            if (!(th.flags&MF_SHOOTABLE))
+            if (!flags(th.flags,MF_SHOOTABLE))
             return true;            // corpse or something
 
             // check angles to see if the thing can be aimed at
@@ -3013,18 +2993,17 @@ class Actions{
                 
             if (in.isaline)
             {
-            li = in.d.line;
+            li = (line_t) in.d();
             
-            if (li.special)
-                P_ShootSpecialLine (shootthing, li);
+            if (li.special!=0)
+                ShootSpecialLine (shootthing, li);
 
             if ( !flags(li.flags, ML_TWOSIDED) ) {
                 hitline=true;
-                break;
                 }
             
             // crosses a two sided line
-            P_LineOpening (li);
+            LineOpening (li);
                 
             dist = FixedMul (attackrange, in.frac);
 
@@ -3033,7 +3012,6 @@ class Actions{
                 slope = FixedDiv (openbottom - shootz , dist);
                 if (slope > aimslope){      
                     hitline=true;
-                    break;
                 }
             }
                 
@@ -3042,7 +3020,6 @@ class Actions{
                 slope = FixedDiv (opentop - shootz , dist);
                 if (slope < aimslope){      
                     hitline=true;
-                    break;
                 }
             }
 
@@ -3058,14 +3035,14 @@ class Actions{
             y = trace.y + FixedMul (trace.dy, frac);
             z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
-            if (li.frontsector.ceilingpic == skyflatnum)
+            if (li.frontsector.ceilingpic == DS.skyflatnum)
             {
                 // don't shoot the sky!
                 if (z > li.frontsector.ceilingheight)
                 return false;
                 
                 // it's a sky hack wall
-                if  (li.backsector && li.backsector.ceilingpic == skyflatnum)
+                if  (li.backsector!=null && li.backsector.ceilingpic == DS.skyflatnum)
                 return false;       
             }
 
@@ -3077,11 +3054,11 @@ class Actions{
             }
             
             // shoot a thing
-            th = in.d.thing;
+            th = (mobj_t) in.d();
             if (th == shootthing)
             return true;        // can't shoot self
             
-            if (!(th.flags&MF_SHOOTABLE))
+            if (!flags(th.flags,MF_SHOOTABLE))
             return true;        // corpse or something
                 
             // check angles to see if the thing can be aimed at
@@ -3107,13 +3084,13 @@ class Actions{
 
             // Spawn bullet puffs or blod spots,
             // depending on target type.
-            if (in.d.thing.flags & MF_NOBLOOD)
-            P_SpawnPuff (x,y,z);
+            if (flags(((mobj_t)in.d()).flags , MF_NOBLOOD))
+            SpawnPuff (x,y,z);
             else
-            P_SpawnBlood (x,y,z, la_damage);
+            SpawnBlood (x,y,z, la_damage);
 
-            if (la_damage)
-            P_DamageMobj (th, shootthing, shootthing, la_damage);
+            if (la_damage!=0)
+            DamageMobj (th, shootthing, shootthing, la_damage);
 
             // don't go any farther
             return false;
@@ -3164,7 +3141,7 @@ class Actions{
             tmfloorz = tmdropoffz = newsubsec.sector.floorheight;
             tmceilingz = newsubsec.sector.ceilingheight;
                     
-             // TODO: validcount++; // This is r_main's ?
+            R.validcount++; // This is r_main's ?
             numspechit = 0;
             
             // stomp on any things contacted
@@ -3175,7 +3152,7 @@ class Actions{
 
             for (bx=xl ; bx<=xh ; bx++)
             for (by=yl ; by<=yh ; by++)
-                if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
+                if (!BlockThingsIterator(bx,by,PIT.StompThing))
                 return false;
             
             // the move is ok,
@@ -3248,7 +3225,7 @@ class Actions{
             tmbbox[BOXRIGHT] = x + tmthing.radius;
             tmbbox[BOXLEFT] = x - tmthing.radius;
 
-            newsubsec = PointInSubsector (x,y);
+            newsubsec = R.PointInSubsector (x,y);
             ceilingline = null;
             
             // The base floor / ceiling is from the subsector
@@ -3276,7 +3253,7 @@ class Actions{
 
             for (bx=xl ; bx<=xh ; bx++)
             for (by=yl ; by<=yh ; by++)
-                if (!P_BlockThingsIterator(bx,by,PIT_CheckThing))
+                if (!BlockThingsIterator(bx,by,PIT.CheckThing))
                 return false;
             
             // check lines
@@ -3287,7 +3264,7 @@ class Actions{
 
             for (bx=xl ; bx<=xh ; bx++)
             for (by=yl ; by<=yh ; by++)
-                if (!BlockLinesIterator (bx,by,PIT_CheckLine))
+                if (!BlockLinesIterator (bx,by,PIT.CheckLine))
                 return false;
 
             return true;
@@ -3352,7 +3329,7 @@ class Actions{
             // if any special lines were hit, do the effect
             if (! flags(thing.flags,(MF_TELEPORT|MF_NOCLIP)) )
             {
-            while (numspechit-.0)
+            while (numspechit-->0)
             {
                 // see if the line was crossed
                 ld = spechit[numspechit];
@@ -3361,7 +3338,7 @@ class Actions{
                 if (side != oldside)
                 {
                 if (ld.special!=0)
-                    CrossSpecialLine (ld, oldside, thing);
+                    CrossSpecialLine (ld, oldside?1:0, thing);
                 }
             }
             }
@@ -3386,7 +3363,7 @@ class Actions{
             
             onfloor = (thing.z == thing.floorz);
             
-            P_CheckPosition (thing, thing.x, thing.y);  
+            CheckPosition (thing, thing.x, thing.y);  
             // what about stranding a monster partially off an edge?
             
             thing.floorz = tmfloorz;
@@ -3436,46 +3413,45 @@ class Actions{
         //
         private void HitSlideLine (line_t ld)
         {
-            int         side;
+            boolean         side;
 
-            angle_t     lineangle;
-            angle_t     moveangle;
-            angle_t     deltaangle;
+            // all angles
+            int     lineangle, moveangle,deltaangle;
             
-            fixed_t     movelen;
-            fixed_t     newlen;
+            // fixed_t
+            int     movelen,  newlen;
             
             
-            if (ld.slopetype == ST_HORIZONTAL)
+            if (ld.slopetype == slopetype_t.ST_HORIZONTAL)
             {
             tmymove = 0;
             return;
             }
             
-            if (ld.slopetype == ST_VERTICAL)
+            if (ld.slopetype == slopetype_t.ST_VERTICAL)
             {
             tmxmove = 0;
             return;
             }
             
-            side = P_PointOnLineSide (slidemo.x, slidemo.y, ld);
+            side = ld.PointOnLineSide (slidemo.x, slidemo.y);
             
-            lineangle = R_PointToAngle2 (0,0, ld.dx, ld.dy);
+            lineangle = R.PointToAngle2 (0,0, ld.dx, ld.dy);
 
-            if (side == 1)
+            if (side == true)
             lineangle += ANG180;
 
-            moveangle = R_PointToAngle2 (0,0, tmxmove, tmymove);
+            moveangle = R.PointToAngle2 (0,0, tmxmove, tmymove);
             deltaangle = moveangle-lineangle;
 
             if (deltaangle > ANG180)
             deltaangle += ANG180;
             //  system.Error ("SlideLine: ang>ANG180");
 
-            lineangle >>= ANGLETOFINESHIFT;
-            deltaangle >>= ANGLETOFINESHIFT;
+            lineangle >>>= ANGLETOFINESHIFT;
+            deltaangle >>>= ANGLETOFINESHIFT;
             
-            movelen = P_AproxDistance (tmxmove, tmymove);
+            movelen = AproxDistance (tmxmove, tmymove);
             newlen = FixedMul (movelen, finecosine[deltaangle]);
 
             tmxmove = FixedMul (newlen, finecosine[lineangle]); 
@@ -3493,36 +3469,25 @@ class Actions{
             if (!in.isaline)
             system.Error ("PTR_SlideTraverse: not a line?");
                 
-            li = in.d.line;
+            li = (line_t) in.d();
             
-            if ( ! (li.flags & ML_TWOSIDED) )
+            if ( ! flags(li.flags ,ML_TWOSIDED) )
             {
-            if (P_PointOnLineSide (slidemo.x, slidemo.y, li))
+            if (li.PointOnLineSide (slidemo.x, slidemo.y))
             {
                 // don't hit the back side
                 return true;        
             }
-            goto isblocking;
+            return isblocking(in,li);
             }
 
             // set openrange, opentop, openbottom
-            P_LineOpening (li);
+            LineOpening (li);
             
-            if (openrange < slidemo.height)
-            goto isblocking;        // doesn't fit
-                
-            if (opentop - slidemo.z < slidemo.height)
-            goto isblocking;        // mobj is too high
-
-            if (openbottom - slidemo.z > 24*FRACUNIT )
-            goto isblocking;        // too big a step up
-
-            // this line doesn't block movement
-            return true;        
-            
-            // the line does block movement,
-            // see if it is closer than best so far
-          isblocking:       
+            if ((openrange < slidemo.height)|| // doesn't fit
+                (opentop - slidemo.z < slidemo.height)|| // mobj is too high
+                (openbottom - slidemo.z > 24*FRACUNIT )) // too big a step up
+            {
             if (in.frac < bestslidefrac)
             {
             secondslidefrac = bestslidefrac;
@@ -3533,9 +3498,29 @@ class Actions{
             
             return false;   // stop
         }
+            
+            else
+            // this line doesn't block movement
+            return true;        
+            
 
+        }
 
-
+        private final boolean isblocking(intercept_t in, line_t li){
+        // the line does block movement,
+        // see if it is closer than best so far
+     
+        if (in.frac < bestslidefrac)
+        {
+        secondslidefrac = bestslidefrac;
+        secondslideline = bestslideline;
+        bestslidefrac = in.frac;
+        bestslideline = li;
+        }
+        
+        return false;   // stop
+        }
+        
         //
         // P_SlideMove
         // The momx / momy move is bad, so try to slide
@@ -3547,20 +3532,21 @@ class Actions{
         //
         void SlideMove (mobj_t mo)
         {
-            fixed_t     leadx;
-            fixed_t     leady;
-            fixed_t     trailx;
-            fixed_t     traily;
-            fixed_t     newx;
-            fixed_t     newy;
+        	// fixed_t
+            int     leadx,leady,trailx,traily,newx,newy;
             int         hitcount;
                 
             slidemo = mo;
             hitcount = 0;
+            boolean retry=true;
             
-          retry:
-            if (++hitcount == 3)
-            goto stairstep;     // don't loop forever
+          while(retry){
+            if (++hitcount == 3) {
+            	// goto stairstep
+                if (!TryMove (mo, mo.x, mo.y + mo.momy))
+                    TryMove (mo, mo.x + mo.momx, mo.y);
+                return;
+            }     // don't loop forever
 
             
             // trace along the three leading corners
@@ -3588,22 +3574,21 @@ class Actions{
                 
             bestslidefrac = FRACUNIT+1;
             
-            P_PathTraverse ( leadx, leady, leadx+mo.momx, leady+mo.momy,
-                     PT_ADDLINES, PTR_SlideTraverse );
-            P_PathTraverse ( trailx, leady, trailx+mo.momx, leady+mo.momy,
-                     PT_ADDLINES, PTR_SlideTraverse );
-            P_PathTraverse ( leadx, traily, leadx+mo.momx, traily+mo.momy,
-                     PT_ADDLINES, PTR_SlideTraverse );
+            PathTraverse ( leadx, leady, leadx+mo.momx, leady+mo.momy,
+                     PT_ADDLINES, PTR.SlideTraverse );
+            PathTraverse ( trailx, leady, trailx+mo.momx, leady+mo.momy,
+                     PT_ADDLINES, PTR.SlideTraverse );
+            PathTraverse ( leadx, traily, leadx+mo.momx, traily+mo.momy,
+                     PT_ADDLINES, PTR.SlideTraverse );
             
             // move up to the wall
             if (bestslidefrac == FRACUNIT+1)
             {
             // the move most have hit the middle, so stairstep
-              stairstep:
-            if (!P_TryMove (mo, mo.x, mo.y + mo.momy))
-                P_TryMove (mo, mo.x + mo.momx, mo.y);
-            return;
-            }
+                  if (!TryMove (mo, mo.x, mo.y + mo.momy))
+                      TryMove (mo, mo.x + mo.momx, mo.y);
+                  return;
+              }     // don't loop forever
 
             // fudge a bit to make sure it doesn't hit
             bestslidefrac -= 0x800; 
@@ -3612,8 +3597,13 @@ class Actions{
             newx = FixedMul (mo.momx, bestslidefrac);
             newy = FixedMul (mo.momy, bestslidefrac);
             
-            if (!P_TryMove (mo, mo.x+newx, mo.y+newy))
-                goto stairstep;
+            if (!TryMove (mo, mo.x+newx, mo.y+newy))
+            {
+            	// goto stairstep
+                if (!TryMove (mo, mo.x, mo.y + mo.momy))
+                    TryMove (mo, mo.x + mo.momx, mo.y);
+                return;
+            }     // don't loop forever
             }
             
             // Now continue along the wall.
@@ -3629,18 +3619,149 @@ class Actions{
             tmxmove = FixedMul (mo.momx, bestslidefrac);
             tmymove = FixedMul (mo.momy, bestslidefrac);
 
-            P_HitSlideLine (bestslideline); // clip the moves
+            HitSlideLine (bestslideline); // clip the moves
 
             mo.momx = tmxmove;
             mo.momy = tmymove;
                 
-            if (!P_TryMove (mo, mo.x+tmxmove, mo.y+tmymove))
-            {
-            goto retry;
+            retry=!TryMove (mo, mo.x+tmxmove, mo.y+tmymove);
             }
         }
 
+        //
+        // P_XYMovement  
+        //
+        protected final static int STOPSPEED =      0x1000;
+        protected final static int FRICTION =       0xe800;
 
+        public void XYMovement (mobj_t mo) 
+        {   
+        int     ptryx, ptryy; // pointers to fixed_t ???
+        player_t   player;
+        int  xmove, ymove; // fixed_t
+              
+        if ((mo.momx==0) && (mo.momy==0))
+        {
+        if ((mo.flags & MF_SKULLFLY)!=0)
+        {
+          // the skull slammed into something
+          mo.flags &= ~MF_SKULLFLY;
+          mo.momx = mo.momy = mo.momz = 0;
+
+          SetMobjState (mo, mo.info.spawnstate);
+        }
+        return;
+        }
+
+        player = mo.player;
+          
+        if (mo.momx > MAXMOVE)
+        mo.momx = MAXMOVE;
+        else if (mo.momx < -MAXMOVE)
+        mo.momx = -MAXMOVE;
+
+        if (mo.momy > MAXMOVE)
+        mo.momy = MAXMOVE;
+        else if (mo.momy < -MAXMOVE)
+        mo.momy = -MAXMOVE;
+          
+        xmove = mo.momx;
+        ymove = mo.momy;
+
+        do
+        {
+        if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2)
+        {
+          ptryx = mo.x + xmove/2;
+          ptryy = mo.y + ymove/2;
+          xmove >>= 1;
+          ymove >>= 1;
+        }
+        else
+        {
+          ptryx = mo.x + xmove;
+          ptryy = mo.y + ymove;
+          xmove = ymove = 0;
+        }
+          
+        if (!MV.TryMove (mo, ptryx, ptryy))
+        {
+          // blocked move
+          if (mo.player!=null)
+          {   // try to slide along it
+          MV.SlideMove (mo);
+          }
+          else if (flags(mo.flags , MF_MISSILE))
+          {
+          // explode a missile
+          if (ceilingline!=null &&
+              ceilingline.backsector!=null &&
+              ceilingline.backsector.ceilingpic == DS.skyflatnum)
+          {
+              // Hack to prevent missiles exploding
+              // against the sky.
+              // Does not handle sky floors.
+              RemoveMobj (mo);
+              return;
+          }
+          ExplodeMissile (mo);
+          }
+          else
+          mo.momx = mo.momy = 0;
+        }
+        } while ((xmove | ymove)!=0);
+
+        // slow down
+        if (player!=null && flags(player.cheats , player.CF_NOMOMENTUM))
+        {
+        // debug option for no sliding at all
+        mo.momx = mo.momy = 0;
+        return;
+        }
+
+        if (flags(mo.flags , (MF_MISSILE | MF_SKULLFLY)) )
+        return;     // no friction for missiles ever
+          
+        if (mo.z > mo.floorz)
+        return;     // no friction when airborne
+
+        if (flags(mo.flags , MF_CORPSE))
+        {
+        // do not stop sliding
+        //  if halfway off a step with some momentum
+        if (mo.momx > FRACUNIT/4
+          || mo.momx < -FRACUNIT/4
+          || mo.momy > FRACUNIT/4
+          || mo.momy < -FRACUNIT/4)
+        {
+          if (mo.floorz != mo.subsector.sector.floorheight)
+          return;
+        }
+        }
+
+        if (mo.momx > -STOPSPEED
+        && mo.momx < STOPSPEED
+        && mo.momy > -STOPSPEED
+        && mo.momy < STOPSPEED
+        && (player==null
+          || (player.cmd.forwardmove== 0
+          && player.cmd.sidemove == 0 ) ) )
+        {
+        // if in a walking frame, stop moving
+        // TODO: we need a way to get state indexed inside of states[], to sim pointer arithmetic.
+       // FIX: added an "id" field.
+        if ( player!=null&&(int)(player.mo.state.id- statenum_t.S_PLAY_RUN1.ordinal()) < 4)
+        	player.mo.SetMobjState (statenum_t.S_PLAY);
+
+        mo.momx = 0;
+        mo.momy = 0;
+        }
+        else
+        {
+        mo.momx = FixedMul (mo.momx, FRICTION);
+        mo.momy = FixedMul (mo.momy, FRICTION);
+        }
+        }
         //
         // P_LineAttack
         //
@@ -3689,12 +3810,12 @@ class Actions{
             attackrange = distance;
             linetarget = null;
             
-            P_PathTraverse ( t1.x, t1.y,
+            PathTraverse ( t1.x, t1.y,
                      x2, y2,
                      PT_ADDLINES|PT_ADDTHINGS,
                      PTR.AimTraverse );
                 
-            if (linetarget)
+            if (linetarget!=null)
             return aimslope;
 
             return 0;
@@ -3732,10 +3853,10 @@ class Actions{
             attackrange = distance;
             aimslope = slope;
                 
-            P_PathTraverse ( t1.x, t1.y,
+            PathTraverse ( t1.x, t1.y,
                      x2, y2,
                      PT_ADDLINES|PT_ADDTHINGS,
-                     PTR_ShootTraverse );
+                     PTR.ShootTraverse );
         }
          
 
@@ -3747,14 +3868,16 @@ class Actions{
 
         boolean UseTraverse (intercept_t in)
         {
-            int     side;
+            boolean     side;
+            // FIXME: some sanity check here?
+            line_t line=(line_t) in.d();
             
-            if (!in.d.line.special)
+            if (line.special==0)
             {
-            P_LineOpening (in.d.line);
+            LineOpening (line);
             if (openrange <= 0)
             {
-                ; // TODO: (usething, sfx_noway);
+                ; // TODO: S_StartSound(usething, sfx_noway);
                 
                 // can't use through a wall
                 return false;   
@@ -3763,13 +3886,13 @@ class Actions{
             return true ;       
             }
             
-            side = 0;
-            if (P_PointOnLineSide (usething.x, usething.y, in.d.line) == 1)
-            side = 1;
+            side = false;
+            if (line.PointOnLineSide (usething.x, usething.y))
+            side = true;
             
             //  return false;       // don't use back side
             
-            P_UseSpecialLine (usething, in.d.line, side);
+            UseSpecialLine (usething, line, side);
 
             // can't use for than one special line in a row
             return false;
@@ -3794,7 +3917,7 @@ class Actions{
             x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angle];
             y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
             
-            P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse );
+            PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR.UseTraverse );
         }
 
 
@@ -3841,7 +3964,7 @@ class Actions{
             
             for (y=yl ; y<=yh ; y++)
             for (x=xl ; x<=xh ; x++)
-                P_BlockThingsIterator (x, y, PIT_RadiusAttack );
+                BlockThingsIterator (x, y, PIT.RadiusAttack );
         }
 
 
@@ -3904,7 +4027,7 @@ class Actions{
          * OPTIMIZE: keep this precalculated
          */
 
-        public void P_LineOpening (line_t linedef)
+        public void LineOpening (line_t linedef)
         {
          sector_t   front;
          sector_t   back;
@@ -4032,7 +4155,7 @@ class Actions{
          //offset = *(blockmap+offset);
 
          // for ( int list = blockmaplump[offset] ; *list != -1 ; list++)
-         {
+         
              for (int list=offset;LL.blockmaplump[list]!=-1;list++){
                  ld = LL.lines[list];
          if (ld.validcount == R.validcount)
@@ -4040,24 +4163,20 @@ class Actions{
 
          ld.validcount = R.validcount;
              
-         if ( !Movement.dispatch(func,ld) )
+         if ( !MV.dispatch(func,ld) )
              return false;
          }
          return true;    // everything was checked
         }
 
-
-        
-
-
-
         //
         //INTERCEPT ROUTINES
         //
-        intercept_t intercepts=new intercept_t[MAXINTERCEPTS];
+        intercept_t[] intercepts=new intercept_t[MAXINTERCEPTS];
+        C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
         int    intercept_p;
 
-        divline_t   trace;
+        public divline_t   trace;
         boolean     earlyout;
         int     ptflags;
 
@@ -4071,12 +4190,11 @@ class Actions{
         //are on opposite sides of the trace.
         //Returns true if earlyout and a solid line hit.
         //
-        boolean
-        PIT_AddLineIntercepts (line_t ld)
+        boolean AddLineIntercepts (line_t ld)
         {
-         int         s1;
-         int         s2;
-         fixed_t     frac;
+         boolean         s1;
+         boolean         s2;
+         int     frac;
          divline_t       dl;
          
          // avoid precision problems with two routines
@@ -4085,21 +4203,21 @@ class Actions{
           || trace.dx < -FRACUNIT*16
           || trace.dy < -FRACUNIT*16)
          {
-         s1 = P_PointOnDivlineSide (ld.v1.x, ld.v1.y, &trace);
-         s2 = P_PointOnDivlineSide (ld.v2.x, ld.v2.y, &trace);
+         s1 = trace.PointOnDivlineSide (ld.v1x, ld.v1.y);
+         s2 = trace.PointOnDivlineSide(ld.v2x, ld.v2y);
          }
          else
          {
-         s1 = P_PointOnLineSide (trace.x, trace.y, ld);
-         s2 = P_PointOnLineSide (trace.x+trace.dx, trace.y+trace.dy, ld);
+         s1 = ld.PointOnLineSide (trace.x, trace.y);
+         s2 = ld.PointOnLineSide (trace.x+trace.dx, trace.y+trace.dy);
          }
          
          if (s1 == s2)
          return true;    // line isn't crossed
          
          // hit the line
-         P_MakeDivline (ld, &dl);
-         frac = P_InterceptVector (&trace, &dl);
+         dl.MakeDivline (ld);
+         frac = InterceptVector (trace, dl);
 
          if (frac < 0)
          return true;    // behind source
@@ -4107,15 +4225,15 @@ class Actions{
          // try to early out the check
          if (earlyout
          && frac < FRACUNIT
-         && !ld.backsector)
+         && ld.backsector==null)
          {
          return false;   // stop checking
          }
          
-         
-         intercept_p.frac = frac;
-         intercept_p.isaline = true;
-         intercept_p.d.line = ld;
+         // "create" a new intercept in the static intercept pool.
+         intercepts[intercept_p].frac = frac;
+         intercepts[intercept_p].isaline = true;
+         intercepts[intercept_p].line = ld;
          intercept_p++;
 
          return true;    // continue
@@ -4126,21 +4244,17 @@ class Actions{
         //
         //PIT_AddThingIntercepts
         //
-        boolean PIT_AddThingIntercepts (mobj_t thing)
+        boolean AddThingIntercepts (mobj_t thing)
         {
-         fixed_t     x1;
-         fixed_t     y1;
-         fixed_t     x2;
-         fixed_t     y2;
+         int     x1,  y1,x2,y2; //fixed_t
          
-         int         s1;
-         int         s2;
+         boolean         s1,s2;
          
          boolean     tracepositive;
 
          divline_t       dl;
          
-         fixed_t     frac;
+         int     frac; //fixed_t
          
          tracepositive = (trace.dx ^ trace.dy)>0;
              
@@ -4162,8 +4276,8 @@ class Actions{
          y2 = thing.y + thing.radius;          
          }
          
-         s1 = P_PointOnDivlineSide (x1, y1, &trace);
-         s2 = P_PointOnDivlineSide (x2, y2, &trace);
+         s1 = trace.PointOnDivlineSide (x1, y1);
+         s2 = trace.PointOnDivlineSide (x2, y2);
 
          if (s1 == s2)
          return true;        // line isn't crossed
@@ -4173,14 +4287,15 @@ class Actions{
          dl.dx = x2-x1;
          dl.dy = y2-y1;
          
-         frac = P_InterceptVector (&trace, &dl);
+         frac = InterceptVector (trace, dl);
 
          if (frac < 0)
          return true;        // behind source
 
-         intercept_p.frac = frac;
-         intercept_p.isaline = false;
-         intercept_p.d.thing = thing;
+         // "create" a new intercept in the static intercept pool.
+         intercepts[intercept_p].frac = frac;
+         intercepts[intercept_p].isaline = false;
+         intercepts[intercept_p].thing = thing;
          intercept_p++;
 
          return true;        // keep going
@@ -4198,23 +4313,20 @@ class Actions{
         int   maxfrac )
         {
          int         count;
-         fixed_t     dist;
-         intercept_t    scan;
-         intercept_t    in;
+         int     dist; //fixed_t
+         intercept_t    in=null;  // shut up compiler warning
          
-         count = intercept_p - intercepts;
-         
-         in = 0;         // shut up compiler warning
-         
-         while (count--)
+         count = intercept_p;
+
+         while (count-->0)
          {
          dist = MAXINT;
-         for (scan = intercepts ; scan<intercept_p ; scan++)
+         for (int scan = 0 ; scan<intercept_p ; scan++)
          {
-             if (scan.frac < dist)
+             if (intercepts[scan].frac < dist)
              {
-             dist = scan.frac;
-             in = scan;
+             dist = intercepts[scan].frac;
+             in = intercepts[scan];
              }
          }
          
@@ -4233,7 +4345,7 @@ class Actions{
          }
         */
 
-             if ( !dispatch(func,in) )
+             if ( !MV.dispatch(func,in) )
              return false;   // don't bother going farther
 
          in.frac = MAXINT;
@@ -4253,7 +4365,7 @@ class Actions{
         //for all lines.
         //
         boolean
-        P_PathTraverse
+        PathTraverse
         ( int       x1,
         		int       y1,
         		int       x2,
@@ -4278,15 +4390,15 @@ class Actions{
 
          int     count;
              
-         earlyout = flags & PT_EARLYOUT;
+         earlyout = flags(flags ,PT_EARLYOUT);
              
-         validcount++;
-         intercept_p = intercepts;
+         R.validcount++;
+         intercept_p = 0;
          
-         if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
+         if ( ((x1-LL.bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
          x1 += FRACUNIT; // don't side exactly on a line
          
-         if ( ((y1-bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
+         if ( ((y1-LL.bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
          y1 += FRACUNIT; // don't side exactly on a line
 
          trace.x = x1;
@@ -4294,13 +4406,13 @@ class Actions{
          trace.dx = x2 - x1;
          trace.dy = y2 - y1;
 
-         x1 -= bmaporgx;
-         y1 -= bmaporgy;
+         x1 -= LL.bmaporgx;
+         y1 -= LL.bmaporgy;
          xt1 = x1>>MAPBLOCKSHIFT;
          yt1 = y1>>MAPBLOCKSHIFT;
 
-         x2 -= bmaporgx;
-         y2 -= bmaporgy;
+         x2 -= LL.bmaporgx;
+         y2 -= LL.bmaporgy;
          xt2 = x2>>MAPBLOCKSHIFT;
          yt2 = y2>>MAPBLOCKSHIFT;
 
@@ -4308,13 +4420,13 @@ class Actions{
          {
          mapxstep = 1;
          partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
-         ystep = FixedDiv (y2-y1,abs(x2-x1));
+         ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
          }
          else if (xt2 < xt1)
          {
          mapxstep = -1;
          partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
-         ystep = FixedDiv (y2-y1,abs(x2-x1));
+         ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
          }
          else
          {
@@ -4330,13 +4442,13 @@ class Actions{
          {
          mapystep = 1;
          partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
-         xstep = FixedDiv (x2-x1,abs(y2-y1));
+         xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
          }
          else if (yt2 < yt1)
          {
          mapystep = -1;
          partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
-         xstep = FixedDiv (x2-x1,abs(y2-y1));
+         xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
          }
          else
          {
@@ -4354,15 +4466,15 @@ class Actions{
          
          for (count = 0 ; count < 64 ; count++)
          {
-         if (flags & PT_ADDLINES)
+         if (flags(flags ,PT_ADDLINES))
          {
-             if (!P_BlockLinesIterator (mapx, mapy,PIT_AddLineIntercepts))
+             if (!BlockLinesIterator (mapx, mapy,PIT.AddLineIntercepts))
              return false;   // early out
          }
          
-         if (flags & PT_ADDTHINGS)
+         if (flags(flags ,PT_ADDTHINGS))
          {
-             if (!P_BlockThingsIterator (mapx, mapy,PIT_AddThingIntercepts))
+             if (!MV.BlockThingsIterator (mapx, mapy,PIT.AddThingIntercepts))
              return false;   // early out
          }
              
@@ -4391,6 +4503,10 @@ class Actions{
 
 
 class Lights{
+	public static final int GLOWSPEED = 8;
+	public static final int STROBEBRIGHT = 5;
+	public static final int FASTDARK = 15;
+	public static final int SLOWDARK = 35;
     //
  // FIRELIGHT FLICKER
  //
@@ -4402,15 +4518,15 @@ class Lights{
  {
      int amount;
      
-     if (--flick.count)
+     if (--flick.count!=0)
      return;
      
      amount = (RND.P_Random()&3)*16;
      
      if (flick.sector.lightlevel - amount < flick.minlight)
-     flick.sector.lightlevel = flick.minlight;
+     flick.sector.lightlevel = (short) flick.minlight;
      else
-     flick.sector.lightlevel = flick.maxlight - amount;
+     flick.sector.lightlevel = (short) (flick.maxlight - amount);
 
      flick.count = 4;
  }
@@ -4428,14 +4544,14 @@ class Lights{
      // Nothing special about it during gameplay.
      sector.special = 0; 
      
-     flick = Z_Malloc ( sizeof(*flick), PU_LEVSPEC, 0);
+     flick = new fireflicker_t();
 
-     P_AddThinker (&flick.thinker);
+     AddThinker (flick.thinker);
 
-     flick.thinker.function.acp1 = (actionf_p1) T_FireFlicker;
+     flick.thinker.function = think_t.T_FireFlicker;
      flick.sector = sector;
      flick.maxlight = sector.lightlevel;
-     flick.minlight = P_FindMinSurroundingLight(sector,sector.lightlevel)+16;
+     flick.minlight = FindMinSurroundingLight(sector,sector.lightlevel)+16;
      flick.count = 4;
  }
 
@@ -4452,17 +4568,17 @@ class Lights{
  //
  void LightFlash (lightflash_t flash)
  {
-     if (--flash.count)
+     if (--flash.count!=0)
      return;
      
      if (flash.sector.lightlevel == flash.maxlight)
      {
-     flash. sector.lightlevel = flash.minlight;
+     flash. sector.lightlevel = (short) flash.minlight;
      flash.count = (RND.P_Random()&flash.mintime)+1;
      }
      else
      {
-     flash. sector.lightlevel = flash.maxlight;
+     flash. sector.lightlevel = (short) flash.maxlight;
      flash.count = (RND.P_Random()&flash.maxtime)+1;
      }
 
@@ -4483,15 +4599,15 @@ class Lights{
      // nothing special about it during gameplay
      sector.special = 0;    
      
-     flash = Z_Malloc ( sizeof(*flash), PU_LEVSPEC, 0);
+     flash = new lightflash_t();
 
-     P_AddThinker (&flash.thinker);
+     AddThinker (flash.thinker);
 
-     flash.thinker.function.acp1 = (actionf_p1) T_LightFlash;
+     flash.thinker.function = think_t.T_LightFlash;
      flash.sector = sector;
      flash.maxlight = sector.lightlevel;
 
-     flash.minlight = P_FindMinSurroundingLight(sector,sector.lightlevel);
+     flash.minlight = FindMinSurroundingLight(sector,sector.lightlevel);
      flash.maxtime = 64;
      flash.mintime = 7;
      flash.count = (RND.P_Random()&flash.maxtime)+1;
@@ -4509,17 +4625,17 @@ class Lights{
  //
  void StrobeFlash (strobe_t       flash)
  {
-     if (--flash.count)
+     if (--flash.count!=0)
      return;
      
      if (flash.sector.lightlevel == flash.minlight)
      {
-     flash. sector.lightlevel = flash.maxlight;
+     flash. sector.lightlevel = (short) flash.maxlight;
      flash.count = flash.brighttime;
      }
      else
      {
-     flash. sector.lightlevel = flash.minlight;
+     flash. sector.lightlevel = (short) flash.minlight;
      flash.count =flash.darktime;
      }
 
@@ -4540,16 +4656,16 @@ class Lights{
  {
      strobe_t   flash;
      
-     flash = Z_Malloc ( sizeof(*flash), PU_LEVSPEC, 0);
+     flash = new strobe_t();
 
-     P_AddThinker (&flash.thinker);
+     AddThinker (flash.thinker);
 
      flash.sector = sector;
      flash.darktime = fastOrSlow;
      flash.brighttime = STROBEBRIGHT;
-     flash.thinker.function.acp1 = (actionf_p1) T_StrobeFlash;
+     flash.thinker.function = think_t.T_StrobeFlash;
      flash.maxlight = sector.lightlevel;
-     flash.minlight = P_FindMinSurroundingLight(sector, sector.lightlevel);
+     flash.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
          
      if (flash.minlight == flash.maxlight)
      flash.minlight = 0;
@@ -4557,7 +4673,7 @@ class Lights{
      // nothing special about it during gameplay
      sector.special = 0;    
 
-     if (!inSync)
+     if (inSync==0)
      flash.count = (RND.P_Random()&7)+1;
      else
      flash.count = 1;
@@ -4570,16 +4686,16 @@ class Lights{
  void StartLightStrobing(line_t  line)
  {
      int     secnum;
-     sector_t*   sec;
+     sector_t   sec;
      
      secnum = -1;
-     while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
+     while ((secnum = FindSectorFromLineTag(line,secnum)) >= 0)
      {
-     sec = &sectors[secnum];
-     if (sec.specialdata)
+     sec = LL.sectors[secnum];
+     if (sec.specialdata!=null)
          continue;
      
-     P_SpawnStrobeFlash (sec,SLOWDARK, 0);
+     SpawnStrobeFlash (sec,SLOWDARK, 0);
      }
  }
 
@@ -6348,6 +6464,9 @@ class Lights{
              DI_NORTHWEST, DI_NORTHEAST, DI_SOUTHWEST, DI_SOUTHEAST
      };
 
+     public static final int[] xspeed = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000}; //all fixed
+     public static final int[] yspeed = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000}; //all fixed
+     
      // void A_Fall (mobj_t *actor);
 
 
@@ -6391,7 +6510,7 @@ class Lights{
      {
          int dist; //fixed_t
          
-         if (! P_CheckSight (actor, actor.target) )
+         if (! CheckSight (actor, actor.target) )
          return false;
          
          if ( (actor.flags & MF_JUSTHIT )!=0)
@@ -6406,7 +6525,7 @@ class Lights{
          return false;   // do not attack yet
              
          // OPTIMIZE: get this from a global checksight
-         dist = P_AproxDistance ( actor.x-actor.target.x,
+         dist = AproxDistance ( actor.x-actor.target.x,
                       actor.y-actor.target.y) - 64*FRACUNIT;
          
          if (actor.info.meleestate==null)
@@ -6414,14 +6533,14 @@ class Lights{
 
          dist >>= 16;
 
-         if (actor.type == MT_VILE)
+         if (actor.type == mobjtype_t.MT_VILE)
          {
          if (dist > 14*64)   
              return false;   // too far away
          }
          
 
-         if (actor.type == MT_UNDEAD)
+         if (actor.type == mobjtype_t.MT_UNDEAD)
          {
          if (dist < 196) 
              return false;   // close for fist attack
@@ -6429,9 +6548,9 @@ class Lights{
          }
          
 
-         if (actor.type == MT_CYBORG
-         || actor.type == MT_SPIDER
-         || actor.type == MT_SKULL)
+         if (actor.type == mobjtype_t.MT_CYBORG
+         || actor.type == mobjtype_t.MT_SPIDER
+         || actor.type == mobjtype_t.MT_SKULL)
          {
          dist >>= 1;
          }
@@ -6439,10 +6558,10 @@ class Lights{
          if (dist > 200)
          dist = 200;
              
-         if (actor.type == MT_CYBORG && dist > 160)
+         if (actor.type == mobjtype_t.MT_CYBORG && dist > 160)
          dist = 160;
              
-         if (P_Random () < dist)
+         if (RND.P_Random () < dist)
          return false;
              
          return true;
@@ -6478,7 +6597,7 @@ class Lights{
          // Check in REJECT table.
          if (flags(LL.rejectmatrix[bytenum],bitnum))
          {
-         sightcounts[0]++;
+         See.sightcounts[0]++;
 
          // can't possibly be connected
          return false;   
@@ -6486,23 +6605,23 @@ class Lights{
 
          // An unobstructed LOS is possible.
          // Now look from eyes of t1 to any part of t2.
-         sightcounts[1]++;
+         See.sightcounts[1]++;
 
          R.validcount++;
          
-         sightzstart = t1.z + t1.height - (t1.height>>2);
-         topslope = (t2.z+t2.height) - sightzstart;
-         bottomslope = (t2.z) - sightzstart;
+         See.sightzstart = t1.z + t1.height - (t1.height>>2);
+         topslope = (t2.z+t2.height) - See.sightzstart;
+         bottomslope = (t2.z) - See.sightzstart;
          
-         strace.x = t1.x;
-         strace.y = t1.y;
-         t2x = t2.x;
-         t2y = t2.y;
-         strace.dx = t2.x - t1.x;
-         strace.dy = t2.y - t1.y;
+         See.strace.x = t1.x;
+         See.strace.y = t1.y;
+         See.t2x = t2.x;
+         See.t2y = t2.y;
+         See.strace.dx = t2.x - t1.x;
+         See.strace.dy = t2.y - t1.y;
 
          // the head node is the last node output
-         return P_CrossBSPNode (LL.numnodes-1);  
+         return CrossBSPNode (LL.numnodes-1);  
      }
      
      //
@@ -6581,19 +6700,30 @@ class Lights{
          RecursiveSound (emmiter.subsector.sector, 0);
      }
 
-
-
-
-     
-
+     /**
+      * P_FireWeapon.
+      * Originally in pspr
+      *
+      */
+     public void FireWeapon (player_t player)
+     {
+         statenum_t  newstate;
+         
+         if (!player.CheckAmmo ())
+         return;
+         
+         player.mo.SetMobjState (statenum_t.S_PLAY_ATK1);
+         newstate = weaponinfo[player.readyweapon.ordinal()].atkstate;
+         player.SetPsprite (player.ps_weapon, newstate);
+         NoiseAlert (player.mo, player.mo);
+     }
 
      //
      // P_Move
      // Move in the current direction,
      // returns false if the move is blocked.
      //
-     int[] xspeed = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000}; //all fixed
-     int[] yspeed = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000}; //all fixed
+
 
 
      // Peg to map movement 
@@ -7897,10 +8027,10 @@ class Lights{
 	 	if (switchlist[i] == texTop)
 	 	{
 	 	    // TODO: ; // TODO:(buttonlist[0].soundorg,sound);
-	 	    sides[line.sidenum[0]].toptexture = switchlist[i^1];
+	 	    LL.sides[line.sidenum[0]].toptexture = (short) switchlist[i^1];
 
-	 	    if (useAgain)
-	 		P_StartButton(line,top,switchlist[i],BUTTONTIME);
+	 	    if (useAgain!=0)
+	 		StartButton(line,top,switchlist[i],BUTTONTIME);
 
 	 	    return;
 	 	}
@@ -7947,7 +8077,7 @@ class Lights{
 	 UseSpecialLine
 	 ( mobj_t	thing,
 	   line_t	line,
-	   int		side )
+	   boolean		side )
 	 {               
 
 	     // Err...
@@ -7969,7 +8099,7 @@ class Lights{
 
 	     
 	     // Switches that other things can activate.
-	     if (!thing.player)
+	     if (thing.player!=null)
 	     {
 	 	// never open secret doors
 	 	if (flags(line.flags, ML_SECRET))
@@ -8329,6 +8459,8 @@ class Lights{
  
  
  enum PIT{
+	 AddLineIntercepts,
+	 AddThingIntercepts,
      ChangeSector,
      CheckLine,     
      CheckThing,
@@ -8376,8 +8508,8 @@ class Lights{
 
  // Modified handling.
  // Call action functions when the state is set
- if (st.action.getType()==ActionType.acp1)       
-   ((acp1)st.action).invoke(mobj); 
+ if (st.action.getType()==acp1)       
+   A.dispatch(st.action, mobj,null); 
 
  state = st.nextstate;
  } while (mobj.tics==0);
@@ -8411,138 +8543,7 @@ class Lights{
  }
 
 
- //
- // P_XYMovement  
- //
- protected final static int STOPSPEED =      0x1000;
- protected final static int FRICTION =       0xe800;
-
- public void XYMovement (mobj_t mo) 
- {   
- int     ptryx, ptryy; // pointers to fixed_t ???
- player_t   player;
- int  xmove, ymove; // fixed_t
-       
- if ((mo.momx==0) && (mo.momy==0))
- {
- if ((mo.flags & MF_SKULLFLY)!=0)
- {
-   // the skull slammed into something
-   mo.flags &= ~MF_SKULLFLY;
-   mo.momx = mo.momy = mo.momz = 0;
-
-   SetMobjState (mo, mo.info.spawnstate);
- }
- return;
- }
-
- player = mo.player;
-   
- if (mo.momx > MAXMOVE)
- mo.momx = MAXMOVE;
- else if (mo.momx < -MAXMOVE)
- mo.momx = -MAXMOVE;
-
- if (mo.momy > MAXMOVE)
- mo.momy = MAXMOVE;
- else if (mo.momy < -MAXMOVE)
- mo.momy = -MAXMOVE;
-   
- xmove = mo.momx;
- ymove = mo.momy;
-
- do
- {
- if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2)
- {
-   ptryx = mo.x + xmove/2;
-   ptryy = mo.y + ymove/2;
-   xmove >>= 1;
-   ymove >>= 1;
- }
- else
- {
-   ptryx = mo.x + xmove;
-   ptryy = mo.y + ymove;
-   xmove = ymove = 0;
- }
-   
- if (!P_TryMove (mo, ptryx, ptryy))
- {
-   // blocked move
-   if (mo.player)
-   {   // try to slide along it
-   P_SlideMove (mo);
-   }
-   else if (mo.flags & MF_MISSILE)
-   {
-   // explode a missile
-   if (ceilingline &&
-       ceilingline.backsector &&
-       ceilingline.backsector.ceilingpic == skyflatnum)
-   {
-       // Hack to prevent missiles exploding
-       // against the sky.
-       // Does not handle sky floors.
-       P_RemoveMobj (mo);
-       return;
-   }
-   P_ExplodeMissile (mo);
-   }
-   else
-   mo.momx = mo.momy = 0;
- }
- } while ((xmove | ymove)!=0);
-
- // slow down
- if (player && player.cheats & CF_NOMOMENTUM)
- {
- // debug option for no sliding at all
- mo.momx = mo.momy = 0;
- return;
- }
-
- if (mo.flags & (MF_MISSILE | MF_SKULLFLY) )
- return;     // no friction for missiles ever
-   
- if (mo.z > mo.floorz)
- return;     // no friction when airborne
-
- if (mo.flags & MF_CORPSE)
- {
- // do not stop sliding
- //  if halfway off a step with some momentum
- if (mo.momx > FRACUNIT/4
-   || mo.momx < -FRACUNIT/4
-   || mo.momy > FRACUNIT/4
-   || mo.momy < -FRACUNIT/4)
- {
-   if (mo.floorz != mo.subsector.sector.floorheight)
-   return;
- }
- }
-
- if (mo.momx > -STOPSPEED
- && mo.momx < STOPSPEED
- && mo.momy > -STOPSPEED
- && mo.momy < STOPSPEED
- && (!player
-   || (player.cmd.forwardmove== 0
-   && player.cmd.sidemove == 0 ) ) )
- {
- // if in a walking frame, stop moving
- if ( player&&(unsigned)((player.mo.state - states)- S_PLAY_RUN1) < 4)
-   P_SetMobjState (player.mo, S_PLAY);
-
- mo.momx = 0;
- mo.momy = 0;
- }
- else
- {
- mo.momx = FixedMul (mo.momx, FRICTION);
- mo.momy = FixedMul (mo.momy, FRICTION);
- }
- }
+ 
 
  //
  // P_NightmareRespawn
@@ -9551,10 +9552,11 @@ public void InitThinkers ()
    thinkercap.prev=thinkercap;
 }
 
-//
-//P_AddThinker
-//Adds a new thinker at the end of the list.
-//
+/**
+ * P_AddThinker
+ * Adds a new thinker at the end of the list.
+ */
+
 public void AddThinker (thinker_t thinker)
 {
    thinkercap.prev.next=thinker;
@@ -9644,6 +9646,333 @@ public void Ticker ()
    DS.leveltime++;    
 }
 
+/**
+ * P_TouchSpecialThing
+ */
+public void
+TouchSpecialThing
+( mobj_t   special,
+  mobj_t   toucher )
+{
+    player_t   player;
+    int     i;
+    int delta;// fixed_t
+    sfxenum_t     sound;
+        
+    delta = special.z - toucher.z;
+
+    if (delta > toucher.height
+    || delta < -8*FRACUNIT)
+    {
+    // out of reach
+    return;
+    }
+    
+    
+    sound = sfxenum_t.sfx_itemup; 
+    player = toucher.player;
+
+    // Dead thing touching.
+    // Can happen with a sliding player corpse.
+    if (toucher.health <= 0)
+    return;
+
+    // Identify by sprite.
+    switch (special.sprite)
+    {
+    // armor
+      case SPR_ARM1:
+    if (!player.GiveArmor (1))
+        return;
+    player.message = GOTARMOR;
+    break;
+        
+      case SPR_ARM2:
+    if (!player.GiveArmor (2))
+        return;
+    player.message = GOTMEGA;
+    break;
+    
+    // bonus items
+      case SPR_BON1:
+    player.health[0]++;       // can go over 100%
+    if (player.health[0] > 200)
+        player.health[0] = 200;
+    player.mo.health = player.health[0];
+    player.message = GOTHTHBONUS;
+    break;
+    
+      case SPR_BON2:
+    player.armorpoints[0]++;      // can go over 100%
+    if (player.armorpoints[0] > 200)
+        player.armorpoints[0] = 200;
+    if (player.armortype==0)
+        player.armortype = 1;
+    player.message = GOTARMBONUS;
+    break;
+    
+      case SPR_SOUL:
+    player.health[0] += 100;
+    if (player.health[0] > 200)
+        player.health[0] = 200;
+    player.mo.health = player.health[0];
+    player.message = GOTSUPER;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+      case SPR_MEGA:
+    if (DS.gamemode != GameMode_t.commercial)
+        return;
+    player.health[0] = 200;
+    player.mo.health = player.health[0];
+    player.GiveArmor (2);
+    player.message = GOTMSPHERE;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+    // cards
+    // leave cards for everyone
+      case SPR_BKEY:
+    if (!player.cards[card_t.it_bluecard.ordinal()])
+        player.message = GOTBLUECARD;
+    player.GiveCard (card_t.it_bluecard);
+    if (!DS.netgame)
+        break;
+    return;
+    
+      case SPR_YKEY:
+    if (!player.cards[card_t.it_yellowcard.ordinal()])
+        player.message = GOTYELWCARD;
+    player.GiveCard (card_t.it_yellowcard);
+    if (!DS.netgame)
+        break;
+    return;
+    
+      case SPR_RKEY:
+    if (!player.cards[card_t.it_redcard.ordinal()])
+        player.message = GOTREDCARD;
+    player.GiveCard (card_t.it_redcard);
+    if (!DS.netgame)
+        break;
+    return;
+    
+      case SPR_BSKU:
+    if (!player.cards[card_t.it_blueskull.ordinal()])
+        player.message = GOTBLUESKUL;
+    player.GiveCard (card_t.it_blueskull);
+    if (!DS.netgame)
+        break;
+    return;
+    
+      case SPR_YSKU:
+    if (!player.cards[card_t.it_yellowskull.ordinal()])
+        player.message = GOTYELWSKUL;
+    player.GiveCard (card_t.it_yellowskull);
+    if (!DS.netgame)
+        break;
+    return;
+    
+      case SPR_RSKU:
+    if (!player.cards[card_t.it_redskull.ordinal()])
+        player.message = GOTREDSKULL;
+    player.GiveCard (card_t.it_redskull);
+    if (!DS.netgame)
+        break;
+    return;
+    
+    // medikits, heals
+      case SPR_STIM:
+    if (!player.GiveBody (10))
+        return;
+    player.message = GOTSTIM;
+    break;
+    
+      case SPR_MEDI:
+    if (!player.GiveBody ( 25))
+        return;
+
+    if (player.health[0] < 25)
+        player.message = GOTMEDINEED;
+    else
+        player.message = GOTMEDIKIT;
+    break;
+
+    
+    // power ups
+      case SPR_PINV:
+    if (!player.GivePower(pw_invulnerability))
+        return;
+    player.message = GOTINVUL;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+      case SPR_PSTR:
+    if (!player.GivePower (pw_strength))
+        return;
+    player.message = GOTBERSERK;
+    if (player.readyweapon != weapontype_t.wp_fist)
+        player.pendingweapon = weapontype_t.wp_fist;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+      case SPR_PINS:
+    if (!player.GivePower (pw_invisibility))
+        return;
+    player.message = GOTINVIS;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+      case SPR_SUIT:
+    if (!player.GivePower (pw_ironfeet))
+        return;
+    player.message = GOTSUIT;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+      case SPR_PMAP:
+    if (!player.GivePower (pw_allmap))
+        return;
+    player.message = GOTMAP;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+      case SPR_PVIS:
+    if (!player.GivePower (pw_infrared))
+        return;
+    player.message = GOTVISOR;
+    sound = sfxenum_t.sfx_getpow;
+    break;
+    
+    // ammo
+      case SPR_CLIP:
+    if ((special.flags & MF_DROPPED) !=0)
+    {
+        if (!player.GiveAmmo (ammotype_t.am_clip,0))
+        return;
+    }
+    else
+    {
+        if (!player.GiveAmmo (ammotype_t.am_clip,1))
+        return;
+    }
+    player.message = GOTCLIP;
+    break;
+    
+      case SPR_AMMO:
+    if (!player.GiveAmmo ( ammotype_t.am_clip,5))
+        return;
+    player.message = GOTCLIPBOX;
+    break;
+    
+      case SPR_ROCK:
+    if (!player.GiveAmmo ( ammotype_t.am_misl,1))
+        return;
+    player.message = GOTROCKET;
+    break;
+    
+      case SPR_BROK:
+    if (!player.GiveAmmo ( ammotype_t.am_misl,5))
+        return;
+    player.message = GOTROCKBOX;
+    break;
+    
+      case SPR_CELL:
+    if (!player.GiveAmmo ( ammotype_t.am_cell,1))
+        return;
+    player.message = GOTCELL;
+    break;
+    
+      case SPR_CELP:
+    if (!player.GiveAmmo ( ammotype_t.am_cell,5))
+        return;
+    player.message = GOTCELLBOX;
+    break;
+    
+      case SPR_SHEL:
+    if (!player.GiveAmmo ( ammotype_t.am_shell,1))
+        return;
+    player.message = GOTSHELLS;
+    break;
+    
+      case SPR_SBOX:
+    if (!player.GiveAmmo ( ammotype_t.am_shell,5))
+        return;
+    player.message = GOTSHELLBOX;
+    break;
+    
+      case SPR_BPAK:
+    if (!player.backpack)
+    {
+        for (i=0 ; i<NUMAMMO ; i++)
+        player.maxammo[i] *= 2;
+        player.backpack = true;
+    }
+    for (i=0 ; i<NUMAMMO ; i++)
+        player.GiveAmmo ( ammotype_t.values()[i], 1);
+    player.message = GOTBACKPACK;
+    break;
+    
+    // weapons
+      case SPR_BFUG:
+    if (!player.GiveWeapon (weapontype_t.wp_bfg, false) )
+        return;
+    player.message = GOTBFG9000;
+    sound = sfxenum_t.sfx_wpnup;  
+    break;
+    
+      case SPR_MGUN:
+    if (!player.GiveWeapon (weapontype_t.wp_chaingun, (special.flags&MF_DROPPED)!=0 ))
+        return;
+    player.message = GOTCHAINGUN;
+    sound = sfxenum_t.sfx_wpnup;  
+    break;
+    
+      case SPR_CSAW:
+    if (!player.GiveWeapon (weapontype_t.wp_chainsaw, false) )
+        return;
+    player.message = GOTCHAINSAW;
+    sound = sfxenum_t.sfx_wpnup;  
+    break;
+    
+      case SPR_LAUN:
+    if (!player.GiveWeapon (weapontype_t.wp_missile, false) )
+        return;
+    player.message = GOTLAUNCHER;
+    sound = sfxenum_t.sfx_wpnup;  
+    break;
+    
+      case SPR_PLAS:
+    if (!player.GiveWeapon (weapontype_t.wp_plasma, false) )
+        return;
+    player.message = GOTPLASMA;
+    sound = sfxenum_t.sfx_wpnup;  
+    break;
+    
+      case SPR_SHOT:
+    if (!player.GiveWeapon (weapontype_t.wp_shotgun, (special.flags&MF_DROPPED) !=0  ) )
+        return;
+    player.message = GOTSHOTGUN;
+    sound = sfxenum_t.sfx_wpnup;  
+    break;
+        
+      case SPR_SGN2:
+    if (!player.GiveWeapon (weapontype_t.wp_supershotgun, (special.flags&MF_DROPPED )!=0 ))
+        return;
+    player.message = GOTSHOTGUN2;
+    sound = sfxenum_t.sfx_wpnup;  
+    break;
+        
+      default:
+    system.Error ("P_SpecialThing: Unknown gettable thing");
+    }
+    
+    if ((special.flags & MF_COUNTITEM)!=0)
+    player.itemcount++;
+    RemoveMobj (special);
+    player.bonuscount += player_t.BONUSADD;
+    if (player == DS.players[DS.consoleplayer]) ;
+    // TODO: S_StartSound (NULL, sound);
+}
  
  
  } // End unified map 

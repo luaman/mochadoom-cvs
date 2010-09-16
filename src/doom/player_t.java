@@ -1222,21 +1222,7 @@ SetPsprite
     }
 
 
-    //
-    // P_FireWeapon.
-    //
-    public void FireWeapon ()
-    {
-        statenum_t  newstate;
-        
-        if (!this.CheckAmmo ())
-        return;
-        
-        this.mo.SetMobjState (statenum_t.S_PLAY_ATK1);
-        newstate = weaponinfo[readyweapon.ordinal()].atkstate;
-        this.SetPsprite (ps_weapon, newstate);
-        NoiseAlert (mo, mo);
-    }
+ 
 
 
 
