@@ -98,5 +98,6 @@ public final class Limits {
 	public static final int MAXPLATS = 30;
 	public static final int MAXSKULLS = 20;
 	public static final int NUMBRAINTARGETS=32;
-
+	public static final int NUMMOBJTYPES=mobjtype_t.NUMMOBJTYPES.ordinal();
+	
 }

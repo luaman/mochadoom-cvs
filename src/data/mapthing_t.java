@@ -8,7 +8,7 @@ import w.CacheableDoomObject;
 
 /** mapthing_t ... same on disk AND in memory, wow?! */
 
-public class mapthing_t implements CacheableDoomObject{
+public class mapthing_t implements CacheableDoomObject,Cloneable{
     public short x;
 
     public short y;
@@ -36,5 +36,16 @@ public class mapthing_t implements CacheableDoomObject{
         this.type = buf.getShort();
         this.options = buf.getShort();
         
+    }
+    
+    public mapthing_t clone(){
+
+    	try {
+			return (mapthing_t)super.clone();
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
     }
 }

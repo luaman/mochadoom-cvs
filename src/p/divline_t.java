@@ -88,7 +88,13 @@ public class divline_t {
       this.dy = li.dy;
      }
 
-     /**
+     public divline_t() {
+		// TODO Auto-generated constructor stub
+	}
+
+
+
+	/**
  	  * P_DivlineSide
  	  * Returns side 0 (front), 1 (back), or 2 (on).
  	 */

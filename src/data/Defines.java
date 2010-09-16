@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.15 2010/09/15 16:17:38 velktron Exp $
+// $Id: Defines.java,v 1.16 2010/09/16 23:37:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -472,6 +472,8 @@ static public final anim_t[] epsd2animinfo =
 // MAES: cute, but we can do it in a more Java-friendly way :-p
 
 public static final int[] NUMANIMS={epsd0animinfo.length,epsd1animinfo.length,epsd2animinfo.length};
+
+/** ATTENTION: there's a difference between these "anims" and those used in p_spec.c */
 
 public static final anim_t[][] anims =
 {
@@ -1687,6 +1689,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.15 2010/09/15 16:17:38 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.16 2010/09/16 23:37:28 velktron Exp $";
 }
 

@@ -15,6 +15,7 @@ import static p.mobj_t.MF_FLOAT;
 import static p.mobj_t.MF_INFLOAT;
 import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
+import static utils.C2JUtils.*;
 import g.DoomGame;
 import hu.HU;
 import i.system;
@@ -72,8 +73,8 @@ public class UnifiedGameMap {
     HU HU;
     
     ////////////// Internal singletons //////////////
-    Actions A;
-    Specials MySpec;
+    public Actions A;
+    Specials SPECS;
 	DoorsFloors EV;
 	Plats PEV;
 	Lights LEV;
@@ -866,7 +867,8 @@ Teleport
     int     i;
     int     tag;
     mobj_t  m;
-    mobj_t  fog;
+    @SuppressWarnings("unused")
+	mobj_t  fog;
     int an;
     thinker_t   thinker;
     sector_t    sector;
@@ -1008,7 +1010,8 @@ class Actions{
      *  I guess you <i>could</i> implement this with callbacks too, but it won't result
      *  in any less effort, and to add new functions, you'll have to go through more
      *  or less the same effort, as action functions need to be aware of what's going
-     *  on around them, so they can't be defined elsewhere.
+     *  on around them, so they cannot be defined elsewhere unless you also pass context
+     *  around....
      *  
      * @param action
      * @param a
@@ -1643,9 +1646,9 @@ class Actions{
           {
           // check for corpses to raise
           viletryx =
-              actor.x + actor.info.speed*Enemies.xspeed[actor.movedir];
+              actor.x + actor.info.speed*EN.xspeed[actor.movedir];
           viletryy =
-              actor.y + actor.info.speed*Enemies.yspeed[actor.movedir];
+              actor.y + actor.info.speed*EN.yspeed[actor.movedir];
 
           xl = (viletryx - LL.bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
           xh = (viletryx - LL.bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
@@ -2070,7 +2073,7 @@ class Actions{
       {
           thinker_t  th;
           mobj_t  mo2;
-          line_t  junk = null;
+          line_t  junk = new line_t();
           int     i;
               
           if ( DS.gamemode == GameMode_t.commercial)
@@ -3736,7 +3739,8 @@ class Actions{
         //
         // P_LineAttack
         //
-        mobj_t     linetarget; // who got hit (or NULL)
+        /** who got hit (or NULL) */
+        public mobj_t     linetarget;
         mobj_t     shootthing;
 
         // Height if not aiming up or down
@@ -3863,7 +3867,7 @@ class Actions{
             
             //  return false;       // don't use back side
             
-            UseSpecialLine (usething, line, side);
+            SPECS.UseSpecialLine (usething, line, side);
 
             // can't use for than one special line in a row
             return false;
@@ -3874,7 +3878,7 @@ class Actions{
          * P_UseLines
          * Looks for special lines in front of the player to activate.
          */
-        void UseLines (player_t  player) 
+        public void UseLines (player_t  player) 
         {
             int     angle;
             int x1,y1,x2,y2;
@@ -4144,7 +4148,7 @@ class Actions{
         //INTERCEPT ROUTINES
         //
         intercept_t[] intercepts=new intercept_t[MAXINTERCEPTS];
-        C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
+        //C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
         int    intercept_p;
 
         public divline_t   trace;
@@ -4166,7 +4170,7 @@ class Actions{
          boolean         s1;
          boolean         s2;
          int     frac;
-         divline_t       dl;
+         divline_t       dl=new divline_t();
          
          // avoid precision problems with two routines
          if ( trace.dx > FRACUNIT*16
@@ -4223,7 +4227,8 @@ class Actions{
          
          boolean     tracepositive;
 
-         divline_t       dl;
+         // maybe make this a shared instance variable?
+         divline_t       dl=new divline_t();
          
          int     frac; //fixed_t
          
@@ -5596,8 +5601,8 @@ class Lights{
 
          floormove_t    floor;
          
-         int     stairsize;
-         int     speed;
+         int     stairsize = 0; 
+         int     speed=0; // shut up compiler
 
          secnum = -1;
          rtn = false;
@@ -6401,33 +6406,33 @@ class Lights{
  
  class Enemies {
 
-     private static int DI_EAST=0;
-     private static int    DI_NORTHEAST=1;
-     private static int    DI_NORTH=2;
-     private static int    DI_NORTHWEST=3;
-     private static int    DI_WEST=4;
-     private static int    DI_SOUTHWEST=5;
-     private static int    DI_SOUTH=6;
-     private static int    DI_SOUTHEAST=7;
-     private static int    DI_NODIR=8;
-     private static int    NUMDIR=9;
+     private static final int DI_EAST=0;
+     private static final int    DI_NORTHEAST=1;
+     private static final int    DI_NORTH=2;
+     private static final int    DI_NORTHWEST=3;
+     private static final int    DI_WEST=4;
+     private static final int    DI_SOUTHWEST=5;
+     private static final int    DI_SOUTH=6;
+     private static final int    DI_SOUTHEAST=7;
+     private static final int    DI_NODIR=8;
+     private static final int    NUMDIR=9;
 
      //
      // P_NewChaseDir related LUT.
      //
-     private static final int opposite[] =
+     private final int opposite[] =
      {
              DI_WEST, DI_SOUTHWEST, DI_SOUTH, DI_SOUTHEAST,
              DI_EAST, DI_NORTHEAST, DI_NORTH, DI_NORTHWEST, DI_NODIR
      };
 
-     private static final int diags[] =
+     public final int diags[] =
      {
              DI_NORTHWEST, DI_NORTHEAST, DI_SOUTHWEST, DI_SOUTHEAST
      };
 
-     public static final int[] xspeed = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000}; //all fixed
-     public static final int[] yspeed = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000}; //all fixed
+     public  final int[] xspeed = {FRACUNIT,47000,0,-47000,-FRACUNIT,-47000,0,47000}; //all fixed
+     public  final int[] yspeed = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-47000}; //all fixed
      
      // void A_Fall (mobj_t *actor);
 
@@ -6756,8 +6761,8 @@ class Lights{
            actor.target = player.mo;
            return true;
            }
-
-           return false;
+           // The compiler complains that this is unreachable 
+          // return false;
        }   
        
        
@@ -6811,7 +6816,7 @@ class Lights{
              // if the special is not a door
              // that can be opened,
              // return false
-             if (UseSpecialLine (actor, ld,0))
+             if (SPECS.UseSpecialLine (actor, ld,false))
              good = true;
          }
          return good;
@@ -7006,7 +7011,7 @@ class Lights{
          switch(plat.status)
          {
            case up:
-         res = MovePlane(plat.sector,
+         res = EV.MovePlane(plat.sector,
                    plat.speed,
                    plat.high,
                    plat.crush,0,1);
@@ -7053,7 +7058,7 @@ class Lights{
          break;
          
            case  down:
-         res = T_MovePlane(plat.sector,plat.speed,plat.low,false,0,-1);
+         res = EV.MovePlane(plat.sector,plat.speed,plat.low,false,0,-1);
 
          if (res == result_e.pastdest)
          {
@@ -7270,10 +7275,7 @@ class Lights{
 
      int[]       sightcounts=new int[2];
 
-     
-     
-
-     
+   
      /** P_InterceptVector2
       *  Returns the fractional intercept point
       *  along the first divline.
@@ -7326,7 +7328,7 @@ class Lights{
          sector_t        back;
          int     opentop; //fixed_t
          int     openbottom;
-         divline_t       divl;
+         divline_t       divl = new divline_t();
          vertex_t        v1;
          vertex_t        v2;
          int     frac; //fixed_t
@@ -7476,97 +7478,7 @@ class Lights{
      
  }
  
- class Specials{
-     public static final int ok=0, crushed=1,pastdest=2;
 
-
-     public short   numlinespecials;
-     
-     public anim_t[]   anims=new anim_t[MAXANIMS];
-     // MAES: was a pointer
-     public int  lastanim;
-
-     //
-  // P_UpdateSpecials
-  // Animate planes, scroll walls, etc.
-  //
-  boolean     levelTimer;
-  int     levelTimeCount;
-
-  public void UpdateSpecials ()
-  {
-      int     pic;
-      line_t line;
-      anim_t anim;
-      
-      //  LEVEL TIMER
-      if (levelTimer == true)
-      {
-      levelTimeCount--;
-      if (levelTimeCount==0)
-          DG.ExitLevel();
-      }
-      
-      //  ANIMATE FLATS AND TEXTURES GLOBALLY
-
-      for (int j = 0 ; j < lastanim ; j++)
-      {
-          anim=anims[j];
-          
-      for (int i=anim.basepic ; i<anim.basepic+anim.numpics ; i++)
-      {
-          pic = anim.basepic + ( (DS.leveltime/anim.speed + i)%anim.numpics );
-          if (anim.istexture)
-          R.texturetranslation[i] = pic;
-          else
-          R.flattranslation[i] = pic;
-      }
-      }
-
-      
-      //  ANIMATE LINE SPECIALS
-      for (int i = 0; i < numlinespecials; i++)
-      {
-      line = linespeciallist[i];
-      switch(line.special)
-      {
-        case 48:
-          // EFFECT FIRSTCOL SCROLL +
-          LL.sides[line.sidenum[0]].textureoffset += FRACUNIT;
-          break;
-      }
-      }
-
-      
-      //  DO BUTTONS
-      for (int i = 0; i < MAXBUTTONS; i++)
-      if (eval(SW.buttonlist[i].btimer))
-      {
-          SW.buttonlist[i].btimer--;
-          if (!eval(SW.buttonlist[i].btimer))
-          {
-          switch(SW.buttonlist[i].where)
-          {
-            case top:
-              LL.sides[SW.buttonlist[i].line.sidenum[0]].toptexture =
-              (short) SW.buttonlist[i].btexture;
-              break;
-              
-            case middle:
-              LL.sides[SW.buttonlist[i].line.sidenum[0]].midtexture =
-              (short) SW.buttonlist[i].btexture;
-              break;
-              
-            case bottom:
-              LL.sides[SW.buttonlist[i].line.sidenum[0]].bottomtexture =
-              (short) SW.buttonlist[i].btexture;
-              break;
-          }
-          ; // TODO:S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
-          // TODO: memset(buttonlist[i],0,sizeof(button_t));
-          }
-      }
-  }
       
      
      
@@ -7584,7 +7496,7 @@ class Lights{
    *  the WAD file.
    */
   
- protected static animdef_t[]       animdefs =
+ private final animdef_t[]       animdefs =
   {
       new animdef_t(false, "NUKAGE3",  "NUKAGE1",  8),
       new animdef_t(false, "FWATER4",  "FWATER1",  8),
@@ -7617,11 +7529,15 @@ class Lights{
       new animdef_t(false, "","",0)
   };
 
+ /** These are NOT the same anims found in defines.
+  *  Dunno why they fucked up this one so bad */
+ private anim_t[]	anims=new anim_t[MAXANIMS];
+ 
  public void InitPicAnims ()
  {
-     anim_t lstanim;
+	 anim_t lstanim=null;
      //  Init animation. MAES: sneaky base pointer conversion ;-)
-     lastanim = 0;
+     int lastanim = 0;
      //MAES: for (i=0 ; animdefs[i].istexture != -1 ; i++)
      for (int i=0 ; animdefs[i].istexture ; i++)
      {
@@ -7629,12 +7545,11 @@ class Lights{
      if (animdefs[i].istexture)
      {
          // different episode ?
-         // TODO:
          if(R.CheckTextureNumForName(animdefs[i].startname) == -1)
          continue;   
          lstanim=anims[lastanim];
          lstanim.picnum = R.TextureNumForName (animdefs[i].endname);
-         lstanim.picnum = R.TextureNumForName (animdefs[i].startname);
+         lstanim.basepic = R.TextureNumForName (animdefs[i].startname);
      }
      else
      {
@@ -7689,13 +7604,13 @@ class Lights{
 
          
          // See if -TIMER needs to be used.
-         levelTimer = false;
+         SPECS.levelTimer = false;
          
          i = M.CheckParm("-avg");
          if (eval(i) && DS.deathmatch)
          {
-         levelTimer = true;
-         levelTimeCount = 20 * 60 * 35;
+        	 SPECS.levelTimer = true;
+        	 SPECS.levelTimeCount = 20 * 60 * 35;
          }
          
          i = M.CheckParm("-timer");
@@ -7703,8 +7618,8 @@ class Lights{
          {
          int time;
          time = Integer.parseInt(M.myargv[i+1]) * 60 * 35;
-         levelTimer = true;
-         levelTimeCount = time;
+         SPECS.levelTimer = true;
+         SPECS.levelTimeCount = time;
          }
          
          //  Init special SECTORs.
@@ -7775,15 +7690,15 @@ class Lights{
 
          
          //  Init line EFFECTs
-         numlinespecials = 0;
+         SPECS.numlinespecials = 0;
          for (i = 0;i < LL.numlines; i++)
          {
          switch(LL.lines[i].special)
          {
            case 48:
              // EFFECT FIRSTCOL SCROLL+
-             linespeciallist[numlinespecials] = LL.lines[i];
-             numlinespecials++;
+             linespeciallist[SPECS.numlinespecials] = LL.lines[i];
+             SPECS.numlinespecials++;
              break;
          }
          }
@@ -7802,8 +7717,485 @@ class Lights{
          // UNUSED: no horizonal sliders.
          //  P_InitSlidingDoorFrames();
      }
-     
- }
+
+     class Specials{
+    	    public static final int ok=0, crushed=1,pastdest=2;
+
+
+    	    public short   numlinespecials;
+    	    
+    	    public anim_t[]   anims=new anim_t[MAXANIMS];
+    	    // MAES: was a pointer
+    	    public int  lastanim;
+
+    	    //
+    	 // P_UpdateSpecials
+    	 // Animate planes, scroll walls, etc.
+    	 //
+    	 boolean     levelTimer;
+    	 int     levelTimeCount;
+
+    	 public void UpdateSpecials ()
+    	 {
+    	     int     pic;
+    	     line_t line;
+    	     anim_t anim;
+    	     
+    	     //  LEVEL TIMER
+    	     if (levelTimer == true)
+    	     {
+    	     levelTimeCount--;
+    	     if (levelTimeCount==0)
+    	         DG.ExitLevel();
+    	     }
+    	     
+    	     //  ANIMATE FLATS AND TEXTURES GLOBALLY
+
+    	     for (int j = 0 ; j < lastanim ; j++)
+    	     {
+    	         anim=anims[j];
+    	         
+    	     for (int i=anim.basepic ; i<anim.basepic+anim.numpics ; i++)
+    	     {
+    	         pic = anim.basepic + ( (DS.leveltime/anim.speed + i)%anim.numpics );
+    	         if (anim.istexture)
+    	         R.texturetranslation[i] = pic;
+    	         else
+    	         R.flattranslation[i] = pic;
+    	     }
+    	     }
+
+    	     
+    	     //  ANIMATE LINE SPECIALS
+    	     for (int i = 0; i < numlinespecials; i++)
+    	     {
+    	     line = linespeciallist[i];
+    	     switch(line.special)
+    	     {
+    	       case 48:
+    	         // EFFECT FIRSTCOL SCROLL +
+    	         LL.sides[line.sidenum[0]].textureoffset += FRACUNIT;
+    	         break;
+    	     }
+    	     }
+
+    	     
+    	     //  DO BUTTONS
+    	     for (int i = 0; i < MAXBUTTONS; i++)
+    	     if (eval(SW.buttonlist[i].btimer))
+    	     {
+    	         SW.buttonlist[i].btimer--;
+    	         if (!eval(SW.buttonlist[i].btimer))
+    	         {
+    	         switch(SW.buttonlist[i].where)
+    	         {
+    	           case top:
+    	             LL.sides[SW.buttonlist[i].line.sidenum[0]].toptexture =
+    	             (short) SW.buttonlist[i].btexture;
+    	             break;
+    	             
+    	           case middle:
+    	             LL.sides[SW.buttonlist[i].line.sidenum[0]].midtexture =
+    	             (short) SW.buttonlist[i].btexture;
+    	             break;
+    	             
+    	           case bottom:
+    	             LL.sides[SW.buttonlist[i].line.sidenum[0]].bottomtexture =
+    	             (short) SW.buttonlist[i].btexture;
+    	             break;
+    	         }
+    	         ; // TODO:S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
+    	         // TODO: memset(buttonlist[i],0,sizeof(button_t));
+    	         }
+    	     }}
+    	     
+    	     /**
+    		  * P_UseSpecialLine
+    		  * Called when a thing uses a special line.
+    		  * Only the front sides of lines are usable.
+    		  */
+    		 
+    		 public boolean
+    		 UseSpecialLine
+    		 ( mobj_t	thing,
+    		   line_t	line,
+    		   boolean		side )
+    		 {               
+
+    		     // Err...
+    		     // Use the back sides of VERY SPECIAL lines...
+    		     if (side)
+    		     {
+    		 	switch(line.special)
+    		 	{
+    		 	  case 124:
+    		 	    // Sliding door open&close
+    		 	    // UNUSED?
+    		 	    break;
+
+    		 	  default:
+    		 	    return false;
+    		 	    //break;
+    		 	}
+    		     }
+
+    		     
+    		     // Switches that other things can activate.
+    		     if (thing.player!=null)
+    		     {
+    		 	// never open secret doors
+    		 	if (flags(line.flags, ML_SECRET))
+    		 	    return false;
+    		 	
+    		 	switch(line.special)
+    		 	{
+    		 	  case 1: 	// MANUAL DOOR RAISE
+    		 	  case 32:	// MANUAL BLUE
+    		 	  case 33:	// MANUAL RED
+    		 	  case 34:	// MANUAL YELLOW
+    		 	    break;
+    		 	    
+    		 	  default:
+    		 	    return false;
+    		 	    //break;
+    		 	}
+    		     }
+
+    		     
+    		     // do something  
+    		     switch (line.special)
+    		     {
+    		 	// MANUALS
+    		       case 1:		// Vertical Door
+    		       case 26:		// Blue Door/Locked
+    		       case 27:		// Yellow Door /Locked
+    		       case 28:		// Red Door /Locked
+
+    		       case 31:		// Manual door open
+    		       case 32:		// Blue locked door open
+    		       case 33:		// Red locked door open
+    		       case 34:		// Yellow locked door open
+
+    		       case 117:		// Blazing door raise
+    		       case 118:		// Blazing door open
+    		 	EV.VerticalDoor (line, thing);
+    		 	break;
+    		 	
+    		 	//UNUSED - Door Slide Open&Close
+    		 	// case 124:
+    		 	// EV_SlidingDoor (line, thing);
+    		 	// break;
+
+    		 	// SWITCHES
+    		       case 7:
+    		 	// Build Stairs
+    		 	if (EV.BuildStairs(line,stair_e.build8))
+    		 	    SW.ChangeSwitchTexture(line,0);
+    		 	break;
+
+    		       case 9:
+    		 	// Change Donut
+    		 	if (EV.DoDonut(line))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 11:
+    		 	// Exit level
+    		    	   SW.ChangeSwitchTexture(line,0);
+    		 	DG.ExitLevel ();
+    		 	break;
+    		 	
+    		       case 14:
+    		 	// Raise Floor 32 and change texture
+    		 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 15:
+    		 	// Raise Floor 24 and change texture
+    		 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 18:
+    		 	// Raise Floor to next highest floor
+    		 	if (EV.DoFloor(line, floor_e.raiseFloorToNearest))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 20:
+    		 	// Raise Plat next highest floor and change texture
+    		 	if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 21:
+    		 	// PlatDownWaitUpStay
+    		 	if (PEV.DoPlat(line,plattype_e.downWaitUpStay,0))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 23:
+    		 	// Lower Floor to Lowest
+    		 	if (EV.DoFloor(line,floor_e.lowerFloorToLowest))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 29:
+    		 	// Raise Door
+    		 	if (EV.DoDoor(line,vldoor_e.normal))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 41:
+    		 	// Lower Ceiling to Floor
+    		 	if (EV.DoCeiling(line,ceiling_e.lowerToFloor))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 71:
+    		 	// Turbo Lower Floor
+    		 	if (EV.DoFloor(line,floor_e.turboLower))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 49:
+    		 	// Ceiling Crush And Raise
+    		 	if (EV.DoCeiling(line,ceiling_e.crushAndRaise))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 50:
+    		 	// Close Door
+    		 	if (EV.DoDoor(line,vldoor_e.close))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 51:
+    		 	// Secret EXIT
+    		    	   SW.ChangeSwitchTexture(line,0);
+    		 	DG.SecretExitLevel ();
+    		 	break;
+    		 	
+    		       case 55:
+    		 	// Raise Floor Crush
+    		 	if (EV.DoFloor(line,floor_e.raiseFloorCrush))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 101:
+    		 	// Raise Floor
+    		 	if (EV.DoFloor(line,floor_e.raiseFloor))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 102:
+    		 	// Lower Floor to Surrounding floor height
+    		 	if (EV.DoFloor(line,floor_e.lowerFloor))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 103:
+    		 	// Open Door
+    		 	if (EV.DoDoor(line,vldoor_e.open))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 111:
+    		 	// Blazing Door Raise (faster than TURBO!)
+    		 	if (EV.DoDoor (line,vldoor_e.blazeRaise))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 112:
+    		 	// Blazing Door Open (faster than TURBO!)
+    		 	if (EV.DoDoor (line,vldoor_e.blazeOpen))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 113:
+    		 	// Blazing Door Close (faster than TURBO!)
+    		 	if (EV.DoDoor (line,vldoor_e.blazeClose))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 122:
+    		 	// Blazing PlatDownWaitUpStay
+    		 	if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 127:
+    		 	// Build Stairs Turbo 16
+    		 	if (EV.BuildStairs(line,stair_e.turbo16))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 131:
+    		 	// Raise Floor Turbo
+    		 	if (EV.DoFloor(line,floor_e.raiseFloorTurbo))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 133:
+    		 	// BlzOpenDoor BLUE
+    		       case 135:
+    		 	// BlzOpenDoor RED
+    		       case 137:
+    		 	// BlzOpenDoor YELLOW
+    		 	if (EV.DoLockedDoor (line,vldoor_e.blazeOpen,thing))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		       case 140:
+    		 	// Raise Floor 512
+    		 	if (EV.DoFloor(line,floor_e.raiseFloor512))
+    		 		SW.ChangeSwitchTexture(line,0);
+    		 	break;
+    		 	
+    		 	// BUTTONS
+    		       case 42:
+    		 	// Close Door
+    		 	if (EV.DoDoor(line,vldoor_e.close))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 43:
+    		 	// Lower Ceiling to Floor
+    		 	if (EV.DoCeiling(line,ceiling_e.lowerToFloor))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 45:
+    		 	// Lower Floor to Surrounding floor height
+    		 	if (EV.DoFloor(line,floor_e.lowerFloor))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 60:
+    		 	// Lower Floor to Lowest
+    		 	if (EV.DoFloor(line,floor_e.lowerFloorToLowest))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 61:
+    		 	// Open Door
+    		 	if (EV.DoDoor(line,vldoor_e.open))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 62:
+    		 	// PlatDownWaitUpStay
+    		 	if (PEV.DoPlat(line,plattype_e.downWaitUpStay,1))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 63:
+    		 	// Raise Door
+    		 	if (EV.DoDoor(line,vldoor_e.normal))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 64:
+    		 	// Raise Floor to ceiling
+    		 	if (EV.DoFloor(line,floor_e.raiseFloor))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 66:
+    		 	// Raise Floor 24 and change texture
+    		 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
+    		 		SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 67:
+    		 	// Raise Floor 32 and change texture
+    		 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 65:
+    		 	// Raise Floor Crush
+    		 	if (EV.DoFloor(line,floor_e.raiseFloorCrush))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 68:
+    		 	// Raise Plat to next highest floor and change texture
+    		 	if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 69:
+    		 	// Raise Floor to next highest floor
+    		 	if (EV.DoFloor(line, floor_e.raiseFloorToNearest))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 70:
+    		 	// Turbo Lower Floor
+    		 	if (EV.DoFloor(line,floor_e.turboLower))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 114:
+    		 	// Blazing Door Raise (faster than TURBO!)
+    		 	if (EV.DoDoor (line,vldoor_e.blazeRaise))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 115:
+    		 	// Blazing Door Open (faster than TURBO!)
+    		 	if (EV.DoDoor (line,vldoor_e.blazeOpen))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 116:
+    		 	// Blazing Door Close (faster than TURBO!)
+    		 	if (EV.DoDoor (line,vldoor_e.blazeClose))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 123:
+    		 	// Blazing PlatDownWaitUpStay
+    		 	if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 132:
+    		 	// Raise Floor Turbo
+    		 	if (EV.DoFloor(line,floor_e.raiseFloorTurbo))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 99:
+    		 	// BlzOpenDoor BLUE
+    		       case 134:
+    		 	// BlzOpenDoor RED
+    		       case 136:
+    		 	// BlzOpenDoor YELLOW
+    		 	if (EV.DoLockedDoor (line,vldoor_e.blazeOpen,thing))
+    		 	    SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 138:
+    		 	// Light Turn On
+    		 	LEV.LightTurnOn(line,255);
+    		 	SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 	
+    		       case 139:
+    		 	// Light Turn Off
+    		 	LEV.LightTurnOn(line,35);
+    		 	SW.ChangeSwitchTexture(line,1);
+    		 	break;
+    		 			
+    		     }
+    		 	
+    		     return true;
+    		 }
+    	 }
+
  
  class Switches {
 
@@ -8028,395 +8420,23 @@ class Lights{
 
 
 
-	 //
-	 // P_UseSpecialLine
-	 // Called when a thing uses a special line.
-	 // Only the front sides of lines are usable.
-	 //
-	 boolean
-	 UseSpecialLine
-	 ( mobj_t	thing,
-	   line_t	line,
-	   boolean		side )
-	 {               
-
-	     // Err...
-	     // Use the back sides of VERY SPECIAL lines...
-	     if (side)
-	     {
-	 	switch(line.special)
-	 	{
-	 	  case 124:
-	 	    // Sliding door open&close
-	 	    // UNUSED?
-	 	    break;
-
-	 	  default:
-	 	    return false;
-	 	    break;
-	 	}
-	     }
-
-	     
-	     // Switches that other things can activate.
-	     if (thing.player!=null)
-	     {
-	 	// never open secret doors
-	 	if (flags(line.flags, ML_SECRET))
-	 	    return false;
-	 	
-	 	switch(line.special)
-	 	{
-	 	  case 1: 	// MANUAL DOOR RAISE
-	 	  case 32:	// MANUAL BLUE
-	 	  case 33:	// MANUAL RED
-	 	  case 34:	// MANUAL YELLOW
-	 	    break;
-	 	    
-	 	  default:
-	 	    return false;
-	 	    break;
-	 	}
-	     }
-
-	     
-	     // do something  
-	     switch (line.special)
-	     {
-	 	// MANUALS
-	       case 1:		// Vertical Door
-	       case 26:		// Blue Door/Locked
-	       case 27:		// Yellow Door /Locked
-	       case 28:		// Red Door /Locked
-
-	       case 31:		// Manual door open
-	       case 32:		// Blue locked door open
-	       case 33:		// Red locked door open
-	       case 34:		// Yellow locked door open
-
-	       case 117:		// Blazing door raise
-	       case 118:		// Blazing door open
-	 	EV.VerticalDoor (line, thing);
-	 	break;
-	 	
-	 	//UNUSED - Door Slide Open&Close
-	 	// case 124:
-	 	// EV_SlidingDoor (line, thing);
-	 	// break;
-
-	 	// SWITCHES
-	       case 7:
-	 	// Build Stairs
-	 	if (EV.BuildStairs(line,stair_e.build8))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-
-	       case 9:
-	 	// Change Donut
-	 	if (EV.DoDonut(line))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 11:
-	 	// Exit level
-	 	ChangeSwitchTexture(line,0);
-	 	DG.ExitLevel ();
-	 	break;
-	 	
-	       case 14:
-	 	// Raise Floor 32 and change texture
-	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 15:
-	 	// Raise Floor 24 and change texture
-	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 18:
-	 	// Raise Floor to next highest floor
-	 	if (EV.DoFloor(line, floor_e.raiseFloorToNearest))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 20:
-	 	// Raise Plat next highest floor and change texture
-	 	if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 21:
-	 	// PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,plattype_e.downWaitUpStay,0))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 23:
-	 	// Lower Floor to Lowest
-	 	if (EV.DoFloor(line,floor_e.lowerFloorToLowest))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 29:
-	 	// Raise Door
-	 	if (EV.DoDoor(line,vldoor_e.normal))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 41:
-	 	// Lower Ceiling to Floor
-	 	if (EV.DoCeiling(line,ceiling_e.lowerToFloor))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 71:
-	 	// Turbo Lower Floor
-	 	if (EV.DoFloor(line,floor_e.turboLower))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 49:
-	 	// Ceiling Crush And Raise
-	 	if (EV.DoCeiling(line,ceiling_e.crushAndRaise))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 50:
-	 	// Close Door
-	 	if (EV.DoDoor(line,vldoor_e.close))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 51:
-	 	// Secret EXIT
-	 	ChangeSwitchTexture(line,0);
-	 	DG.SecretExitLevel ();
-	 	break;
-	 	
-	       case 55:
-	 	// Raise Floor Crush
-	 	if (EV.DoFloor(line,floor_e.raiseFloorCrush))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 101:
-	 	// Raise Floor
-	 	if (EV.DoFloor(line,floor_e.raiseFloor))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 102:
-	 	// Lower Floor to Surrounding floor height
-	 	if (EV.DoFloor(line,floor_e.lowerFloor))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 103:
-	 	// Open Door
-	 	if (EV.DoDoor(line,vldoor_e.open))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 111:
-	 	// Blazing Door Raise (faster than TURBO!)
-	 	if (EV.DoDoor (line,vldoor_e.blazeRaise))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 112:
-	 	// Blazing Door Open (faster than TURBO!)
-	 	if (EV.DoDoor (line,vldoor_e.blazeOpen))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 113:
-	 	// Blazing Door Close (faster than TURBO!)
-	 	if (EV.DoDoor (line,vldoor_e.blazeClose))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 122:
-	 	// Blazing PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 127:
-	 	// Build Stairs Turbo 16
-	 	if (EV.BuildStairs(line,stair_e.turbo16))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 131:
-	 	// Raise Floor Turbo
-	 	if (EV.DoFloor(line,floor_e.raiseFloorTurbo))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 133:
-	 	// BlzOpenDoor BLUE
-	       case 135:
-	 	// BlzOpenDoor RED
-	       case 137:
-	 	// BlzOpenDoor YELLOW
-	 	if (EV.DoLockedDoor (line,vldoor_e.blazeOpen,thing))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	       case 140:
-	 	// Raise Floor 512
-	 	if (EV.DoFloor(line,floor_e.raiseFloor512))
-	 	    ChangeSwitchTexture(line,0);
-	 	break;
-	 	
-	 	// BUTTONS
-	       case 42:
-	 	// Close Door
-	 	if (EV.DoDoor(line,vldoor_e.close))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 43:
-	 	// Lower Ceiling to Floor
-	 	if (EV.DoCeiling(line,ceiling_e.lowerToFloor))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 45:
-	 	// Lower Floor to Surrounding floor height
-	 	if (EV.DoFloor(line,floor_e.lowerFloor))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 60:
-	 	// Lower Floor to Lowest
-	 	if (EV.DoFloor(line,floor_e.lowerFloorToLowest))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 61:
-	 	// Open Door
-	 	if (EV.DoDoor(line,vldoor_e.open))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 62:
-	 	// PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,plattype_e.downWaitUpStay,1))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 63:
-	 	// Raise Door
-	 	if (EV.DoDoor(line,vldoor_e.normal))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 64:
-	 	// Raise Floor to ceiling
-	 	if (EV.DoFloor(line,floor_e.raiseFloor))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 66:
-	 	// Raise Floor 24 and change texture
-	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 67:
-	 	// Raise Floor 32 and change texture
-	 	if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 65:
-	 	// Raise Floor Crush
-	 	if (EV.DoFloor(line,floor_e.raiseFloorCrush))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 68:
-	 	// Raise Plat to next highest floor and change texture
-	 	if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 69:
-	 	// Raise Floor to next highest floor
-	 	if (EV.DoFloor(line, floor_e.raiseFloorToNearest))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 70:
-	 	// Turbo Lower Floor
-	 	if (EV.DoFloor(line,floor_e.turboLower))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 114:
-	 	// Blazing Door Raise (faster than TURBO!)
-	 	if (EV.DoDoor (line,vldoor_e.blazeRaise))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 115:
-	 	// Blazing Door Open (faster than TURBO!)
-	 	if (EV.DoDoor (line,vldoor_e.blazeOpen))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 116:
-	 	// Blazing Door Close (faster than TURBO!)
-	 	if (EV.DoDoor (line,vldoor_e.blazeClose))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 123:
-	 	// Blazing PlatDownWaitUpStay
-	 	if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 132:
-	 	// Raise Floor Turbo
-	 	if (EV.DoFloor(line,floor_e.raiseFloorTurbo))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 99:
-	 	// BlzOpenDoor BLUE
-	       case 134:
-	 	// BlzOpenDoor RED
-	       case 136:
-	 	// BlzOpenDoor YELLOW
-	 	if (EV.DoLockedDoor (line,vldoor_e.blazeOpen,thing))
-	 	    ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 138:
-	 	// Light Turn On
-	 	LEV.LightTurnOn(line,255);
-	 	ChangeSwitchTexture(line,1);
-	 	break;
-	 	
-	       case 139:
-	 	// Light Turn Off
-	 	LEV.LightTurnOn(line,35);
-	 	ChangeSwitchTexture(line,1);
-	 	break;
-	 			
-	     }
-	 	
-	     return true;
-	 }
+	 
 	 
 	 
  }
  
- 
+ //
+//MOVEMENT ITERATOR FUNCTIONS
+//
+
+interface PIT_LineFunction {
+  public boolean invoke(line_t ld);
+}
+
+
+interface PIT_MobjFunction {
+    public boolean invoke(mobj_t thing);
+}
  
  enum PIT{
 	 AddLineIntercepts,
@@ -8761,12 +8781,12 @@ class Lights{
    
  mobj.angle = ANG45 * (mthing.angle/45);
  mobj.player = p;
- mobj.health = p.health;
+ mobj.health = p.health[0];
 
  p.mo = mobj;
  p.playerstate = PST_LIVE;  
  p.refire = 0;
- p.message = NULL;
+ p.message = null;
  p.damagecount = 0;
  p.bonuscount = 0;
  p.extralight = 0;
@@ -8774,7 +8794,7 @@ class Lights{
  p.viewheight = VIEWHEIGHT;
 
  // setup gun psprite
- SetupPsprites (p);
+ p.SetupPsprites ();
 
  // give all cards in death match mode
  if (DS.deathmatch)
@@ -8808,10 +8828,11 @@ class Lights{
  // count deathmatch start positions
  if (mthing.type == 11)
  {
- if (LL.deathmatch_p < LL.deathmatchstarts[10])
+ if (DS.deathmatch_p < 10/*DS.deathmatchstarts[10]*/)
  {
-   memcpy (deathmatch_p, mthing, sizeof(*mthing));
-   deathmatch_p++;
+  // memcpy (deathmatch_p, mthing, sizeof(*mthing));
+	 DS.deathmatchstarts[DS.deathmatch_p]=mthing.clone();
+   DS.deathmatch_p++;
  }
  return;
  }
@@ -8820,25 +8841,25 @@ class Lights{
  if (mthing.type <= 4)
  {
  // save spots for respawning in network games
- playerstarts[mthing.type-1] = *mthing;
- if (!deathmatch)
-   P_SpawnPlayer (mthing);
+ DS.playerstarts[mthing.type-1] = mthing;
+ if (!DS.deathmatch)
+   SpawnPlayer (mthing);
 
  return;
  }
 
  // check for apropriate skill level
- if (!netgame && (mthing.options & 16) )
+ if (!DS.netgame && flags(mthing.options , 16) )
  return;
    
- if (gameskill == sk_baby)
+ if (DS.gameskill == skill_t.sk_baby)
  bit = 1;
- else if (gameskill == sk_nightmare)
+ else if (DS.gameskill == skill_t.sk_nightmare)
  bit = 4;
  else
- bit = 1<<(gameskill-1);
+ bit = 1<<(DS.gameskill.ordinal()-1);
 
- if (!(mthing.options & bit) )
+ if (!flags(mthing.options , bit) )
  return;
 
  // find which type to spawn
@@ -8852,13 +8873,13 @@ class Lights{
     mthing.x, mthing.y);
    
  // don't spawn keycards and players in deathmatch
- if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
+ if (DS.deathmatch && flags(mobjinfo[i].flags , MF_NOTDMATCH))
  return;
    
  // don't spawn any monsters if -nomonsters
- if (nomonsters
- && ( i == mobjtype_t.MT_SKULL
-    || (mobjinfo[i].flags & MF_COUNTKILL)) )
+ if (DS.nomonsters
+ && ( i == mobjtype_t.MT_SKULL.ordinal()
+    || flags(mobjinfo[i].flags , MF_COUNTKILL)) )
  {
  return;
  }
@@ -8867,23 +8888,23 @@ class Lights{
  x = mthing.x << FRACBITS;
  y = mthing.y << FRACBITS;
 
- if (mobjinfo[i].flags & MF_SPAWNCEILING)
+ if (flags(mobjinfo[i].flags , MF_SPAWNCEILING))
  z = ONCEILINGZ;
  else
  z = ONFLOORZ;
 
- mobj = P_SpawnMobj (x,y,z, i);
- mobj.spawnpoint = *mthing;
+ mobj = SpawnMobj (x,y,z, mobjtype_t.values()[i]);
+ mobj.spawnpoint = mthing;
 
  if (mobj.tics > 0)
  mobj.tics = 1 + (RND.P_Random () % mobj.tics);
- if (mobj.flags & MF_COUNTKILL)
- totalkills++;
- if (mobj.flags & MF_COUNTITEM)
- totalitems++;
+ if (flags(mobj.flags , MF_COUNTKILL))
+ DS.totalkills++;
+ if (flags(mobj.flags , MF_COUNTITEM))
+ DS.totalitems++;
    
  mobj.angle = ANG45 * (mthing.angle/45);
- if (mthing.options & MTF_AMBUSH)
+ if (flags(mthing.options , MTF_AMBUSH))
  mobj.flags |= MF_AMBUSH;
  }
 
@@ -8917,9 +8938,9 @@ class Lights{
 
  z += ((RND.P_Random()-RND.P_Random())<<10);
 
- th = P_SpawnMobj (x,y,z, mobjtype_t.MT_PUFF);
+ th = SpawnMobj (x,y,z, mobjtype_t.MT_PUFF);
  th.momz = FRACUNIT;
- th.tics -= P_Random()&3;
+ th.tics -= RND.P_Random()&3;
 
  if (th.tics < 1)
  th.tics = 1;
@@ -8948,18 +8969,18 @@ class Lights{
  {
  mobj_t th;
 
- z += ((RND.P_Random()-P_Random())<<10);
- th = P_SpawnMobj (x,y,z, mobjtype_t.MT_BLOOD);
+ z += ((RND.P_Random()-RND.P_Random())<<10);
+ th = SpawnMobj (x,y,z, mobjtype_t.MT_BLOOD);
  th.momz = FRACUNIT*2;
- th.tics -= P_Random()&3;
+ th.tics -= RND.P_Random()&3;
 
  if (th.tics < 1)
  th.tics = 1;
    
  if (damage <= 12 && damage >= 9)
- P_SetMobjState (th,S_BLOOD2);
+	 th.SetMobjState (statenum_t.S_BLOOD2);
  else if (damage < 9)
- P_SetMobjState (th,S_BLOOD3);
+	 th.SetMobjState (statenum_t.S_BLOOD3);
  }
 
 
@@ -8973,7 +8994,7 @@ class Lights{
 
  void CheckMissileSpawn (mobj_t th)
  {
- th.tics -= P_Random()&3;
+ th.tics -= RND.P_Random()&3;
  if (th.tics < 1)
  th.tics = 1;
 
@@ -8983,8 +9004,8 @@ class Lights{
  th.y += (th.momy>>1);
  th.z += (th.momz>>1);
 
- if (!P_TryMove (th, th.x, th.y))
- P_ExplodeMissile (th);
+ if (!MV.TryMove (th, th.x, th.y))
+ ExplodeMissile (th);
  }
 
 
@@ -9001,18 +9022,18 @@ class Lights{
  int an; // angle_t
  int     dist;
 
- th = P_SpawnMobj (source.x,
+ th = SpawnMobj (source.x,
          source.y,
          source.z + 4*8*FRACUNIT, type);
 
- if (th.info.seesound)
+ if (th.info.seesound!=null)
  ; // TODO: (th, th.info.seesound);
 
  th.target = source;    // where it came from
- an = R_PointToAngle2 (source.x, source.y, dest.x, dest.y);  
+ an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y);  
 
  // fuzzy player
- if (dest.flags & MF_SHADOW)
+ if (flags(dest.flags , MF_SHADOW))
  an += (RND.P_Random()-RND.P_Random())<<20;  
 
  th.angle = an;
@@ -9020,14 +9041,14 @@ class Lights{
  th.momx = FixedMul (th.info.speed, finecosine[an]);
  th.momy = FixedMul (th.info.speed, finesine[an]);
 
- dist = P_AproxDistance (dest.x - source.x, dest.y - source.y);
+ dist = AproxDistance (dest.x - source.x, dest.y - source.y);
  dist = dist / th.info.speed;
 
  if (dist < 1)
  dist = 1;
 
  th.momz = (dest.z - source.z) / dist;
- P_CheckMissileSpawn (th);
+ CheckMissileSpawn (th);
 
  return th;
  }
@@ -9049,20 +9070,20 @@ class Lights{
 
  // see which target is to be aimed at
  an = source.angle;
- slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+ slope = MV.AimLineAttack (source, an, 16*64*FRACUNIT);
 
- if (!linetarget)
+ if (MV.linetarget==null)
  {
  an += 1<<26;
- slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+ slope = MV.AimLineAttack (source, an, 16*64*FRACUNIT);
 
- if (!linetarget)
+ if (MV.linetarget==null)
  {
    an -= 2<<26;
-   slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+   slope = MV.AimLineAttack (source, an, 16*64*FRACUNIT);
  }
 
- if (!linetarget)
+ if (MV.linetarget==null)
  {
    an = source.angle;
    slope = 0;
@@ -9073,9 +9094,9 @@ class Lights{
  y = source.y;
  z = source.z + 4*8*FRACUNIT;
 
- th = P_SpawnMobj (x,y,z, type);
+ th = SpawnMobj (x,y,z, type);
 
- if (th.info.seesound)
+ if (th.info.seesound!=null)
  ; // TODO: (th, th.info.seesound);
 
  th.target = source;
@@ -9086,7 +9107,7 @@ class Lights{
         finesine[an>>ANGLETOFINESHIFT]);
  th.momz = FixedMul( th.info.speed, slope);
 
- P_CheckMissileSpawn (th);
+ CheckMissileSpawn (th);
  }
 
      //
@@ -9175,7 +9196,7 @@ class Lights{
          // ignore damage in GOD mode, or with INVUL power.
          if ( damage < 1000
               && ( flags(player.cheats,player_t.CF_GODMODE))
-               || player.powers[pW.invulnerability]!=0 ) 
+               || player.powers[pw_invulnerability]!=0 ) 
          {
              return;
          }
@@ -9324,16 +9345,16 @@ class Lights{
          // during the death frame of a thing.
          switch (target.type)
          {
-           case mobjtype_t.MT_WOLFSS:
-           case mobjtype_t.MT_POSSESSED:
+           case MT_WOLFSS:
+           case MT_POSSESSED:
          item = mobjtype_t.MT_CLIP;
          break;
          
-           case mobjtype_t.MT_SHOTGUY:
+           case MT_SHOTGUY:
          item = mobjtype_t.MT_SHOTGUN;
          break;
          
-           case mobjtype_t.MT_CHAINGUY:
+           case MT_CHAINGUY:
          item = mobjtype_t.MT_CHAINGUN;
          break;
          
@@ -9341,7 +9362,7 @@ class Lights{
          return;
          }
 
-         mo = P_SpawnMobj (target.x,target.y,ONFLOORZ, item);
+         mo = SpawnMobj (target.x,target.y,ONFLOORZ, item);
          mo.flags |= MF_DROPPED;    // special versions of items
      }
      
@@ -9403,7 +9424,7 @@ class Lights{
   else 
   mobj.z = z;
 
-  mobj.thinker.function=P_MobjThinker;
+  mobj.thinker.function=think_t.P_MobjThinker;
 
   AddThinker (mobj.thinker);
 
@@ -9553,8 +9574,9 @@ if ( currentthinker.function == null )
 }
 else
 {
-    if (currentthinker.function.getType()==ActionType.acp1)
-    currentthinker.function.acp1(currentthinker);
+    if (currentthinker.function.getType()==acp1)
+    	// Execute thinker's function.
+    A.dispatch(currentthinker.function, currentthinker,null);
 }
 currentthinker = currentthinker.next;
 }
@@ -9583,10 +9605,10 @@ public void Ticker ()
        
    for (i=0 ; i<MAXPLAYERS ; i++)
    if (DS.playeringame[i])
-       GAME.PlayerThink (DS.players[i]);
+	   DS.players[i].PlayerThink ();
            
    RunThinkers ();
-   UpdateSpecials (); // In specials. Merge?
+   SPECS.UpdateSpecials (); // In specials. Merge?
    RespawnSpecials ();
 
    // for par times
@@ -9595,6 +9617,8 @@ public void Ticker ()
 
 /**
  * P_TouchSpecialThing
+ * 
+ * LIKE ROMERO's ASS!!!
  */
 public void
 TouchSpecialThing

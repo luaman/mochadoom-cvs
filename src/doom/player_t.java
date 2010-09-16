@@ -1,8 +1,11 @@
 package doom;
 
+import g.DoomGame;
 import i.system;
 
 import java.util.Arrays;
+
+import m.random;
 
 import data.doomstat;
 import data.state_t;
@@ -19,7 +22,7 @@ import static m.fixed_t.*;
 import static data.info.*;
 import static p.mobj.*;
 import p.UnifiedGameMap;
-import p.mobj;
+import static p.MapUtils.*;
 import p.mobj_t;
 import p.pspdef_t;
 import rr.RendererState;
@@ -52,7 +55,7 @@ import static p.mobj.MF_SHADOW;
 
 public class player_t /*extends mobj_t */
         implements Cloneable
-/*  */{
+        {
     public static player_t nullplayer;
     static {
         nullplayer = new player_t();
@@ -582,25 +585,25 @@ public class player_t /*extends mobj_t */
         // HELLSLIME DAMAGE
         if (powers[pw_ironfeet]==0)
             if (!flags(DS.leveltime,0x1f))
-                GW.DamageMobj (mo,null, null, 10);
+                P.DamageMobj (mo,null, null, 10);
         break;
         
           case 7:
         // NUKAGE DAMAGE
         if (powers[pw_ironfeet]==0)
             if (!flags(DS.leveltime,0x1f))
-                GW.DamageMobj (mo, null, null, 5);
+                P.DamageMobj (mo, null, null, 5);
         break;
         
           case 16:
         // SUPER HELLSLIME DAMAGE
           case 4:
         // STROBE HURT
-        if (!powers[pW.ironfeet]
-            || (P_Random()<5) )
+        if (!eval(powers[pw_ironfeet])
+            || (RND.P_Random()<5) )
         {
-            if (!(leveltime&0x1f))
-            P_DamageMobj (mo, NULL, NULL, 20);
+            if (!flags(DS.leveltime,0x1f))
+            P.DamageMobj (mo, null, null, 20);
         }
         break;
                 
@@ -614,11 +617,11 @@ public class player_t /*extends mobj_t */
         // EXIT SUPER DAMAGE! (for E1M8 finale)
         cheats &= ~CF_GODMODE;
 
-        if (!(leveltime&0x1f))
-            P_DamageMobj (mo, NULL, NULL, 20);
+        if (!flags(DS.leveltime,0x1f))
+            P.DamageMobj (mo, null, null, 20);
 
-        if (health <= 10)
-            G_ExitLevel();
+        if (health[0] <= 10)
+            G.ExitLevel();
         break;
                 
           default:
@@ -626,11 +629,19 @@ public class player_t /*extends mobj_t */
         break;
         };
     }    
+   
+ // Index of the special effects (INVUL inverse) map.
+public static final int INVERSECOLORMAP		=32;
     
- //
- // P_PlayerThink
- //
- public void P_PlayerThink ()
+ /**
+  * P_PlayerThink
+  * 
+  * Because, as we know, Doomguy THINKS, unlike the monsters that
+  * maybe don't think.
+  * 
+  */
+
+ public void PlayerThink ()
  {
      ticcmd_t       cmd=new ticcmd_t();
      weapontype_t    newweapon;
@@ -668,7 +679,7 @@ public class player_t /*extends mobj_t */
      
      CalcHeight ();
 
-     if (mo.subsector.sector.special!=null)
+     if (eval(mo.subsector.sector.special))
      PlayerInSpecialSector ();
      
      // Check for weapon change.
@@ -701,14 +712,14 @@ public class player_t /*extends mobj_t */
      }
      
 
-     if (weaponowned[newweapon]
+     if (weaponowned[newweapon.ordinal()]
          && newweapon != readyweapon)
      {
          // Do not go to plasma or BFG in shareware,
          //  even if cheated.
-         if ((newweapon != wp_plasma
-          && newweapon != wp_bfg)
-         || (gamemode != shareware) )
+         if ((newweapon != weapontype_t.wp_plasma
+          && newweapon != weapontype_t.wp_bfg)
+         || (DS.gamemode != GameMode_t.shareware) )
          {
          pendingweapon = newweapon;
          }
@@ -716,11 +727,11 @@ public class player_t /*extends mobj_t */
      }
      
      // check for use
-     if (cmd.buttons & BT_USE)
+     if (flags(cmd.buttons , BT_USE))
      {
      if (!usedown)
      {
-         P_UseLines (player);
+         P.MV.UseLines (this);
          usedown = true;
      }
      }
@@ -728,47 +739,47 @@ public class player_t /*extends mobj_t */
      usedown = false;
      
      // cycle psprites
-     P_MovePsprites (player);
+     MovePsprites ();
      
      // Counters, time dependend power ups.
 
      // Strength counts up to diminish fade.
-     if (powers[pw_strength])
+     if (eval(powers[pw_strength]))
      powers[pw_strength]++;  
          
-     if (powers[pw_invulnerability])
+     if (eval(powers[pw_invulnerability]))
      powers[pw_invulnerability]--;
 
-     if (powers[pw_invisibility])
-     if (! --powers[pw_invisibility] )
+     if (eval(powers[pw_invisibility]))
+     if (!eval( --powers[pw_invisibility]) )
          mo.flags &= ~MF_SHADOW;
              
-     if (powers[pw_infrared])
+     if (eval(powers[pw_infrared]))
      powers[pw_infrared]--;
          
-     if (powers[pw_ironfeet])
+     if (eval(powers[pw_ironfeet]))
      powers[pw_ironfeet]--;
          
-     if (damagecount)
+     if (eval(damagecount))
      damagecount--;
          
-     if (bonuscount)
+     if (eval(bonuscount))
      bonuscount--;
 
      
      // Handling colormaps.
-     if (powers[pw_invulnerability])
+     if (eval(powers[pw_invulnerability]))
      {
      if (powers[pw_invulnerability] > 4*32
-         || (powers[pw_invulnerability]&8) )
+         || flags(powers[pw_invulnerability],8) )
          fixedcolormap = INVERSECOLORMAP;
      else
          fixedcolormap = 0;
      }
-     else if (powers[pw_infrared])   
+     else if (eval(powers[pw_infrared]))   
      {
      if (powers[pw_infrared] > 4*32
-         || (powers[pw_infrared]&8) )
+         || flags(powers[pw_infrared],8) )
      {
          // almost full bright
          fixedcolormap = 1;
@@ -911,26 +922,27 @@ public void DeathThink ()
 // P_MovePsprites
 // Called every tic by player thinking routine.
 //
-public void MovePsprites () 
+void MovePsprites () 
 {
-    int     i;
-    pspdef_t[]    psp;
+
+    pspdef_t    psp;
     state_t state;
     
-    psp = psprites;
-    for (i=0 ; i<NUMPSPRITES ; i++)
+ 
+    for (int i=0 ; i<NUMPSPRITES ; i++)
     {
+    	   psp = psprites[i];
     // a null state means not active
-    if ( (state = psp[i].state) != null )  
+    if ( (state = psp.state)!=null )  
     {
         // drop tic count and possibly change state
 
         // a -1 tic count never changes
-        if (psp[i].tics != -1) 
+        if (psp.tics != -1) 
         {
-        psp[i].tics--;
-        if (psp[i].tics==0)
-            SetPsprite (i, psp[i].state.nextstate);
+        psp.tics--;
+        if (!eval(psp.tics))
+            this.SetPsprite (i, psp.state.nextstate);
         }               
     }
     }
@@ -975,9 +987,9 @@ SetPsprite
     
     // Call action routine.
     // Modified handling.
-    if (state.action.getType()==ActionType.acp2)
+    if (state.action.getType()==acp2)
     {
-        ((acp2)(state.action)).invoke(player, psp);
+        P.A.dispatch(state.action,this, psp);
         if (psp.state==null)
         break;
     }
@@ -1015,9 +1027,11 @@ SetPsprite
 
     /** Probably doomguy needs to know what the fuck is going on */
     private doomstat DS;
-    private UnifiedGameMap GW;
+    private UnifiedGameMap P;
     private RendererState R;
-
+    private random RND;
+    private DoomGame G;
+    	
     /* psprnum_t enum */
     public static int ps_weapon=0,
         ps_flash=1,
@@ -1117,7 +1131,7 @@ SetPsprite
     // from the bottom of the screen.
     // Uses player
     //
-    public void BringUpWeapon (player_t player)
+    public void BringUpWeapon ()
     {
         statenum_t  newstate=statenum_t.S_NULL;
         
@@ -1157,7 +1171,7 @@ SetPsprite
 
         // Some do not need ammunition anyway.
         // Return if current ammunition sufficient.
-        if (ammo == ammotype_t.am_noammo || ammo[ammo.ordinal()] >= count)
+        if (ammo == ammotype_t.am_noammo || this.ammo[ammo.ordinal()] >= count)
         return true;
             
         // Out of ammo, pick a weapon to change to.
@@ -1165,28 +1179,28 @@ SetPsprite
         do
         {
         if (weaponowned[weapontype_t.wp_plasma.ordinal()]
-            && (ammo[ammotype_t.am_cell.ordinal()]!=0)
+            && (this.ammo[ammotype_t.am_cell.ordinal()]!=0)
             && (DS.gamemode != GameMode_t.shareware) )
         {
             pendingweapon = weapontype_t.wp_plasma;
         }
         else if (weaponowned[weapontype_t.wp_supershotgun.ordinal()] 
-             && ammo[ammotype_t.am_shell.ordinal()]>2
+             && this.ammo[ammotype_t.am_shell.ordinal()]>2
              && (DS.gamemode == GameMode_t.commercial) )
         {
             pendingweapon = weapontype_t.wp_supershotgun;
         }
         else if (weaponowned[weapontype_t.wp_chaingun.ordinal()]
-             && ammo[ammotype_t.am_clip.ordinal()]!=0)
+             && this.ammo[ammotype_t.am_clip.ordinal()]!=0)
         {
             pendingweapon = weapontype_t.wp_chaingun;
         }
         else if (weaponowned[weapontype_t.wp_shotgun.ordinal()]
-             && ammo[ammotype_t.am_shell.ordinal()]!=0)
+             && this.ammo[ammotype_t.am_shell.ordinal()]!=0)
         {
             pendingweapon = weapontype_t.wp_shotgun;
         }
-        else if (ammo[ammotype_t.am_clip.ordinal()]!=0)
+        else if (this.ammo[ammotype_t.am_clip.ordinal()]!=0)
         {
             pendingweapon = weapontype_t.wp_pistol;
         }
@@ -1195,12 +1209,12 @@ SetPsprite
             pendingweapon = weapontype_t.wp_chainsaw;
         }
         else if (weaponowned[weapontype_t.wp_missile.ordinal()]
-             && ammo[ammotype_t.am_misl.ordinal()]!=0)
+             && this.ammo[ammotype_t.am_misl.ordinal()]!=0)
         {
             pendingweapon = weapontype_t.wp_missile;
         }
         else if (weaponowned[weapontype_t.wp_bfg.ordinal()]
-             && ammo[ammotype_t.am_cell.ordinal()]>40
+             && this.ammo[ammotype_t.am_cell.ordinal()]>40
              && (DS.gamemode != GameMode_t.shareware) )
         {
             pendingweapon = weapontype_t.wp_bfg;
@@ -1214,7 +1228,7 @@ SetPsprite
         } while (pendingweapon == weapontype_t.wp_nochange);
 
         // Now set appropriate weapon overlay.
-        this.SetPsprite (player,
+        this.SetPsprite (
               ps_weapon,
               weaponinfo[readyweapon.ordinal()].downstate);
 
@@ -1254,39 +1268,39 @@ SetPsprite
         int     angle;
         
         // get out of attack state
-        if (mo.state == states[S_PLAY_ATK1]
-        || mo.state == states[S_PLAY_ATK2] )
+        if (mo.state == states[statenum_t.S_PLAY_ATK1.ordinal()]
+        || mo.state == states[statenum_t.S_PLAY_ATK2.ordinal()] )
         {
-        P_SetMobjState (mo, S_PLAY);
+        mo.SetMobjState (statenum_t.S_PLAY);
         }
         
-        if (readyweapon == wp_chainsaw
-        && psp.state == states[S_SAW])
+        if (readyweapon == weapontype_t.wp_chainsaw
+        && psp.state == states[statenum_t.S_SAW.ordinal()])
         {
-        S_StartSound (mo, sfx_sawidl);
+        ; //TODO: S_StartSound (mo, sfx_sawidl);
         }
         
         // check for change
         //  if player is dead, put the weapon away
-        if (pendingweapon != wp_nochange || !health)
+        if (pendingweapon != weapontype_t.wp_nochange || health[0]==0)
         {
         // change weapon
         //  (pending weapon should allready be validated)
-        newstate = weaponinfo[readyweapon].downstate;
-        P_SetPsprite (player, ps_weapon, newstate);
+        newstate = weaponinfo[readyweapon.ordinal()].downstate;
+        SetPsprite (ps_weapon, newstate);
         return; 
         }
         
         // check for fire
         //  the missile launcher and bfg do not auto fire
-        if (cmd.buttons & BT_ATTACK)
+        if (flags(cmd.buttons , BT_ATTACK))
         {
         if ( !attackdown
-             || (readyweapon != wp_missile
-             && readyweapon != wp_bfg) )
+             || (readyweapon != weapontype_t.wp_missile
+             && readyweapon != weapontype_t.wp_bfg) )
         {
             attackdown = true;
-            P_FireWeapon (player);      
+            FireWeapon ();      
             return;
         }
         }
@@ -1294,7 +1308,7 @@ SetPsprite
         attackdown = false;
         
         // bob the weapon based on movement speed
-        angle = (128*leveltime)&FINEMASK;
+        angle = (128*DS.leveltime)&FINEMASK;
         psp.sx = FRACUNIT + FixedMul (bob, finecosine[angle]);
         angle &= FINEANGLES/2-1;
         psp.sy = WEAPONTOP + FixedMul (bob, finesine[angle]);
@@ -1312,7 +1326,7 @@ public void A_ReFire(pspdef_t psp )
         //  (if a weaponchange is pending, let it go through instead)
         if ( flags(cmd.buttons , BT_ATTACK) 
          && pendingweapon == weapontype_t.wp_nochange
-         && health!=0)
+         && health[0]!=0)
         {
         refire++;
         FireWeapon ();
@@ -1363,16 +1377,16 @@ public void A_CheckReload
         
         // The old weapon has been lowered off the screen,
         // so change the weapon and start raising it
-        if (!health)
+        if (!(health[0]==0))
         {
         // Player is dead, so keep the weapon off screen.
-        P_SetPsprite (player,  ps_weapon, S_NULL);
+        this.SetPsprite(ps_weapon, statenum_t.S_NULL);
         return; 
         }
         
         readyweapon = pendingweapon; 
 
-        P_BringUpWeapon (player);
+        BringUpWeapon ();
     }
 
 
@@ -1784,56 +1798,27 @@ public void A_CheckReload
 
 
 
-    //
-    // P_SetupPsprites
-    // Called at start of level for each 
-    //
-    void P_SetupPsprites (player_t* player) 
+    /**
+     * P_SetupPsprites
+     * Called at start of level for each 
+     */
+    
+    public void SetupPsprites () 
     {
         int i;
         
         // remove all psprites
         for (i=0 ; i<NUMPSPRITES ; i++)
-        psprites[i].state = NULL;
+        psprites[i].state = null;
             
         // spawn the gun
         pendingweapon = readyweapon;
-        P_BringUpWeapon (player);
+        BringUpWeapon (this);
     }
 
 
 
 
-    //
-    // P_MovePsprites
-    // Called every tic by player thinking routine.
-    //
-    void P_MovePsprites (player_t player) 
-    {
-        int     i;
-        pspdef_t    psp;
-        state_t state;
-        
-        psp = psprites[0];
-        for (i=0 ; i<NUMPSPRITES ; i++, psp++)
-        {
-        // a null state means not active
-        if ( (state = psp.state) )  
-        {
-            // drop tic count and possibly change state
-
-            // a -1 tic count never changes
-            if (psp.tics != -1) 
-            {
-            psp.tics--;
-            if (!psp.tics)
-                P_SetPsprite (player, i, psp.state.nextstate);
-            }               
-        }
-        }
-        
-        psprites[ps_flash].sx = psprites[ps_weapon].sx;
-        psprites[ps_flash].sy = psprites[ps_weapon].sy;
-    }
+   
     
 }
