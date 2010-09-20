@@ -1085,9 +1085,9 @@ SetPsprite
         
         // Call action routine.
         // Modified handling.
-        if (state.action.getType()==ActionType.acp2)
+        if (state.action.getType()==acp2)
         {
-            ((acp2)(state.action)).invoke(player, psp);
+            P.A.dispatch(state.action,this, psp);
             if (psp.state==null)
             break;
         }
@@ -1236,10 +1236,6 @@ SetPsprite
     }
 
 
- 
-
-
-
     //
     // P_DropWeapon
     // Player died, so put the weapon away.
@@ -1250,8 +1246,6 @@ SetPsprite
               ps_weapon,
               weaponinfo[readyweapon.ordinal()].downstate);
     }
-
-
 
     //
     // A_WeaponReady
@@ -1337,6 +1331,23 @@ public void A_ReFire(pspdef_t psp )
         CheckAmmo ();
         }
     }
+
+
+//
+// P_FireWeapon.
+//
+public void FireWeapon ()
+{
+    statenum_t  newstate;
+    
+    if (!this.CheckAmmo ())
+    return;
+    
+    this.mo.SetMobjState (statenum_t.S_PLAY_ATK1);
+    newstate = weaponinfo[readyweapon.ordinal()].atkstate;
+    this.SetPsprite (ps_weapon, newstate);
+    NoiseAlert (player.mo, player.mo);
+}
 
 public void A_CheckReload
     (  pspdef_t psp )

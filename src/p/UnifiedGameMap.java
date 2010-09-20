@@ -78,7 +78,7 @@ public class UnifiedGameMap {
 	DoorsFloors EV;
 	Plats PEV;
 	Lights LEV;
-	Movement MV;
+	public Movement MV;
 	Switches SW;
 	Sight See;
 	Enemies EN;
