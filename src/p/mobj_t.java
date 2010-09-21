@@ -89,14 +89,15 @@ import doom.thinker_t;
  */
 
 public class mobj_t extends thinker_t implements Interceptable   {
-    
-    UnifiedGameMap.Actions A;
-    public mobj_t(UnifiedGameMap.Actions A){
-        this.A=A;
-    }
+   
+    Actions A;    
     
         public mobj_t(){
             
+        }
+    
+        public mobj_t(Actions A){
+            this.A=A;
         }
 
         /** List: thinker links. */
@@ -111,7 +112,7 @@ public class mobj_t extends thinker_t implements Interceptable   {
         //More drawing info: to determine current sprite.
         /** orientation. This needs to be long or else certain checks will fail...but
          * I need to see it working in order to confirm */
-        public int     angle;  
+        public long     angle;  
         
         /** used to find patch_t and flip value */
         public spritenum_t     sprite; 

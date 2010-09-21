@@ -32,7 +32,7 @@ public abstract class RendererState {
     
     //// FROM SEGS ////
     /** angle_t */
-    int     rw_normalangle;
+    long     rw_normalangle;
     
  // OPTIMIZE: closed two sided lines as single sided
 
@@ -48,14 +48,14 @@ public abstract class RendererState {
     int     midtexture;
 
     /** angle to line origin */
-    int     rw_angle1;  
+    long     rw_angle1;  
 
     //
     // regular wall
     //
     int     rw_x;
     int     rw_stopx;
-    int     rw_centerangle; // angle_t
+    long     rw_centerangle; // angle_t
     /** fixed_t */
     int     rw_offset,rw_distance,rw_scale,
     rw_scalestep,rw_midtexturemid,rw_toptexturemid,rw_bottomtexturemid;
@@ -193,17 +193,21 @@ public abstract class RendererState {
 
     // Lighting constants.
     // Now why not 32 levels here?
-    public static int LIGHTLEVELS=16;
-    public static int LIGHTSEGSHIFT=4;
+    public static final int LIGHTLEVELS=16;
+    public static final int LIGHTSEGSHIFT=4;
 
-    public static int MAXLIGHTSCALE=       48;
-    public static int LIGHTSCALESHIFT =    12;
-    public static int MAXLIGHTZ      =    128;
-    public static int LIGHTZSHIFT    = 20;
+    public static final int MAXLIGHTSCALE=       48;
+    public static final int LIGHTSCALESHIFT =    12;
+    public static final int MAXLIGHTZ      =    128;
+    public static final int LIGHTZSHIFT    = 20;
 
    /** Fineangles in the SCREENWIDTH wide window. */
-   public static int FIELDOFVIEW   =   2048;   
-   public static int           viewangleoffset;
+   public static final int FIELDOFVIEW   =   2048;   
+   
+   /** killough: viewangleoffset is a legacy from the pre-v1.2 days, when Doom
+    *  had Left/Mid/Right viewing. +/-ANG90 offsets were placed here on each
+    *  node, by d_net.c, to set up a L/M/R session. */
+   public static final int viewangleoffset=0;
 
    /** Increment every time a check is made 
     *  For some reason, this needs to be visible even by enemies thinking :-S*/
@@ -233,7 +237,7 @@ public abstract class RendererState {
 
    //MAES: an exception to strict type safety. These are used only in here, anyway (?) and have no special functions.
    //Plus I must use them as indexes. angle_t
-   public int  viewangle;
+   public long  viewangle;
 
    /** fixed */
    public int          viewcos,viewsin;
@@ -246,7 +250,7 @@ public abstract class RendererState {
    //
    // precalculated math tables
    //
-   public static int           clipangle;
+   public static long           clipangle;
 
    // The viewangletox[viewangle + FINEANGLES/4] lookup
    // maps the visible view angles to screen X coordinates,
@@ -255,10 +259,10 @@ public abstract class RendererState {
 
    public static final int[]         viewangletox=new int[FINEANGLES/2];
 
-   // The xtoviewangleangle[] table maps a screen pixel
-   // to the lowest viewangle that maps back to x ranges
-   // from clipangle to -clipangle.
-   public static final int[]         xtoviewangle=new int[SCREENWIDTH+1];
+   /** The xtoviewangleangle[] table maps a screen pixel
+    * to the lowest viewangle that maps back to x ranges
+    * from clipangle to -clipangle. */
+   public static final long[]         xtoviewangle=new long[SCREENWIDTH+1];
 
 
    // UNUSED.
@@ -406,7 +410,7 @@ public abstract class RendererState {
    
    ////////////// SOME UTILITY METHODS /////////////
 
-   public int
+   public long
    PointToAngle2
    ( fixed_t	x1,
      fixed_t	y1,
@@ -422,7 +426,7 @@ public abstract class RendererState {
 
    /** Assigns a point of view before calling PointToAngle */
    
-   public int
+   public long
    PointToAngle2
    ( int   x1,
      int   y1,
@@ -459,7 +463,7 @@ public abstract class RendererState {
    	dy = temp;
        }
    	
-       angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
+       angle = (int) ((tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT);
 
        // use as cosine
        dist = FixedDiv (dx, finesine[angle] );	
@@ -505,7 +509,7 @@ public abstract class RendererState {
     *   @param yy (fixed_t)
     */
 
-   public int
+   public long
    PointToAngle
    ( int   xx,
      int   yy )
@@ -598,7 +602,7 @@ public abstract class RendererState {
    //  at the given angle.
    // rw_distance must be calculated first.
    //
-   public int ScaleFromGlobalAngle (int visangle)
+   public int ScaleFromGlobalAngle (long visangle)
    {
        int         scale;
        int         anglea;
@@ -625,12 +629,12 @@ public abstract class RendererState {
    }
    */
 
-       anglea = ANG90 + (visangle-viewangle);
-       angleb = ANG90 + (visangle-rw_normalangle);
+       anglea = (int) (ANG90 + (visangle-viewangle));
+       angleb = (int) (ANG90 + (visangle-rw_normalangle));
 
        // both sines are allways positive
-       sinea = finesine[anglea>>ANGLETOFINESHIFT]; 
-       sineb = finesine[angleb>>ANGLETOFINESHIFT];
+       sinea = finesine[anglea>>>ANGLETOFINESHIFT]; 
+       sineb = finesine[angleb>>>ANGLETOFINESHIFT];
        num = FixedMul(projection,sineb)<<detailshift;
        den = FixedMul(rw_distance,sinea);
 
@@ -712,7 +716,7 @@ public abstract class RendererState {
        dy = temp;
        }
        
-       angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
+       angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+(int)ANG90) >>> ANGLETOFINESHIFT;
 
        // use as cosine
        dist = FixedDiv (dx, finesine[angle] ); 

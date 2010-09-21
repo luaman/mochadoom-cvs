@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.4 2010/09/16 00:16:27 velktron Exp $
+// $Id: Tables.java,v 1.5 2010/09/21 15:53:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.5  2010/09/21 15:53:37  velktron
+// Split the Map ...somewhat...
+//
 // Revision 1.4  2010/09/16 00:16:27  velktron
 // Velvet FM 96.8
 //
@@ -99,10 +102,10 @@ public final class Tables extends SineCosine{
  * 
  */
   
-public static final int ANG45 =  0x20000000,
-                        ANG90  =     0x40000000,
-                        ANG180 =     0x80000000,
-                        ANG270 =     0xc0000000;
+public static final long ANG45 =  0x20000000L,
+                        ANG90  =     0x40000000L,
+                        ANG180 =     0x80000000L,
+                        ANG270 =     0xc0000000L;
 
 public static final int SLOPERANGE =    2048;
 public static final int SLOPEBITS  =     11;
@@ -944,6 +947,16 @@ public static final int finesine(int angle){
     return finesine[angle>>>ANGLETOFINESHIFT];
 }
 
+/** Use this to get a value from the finesine table. It will be automatically shifte, 
+ *  Equivalent to finesine[angle>>>ANGLETOFINESHIFT]
+ * 
+ * @param angle in BAM units
+ * @return
+ */
+public static final int finesine(long angle){
+    return finesine[(int) (angle>>ANGLETOFINESHIFT)];
+}
+
 /** Use this to get a value from the finecosine table. It will be automatically shifte, 
  * Equivalent to finecosine[angle>>>ANGLETOFINESHIFT]
  * @param angle in BAM units
@@ -951,6 +964,15 @@ public static final int finesine(int angle){
  */
 public static final int finecosine(int angle){
     return finecosine[angle>>>ANGLETOFINESHIFT];
+}
+
+/** Use this to get a value from the finecosine table. It will be automatically shifte, 
+ * Equivalent to finecosine[angle>>>ANGLETOFINESHIFT]
+ * @param angle in BAM units
+ * @return
+ */
+public static final int finecosine(long angle){
+    return finecosine[(int) (angle>>ANGLETOFINESHIFT)];
 }
 
 private Tables(){

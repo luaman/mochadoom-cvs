@@ -117,6 +117,20 @@ public class MapUtils {
       return (expr?1:0);
   }
   
+  /** Returns 1 for true and 0 for false. Useful, given 
+   * the amount of "arithmetic" logical functions in 
+   * legacy code.
+   * 
+   *  Synonymous with (expr!=null);
+   * 
+   * @param flags
+   * @param arg
+   * @return
+   */
+  public static final boolean eval(Object expr){
+      return (expr!=null);
+  }
+  
   /** Returns true for expr!=0, false otherwise.
    * 
    * @param flags

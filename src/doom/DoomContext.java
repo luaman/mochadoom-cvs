@@ -1,12 +1,15 @@
 package doom;
 
 import p.LevelLoader;
+import p.UnifiedGameMap;
+import g.DoomGame;
 import i.SystemInterface;
 import data.doomstat;
 import m.DoomMenu;
 import m.random;
 import rr.DoomRenderingContext;
 import rr.Renderer;
+import rr.UnifiedRenderer;
 import s.DoomSoundInterface;
 import st.DoomStatusBarInterface;
 import v.DoomVideoRenderer;
@@ -26,9 +29,9 @@ import w.WadLoader;
  */
 
 public class DoomContext {
+    public DoomGame DG;
     public doomstat DS;
     public WadLoader W;
-    public DoomRenderingContext DRC;
     public random RND;
     public SystemInterface I;
     public DoomSoundInterface S;
@@ -36,4 +39,6 @@ public class DoomContext {
     public DoomVideoRenderer V;
     public LevelLoader LL;
     public DoomMenu M;
+    public UnifiedGameMap P;
+    public UnifiedRenderer R;
 }

@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Plane.java,v 1.4 2010/09/02 15:56:54 velktron Exp $
+// $Id: Plane.java,v 1.5 2010/09/21 15:53:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Plane.java,v $
+// Revision 1.5  2010/09/21 15:53:37  velktron
+// Split the Map ...somewhat...
+//
 // Revision 1.4  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -64,7 +67,7 @@ import static data.Tables.*;
 
 public class Plane{
 public static final String
-rcsid = "$Id: Plane.java,v 1.4 2010/09/02 15:56:54 velktron Exp $";
+rcsid = "$Id: Plane.java,v 1.5 2010/09/21 15:53:37 velktron Exp $";
 
 private Draw DR;
 private Renderer R;
@@ -240,7 +243,7 @@ public void ClearPlanes ()
 	ceilingclip[i] = -1;
     }
 
-    lastvisplane = 0;
+    lastvisplane = 1;
     lastopening = openings[0];
     
     // texture calculation

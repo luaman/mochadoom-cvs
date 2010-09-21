@@ -1,8 +1,7 @@
 package testers;
 
-import hu.HU;
 import p.LevelLoader;
-import rr.RendererData;
+import rr.UnifiedRenderer;
 import utils.C2JUtils;
 import w.WadLoader;
 import data.doomstat;
@@ -43,8 +42,11 @@ public class RenderDataLoader {
     DC.LL=LL;
     LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     
-    RendererData RD=new RendererData(DC);
+    
+    
+    UnifiedRenderer RD=new UnifiedRenderer(DC);
     RD.InitData();
+    RD.RenderPlayerView(ds.players[0]);
     
         } catch (Exception e){
             e.printStackTrace();

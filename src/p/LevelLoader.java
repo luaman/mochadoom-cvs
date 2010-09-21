@@ -1,18 +1,6 @@
 package p;
 
-import static data.Defines.MAPBLOCKSHIFT;
-import static data.Defines.ML_BLOCKMAP;
-import static data.Defines.ML_LINEDEFS;
-import static data.Defines.ML_NODES;
-import static data.Defines.ML_SECTORS;
-import static data.Defines.ML_SEGS;
-import static data.Defines.ML_SIDEDEFS;
-import static data.Defines.ML_SSECTORS;
-import static data.Defines.ML_THINGS;
-import static data.Defines.ML_TWOSIDED;
-import static data.Defines.ML_VERTEXES;
-import static data.Defines.PU_LEVEL;
-import static data.Defines.PU_STATIC;
+import static data.Defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Limits.MAXRADIUS;
 import static m.BBox.BOXBOTTOM;
@@ -21,6 +9,7 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
+import static data.info.sprnames; 
 import i.system;
 
 import java.io.IOException;
@@ -28,6 +17,7 @@ import java.nio.ByteOrder;
 
 import m.BBox;
 import rr.Renderer;
+import rr.UnifiedRenderer;
 import rr.line_t;
 import rr.node_t;
 import rr.sector_t;
@@ -57,7 +47,7 @@ import doom.DoomContext;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.4 2010/09/14 15:34:01 velktron Exp $
+// $Id: LevelLoader.java,v 1.5 2010/09/21 15:53:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +62,9 @@ import doom.DoomContext;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.5  2010/09/21 15:53:37  velktron
+// Split the Map ...somewhat...
+//
 // Revision 1.4  2010/09/14 15:34:01  velktron
 // The enormity of this commit is incredible (pun intended)
 //
@@ -113,33 +106,10 @@ public class LevelLoader {
     WadLoader W;
     doomstat DS;
     DoomVideoRenderer V;
-    Renderer R;
+    UnifiedRenderer R;
+    UnifiedGameMap P;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.4 2010/09/14 15:34:01 velktron Exp $";
-
-/*
-  #include <math.h>
-
-  #include "z_zone.h"
-
-  #include "m_swap.h"
-  #include "m_bbox.h"
-
-  #include "g_game.h"
-
-  #include "i_system.h"
-  #include "w_wad.h"
-
-  #include "doomdef.h"
-  #include "p_local.h"
-
-  #include "s_sound.h"
-
-  #include "doomstat.h"
-*/
-
-  public void    SpawnMapThing (mapthing_t    mthing){}
-
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.5 2010/09/21 15:53:37 velktron Exp $";
 
   //
   // MAP related Lookup tables.
@@ -858,21 +828,11 @@ public int bmaporgy;
   }
 
 
-
-  //
-  // P_Init
-  //
-  public void P_Init ()
-  {
-      //TODO:
-      /*InitSwitchList ();
-      InitPicAnims ();
-      InitSprites (sprnames);*/
-  }
-
   public LevelLoader(DoomContext DC){
       this.W=DC.W;
       this.DS=DC.DS;
+      this.P=DC.P;
+      this.R=DC.R;
    
   }
 

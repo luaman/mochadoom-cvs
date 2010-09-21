@@ -86,10 +86,34 @@ public class C2JUtils {
             os[i]=c.newInstance();
         }
         } catch (Exception e){
+            e.printStackTrace();
             System.err.println("Failure to allocate "+os.length+" objects of class" +c.getName()+ "!");
             System.exit(-1);
         }
     }
+    /** Automatically "initializes" arrays of objects with their
+     * default constuctor. It's better than doing it by hand, IMO.
+     * If you have a better way, be my guest.
+     * 
+     * @param os
+     * @throws Exception 
+     * @throws
+     */  
+
+    public static void initArrayOfObjects(Object[] os) {
+        Class c=os.getClass().getComponentType();
+        try {
+        for (int i=0;i<os.length;i++){
+            os[i]=c.newInstance();
+        }
+        } catch (Exception e){
+            e.printStackTrace();
+            System.err.println("Failure to allocate "+os.length+" objects of class " +c.getName()+ "!");
+            
+            System.exit(-1);
+        }
+    }
+    
     
     /** This method gets eventually inlined, becoming very fast */
     

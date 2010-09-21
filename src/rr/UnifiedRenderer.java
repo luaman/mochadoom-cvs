@@ -1,9 +1,9 @@
 package rr;
 
 import static utils.C2JUtils.toUnsignedByte;
-import static p.SpriteAnimations.NUMPSPRITES;
 import static data.Defines.*;
 import static data.Limits.*;
+import static doom.player_t.*;
 
 import static p.mobj_t.*;
 import static data.SineCosine.finecosine;
@@ -22,6 +22,7 @@ import java.util.Arrays;
 import g.DoomGame;
 import i.system;
 import p.LevelLoader;
+import p.UnifiedGameMap;
 import p.mobj_t;
 import p.pspdef_t;
 import utils.C2JUtils;
@@ -33,10 +34,13 @@ import m.BBox;
 import m.fixed_t;
 import data.doomstat;
 import data.Defines.GameMode_t;
+import doom.DoomContext;
 import doom.player_t;
 import doom.thinker_t;
 
 public class UnifiedRenderer extends RendererState{
+    
+    //////////////////////////////// STATUS ////////////////
 
     private doomstat DS;
     private LevelLoader LL;
@@ -44,9 +48,29 @@ public class UnifiedRenderer extends RendererState{
     private Segs MySegs;
     private BSP MyBSP;
     private Planes MyPlanes;
-    private Things MyThings;
+    public Things MyThings;
     private DoomVideoRenderer V;
     private DoomGame DG;
+    private UnifiedGameMap P;
+    
+    
+    public UnifiedRenderer(DoomContext DC) {
+      this.DS=DC.DS;
+      this.LL=DC.LL;
+      this.W=DC.W;
+      this.DG=DC.DG;
+      this.MySegs=new Segs();
+      this.MyBSP=new BSP();
+      this.MyPlanes=new Planes();
+      this.MyThings=new Things();
+      this.V=DC.V;
+     
+  }
+
+    public Things getThings(){
+        return this.MyThings;
+    }
+    
     
   class BSP{
       public int      rw_x;
@@ -62,7 +86,17 @@ public class UnifiedRenderer extends RendererState{
 
       /** light tables */
       public short[][]   hscalelight,vscalelight,dscalelight;
+      
+      /** newend is one past the last valid seg (cliprange_t) */
+      int newend;
+      cliprange_t[]   solidsegs;
 
+      public BSP(){
+          solidsegs= new cliprange_t[MAXSEGS];
+          C2JUtils.initArrayOfObjects(solidsegs);
+          
+      }
+      
 
   //
   // R_ClearDrawSegs
@@ -76,20 +110,9 @@ public class UnifiedRenderer extends RendererState{
   // Clips the given range of columns
   // and includes it in the new clip list.
   //
-        class cliprange_t {
 
-            public cliprange_t(int first, int last) {
-                this.first = first;
-                this.last = last;
-            }
 
-            public int first;
-            public int last;
-        }
 
-  /** newend is one past the last valid seg (cliprange_t) */
-  int newend;
-  cliprange_t[]   solidsegs= new cliprange_t[MAXSEGS];
 
   /**
    * R_ClipSolidWallSegment
@@ -263,10 +286,10 @@ public class UnifiedRenderer extends RendererState{
   {
       int         x1;
       int         x2;
-      int     angle1;
-      int     angle2;
-      int     span;
-      int     tspan;
+      long     angle1;
+      long     angle2;
+      long     span;
+      long     tspan;
       
       curline = line;
 
@@ -313,8 +336,8 @@ public class UnifiedRenderer extends RendererState{
       // but not necessarily visible.
       angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
       angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-      x1 = viewangletox[angle1];
-      x2 = viewangletox[angle2];
+      x1 = viewangletox[(int) angle1];
+      x2 = viewangletox[(int) angle2];
 
       // Does not cross a pixel?
       if (x1 == x2)
@@ -399,10 +422,10 @@ public class UnifiedRenderer extends RendererState{
       int     y2;
       
       //angle_t
-      int     angle1;
-      int     angle2;
-      int     span;
-      int     tspan;
+      long     angle1;
+      long     angle2;
+      long     span;
+      long     tspan;
       
       cliprange_t start;
 
@@ -435,8 +458,8 @@ public class UnifiedRenderer extends RendererState{
       y2 = bspcoord[checkcoord[boxpos][3]];
       
       // check clip list for an open space
-      angle1 = PointToAngle (x1, y1) - viewangle;
-      angle2 = PointToAngle (x2, y2) - viewangle;
+      angle1 = 0xFFFFFFFFL&PointToAngle (x1, y1) - viewangle;
+      angle2 = 0xFFFFFFFFL&PointToAngle (x2, y2) - viewangle;
       
       span = angle1 - angle2;
 
@@ -474,8 +497,8 @@ public class UnifiedRenderer extends RendererState{
       //  (adjacent pixels are touching).
       angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
       angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
-      sx1 = viewangletox[angle1];
-      sx2 = viewangletox[angle2];
+      sx1 = viewangletox[(int) angle1];
+      sx2 = viewangletox[(int) angle2];
 
       // Does not cross a pixel.
       if (sx1 == sx2)
@@ -598,13 +621,18 @@ public class UnifiedRenderer extends RendererState{
   
   class Segs{
 
-      public static final String rcsid = "$Id: UnifiedRenderer.java,v 1.8 2010/09/16 16:39:25 velktron Exp $";
+      protected static final int HEIGHTBITS   =   12;
+      protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
+      
+      public Segs(){
+       col=new column_t();          
+      }
 
       //
       // R_RenderMaskedSegRange
       //
       
-      column_t    col=new column_t();
+      column_t    col;
       
       public void
       RenderMaskedSegRange
@@ -705,8 +733,7 @@ public class UnifiedRenderer extends RendererState{
       }
 
 
-      protected static final int HEIGHTBITS   =   12;
-      protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
+
 
       /**
        * R_RenderSegLoop
@@ -720,7 +747,7 @@ public class UnifiedRenderer extends RendererState{
       
       public void RenderSegLoop () 
       {
-          int     angle; // angle_t
+          long     angle; // angle_t
           int     index;
           int         yl;
           int         yh;
@@ -778,7 +805,7 @@ public class UnifiedRenderer extends RendererState{
           {
               // calculate texture offset
               angle = (rw_centerangle + xtoviewangle[rw_x])>>ANGLETOFINESHIFT;
-              texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
+              texturecolumn = rw_offset-FixedMul(finetangent[(int) angle],rw_distance);
               texturecolumn >>= FRACBITS;
               // calculate lighting
               index = rw_scale>>LIGHTSCALESHIFT;
@@ -896,7 +923,7 @@ public class UnifiedRenderer extends RendererState{
       {
           int     hyp; //fixed_t
           int     sineval; //fixed_t
-          int     distangle, offsetangle; // angle_t
+          long     distangle, offsetangle; // angle_t
           int     vtop; // fixed_t
           int         lightnum;
           drawseg_t seg;
@@ -927,7 +954,7 @@ public class UnifiedRenderer extends RendererState{
 
           distangle = ANG90 - offsetangle;
           hyp = PointToDist (curline.v1.x, curline.v1.y);
-          sineval = finesine[distangle>>ANGLETOFINESHIFT];
+          sineval = finesine[(int) (distangle>>>ANGLETOFINESHIFT)];
           rw_distance = FixedMul (hyp, sineval);
               
           
@@ -1150,7 +1177,7 @@ public class UnifiedRenderer extends RendererState{
           if (offsetangle > ANG90)
               offsetangle = ANG90;
 
-          sineval = finesine[offsetangle >>ANGLETOFINESHIFT];
+          sineval = finesine[(int) (offsetangle >>>ANGLETOFINESHIFT)];
           rw_offset = FixedMul (hyp, sineval);
 
           if (rw_normalangle-rw_angle1 < ANG180)
@@ -1276,6 +1303,7 @@ public class UnifiedRenderer extends RendererState{
   class Planes{
 
       public Planes (){
+          C2JUtils.initArrayOfObjects(visplanes);
       }
 
       planefunction_t     floorfunc;
@@ -1375,7 +1403,7 @@ public class UnifiedRenderer extends RendererState{
           }
           
           length = FixedMul (distance,distscale[x1]);
-          angle = (viewangle + xtoviewangle[x1])>>ANGLETOFINESHIFT;
+          angle = (int) ((viewangle + xtoviewangle[x1])>>ANGLETOFINESHIFT);
           ds_xfrac = viewx + FixedMul(finecosine[angle], length);
           ds_yfrac = -viewy - FixedMul(finesine[angle], length);
 
@@ -1416,14 +1444,16 @@ public class UnifiedRenderer extends RendererState{
           ceilingclip[i] = -1;
           }
 
-          lastvisplane = 0;
+          lastvisplane = 1;
           lastopening = openings[0];
           
           // texture calculation
           //memset (cachedheight, 0, sizeof(cachedheight));
 
           // left to right mapping
-          angle = (viewangle-ANG90)>>ANGLETOFINESHIFT;
+          // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
+          // Answer: 32-bit unsigned are supposed to roll over. You can % or AND with 0xFFFFFFFFL.
+          angle = (int) ((viewangle-ANG90)>>ANGLETOFINESHIFT)%0xFFFFFFFF;
           
           // scale will be unit scale at SCREENWIDTH/2 distance
           basexscale = FixedDiv (finecosine[angle],centerxfrac);
@@ -1455,16 +1485,14 @@ public class UnifiedRenderer extends RendererState{
           lightlevel = 0;
           }
           
-          for (check=0; check<lastvisplane; check++, chk=visplanes[check])
+          // Find visplane with the desired attributes
+          for (check=0; check<lastvisplane; check++)
           {
+              chk=visplanes[check];
           if (height == chk.height
               && picnum == chk.picnum
-              && lightlevel ==chk.lightlevel)
-          {
-              break;
+              && lightlevel ==chk.lightlevel) break;
           }
-          }
-          
                   
           if (check < lastvisplane)
           return check;
@@ -1620,8 +1648,9 @@ public class UnifiedRenderer extends RendererState{
                lastopening );
       }
 
-          for (int pl = 0 ; pl < lastvisplane ;  pln=visplanes[pl++])
+          for (int pl = 0 ; pl < lastvisplane ;  pl++)
           {
+              pln=visplanes[pl];
           if (pln.minx > pln.maxx)
               continue;
 
@@ -1644,7 +1673,7 @@ public class UnifiedRenderer extends RendererState{
 
               if (dc_yl <= dc_yh)
               {
-                  angle = (viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+                  angle = (int) ((viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT);
                   dc_x = x;
                   dc_source = GetColumn(skytexture, angle);
                   colfunc.invoke();
@@ -1695,6 +1724,17 @@ public class UnifiedRenderer extends RendererState{
       protected static final int MINZ    =            (FRACUNIT*4);
       protected static final int BASEYCENTER         =100;
 
+      public Things(){
+          negonearray=new short[SCREENWIDTH];
+          screenheightarray=new short[SCREENWIDTH];
+          sprtemp=new spriteframe_t[MAX_SPRITEFRAMES];
+          C2JUtils.initArrayOfObjects(sprtemp);
+          vissprites=new vissprite_t[MAXVISSPRITES];
+          C2JUtils.initArrayOfObjects(vissprites);
+          vsprsortedhead=new vissprite_t();
+          unsorted=new vissprite_t();
+      }
+      
       //void R_DrawColumn (void);
       //void R_DrawFuzzColumn (void);
 
@@ -1728,22 +1768,13 @@ public class UnifiedRenderer extends RendererState{
 
       /** constant arrays
          used for psprite clipping and initializing clipping */
-      short[]       negonearray=new short[SCREENWIDTH];
-      short[]       screenheightarray=new short[SCREENWIDTH];
+      short[]       negonearray;
+      short[]       screenheightarray;
 
 
       //
       // INITIALIZATION FUNCTIONS
       //
-
-      // variables used to look up
-      //  and range check thing_t sprites patches
-      spritedef_t[]    sprites;
-      int     numsprites;
-
-      spriteframe_t[]   sprtemp=new spriteframe_t[MAX_SPRITEFRAMES];
-      int     maxframe;
-      String       spritename;
 
       /**
        * R_InstallSpriteLump
@@ -1934,36 +1965,12 @@ public class UnifiedRenderer extends RendererState{
 
       }
 
-
-
-
       //
       // GAME FUNCTIONS
       //
-      vissprite_t[] vissprites=new vissprite_t[MAXVISSPRITES];
+      vissprite_t[] vissprites;
       int    vissprite_p;
       int     newvissprite;
-
-
-
-      /**
-       * R_InitSprites
-       * Called at program start.
-       *
-       */
-      
-      public void InitSprites (String[] namelist)
-      {
-          int     i;
-          
-          for (i=0 ; i<SCREENWIDTH ; i++)
-          {
-          negonearray[i] = -1;
-          }
-          
-          InitSpriteDefs (namelist);
-      }
-
 
 
       /**
@@ -2022,7 +2029,7 @@ public class UnifiedRenderer extends RendererState{
           else if ((vis.mobjflags & MF_TRANSLATION)!=0)
           {
           shadow=false;
-          //colfunc = R_DrawTranslatedColumn;
+          //TODO: colfunc = R_DrawTranslatedColumn;
           dc_translation = translationtables;
           dcto=          - 256 +
               ( (vis.mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
@@ -2082,7 +2089,7 @@ public class UnifiedRenderer extends RendererState{
 
           vissprite_t    vis;
           
-          int     ang;
+          long     ang;
           int     iscale;
           
           // transform the origin point
@@ -2126,7 +2133,7 @@ public class UnifiedRenderer extends RendererState{
           {
           // choose a different rotation based on player view
           ang = PointToAngle (thing.x, thing.y);
-          rot = (ang-thing.angle+(ANG45/2)*9)>>29;
+          rot = (int) ((ang-thing.angle+(ANG45/2)*9)>>29);
           lump = sprframe.lump[rot];
           flip = (boolean)(sprframe.flip[rot]!=0);
           }
@@ -2396,7 +2403,7 @@ public class UnifiedRenderer extends RendererState{
 
       vissprite_t vsprsortedhead;
       // A dummy used as temp during sorting.
-      vissprite_t     unsorted=new vissprite_t();
+      vissprite_t     unsorted;
       
       /**
        * R_SortVisSprites
@@ -2634,8 +2641,8 @@ public class UnifiedRenderer extends RendererState{
   
   
   
-  
-  /**
+
+/**
    * R_PointInSubsector
    * 
    * @param x fixed
@@ -3543,8 +3550,8 @@ public void SetupFrame (player_t player)
 
  viewz = player.viewz;
  
- viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
- viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
+ viewsin = finesine[(int) (viewangle>>ANGLETOFINESHIFT)];
+ viewcos = finecosine[(int) (viewangle>>ANGLETOFINESHIFT)];
  
  sscount = 0;
  
@@ -3668,7 +3675,7 @@ public void ExecuteSetViewSize ()
     
     for (i=0 ; i<viewwidth ; i++)
     {
-    cosadj = Math.abs(finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
+    cosadj = Math.abs(finecosine[(int) (xtoviewangle[i]>>ANGLETOFINESHIFT)]);
     MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
     }
     
@@ -4450,13 +4457,13 @@ public void InitSkyMap ()
       }
       
       // TODO: Precache sprites.
-      // spritepresent = new boolean[LL.numsprites];
+      spritepresent = new boolean[numsprites];
       
-      /*
-      for (th = thinkercap.next ; th != &thinkercap ; th=th.next)
+      
+      for (th = P.thinkercap.next ; th != P.thinkercap ; th=th.next)
       {
-      if (th.function.acp1 == (actionf_p1)P_MobjThinker)
-          spritepresent[((mobj_t *)th).sprite] = 1;
+      /*if (th.function.acp1 == (actionf_p1)P_MobjThinker)
+          spritepresent[((mobj_t *)th).sprite] = 1; */
       }
       
       spritememory = 0;
@@ -4467,15 +4474,33 @@ public void InitSkyMap ()
 
       for (j=0 ; j<sprites[i].numframes ; j++)
       {
-          sf = &sprites[i].spriteframes[j];
+          sf = sprites[i].spriteframes[j];
           for (k=0 ; k<8 ; k++)
           {
           lump = firstspritelump + sf.lump[k];
-          spritememory += lumpinfo[lump].size;
-          W_CacheLumpNum(lump , PU_CACHE);
+          spritememory += W.lumpinfo[lump].size;
+          W.CacheLumpNum(lump , PU_CACHE,patch_t.class);
           }
       }
-      }*/
+      }
+  }
+  
+  /**
+   * R_InitSprites
+   * Called at program start.
+   *
+   */
+  
+  public void InitSprites (String[] namelist)
+  {
+      int     i;
+      
+      for (i=0 ; i<SCREENWIDTH ; i++)
+      {
+      negonearray[i] = -1;
+      }
+      
+      MyThings.InitSpriteDefs (namelist);
   }
 
  
