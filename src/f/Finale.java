@@ -1,37 +1,44 @@
 package f;
 
+import static data.Defines.HU_FONTSIZE;
+import static data.Defines.HU_FONTSTART;
+import static data.Defines.PU_CACHE;
+import static data.Defines.PU_LEVEL;
+import static data.Defines.SCREENHEIGHT;
+import static data.Defines.SCREENWIDTH;
+import static data.Defines.FF_FRAMEMASK;
+import static data.Limits.MAXPLAYERS;
+import static data.info.mobjinfo;
+import static data.info.states;
 import static doom.englsh.*;
-import static data.Defines.*;
-import static data.Limits.*;
-import static data.info.*;
+import static p.MapUtils.*;
+import g.DoomGameInterface;
+import hu.HU;
 
 import java.io.IOException;
 
-import rr.Renderer;
-import rr.RendererData;
+import rr.UnifiedRenderer;
 import rr.column_t;
 import rr.patch_t;
 import rr.spritedef_t;
 import rr.spriteframe_t;
 import v.DoomVideoRenderer;
-import w.DoomBuffer;
 import w.WadLoader;
 import data.doomstat;
 import data.mobjtype_t;
 import data.state_t;
 import data.Defines.GameMode_t;
 import data.Defines.gamestate_t;
+import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
 import doom.event_t;
 import doom.evtype_t;
 import doom.gameaction_t;
-import g.DoomGameInterface;
-import hu.HU;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.3 2010/09/07 16:23:00 velktron Exp $
+// $Id: Finale.java,v 1.4 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -52,14 +59,14 @@ import hu.HU;
 
 public class Finale {
 
-  public static final String rcsid = "$Id: Finale.java,v 1.3 2010/09/07 16:23:00 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.4 2010/09/22 16:40:02 velktron Exp $";
 
   DoomGameInterface G;
   doomstat DS;
   DoomVideoRenderer V;
   HU HU;
   WadLoader W;
-  RendererData RD;
+  UnifiedRenderer R;
   
   int     finalestage;
 
@@ -621,14 +628,14 @@ protected void stopattack(){
       
       // draw the current frame in the middle of the screen
       // TODO: Sprites are in Renderer;
-      //sprdef = sprites[caststate.sprite];
-     // sprframe = sprdef.spriteframes[ caststate.frame & FF_FRAMEMASK];
-      //lump = sprframe->lump[0];
-     // flip = (boolean)sprframe->flip[0];
+      sprdef = R.sprites[caststate.sprite.ordinal()];
+      sprframe = sprdef.spriteframes[ caststate.frame & FF_FRAMEMASK];
+      lump = sprframe.lump[0];
+      flip = eval(sprframe.flip[0]);
                flip=false;
               lump=0;
               
-        patch = W.CachePatchNum(lump+RD.firstspritelump, PU_CACHE);
+        patch = W.CachePatchNum(lump+R.firstspritelump, PU_CACHE);
 
       if (flip)
       V.DrawPatchFlipped (160,170,0,patch);

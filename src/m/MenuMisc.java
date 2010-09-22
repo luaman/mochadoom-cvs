@@ -9,6 +9,7 @@ import java.util.Arrays;
 import data.doomstat;
 import doom.DoomContext;
 import doom.DoomInterface;
+import doom.DoomMain;
 import rr.patch_t;
 import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
@@ -18,7 +19,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.4 2010/09/10 17:42:14 velktron Exp $
+// $Id: MenuMisc.java,v 1.5 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -34,6 +35,13 @@ import w.WadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.5  2010/09/22 16:40:02  velktron
+// MASSIVE changes in the status passing model.
+// DoomMain and DoomGame unified.
+// Doomstat merged into DoomMain (now status and game functions are one).
+//
+// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
 // Revision 1.4  2010/09/10 17:42:14  velktron
 // Added Applet
 //
@@ -72,23 +80,14 @@ import w.WadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.4 2010/09/10 17:42:14 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.5 2010/09/22 16:40:02 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
-doomstat DS;
-
-DoomContext DC;
-
+DoomMain DM;
 WadLoader W;
-
-SystemInterface I;
-
 DoomVideoRenderer V;
 
-DoomGameInterface G;
-
-DoomInterface D;
-
+SystemInterface I;
 DoomSoundInterface S;
 
 

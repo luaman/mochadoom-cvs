@@ -3090,5 +3090,13 @@ private Vector vFmt = new Vector();
 private int cPos=0;
 /** Character position.  Used by the constructor. */
 private DecimalFormatSymbols dfs=null;
+
+public static String sprintf(String format, Object ... o){
+    PrintfFormat tmp =new PrintfFormat(format);
+    return tmp.sprintf(o);
+}
+
+
+
 }
 

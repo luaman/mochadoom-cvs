@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.7 2010/09/07 16:23:00 velktron Exp $
+// $Id: HU.java,v 1.8 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,13 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.8  2010/09/22 16:40:02  velktron
+// MASSIVE changes in the status passing model.
+// DoomMain and DoomGame unified.
+// Doomstat merged into DoomMain (now status and game functions are one).
+//
+// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
 // Revision 1.7  2010/09/07 16:23:00  velktron
 // *** empty log message ***
 //
@@ -78,6 +85,7 @@ import rr.patch_t;
 import w.WadLoader;
 import data.doomstat;
 import doom.DoomContext;
+import doom.DoomMain;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -91,12 +99,12 @@ import doom.player_t;
 
 public class HU {
     public final static String rcsid =
-        "$Id: HU.java,v 1.7 2010/09/07 16:23:00 velktron Exp $";
+        "$Id: HU.java,v 1.8 2010/09/22 16:40:02 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader wd;
 
-    doomstat ds;
+    DoomMain DM;
 
     Menu M;
 
@@ -416,15 +424,15 @@ public class HU {
     }
 
     public HU(DoomContext DC) {
-        this.ds = DC.DS;
+        this.DM = DC.DM;
         this.wd = DC.W;
         //this.R = DC.DRC.R;
         //this.DR = DC.DRC.DR;
 
-        this.HU_TITLE = mapnames[(ds.gameepisode - 1) * 9 + ds.gamemap - 1];
-        this.HU_TITLE2 = mapnames2[ds.gamemap - 1];
-        this.HU_TITLE = mapnamesp[ds.gamemap - 1];
-        this.HU_TITLET = mapnamest[ds.gamemap - 1];
+        this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 1];
+        this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
+        this.HU_TITLE = mapnamesp[DM.gamemap - 1];
+        this.HU_TITLET = mapnamest[DM.gamemap - 1];
 
         /*
          * #define HU_TITLE #define HU_TITLE2 (mapnames2[gamemap-1]) #define
@@ -442,13 +450,13 @@ public class HU {
      */
 
     public void Init()
-            throws Exception {
+             {
         PrintfFormat xxx = new PrintfFormat("STCFN%.3d");
         int i;
         int j;
         String buffer;
 
-        if (ds.language == Language_t.french)
+        if (DM.language == Language_t.french)
             shiftxform = french_shiftxform;
         else
             shiftxform = english_shiftxform;
@@ -487,7 +495,7 @@ public class HU {
         if (headsupactive)
             this.Stop();
 
-        plr = ds.players[ds.consoleplayer];
+        plr = DM.players[DM.consoleplayer];
         message_on[0] = false;
         message_dontfuckwithme = false;
         message_nottobefuckedwith = false;
@@ -500,7 +508,7 @@ public class HU {
         // create the map title widget
         this.w_title.initTextLine(HU_TITLEX, HU_TITLEY, hu_font, HU_FONTSTART);
 
-        switch (ds.gamemode) {
+        switch (DM.gamemode) {
         case shareware:
         case registered:
         case retail:
@@ -583,12 +591,12 @@ public class HU {
         } // else message_on = false;
 
         // check for incoming chat characters
-        if (ds.netgame) {
+        if (DM.netgame) {
             for (i = 0; i < MAXPLAYERS; i++) {
-                if (!ds.playeringame[i])
+                if (!DM.playeringame[i])
                     continue;
-                if ((i != ds.consoleplayer)
-                        && ((c = ds.players[i].cmd.chatchar) != 0)) {
+                if ((i != DM.consoleplayer)
+                        && ((c = DM.players[i].cmd.chatchar) != 0)) {
                     if (c <= HU_BROADCAST)
                         chat_dest[i] = c;
                     else {
@@ -597,7 +605,7 @@ public class HU {
                         rc = w_inputbuffer[i].keyInIText(c);
                         if (rc && c == KEY_ENTER) {
                             if ((w_inputbuffer[i].l.len != 0)
-                                    && (chat_dest[i] == ds.consoleplayer + 1)
+                                    && (chat_dest[i] == DM.consoleplayer + 1)
                                     || (chat_dest[i] == HU_BROADCAST)) {
                                 w_message.addMessageToSText(player_names[i]
                                         .toCharArray(), w_inputbuffer[i].l.l);
@@ -605,7 +613,7 @@ public class HU {
                                 message_nottobefuckedwith = true;
                                 message_on[0] = true;
                                 message_counter = HU_MSGTIMEOUT;
-                                if (ds.gamemode == GameMode_t.commercial)
+                                if (DM.gamemode == GameMode_t.commercial)
                                     // TODO: S_StartSound(0, sfx_radio);
                                     ;
                                 else
@@ -615,7 +623,7 @@ public class HU {
                             w_inputbuffer[i].resetIText();
                         }
                     }
-                    ds.players[i].cmd.chatchar = 0;
+                    DM.players[i].cmd.chatchar = 0;
                 }
             }
         }
@@ -678,7 +686,7 @@ public class HU {
         numplayers = 0;
         // MAES: Adding BOOLEANS to ints, are we ?!
         for (i = 0; i < MAXPLAYERS; i++) {
-            numplayers += (ds.playeringame[i]) ? 1 : 0;
+            numplayers += (DM.playeringame[i]) ? 1 : 0;
         }
 
         if (ev.data1 == KEY_RSHIFT) {
@@ -697,19 +705,19 @@ public class HU {
                 message_on[0] = true;
                 message_counter = HU_MSGTIMEOUT;
                 eatkey = true;
-            } else if (ds.netgame && ev.data1 == HU_INPUTTOGGLE) {
+            } else if (DM.netgame && ev.data1 == HU_INPUTTOGGLE) {
                 eatkey = chat_on[0] = true;
                 w_chat.resetIText();
                 this.queueChatChar(HU_BROADCAST);
-            } else if (ds.netgame && numplayers > 2) {
+            } else if (DM.netgame && numplayers > 2) {
                 for (i = 0; i < MAXPLAYERS; i++) {
                     if (ev.data1 == destination_keys[i]) {
-                        if (ds.playeringame[i] && i != ds.consoleplayer) {
+                        if (DM.playeringame[i] && i != DM.consoleplayer) {
                             eatkey = chat_on[0] = true;
                             w_chat.resetIText();
                             this.queueChatChar((char) (i + 1));
                             break;
-                        } else if (i == ds.consoleplayer) {
+                        } else if (i == DM.consoleplayer) {
                             num_nobrainers++;
                             if (num_nobrainers < 3)
                                 plr.message = HUSTR_TALKTOSELF1;
@@ -751,7 +759,7 @@ public class HU {
                 plr.message = new String(lastmessage);
                 eatkey = true;
             } else {
-                if (ds.language == Language_t.french)
+                if (DM.language == Language_t.french)
                     c = ForeignTranslation(c);
                 if (shiftdown || (c >= 'a' && c <= 'z'))
                     c = shiftxform[c];
@@ -1158,22 +1166,22 @@ public class HU {
             // and the text must either need updating or refreshing
             // (because of a recent change back from the automap)
 
-            if (!automapactive && (ds.viewwindowx != 0)
+            if (!automapactive && (DM.viewwindowx != 0)
                     && (this.needsupdate > 0)) {
                 lh = this.f[0].height + 1;
 
                 for (int y = this.y, yoffset = y * SCREENWIDTH; y < this.y + lh; y++, yoffset +=
                     SCREENWIDTH) {
                     // Stuff is probably in am_map??
-                    if (y < ds.viewwindowy
-                            || y >= ds.viewwindowy + ds.viewheight)
+                    if (y < DM.viewwindowy
+                            || y >= DM.viewwindowy + DM.viewheight)
                         R.VideoErase(yoffset, SCREENWIDTH); // erase entire
                     // line
                     else {
-                        R.VideoErase(yoffset, ds.viewwindowx); // erase left
+                        R.VideoErase(yoffset, DM.viewwindowx); // erase left
                         // border
-                        R.VideoErase(yoffset + ds.viewwindowx + ds.viewwidth,
-                            ds.viewwindowx);
+                        R.VideoErase(yoffset + DM.viewwindowx + DM.viewwidth,
+                            DM.viewwindowx);
                         // erase right border
                     }
                 }

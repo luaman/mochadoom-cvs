@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import g.DoomGame;
 import i.system;
 import p.LevelLoader;
 import p.UnifiedGameMap;
@@ -35,14 +34,16 @@ import m.fixed_t;
 import data.doomstat;
 import data.Defines.GameMode_t;
 import doom.DoomContext;
+import doom.DoomMain;
 import doom.player_t;
+import doom.think_t;
 import doom.thinker_t;
 
 public class UnifiedRenderer extends RendererState{
     
     //////////////////////////////// STATUS ////////////////
 
-    private doomstat DS;
+    private DoomMain DM;
     private LevelLoader LL;
     private WadLoader W;
     private Segs MySegs;
@@ -50,20 +51,21 @@ public class UnifiedRenderer extends RendererState{
     private Planes MyPlanes;
     public Things MyThings;
     private DoomVideoRenderer V;
-    private DoomGame DG;
     private UnifiedGameMap P;
     
     
-    public UnifiedRenderer(DoomContext DC) {
-      this.DS=DC.DS;
-      this.LL=DC.LL;
-      this.W=DC.W;
-      this.DG=DC.DG;
+    public UnifiedRenderer(DoomMain DM) {
+      this.DM=DM;
+      this.LL=DM.LL;
+      this.W=DM.W;
       this.MySegs=new Segs();
       this.MyBSP=new BSP();
       this.MyPlanes=new Planes();
       this.MyThings=new Things();
-      this.V=DC.V;
+      this.V=DM.V;
+      // Span functions
+      DrawSpan=new R_DrawSpan();
+      DrawSpanLow=new R_DrawSpanLow();
      
   }
 
@@ -272,7 +274,7 @@ public class UnifiedRenderer extends RendererState{
   {
       solidsegs[0].first = -0x7fffffff;
       solidsegs[0].last = -1;
-      solidsegs[1].first = DS.viewwidth;
+      solidsegs[1].first = DM.viewwidth;
       solidsegs[1].last = 0x7fffffff;
       newend = 2; // point so solidsegs[2];
   }
@@ -570,7 +572,7 @@ public class UnifiedRenderer extends RendererState{
       else
           ceilingplane = -1;
           
-      // TODO: it's in THINGS AddSprites (frontsector); 
+      MyThings.AddSprites (frontsector); 
 
       while (count-->0)
       {
@@ -828,7 +830,7 @@ public class UnifiedRenderer extends RendererState{
               dc_texturemid = rw_midtexturemid;
               dc_source = GetColumn(midtexture,texturecolumn);
               colfunc.invoke();
-              ceilingclip[rw_x] = DS.viewheight;
+              ceilingclip[rw_x] = DM.viewheight;
               floorclip[rw_x] = -1;
           }
           else
@@ -1381,8 +1383,8 @@ public class UnifiedRenderer extends RendererState{
       if (RANGECHECK){
           if (x2 < x1
           || x1<0
-          || x2>=DS.viewwidth
-          || y>DS.viewheight)
+          || x2>=DM.viewwidth
+          || y>DM.viewheight)
           {
           system.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
           }
@@ -1425,7 +1427,7 @@ public class UnifiedRenderer extends RendererState{
           ds_x2 = x2;
 
           // high or low detail
-          // TODO:spanfunc.invoke();    
+          spanfunc.invoke();    
       }
 
 
@@ -1438,9 +1440,9 @@ public class UnifiedRenderer extends RendererState{
           int angle;
           
           // opening / clipping determination
-          for (int i=0 ; i<DS.viewwidth ; i++)
+          for (int i=0 ; i<DM.viewwidth ; i++)
           {
-          floorclip[i] = DS.viewheight;
+          floorclip[i] = DM.viewheight;
           ceilingclip[i] = -1;
           }
 
@@ -1452,8 +1454,8 @@ public class UnifiedRenderer extends RendererState{
 
           // left to right mapping
           // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
-          // Answer: 32-bit unsigned are supposed to roll over. You can % or AND with 0xFFFFFFFFL.
-          angle = (int) ((viewangle-ANG90)>>ANGLETOFINESHIFT)%0xFFFFFFFF;
+          // Answer: 32-bit unsigned are supposed to roll over. You can % with 0xFFFFFFFFL.
+          angle = (int) (((viewangle-ANG90)>>ANGLETOFINESHIFT)%ANGLEMODULE);
           
           // scale will be unit scale at SCREENWIDTH/2 distance
           basexscale = FixedDiv (finecosine[angle],centerxfrac);
@@ -1479,7 +1481,7 @@ public class UnifiedRenderer extends RendererState{
           int check; // visplane_t* 
           visplane_t chk=null;
           
-          if (picnum == DS.skyflatnum)
+          if (picnum == DM.skyflatnum)
           {
           height = 0;         // all skys map together
           lightlevel = 0;
@@ -1656,7 +1658,7 @@ public class UnifiedRenderer extends RendererState{
 
           
           // sky flat
-          if (pln.picnum == DS.skyflatnum)
+          if (pln.picnum == DM.skyflatnum)
           {
               dc_iscale = pspriteiscale>>detailshift;
               
@@ -1899,7 +1901,7 @@ public class UnifiedRenderer extends RendererState{
               frame = cname[4] - 'A';
               rotation = cname[5] - '0';
 
-              if (DS.modifiedgame)
+              if (DM.modifiedgame)
                   patched = W.GetNumForName (W.lumpinfo[l].name);
               else
                   patched = l;
@@ -2024,12 +2026,12 @@ public class UnifiedRenderer extends RendererState{
           {
           // NULL colormap = shadow draw
           shadow=true;
-          //colfunc = fuzzcolfunc;
+          colfunc = fuzzcolfunc;
           }
           else if ((vis.mobjflags & MF_TRANSLATION)!=0)
           {
           shadow=false;
-          //TODO: colfunc = R_DrawTranslatedColumn;
+          colfunc = DrawTranslatedColumn;
           dc_translation = translationtables;
           dcto=          - 256 +
               ( (vis.mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
@@ -2057,11 +2059,13 @@ public class UnifiedRenderer extends RendererState{
 
 
 
-      //
-      // R_ProjectSprite
-      // Generates a vissprite for a thing
-      //  if it might be visible.
-      //
+      /**
+       * R_ProjectSprite
+       * Generates a vissprite for a thing
+       * if it might be visible.
+       * 
+       * @param thing
+       */
       public void ProjectSprite (mobj_t thing)
       {
           int     tr_x;
@@ -2698,7 +2702,7 @@ public class UnifiedRenderer extends RendererState{
       if (finetangent[i] > FRACUNIT*2)
           t = -1;
       else if (finetangent[i] < -FRACUNIT*2)
-          t = DS.viewwidth+1;
+          t = DM.viewwidth+1;
       else
       {
           t = FixedMul (finetangent[i], focallength);
@@ -2706,8 +2710,8 @@ public class UnifiedRenderer extends RendererState{
 
           if (t < -1)
           t = -1;
-          else if (t>DS.viewwidth+1)
-          t = DS.viewwidth+1;
+          else if (t>DM.viewwidth+1)
+          t = DM.viewwidth+1;
       }
       viewangletox[i] = t;
       }
@@ -2715,7 +2719,7 @@ public class UnifiedRenderer extends RendererState{
       // Scan viewangletox[] to generate xtoviewangle[]:
       //  xtoviewangle will give the smallest view angle
       //  that maps to x. 
-      for (x=0;x<=DS.viewwidth;x++)
+      for (x=0;x<=DM.viewwidth;x++)
       {
       i = 0;
       while (viewangletox[i]>x)
@@ -2731,8 +2735,8 @@ public class UnifiedRenderer extends RendererState{
       
       if (viewangletox[i] == -1)
           viewangletox[i] = 0;
-      else if (viewangletox[i] == DS.viewwidth+1)
-          viewangletox[i]  = DS.viewwidth;
+      else if (viewangletox[i] == DM.viewwidth+1)
+          viewangletox[i]  = DM.viewwidth;
       }
       
       clipangle = xtoviewangle[0];
@@ -2778,262 +2782,7 @@ public class UnifiedRenderer extends RendererState{
   }
   
     
-  /**
-   * A column is a vertical slice/span from a wall texture that, given the
-   * DOOM style restrictions on the view orientation, will always have
-   * constant z depth. Thus a special case loop for very fast rendering can be
-   * used. It has also been used with Wolfenstein 3D. MAES: this is called
-   * mostly from inside Draw and from an external "Renderer"
-   */
-
-  public void DrawColumn() {
-      int count;
-      // byte* dest;
-      int dest; // As pointer
-      // fixed_t
-      int frac, fracstep;
-
-      // How much we should draw
-      count = dc_yh - dc_yl;
-
-      // Zero length, column does not exceed a pixel.
-      if (count < 0)
-          return;
-
-      if (RANGECHECK) {
-          if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
-              system
-                      .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
-                          dc_x);
-      }
-
-      // Framebuffer destination address.
-      // Use ylookup LUT to avoid multiply with ScreenWidth.
-      // Use columnofs LUT for subwindows?
-      dest = ylookup[dc_yl] + columnofs[dc_x];
-
-      // Determine scaling,
-      // which is the only mapping to be done.
-      fracstep = dc_iscale;
-      frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
-      // Inner loop that does the actual texture mapping,
-      // e.g. a DDA-lile scaling.
-      // This is as fast as it gets.
-      do {
-          // Re-map color indices from wall texture column
-          // using a lighting/special effects LUT.
-          // TODO: determine WHERE the fuck "*dest" is supposed to be
-          // pointing.
-          // DONE: it's pointing inside screen[0] (implicitly).
-          // dc_source was probably just a pointer to a decompressed
-          // column...right? Right.
-          screen[dest] = (byte) dc_colormap[dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
-
-          dest += SCREENWIDTH;
-          frac += fracstep;
-
-      } while (count-- > 0);
-  }
   
-  
-  public void DrawColumnLow() {
-      int count;
-      // MAES: were pointers. Of course...
-      int dest;
-      int dest2;
-      // Maes: fixed_t never used as such.
-      int frac;
-      int fracstep;
-
-      count = dc_yh - dc_yl;
-
-      // Zero length.
-      if (count < 0)
-          return;
-
-      if (RANGECHECK) {
-          if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
-
-              system
-                      .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
-                          dc_x);
-          }
-          // dccount++;
-      }
-      // Blocky mode, need to multiply by 2.
-      dc_x <<= 1;
-
-      dest = ylookup[dc_yl] + columnofs[dc_x];
-      dest2 = ylookup[dc_yl] + columnofs[dc_x + 1];
-
-      fracstep = dc_iscale;
-      frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
-      do {
-          // Hack. Does not work correctly.
-          // MAES: that's good to know.
-          screen[dest2] =
-              screen[dest] =
-                  dc_colormap[dc_source[dc_source_ofs+(frac >> FRACBITS) & 127]];
-          dest += SCREENWIDTH;
-          dest2 += SCREENWIDTH;
-          frac += fracstep;
-      } while (count-- != 0);
-  }
-
-/**
- * Framebuffer postprocessing.
- * Creates a fuzzy image by copying pixels
- * from adjacent ones to left and right.
- * Used with an all black colormap, this
- * could create the SHADOW effect,
- * i.e. spectres and invisible players.
- */
-  
-public void DrawFuzzColumn () 
-{ 
-   int         count; 
-   int       dest; 
-   int     frac;
-   int     fracstep;    
-
-   // Adjust borders. Low... 
-   if (dc_yl==0) 
-   dc_yl = 1;
-
-   // .. and high.
-   if (dc_yh == viewheight-1) 
-   dc_yh = viewheight - 2; 
-        
-   count = dc_yh - dc_yl; 
-
-   // Zero length.
-   if (count < 0) 
-   return; 
-
-   
-if(RANGECHECK){ 
-   if (dc_x >= SCREENWIDTH
-   || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
-   {
-   system.Error ("R_DrawFuzzColumn: %i to %i at %i",
-        dc_yl, dc_yh, dc_x);
-   }
-}
-
-
-   // Keep till detailshift bug in blocky mode fixed,
-   //  or blocky mode removed.
-   /* WATCOM code 
-   if (detailshift)
-   {
-   if (dc_x & 1)
-   {
-       outpw (GC_INDEX,GC_READMAP+(2<<8) ); 
-       outp (SC_INDEX+1,12); 
-   }
-   else
-   {
-       outpw (GC_INDEX,GC_READMAP); 
-       outp (SC_INDEX+1,3); 
-   }
-   dest = destview + dc_yl*80 + (dc_x>>1); 
-   }
-   else
-   {
-   outpw (GC_INDEX,GC_READMAP+((dc_x&3)<<8) ); 
-   outp (SC_INDEX+1,1<<(dc_x&3)); 
-   dest = destview + dc_yl*80 + (dc_x>>2); 
-   }*/
-
-   
-   // Does not work with blocky mode.
-   dest = ylookup[dc_yl] + columnofs[dc_x];
-
-   // Looks familiar.
-   fracstep = dc_iscale; 
-   frac = dc_texturemid + (dc_yl-centery)*fracstep; 
-
-   // Looks like an attempt at dithering,
-   //  using the colormap #6 (of 0-31, a bit
-   //  brighter than average).
-   do 
-   {
-   // Lookup framebuffer, and retrieve
-   //  a pixel that is either one column
-   //  left or right of the current one.
-   // Add index from colormap to index.
-   screen[dest] = colormaps[6*256+screen[dest+fuzzoffset[fuzzpos]]]; 
-
-   // Clamp table lookup index.
-   if (++fuzzpos == FUZZTABLE) 
-       fuzzpos = 0;
-   
-   dest += SCREENWIDTH;
-
-   frac += fracstep; 
-   } while (count-->0); 
-} 
-  
-/** use paired with dcto */
-byte[] dc_translation;
-/** DC Translation offset */
-int dcto;
-
-/** used paired with tto */
-byte[] translationtables;
-/** translation tables offset */
-int tto;
-
-public void DrawTranslatedColumn() {
-    int count;
-    // MAES: you know the deal by now...
-    int dest;
-    int frac;
-    int fracstep;
-
-    count = dc_yh - dc_yl;
-    if (count < 0)
-        return;
-
-    if (RANGECHECK) {
-        if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
-            system
-                    .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
-                        dc_x);
-        }
-    }
-
-    // WATCOM VGA specific.
-    /*
-     * Keep for fixing. if (detailshift) { if (dc_x & 1) outp
-     * (SC_INDEX+1,12); else outp (SC_INDEX+1,3); dest = destview + dc_yl*80
-     * + (dc_x>>1); } else { outp (SC_INDEX+1,1<<(dc_x&3)); dest = destview
-     * + dc_yl*80 + (dc_x>>2); }
-     */
-
-    // FIXME. As above.
-    dest = ylookup[dc_yl] + columnofs[dc_x];
-
-    // Looks familiar.
-    fracstep = dc_iscale;
-    frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
-    // Here we do an additional index re-mapping.
-    do {
-        // Translation tables are used
-        // to map certain colorramps to other ones,
-        // used with PLAY sprites.
-        // Thus the "green" ramp of the player 0 sprite
-        // is mapped to gray, red, black/indigo.
-        screen[dest] =
-            dc_colormap[dc_translation[dc_source[dc_source_ofs+(frac >> FRACBITS)]]];
-        dest += SCREENWIDTH;
-
-        frac += fracstep;
-    } while (count-- != 0);
-}
 
 //
 // R_InitTranslationTables
@@ -3109,12 +2858,12 @@ public void DrawMaskedColumn (column_t column)
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
         if (MyThings.shadow){
-            DrawFuzzColumn();
+            DrawFuzzColumn.invoke();
         } else {
-            DrawColumn();
+            DrawColumn.invoke();
         }
         
-        // colfunc (); 
+         //colfunc.invoke(); 
     }
     //column = (column_t *)(  (byte *)column + column.length + 4);
     }
@@ -3171,9 +2920,9 @@ public void DrawMaskedColumn (byte[] column)
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
         if (MyThings.shadow){
-            DrawFuzzColumn();
+            DrawFuzzColumn.invoke();
         } else {
-            DrawColumn();
+            DrawColumn.invoke();
         }
         
         // colfunc (); 
@@ -3265,7 +3014,7 @@ public void VideoErase(int ofs, int count) {
      if (scaledviewwidth == 320)
          return;
 
-     if (DS.gamemode == GameMode_t.commercial)
+     if (DM.gamemode == GameMode_t.commercial)
          name = name2;
      else
          name = name1;
@@ -3355,19 +3104,21 @@ public void VideoErase(int ofs, int count) {
          ylookup[i] = /* screens[0] + */(i + viewwindowy) * SCREENWIDTH;
  }
  
+ 
  /**
-  * Again..
+  * Draws the actual span.
   */
  
- public void DrawSpanLow() {
-     int f_xfrac;
-     int f_yfrac;
+ class R_DrawSpan implements colfunc_t {
+     public void invoke(){
+     int f_xfrac; // fixed_t
+     int f_yfrac; // fixed_t
      int dest;
      int count;
      int spot;
 
      if (RANGECHECK) {
-         if ((ds_x2 < ds_x1) || (ds_x1 < 0) || ds_x2 >= SCREENWIDTH
+         if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
                  || ds_y > SCREENHEIGHT) {
              system.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
          }
@@ -3377,25 +3128,71 @@ public void VideoErase(int ofs, int count) {
      f_xfrac = ds_xfrac;
      f_yfrac = ds_yfrac;
 
-     // Blocky mode, need to multiply by 2.
-     ds_x1 <<= 1;
-     ds_x2 <<= 1;
-
      dest = ylookup[ds_y] + columnofs[ds_x1];
 
+     // We do not check for zero spans here?
      count = ds_x2 - ds_x1;
+
      do {
+         // Current texture index in u,v.
          spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
-         // Lowres/blocky mode does it twice,
-         // while scale is adjusted appropriately.
-         screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+
+         // Lookup pixel from flat texture tile,
+         // re-index using light/colormap.
          screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
 
+         // Next step in u,v.
          f_xfrac += ds_xstep;
          f_yfrac += ds_ystep;
 
      } while (count-- != 0);
  }
+ }
+ 
+ class R_DrawSpanLow implements colfunc_t{
+
+    @Override
+    public void invoke() {
+        int f_xfrac;
+        int f_yfrac;
+        int dest;
+        int count;
+        int spot;
+
+        if (RANGECHECK) {
+            if ((ds_x2 < ds_x1) || (ds_x1 < 0) || ds_x2 >= SCREENWIDTH
+                    || ds_y > SCREENHEIGHT) {
+                system.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+            }
+            // dscount++;
+        }
+
+        f_xfrac = ds_xfrac;
+        f_yfrac = ds_yfrac;
+
+        // Blocky mode, need to multiply by 2.
+        ds_x1 <<= 1;
+        ds_x2 <<= 1;
+
+        dest = ylookup[ds_y] + columnofs[ds_x1];
+
+        count = ds_x2 - ds_x1;
+        do {
+            spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+            // Lowres/blocky mode does it twice,
+            // while scale is adjusted appropriately.
+            screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+            screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+
+            f_xfrac += ds_xstep;
+            f_yfrac += ds_ystep;
+
+        } while (count-- != 0);
+        
+    }
+     
+ }
+ 
  
  /** UNUSED.
   * Loop unrolled by 4.
@@ -3457,46 +3254,7 @@ public void VideoErase(int ofs, int count) {
      }
  }
  
- /**
-  * Draws the actual span.
-  */
- public void DrawSpan() {
-     int f_xfrac; // fixed_t
-     int f_yfrac; // fixed_t
-     int dest;
-     int count;
-     int spot;
-
-     if (RANGECHECK) {
-         if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
-                 || ds_y > SCREENHEIGHT) {
-             system.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
-         }
-         // dscount++;
-     }
-
-     f_xfrac = ds_xfrac;
-     f_yfrac = ds_yfrac;
-
-     dest = ylookup[ds_y] + columnofs[ds_x1];
-
-     // We do not check for zero spans here?
-     count = ds_x2 - ds_x1;
-
-     do {
-         // Current texture index in u,v.
-         spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
-
-         // Lookup pixel from flat texture tile,
-         // re-index using light/colormap.
-         screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
-
-         // Next step in u,v.
-         f_xfrac += ds_xstep;
-         f_yfrac += ds_ystep;
-
-     } while (count-- != 0);
- }
+ 
 
 
 ///////////////////////// The actual rendering calls ///////////////////////
@@ -3607,7 +3365,7 @@ public void ExecuteSetViewSize ()
     int     j;
     int     level;
     int     startmap;   
-    int viewheight=DS.viewheight;
+    int viewheight=DM.viewheight;
     
     setsizeneeded = false;
 
@@ -3615,17 +3373,17 @@ public void ExecuteSetViewSize ()
     
     if (setblocks == 11)
     {
-    DS.scaledviewwidth = SCREENWIDTH;
+    DM.scaledviewwidth = SCREENWIDTH;
     viewheight = SCREENHEIGHT;
     }
     else
     {
-        DS.scaledviewwidth = setblocks*32;
+        DM.scaledviewwidth = setblocks*32;
         viewheight = (short) ((setblocks*168/10)&~7);
     }
     
     detailshift = setdetail;
-    viewwidth = DS.scaledviewwidth>>detailshift;
+    viewwidth = DM.scaledviewwidth>>detailshift;
     
     centery = viewheight/2;
     centerx = viewwidth/2;
@@ -3636,33 +3394,32 @@ public void ExecuteSetViewSize ()
     
     if (detailshift!=0)
     {
-        /* TODO:
-    colfunc = basecolfunc = Draw.class.getDeclaredMethod("DrawColumn", Void.class);
-    fuzzcolfunc = Draw.class.getDeclaredMethod("DrawFuzzColumn", Void.class);
-    transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn", Void.class);
-    spanfunc = Draw.class.getDeclaredMethod("DrawSpan;", Void.class);
-    */
+        
+    colfunc = basecolfunc =DrawColumn;
+    fuzzcolfunc = DrawFuzzColumn;
+    transcolfunc = DrawTranslatedColumn;
+    spanfunc = DrawSpan;
     }
-    else
-    {/*
-    colfunc = basecolfunc = Draw.class.getDeclaredMethod("DrawColumnLow",Void.class);
-    fuzzcolfunc = Draw.class.getDeclaredMethod("DrawFuzzColumn",Void.class);
-    transcolfunc = Draw.class.getDeclaredMethod("DrawTranslatedColumn",Void.class);
-    spanfunc = Draw.class.getDeclaredMethod("DrawSpanLow",Void.class);
-    */
+    else {
+    
+    colfunc = basecolfunc = DrawColumnLow;
+    fuzzcolfunc =DrawFuzzColumn;
+    transcolfunc = DrawTranslatedColumn;
+    spanfunc = DrawSpanLow;
+    
     }
 
-    InitBuffer (DS.scaledviewwidth, DS.viewheight);
+    InitBuffer (DM.scaledviewwidth, DM.viewheight);
     
     InitTextureMapping ();
     
     // psprite scales
-    pspritescale=(FRACUNIT*DS.viewwidth/SCREENWIDTH);
-    pspriteiscale=(FRACUNIT*SCREENWIDTH/DS.viewwidth);
+    pspritescale=(FRACUNIT*DM.viewwidth/SCREENWIDTH);
+    pspriteiscale=(FRACUNIT*SCREENWIDTH/DM.viewwidth);
     
     // thing clipping
-    for (i=0 ; i<DS.viewwidth ; i++)
-    screenheightarray[i] = (short) DS.viewheight;
+    for (i=0 ; i<DM.viewwidth ; i++)
+    screenheightarray[i] = (short) DM.viewheight;
     
     // planes
     for (i=0 ; i<viewheight ; i++)
@@ -4397,7 +4154,7 @@ public void InitSkyMap ()
       thinker_t      th;
       spriteframe_t  sf;
 
-      if (DG.demoplayback)
+      if (DM.demoplayback)
       return;
       
       // Precache flats.
@@ -4438,7 +4195,7 @@ public void InitSkyMap ()
       //  while the sky texture is stored like
       //  a wall texture, with an episode dependend
       //  name.
-      texturepresent[DG.skytexture] = true;
+      texturepresent[DM.skytexture] = true;
       
       texturememory = 0;
       for (i=0 ; i<numtextures ; i++)
@@ -4456,14 +4213,14 @@ public void InitSkyMap ()
       }
       }
       
-      // TODO: Precache sprites.
+      // recache sprites.
       spritepresent = new boolean[numsprites];
       
       
       for (th = P.thinkercap.next ; th != P.thinkercap ; th=th.next)
       {
-      /*if (th.function.acp1 == (actionf_p1)P_MobjThinker)
-          spritepresent[((mobj_t *)th).sprite] = 1; */
+      if (th.function==think_t.P_MobjThinker)
+          spritepresent[((mobj_t )th).sprite.ordinal()] = true;
       }
       
       spritememory = 0;
@@ -4503,6 +4260,35 @@ public void InitSkyMap ()
       MyThings.InitSpriteDefs (namelist);
   }
 
+/**
+ * R_Init
+ */
+  
+public int  detailLevel;
+public int  screenblocks;
+
+public void Init ()
+{
+   InitData ();
+   System.out.print("\nR_InitData");
+   InitPointToAngle ();
+   System.out.print("\nR_InitPointToAngle");
+   InitTables ();
+   // ds.viewwidth / ds.viewheight / detailLevel are set by the defaults
+   System.out.print ("\nR_InitTables");
+
+   SetViewSize (screenblocks, detailLevel);
+   MyPlanes.InitPlanes ();
+   System.out.print ("\nR_InitPlanes");
+   InitLightTables ();
+   System.out.print("\nR_InitLightTables");
+   InitSkyMap ();
+   System.out.print("\nR_InitSkyMap");
+   InitTranslationTables ();
+   System.out.print("\nR_InitTranslationsTables");
+   
+   framecount = 0;
+}
  
   
   

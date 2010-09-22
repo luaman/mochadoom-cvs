@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.15 2010/09/13 15:39:17 velktron Exp $
+// $Id: WadLoader.java,v 1.16 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,13 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.16  2010/09/22 16:40:02  velktron
+// MASSIVE changes in the status passing model.
+// DoomMain and DoomGame unified.
+// Doomstat merged into DoomMain (now status and game functions are one).
+//
+// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
 // Revision 1.15  2010/09/13 15:39:17  velktron
 // Moving towards an unified gameplay approach...
 //
@@ -444,8 +451,10 @@ public class WadLoader {
         // will be realloced as lumps are added
         lumpinfo = new lumpinfo_t[0];
 
-        for (String s : filenames)
-            this.AddFile(s);
+        for (String s : filenames) {
+         if (s!=null)   this.AddFile(s);
+        }
+        
 
         if (numlumps == 0)
             system.Error("W_InitFiles: no files found");

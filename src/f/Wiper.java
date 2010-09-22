@@ -7,7 +7,7 @@ import m.random;
 
 public class Wiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.1 2010/08/30 15:53:19 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.2 2010/09/22 16:40:02 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -393,6 +393,30 @@ public class Wiper {
 
     }
 
+    public void Drawer ()
+    {
+        switch (DS.state)
+        {
+          case StatCount:
+        if (deathmatch)
+            WI_drawDeathmatchStats();
+        else if (netgame)
+            WI_drawNetgameStats();
+        else
+            WI_drawStats();
+        break;
+        
+          case ShowNextLoc:
+        WI_drawShowNextLoc();
+        break;
+        
+          case NoState:
+        WI_drawNoState();
+        break;
+        }
+    }
+    
+    
     /** Interface for ASS-WIPING functions */
     
     interface wipefun{

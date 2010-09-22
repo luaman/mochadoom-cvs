@@ -1,5 +1,10 @@
 package utils;
-/** Some utilities that emulate C stlib methods.
+
+import w.DoomFile;
+
+/** Some utilities that emulate C stlib methods or provide
+ *  convenient functions to do repetitive system and 
+ *  memory related stuff.
  * 
  * @author Maes
  *
@@ -80,7 +85,7 @@ public class C2JUtils {
      * @throws
      */  
 
-    public static void initArrayOfObjects(Object[] os, Class c) {
+    public static final void initArrayOfObjects(Object[] os, Class c) {
         try {
         for (int i=0;i<os.length;i++){
             os[i]=c.newInstance();
@@ -100,7 +105,7 @@ public class C2JUtils {
      * @throws
      */  
 
-    public static void initArrayOfObjects(Object[] os) {
+    public static final void initArrayOfObjects(Object[] os) {
         Class c=os.getClass().getComponentType();
         try {
         for (int i=0;i<os.length;i++){
@@ -117,11 +122,11 @@ public class C2JUtils {
     
     /** This method gets eventually inlined, becoming very fast */
     
-    public static int toUnsignedByte(byte b){
+    public static final int toUnsignedByte(byte b){
         return (0x000000FF&b);
     }
 
-    public static void memset(char[] string, char val, int len) {
+    public static final void memset(char[] string, char val, int len) {
         for (int i=0;i<len;i++){
             string[i]=val;
         }        
@@ -134,8 +139,25 @@ public class C2JUtils {
      * @param src
      * @param length
      */
-    public static void memcpy(Object dest, Object src, int length ) {
+    public static final void memcpy(Object dest, Object src, int length ) {
        System.arraycopy(src, 0, dest, 0, length);
+    }
+
+    public static final boolean testAccess(String filename, String mode) {
+        
+        // This is bullshit.
+        if (filename==null) return false;
+        if (filename.length()==0) return false;
+        
+        boolean access=true;
+        try {
+        DoomFile test=new DoomFile(filename,mode);
+        } catch (Exception e){
+            // Something went wrong. In any case, access isn't guaranteed.
+            access=false;
+        }
+        return access;
+        
     }
 
     

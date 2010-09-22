@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.16 2010/09/16 23:37:28 velktron Exp $
+// $Id: Defines.java,v 1.17 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,6 +47,9 @@ public class Defines{
     /** Seems to be 109 for shareware 1.9, wtf is this*/
 public static final int VERSION =  110 ;
 
+/** Some parts of the code may actually be better used as if in a UNIX environment */
+
+public static final boolean NORMALUNIX =false;
 
 // Game mode handling - identify IWAD version
 //  to handle IWAD dependend animations etc.
@@ -57,8 +60,9 @@ public enum GameMode_t
   commercial,   // DOOM 2 retail, E1 M34
   // DOOM 2 german edition not handled
   retail,   // DOOM 1 retail, E4, M36
-  indetermined  // Well, no IWAD found.
-  
+  pack_tnt, // TNT mission pack
+  pack_plut,    // Plutonia pack
+  indetermined  // Well, no IWAD found.  
 } ;
 
 
@@ -1689,6 +1693,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.16 2010/09/16 23:37:28 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.17 2010/09/22 16:40:02 velktron Exp $";
 }
 

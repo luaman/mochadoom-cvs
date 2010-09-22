@@ -1,37 +1,13 @@
 package p;
 
-import static data.Defines.BASETHRESHOLD;
-import static data.Defines.BT_CHANGE;
-import static data.Defines.BT_SPECIAL;
-import static data.Defines.BT_USE;
-import static data.Defines.BT_WEAPONMASK;
-import static data.Defines.BT_WEAPONSHIFT;
-import static data.Defines.FLOATSPEED;
 import static data.Defines.ITEMQUESIZE;
 import static data.Defines.MAPBLOCKSHIFT;
-import static data.Defines.MAPBLOCKSIZE;
-import static data.Defines.MAPBTOFRAC;
 import static data.Defines.MELEERANGE;
-import static data.Defines.ML_BLOCKING;
-import static data.Defines.ML_BLOCKMONSTERS;
-import static data.Defines.ML_SECRET;
 import static data.Defines.ML_SOUNDBLOCK;
 import static data.Defines.ML_TWOSIDED;
-import static data.Defines.MTF_AMBUSH;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMAMMO;
-import static data.Defines.NUMCARDS;
-import static data.Defines.ONCEILINGZ;
-import static data.Defines.ONFLOORZ;
-import static data.Defines.PST_DEAD;
-import static data.Defines.PST_LIVE;
-import static data.Defines.PST_REBORN;
-import static data.Defines.PT_ADDLINES;
-import static data.Defines.PT_ADDTHINGS;
-import static data.Defines.PT_EARLYOUT;
 import static data.Defines.RANGECHECK;
-import static data.Defines.USERANGE;
-import static data.Defines.VIEWHEIGHT;
 import static data.Defines.acp1;
 import static data.Defines.pw_allmap;
 import static data.Defines.pw_infrared;
@@ -40,30 +16,19 @@ import static data.Defines.pw_invulnerability;
 import static data.Defines.pw_ironfeet;
 import static data.Defines.pw_strength;
 import static data.Limits.BUTTONTIME;
-import static data.Limits.CEILSPEED;
 import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
-import static data.Limits.MAXCEILINGS;
 import static data.Limits.MAXINT;
 import static data.Limits.MAXINTERCEPTS;
 import static data.Limits.MAXLINEANIMS;
-import static data.Limits.MAXMOVE;
 import static data.Limits.MAXPLATS;
-import static data.Limits.MAXPLAYERS;
-import static data.Limits.MAXRADIUS;
 import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.MAXSWITCHES;
 import static data.Limits.MAX_ADJOINING_SECTORS;
-import static data.Limits.NUMMOBJTYPES;
 import static data.Limits.PLATSPEED;
 import static data.Limits.PLATWAIT;
-import static data.SineCosine.finecosine;
-import static data.SineCosine.finesine;
-import static data.Tables.ANG180;
 import static data.Tables.ANG270;
-import static data.Tables.ANG45;
 import static data.Tables.ANG90;
-import static data.Tables.ANGLETOFINESHIFT;
 import static data.info.mobjinfo;
 import static data.info.sprnames;
 import static data.info.states;
@@ -104,18 +69,7 @@ import static doom.englsh.GOTSUPER;
 import static doom.englsh.GOTVISOR;
 import static doom.englsh.GOTYELWCARD;
 import static doom.englsh.GOTYELWSKUL;
-import static doom.englsh.PD_BLUEK;
-import static doom.englsh.PD_BLUEO;
-import static doom.englsh.PD_REDK;
-import static doom.englsh.PD_REDO;
-import static doom.englsh.PD_YELLOWK;
-import static doom.englsh.PD_YELLOWO;
 import static doom.items.weaponinfo;
-import static m.BBox.BOXBOTTOM;
-import static m.BBox.BOXLEFT;
-import static m.BBox.BOXRIGHT;
-import static m.BBox.BOXTOP;
-import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
@@ -123,36 +77,16 @@ import static p.MapUtils.AproxDistance;
 import static p.MapUtils.InterceptVector;
 import static p.MapUtils.eval;
 import static p.MapUtils.flags;
-import static p.mobj.MF_AMBUSH;
-import static p.mobj.MF_CORPSE;
 import static p.mobj.MF_COUNTITEM;
-import static p.mobj.MF_COUNTKILL;
-import static p.mobj.MF_DROPOFF;
 import static p.mobj.MF_DROPPED;
-import static p.mobj.MF_JUSTATTACKED;
 import static p.mobj.MF_NOBLOCKMAP;
-import static p.mobj.MF_NOBLOOD;
-import static p.mobj.MF_NOCLIP;
-import static p.mobj.MF_NOGRAVITY;
 import static p.mobj.MF_NOSECTOR;
-import static p.mobj.MF_NOTDMATCH;
-import static p.mobj.MF_PICKUP;
-import static p.mobj.MF_SHADOW;
-import static p.mobj.MF_SHOOTABLE;
-import static p.mobj.MF_SKULLFLY;
-import static p.mobj.MF_SOLID;
-import static p.mobj.MF_SPAWNCEILING;
 import static p.mobj.MF_SPECIAL;
-import static p.mobj.MF_TELEPORT;
-import static p.mobj.MF_TRANSSHIFT;
-import static p.mobj_t.MF_FLOAT;
-import static p.mobj_t.MF_INFLOAT;
 import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
-import g.DoomGame;
+import automap.DoomAutoMap;
 import hu.HU;
 import i.system;
-import m.Menu;
 import m.random;
 import rr.UnifiedRenderer;
 import rr.line_t;
@@ -163,23 +97,18 @@ import rr.subsector_t;
 import rr.vertex_t;
 import st.StatusBar;
 import w.WadLoader;
-import automap.DoomAutoMap;
-import data.doomstat;
 import data.mapthing_t;
-import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.state_t;
 import data.Defines.GameMode_t;
 import data.Defines.ammotype_t;
 import data.Defines.card_t;
-import data.Defines.skill_t;
-import data.Defines.slopetype_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
+import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
-import doom.ticcmd_t;
 import doom.weapontype_t;
 
 // // FROM SIGHT
@@ -190,8 +119,6 @@ public class UnifiedGameMap {
 
     WadLoader W;
 
-    doomstat DS;
-
     DoomAutoMap AM;
 
     random RND;
@@ -200,9 +127,7 @@ public class UnifiedGameMap {
 
     LevelLoader LL;
 
-    DoomGame DG;
-
-    Menu M;
+    DoomMain DM;
 
     StatusBar ST;
 
@@ -1238,7 +1163,7 @@ public class UnifiedGameMap {
             stop = (actor.lastlook - 1) & 3;
 
             for (;; actor.lastlook = (actor.lastlook + 1) & 3) {
-                if (!DS.playeringame[actor.lastlook])
+                if (!DM.playeringame[actor.lastlook])
                     continue;
 
                 if (c++ == 2 || actor.lastlook == stop) {
@@ -1246,7 +1171,7 @@ public class UnifiedGameMap {
                     return false;
                 }
 
-                player = DS.players[actor.lastlook];
+                player = DM.players[actor.lastlook];
 
                 if (player.health[0] <= 0)
                     continue; // dead
@@ -1763,7 +1688,7 @@ public class UnifiedGameMap {
             if (levelTimer == true) {
                 levelTimeCount--;
                 if (levelTimeCount == 0)
-                    DG.ExitLevel();
+                    DM.ExitLevel();
             }
 
             // ANIMATE FLATS AND TEXTURES GLOBALLY
@@ -1774,7 +1699,7 @@ public class UnifiedGameMap {
                 for (int i = anim.basepic; i < anim.basepic + anim.numpics; i++) {
                     pic =
                         anim.basepic
-                                + ((DS.leveltime / anim.speed + i) % anim.numpics);
+                                + ((DM.leveltime / anim.speed + i) % anim.numpics);
                     if (anim.istexture)
                         R.texturetranslation[i] = pic;
                     else
@@ -1895,9 +1820,9 @@ public class UnifiedGameMap {
 
             episode = 1;
 
-            if (DS.gamemode == GameMode_t.registered)
+            if (DM.gamemode == GameMode_t.registered)
                 episode = 2;
-            else if (DS.gamemode == GameMode_t.commercial)
+            else if (DM.gamemode == GameMode_t.commercial)
                 episode = 3;
 
             for (index = 0, i = 0; i < MAXSWITCHES; i++) {
@@ -2119,7 +2044,7 @@ public class UnifiedGameMap {
                 && (mobj.type != mobjtype_t.MT_INV)
                 && (mobj.type != mobjtype_t.MT_INS)) {
             itemrespawnque[iquehead] = mobj.spawnpoint;
-            itemrespawntime[iquehead] = DS.leveltime;
+            itemrespawntime[iquehead] = DM.leveltime;
             iquehead = (iquehead + 1) & (ITEMQUESIZE - 1);
 
             // lose one off the end?
@@ -2349,7 +2274,7 @@ public class UnifiedGameMap {
             break;
 
         case SPR_MEGA:
-            if (DS.gamemode != GameMode_t.commercial)
+            if (DM.gamemode != GameMode_t.commercial)
                 return;
             player.health[0] = 200;
             player.mo.health = player.health[0];
@@ -2364,7 +2289,7 @@ public class UnifiedGameMap {
             if (!player.cards[card_t.it_bluecard.ordinal()])
                 player.message = GOTBLUECARD;
             player.GiveCard(card_t.it_bluecard);
-            if (!DS.netgame)
+            if (!DM.netgame)
                 break;
             return;
 
@@ -2372,7 +2297,7 @@ public class UnifiedGameMap {
             if (!player.cards[card_t.it_yellowcard.ordinal()])
                 player.message = GOTYELWCARD;
             player.GiveCard(card_t.it_yellowcard);
-            if (!DS.netgame)
+            if (!DM.netgame)
                 break;
             return;
 
@@ -2380,7 +2305,7 @@ public class UnifiedGameMap {
             if (!player.cards[card_t.it_redcard.ordinal()])
                 player.message = GOTREDCARD;
             player.GiveCard(card_t.it_redcard);
-            if (!DS.netgame)
+            if (!DM.netgame)
                 break;
             return;
 
@@ -2388,7 +2313,7 @@ public class UnifiedGameMap {
             if (!player.cards[card_t.it_blueskull.ordinal()])
                 player.message = GOTBLUESKUL;
             player.GiveCard(card_t.it_blueskull);
-            if (!DS.netgame)
+            if (!DM.netgame)
                 break;
             return;
 
@@ -2396,7 +2321,7 @@ public class UnifiedGameMap {
             if (!player.cards[card_t.it_yellowskull.ordinal()])
                 player.message = GOTYELWSKUL;
             player.GiveCard(card_t.it_yellowskull);
-            if (!DS.netgame)
+            if (!DM.netgame)
                 break;
             return;
 
@@ -2404,7 +2329,7 @@ public class UnifiedGameMap {
             if (!player.cards[card_t.it_redskull.ordinal()])
                 player.message = GOTREDSKULL;
             player.GiveCard(card_t.it_redskull);
-            if (!DS.netgame)
+            if (!DM.netgame)
                 break;
             return;
 
@@ -2596,7 +2521,7 @@ public class UnifiedGameMap {
             player.itemcount++;
         RemoveMobj(special);
         player.bonuscount += player_t.BONUSADD;
-        if (player == DS.players[DS.consoleplayer])
+        if (player == DM.players[DM.consoleplayer])
             ;
         // TODO: S_StartSound (NULL, sound);
     }

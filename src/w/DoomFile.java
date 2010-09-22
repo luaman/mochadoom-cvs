@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.6 2010/09/07 16:23:00 velktron Exp $
+//$Id: DoomFile.java,v 1.7 2010/09/22 16:40:02 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -245,12 +245,36 @@ public class DoomFile extends RandomAccessFile {
        }
    }
    
+   /** Will read an array of proper Unicode chars.
+    * 
+    * @param charr
+    * @param len
+    * @throws IOException
+    */
+   
    public void readCharArray(char[] charr,int len) throws IOException {
 
        if ((charr==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,charr.length);i++){           
            charr[i]=this.readChar();
+       }
+   }
+   
+   /** Will read a bunch of non-unicode chars into a char array.
+    *  Useful when dealing with legacy text files.
+    * 
+    * @param charr
+    * @param len
+    * @throws IOException
+    */
+   
+   public void readNonUnicodeCharArray(char[] charr,int len) throws IOException {
+
+       if ((charr==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,charr.length);i++){           
+           charr[i]=(char) this.readUnsignedByte();
        }
    }
    

@@ -1,5 +1,7 @@
 package rr;
 
+import static data.Defines.RANGECHECK;
+import static data.Defines.SCREENHEIGHT;
 import static data.Defines.SCREENWIDTH;
 import static data.Limits.MAXHEIGHT;
 import static data.Limits.MAXOPENINGS;
@@ -15,15 +17,30 @@ import static data.Tables.FINEANGLES;
 import static data.Tables.SLOPERANGE;
 import static data.Tables.SlopeDiv;
 import static data.Tables.tantoangle;
+import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
+import i.system;
 import m.fixed_t;
 import rr.UnifiedRenderer.colfunc_t;
 import doom.player_t;
 
 public abstract class RendererState {
 
+    
+    ///////////////// COLORMAPS ///////////////////////////////
+    
+    /** use paired with dcto */
+    byte[] dc_translation;
+    /** DC Translation offset */
+    int dcto;
+
+    /** used paired with tto */
+    byte[] translationtables;
+    /** translation tables offset */
+    int tto;
+    
     
     ///////////////// COMMON RENDERING GLOBALS ////////////////
     
@@ -296,12 +313,280 @@ public abstract class RendererState {
    // Fuck that shit. Amma gonna do it the fastest way possible.
    
    
-   colfunc_t colfunc;
-   colfunc_t basecolfunc;
-   colfunc_t fuzzcolfunc;
-   colfunc_t transcolfunc;
-   colfunc_t spanfunc;
+   protected colfunc_t colfunc;
+   protected colfunc_t basecolfunc;
+   protected colfunc_t fuzzcolfunc;
+   protected colfunc_t transcolfunc;
+   protected colfunc_t spanfunc;
 
+   protected colfunc_t DrawTranslatedColumn=new R_DrawTranslatedColumn();
+   protected colfunc_t DrawFuzzColumn=new R_DrawFuzzColumn();
+   protected colfunc_t DrawColumnLow=new R_DrawColumnLow();
+   protected colfunc_t DrawColumn=new R_DrawColumn();
+   /** to be set in UnifiedRenderer */
+   protected colfunc_t DrawSpan,DrawSpanLow;
+   
+   class R_DrawTranslatedColumn implements colfunc_t{
+
+       public void invoke() {
+           int count;
+           // MAES: you know the deal by now...
+           int dest;
+           int frac;
+           int fracstep;
+
+           count = dc_yh - dc_yl;
+           if (count < 0)
+               return;
+
+           if (RANGECHECK) {
+               if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
+                   system
+                           .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
+                               dc_x);
+               }
+           }
+
+           // WATCOM VGA specific.
+           /*
+            * Keep for fixing. if (detailshift) { if (dc_x & 1) outp
+            * (SC_INDEX+1,12); else outp (SC_INDEX+1,3); dest = destview + dc_yl*80
+            * + (dc_x>>1); } else { outp (SC_INDEX+1,1<<(dc_x&3)); dest = destview
+            * + dc_yl*80 + (dc_x>>2); }
+            */
+
+           // FIXME. As above.
+           dest = ylookup[dc_yl] + columnofs[dc_x];
+
+           // Looks familiar.
+           fracstep = dc_iscale;
+           frac = dc_texturemid + (dc_yl - centery) * fracstep;
+
+           // Here we do an additional index re-mapping.
+           do {
+               // Translation tables are used
+               // to map certain colorramps to other ones,
+               // used with PLAY sprites.
+               // Thus the "green" ramp of the player 0 sprite
+               // is mapped to gray, red, black/indigo.
+               screen[dest] =
+                   dc_colormap[dc_translation[dc_source[dc_source_ofs+(frac >> FRACBITS)]]];
+               dest += SCREENWIDTH;
+
+               frac += fracstep;
+           } while (count-- != 0);
+       }
+
+       }
+   
+   
+   /**
+    * A column is a vertical slice/span from a wall texture that, given the
+    * DOOM style restrictions on the view orientation, will always have
+    * constant z depth. Thus a special case loop for very fast rendering can be
+    * used. It has also been used with Wolfenstein 3D. MAES: this is called
+    * mostly from inside Draw and from an external "Renderer"
+    */
+
+   class R_DrawColumn implements colfunc_t{
+       public void invoke(){ 
+       int count;
+       // byte* dest;
+       int dest; // As pointer
+       // fixed_t
+       int frac, fracstep;
+
+       // How much we should draw
+       count = dc_yh - dc_yl;
+
+       // Zero length, column does not exceed a pixel.
+       if (count < 0)
+           return;
+
+       if (RANGECHECK) {
+           if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+               system
+                       .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
+                           dc_x);
+       }
+
+       // Framebuffer destination address.
+       // Use ylookup LUT to avoid multiply with ScreenWidth.
+       // Use columnofs LUT for subwindows?
+       dest = ylookup[dc_yl] + columnofs[dc_x];
+
+       // Determine scaling,
+       // which is the only mapping to be done.
+       fracstep = dc_iscale;
+       frac = dc_texturemid + (dc_yl - centery) * fracstep;
+
+       // Inner loop that does the actual texture mapping,
+       // e.g. a DDA-lile scaling.
+       // This is as fast as it gets.
+       do {
+           // Re-map color indices from wall texture column
+           // using a lighting/special effects LUT.
+           // TODO: determine WHERE the fuck "*dest" is supposed to be
+           // pointing.
+           // DONE: it's pointing inside screen[0] (implicitly).
+           // dc_source was probably just a pointer to a decompressed
+           // column...right? Right.
+           screen[dest] = (byte) dc_colormap[dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
+
+           dest += SCREENWIDTH;
+           frac += fracstep;
+
+       } while (count-- > 0);
+   }
+   }
+   
+   
+   class R_DrawColumnLow implements colfunc_t{
+       public void invoke(){
+       int count;
+       // MAES: were pointers. Of course...
+       int dest;
+       int dest2;
+       // Maes: fixed_t never used as such.
+       int frac;
+       int fracstep;
+
+       count = dc_yh - dc_yl;
+
+       // Zero length.
+       if (count < 0)
+           return;
+
+       if (RANGECHECK) {
+           if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
+
+               system
+                       .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
+                           dc_x);
+           }
+           // dccount++;
+       }
+       // Blocky mode, need to multiply by 2.
+       dc_x <<= 1;
+
+       dest = ylookup[dc_yl] + columnofs[dc_x];
+       dest2 = ylookup[dc_yl] + columnofs[dc_x + 1];
+
+       fracstep = dc_iscale;
+       frac = dc_texturemid + (dc_yl - centery) * fracstep;
+
+       do {
+           // Hack. Does not work correctly.
+           // MAES: that's good to know.
+           screen[dest2] =
+               screen[dest] =
+                   dc_colormap[dc_source[dc_source_ofs+(frac >> FRACBITS) & 127]];
+           dest += SCREENWIDTH;
+           dest2 += SCREENWIDTH;
+           frac += fracstep;
+       } while (count-- != 0);
+   }
+   }
+
+ /**
+  * Framebuffer postprocessing.
+  * Creates a fuzzy image by copying pixels
+  * from adjacent ones to left and right.
+  * Used with an all black colormap, this
+  * could create the SHADOW effect,
+  * i.e. spectres and invisible players.
+  */
+   
+ class R_DrawFuzzColumn implements colfunc_t{
+     public void invoke()
+ { 
+    int         count; 
+    int       dest; 
+    int     frac;
+    int     fracstep;    
+
+    // Adjust borders. Low... 
+    if (dc_yl==0) 
+    dc_yl = 1;
+
+    // .. and high.
+    if (dc_yh == viewheight-1) 
+    dc_yh = viewheight - 2; 
+         
+    count = dc_yh - dc_yl; 
+
+    // Zero length.
+    if (count < 0) 
+    return; 
+
+    
+ if(RANGECHECK){ 
+    if (dc_x >= SCREENWIDTH
+    || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+    {
+    system.Error ("R_DrawFuzzColumn: %i to %i at %i",
+         dc_yl, dc_yh, dc_x);
+    }
+ }
+
+
+    // Keep till detailshift bug in blocky mode fixed,
+    //  or blocky mode removed.
+    /* WATCOM code 
+    if (detailshift)
+    {
+    if (dc_x & 1)
+    {
+        outpw (GC_INDEX,GC_READMAP+(2<<8) ); 
+        outp (SC_INDEX+1,12); 
+    }
+    else
+    {
+        outpw (GC_INDEX,GC_READMAP); 
+        outp (SC_INDEX+1,3); 
+    }
+    dest = destview + dc_yl*80 + (dc_x>>1); 
+    }
+    else
+    {
+    outpw (GC_INDEX,GC_READMAP+((dc_x&3)<<8) ); 
+    outp (SC_INDEX+1,1<<(dc_x&3)); 
+    dest = destview + dc_yl*80 + (dc_x>>2); 
+    }*/
+
+    
+    // Does not work with blocky mode.
+    dest = ylookup[dc_yl] + columnofs[dc_x];
+
+    // Looks familiar.
+    fracstep = dc_iscale; 
+    frac = dc_texturemid + (dc_yl-centery)*fracstep; 
+
+    // Looks like an attempt at dithering,
+    //  using the colormap #6 (of 0-31, a bit
+    //  brighter than average).
+    do 
+    {
+    // Lookup framebuffer, and retrieve
+    //  a pixel that is either one column
+    //  left or right of the current one.
+    // Add index from colormap to index.
+    screen[dest] = colormaps[6*256+screen[dest+fuzzoffset[fuzzpos]]]; 
+
+    // Clamp table lookup index.
+    if (++fuzzpos == FUZZTABLE) 
+        fuzzpos = 0;
+    
+    dest += SCREENWIDTH;
+
+    frac += fracstep; 
+    } while (count-->0); 
+ } 
+ }
+ 
+ 
+   
+   
    // MAES: More renderer fields from segs.
 
    //OPTIMIZE: closed two sided lines as single sided
@@ -343,7 +628,7 @@ public abstract class RendererState {
    /** variables used to look up
      *    and range check thing_t sprites patches
      */
-   spritedef_t[]   sprites;
+   public spritedef_t[]   sprites;
    int     numsprites;
 
    /** variables used to look up
@@ -723,5 +1008,7 @@ public abstract class RendererState {
        
        return dist;
    }
+   
+
    
 }

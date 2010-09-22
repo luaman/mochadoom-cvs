@@ -1,5 +1,6 @@
 package doom;
 
+import p.Actions;
 import p.LevelLoader;
 import p.UnifiedGameMap;
 import g.DoomGame;
@@ -29,8 +30,7 @@ import w.WadLoader;
  */
 
 public class DoomContext {
-    public DoomGame DG;
-    public doomstat DS;
+    public DoomMain DM;
     public WadLoader W;
     public random RND;
     public SystemInterface I;
@@ -39,6 +39,6 @@ public class DoomContext {
     public DoomVideoRenderer V;
     public LevelLoader LL;
     public DoomMenu M;
-    public UnifiedGameMap P;
-    public UnifiedRenderer R;
+    public Actions P;
+    public UnifiedRenderer R;    
 }

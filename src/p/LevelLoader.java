@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 
 import m.BBox;
-import rr.Renderer;
 import rr.UnifiedRenderer;
 import rr.line_t;
 import rr.node_t;
@@ -30,7 +29,6 @@ import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
-import data.doomstat;
 import data.maplinedef_t;
 import data.mapnode_t;
 import data.mapsector_t;
@@ -43,11 +41,12 @@ import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import data.Defines.slopetype_t;
 import doom.DoomContext;
+import doom.DoomMain;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.5 2010/09/21 15:53:37 velktron Exp $
+// $Id: LevelLoader.java,v 1.6 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,6 +61,13 @@ import doom.DoomContext;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.6  2010/09/22 16:40:02  velktron
+// MASSIVE changes in the status passing model.
+// DoomMain and DoomGame unified.
+// Doomstat merged into DoomMain (now status and game functions are one).
+//
+// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
 // Revision 1.5  2010/09/21 15:53:37  velktron
 // Split the Map ...somewhat...
 //
@@ -104,14 +110,14 @@ public class LevelLoader {
     
     DoomStatusBarInterface ST;
     WadLoader W;
-    doomstat DS;
+    DoomMain DM;
     DoomVideoRenderer V;
     UnifiedRenderer R;
-    UnifiedGameMap P;
+    Actions P;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.5 2010/09/21 15:53:37 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.6 2010/09/22 16:40:02 velktron Exp $";
 
-  //
+  //  
   // MAP related Lookup tables.
   // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
   //
@@ -313,8 +319,8 @@ public int bmaporgy;
           ss = sectors[i];
       ss.floorheight = ms.floorheight<<FRACBITS;
       ss.ceilingheight = ms.ceilingheight<<FRACBITS;
-     //TODO: ss.floorpic = (short) R.FlatNumForName(ms.floorpic);
-     //TODO: ss.ceilingpic = (short) R.FlatNumForName(ms.ceilingpic);
+      ss.floorpic = (short) R.FlatNumForName(ms.floorpic);
+      ss.ceilingpic = (short) R.FlatNumForName(ms.ceilingpic);
       ss.lightlevel = ms.lightlevel;
       ss.special = ms.special;
       ss.tag = ms.tag;
@@ -390,7 +396,7 @@ public int bmaporgy;
       spawn = true;
 
       // Do not spawn cool, new monsters if !commercial
-      if ( DS.gamemode != GameMode_t.commercial)
+      if ( DM.gamemode != GameMode_t.commercial)
       {
           switch(mt.type)
           {
@@ -419,7 +425,7 @@ public int bmaporgy;
       mt.type = SHORT(mt.type);
       mt.options = SHORT(mt.options);*/
       
-      // TODO: P_SpawnMapThing (mt);
+      P.SpawnMapThing (mt);
       }
       
   }
@@ -536,9 +542,9 @@ public int bmaporgy;
           
       sd.textureoffset = (msd.textureoffset)<<FRACBITS;
       sd.rowoffset = (msd.rowoffset)<<FRACBITS;
-      //TODO: sd.toptexture = R.TextureNumForName(msd.toptexture);
-      //TODO: sd.bottomtexture = R.TextureNumForName(msd.bottomtexture);
-      //TODO: sd.midtexture = R.TextureNumForName(msd.midtexture);
+      sd.toptexture = (short) R.TextureNumForName(msd.toptexture);
+      sd.bottomtexture = (short) R.TextureNumForName(msd.bottomtexture);
+      sd.midtexture = (short) R.TextureNumForName(msd.midtexture);
       sd.sector = sectors[msd.sector];
       }
   }
@@ -720,23 +726,24 @@ public int bmaporgy;
   ( int       episode,
     int       map,
     int       playermask,
-    skill_t   skill) throws Exception
+    skill_t   skill) 
   {
       int     i;
       String    lumpname;
       int     lumpnum;
-      
-      DS.totalkills = DS.totalitems = DS.totalsecret = DS.wminfo.maxfrags = 0;
-      DS.wminfo.partime = 180;
+   
+      try{
+      DM.totalkills = DM.totalitems = DM.totalsecret = DM.wminfo.maxfrags = 0;
+      DM.wminfo.partime = 180;
       for (i=0 ; i<MAXPLAYERS ; i++)
       {
-      DS.players[i].killcount = DS.players[i].secretcount 
-          = DS.players[i].itemcount = 0;
+      DM.players[i].killcount = DM.players[i].secretcount 
+          = DM.players[i].itemcount = 0;
       }
 
       // Initial height of PointOfView
       // will be set by player think.
-      DS.players[DS.consoleplayer].viewz = 1; 
+      DM.players[DM.consoleplayer].viewz = 1; 
 
       // Make sure all sounds are stopped before Z_FreeTags.
       //TODO: S_Start ();         
@@ -755,13 +762,13 @@ public int bmaporgy;
 
 
       // UNUSED W_Profile ();
-      //TODO: P_InitThinkers ();
+      P.InitThinkers ();
 
-      // if working with a devlopment map, reload it
+      // if working with a development map, reload it
       W.Reload ();            
          
       // find map name
-      if ( DS.gamemode == GameMode_t.commercial)
+      if ( DM.gamemode == GameMode_t.commercial)
       {
       if (map<10)
           lumpname="MAP0"+map;
@@ -779,7 +786,7 @@ public int bmaporgy;
 
       lumpnum = W.GetNumForName (lumpname);
       
-      DS.leveltime = 0;
+      DM.leveltime = 0;
       
       // note: most of this ordering is important 
       this.LoadBlockMap (lumpnum+ML_BLOCKMAP);
@@ -794,46 +801,49 @@ public int bmaporgy;
       //rejectmatrix = W.CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL);
       this.GroupLines ();
 
-      DS.bodyqueslot = 0;
-      //TODO: deathmatch_p = deathmatchstarts;
+      DM.bodyqueslot = 0;
+      // Reset to "deathmatch starts"
+      DM.deathmatch_p = 0;
       this.LoadThings (lumpnum+ML_THINGS);
       
       // if deathmatch, randomly spawn the active players
-      if (DS.deathmatch)
+      if (DM.deathmatch)
       {
       for (i=0 ; i<MAXPLAYERS ; i++)
-          if (DS.playeringame[i])
+          if (DM.playeringame[i])
           {
-          DS.players[i].mo = null;
-          //TODO: G_DeathMatchSpawnPlayer (i);
+          DM.players[i].mo = null;
+          DM.DeathMatchSpawnPlayer (i);
           }
               
       }
 
       // clear special respawning que
-      //TODO: iquehead = iquetail = 0;        
+      P.iquehead = P.iquetail = 0;        
       
       // set up world state
-      //TODO: P_SpawnSpecials ();
+      P.SpawnSpecials ();
       
       // build subsector connect matrix
       //  UNUSED P_ConnectSubsectors ();
 
       // preload graphics
-      if (DS.precache){
-      //TODO: R_PrecacheLevel ();
+      if (DM.precache){
+      R.PrecacheLevel ();
       }
-      //printf ("free memory: 0x%x\n", Z_FreeMemory());
 
+      } catch (Exception e){
+          System.err.println("Error while loading level");
+          e.printStackTrace();
+      }
   }
 
 
-  public LevelLoader(DoomContext DC){
+  public LevelLoader(DoomMain DC){
       this.W=DC.W;
-      this.DS=DC.DS;
+      this.DM=DC;
       this.P=DC.P;
-      this.R=DC.R;
-   
+      this.R=DC.R;   
   }
 
 

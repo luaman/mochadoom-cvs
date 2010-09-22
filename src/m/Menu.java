@@ -56,6 +56,7 @@ import data.Defines.gamestate_t;
 import data.Defines.skill_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
+import doom.DoomMain;
 import doom.event_t;
 import doom.evtype_t;
 
@@ -64,10 +65,10 @@ public class Menu extends MenuMisc implements DoomMenu{
 
     ////////////////// CONSTRUCTOR ////////////////
     
-    public Menu(DoomContext DC){
-        this.V=DC.V;
-        this.DS=DC.DS;
-        this.W=DC.W;
+    public Menu(DoomMain DM){
+        this.DM=DM;
+        this.V=DM.V;
+        this.W=DM.W;
         this.initMenuItems();
         this.initMenuRoutines();
         this.initDrawRoutines();
@@ -382,7 +383,7 @@ public class Menu extends MenuMisc implements DoomMenu{
         String name;
 
         for (i = 0; i < load_end; i++) {
-            if (this.CheckParm("-cdrom") != 0)
+            if (DM.CheckParm("-cdrom") != 0)
                 name = "c:\\doomdata\\" + SAVEGAMENAME + (i) + ".dsg";
             else
                 name = SAVEGAMENAME + (i) + ".dsg";
@@ -471,7 +472,7 @@ public class Menu extends MenuMisc implements DoomMenu{
      */
 
     public void DoSave(int slot) {
-        G.SaveGame(slot, new String(savegamestrings[slot]));
+        DM.SaveGame(slot, new String(savegamestrings[slot]));
         ClearMenus();
 
         // PICK QUICKSAVE SLOT YET?
@@ -505,12 +506,12 @@ public class Menu extends MenuMisc implements DoomMenu{
             implements MenuRoutine {
         @Override
         public void invoke(int choice) {
-            if (!DS.usergame) {
+            if (!DM.usergame) {
                 StartMessage(SAVEDEAD, null, false);
                 return;
             }
 
-            if (DS.gamestate != gamestate_t.GS_LEVEL)
+            if (DM.gamestate != gamestate_t.GS_LEVEL)
                 return;
 
             SetupNextMenu(SaveDef);
@@ -535,12 +536,12 @@ public class Menu extends MenuMisc implements DoomMenu{
     }
 
     private void QuickSave() {
-        if (!DS.usergame) {
+        if (!DM.usergame) {
             S.StartSound(null, sfxenum_t.sfx_oof);
             return;
         }
 
-        if (DS.gamestate != gamestate_t.GS_LEVEL)
+        if (DM.gamestate != gamestate_t.GS_LEVEL)
             return;
 
         if (quickSaveSlot < 0) {
@@ -574,11 +575,11 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int ch) {
             if (ch != 'y')
                 return;
-            if (!DS.netgame) {
-                if (DS.gamemode == GameMode_t.commercial)
-                    S.StartSound(null, quitsounds2[(DS.gametic >> 2) & 7]);
+            if (!DM.netgame) {
+                if (DM.gamemode == GameMode_t.commercial)
+                    S.StartSound(null, quitsounds2[(DM.gametic >> 2) & 7]);
                 else
-                    S.StartSound(null, quitsounds[(DS.gametic >> 2) & 7]);
+                    S.StartSound(null, quitsounds[(DM.gametic >> 2) & 7]);
                 // TI.WaitVBL(105);
             }
             I.Quit();
@@ -586,7 +587,7 @@ public class Menu extends MenuMisc implements DoomMenu{
     }
 
     public void QuickLoad() {
-        if (DS.netgame) {
+        if (DM.netgame) {
             StartMessage(QLOADNET, null, false);
             return;
         }
@@ -616,12 +617,12 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int choice) {
             switch (choice) {
             case 0:
-                if (DS.snd_SfxVolume != 0)
-                    DS.snd_SfxVolume--;
+                if (DM.snd_SfxVolume != 0)
+                    DM.snd_SfxVolume--;
                 break;
             case 1:
-                if (DS.snd_SfxVolume < 15)
-                    DS.snd_SfxVolume++;
+                if (DM.snd_SfxVolume < 15)
+                    DM.snd_SfxVolume++;
                 break;
             }
 
@@ -636,16 +637,16 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int choice) {
             switch (choice) {
             case 0:
-                if (DS.snd_MusicVolume != 0)
-                    DS.snd_MusicVolume--;
+                if (DM.snd_MusicVolume != 0)
+                    DM.snd_MusicVolume--;
                 break;
             case 1:
-                if (DS.snd_MusicVolume < 15)
-                    DS.snd_MusicVolume++;
+                if (DM.snd_MusicVolume < 15)
+                    DM.snd_MusicVolume++;
                 break;
             }
 
-            // TODO: S_SetMusicVolume(DS.snd_MusicVolume /* *8 */);
+            // TODO: S_SetMusicVolume(DM.snd_MusicVolume /* *8 */);
         }
     }
 
@@ -662,7 +663,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             if (ch != 'y')
                 return;
 
-            G.DeferedInitNew(Defines.skill_t.sk_nightmare, epi + 1, 1);
+            DM.DeferedInitNew(Defines.skill_t.sk_nightmare, epi + 1, 1);
             ClearMenus();
         }
     }
@@ -711,11 +712,11 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int choice) {
             // We pick index 0 which is language sensitive,
             // or one at random, between 1 and maximum number.
-            if (DS.language != Language_t.english)
+            if (DM.language != Language_t.english)
                 endstring = endmsg[0] + "\n\n" + DOSY;
             else
                 endstring =
-                    endmsg[(DS.gametic % (NUM_QUITMESSAGES - 2)) + 1] + "\n\n"
+                    endmsg[(DM.gametic % (NUM_QUITMESSAGES - 2)) + 1] + "\n\n"
                             + DOSY;
 
             StartMessage(endstring, QuitResponse, true);
@@ -729,8 +730,8 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int ch) {
             if (ch != 'y')
                 return;
-            if (!DS.netgame) {
-                if (DS.gamemode == GameMode_t.commercial)
+            if (!DM.netgame) {
+                if (DM.gamemode == GameMode_t.commercial)
                     ;
                 // TODO:S_StartSound(NULL,quitsounds2[(gametic>>2)&7]);
                 else
@@ -782,12 +783,12 @@ public class Menu extends MenuMisc implements DoomMenu{
 
         @Override
         public void invoke(int choice) {
-            if (DS.netgame && !DS.demoplayback) {
+            if (DM.netgame && !DM.demoplayback) {
                 StartMessage(NEWGAME, null, false);
                 return;
             }
 
-            if (DS.gamemode == GameMode_t.commercial)
+            if (DM.gamemode == GameMode_t.commercial)
                 SetupNextMenu(NewDef);
             else
                 SetupNextMenu(EpiDef);
@@ -796,17 +797,17 @@ public class Menu extends MenuMisc implements DoomMenu{
     }
 
     public void StartMessage(String string, MenuRoutine routine, boolean input) {
-        messageLastMenuActive = DS.menuactive;
+        messageLastMenuActive = DM.menuactive;
         messageToPrint = true;
         messageString = string;
         messageRoutine = routine;
         messageNeedsInput = input;
-        DS.menuactive = true; // "true"
+        DM.menuactive = true; // "true"
         return;
     }
 
     public void StopMessage() {
-        DS.menuactive = messageLastMenuActive;
+        DM.menuactive = messageLastMenuActive;
         messageToPrint = false;
     }
 
@@ -1068,33 +1069,33 @@ public class Menu extends MenuMisc implements DoomMenu{
                     && !(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE))
                 return false;
 
-            DS.menuactive = messageLastMenuActive;
+            DM.menuactive = messageLastMenuActive;
             messageToPrint = false;
             if (messageRoutine != null)
                 messageRoutine.invoke(ch);
 
-            DS.menuactive = false; // "false"
+            DM.menuactive = false; // "false"
             S.StartSound(null, sfxenum_t.sfx_swtchx);
             return true;
         }
 
-        if (DS.devparm && ch == KEY_F1) {
-            G.ScreenShot();
+        if (DM.devparm && ch == KEY_F1) {
+            DM.ScreenShot();
             return true;
         }
 
         // F-Keys
-        if (!DS.menuactive)
+        if (!DM.menuactive)
             switch (ch) {
             case KEY_MINUS: // Screen size down
-                if (DS.automapactive || chat_on)
+                if (DM.automapactive || chat_on)
                     return false;
                 SizeDisplay.invoke(0);
                 S.StartSound(null, sfxenum_t.sfx_stnmov);
                 return true;
 
             case KEY_EQUALS: // Screen size up
-                if (DS.automapactive || chat_on)
+                if (DM.automapactive || chat_on)
                     return false;
                 SizeDisplay.invoke(1);
                 S.StartSound(null, sfxenum_t.sfx_stnmov);
@@ -1103,7 +1104,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             case KEY_F1: // Help key
                 StartControlPanel();
 
-                if (DS.gamemode == GameMode_t.retail)
+                if (DM.gamemode == GameMode_t.retail)
                     currentMenu = ReadDef2;
                 else
                     currentMenu = ReadDef1;
@@ -1165,7 +1166,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 int usegamma = V.getUsegamma();
                 if (usegamma > 4)
                     usegamma = 0;
-                DS.players[DS.consoleplayer].message = gammamsg[usegamma];
+                DM.players[DM.consoleplayer].message = gammamsg[usegamma];
                 // TODO: I.SetPalette (W.CacheLumpName ("PLAYPAL",PU_CACHE));
                 V.setUsegamma(usegamma);
                 return true;
@@ -1173,7 +1174,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             }
 
         // Pop-up menu?
-        if (!DS.menuactive) {
+        if (!DM.menuactive) {
             if (ch == KEY_ESCAPE) {
                 StartControlPanel();
              //TODO:   S.StartSound(null, sfxenum_t.sfx_swtchn);
@@ -1275,10 +1276,10 @@ public class Menu extends MenuMisc implements DoomMenu{
      */
     public void StartControlPanel() {
         // intro might call this repeatedly
-        if (DS.menuactive)
+        if (DM.menuactive)
             return;
 
-        DS.menuactive = true;
+        DM.menuactive = true;
         currentMenu = MainDef; // JDC
         itemOn = (short) currentMenu.lastOn; // JDC
     }
@@ -1320,7 +1321,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 }
                 return;
             }
-            if (!DS.menuactive)
+            if (!DM.menuactive)
                 return;
             if (currentMenu.routine != null)
                 currentMenu.routine.invoke(); // call Draw routine
@@ -1346,9 +1347,9 @@ public class Menu extends MenuMisc implements DoomMenu{
     // M_ClearMenus
     //
     public void ClearMenus() {
-        DS.menuactive = false;
-        if (!DS.netgame && DS.usergame && DS.paused)
-         G.setPaused(true);
+        DM.menuactive = false;
+        if (!DM.netgame && DM.usergame && DM.paused)
+            DM.setPaused(true);
     }
 
     /**
@@ -1374,20 +1375,20 @@ public class Menu extends MenuMisc implements DoomMenu{
      */
     public void Init() {
         currentMenu = MainDef;
-        DS.menuactive = false;
+        DM.menuactive = false;
         itemOn = (short) currentMenu.lastOn;
         whichSkull = 0;
         skullAnimCounter = 10;
         screenSize = screenblocks - 3;
         messageToPrint = false;
         messageString = null;
-        messageLastMenuActive = DS.menuactive;
+        messageLastMenuActive = DM.menuactive;
         quickSaveSlot = -1;
 
         // Here we could catch other version dependencies,
         // like HELP1/2, and four episodes.
 
-        switch (DS.gamemode) {
+        switch (DM.gamemode) {
         case commercial:
             // This is used because DOOM 2 had only one HELP
             // page. I use CREDIT as second page now, but
@@ -1416,24 +1417,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
     }
 
-    public int myargc;
-
-    public String[] myargv;
-
-    /**
-     * M_CheckParm Checks for the given parameter in the program's command line
-     * arguments. Returns the argument number (1 to argc-1) or 0 if not present
-     */
-    public int CheckParm(String check) {
-        int i;
-
-        for (i = 1; i < myargc; i++) {
-            if (check.compareToIgnoreCase(myargv[i]) == 0)
-                return i;
-        }
-
-        return 0;
-    }
+    
 
     /**
      * M_DrawText Returns the final X coordinate HU_Init must have been called
@@ -1561,7 +1545,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
         public void invoke() {
             inhelpscreens = true;
-            switch (DS.gamemode) {
+            switch (DM.gamemode) {
             case commercial:
                 V.DrawPatchDirect(0, 0, 0, W.CachePatchName("HELP"));
                 break;
@@ -1585,7 +1569,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
         public void invoke() {
             inhelpscreens = true;
-            switch (DS.gamemode) {
+            switch (DM.gamemode) {
             case retail:
             case commercial:
                 // This hack keeps us from having to change menus.
@@ -1613,10 +1597,10 @@ public class Menu extends MenuMisc implements DoomMenu{
                 PU_CACHE, patch_t.class));
 
             DrawThermo(SoundDef.x, SoundDef.y + LINEHEIGHT * (sfx_vol + 1), 16,
-                DS.snd_SfxVolume);
+                DM.snd_SfxVolume);
 
             DrawThermo(SoundDef.x, SoundDef.y + LINEHEIGHT * (music_vol + 1),
-                16, DS.snd_MusicVolume);
+                16, DM.snd_MusicVolume);
         }
     }
 
@@ -1638,8 +1622,8 @@ public class Menu extends MenuMisc implements DoomMenu{
 
             /*
              * TODO: R.SetViewSize (screenblocks, detailLevel); if
-             * (detailLevel==0) DS.players[DS.consoleplayer].message = DETAILHI;
-             * else DS.players[DS.consoleplayer].message = DETAILLO;
+             * (detailLevel==0) DM.players[DM.consoleplayer].message = DETAILHI;
+             * else DM.players[DM.consoleplayer].message = DETAILLO;
              */
 
         }
@@ -1658,9 +1642,9 @@ public class Menu extends MenuMisc implements DoomMenu{
             showMessages = 1 - showMessages;
 
             if (showMessages == 0)
-                DS.players[DS.consoleplayer].message = MSGOFF;
+                DM.players[DM.consoleplayer].message = MSGOFF;
             else
-                DS.players[DS.consoleplayer].message = MSGON;
+                DM.players[DM.consoleplayer].message = MSGON;
 
             message_dontfuckwithme = true;
         }
@@ -1693,7 +1677,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 return;
             }
 
-            G.DeferedInitNew(skill_t.values()[choice], epi + 1, 1);
+            DM.DeferedInitNew(skill_t.values()[choice], epi + 1, 1);
             ClearMenus();
         }
 
@@ -1709,12 +1693,12 @@ public class Menu extends MenuMisc implements DoomMenu{
         @Override
         public void invoke(int choice) {
             choice = 0;
-            if (!DS.usergame) {
+            if (!DM.usergame) {
                 S.StartSound(null, sfxenum_t.sfx_oof);
                 return;
             }
 
-            if (DS.netgame) {
+            if (DM.netgame) {
                 StartMessage(NETEND, null, false);
                 return;
             }
@@ -1733,7 +1717,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
             currentMenu.lastOn = itemOn;
             ClearMenus();
-            D.StartTitle();
+            DM.StartTitle();
         }
     }
 
@@ -1743,14 +1727,14 @@ public class Menu extends MenuMisc implements DoomMenu{
         @Override
         public void invoke(int choice) {
 
-            if ((DS.gamemode == GameMode_t.shareware) && (choice != 0)) {
+            if ((DM.gamemode == GameMode_t.shareware) && (choice != 0)) {
                 StartMessage(SWSTRING, null, false);
                 SetupNextMenu(ReadDef1);
                 return;
             }
 
             // Yet another hack...
-            if ((DS.gamemode == GameMode_t.registered) && (choice > 2)) {
+            if ((DM.gamemode == GameMode_t.registered) && (choice > 2)) {
                 System.err
                         .print("M_Episode: 4th episode requires UltimateDOOM\n");
                 choice = 0;
@@ -1772,11 +1756,11 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int choice) {
             String name;
 
-            if (CheckParm("-cdrom") != 0)
+            if (DM.CheckParm("-cdrom") != 0)
                 name = ("c:\\doomdata\\" + SAVEGAMENAME + (choice) + ".dsg");
             else
                 name = (SAVEGAMENAME + (choice) + ".dsg");
-            G.LoadGame(name);
+            DM.LoadGame(name);
             ClearMenus();
         }
     }
@@ -1789,7 +1773,7 @@ public class Menu extends MenuMisc implements DoomMenu{
         @Override
         public void invoke(int choice) {
 
-            if (DS.netgame) {
+            if (DM.netgame) {
                 StartMessage(LOADNET, null, false);
                 return;
             }

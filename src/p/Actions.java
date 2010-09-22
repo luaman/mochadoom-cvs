@@ -116,6 +116,7 @@ import data.Defines.skill_t;
 import data.Defines.slopetype_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
+import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
@@ -168,7 +169,7 @@ public class Actions extends UnifiedGameMap{
                     ceiling.topheight,
                     false,1,ceiling.direction);
           
-          if (!flags(DS.leveltime,7))
+          if (!flags(DM.leveltime,7))
           {
               switch(ceiling.type)
               {
@@ -211,7 +212,7 @@ public class Actions extends UnifiedGameMap{
                     ceiling.bottomheight,
                     ceiling.crush,1,ceiling.direction);
           
-          if (!flags(DS.leveltime,7))
+          if (!flags(DM.leveltime,7))
           {
               switch(ceiling.type)
               {
@@ -341,7 +342,7 @@ public class Actions extends UnifiedGameMap{
                     floor.floordestheight,
                     floor.crush,0,floor.direction);
           
-          if (!flags(DS.leveltime,7))
+          if (!flags(DM.leveltime,7))
               
           ; // TODO: S_StartSound((mobj_t *)&floor.sector.soundorg,  sfx_stnmov);
           
@@ -1519,7 +1520,7 @@ public class Actions extends UnifiedGameMap{
           slidedoor_t*   door;
          
           // DOOM II ONLY...
-          if (DS.gamemode != commercial)
+          if (DM.gamemode != commercial)
          return;
           
           // Make sure door isn't already being animated
@@ -1643,7 +1644,7 @@ public class Actions extends UnifiedGameMap{
       player.attackdown = false;
       
       // bob the weapon based on movement speed
-      angle = (128*DS.leveltime)&FINEMASK;
+      angle = (128*DM.leveltime)&FINEMASK;
       psp.sx = FRACUNIT + FixedMul (player.bob, finecosine[angle]);
       angle &= FINEANGLES/2-1;
       psp.sy = player_t.WEAPONTOP + FixedMul (player.bob, finesine[angle]);
@@ -2303,7 +2304,7 @@ public class Actions extends UnifiedGameMap{
         if (flags(actor.flags , MF_JUSTATTACKED))
         {
         actor.flags &= ~MF_JUSTATTACKED;
-        if (DS.gameskill != skill_t.sk_nightmare && !DS.fastparm)
+        if (DM.gameskill != skill_t.sk_nightmare && !DM.fastparm)
             NewChaseDir (actor);
         return;
         }
@@ -2322,8 +2323,8 @@ public class Actions extends UnifiedGameMap{
         // check for missile attack
         if (actor.info.missilestate != null)
         {
-        if (DS.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
-            && !DS.fastparm && actor.movecount!=0)
+        if (DM.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
+            && !DM.fastparm && actor.movecount!=0)
         {
             nomissile=true;
         }
@@ -2340,7 +2341,7 @@ public class Actions extends UnifiedGameMap{
         // ?
       nomissile:
         // possibly choose another target
-        if (DS.netgame
+        if (DM.netgame
         && actor.threshold==0
         && !EN.CheckSight (actor, actor.target) )
         {
@@ -2701,7 +2702,7 @@ public class Actions extends UnifiedGameMap{
         mobj_t  dest;
         mobj_t  th;
             
-        if (flags(DS.gametic ,3))
+        if (flags(DM.gametic ,3))
         return;
         
         // spawn a puff of smoke behind the rocket      
@@ -3286,9 +3287,9 @@ public class Actions extends UnifiedGameMap{
         line_t  junk = new line_t();
         int     i;
             
-        if ( DS.gamemode == GameMode_t.commercial)
+        if ( DM.gamemode == GameMode_t.commercial)
         {
-        if (DS.gamemap != 7)
+        if (DM.gamemap != 7)
             return;
             
         if ((mo.type != mobjtype_t.MT_FATSO)
@@ -3297,10 +3298,10 @@ public class Actions extends UnifiedGameMap{
         }
         else
         {
-        switch(DS.gameepisode)
+        switch(DM.gameepisode)
         {
           case 1:
-            if (DS.gamemap != 8)
+            if (DM.gamemap != 8)
             return;
 
             if (mo.type != mobjtype_t.MT_BRUISER)
@@ -3308,7 +3309,7 @@ public class Actions extends UnifiedGameMap{
             break;
             
           case 2:
-            if (DS.gamemap != 8)
+            if (DM.gamemap != 8)
             return;
 
             if (mo.type != mobjtype_t.MT_CYBORG)
@@ -3316,7 +3317,7 @@ public class Actions extends UnifiedGameMap{
             break;
             
           case 3:
-            if (DS.gamemap != 8)
+            if (DM.gamemap != 8)
             return;
             
             if (mo.type != mobjtype_t.MT_SPIDER)
@@ -3325,7 +3326,7 @@ public class Actions extends UnifiedGameMap{
             break;
             
           case 4:
-            switch(DS.gamemap)
+            switch(DM.gamemap)
             {
               case 6:
             if (mo.type != mobjtype_t.MT_CYBORG)
@@ -3343,7 +3344,7 @@ public class Actions extends UnifiedGameMap{
             break;
             
           default:
-            if (DS.gamemap != 8)
+            if (DM.gamemap != 8)
             return;
             break;
         }
@@ -3353,7 +3354,7 @@ public class Actions extends UnifiedGameMap{
         
         // make sure there is a player alive for victory
         for (i=0 ; i<MAXPLAYERS ; i++)
-        if (DS.playeringame[i] && DS.players[i].health[0] > 0)
+        if (DM.playeringame[i] && DM.players[i].health[0] > 0)
             break;
         
         if (i==MAXPLAYERS)
@@ -3377,9 +3378,9 @@ public class Actions extends UnifiedGameMap{
         }
         
         // victory!
-        if ( DS.gamemode == GameMode_t.commercial)
+        if ( DM.gamemode == GameMode_t.commercial)
         {
-        if (DS.gamemap == 7)
+        if (DM.gamemap == 7)
         {
             if (mo.type == mobjtype_t.MT_FATSO)
             {
@@ -3398,7 +3399,7 @@ public class Actions extends UnifiedGameMap{
         }
         else
         {
-        switch(DS.gameepisode)
+        switch(DM.gameepisode)
         {
           case 1:
             junk.tag = 666;
@@ -3406,7 +3407,7 @@ public class Actions extends UnifiedGameMap{
             return;
             
           case 4:
-            switch(DS.gamemap)
+            switch(DM.gamemap)
             {
               case 6:
             junk.tag = 666;
@@ -3421,7 +3422,7 @@ public class Actions extends UnifiedGameMap{
         }
         }
         
-        DG.ExitLevel ();
+        DM.ExitLevel ();
     }
 
 
@@ -3559,7 +3560,7 @@ public class Actions extends UnifiedGameMap{
 
     void A_BrainDie (mobj_t     mo)
     {
-        DG.ExitLevel ();
+        DM.ExitLevel ();
     }
 
     private int  easy = 0;
@@ -3570,7 +3571,7 @@ public class Actions extends UnifiedGameMap{
         mobj_t  newmobj;
         
         easy ^= 1;
-        if (DS.gameskill.ordinal() <= skill_t.sk_easy.ordinal() && (easy==0))
+        if (DM.gameskill.ordinal() <= skill_t.sk_easy.ordinal() && (easy==0))
         return;
             
         // shoot a cube at current target
@@ -3660,7 +3661,7 @@ public class Actions extends UnifiedGameMap{
           // Default death sound.
           sfxenum_t     sound = sfxenum_t.sfx_pldeth;
           
-          if ( (DS.gamemode == GameMode_t.commercial)
+          if ( (DM.gamemode == GameMode_t.commercial)
           &&  (mo.health < -50))
           {
           // IF THE PLAYER DIES
@@ -3711,7 +3712,7 @@ else
 if (! flags(mobj.flags ,MF_COUNTKILL) )
 return;
 
-if (!DS.respawnmonsters)
+if (!DM.respawnmonsters)
 return;
 
 mobj.movecount++;
@@ -3719,7 +3720,7 @@ mobj.movecount++;
 if (mobj.movecount < 12*35)
 return;
 
-if ( flags(DS.leveltime,31 ))
+if ( flags(DM.leveltime,31 ))
 return;
 
 if (RND.P_Random () > 4)
@@ -3817,7 +3818,7 @@ mobj.height = info.height;
 mobj.flags = info.flags;
 mobj.health = info.spawnhealth;
 
-if (DS.gameskill != skill_t.sk_nightmare)
+if (DM.gameskill != skill_t.sk_nightmare)
 mobj.reactiontime = info.reactiontime;
 
 mobj.lastlook = RND.P_Random () % MAXPLAYERS;
@@ -3865,7 +3866,7 @@ mapthing_t     mthing;
 int         i;
 
 // only respawn items in deathmatch (deathmatch!=2)
-if (!DS.altdeath)
+if (!DM.altdeath)
 return; // 
 
 // nothing left to respawn?
@@ -3873,7 +3874,7 @@ if (iquehead == iquetail)
 return;     
 
 // wait at least 30 seconds
-if (DS.leveltime - itemrespawntime[iquetail] < 30*35)
+if (DM.leveltime - itemrespawntime[iquetail] < 30*35)
 return;         
 
 mthing = itemrespawnque[iquetail];
@@ -3913,7 +3914,7 @@ iquetail = (iquetail+1)&(ITEMQUESIZE-1);
  * Most of the player structure stays unchanged
  *  between levels.
  */
-void SpawnPlayer (mapthing_t mthing)
+public void SpawnPlayer (mapthing_t mthing)
 {
 player_t       p;
 int     x;
@@ -3925,13 +3926,13 @@ mobj_t     mobj;
 int         i;
 
 // not playing?
-if (!DS.playeringame[mthing.type-1])
+if (!DM.playeringame[mthing.type-1])
 return;                 
   
-p = DS.players[mthing.type-1];
+p = DM.players[mthing.type-1];
 
 if (p.playerstate == PST_REBORN)
-DG.PlayerReborn (mthing.type-1);
+DM.PlayerReborn (mthing.type-1);
 
 x       = mthing.x << FRACBITS;
 y       = mthing.y << FRACBITS;
@@ -3960,11 +3961,11 @@ p.viewheight = VIEWHEIGHT;
 p.SetupPsprites ();
 
 // give all cards in death match mode
-if (DS.deathmatch)
+if (DM.deathmatch)
 for (i=0 ; i<NUMCARDS ; i++)
   p.cards[i] = true;
       
-if (mthing.type-1 == DS.consoleplayer)
+if (mthing.type-1 == DM.consoleplayer)
 {
 // wake up the status bar
 ST.Start ();
@@ -3991,11 +3992,11 @@ int     z;
 // count deathmatch start positions
 if (mthing.type == 11)
 {
-if (DS.deathmatch_p < 10/*DS.deathmatchstarts[10]*/)
+if (DM.deathmatch_p < 10/*DM.deathmatchstarts[10]*/)
 {
  // memcpy (deathmatch_p, mthing, sizeof(*mthing));
-    DS.deathmatchstarts[DS.deathmatch_p]=mthing.clone();
-  DS.deathmatch_p++;
+    DM.deathmatchstarts[DM.deathmatch_p]=mthing.clone();
+  DM.deathmatch_p++;
 }
 return;
 }
@@ -4004,23 +4005,23 @@ return;
 if (mthing.type <= 4)
 {
 // save spots for respawning in network games
-DS.playerstarts[mthing.type-1] = mthing;
-if (!DS.deathmatch)
+DM.playerstarts[mthing.type-1] = mthing;
+if (!DM.deathmatch)
   SpawnPlayer (mthing);
 
 return;
 }
 
 // check for apropriate skill level
-if (!DS.netgame && flags(mthing.options , 16) )
+if (!DM.netgame && flags(mthing.options , 16) )
 return;
   
-if (DS.gameskill == skill_t.sk_baby)
+if (DM.gameskill == skill_t.sk_baby)
 bit = 1;
-else if (DS.gameskill == skill_t.sk_nightmare)
+else if (DM.gameskill == skill_t.sk_nightmare)
 bit = 4;
 else
-bit = 1<<(DS.gameskill.ordinal()-1);
+bit = 1<<(DM.gameskill.ordinal()-1);
 
 if (!flags(mthing.options , bit) )
 return;
@@ -4036,11 +4037,11 @@ system.Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
    mthing.x, mthing.y);
   
 // don't spawn keycards and players in deathmatch
-if (DS.deathmatch && flags(mobjinfo[i].flags , MF_NOTDMATCH))
+if (DM.deathmatch && flags(mobjinfo[i].flags , MF_NOTDMATCH))
 return;
   
 // don't spawn any monsters if -nomonsters
-if (DS.nomonsters
+if (DM.nomonsters
 && ( i == mobjtype_t.MT_SKULL.ordinal()
    || flags(mobjinfo[i].flags , MF_COUNTKILL)) )
 {
@@ -4062,9 +4063,9 @@ mobj.spawnpoint = mthing;
 if (mobj.tics > 0)
 mobj.tics = 1 + (RND.P_Random () % mobj.tics);
 if (flags(mobj.flags , MF_COUNTKILL))
-DS.totalkills++;
+DM.totalkills++;
 if (flags(mobj.flags , MF_COUNTITEM))
-DS.totalitems++;
+DM.totalitems++;
   
 mobj.angle = ANG45 * (mthing.angle/45);
 if (flags(mthing.options , MTF_AMBUSH))
@@ -4143,7 +4144,7 @@ mobj_t   dest,
 mobjtype_t    type )
 {
 mobj_t th;
-int an; // angle_t
+long an; // angle_t
 int     dist;
 
 th = SpawnMobj (source.x,
@@ -4161,9 +4162,9 @@ if (flags(dest.flags , MF_SHADOW))
 an += (RND.P_Random()-RND.P_Random())<<20;  
 
 th.angle = an;
-an >>= ANGLETOFINESHIFT;
-th.momx = FixedMul (th.info.speed, finecosine[an]);
-th.momy = FixedMul (th.info.speed, finesine[an]);
+//an >>= ANGLETOFINESHIFT;
+th.momx = FixedMul (th.info.speed, finecosine(an));
+th.momy = FixedMul (th.info.speed, finesine(an));
 
 dist = AproxDistance (dest.x - source.x, dest.y - source.y);
 dist = dist / th.info.speed;
@@ -4253,7 +4254,7 @@ CheckMissileSpawn (th);
       mobj_t   source,
       int       damage )
     {
-        int    ang; // unsigned
+        long    ang; // unsigned
         int     saved;
         player_t   player;
         int thrust; // fixed_t
@@ -4271,7 +4272,7 @@ CheckMissileSpawn (th);
         }
         
         player = target.player;
-        if ((player!=null) && DS.gameskill == skill_t.sk_baby)
+        if ((player!=null) && DM.gameskill == skill_t.sk_baby)
         damage >>= 1;   // take half damage in trainer mode
             
 
@@ -4301,9 +4302,9 @@ CheckMissileSpawn (th);
             thrust *= 4;
         }
             
-        ang >>= ANGLETOFINESHIFT;
-        target.momx += FixedMul (thrust, finecosine[ang]);
-        target.momy += FixedMul (thrust, finesine[ang]);
+        //ang >>= ANGLETOFINESHIFT;
+        target.momx += FixedMul (thrust, finecosine(ang));
+        target.momy += FixedMul (thrust, finesine(ang));
         }
         
         // player specific
@@ -4354,7 +4355,7 @@ CheckMissileSpawn (th);
         
         temp = damage < 100 ? damage : 100;
 
-        if (player == DS.players[DS.consoleplayer]) ;
+        if (player == DM.players[DM.consoleplayer]) ;
             // TODO: I_Tactile (40,10,40+temp*2);
         }
         
@@ -4417,14 +4418,14 @@ CheckMissileSpawn (th);
             source.player.killcount++;    
 
         if (target.player!=null) ;
-           // TODO: source.player.frags[target.player-DS.players]++;
+           // TODO: source.player.frags[target.player-DM.players]++;
            // It's probably intended to increment the frags of source player vs target player. Lookup? 
         }
-        else if (!DS.netgame && ((target.flags & MF_COUNTKILL)!=0) )
+        else if (!DM.netgame && ((target.flags & MF_COUNTKILL)!=0) )
         {
         // count all monster deaths,
         // even those caused by other monsters
-        DS.players[0].killcount++;
+        DM.players[0].killcount++;
         }
         
         if (target.player!=null)
@@ -4440,8 +4441,8 @@ CheckMissileSpawn (th);
         target.player.playerstate = PST_DEAD;
         //TODO: DropWeapon (target.player); // in PSPR
 
-        if (target.player == DS.players[DS.consoleplayer]
-            && DS.automapactive)
+        if (target.player == DM.players[DM.consoleplayer]
+            && DM.automapactive)
         {
             // don't die in auto map,
             // switch view prior to dying
@@ -4779,7 +4780,7 @@ mobj_t  thing )
   
     case 52:
   // EXIT!
-  DG.ExitLevel ();
+  DM.ExitLevel ();
   break;
   
     case 53:
@@ -4862,7 +4863,7 @@ mobj_t  thing )
   
     case 124:
   // Secret EXIT
-  DG.SecretExitLevel ();
+  DM.SecretExitLevel ();
   break;
       
     case 125:
@@ -5159,7 +5160,7 @@ mobj_t  thing )
         
         nofit = true;
 
-        if (crushchange && !flags(DS.leveltime,3) )
+        if (crushchange && !flags(DM.leveltime,3) )
         {
         DamageMobj( thing,null,null,10);
 
@@ -5360,7 +5361,7 @@ mobj_t  thing )
      return true;
      
      // monsters don't stomp things except on boss level
-     if ( (tmthing.player==null) && (DS.gamemap != 30))
+     if ( (tmthing.player==null) && (DM.gamemap != 30))
      return false;   
          
      DamageMobj (thing, tmthing, tmthing, 10000); // in interaction
@@ -5576,14 +5577,14 @@ mobj_t  thing )
         y = trace.y + FixedMul (trace.dy, frac);
         z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
-        if (li.frontsector.ceilingpic == DS.skyflatnum)
+        if (li.frontsector.ceilingpic == DM.skyflatnum)
         {
             // don't shoot the sky!
             if (z > li.frontsector.ceilingheight)
             return false;
             
             // it's a sky hack wall
-            if  (li.backsector!=null && li.backsector.ceilingpic == DS.skyflatnum)
+            if  (li.backsector!=null && li.backsector.ceilingpic == DM.skyflatnum)
             return false;       
         }
 
@@ -5957,7 +5958,7 @@ mobj_t  thing )
         boolean         side;
 
         // all angles
-        int     lineangle, moveangle,deltaangle;
+        long     lineangle, moveangle,deltaangle;
         
         // fixed_t
         int     movelen,  newlen;
@@ -5989,14 +5990,14 @@ mobj_t  thing )
         deltaangle += ANG180;
         //  system.Error ("SlideLine: ang>ANG180");
 
-        lineangle >>>= ANGLETOFINESHIFT;
-        deltaangle >>>= ANGLETOFINESHIFT;
+        //lineangle >>>= ANGLETOFINESHIFT;
+        //deltaangle >>>= ANGLETOFINESHIFT;
         
         movelen = AproxDistance (tmxmove, tmymove);
-        newlen = FixedMul (movelen, finecosine[deltaangle]);
+        newlen = FixedMul (movelen, finecosine(deltaangle));
 
-        tmxmove = FixedMul (newlen, finecosine[lineangle]); 
-        tmymove = FixedMul (newlen, finesine[lineangle]);   
+        tmxmove = FixedMul (newlen, finecosine(lineangle)); 
+        tmymove = FixedMul (newlen, finesine(lineangle));   
     }
 
 
@@ -6237,7 +6238,7 @@ mobj_t  thing )
       // explode a missile
       if (ceilingline!=null &&
           ceilingline.backsector!=null &&
-          ceilingline.backsector.ceilingpic == DS.skyflatnum)
+          ceilingline.backsector.ceilingpic == DM.skyflatnum)
       {
           // Hack to prevent missiles exploding
           // against the sky.
@@ -6533,7 +6534,7 @@ mobj_t  thing )
           case 11:
        // Exit level
               SW.ChangeSwitchTexture(line,0);
-       DG.ExitLevel ();
+       DM.ExitLevel ();
        break;
        
           case 14:
@@ -6605,7 +6606,7 @@ mobj_t  thing )
           case 51:
        // Secret EXIT
               SW.ChangeSwitchTexture(line,0);
-       DG.SecretExitLevel ();
+       DM.SecretExitLevel ();
        break;
        
           case 55:
@@ -7383,29 +7384,29 @@ mobj_t  thing )
      int     i;
      
      // run the tic
-     if (DS.paused)
+     if (DM.paused)
      return;
          
      // pause if in menu and at least one tic has been run
-     if ( !DS.netgame
-      && DS.menuactive
-      && !DS.demoplayback
-      && DS.players[DS.consoleplayer].viewz != 1)
+     if ( !DM.netgame
+      && DM.menuactive
+      && !DM.demoplayback
+      && DM.players[DM.consoleplayer].viewz != 1)
      {
      return;
      }
      
          
      for (i=0 ; i<MAXPLAYERS ; i++)
-     if (DS.playeringame[i])
-         DS.players[i].PlayerThink ();
+     if (DM.playeringame[i])
+         DM.players[i].PlayerThink ();
              
      RunThinkers ();
      SPECS.UpdateSpecials (); // In specials. Merge?
      RespawnSpecials ();
 
      // for par times
-     DS.leveltime++;    
+     DM.leveltime++;    
   }
   
   /**
@@ -7475,18 +7476,18 @@ mobj_t  thing )
       // See if -TIMER needs to be used.
       SPECS.levelTimer = false;
       
-      i = M.CheckParm("-avg");
-      if (eval(i) && DS.deathmatch)
+      i = DM.CheckParm("-avg");
+      if (eval(i) && DM.deathmatch)
       {
           SPECS.levelTimer = true;
           SPECS.levelTimeCount = 20 * 60 * 35;
       }
       
-      i = M.CheckParm("-timer");
-      if (eval(i) && DS.deathmatch)
+      i = DM.CheckParm("-timer");
+      if (eval(i) && DM.deathmatch)
       {
       int time;
-      time = Integer.parseInt(M.myargv[i+1]) * 60 * 35;
+      time = Integer.parseInt(DM.myargv[i+1]) * 60 * 35;
       SPECS.levelTimer = true;
       SPECS.levelTimeCount = time;
       }
@@ -7528,7 +7529,7 @@ mobj_t  thing )
           break;
         case 9:
           // SECRET SECTOR
-          DS.totalsecret++;
+          DM.totalsecret++;
           break;
           
         case 10:
@@ -7734,7 +7735,7 @@ mobj_t  thing )
       if (plat.type == plattype_e.raiseAndChange
           || plat.type == plattype_e.raiseToNearestAndChange)
       {
-          if (!flags(DS.leveltime,7))
+          if (!flags(DM.leveltime,7))
           ; //TODO: S_StartSound((mobj_t *)&plat.sector.soundorg, sfx_stnmov);
       }
       
@@ -7795,6 +7796,14 @@ mobj_t  thing )
         case  in_stasis:
       break;
       }
+  }
+  
+  public Actions(DoomMain DM){
+            this.DM=DM;
+            this.R=DM.R;
+            this.W=DM.W;
+            this.AM=DM.AM;
+            this.SW=new Switches();
   }
   
 }

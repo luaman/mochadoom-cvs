@@ -117,9 +117,9 @@ public class MapUtils {
       return (expr?1:0);
   }
   
-  /** Returns 1 for true and 0 for false. Useful, given 
-   * the amount of "arithmetic" logical functions in 
-   * legacy code.
+  /** Returns 1 for non-null and 0 for null objects.
+   * Useful, given the amount of "existential" logical 
+   * functions in legacy code.
    * 
    *  Synonymous with (expr!=null);
    * 

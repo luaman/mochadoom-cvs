@@ -2,7 +2,7 @@ package data;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.java,v 1.2 2010/07/22 15:37:53 velktron Exp $
+// $Id: dstrings.java,v 1.3 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,13 @@ package data;
 // GNU General Public License for more details.
 //
 // $Log: dstrings.java,v $
+// Revision 1.3  2010/09/22 16:40:02  velktron
+// MASSIVE changes in the status passing model.
+// DoomMain and DoomGame unified.
+// Doomstat merged into DoomMain (now status and game functions are one).
+//
+// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
 // Revision 1.2  2010/07/22 15:37:53  velktron
 // MAJOR changes in Menu system.
 //
@@ -43,18 +50,21 @@ import static doom.englsh.*;
 
 public class dstrings{
 
-//public static const char rcsid[] = "$Id: dstrings.java,v 1.2 2010/07/22 15:37:53 velktron Exp $";
+//public static const char rcsid[] = "$Id: dstrings.java,v 1.3 2010/09/22 16:40:02 velktron Exp $";
 
 
     // Misc. other strings.
     public static final String SAVEGAMENAME=    "doomsav";
-    //
-    // File locations,
-    //  relative to current position.
-    // Path names are OS-sensitive.
-    //
-    public static final String DEVMAPS= "devmaps";
-    public static final String DEVDATA ="devdata";
+    
+    /** File locations,  relative to current position.
+     * Path names are OS-sensitive. 
+     * Only really used with the -shdev command line parameter.
+     * 
+     * MAES: shouldn't those need path separator characters? :-S
+     */
+    
+    
+    public static final String DEVMAPS= "devmaps", DEVDATA ="devdata";
 
 
     // Not done in french?

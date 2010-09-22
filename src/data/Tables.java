@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.5 2010/09/21 15:53:37 velktron Exp $
+// $Id: Tables.java,v 1.6 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,13 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.6  2010/09/22 16:40:02  velktron
+// MASSIVE changes in the status passing model.
+// DoomMain and DoomGame unified.
+// Doomstat merged into DoomMain (now status and game functions are one).
+//
+// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
 // Revision 1.5  2010/09/21 15:53:37  velktron
 // Split the Map ...somewhat...
 //
@@ -76,6 +83,8 @@ public final class Tables extends SineCosine{
       
   public static final int FINEANGLES  =    8192;
   public static final int FINEMASK =       (FINEANGLES-1);
+  /** Mod long angle_t's with this value to cut off rollover */
+  public static final long ANGLEMODULE = 0x100000000L;
   
   // Maes: we have to procedurally generate finesine/finecosine, else we run into a Java static limit.
   // Either that, or I split the files. Guess what I did.
@@ -84,23 +93,41 @@ public final class Tables extends SineCosine{
   /** 0x100000000 to 0x2000 */
   public static final int ANGLETOFINESHIFT =   19;
   
-/** Binary Angle Measurement.
+/* Binary Angle Measurement.
  * Some maths: their definition means that a range of 2pi is actually
  * mapped to 2^32 values!!! But the lookup tables are only 8K (2^13)
  * long (for sine/cosine), which means that we're 19 bits too precise
  * -> ergo, >>ANGLETOFINESHIFT must be applied.
  * 
  * Also, the original angle_t type was "unsigned int", so we should be
- * using longs here. However, as BAM is used only after shifting, using ints
- * doesn't cause a problem for LUT access.
+ * using longs here. However, as BAM is used only after shifting, so 
+ * using ints doesn't cause a problem for LUT access.
  *  
- * Some problems may arise with comparisons: ANG270 is supposed to be larger not
- * only than ANG180, but also from ANG45, which is clearly a problem since Doom 
- * doesn't use signed angles.
+ * However, some problems may arise with comparisons and ordinary arithmetic: 
+ * e.g. ANG270 is supposed to be larger not only than ANG180, but also from 
+ * ANG45, which does not hold true if those constants were stored as ints.
+ * 
+ * As a rule of thumb, whenever you need to store JUST a BAM index, then 
+ * ints are ok (actually, you'll have to cast down to int anyway).
+ * 
+ * Whenever you need to add or compare angles directly however, you need 
+ * longs. Furthermore, you must account for possible rollovers by modding
+ * with 0x100000000 or else long ints will store angles exceeding 360 degrees!
+ * Under no circumstances the value actually stored in the "long angles" should
+ * exceed 0xFFFFFFFF.
+ * 
+ * An example: comparing any two long angles directly is OK, provided they were
+ * constructed correctly.
+ * 
+ * Adding, subtracting, multiplying etc. with two or more angles however requires
+ * rollover compensation (e.g. result=(a+b+c) is wrong, result=(a+b+c)%0xFFFFFFFF
+ * is correct and will produce an angle you can "trust".
  * 
  *  So, no adaptation needed?
  * 
  */
+  
+  /** Doom angle constants. */
   
 public static final long ANG45 =  0x20000000L,
                         ANG90  =     0x40000000L,
@@ -947,14 +974,16 @@ public static final int finesine(int angle){
     return finesine[angle>>>ANGLETOFINESHIFT];
 }
 
-/** Use this to get a value from the finesine table. It will be automatically shifte, 
- *  Equivalent to finesine[angle>>>ANGLETOFINESHIFT]
+/** Use this to get a value from the finesine table using a long argument.
+ * It will automatically shift, apply rollover module and cast.
+ * 
+ * Equivalent to finesine[(int) ((angle>>ANGLETOFINESHIFT)%ANGLEMODULE)];
  * 
  * @param angle in BAM units
  * @return
  */
 public static final int finesine(long angle){
-    return finesine[(int) (angle>>ANGLETOFINESHIFT)];
+    return finesine[(int) ((angle>>ANGLETOFINESHIFT)%ANGLEMODULE)];
 }
 
 /** Use this to get a value from the finecosine table. It will be automatically shifte, 
@@ -966,13 +995,15 @@ public static final int finecosine(int angle){
     return finecosine[angle>>>ANGLETOFINESHIFT];
 }
 
-/** Use this to get a value from the finecosine table. It will be automatically shifte, 
- * Equivalent to finecosine[angle>>>ANGLETOFINESHIFT]
+/** Use this to get a value from the finecosine table. 
+ * It will automatically shift, apply rollover module and cast.
+ *  
+ * Equivalent to finecosine[(int) ((angle>>ANGLETOFINESHIFT)%ANGLEMODULE)]
  * @param angle in BAM units
  * @return
  */
 public static final int finecosine(long angle){
-    return finecosine[(int) (angle>>ANGLETOFINESHIFT)];
+    return finecosine[(int) ((angle>>ANGLETOFINESHIFT)%ANGLEMODULE)];
 }
 
 private Tables(){

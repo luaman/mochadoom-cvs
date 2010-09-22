@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: random.java,v 1.3 2010/09/10 17:35:49 velktron Exp $
+// $Id: random.java,v 1.4 2010/09/22 16:40:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,13 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: random.java,v $
+// Revision 1.4  2010/09/22 16:40:02  velktron
+// MASSIVE changes in the status passing model.
+// DoomMain and DoomGame unified.
+// Doomstat merged into DoomMain (now status and game functions are one).
+//
+// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
 // Revision 1.3  2010/09/10 17:35:49  velktron
 // DoomGame, Menu, renderers
 //
@@ -87,13 +94,13 @@ public int M_Random ()
     return rndtable[rndindex];
 }
 
-public void M_ClearRandom ()
+public void ClearRandom ()
 {
     rndindex = prndindex = 0;
 }
 
 public random(){
-    this.M_ClearRandom();
+    this.ClearRandom();
 }
 
 }

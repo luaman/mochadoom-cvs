@@ -1,6 +1,5 @@
 package doom;
 
-import g.DoomGame;
 import i.system;
 
 import java.util.Arrays;
@@ -218,7 +217,7 @@ public class player_t /*extends mobj_t */
             throws CloneNotSupportedException {
         return (player_t) super.clone();
     }
-
+        
     /** 16 pixels of bob */
     private static int MAXBOB = 0x100000;
 
@@ -302,8 +301,8 @@ public class player_t /*extends mobj_t */
         else
             num = clipammo[ammo] / 2;
 
-        if (DS.gameskill == skill_t.sk_baby
-                || DS.gameskill == skill_t.sk_nightmare) {
+        if (DM.gameskill == skill_t.sk_baby
+                ||DM.gameskill == skill_t.sk_nightmare) {
             // give double ammo in trainer mode,
             // you'll need in nightmare
             num <<= 1;
@@ -373,7 +372,7 @@ public class player_t /*extends mobj_t */
         boolean gaveweapon;
         int weapon = weapn.ordinal();
 
-        if (DS.netgame && (DS.deathmatch != true) // ???? was "2"
+        if (DM.netgame && (DM.deathmatch != true) // ???? was "2"
                 && !dropped) {
             // leave placed weapons forever on net games
             if (weaponowned[weapon])
@@ -382,13 +381,13 @@ public class player_t /*extends mobj_t */
             bonuscount += BONUSADD;
             weaponowned[weapon] = true;
 
-            if (DS.deathmatch)
+            if (DM.deathmatch)
                 GiveAmmo(weaponinfo[weapon].ammo, 5);
             else
                 GiveAmmo(weaponinfo[weapon].ammo, 2);
             pendingweapon = weapn;
 
-            if (this == DS.players[DS.consoleplayer])
+            if (this ==DM.players[DM.consoleplayer])
                 // TODO: S_StartSound (null, sfx_wpnup);
                 return false;
         }
@@ -525,14 +524,14 @@ public class player_t /*extends mobj_t */
           case 5:
         // HELLSLIME DAMAGE
         if (powers[pw_ironfeet]==0)
-            if (!flags(DS.leveltime,0x1f))
+            if (!flags(DM.leveltime,0x1f))
                 P.DamageMobj (mo,null, null, 10);
         break;
         
           case 7:
         // NUKAGE DAMAGE
         if (powers[pw_ironfeet]==0)
-            if (!flags(DS.leveltime,0x1f))
+            if (!flags(DM.leveltime,0x1f))
                 P.DamageMobj (mo, null, null, 5);
         break;
         
@@ -543,7 +542,7 @@ public class player_t /*extends mobj_t */
         if (!eval(powers[pw_ironfeet])
             || (RND.P_Random()<5) )
         {
-            if (!flags(DS.leveltime,0x1f))
+            if (!flags(DM.leveltime,0x1f))
             P.DamageMobj (mo, null, null, 20);
         }
         break;
@@ -558,11 +557,11 @@ public class player_t /*extends mobj_t */
         // EXIT SUPER DAMAGE! (for E1M8 finale)
         cheats &= ~CF_GODMODE;
 
-        if (!flags(DS.leveltime,0x1f))
+        if (!flags(DM.leveltime,0x1f))
             P.DamageMobj (mo, null, null, 20);
 
         if (health[0] <= 10)
-            G.ExitLevel();
+            DM.ExitLevel();
         break;
                 
           default:
@@ -611,7 +610,7 @@ public void CalcHeight ()
   return;
   }
       
-  angle = (FINEANGLES/20*DS.leveltime)&FINEMASK;
+  angle = (FINEANGLES/20*DM.leveltime)&FINEMASK;
   bob = FixedMul ( bob/2, finesine[angle]);
 
   
@@ -804,8 +803,8 @@ SetPsprite
             
         // Let's say that we don't know jack.
         id=-1;
-            for (int i=0;i<DS.players.length;i++){
-                if (this==DS.players[i]) id=i;
+            for (int i=0;i<DM.players.length;i++){
+                if (this==DM.players[i]) id=i;
             }
         return id;
     }
@@ -815,12 +814,11 @@ SetPsprite
     private boolean onground;
 
     /** Probably doomguy needs to know what the fuck is going on */
-    private doomstat DS;
+    private DoomMain DM;
     private Actions P;
     private RendererState R;
     private random RND;
-    private DoomGame G;
-    	
+        	
     /* psprnum_t enum */
     public static int ps_weapon=0,
         ps_flash=1,
@@ -906,10 +904,10 @@ SetPsprite
 
         swing = bob;
 
-        angle = (FINEANGLES/70*DS.leveltime)&FINEMASK;
+        angle = (FINEANGLES/70*DM.leveltime)&FINEMASK;
         swingx = FixedMul ( swing, finesine[angle]);
 
-        angle = (FINEANGLES/70*DS.leveltime+FINEANGLES/2)&FINEMASK;
+        angle = (FINEANGLES/70*DM.leveltime+FINEANGLES/2)&FINEMASK;
         swingy = -FixedMul ( swingx, finesine[angle]);
     }
 
@@ -970,13 +968,13 @@ SetPsprite
         {
         if (weaponowned[weapontype_t.wp_plasma.ordinal()]
             && (this.ammo[ammotype_t.am_cell.ordinal()]!=0)
-            && (DS.gamemode != GameMode_t.shareware) )
+            && (DM.gamemode != GameMode_t.shareware) )
         {
             pendingweapon = weapontype_t.wp_plasma;
         }
         else if (weaponowned[weapontype_t.wp_supershotgun.ordinal()] 
              && this.ammo[ammotype_t.am_shell.ordinal()]>2
-             && (DS.gamemode == GameMode_t.commercial) )
+             && (DM.gamemode == GameMode_t.commercial) )
         {
             pendingweapon = weapontype_t.wp_supershotgun;
         }
@@ -1005,7 +1003,7 @@ SetPsprite
         }
         else if (weaponowned[weapontype_t.wp_bfg.ordinal()]
              && this.ammo[ammotype_t.am_cell.ordinal()]>40
-             && (DS.gamemode != GameMode_t.shareware) )
+             && (DM.gamemode != GameMode_t.shareware) )
         {
             pendingweapon = weapontype_t.wp_bfg;
         }
@@ -1120,7 +1118,7 @@ SetPsprite
          newweapon = weapontype_t.wp_chainsaw;
      }
      
-     if ( (DS.gamemode == GameMode_t.commercial)
+     if ( (DM.gamemode == GameMode_t.commercial)
          && newweapon == weapontype_t.wp_shotgun 
          && player.weaponowned[weapontype_t.wp_supershotgun.ordinal()]
          && player.readyweapon != weapontype_t.wp_supershotgun)
@@ -1136,7 +1134,7 @@ SetPsprite
          //  even if cheated.
          if ((newweapon != weapontype_t.wp_plasma
           && newweapon != weapontype_t.wp_bfg)
-         || (DS.gamemode != GameMode_t.shareware) )
+         || (DM.gamemode != GameMode_t.shareware) )
          {
          player.pendingweapon = newweapon;
          }
