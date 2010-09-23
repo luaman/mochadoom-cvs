@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.8 2010/09/22 16:40:02 velktron Exp $
+// $Id: HU.java,v 1.9 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.9  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.8  2010/09/22 16:40:02  velktron
 // MASSIVE changes in the status passing model.
 // DoomMain and DoomGame unified.
@@ -83,9 +86,9 @@ import m.Swap;
 import rr.UnifiedRenderer;
 import rr.patch_t;
 import w.WadLoader;
-import data.doomstat;
 import doom.DoomContext;
 import doom.DoomMain;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -99,7 +102,7 @@ import doom.player_t;
 
 public class HU {
     public final static String rcsid =
-        "$Id: HU.java,v 1.8 2010/09/22 16:40:02 velktron Exp $";
+        "$Id: HU.java,v 1.9 2010/09/23 07:31:11 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader wd;

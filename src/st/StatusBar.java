@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.10 2010/09/13 15:39:17 velktron Exp $
+// $Id: StatusBar.java,v 1.11 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.11  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.10  2010/09/13 15:39:17  velktron
 // Moving towards an unified gameplay approach...
 //
@@ -88,9 +91,10 @@ import p.mobj_t;
 import i.system;
 import m.cheatseq_t;
 import m.random;
-import data.doomstat;
 import data.sounds.musicenum_t;
 import doom.DoomContext;
+import doom.DoomMain;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -104,7 +108,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.10 2010/09/13 15:39:17 velktron Exp $";
+        "$Id: StatusBar.java,v 1.11 2010/09/23 07:31:11 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -114,7 +118,7 @@ public class StatusBar implements DoomStatusBarInterface {
 
     protected UnifiedRenderer R;
 
-    protected doomstat DS;
+    protected DoomMain DS;
 
     protected random RND;
 
@@ -627,7 +631,7 @@ public class StatusBar implements DoomStatusBarInterface {
     public StatusBar(DoomContext dC) {
         this.V=dC.V;
         this.W=dC.W;
-        this.DS=dC.DS;
+        this.DS=dC.DM;
         this.RND=dC.RND;
     }
 
@@ -826,7 +830,7 @@ public class StatusBar implements DoomStatusBarInterface {
                      */
                     mobj_t mo = DS.players[DS.consoleplayer].mo;
                     plyr.message =
-                        "ang=0x" + Integer.toHexString(mo.angle) + "0x"
+                        "ang=0x" + Long.toHexString(mo.angle) + "0x"
                                 + Integer.toHexString(mo.x) + "0x"
                                 + Integer.toHexString(mo.y);
                 }
@@ -907,8 +911,8 @@ public class StatusBar implements DoomStatusBarInterface {
      * > straight ahead
      */
     public void updateFaceWidget() {
-        int badguyangle; // angle_t
-        int diffang;
+        long badguyangle; // angle_t
+        long diffang;
 
         boolean doevilgrin;
 

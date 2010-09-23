@@ -24,12 +24,12 @@ import rr.vertex_t;
 import st.StatusBar;
 
 import data.Defines;
-import data.doomstat;
 import data.mapvertex_t;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -58,7 +58,7 @@ public class AutoMapTester {
     byte[] pal=palette.getBuffer().array();
     IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
         
-    doomstat ds = new doomstat();
+    DoomStatus ds = new DoomStatus();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;

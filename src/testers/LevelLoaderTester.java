@@ -4,11 +4,11 @@ import hu.HU;
 import p.LevelLoader;
 import utils.C2JUtils;
 import w.WadLoader;
-import data.doomstat;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.player_t;
 import doom.wbstartstruct_t;
 
@@ -30,7 +30,7 @@ public class LevelLoaderTester {
     System.out.println("NUm for E1M1: "+W.GetNumForName("E1M1"));
    int lump=W.GetNumForName("VERTEXES");
    System.out.println("NUm for VERTEXES: "+W.GetNumForName("VERTEXES"));
-    doomstat ds = new doomstat();
+    DoomStatus ds = new DoomStatus();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;

@@ -4,11 +4,11 @@ import p.LevelLoader;
 import rr.UnifiedRenderer;
 import utils.C2JUtils;
 import w.WadLoader;
-import data.doomstat;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.player_t;
 import doom.wbstartstruct_t;
 
@@ -27,7 +27,7 @@ public class RenderDataLoader {
     W.InitMultipleFiles(new String[] {"doom1.wad"});
     System.out.println("Total lumps read: "+W.numlumps);
 
-    doomstat ds = new doomstat();
+    DoomStatus ds = new DoomStatus();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;

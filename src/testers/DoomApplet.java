@@ -37,11 +37,11 @@ import w.WadLoader;
 import automap.DoomAutoMap;
 import automap.Map;
 import data.Defines;
-import data.doomstat;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
 import doom.ticcmd_t;
@@ -73,7 +73,7 @@ public class DoomApplet
     
     WadLoader W;
     BufferedRenderer V;
-    doomstat ds;
+    DoomStatus ds;
     DoomContext DC;
     StatusBar ST;
     Map AM;
@@ -220,7 +220,7 @@ public class DoomApplet
             */
         this.Init(pals);
         
-        ds=new doomstat();
+        ds=new DoomStatus();
         initDoomState(ds);
 
         DC=new DoomContext();
@@ -249,7 +249,7 @@ public class DoomApplet
         doStuff();
     }
 
-    private static void initDoomState(doomstat ds) {
+    private static void initDoomState(DoomStatus ds) {
         C2JUtils.initArrayOfObjects(ds.players,player_t.class);
         ds.gameepisode=1;
         ds.gamemap=1;

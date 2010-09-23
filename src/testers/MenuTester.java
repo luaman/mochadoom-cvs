@@ -21,10 +21,10 @@ import v.SimpleRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
 import data.Defines;
-import data.doomstat;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
 import doom.ticcmd_t;
@@ -41,7 +41,7 @@ public class MenuTester {
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
 
-    doomstat ds = new doomstat();
+    DoomStatus ds = new DoomStatus();
     patch_t help1=W.CachePatchName("TITLEPIC", PU_STATIC);
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);

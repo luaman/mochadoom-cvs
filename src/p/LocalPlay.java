@@ -3,7 +3,7 @@ package p;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LocalPlay.java,v 1.4 2010/09/13 23:09:51 velktron Exp $
+// $Id: LocalPlay.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -26,10 +26,10 @@ package p;
 import static data.Defines.*;
 import static data.Limits.*;	
 import rr.line_t;
-import data.doomstat;
 import data.mapthing_t;
 import data.mobjtype_t;
 import doom.ActionType;
+import doom.doomstat;
 import doom.player_t;
 import doom.thinker_t;
 	
@@ -229,7 +229,6 @@ import static p.mobj.*;
 import m.random;
 import w.WadLoader;
 import automap.DoomAutoMap;
-import data.doomstat;
 import data.state_t;
 import doom.acp1;
 import doom.ActionType;

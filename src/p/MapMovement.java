@@ -6,7 +6,7 @@ import static p.mobj.*;
 import static m.BBox.*;
 import m.random;
 import automap.DoomAutoMap;
-import data.doomstat;
+import doom.doomstat;
 
 import rr.Renderer;
 import rr.UnifiedRenderer;
@@ -15,7 +15,7 @@ import rr.subsector_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MapMovement.java,v 1.3 2010/09/13 15:39:17 velktron Exp $
+// $Id: MapMovement.java,v 1.4 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -30,6 +30,9 @@ import rr.subsector_t;
 // GNU General Public License for more details.
 //
 // $Log: MapMovement.java,v $
+// Revision 1.4  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.3  2010/09/13 15:39:17  velktron
 // Moving towards an unified gameplay approach...
 //
@@ -53,7 +56,7 @@ import static p.MapUtils.flags;
 
 public class MapMovement{
 
-public static final String rcsid = "$Id: MapMovement.java,v 1.3 2010/09/13 15:39:17 velktron Exp $";
+public static final String rcsid = "$Id: MapMovement.java,v 1.4 2010/09/23 07:31:11 velktron Exp $";
 
 
 /////////////////// STATUS ///////////////////

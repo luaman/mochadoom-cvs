@@ -1,19 +1,24 @@
 package doom;
 
+import automap.DoomAutoMap;
 import p.Actions;
 import p.LevelLoader;
 import p.UnifiedGameMap;
-import g.DoomGame;
+import f.Finale;
+import f.Wiper;
+import hu.HU;
 import i.SystemInterface;
-import data.doomstat;
 import m.DoomMenu;
+import m.Menu;
 import m.random;
 import rr.DoomRenderingContext;
 import rr.Renderer;
 import rr.UnifiedRenderer;
 import s.DoomSoundInterface;
 import st.DoomStatusBarInterface;
+import st.StatusBar;
 import v.DoomVideoRenderer;
+import w.EndLevel;
 import w.WadLoader;
 
 
@@ -40,5 +45,11 @@ public class DoomContext {
     public LevelLoader LL;
     public DoomMenu M;
     public Actions P;
-    public UnifiedRenderer R;    
+    public UnifiedRenderer R;
+    public HU HU;
+    public UnifiedRenderer RD;
+    public DoomAutoMap AM;
+    public Finale F;
+    public EndLevel WI;
+    public Wiper WIPE;
 }

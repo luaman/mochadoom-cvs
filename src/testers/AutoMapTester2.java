@@ -26,11 +26,12 @@ import w.WadLoader;
 import automap.DoomAutoMap;
 import automap.Map;
 import data.Defines;
-import data.doomstat;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomMain;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
 import doom.ticcmd_t;
@@ -74,7 +75,7 @@ public class AutoMapTester2 {
     
     //=V.getBufferedScreens(0,icm);>= numlumps
     
-    doomstat ds = new doomstat();
+    DoomMain ds = new DoomMain();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;
@@ -83,11 +84,10 @@ public class AutoMapTester2 {
     C2JUtils.initArrayOfObjects(ds.players,player_t.class);
 
     
-    DoomContext DC=new DoomContext();
-    DC.DS=ds;
-    DC.W=W;
-    DC.V=V;
-    DC.RND=new random();
+    ds.DM=ds;
+    ds.W=W;
+    ds.V=V;
+    ds.RND=new random();
     ds.players[0].cmd=new ticcmd_t();
     ds.players[0].itemcount=1337;
     ds.players[0].killcount=1337;
@@ -133,13 +133,13 @@ public class AutoMapTester2 {
     ds.wminfo.maxsecret=100;
     ds.wminfo.partime=28595;
 
-    StatusBar ST=new StatusBar(DC);
+    StatusBar ST=new StatusBar(ds);
     ST.Start();
-    LevelLoader PL=new LevelLoader(DC);
-    PL.SetupLevel(1, 1, 0, skill_t.sk_hard);
-    DC.LL=PL;
-    DC.ST=ST;
-    DoomAutoMap AM=new Map(DC);
+    LevelLoader LL=new LevelLoader(ds);
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
+    ds.LL=LL;
+    ds.ST=ST;
+    DoomAutoMap AM=new Map(ds);
     AM.Start();
     
     ST.Responder(new event_t('i'));

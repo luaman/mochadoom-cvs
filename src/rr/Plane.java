@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Plane.java,v 1.5 2010/09/21 15:53:37 velktron Exp $
+// $Id: Plane.java,v 1.6 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Plane.java,v $
+// Revision 1.6  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.5  2010/09/21 15:53:37  velktron
 // Split the Map ...somewhat...
 //
@@ -56,8 +59,8 @@ package rr;
 //-----------------------------------------------------------------------------
 
 import static data.Defines.*;
-import data.doomstat;
 import doom.DoomContext;
+import doom.DoomStatus;
 import i.system;
 import m.fixed_t;
 import static m.fixed_t.*;
@@ -67,12 +70,12 @@ import static data.Tables.*;
 
 public class Plane{
 public static final String
-rcsid = "$Id: Plane.java,v 1.5 2010/09/21 15:53:37 velktron Exp $";
+rcsid = "$Id: Plane.java,v 1.6 2010/09/23 07:31:11 velktron Exp $";
 
 private Draw DR;
 private Renderer R;
 private RendererData RD;
-private doomstat DS;
+private DoomStatus DS;
 private BSP BSP;
 
 public Plane (DoomRenderingContext DRC){
@@ -80,7 +83,7 @@ public Plane (DoomRenderingContext DRC){
     this.R=DRC.R;
 }
 
-doomstat ds;
+DoomStatus ds;
 
 planefunction_t		floorfunc;
 planefunction_t		ceilingfunc;

@@ -18,7 +18,6 @@ import g.DoomSaveGame;
 import hu.HU;
 import m.Menu;
 import m.random;
-import data.doomstat;
 import static doom.englsh.*;
 import data.dstrings;
 import data.mapthing_t;
@@ -59,7 +58,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.4 2010/09/22 16:40:02 velktron Exp $
+// $Id: DoomMain.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -74,6 +73,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.5  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.4  2010/09/22 16:40:02  velktron
 // MASSIVE changes in the status passing model.
 // DoomMain and DoomGame unified.
@@ -116,9 +118,9 @@ import static utils.C2JUtils.*;
 //
 //-----------------------------------------------------------------------------
 
-public class DoomMain extends doomstat {
+public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.4 2010/09/22 16:40:02 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.5 2010/09/23 07:31:11 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -2820,9 +2822,15 @@ public void DoomGame(DoomContext DC){
 }
 
 
-/** This is the constructor, not to be confused with the callable method.
- * Since this is a fully OO implementation, the constructor must also
- * create instances of the Refresh daemon, the Playloop, the Wadloader 
+
+
+public DoomMain(){
+    
+}
+
+/**
+ * Since this is a fully OO implementation, we need a way to create
+ * the instances of the Refresh daemon, the Playloop, the Wadloader 
  * etc. which however are now completely independent of each other,
  * and are typically only passed context when instantiated.
  * 
@@ -2834,7 +2842,7 @@ public void DoomGame(DoomContext DC){
  * 
  * */
 
-public DoomMain(){
+public void Init(){
     // Random number generator.
     this.RND=new random();
     
@@ -2848,8 +2856,6 @@ public DoomMain(){
     
     this.R=new UnifiedRenderer(this);
     this.P=new Actions(this);
-    
-    
 }
 
 }

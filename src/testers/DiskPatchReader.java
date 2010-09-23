@@ -7,8 +7,8 @@ import java.nio.ByteBuffer;
 
 import rr.patch_t;
 
-import data.doomstat;
 import data.Defines.GameMission_t;
+import doom.DoomStatus;
 
 import w.*;
 

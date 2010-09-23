@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Renderer.java,v 1.15 2010/09/13 23:09:51 velktron Exp $
+// $Id: Renderer.java,v 1.16 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Renderer.java,v $
+// Revision 1.16  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.15  2010/09/13 23:09:51  velktron
 // More "unified game state" work
 //
@@ -102,7 +105,7 @@ import p.Playfield;
 import i.system;
 import w.DoomBuffer;
 import w.WadLoader;
-import data.doomstat;
+import doom.doomstat;
 import doom.player_t;
 import doom.thinker_t;
 import m.fixed_t;

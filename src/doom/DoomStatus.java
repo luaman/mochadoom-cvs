@@ -1,4 +1,4 @@
-package data;
+package doom;
 
 import static data.Defines.*;
 import static data.Limits.*;
@@ -18,12 +18,13 @@ import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.EndLevel;
 import w.WadLoader;
-import doom.doomcom_t;
-import doom.doomdata_t;
-import doom.gameaction_t;
-import doom.player_t;
-import doom.ticcmd_t;
-import doom.wbstartstruct_t;
+import data.Defines;
+import data.mapthing_t;
+import data.Defines.GameMission_t;
+import data.Defines.GameMode_t;
+import data.Defines.Language_t;
+import data.Defines.gamestate_t;
+import data.Defines.skill_t;
 
 /**
  * We need globally shared data structures, for defining the global state
@@ -35,7 +36,7 @@ import doom.wbstartstruct_t;
  * document where everything is supposed to come from/reside.
  */
 
-public class doomstat {
+public class DoomStatus extends DoomContext {
 
     /** Command line parametersm, actually defined in d_main.c */
     public boolean nomonsters; // checkparm of -nomonsters
@@ -284,38 +285,6 @@ public class doomstat {
         C2JUtils.initArrayOfObjects(localcmds, ticcmd_t.class);
 
     }
-
-    // ////////////////////////STATUS /////////////////////////
-
-    public doomstat DS;
-
-    public HU HU;
-
-    public UnifiedRenderer RD;
-
-    public LevelLoader LL;
-
-    public Menu M;
-
-    public StatusBar ST;
-
-    public DoomAutoMap AM;
-
-    public Finale F;
-
-    public WadLoader W;
-
-    public Actions P;
-
-    public UnifiedRenderer R;
-
-    public DoomVideoRenderer V;
-
-    public random RND;
-
-    public EndLevel WI;
-
-    public Wiper WIPE;
 
     // MAES: Fields specific to DoomGame. A lot of them were
     // duplicated/externalized

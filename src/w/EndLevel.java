@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.4 2010/09/02 15:56:54 velktron Exp $
+// $Id: EndLevel.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.5  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.4  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -53,10 +56,10 @@ package w;
 
 import static data.Defines.*;
 import static data.Limits.*;
-import data.doomstat;
 import data.Defines.GameMode_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
 import doom.wbplayerstruct_t;
@@ -77,7 +80,7 @@ import v.DoomVideoRenderer;
 public class EndLevel{
 
     ////////////////// STATUS ///////////////////
-    private doomstat DS;
+    private DoomStatus DS;
     private DoomVideoRenderer V;
     private WadLoader W;
     private random RND;

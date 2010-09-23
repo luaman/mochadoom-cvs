@@ -11,10 +11,10 @@ import m.FixedFloat;
 
 import rr.vertex_t;
 
-import data.doomstat;
 import data.mapvertex_t;
 import data.Defines.GameMission_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 
 import utils.C2JUtils;
 import w.*;
@@ -43,7 +43,7 @@ public class WadLoaderTester {
     // another matter.
     ByteBuffer bb=W.CacheLumpName("SECTORS", 0).getBuffer();
     System.out.println("Num for THINGS: "+W.GetNumForName("THINGS"));
-    doomstat ds = new doomstat();
+    DoomStatus ds = new DoomStatus();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;

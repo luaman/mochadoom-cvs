@@ -24,11 +24,11 @@ import w.WadLoader;
 import automap.DoomAutoMap;
 import automap.Map;
 import data.Defines;
-import data.doomstat;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
 import doom.ticcmd_t;
@@ -57,7 +57,7 @@ public class AutoMapTester3 {
     V.setPalette(pal);
     V.mapInternalRasterToBufferedImage(bi);
     
-    doomstat ds = new doomstat();
+    DoomStatus ds = new DoomStatus();
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;

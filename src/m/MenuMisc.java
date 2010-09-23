@@ -6,10 +6,10 @@ import i.system;
 
 import java.util.Arrays;
 
-import data.doomstat;
 import doom.DoomContext;
 import doom.DoomInterface;
 import doom.DoomMain;
+import doom.DoomStatus;
 import rr.patch_t;
 import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
@@ -19,7 +19,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.5 2010/09/22 16:40:02 velktron Exp $
+// $Id: MenuMisc.java,v 1.6 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -35,6 +35,9 @@ import w.WadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.6  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.5  2010/09/22 16:40:02  velktron
 // MASSIVE changes in the status passing model.
 // DoomMain and DoomGame unified.
@@ -80,7 +83,7 @@ import w.WadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.5 2010/09/22 16:40:02 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.6 2010/09/23 07:31:11 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;

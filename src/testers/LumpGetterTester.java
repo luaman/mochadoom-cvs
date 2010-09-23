@@ -17,12 +17,12 @@ import m.random;
 
 import rr.vertex_t;
 
-import data.doomstat;
 import data.mapvertex_t;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
 import doom.ticcmd_t;

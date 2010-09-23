@@ -2,8 +2,8 @@ package m;
 
 import static data.Defines.*;
 import static doom.englsh.*;
-import data.doomstat;
 import doom.DoomContext;
+import doom.DoomStatus;
 
 
 /** default settings enum */

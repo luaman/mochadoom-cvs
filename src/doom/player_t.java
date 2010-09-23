@@ -6,7 +6,6 @@ import java.util.Arrays;
 
 import m.random;
 
-import data.doomstat;
 import data.state_t;
 import data.Defines.GameMode_t;
 import data.Defines.ammotype_t;

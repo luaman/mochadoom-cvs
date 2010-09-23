@@ -2,7 +2,7 @@ package p;
 
 import i.system;
 import m.random;
-import data.doomstat;
+import doom.doomstat;
 import doom.player_t;
 import static data.info.*;
 import static data.Defines.*;
@@ -17,7 +17,7 @@ import rr.side_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Enemies.java,v 1.4 2010/09/15 16:17:38 velktron Exp $
+// $Id: Enemies.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,6 +32,9 @@ import rr.side_t;
 // GNU General Public License for more details.
 //
 // $Log: Enemies.java,v $
+// Revision 1.5  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.4  2010/09/15 16:17:38  velktron
 // Arithmetic
 //
@@ -63,7 +66,7 @@ import rr.side_t;
 
 public class Enemies {
 
-  public static final String rcsid = "$Id: Enemies.java,v 1.4 2010/09/15 16:17:38 velktron Exp $";
+  public static final String rcsid = "$Id: Enemies.java,v 1.5 2010/09/23 07:31:11 velktron Exp $";
 
   private static int DI_EAST=0;
   private static int    DI_NORTHEAST=1;

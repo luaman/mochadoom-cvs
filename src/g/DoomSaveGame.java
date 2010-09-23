@@ -7,8 +7,8 @@ import static data.Limits.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import data.doomstat;
 import data.Defines.skill_t;
+import doom.DoomStatus;
 import doom.gameaction_t;
 
 import utils.C2JUtils;
@@ -153,7 +153,7 @@ public class DoomSaveGame
         
     } 
 
-     public void toStat(doomstat DS){
+     public void toStat(DoomStatus DS){
          System.arraycopy(this.playeringame, 0, DS.playeringame, 0, this.playeringame.length);
          DS.gameskill=skill_t.values()[this.gameskill];
          DS.gameepisode=this.gameepisode;
@@ -162,7 +162,7 @@ public class DoomSaveGame
          
      }
      
-     public void fromStat(doomstat DS){
+     public void fromStat(DoomStatus DS){
          System.arraycopy(DS.playeringame, 0, this.playeringame, 0, DS.playeringame.length);
          this.gameskill=DS.gameskill.ordinal();
          this.gameepisode=DS.gameepisode;

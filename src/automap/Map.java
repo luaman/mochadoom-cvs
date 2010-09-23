@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.13 2010/09/13 15:39:17 velktron Exp $
+// $Id: Map.java,v 1.14 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.14  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.13  2010/09/13 15:39:17  velktron
 // Moving towards an unified gameplay approach...
 //
@@ -87,8 +90,9 @@ import static data.SineCosine.*;
 import static data.Tables.*;
 import p.LevelLoader;
 import p.mobj_t;
-import data.doomstat;
 import doom.DoomContext;
+import doom.DoomMain;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -106,12 +110,12 @@ public class Map implements DoomAutoMap{
     
 DoomStatusBarInterface ST;
 WadLoader W;
-doomstat DS;
+DoomMain DM;
 DoomVideoRenderer V;
 LevelLoader P;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.13 2010/09/13 15:39:17 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.14 2010/09/23 07:31:11 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -210,7 +214,7 @@ public Map(DoomContext dC) {
     this.V=dC.V;
     this.W=dC.W;
     this.P=dC.LL;
-    this.DS=dC.DS;
+    this.DM=dC.DM;
     this.ST=dC.ST;
     
     // Some initializing...
@@ -546,7 +550,7 @@ public final  void initVariables()
 {
     int pnum;
 
-    DS.automapactive = true;
+    DM.automapactive = true;
     fb = V.getScreen(0);
 
     f_oldloc.x = MAXINT;
@@ -561,12 +565,12 @@ public final  void initVariables()
     m_h = FTOM(f_h);
 
     // find player to center on initially
-    if (!DS.playeringame[pnum = DS.consoleplayer])
+    if (!DM.playeringame[pnum = DM.consoleplayer])
     for (pnum=0;pnum<MAXPLAYERS;pnum++)
-        if (DS.playeringame[pnum])
+        if (DM.playeringame[pnum])
         break;
   
-    plr = DS.players[pnum];
+    plr = DM.players[pnum];
     m_x = plr.mo.x - m_w/2;
     m_y = plr.mo.y - m_h/2;
     this.changeWindowLoc();
@@ -652,7 +656,7 @@ public final  void Stop ()
     event_t st_notify_ex = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
 
     this.unloadPics();
-    DS.automapactive = false;
+    DM.automapactive = false;
     // TODO: could it be modified by the Responder?
     ST.Responder(st_notify_ex);
     stopped = true;
@@ -670,11 +674,11 @@ public final  void Start ()
 
     if (!stopped) Stop();
     stopped = false;
-    if (lastlevel != DS.gamemap || lastepisode != DS.gameepisode)
+    if (lastlevel != DM.gamemap || lastepisode != DM.gameepisode)
     {
     this.LevelInit();
-    lastlevel = DS.gamemap;
-    lastepisode = DS.gameepisode;
+    lastlevel = DM.gamemap;
+    lastepisode = DM.gameepisode;
     }
     this.initVariables();
     this.loadPics();
@@ -719,12 +723,12 @@ public final  boolean Responder ( event_t  ev )
 
     rc = false;
 
-    if (!DS.automapactive)
+    if (!DM.automapactive)
     {
     if (ev.type == evtype_t.ev_keydown && ev.data1 == AM_STARTKEY)
     {
         this.Start ();
-        DS.viewactive = false;
+        DM.viewactive = false;
         rc = true;
     }
     }
@@ -761,7 +765,7 @@ public final  boolean Responder ( event_t  ev )
         break;
       case AM_ENDKEY:
         bigstate = false;
-        DS.viewactive = true;
+        DM.viewactive = true;
         this.Stop ();
         break;
       case AM_GOBIGKEY:
@@ -795,7 +799,7 @@ public final  boolean Responder ( event_t  ev )
         cheatstate=false;
         rc = false;
     }
-    if (!DS.deathmatch && cheat_amap.CheckCheat((char) ev.data1))
+    if (!DM.deathmatch && cheat_amap.CheckCheat((char) ev.data1))
     {
         rc = false;
         cheating = (cheating+1) % 3;
@@ -904,7 +908,7 @@ private final  void updateLightLev()
 public final  void Ticker ()
 {
 
-    if (!DS.automapactive)
+    if (!DM.automapactive)
     return;
 
     amclock++;
@@ -1434,15 +1438,15 @@ public final  void drawPlayers()
     int     their_color = -1;
     int     color;
 
-    if (!DS.netgame)
+    if (!DM.netgame)
     {
     if (cheating!=0)
         drawLineCharacter
         (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-         plr.mo.angle, WHITE, plr.mo.x, plr.mo.y);
+         (int) plr.mo.angle, WHITE, plr.mo.x, plr.mo.y);
     else
         drawLineCharacter
-        (player_arrow, NUMPLYRLINES, 0, plr.mo.angle,
+        (player_arrow, NUMPLYRLINES, 0, (int) plr.mo.angle,
          WHITE, plr.mo.x, plr.mo.y);
     return;
     }
@@ -1450,12 +1454,12 @@ public final  void drawPlayers()
     for (int i=0;i<MAXPLAYERS;i++)
     {
     their_color++;
-    p = DS.players[i];
+    p = DM.players[i];
 
-    if ( (DS.deathmatch && !DS.singledemo) && p != plr)
+    if ( (DM.deathmatch && !DM.singledemo) && p != plr)
         continue;
 
-    if (!DS.playeringame[i])
+    if (!DM.playeringame[i])
         continue;
 
     if (p.powers[pw_invisibility]!=0)
@@ -1464,7 +1468,7 @@ public final  void drawPlayers()
         color = their_colors[their_color];
     
     drawLineCharacter
-        (player_arrow, NUMPLYRLINES, 0, p.mo.angle,
+        (player_arrow, NUMPLYRLINES, 0, (int) p.mo.angle,
          color, p.mo.x, p.mo.y);
     }
 
@@ -1484,7 +1488,7 @@ public final  void drawThings
     {
         drawLineCharacter
         (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-         16<<FRACBITS, t.angle, colors+lightlev, t.x, t.y);
+         16<<FRACBITS, (int) t.angle, colors+lightlev, t.x, t.y);
         t = (mobj_t)t.snext;
     }
     }
@@ -1519,7 +1523,7 @@ public final  void drawCrosshair(int color)
 
 public final  void Drawer ()
 {
-    if (!DS.automapactive) return;
+    if (!DM.automapactive) return;
     
     clearFB((byte)BACKGROUND); // BACKGROUND
     if (grid)

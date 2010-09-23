@@ -5,7 +5,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.1 2010/09/22 16:40:02 velktron Exp $
+//$Id: Main.java,v 1.2 2010/09/23 07:31:11 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import doom.DoomMain;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.2  2010/09/23 07:31:11  velktron
+//fuck
+//
 //Revision 1.1  2010/09/22 16:40:02  velktron
 //MASSIVE changes in the status passing model.
 //DoomMain and DoomGame unified.
@@ -36,11 +39,12 @@ import doom.DoomMain;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.1 2010/09/22 16:40:02 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.2 2010/09/23 07:31:11 velktron Exp $";
 
     public static void main(String[] argv){
 
           DoomMain D=new DoomMain();
+          D.Init();
 
           // Bump argcount +1 to maintain CheckParm behavior
           D.myargc = argv.length+1; 

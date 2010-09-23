@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BSP.java,v 1.5 2010/09/02 15:56:54 velktron Exp $
+// $Id: BSP.java,v 1.6 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: BSP.java,v $
+// Revision 1.6  2010/09/23 07:31:11  velktron
+// fuck
+//
 // Revision 1.5  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -52,7 +55,7 @@ package rr;
 
 import p.LevelLoader;
 import m.fixed_t;
-import data.doomstat;
+import doom.doomstat;
 
 /*
 #include "doomdef.h"
@@ -72,7 +75,7 @@ import data.doomstat;
 
 public class BSP{
 
-   public static final String rcsid = "$Id: BSP.java,v 1.5 2010/09/02 15:56:54 velktron Exp $";
+   public static final String rcsid = "$Id: BSP.java,v 1.6 2010/09/23 07:31:11 velktron Exp $";
 
     private doomstat DS;
     private LevelLoader LL;

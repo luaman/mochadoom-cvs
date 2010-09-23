@@ -24,13 +24,13 @@ import rr.spritedef_t;
 import rr.spriteframe_t;
 import v.DoomVideoRenderer;
 import w.WadLoader;
-import data.doomstat;
 import data.mobjtype_t;
 import data.state_t;
 import data.Defines.GameMode_t;
 import data.Defines.gamestate_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.gameaction_t;
@@ -38,7 +38,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.4 2010/09/22 16:40:02 velktron Exp $
+// $Id: Finale.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -59,10 +59,10 @@ import doom.gameaction_t;
 
 public class Finale {
 
-  public static final String rcsid = "$Id: Finale.java,v 1.4 2010/09/22 16:40:02 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.5 2010/09/23 07:31:11 velktron Exp $";
 
   DoomGameInterface G;
-  doomstat DS;
+  DoomStatus DS;
   DoomVideoRenderer V;
   HU HU;
   WadLoader W;
