@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.1 2010/09/23 15:11:57 velktron Exp $
+// $Id: DoomSystem.java,v 1.2 2010/09/23 20:36:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.2  2010/09/23 20:36:45  velktron
+// *** empty log message ***
+//
 // Revision 1.1  2010/09/23 15:11:57  velktron
 // A bit closer...
 //
@@ -53,7 +56,7 @@ import doom.ticcmd_t;
 import utils.PrintfFormat;
 import static data.Defines.TICRATE;
 
-public class DoomSystem implements DoomInterface{
+public class DoomSystem implements DoomSystemInterface{
  
 
 
@@ -62,6 +65,7 @@ static int	mb_used = 6;
 // Even the SYSTEM needs to know about DOOM!!!!
 protected DoomMain DM;
 
+@Override
 public void
 Tactile
 ( int	on,
@@ -75,20 +79,21 @@ Tactile
 
 public ticcmd_t	emptycmd;
 
-ticcmd_t	BaseTiccmd()
+@Override
+public ticcmd_t	BaseTiccmd()
 {
     return emptycmd;
 }
 
 
-
-public static int  GetHeapSize ()
+@Override
+public int  GetHeapSize ()
 {
     return mb_used*1024*1024;
 }
 
-
-public static byte[] ZoneBase (int	size)
+@Override
+public byte[] ZoneBase (int	size)
 {
     return (new byte[mb_used*1024*1024]);
 }
@@ -103,6 +108,7 @@ protected static long basetime=0;
  * returns time in 1/70th second tics
  */
 
+@Override
 public int  GetTime ()
 {
     long	tp;
@@ -118,7 +124,8 @@ public int  GetTime ()
 //
 //I_Quit
 //
-public static void I_Quit ()
+@Override
+public void Quit ()
 {
     // TODO:
  //DM.QuitNetGame ();
@@ -133,7 +140,7 @@ public static void I_Quit ()
 /**
  * I_Init
  */
-
+@Override
 public void Init ()
 {
     //TODO: InitSound();
@@ -141,7 +148,7 @@ public void Init ()
 }
 
 
-
+@Override
 public void WaitVBL(int count)
 {
     try {
@@ -151,15 +158,17 @@ public void WaitVBL(int count)
         e.printStackTrace();
     }                                
 }
-
+@Override
 public void BeginRead()
 {
 }
 
+@Override
 public void EndRead()
 {
 }
 
+@Override
 public void	AllocLow(int length)
 {
  ; // Dummy
@@ -168,8 +177,8 @@ public void	AllocLow(int length)
 //
 // I_Error
 //
-
-public static void Error (String error, Object ... args)
+@Override
+public void Error (String error, Object ... args)
 {
     //va_list	argptr;
 
@@ -192,43 +201,28 @@ public static void Error (String error, Object ... args)
     System.exit(-1);
 }
 
-
-
 @Override
-public void AdvanceDemo() {
-    // TODO Auto-generated method stub
+public void Error (String error)
+{
+    //va_list	argptr;
+
+    // Message first.
+    //va_start (argptr,error);
+    System.err.print("Error: ");
+    System.err.print(new PrintfFormat(error).sprintf());
+    System.err.print("\n");
+    //va_end (argptr);
+
+    //fflush( stderr );
+
+    // Shutdown. Here might be other errors.
+    //if (demorecording)
+	//G_CheckDemoStatus();
+
+    //D_QuitNetGame ();
+    //I_ShutdownGraphics();
     
-}
-
-
-@Override
-public void PageDrawer() {
-    // TODO Auto-generated method stub
-    
-}
-
-
-
-@Override
-public void PageTicker() {
-    // TODO Auto-generated method stub
-    
-}
-
-
-
-@Override
-public void PostEvent(event_t ev) {
-    // TODO Auto-generated method stub
-    
-}
-
-
-
-@Override
-public void StartTitle() {
-    // TODO Auto-generated method stub
-    
+    System.exit(-1);
 }
 
 public DoomSystem(){

@@ -4,7 +4,7 @@ import static data.Defines.RANGECHECK;
 import static data.Defines.SCREENHEIGHT;
 import static data.Defines.SCREENWIDTH;
 
-import i.DoomSystem;
+import i.DoomSystemInterface;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -183,7 +183,7 @@ public abstract class SoftwareVideoRenderer
                   || srcscrn>4
                   || destscrn>4)
           {
-              DoomSystem.Error ("Bad V_CopyRect");
+              DoomSystemInterface.Error ("Bad V_CopyRect");
           }
       } 
       this.MarkRect (destx, desty, width, height); 
@@ -313,7 +313,7 @@ public abstract class SoftwareVideoRenderer
       {
           System.err.print("Patch origin "+x+","+y +" exceeds LFB\n" );
           // No I_Error abort - what is up with TNT.WAD?
-          DoomSystem.Error("Bad V_DrawPatch in V_DrawPatchFlipped");
+          DoomSystemInterface.Error("Bad V_DrawPatch in V_DrawPatchFlipped");
           }
       }
    
@@ -444,7 +444,7 @@ public abstract class SoftwareVideoRenderer
        
   if (doRangeCheck(x, y, scrn))
       {
-      DoomSystem.Error("Bad V_DrawBlock");
+      DoomSystemInterface.Error("Bad V_DrawBlock");
       }
 
    
@@ -483,7 +483,7 @@ public abstract class SoftwareVideoRenderer
        
   if (RANGECHECK){
       if (doRangeCheck(x,y,scrn)){    
-      DoomSystem.Error ("Bad V_DrawBlock");
+      DoomSystemInterface.Error ("Bad V_DrawBlock");
       }
       
    }

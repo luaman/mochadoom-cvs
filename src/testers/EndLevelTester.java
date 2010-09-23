@@ -2,7 +2,7 @@ package testers;
 
 import static data.Defines.PU_STATIC;
 
-import i.DoomSystem;
+import i.DoomSystemInterface;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -102,7 +102,7 @@ public class EndLevelTester {
 
    // EL.Start(wbstartstruct);
     int a,b;
-    a=DoomSystem.GetTime();
+    a=DoomSystemInterface.GetTime();
     b=a;
     for (int i=0;i<2000;i++){
     	
@@ -121,7 +121,7 @@ public class EndLevelTester {
    // Do we still have time>
         
         while((b-a)==0) {
-        	b=DoomSystem.GetTime();
+        	b=DoomSystemInterface.GetTime();
         	}
        a=b;
     }

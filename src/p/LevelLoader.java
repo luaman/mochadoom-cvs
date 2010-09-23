@@ -10,7 +10,7 @@ import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
 import static data.info.sprnames; 
-import i.DoomSystem;
+import i.DoomSystemInterface;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -46,7 +46,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.7 2010/09/23 15:11:57 velktron Exp $
+// $Id: LevelLoader.java,v 1.8 2010/09/23 20:36:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,6 +61,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.8  2010/09/23 20:36:45  velktron
+// *** empty log message ***
+//
 // Revision 1.7  2010/09/23 15:11:57  velktron
 // A bit closer...
 //
@@ -118,7 +121,7 @@ public class LevelLoader {
     UnifiedRenderer R;
     Actions P;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.7 2010/09/23 15:11:57 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.8 2010/09/23 20:36:45 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -693,7 +696,7 @@ public int bmaporgy;
       }
       
       if (addedlines != sector.linecount)
-          DoomSystem.Error ("P_GroupLines: miscounted");
+          DoomSystemInterface.Error ("P_GroupLines: miscounted");
               
       // set the degenmobj_t to the middle of the bounding box
       sector.soundorg.x = (bbox[BOXRIGHT]+bbox[BOXLEFT])/2;

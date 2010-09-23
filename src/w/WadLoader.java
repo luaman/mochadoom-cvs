@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.17 2010/09/23 15:11:57 velktron Exp $
+// $Id: WadLoader.java,v 1.18 2010/09/23 20:36:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.18  2010/09/23 20:36:45  velktron
+// *** empty log message ***
+//
 // Revision 1.17  2010/09/23 15:11:57  velktron
 // A bit closer...
 //
@@ -113,10 +116,7 @@ import i.*;
 
 public class WadLoader {
 
-    // #include "doomtype.h"
-    // #include "m_swap.h"
-    // #include "i_system.h"
-    // #include "z_zone.h"
+	DoomSystemInterface I;
 
     //
     // GLOBALS
@@ -125,7 +125,8 @@ public class WadLoader {
     // Location of each lump on disk.
     public lumpinfo_t[] lumpinfo;
 
-    public WadLoader() {
+    public WadLoader(DoomSystemInterface I) {
+    	this.I=I;
         lumpinfo = new lumpinfo_t[0];
     }
 
@@ -165,7 +166,7 @@ public class WadLoader {
 
             return handle.length();
         } catch (Exception e) {
-            DoomSystem.Error("Error fstating");
+            I.Error("Error fstating");
             return -1;
         }
 
@@ -202,7 +203,7 @@ public class WadLoader {
         int pos = 0;
         while ((pos < path.length()) && (path.charAt(pos) != '.')) {
             if (++length == 9)
-                DoomSystem.Error("Filename base of %s >8 chars", path);
+                I.Error("Filename base of %s >8 chars", path);
 
             dest[pos] = (byte) path.charAt(pos);
             pos++;
@@ -262,7 +263,7 @@ public class WadLoader {
         try {
             handle = new DoomFile(filename, "r");
         } catch (Exception e) {
-            DoomSystem.Error(" couldn't open %s \n", filename);
+            I.Error(" couldn't open %s \n", filename);
             return;
         }
 
@@ -292,7 +293,7 @@ public class WadLoader {
             if (header.identification.compareTo("IWAD") != 0) {
                 // Homebrew levels?
                 if (header.identification.compareTo("PWAD") != 0) {
-                    DoomSystem.Error("Wad file %s doesn't have IWAD or PWAD id\n",
+                    I.Error("Wad file %s doesn't have IWAD or PWAD id\n",
                         filename);
                 }
 
@@ -333,7 +334,7 @@ public class WadLoader {
                 System.arraycopy(lumpinfo, 0, newlumpinfo, 0, oldsize);
             } catch (Exception e) {
                 // if (!lumpinfo)
-                i.DoomSystem.Error("Couldn't realloc lumpinfo");
+                I.Error("Couldn't realloc lumpinfo");
             }
 
             // Bye bye, old lumpinfo!
@@ -392,7 +393,7 @@ public class WadLoader {
         try {
             handle = new DoomFile(reloadname, "r");
         } catch (Exception e) {
-            DoomSystem.Error("W_Reload: couldn't open %s", reloadname);
+            I.Error("W_Reload: couldn't open %s", reloadname);
         }
 
         header.load(handle);
@@ -460,7 +461,7 @@ public class WadLoader {
         
 
         if (numlumps == 0)
-            DoomSystem.Error("W_InitFiles: no files found");
+            I.Error("W_InitFiles: no files found");
 
         // set up caching
         size = numlumps;
@@ -468,7 +469,7 @@ public class WadLoader {
         preloaded = new boolean[size];
 
         if (lumpcache == null)
-            DoomSystem.Error("Couldn't allocate lumpcache");
+            I.Error("Couldn't allocate lumpcache");
 
         this.InitLumpHash();
     }
@@ -605,7 +606,7 @@ public class WadLoader {
         		e.printStackTrace();
         	System.err.println("Error:" +name+ "not found");
         	System.err.println("Hash:" +Long.toHexString(name8.getLongHash(name)));
-        	DoomSystem.Error("W_GetNumForName: %s not found!", name);
+        	I.Error("W_GetNumForName: %s not found!", name);
         }
 
         return i;
@@ -617,7 +618,7 @@ public class WadLoader {
     //
     public int LumpLength(int lump) {
         if (lump >= numlumps)
-            i.DoomSystem.Error("W_LumpLength: %i >= numlumps", lump);
+            I.Error("W_LumpLength: %i >= numlumps", lump);
 
         return (int) lumpinfo[lump].size;
     }
@@ -635,7 +636,7 @@ public class WadLoader {
         DoomFile handle = null;
 
         if (lump >= this.numlumps) {
-            DoomSystem.Error("W_ReadLump: %i >= numlumps", lump);
+            I.Error("W_ReadLump: %i >= numlumps", lump);
             return;
         }
 
@@ -649,7 +650,7 @@ public class WadLoader {
                 handle = new DoomFile(this.reloadname, "r");
             } catch (Exception e) {
             	e.printStackTrace();
-                DoomSystem.Error("W_ReadLump: couldn't open %s", reloadname);
+                I.Error("W_ReadLump: couldn't open %s", reloadname);
             }
         } else
             handle = l.handle;
@@ -661,7 +662,7 @@ public class WadLoader {
         dest.put(buf);
 
         if (c < l.size)
-            DoomSystem.Error("W_ReadLump: only read %i of %i on lump %i", c,
+            I.Error("W_ReadLump: only read %i of %i on lump %i", c,
                 l.size, lump);
 
         if (l.handle == null)
@@ -669,7 +670,7 @@ public class WadLoader {
 
         // ??? I_EndRead ();
         } catch (Exception e) {
-            DoomSystem.Error("W_ReadLump: could not read lump "+ lump);
+            I.Error("W_ReadLump: could not read lump "+ lump);
             e.printStackTrace();
         }
 
@@ -687,7 +688,7 @@ public class WadLoader {
 
         
         if (lump >= numlumps) {
-            DoomSystem.Error("W_CacheLumpNum: %i >= numlumps", lump);
+            I.Error("W_CacheLumpNum: %i >= numlumps", lump);
         }
 
         // Nothing cached here...
@@ -753,7 +754,7 @@ public class WadLoader {
              throws IOException {
 
          if (lump >= numlumps) {
-             DoomSystem.Error("W_CacheLumpNum: %i >= numlumps", lump);
+             I.Error("W_CacheLumpNum: %i >= numlumps", lump);
          }
 
          // Nothing cached here...

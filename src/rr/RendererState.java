@@ -21,7 +21,7 @@ import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
-import i.DoomSystem;
+import i.DoomSystemInterface;
 import m.fixed_t;
 import rr.UnifiedRenderer.colfunc_t;
 import doom.player_t;
@@ -341,7 +341,7 @@ public abstract class RendererState {
 
            if (RANGECHECK) {
                if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
-                   DoomSystem
+                   DoomSystemInterface
                            .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
                                dc_x);
                }
@@ -405,7 +405,7 @@ public abstract class RendererState {
 
        if (RANGECHECK) {
            if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
-               DoomSystem
+               DoomSystemInterface
                        .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
                            dc_x);
        }
@@ -460,7 +460,7 @@ public abstract class RendererState {
        if (RANGECHECK) {
            if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
 
-               DoomSystem
+               DoomSystemInterface
                        .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
                            dc_x);
            }
@@ -524,7 +524,7 @@ public abstract class RendererState {
     if (dc_x >= SCREENWIDTH
     || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
     {
-    DoomSystem.Error ("R_DrawFuzzColumn: %i to %i at %i",
+    DoomSystemInterface.Error ("R_DrawFuzzColumn: %i to %i at %i",
          dc_yl, dc_yh, dc_x);
     }
  }

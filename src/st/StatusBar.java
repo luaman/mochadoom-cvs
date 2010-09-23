@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.12 2010/09/23 15:11:57 velktron Exp $
+// $Id: StatusBar.java,v 1.13 2010/09/23 20:36:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.13  2010/09/23 20:36:45  velktron
+// *** empty log message ***
+//
 // Revision 1.12  2010/09/23 15:11:57  velktron
 // A bit closer...
 //
@@ -91,7 +94,7 @@ import static doom.items.*;
 import static data.Tables.*;
 import p.mobj_t;
 
-import i.DoomSystem;
+import i.DoomSystemInterface;
 import m.cheatseq_t;
 import m.random;
 import data.sounds.musicenum_t;
@@ -111,7 +114,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.12 2010/09/23 15:11:57 velktron Exp $";
+        "$Id: StatusBar.java,v 1.13 2010/09/23 20:36:45 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -1535,7 +1538,7 @@ public class StatusBar implements DoomStatusBarInterface {
                 h = bi.p.height;
 
                 if (y - ST_Y < 0)
-                    DoomSystem.Error("updateBinIcon: y - ST_Y < 0");
+                    DoomSystemInterface.Error("updateBinIcon: y - ST_Y < 0");
 
                 if (bi.val)
                     V.DrawPatch(bi.x, bi.y, FG, bi.p);
@@ -1639,7 +1642,7 @@ public class StatusBar implements DoomStatusBarInterface {
                     h = this.p[this.oldinum].height;
 
                     if (y - ST_Y < 0)
-                        DoomSystem.Error("updateMultIcon: y - ST_Y < 0");
+                        DoomSystemInterface.Error("updateMultIcon: y - ST_Y < 0");
 
                     V.CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
                 }
@@ -1768,7 +1771,7 @@ public class StatusBar implements DoomStatusBarInterface {
             x = this.x - numdigits * w;
 
             if (this.y - ST_Y < 0) {
-                DoomSystem.Error("drawNum: n.y - ST_Y < 0");
+                DoomSystemInterface.Error("drawNum: n.y - ST_Y < 0");
             }
 
             V.CopyRect(x, this.y - ST_Y, BG, w * numdigits, h, x, n.y, FG);

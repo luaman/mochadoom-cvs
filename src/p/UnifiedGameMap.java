@@ -86,7 +86,7 @@ import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import automap.DoomAutoMap;
 import hu.HU;
-import i.DoomSystem;
+import i.DoomSystemInterface;
 import m.random;
 import rr.UnifiedRenderer;
 import rr.line_t;
@@ -132,6 +132,8 @@ public class UnifiedGameMap {
     StatusBar ST;
 
     HU HU;
+    
+    DoomSystemInterface I;
 
     // //////////// Internal singletons //////////////
     public Actions A;
@@ -1355,7 +1357,7 @@ public class UnifiedGameMap {
                     activeplats[i] = plat;
                     return;
                 }
-            DoomSystem.Error("P_AddActivePlat: no more plats!");
+            I.Error("P_AddActivePlat: no more plats!");
         }
 
         void RemoveActivePlat(plat_t plat) {
@@ -1368,7 +1370,7 @@ public class UnifiedGameMap {
 
                     return;
                 }
-            DoomSystem.Error("P_RemoveActivePlat: can't find plat!");
+            I.Error("P_RemoveActivePlat: can't find plat!");
         }
 
     }
@@ -1440,7 +1442,7 @@ public class UnifiedGameMap {
 
             if (RANGECHECK) {
                 if (num >= LL.numsubsectors)
-                    DoomSystem.Error("P_CrossSubsector: ss %i with numss = %i",
+                    I.Error("P_CrossSubsector: ss %i with numss = %i",
                         num, LL.numsubsectors);
             }
 
@@ -1645,7 +1647,7 @@ public class UnifiedGameMap {
             lstanim.numpics = lstanim.picnum - lstanim.basepic + 1;
 
             if (lstanim.numpics < 2)
-                DoomSystem.Error("P_InitPicAnims: bad cycle from %s to %s",
+                I.Error("P_InitPicAnims: bad cycle from %s to %s",
                     animdefs[i].startname, animdefs[i].endname);
 
             lstanim.speed = animdefs[i].speed;
@@ -1873,7 +1875,7 @@ public class UnifiedGameMap {
                 }
             }
 
-            DoomSystem.Error("P_StartButton: no button slots left!");
+            I.Error("P_StartButton: no button slots left!");
         }
 
         //
@@ -2514,7 +2516,7 @@ public class UnifiedGameMap {
             break;
 
         default:
-            DoomSystem.Error("P_SpecialThing: Unknown gettable thing");
+            I.Error("P_SpecialThing: Unknown gettable thing");
         }
 
         if ((special.flags & MF_COUNTITEM) != 0)

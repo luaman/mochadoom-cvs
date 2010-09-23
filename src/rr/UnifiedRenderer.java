@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import i.DoomSystem;
+import i.DoomSystemInterface;
 import p.LevelLoader;
 import p.UnifiedGameMap;
 import p.mobj_t;
@@ -47,6 +47,7 @@ public class UnifiedRenderer extends RendererState{
     public Things MyThings;
     private DoomVideoRenderer V;
     private UnifiedGameMap P;
+    private DoomSystemInterface I;
     
     
     public UnifiedRenderer(DoomMain DM) {
@@ -58,6 +59,7 @@ public class UnifiedRenderer extends RendererState{
       this.MyPlanes=new Planes();
       this.MyThings=new Things();
       this.V=DM.V;
+      this.I=DM.I;
       // Span functions
       DrawSpan=new R_DrawSpan();
       DrawSpanLow=new R_DrawSpanLow();
@@ -536,7 +538,7 @@ public class UnifiedRenderer extends RendererState{
       
   if (RANGECHECK){
       if (num>=LL.numsubsectors)
-      DoomSystem.Error ("R_Subsector: ss %i with numss = %i",
+      I.Error ("R_Subsector: ss %i with numss = %i",
            num,
            LL.numsubsectors);
   }
@@ -931,7 +933,7 @@ public class UnifiedRenderer extends RendererState{
               
       if( RANGECHECK){
           if (start >=viewwidth || start > stop)
-          DoomSystem.Error ("Bad R_RenderWallRange: %i to %i", start , stop);
+          I.Error ("Bad R_RenderWallRange: %i to %i", start , stop);
       }
           
           seg=drawsegs[ds_p];
@@ -1381,7 +1383,7 @@ public class UnifiedRenderer extends RendererState{
           || x2>=DM.viewwidth
           || y>DM.viewheight)
           {
-          DoomSystem.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+          I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
           }
       }
 
@@ -1495,7 +1497,7 @@ public class UnifiedRenderer extends RendererState{
           return check;
               
           if (lastvisplane == MAXVISPLANES)
-          DoomSystem.Error ("R_FindPlane: no more visplanes");
+          I.Error ("R_FindPlane: no more visplanes");
               
           lastvisplane++;
 
@@ -1633,15 +1635,15 @@ public class UnifiedRenderer extends RendererState{
                       
       if (RANGECHECK){
           if (ds_p > MAXDRAWSEGS)
-          DoomSystem.Error("R_DrawPlanes: drawsegs overflow (%i)",
+          I.Error("R_DrawPlanes: drawsegs overflow (%i)",
               ds_p );
           
           if (lastvisplane > MAXVISPLANES)
-              DoomSystem.Error(" R_DrawPlanes: visplane overflow (%i)",
+              I.Error(" R_DrawPlanes: visplane overflow (%i)",
                lastvisplane);
           
           if (lastopening  > MAXOPENINGS)
-              DoomSystem.Error( "R_DrawPlanes: opening overflow (%i)",
+              I.Error( "R_DrawPlanes: opening overflow (%i)",
                lastopening );
       }
 
@@ -1790,7 +1792,7 @@ public class UnifiedRenderer extends RendererState{
           int     r;
           
           if (frame >= 29 || rotation > 8)
-          DoomSystem.Error("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
+          I.Error("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
           
           if ((int)frame > maxframe)
           maxframe = frame;
@@ -1816,7 +1818,7 @@ public class UnifiedRenderer extends RendererState{
           if (sprtemp[frame].rotate == 0){
               // MAES: Explanation: we stumbled upon this lump before, and decided that this frame should have no more
               // rotations, hence we bomb.
-              DoomSystem.Error ("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump", spritename, 'A'+frame);
+              I.Error ("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump", spritename, 'A'+frame);
           }
 
           // This should NEVER happen!
@@ -1824,7 +1826,7 @@ public class UnifiedRenderer extends RendererState{
               //MAES: This can only happen if we decided that a sprite's frame was already decided to have
               // rotations, but now we stumble upon another occurence of "rotation 0". Or if you use naive
               // true/false evaluation for .rotate ( -1 is also an admissible value).
-              DoomSystem.Error ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);          
+              I.Error ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);          
           }
           
           // Rotation is acknowledged to be totally false at this point.
@@ -1839,14 +1841,14 @@ public class UnifiedRenderer extends RendererState{
           
           // the lump is only used for one rotation
           if (sprtemp[frame].rotate == 0)
-              DoomSystem.Error  ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);
+              I.Error  ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);
               
           sprtemp[frame].rotate = 1;
 
           // make 0 based
           rotation--;     
           if (sprtemp[frame].lump[rotation] != -1)
-              DoomSystem.Error  ("R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it",
+              I.Error  ("R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it",
                spritename, 'A'+frame, '1'+rotation);
               
           // Everything is OK, we can bless the temporary sprite's frame's rotation.
@@ -1967,7 +1969,7 @@ public class UnifiedRenderer extends RendererState{
               {
                 case -1:
               // no rotations were found for that frame at all
-              DoomSystem.Error ("R_InitSprites: No patches found for %s frame %c", namelist[i], frame+'A');
+              I.Error ("R_InitSprites: No patches found for %s frame %c", namelist[i], frame+'A');
               break;
               
                 case 0:
@@ -1978,7 +1980,7 @@ public class UnifiedRenderer extends RendererState{
               // must have all 8 frames
               for (rotation=0 ; rotation<8 ; rotation++)
                   if (sprtemp[frame].lump[rotation] == -1)
-                  DoomSystem.Error ("R_InitSprites: Sprite %s frame %c is missing rotations",
+                  I.Error ("R_InitSprites: Sprite %s frame %c is missing rotations",
                        namelist[i], frame+'A');
               break;
               }
@@ -2082,7 +2084,7 @@ public class UnifiedRenderer extends RendererState{
           texturecolumn = frac>>FRACBITS;
       if(RANGECHECK){
           if (texturecolumn < 0 || texturecolumn >= patch.width)
-              DoomSystem.Error ("R_DrawSpriteRange: bad texturecolumn");
+              I.Error ("R_DrawSpriteRange: bad texturecolumn");
       }
           column = patch.columns[texturecolumn];
           DrawMaskedColumn (column);
@@ -2156,13 +2158,13 @@ public class UnifiedRenderer extends RendererState{
           // decide which patch to use for sprite relative to player
       if(RANGECHECK){
           if (thing.sprite.ordinal() >= numsprites)
-          DoomSystem.Error ("R_ProjectSprite: invalid sprite number %i ",
+          I.Error ("R_ProjectSprite: invalid sprite number %i ",
                thing.sprite);
       }
           sprdef = sprites[thing.sprite.ordinal()];
       if(RANGECHECK){
           if ( (thing.frame&FF_FRAMEMASK) >= sprdef.numframes )
-          DoomSystem.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
+          I.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
                thing.sprite, thing.frame);
       }
           sprframe = sprdef.spriteframes[ thing.frame & FF_FRAMEMASK];
@@ -2314,13 +2316,13 @@ public class UnifiedRenderer extends RendererState{
           // decide which patch to use
       if(RANGECHECK){
           if ( psp.state.sprite.ordinal() >= numsprites)
-          DoomSystem.Error ("R_ProjectSprite: invalid sprite number %i ",
+          I.Error ("R_ProjectSprite: invalid sprite number %i ",
                psp.state.sprite);
           }
           sprdef = sprites[psp.state.sprite.ordinal()];
       if(RANGECHECK){
           if ( (psp.state.frame & FF_FRAMEMASK)  >= sprdef.numframes)
-          DoomSystem.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
+          I.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
                psp.state.sprite, psp.state.frame);
       }
           sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK ];
@@ -3154,7 +3156,7 @@ public void VideoErase(int ofs, int count) {
      if (RANGECHECK) {
          if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
                  || ds_y > SCREENHEIGHT) {
-             DoomSystem.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+             I.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
          }
          // dscount++;
      }
@@ -3196,7 +3198,7 @@ public void VideoErase(int ofs, int count) {
         if (RANGECHECK) {
             if ((ds_x2 < ds_x1) || (ds_x1 < 0) || ds_x2 >= SCREENWIDTH
                     || ds_y > SCREENHEIGHT) {
-                DoomSystem.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+                I.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
             }
             // dscount++;
         }
@@ -3778,7 +3780,7 @@ public void InitSkyMap ()
           
           if (texturecompositesize[texnum] > 0x10000-texture.height)
           {
-          DoomSystem.Error ("R_GenerateLookup: texture %i is >64k",
+          I.Error ("R_GenerateLookup: texture %i is >64k",
                texnum);
           }
           
@@ -3946,7 +3948,7 @@ public void InitSkyMap ()
       //System.out.print("Directory "+directory);
       offset = maptex.getInt(directory*4);
       if (offset > maxoff)
-          DoomSystem.Error("R_InitTextures: bad texture directory");
+          I.Error("R_InitTextures: bad texture directory");
      // System.out.print("offset "+offset+" \n");
       
       maptex.position(offset);
@@ -3969,7 +3971,7 @@ public void InitSkyMap ()
           patch[j].patch = patchlookup[mpatch[j].patch];
           if (patch[j].patch == -1)
           {
-          DoomSystem.Error ("R_InitTextures: Missing patch in texture %s",
+          I.Error ("R_InitTextures: Missing patch in texture %s",
                texture.name);
           }
       }       
@@ -4119,7 +4121,7 @@ public void InitSkyMap ()
         i = W.CheckNumForName(name);
 
         if (i == -1) {
-            DoomSystem.Error("R_FlatNumForName: %s not found", name);
+            I.Error("R_FlatNumForName: %s not found", name);
         }
         return i - firstflat;
     }
@@ -4158,7 +4160,7 @@ public void InitSkyMap ()
         i = CheckTextureNumForName(name);
 
         if (i == -1) {
-            DoomSystem.Error("R_TextureNumForName: %s not found", name);
+            I.Error("R_TextureNumForName: %s not found", name);
         }
         return i;
     }

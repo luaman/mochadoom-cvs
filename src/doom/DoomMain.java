@@ -1,6 +1,7 @@
 package doom;
 
 import i.DoomSystem;
+import i.DoomSystemInterface;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -58,7 +59,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.6 2010/09/23 15:11:57 velktron Exp $
+// $Id: DoomMain.java,v 1.7 2010/09/23 20:36:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -73,6 +74,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.7  2010/09/23 20:36:45  velktron
+// *** empty log message ***
+//
 // Revision 1.6  2010/09/23 15:11:57  velktron
 // A bit closer...
 //
@@ -123,7 +127,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.6 2010/09/23 15:11:57 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.7 2010/09/23 20:36:45 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -312,7 +316,7 @@ public void Display ()
     }
     
     // draw buffered stuff to screen
-    //TODO: I_UpdateNoBlit ();
+    // TODO: I.UpdateNoBlit ();
     
     // draw the view directly
     if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic))
@@ -377,13 +381,13 @@ public void Display ()
     // wipe update
     WIPE.EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
-    wipestart = DoomSystem.GetTime () - 1;
+    wipestart = I.GetTime () - 1;
 
     do
     {
 	do
 	{
-	    nowtime = DoomSystem.GetTime ();
+	    nowtime = I.GetTime ();
 	    tics = nowtime - wipestart;
 	} while (!eval(tics));
 	wipestart = nowtime;
@@ -429,12 +433,12 @@ public void DoomLoop ()
     while (true)
     {
 	// frame syncronous IO operations
-	// TODO: I.StartFrame ();                
+	I.StartFrame ();                
 	
 	// process one or more tics
 	if (singletics)
 	{
-	    // TODO: I.StartTic ();
+	    I.StartTic ();
 	    ProcessEvents ();
 	    BuildTiccmd (netcmds[consoleplayer][maketic%BACKUPTICS]);
 	    if (advancedemo)
@@ -654,7 +658,7 @@ public void IdentifyVersion ()
     home = System.getenv("HOME");
     if (NORMALUNIX){
     if (!eval(home))
-      DoomSystem.Error("Please set $HOME to your home directory");
+      I.Error("Please set $HOME to your home directory");
     }
     basedefault=home+"/.doomrc";   
 
@@ -1176,14 +1180,14 @@ public void Start ()
 	int i;
 	
 	if ( gamemode == GameMode_t.shareware)
-	    DoomSystem.Error("\nYou cannot -file with the shareware version. Register!");
+	    I.Error("\nYou cannot -file with the shareware version. Register!");
 
 	// Check for fake IWAD with right name,
 	// but w/o all the lumps of the registered version. 
 	if (gamemode == GameMode_t.registered)
 	    for (i = 0;i < 23; i++)
 		if (W.CheckNumForName(name[i])<0)
-		    DoomSystem.Error("\nThis is not the registered version.");
+		    I.Error("\nThis is not the registered version.");
     }
     
     // Iff additonal PWAD files are used, print modified banner
@@ -1573,7 +1577,7 @@ public void Start ()
           
      LL.SetupLevel (gameepisode, gamemap, 0, gameskill);    
      displayplayer = consoleplayer;      // view the guy you are playing    
-     starttime = DoomSystem.GetTime (); 
+     starttime = I.GetTime (); 
      gameaction = gameaction_t.ga_nothing; 
      //Z_CheckHeap ();
      
@@ -1777,7 +1781,7 @@ public void Start ()
          if (gametic > BACKUPTICS 
              && consistancy[i][buf] != cmd.consistancy) 
          { 
-             DoomSystem.Error ("consistency failure (%i should be %i)",
+             I.Error ("consistency failure (%i should be %i)",
                   cmd.consistancy, consistancy[i][buf]); 
          } 
          if (players[i].mo!=null) 
@@ -2007,7 +2011,7 @@ public void Start ()
       
      selections = deathmatch_p; 
      if (selections < 4) 
-     DoomSystem.Error ("Only %i deathmatch spots, 4 required", selections); 
+     I.Error ("Only %i deathmatch spots, 4 required", selections); 
   
      for (j=0 ; j<20 ; j++) 
      { 
@@ -2778,15 +2782,15 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
       
      if (timingdemo) 
      { 
-     endtime = DoomSystem.GetTime (); 
-     DoomSystem.Error ("timed %i gametics in %i realtics",gametic 
+     endtime = I.GetTime (); 
+     I.Error ("timed %i gametics in %i realtics",gametic 
           , endtime-starttime); 
      } 
       
      if (demoplayback) 
      { 
      if (singledemo) 
-         DoomSystem.I_Quit (); 
+         I.Quit (); 
               
     // Z_ChangeTag (demobuffer, PU_CACHE); 
      demoplayback = false; 
@@ -2808,7 +2812,7 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
      // TODO: M.WriteFile (demoname, demobuffer, demo_p); 
      //Z_Free (demobuffer); 
      demorecording = false; 
-     DoomSystem.Error ("Demo %s recorded",demoname); 
+     I.Error ("Demo %s recorded",demoname); 
      } 
       
      return false; 
@@ -2842,7 +2846,7 @@ public void Init(){
     // In primis, the video renderer.
     this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
     // In secundis, the Wad Loader
-    this.W=new WadLoader();
+    this.W=new WadLoader(this.I);
     // Then the menu...
     this.M=new Menu(this);
     this.LL=new LevelLoader(this);

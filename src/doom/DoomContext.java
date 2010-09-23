@@ -1,25 +1,20 @@
 package doom;
 
-import automap.DoomAutoMap;
-import p.Actions;
-import p.LevelLoader;
-import p.UnifiedGameMap;
 import f.Finale;
 import f.Wiper;
 import hu.HU;
-import i.SystemInterface;
+import i.DoomSystemInterface;
 import m.DoomMenu;
-import m.Menu;
 import m.random;
-import rr.DoomRenderingContext;
-import rr.Renderer;
+import p.Actions;
+import p.LevelLoader;
 import rr.UnifiedRenderer;
 import s.DoomSoundInterface;
 import st.DoomStatusBarInterface;
-import st.StatusBar;
 import v.DoomVideoRenderer;
 import w.EndLevel;
 import w.WadLoader;
+import automap.DoomAutoMap;
 
 
 /** Since a lot of stuff requires shared/global access to 
@@ -38,7 +33,7 @@ public class DoomContext {
     public DoomMain DM;
     public WadLoader W;
     public random RND;
-    public SystemInterface I;
+    public DoomSystemInterface I;
     public DoomSoundInterface S;
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
