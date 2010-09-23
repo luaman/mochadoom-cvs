@@ -1,6 +1,6 @@
 package doom;
 
-import i.system;
+import i.DoomSystem;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -58,7 +58,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
+// $Id: DoomMain.java,v 1.6 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -73,6 +73,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.6  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.5  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -120,7 +123,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.5 2010/09/23 07:31:11 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.6 2010/09/23 15:11:57 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -374,13 +377,13 @@ public void Display ()
     // wipe update
     WIPE.EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
-    wipestart = system.GetTime () - 1;
+    wipestart = DoomSystem.GetTime () - 1;
 
     do
     {
 	do
 	{
-	    nowtime = system.GetTime ();
+	    nowtime = DoomSystem.GetTime ();
 	    tics = nowtime - wipestart;
 	} while (!eval(tics));
 	wipestart = nowtime;
@@ -651,7 +654,7 @@ public void IdentifyVersion ()
     home = System.getenv("HOME");
     if (NORMALUNIX){
     if (!eval(home))
-      system.Error("Please set $HOME to your home directory");
+      DoomSystem.Error("Please set $HOME to your home directory");
     }
     basedefault=home+"/.doomrc";   
 
@@ -1173,14 +1176,14 @@ public void Start ()
 	int i;
 	
 	if ( gamemode == GameMode_t.shareware)
-	    system.Error("\nYou cannot -file with the shareware version. Register!");
+	    DoomSystem.Error("\nYou cannot -file with the shareware version. Register!");
 
 	// Check for fake IWAD with right name,
 	// but w/o all the lumps of the registered version. 
 	if (gamemode == GameMode_t.registered)
 	    for (i = 0;i < 23; i++)
 		if (W.CheckNumForName(name[i])<0)
-		    system.Error("\nThis is not the registered version.");
+		    DoomSystem.Error("\nThis is not the registered version.");
     }
     
     // Iff additonal PWAD files are used, print modified banner
@@ -1570,7 +1573,7 @@ public void Start ()
           
      LL.SetupLevel (gameepisode, gamemap, 0, gameskill);    
      displayplayer = consoleplayer;      // view the guy you are playing    
-     starttime = system.GetTime (); 
+     starttime = DoomSystem.GetTime (); 
      gameaction = gameaction_t.ga_nothing; 
      //Z_CheckHeap ();
      
@@ -1774,7 +1777,7 @@ public void Start ()
          if (gametic > BACKUPTICS 
              && consistancy[i][buf] != cmd.consistancy) 
          { 
-             system.Error ("consistency failure (%i should be %i)",
+             DoomSystem.Error ("consistency failure (%i should be %i)",
                   cmd.consistancy, consistancy[i][buf]); 
          } 
          if (players[i].mo!=null) 
@@ -2004,7 +2007,7 @@ public void Start ()
       
      selections = deathmatch_p; 
      if (selections < 4) 
-     system.Error ("Only %i deathmatch spots, 4 required", selections); 
+     DoomSystem.Error ("Only %i deathmatch spots, 4 required", selections); 
   
      for (j=0 ; j<20 ; j++) 
      { 
@@ -2775,15 +2778,15 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
       
      if (timingdemo) 
      { 
-     endtime = system.GetTime (); 
-     system.Error ("timed %i gametics in %i realtics",gametic 
+     endtime = DoomSystem.GetTime (); 
+     DoomSystem.Error ("timed %i gametics in %i realtics",gametic 
           , endtime-starttime); 
      } 
       
      if (demoplayback) 
      { 
      if (singledemo) 
-         system.I_Quit (); 
+         DoomSystem.I_Quit (); 
               
     // Z_ChangeTag (demobuffer, PU_CACHE); 
      demoplayback = false; 
@@ -2802,30 +2805,20 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
      if (demorecording) 
      { 
      demobuffer[demo_p++] = (byte) DEMOMARKER; 
-     M.WriteFile (demoname, demobuffer, demo_p); 
+     // TODO: M.WriteFile (demoname, demobuffer, demo_p); 
      //Z_Free (demobuffer); 
      demorecording = false; 
-     system.Error ("Demo %s recorded",demoname); 
+     DoomSystem.Error ("Demo %s recorded",demoname); 
      } 
       
      return false; 
  } 
   
-  
-  
-public void DoomGame(DoomContext DC){
-   // Pegged for convenience... or viceversa
-   this.playeringame=playeringame;
-   this.players=players;
-   this.playerstarts=playerstarts;
-   //this.gamemode=gamemode;
-}
-
-
-
 
 public DoomMain(){
-    
+    this.I=new DoomSystem();
+    I.Init();
+    gamestate=gamestate_t.GS_DEMOSCREEN;
 }
 
 /**
@@ -2856,6 +2849,9 @@ public void Init(){
     
     this.R=new UnifiedRenderer(this);
     this.P=new Actions(this);
+    this.HU=new HU(this);
+    this.ST=new StatusBar(this);
+    this.WIPE=new Wiper(this);
 }
 
 }

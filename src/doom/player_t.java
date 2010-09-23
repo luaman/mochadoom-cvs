@@ -1,6 +1,6 @@
 package doom;
 
-import i.system;
+import i.DoomSystem;
 
 import java.util.Arrays;
 
@@ -290,7 +290,7 @@ public class player_t /*extends mobj_t */
             return false;
 
         if (ammo < 0 || ammo > NUMAMMO)
-            system.Error("P_GiveAmmo: bad type %i", ammo);
+            DoomSystem.Error("P_GiveAmmo: bad type %i", ammo);
 
         if (this.ammo[ammo] == maxammo[ammo])
             return false;
@@ -564,7 +564,7 @@ public class player_t /*extends mobj_t */
         break;
                 
           default:
-        system.Error ("P_PlayerInSpecialSector: unknown special %i", sector.special);
+        DoomSystem.Error ("P_PlayerInSpecialSector: unknown special %i", sector.special);
         break;
         };
     }    

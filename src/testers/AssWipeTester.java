@@ -4,7 +4,7 @@ import static data.Defines.PU_STATIC;
 import static data.Defines.pw_allmap;
 import static m.fixed_t.FRACBITS;
 
-import i.system;
+import i.DoomSystem;
 
 import java.awt.Frame;
 import java.awt.GraphicsDevice;
@@ -89,7 +89,7 @@ public class AssWipeTester {
     frame.setVisible(true);
     frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
     
-    int tck=system.GetTime();
+    int tck=DoomSystem.GetTime();
     long a=System.nanoTime();
     int TICKS=10;
     int frames=0;
@@ -101,7 +101,7 @@ public class AssWipeTester {
                 V.DrawPatch(320, 0, 0, titlepic);
         wipe.EndScreen(0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT);
         
-        int wipestart = system.GetTime () - 1;
+        int wipestart = DoomSystem.GetTime () - 1;
         int nowtime;
         int tics;
         boolean done;
@@ -114,7 +114,7 @@ public class AssWipeTester {
     {
     do
     {
-        nowtime = system.GetTime ();
+        nowtime = DoomSystem.GetTime ();
         tics = nowtime - wipestart;
     } while (tics<1);
     wipestart = nowtime;

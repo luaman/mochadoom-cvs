@@ -16,7 +16,7 @@ import rr.RendererState;
 import st.DoomStatusBarInterface;
 import v.DoomVideoRenderer;
 import w.WadLoader;
-import i.system;
+import i.DoomSystem;
 import data.mobjtype_t;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
@@ -26,7 +26,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Interaction.java,v 1.6 2010/09/23 07:31:11 velktron Exp $
+// $Id: Interaction.java,v 1.7 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -41,6 +41,9 @@ import doom.weapontype_t;
 // GNU General Public License for more details.
 //
 // $Log: Interaction.java,v $
+// Revision 1.7  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.6  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -71,7 +74,7 @@ import doom.weapontype_t;
 public class Interaction {
 
 
-  public static final String rcsid = "$Id: Interaction.java,v 1.6 2010/09/23 07:31:11 velktron Exp $";
+  public static final String rcsid = "$Id: Interaction.java,v 1.7 2010/09/23 15:11:57 velktron Exp $";
 
 /////////////////// STATUS ///////////////////
   

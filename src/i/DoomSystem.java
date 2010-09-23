@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: system.java,v 1.3 2010/09/07 16:23:00 velktron Exp $
+// $Id: DoomSystem.java,v 1.1 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,7 +15,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: system.java,v $
+// $Log: DoomSystem.java,v $
+// Revision 1.1  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.3  2010/09/07 16:23:00  velktron
 // *** empty log message ***
 //
@@ -43,39 +46,21 @@
 
 package i;
 
+import doom.DoomInterface;
+import doom.DoomMain;
+import doom.event_t;
 import doom.ticcmd_t;
 import utils.PrintfFormat;
 import static data.Defines.TICRATE;
 
-public class system{
-    
-/*
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <stdarg.h>
-#include <sys/time.h>
-#include <unistd.h>
-
-#include "doomdef.h"
-#include "m_misc.h"
-#include "i_video.h"
-#include "i_sound.h"
-
-#include "d_net.h"
-#include "g_game.h"
-
-#ifdef __GNUG__
-#pragma implementation "i_system.h"
-#endif
-#include "i_system.h"
-
-*/
+public class DoomSystem implements DoomInterface{
+ 
 
 
 static int	mb_used = 6;
 
+// Even the SYSTEM needs to know about DOOM!!!!
+protected DoomMain DM;
 
 public void
 Tactile
@@ -110,13 +95,15 @@ public static byte[] ZoneBase (int	size)
 
 
 
-//
-// I_GetTime
-// returns time in 1/70th second tics
-//
+
 protected static long basetime=0;
 
-public static int  GetTime ()
+/**
+ * I_GetTime
+ * returns time in 1/70th second tics
+ */
+
+public int  GetTime ()
 {
     long	tp;
     //struct timezone	tzp;
@@ -134,7 +121,7 @@ public static int  GetTime ()
 public static void I_Quit ()
 {
     // TODO:
- //D_QuitNetGame ();
+ //DM.QuitNetGame ();
  //I_ShutdownSound();
  //I_ShutdownMusic();
  //M.SaveDefaults ();
@@ -143,54 +130,44 @@ public static void I_Quit ()
 }
 
 
-//
-// I_Init
-//
-/*
-void I_Init (void)
+/**
+ * I_Init
+ */
+
+public void Init ()
 {
-    I_InitSound();
-    //  I_InitGraphics();
+    //TODO: InitSound();
+    //TODO: InitGraphics();
 }
 
 
 
-void I_WaitVBL(int count)
+public void WaitVBL(int count)
 {
-#ifdef SGI
-    sginap(1);                                           
-#else
-#ifdef SUN
-    sleep(0);
-#else
-    usleep (count * (1000000/70) );                                
-#endif
-#endif
+    try {
+        Thread.sleep(count*1000/70);
+    } catch (InterruptedException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+    }                                
 }
 
-void I_BeginRead(void)
+public void BeginRead()
 {
 }
 
-void I_EndRead(void)
+public void EndRead()
 {
 }
 
-byte*	I_AllocLow(int length)
+public void	AllocLow(int length)
 {
-    byte*	mem;
-        
-    mem = (byte *)malloc (length);
-    memset (mem,0,length);
-    return mem;
+ ; // Dummy
 }
-
-*/
 
 //
 // I_Error
 //
-public static boolean demorecording;
 
 public static void Error (String error, Object ... args)
 {
@@ -214,4 +191,48 @@ public static void Error (String error, Object ... args)
     
     System.exit(-1);
 }
+
+
+
+@Override
+public void AdvanceDemo() {
+    // TODO Auto-generated method stub
+    
+}
+
+
+@Override
+public void PageDrawer() {
+    // TODO Auto-generated method stub
+    
+}
+
+
+
+@Override
+public void PageTicker() {
+    // TODO Auto-generated method stub
+    
+}
+
+
+
+@Override
+public void PostEvent(event_t ev) {
+    // TODO Auto-generated method stub
+    
+}
+
+
+
+@Override
+public void StartTitle() {
+    // TODO Auto-generated method stub
+    
+}
+
+public DoomSystem(){
+emptycmd=new ticcmd_t();
+}
+
 }

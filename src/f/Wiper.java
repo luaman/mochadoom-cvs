@@ -2,12 +2,13 @@ package f;
 
 import static data.Defines.*;
 import doom.DoomContext;
+import doom.DoomMain;
 import v.DoomVideoRenderer;
 import m.random;
 
 public class Wiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.2 2010/09/22 16:40:02 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.3 2010/09/23 15:11:57 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -27,7 +28,7 @@ public class Wiper {
     
     protected wipefun[] wipes;
     
-    public Wiper(DoomContext DC){
+    public Wiper(DoomMain DC){
         this.RND=DC.RND;
         this.V=DC.V;
         wipes=new wipefun[]{
@@ -393,29 +394,6 @@ public class Wiper {
 
     }
 
-    public void Drawer ()
-    {
-        switch (DS.state)
-        {
-          case StatCount:
-        if (deathmatch)
-            WI_drawDeathmatchStats();
-        else if (netgame)
-            WI_drawNetgameStats();
-        else
-            WI_drawStats();
-        break;
-        
-          case ShowNextLoc:
-        WI_drawShowNextLoc();
-        break;
-        
-          case NoState:
-        WI_drawNoState();
-        break;
-        }
-    }
-    
     
     /** Interface for ASS-WIPING functions */
     

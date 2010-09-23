@@ -101,7 +101,7 @@ import static p.mobj_t.MF_INFLOAT;
 import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import p.UnifiedGameMap.Lights;
-import i.system;
+import i.DoomSystem;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
@@ -2381,7 +2381,7 @@ public class Actions extends UnifiedGameMap{
         return false;
             
         if (actor.movedir >= 8)
-        system.Error ("Weird actor.movedir!");
+        DoomSystem.Error ("Weird actor.movedir!");
             
         tryx = actor.x + actor.info.speed*xspeed[actor.movedir];
         tryy = actor.y + actor.info.speed*yspeed[actor.movedir];
@@ -4032,7 +4032,7 @@ if (mthing.type == mobjinfo[i].doomednum)
   break;
 
 if (i==NUMMOBJTYPES)
-system.Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
+DoomSystem.Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
    mthing.type,
    mthing.x, mthing.y);
   
@@ -6009,7 +6009,7 @@ mobj_t  thing )
         line_t li;
         
         if (!in.isaline)
-        system.Error ("PTR_SlideTraverse: not a line?");
+        DoomSystem.Error ("PTR_SlideTraverse: not a line?");
             
         li = (line_t) in.d();
         
@@ -7602,7 +7602,7 @@ mobj_t  thing )
       int   turnaround;
 
       if (actor.target==null)
-      system.Error ("P_NewChaseDir: called with no target");
+      DoomSystem.Error ("P_NewChaseDir: called with no target");
           
       olddir = actor.movedir;
       turnaround=opposite[olddir];

@@ -3,7 +3,7 @@ package doom;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomInterface.java,v 1.2 2010/09/02 15:56:54 velktron Exp $
+// $Id: DoomInterface.java,v 1.3 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: DoomInterface.java,v $
+// Revision 1.3  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.2  2010/09/02 15:56:54  velktron
 // Bulk of unified renderer copyediting done.
 //
@@ -36,24 +39,8 @@ package doom;
 public interface DoomInterface {
 
 
-	//extern char*		wadfiles[MAXWADFILES];
-
-	public void D_AddFile (String file);
-
-
-
-	/**
-	 * D_DoomMain()
-	 * Not a globally visible function, just included for source reference,
-	 * calls all startup code, parses command line options.
-	 * If not overrided by user input, calls N_AdvanceDemo.
-	 */
-	public void DoomMain ();
-
 	/** Called by IO functions when input is detected. */
 	public void PostEvent (event_t ev);
-
-		
 
 	//
 	// BASE LEVEL
@@ -62,6 +49,5 @@ public interface DoomInterface {
 	public void PageDrawer ();
 	public void AdvanceDemo ();
 	public void StartTitle ();
-
 
 }

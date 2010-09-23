@@ -18,14 +18,14 @@ import javax.imageio.ImageIO;
 import rr.column_t;
 import rr.patch_t;
 import utils.C2JUtils;
-import i.system;
+import i.DoomSystem;
 import m.BBox;
 import static data.Defines.*;
 
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: VolatileRenderer.java,v 1.2 2010/09/06 10:23:24 velktron Exp $
+// $Id: VolatileRenderer.java,v 1.3 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +39,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: VolatileRenderer.java,v $
+// Revision 1.3  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.2  2010/09/06 10:23:24  velktron
 // Alternative rendering method
 //
@@ -120,7 +123,7 @@ import static data.Defines.*;
 
 public class VolatileRenderer implements DoomVideoRenderer{
 	
-static final String rcsid = "$Id: VolatileRenderer.java,v 1.2 2010/09/06 10:23:24 velktron Exp $";
+static final String rcsid = "$Id: VolatileRenderer.java,v 1.3 2010/09/23 15:11:57 velktron Exp $";
 
 private boolean RANGECHECK = true;
 static byte[][] colbuf;
@@ -320,7 +323,7 @@ public void CopyRect (int		srcx,
                 || srcscrn>4
                 || destscrn>4)
         {
-            system.Error ("Bad V_CopyRect");
+            DoomSystem.Error ("Bad V_CopyRect");
         }
     } 
     this.MarkRect (destx, desty, width, height); 
@@ -585,7 +588,7 @@ public void DrawPatchFlipped ( int		x,   int		y,    int		scrn,  patch_t	patch )
     {
         System.err.print("Patch origin "+x+","+y +" exceeds LFB\n" );
         // No I_Error abort - what is up with TNT.WAD?
-        system.Error("Bad V_DrawPatch in V_DrawPatchFlipped");
+        DoomSystem.Error("Bad V_DrawPatch in V_DrawPatchFlipped");
         }
     }
  
@@ -716,7 +719,7 @@ DrawBlock
 	 
 if (doRangeCheck(x, y, scrn))
     {
-	system.Error("Bad V_DrawBlock");
+	DoomSystem.Error("Bad V_DrawBlock");
     }
 
  
@@ -755,7 +758,7 @@ GetBlock
 	 
 if (RANGECHECK){
     if (doRangeCheck(x,y,scrn)){    
-	system.Error ("Bad V_DrawBlock");
+	DoomSystem.Error ("Bad V_DrawBlock");
     }
     
  }

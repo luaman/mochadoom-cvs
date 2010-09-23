@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.9 2010/09/23 07:31:11 velktron Exp $
+// $Id: HU.java,v 1.10 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.10  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.9  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -102,7 +105,7 @@ import doom.player_t;
 
 public class HU {
     public final static String rcsid =
-        "$Id: HU.java,v 1.9 2010/09/23 07:31:11 velktron Exp $";
+        "$Id: HU.java,v 1.10 2010/09/23 15:11:57 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader wd;
@@ -426,23 +429,10 @@ public class HU {
         return ch < 128 ? frenchKeyMap[ch] : ch;
     }
 
-    public HU(DoomContext DC) {
-        this.DM = DC.DM;
-        this.wd = DC.W;
-        //this.R = DC.DRC.R;
-        //this.DR = DC.DRC.DR;
-
-        this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 1];
-        this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
-        this.HU_TITLE = mapnamesp[DM.gamemap - 1];
-        this.HU_TITLET = mapnamest[DM.gamemap - 1];
-
-        /*
-         * #define HU_TITLE #define HU_TITLE2 (mapnames2[gamemap-1]) #define
-         * HU_TITLEP (mapnamesp[gamemap-1]) #define HU_TITLET
-         * (mapnamest[gamemap-1])
-         */
-
+    public HU(DoomMain DM) {
+        this.DM = DM;
+        this.wd = DM.W;
+        this.R = DM.R;
     }
 
     /**
@@ -494,6 +484,15 @@ public class HU {
 
         int i;
         String s;
+        
+        // MAES: fugly hax. These were compile-time inlines,
+        // so they can either work as functions, or be set whenever the HU is started
+        // (typically once per level). They need to be aware of game progress,
+        // and episode numbers <1 will cause it to bomb.
+        this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 1];
+        this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
+        this.HU_TITLE = mapnamesp[DM.gamemap - 1];
+        this.HU_TITLET = mapnamest[DM.gamemap - 1];
 
         if (headsupactive)
             this.Stop();
@@ -518,11 +517,11 @@ public class HU {
             s = HU_TITLE;
             break;
 
-        /*
-         * FIXME case pack_plut: s = HU_TITLEP; break; case pack_tnt: s =
-         * HU_TITLET; break;
-         */
-
+       case pack_plut: s = HU_TITLEP; 
+           break; 
+       case pack_tnt: s = HU_TITLET;
+       break;
+       
         case commercial:
         default:
             s = HU_TITLE2;

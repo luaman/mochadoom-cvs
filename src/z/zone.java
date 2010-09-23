@@ -1,6 +1,6 @@
 package z;
 
-import i.system;
+import i.DoomSystem;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,7 +10,7 @@ import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: zone.java,v 1.2 2010/08/13 14:06:36 velktron Exp $
+// $Id: zone.java,v 1.3 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: zone.java,v $
+// Revision 1.3  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.2  2010/08/13 14:06:36  velktron
 // Endlevel screen fully functional!
 //
@@ -48,7 +51,7 @@ import static data.Defines.*;
 
 class zone{
 
-public static String rcsid = "$Id: zone.java,v 1.2 2010/08/13 14:06:36 velktron Exp $";
+public static String rcsid = "$Id: zone.java,v 1.3 2010/09/23 15:11:57 velktron Exp $";
 
 //
 // ZONE MEMORY ALLOCATION
@@ -106,7 +109,7 @@ public void Free (memblock_t ptr)
     block = ptr;
 
     if (block.id != ZONEID)
-    system.Error ("Z_Free: freed a pointer without ZONEID");
+    DoomSystem.Error ("Z_Free: freed a pointer without ZONEID");
    
     /*
     if (block.user > 0x100)
@@ -292,10 +295,10 @@ public void CheckHeap ()
 	    system.Error ("Z_CheckHeap: block size does not touch the next block\n");*/
 
 	if ( block.next.prev != block)
-	    system.Error ("Z_CheckHeap: next block doesn't have proper back link\n");
+	    DoomSystem.Error ("Z_CheckHeap: next block doesn't have proper back link\n");
 
 	if (block.user == null && block.next.user==null)
-	    system.Error ("Z_CheckHeap: two consecutive free blocks\n");
+	    DoomSystem.Error ("Z_CheckHeap: two consecutive free blocks\n");
     }
 }
 
@@ -315,7 +318,7 @@ ChangeTag2
     block = ptr;
 
     if (block.id != ZONEID)
-	system.Error ("Z_ChangeTag: freed a pointer without ZONEID");
+	DoomSystem.Error ("Z_ChangeTag: freed a pointer without ZONEID");
 
 /*    if (tag >= PU_PURGELEVEL)
 	system.Error ("Z_ChangeTag: an owner is required for purgable blocks");*/

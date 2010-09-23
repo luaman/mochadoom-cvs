@@ -194,7 +194,7 @@ public class DoomStatus extends DoomContext {
     // Quit after playing a demo from cmdline.
     public boolean singledemo;
 
-    // ?
+    /** Set this to GS_DEMOSCREEN upon init, else it will be null*/
     public gamestate_t gamestate;
 
     // -----------------------------

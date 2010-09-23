@@ -2,7 +2,7 @@ package m;
 
 import g.DoomGameInterface;
 import i.SystemInterface;
-import i.system;
+import i.DoomSystem;
 
 import java.util.Arrays;
 
@@ -19,7 +19,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.6 2010/09/23 07:31:11 velktron Exp $
+// $Id: MenuMisc.java,v 1.7 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -35,6 +35,9 @@ import w.WadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.7  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.6  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -83,7 +86,7 @@ import w.WadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.6 2010/09/23 07:31:11 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.7 2010/09/23 15:11:57 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;
@@ -531,7 +534,7 @@ public int ReadFile(String name, byte[] buffer) {
                     + length);
 
     } catch (Exception e) {
-        system.Error("Couldn't read file %s (%s)", name, e.getMessage());
+        DoomSystem.Error("Couldn't read file %s (%s)", name, e.getMessage());
         return -1;
     }
     buffer = buf;

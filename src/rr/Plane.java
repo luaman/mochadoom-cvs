@@ -2,7 +2,7 @@ package rr;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Plane.java,v 1.6 2010/09/23 07:31:11 velktron Exp $
+// $Id: Plane.java,v 1.7 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package rr;
 // GNU General Public License for more details.
 //
 // $Log: Plane.java,v $
+// Revision 1.7  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.6  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -61,7 +64,7 @@ package rr;
 import static data.Defines.*;
 import doom.DoomContext;
 import doom.DoomStatus;
-import i.system;
+import i.DoomSystem;
 import m.fixed_t;
 import static m.fixed_t.*;
 import static data.SineCosine.*;
@@ -70,7 +73,7 @@ import static data.Tables.*;
 
 public class Plane{
 public static final String
-rcsid = "$Id: Plane.java,v 1.6 2010/09/23 07:31:11 velktron Exp $";
+rcsid = "$Id: Plane.java,v 1.7 2010/09/23 15:11:57 velktron Exp $";
 
 private Draw DR;
 private Renderer R;
@@ -187,7 +190,7 @@ if (RANGECHECK){
 	|| x2>=ds.viewwidth
 	|| y>ds.viewheight)
     {
-	system.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+	DoomSystem.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
     }
 }
 
@@ -300,7 +303,7 @@ FindPlane
 	return chk;
 		
     if (lastvisplane == MAXVISPLANES)
-	system.Error ("R_FindPlane: no more visplanes");
+	DoomSystem.Error ("R_FindPlane: no more visplanes");
 		
     lastvisplane++;
 
@@ -433,15 +436,15 @@ public void DrawPlanes ()
 				
 if (RANGECHECK){
     if (BSP.ds_p > MAXDRAWSEGS)
-	system.Error("R_DrawPlanes: drawsegs overflow (%i)",
+	DoomSystem.Error("R_DrawPlanes: drawsegs overflow (%i)",
 	    BSP.ds_p );
     
     if (lastvisplane > MAXVISPLANES)
-        system.Error(" R_DrawPlanes: visplane overflow (%i)",
+        DoomSystem.Error(" R_DrawPlanes: visplane overflow (%i)",
 		 lastvisplane);
     
     if (lastopening  > MAXOPENINGS)
-        system.Error( "R_DrawPlanes: opening overflow (%i)",
+        DoomSystem.Error( "R_DrawPlanes: opening overflow (%i)",
 		 lastopening );
 }
 

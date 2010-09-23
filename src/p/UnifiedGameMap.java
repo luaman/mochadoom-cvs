@@ -86,7 +86,7 @@ import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import automap.DoomAutoMap;
 import hu.HU;
-import i.system;
+import i.DoomSystem;
 import m.random;
 import rr.UnifiedRenderer;
 import rr.line_t;
@@ -1355,7 +1355,7 @@ public class UnifiedGameMap {
                     activeplats[i] = plat;
                     return;
                 }
-            system.Error("P_AddActivePlat: no more plats!");
+            DoomSystem.Error("P_AddActivePlat: no more plats!");
         }
 
         void RemoveActivePlat(plat_t plat) {
@@ -1368,7 +1368,7 @@ public class UnifiedGameMap {
 
                     return;
                 }
-            system.Error("P_RemoveActivePlat: can't find plat!");
+            DoomSystem.Error("P_RemoveActivePlat: can't find plat!");
         }
 
     }
@@ -1440,7 +1440,7 @@ public class UnifiedGameMap {
 
             if (RANGECHECK) {
                 if (num >= LL.numsubsectors)
-                    system.Error("P_CrossSubsector: ss %i with numss = %i",
+                    DoomSystem.Error("P_CrossSubsector: ss %i with numss = %i",
                         num, LL.numsubsectors);
             }
 
@@ -1645,7 +1645,7 @@ public class UnifiedGameMap {
             lstanim.numpics = lstanim.picnum - lstanim.basepic + 1;
 
             if (lstanim.numpics < 2)
-                system.Error("P_InitPicAnims: bad cycle from %s to %s",
+                DoomSystem.Error("P_InitPicAnims: bad cycle from %s to %s",
                     animdefs[i].startname, animdefs[i].endname);
 
             lstanim.speed = animdefs[i].speed;
@@ -1873,7 +1873,7 @@ public class UnifiedGameMap {
                 }
             }
 
-            system.Error("P_StartButton: no button slots left!");
+            DoomSystem.Error("P_StartButton: no button slots left!");
         }
 
         //
@@ -2514,7 +2514,7 @@ public class UnifiedGameMap {
             break;
 
         default:
-            system.Error("P_SpecialThing: Unknown gettable thing");
+            DoomSystem.Error("P_SpecialThing: Unknown gettable thing");
         }
 
         if ((special.flags & MF_COUNTITEM) != 0)

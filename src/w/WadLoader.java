@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.16 2010/09/22 16:40:02 velktron Exp $
+// $Id: WadLoader.java,v 1.17 2010/09/23 15:11:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.17  2010/09/23 15:11:57  velktron
+// A bit closer...
+//
 // Revision 1.16  2010/09/22 16:40:02  velktron
 // MASSIVE changes in the status passing model.
 // DoomMain and DoomGame unified.
@@ -162,7 +165,7 @@ public class WadLoader {
 
             return handle.length();
         } catch (Exception e) {
-            system.Error("Error fstating");
+            DoomSystem.Error("Error fstating");
             return -1;
         }
 
@@ -199,7 +202,7 @@ public class WadLoader {
         int pos = 0;
         while ((pos < path.length()) && (path.charAt(pos) != '.')) {
             if (++length == 9)
-                system.Error("Filename base of %s >8 chars", path);
+                DoomSystem.Error("Filename base of %s >8 chars", path);
 
             dest[pos] = (byte) path.charAt(pos);
             pos++;
@@ -259,7 +262,7 @@ public class WadLoader {
         try {
             handle = new DoomFile(filename, "r");
         } catch (Exception e) {
-            system.Error(" couldn't open %s \n", filename);
+            DoomSystem.Error(" couldn't open %s \n", filename);
             return;
         }
 
@@ -289,7 +292,7 @@ public class WadLoader {
             if (header.identification.compareTo("IWAD") != 0) {
                 // Homebrew levels?
                 if (header.identification.compareTo("PWAD") != 0) {
-                    system.Error("Wad file %s doesn't have IWAD or PWAD id\n",
+                    DoomSystem.Error("Wad file %s doesn't have IWAD or PWAD id\n",
                         filename);
                 }
 
@@ -330,7 +333,7 @@ public class WadLoader {
                 System.arraycopy(lumpinfo, 0, newlumpinfo, 0, oldsize);
             } catch (Exception e) {
                 // if (!lumpinfo)
-                i.system.Error("Couldn't realloc lumpinfo");
+                i.DoomSystem.Error("Couldn't realloc lumpinfo");
             }
 
             // Bye bye, old lumpinfo!
@@ -389,7 +392,7 @@ public class WadLoader {
         try {
             handle = new DoomFile(reloadname, "r");
         } catch (Exception e) {
-            system.Error("W_Reload: couldn't open %s", reloadname);
+            DoomSystem.Error("W_Reload: couldn't open %s", reloadname);
         }
 
         header.load(handle);
@@ -457,7 +460,7 @@ public class WadLoader {
         
 
         if (numlumps == 0)
-            system.Error("W_InitFiles: no files found");
+            DoomSystem.Error("W_InitFiles: no files found");
 
         // set up caching
         size = numlumps;
@@ -465,7 +468,7 @@ public class WadLoader {
         preloaded = new boolean[size];
 
         if (lumpcache == null)
-            system.Error("Couldn't allocate lumpcache");
+            DoomSystem.Error("Couldn't allocate lumpcache");
 
         this.InitLumpHash();
     }
@@ -602,7 +605,7 @@ public class WadLoader {
         		e.printStackTrace();
         	System.err.println("Error:" +name+ "not found");
         	System.err.println("Hash:" +Long.toHexString(name8.getLongHash(name)));
-        	system.Error("W_GetNumForName: %s not found!", name);
+        	DoomSystem.Error("W_GetNumForName: %s not found!", name);
         }
 
         return i;
@@ -614,7 +617,7 @@ public class WadLoader {
     //
     public int LumpLength(int lump) {
         if (lump >= numlumps)
-            i.system.Error("W_LumpLength: %i >= numlumps", lump);
+            i.DoomSystem.Error("W_LumpLength: %i >= numlumps", lump);
 
         return (int) lumpinfo[lump].size;
     }
@@ -632,7 +635,7 @@ public class WadLoader {
         DoomFile handle = null;
 
         if (lump >= this.numlumps) {
-            system.Error("W_ReadLump: %i >= numlumps", lump);
+            DoomSystem.Error("W_ReadLump: %i >= numlumps", lump);
             return;
         }
 
@@ -646,7 +649,7 @@ public class WadLoader {
                 handle = new DoomFile(this.reloadname, "r");
             } catch (Exception e) {
             	e.printStackTrace();
-                system.Error("W_ReadLump: couldn't open %s", reloadname);
+                DoomSystem.Error("W_ReadLump: couldn't open %s", reloadname);
             }
         } else
             handle = l.handle;
@@ -658,7 +661,7 @@ public class WadLoader {
         dest.put(buf);
 
         if (c < l.size)
-            system.Error("W_ReadLump: only read %i of %i on lump %i", c,
+            DoomSystem.Error("W_ReadLump: only read %i of %i on lump %i", c,
                 l.size, lump);
 
         if (l.handle == null)
@@ -666,7 +669,7 @@ public class WadLoader {
 
         // ??? I_EndRead ();
         } catch (Exception e) {
-            system.Error("W_ReadLump: could not read lump "+ lump);
+            DoomSystem.Error("W_ReadLump: could not read lump "+ lump);
             e.printStackTrace();
         }
 
@@ -684,7 +687,7 @@ public class WadLoader {
 
         
         if (lump >= numlumps) {
-            system.Error("W_CacheLumpNum: %i >= numlumps", lump);
+            DoomSystem.Error("W_CacheLumpNum: %i >= numlumps", lump);
         }
 
         // Nothing cached here...
@@ -750,7 +753,7 @@ public class WadLoader {
              throws IOException {
 
          if (lump >= numlumps) {
-             system.Error("W_CacheLumpNum: %i >= numlumps", lump);
+             DoomSystem.Error("W_CacheLumpNum: %i >= numlumps", lump);
          }
 
          // Nothing cached here...
