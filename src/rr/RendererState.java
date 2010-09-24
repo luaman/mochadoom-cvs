@@ -21,13 +21,34 @@ import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
+import p.LevelLoader;
+import p.UnifiedGameMap;
 import i.DoomSystemInterface;
 import m.fixed_t;
+import rr.UnifiedRenderer.BSP;
+import rr.UnifiedRenderer.Planes;
+import rr.UnifiedRenderer.Segs;
+import rr.UnifiedRenderer.Things;
 import rr.UnifiedRenderer.colfunc_t;
+import v.DoomVideoRenderer;
+import w.WadLoader;
+import doom.DoomMain;
 import doom.player_t;
 
 public abstract class RendererState {
 
+    //////////////////////////////// STATUS ////////////////
+
+    protected DoomMain DM;
+    protected LevelLoader LL;
+    protected WadLoader W;
+    protected Segs MySegs;
+    protected BSP MyBSP;
+    protected Planes MyPlanes;
+    public Things MyThings;
+    protected DoomVideoRenderer V;
+    protected UnifiedGameMap P;
+    protected DoomSystemInterface I;
     
     ///////////////// COLORMAPS ///////////////////////////////
     
@@ -239,7 +260,7 @@ public abstract class RendererState {
    public int          centerx;
    public int          centery;
 
-   /** fixed_t */
+   /** Used to determind the view center and projection in view units fixed_t */
    public int centerxfrac,centeryfrac, projection;
 
    /** just for profiling purposes */
@@ -341,9 +362,7 @@ public abstract class RendererState {
 
            if (RANGECHECK) {
                if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
-                   DoomSystemInterface
-                           .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
-                               dc_x);
+                   I.Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
                }
            }
 
@@ -405,8 +424,7 @@ public abstract class RendererState {
 
        if (RANGECHECK) {
            if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
-               DoomSystemInterface
-                       .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
+               I.Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
                            dc_x);
        }
 
@@ -424,15 +442,22 @@ public abstract class RendererState {
        // e.g. a DDA-lile scaling.
        // This is as fast as it gets.
        do {
-           // Re-map color indices from wall texture column
-           // using a lighting/special effects LUT.
-           // TODO: determine WHERE the fuck "*dest" is supposed to be
-           // pointing.
-           // DONE: it's pointing inside screen[0] (implicitly).
-           // dc_source was probably just a pointer to a decompressed
-           // column...right? Right.
+           /* Re-map color indices from wall texture column
+            * using a lighting/special effects LUT.
+            * TODO: determine WHERE the fuck "*dest" is supposed to be
+            * pointing.
+            * DONE: it's pointing inside screen[0] (implicitly).
+            * dc_source was probably just a pointer to a decompressed
+            *  column...right? Right.
+            */  
            screen[dest] = (byte) dc_colormap[dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
 
+           /* MAES: ok, so we have (from inside out):
+            * 
+            * frac is a fixed-point number representing a pointer inside a column.
+            * 
+            * 
+            */
            dest += SCREENWIDTH;
            frac += fracstep;
 
@@ -460,8 +485,7 @@ public abstract class RendererState {
        if (RANGECHECK) {
            if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
 
-               DoomSystemInterface
-                       .Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
+               I.Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
                            dc_x);
            }
            // dccount++;
@@ -524,7 +548,7 @@ public abstract class RendererState {
     if (dc_x >= SCREENWIDTH
     || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
     {
-    DoomSystemInterface.Error ("R_DrawFuzzColumn: %i to %i at %i",
+    I.Error ("R_DrawFuzzColumn: %i to %i at %i",
          dc_yl, dc_yh, dc_x);
     }
  }

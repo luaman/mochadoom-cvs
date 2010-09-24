@@ -3,7 +3,7 @@ package i;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: IVideo.java,v 1.1 2010/07/03 23:24:13 velktron Exp $
+//$Id: IVideo.java,v 1.2 2010/09/24 17:58:39 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package i;
 //GNU General Public License for more details.
 //
 //$Log: IVideo.java,v $
+//Revision 1.2  2010/09/24 17:58:39  velktron
+//Menus and HU  functional -mostly.
+//
 //Revision 1.1  2010/07/03 23:24:13  velktron
 //Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
 //
@@ -45,7 +48,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 
 public class IVideo{
-static final public String rcsid = "$Id: IVideo.java,v 1.1 2010/07/03 23:24:13 velktron Exp $";
+static final public String rcsid = "$Id: IVideo.java,v 1.2 2010/09/24 17:58:39 velktron Exp $";
 
 
 protected int POINTER_WARP_COUNTDOWN	=1;
@@ -167,10 +170,12 @@ image->data = NULL;
 
 
 
-//
-//I_StartFrame
-//
-public void I_StartFrame ()
+/**
+ *  I_StartFrame 
+ *  
+ *  Doesn't do anything.
+ */
+public void StartFrame ()
 {
   // er?
 
@@ -181,8 +186,9 @@ protected int	lastmousey = 0;
 boolean		mousemoved = false;
 boolean		shmFinished;
 
-/*
-void I_GetEvent()
+/** Does event handling and processing */
+
+public void GetEvent()
 {
 
   event_t event;
@@ -268,7 +274,7 @@ void I_GetEvent()
   }
 
 }
-*/
+
 /*
 Cursor
 createnullcursor
@@ -296,19 +302,24 @@ Window	root )
 }
 */
 
-//
-//I_StartTic
-//
+/**
+ *  I_StartTic
+ *  
+ *  Its purpose is to prepare for the next frame.
+ *  Calls GetEvent (thus intercepting new events),
+ *  gaining back windows focus (if applicable).
+ *  
+ */
 
-/*
-void I_StartTic (void)
+
+public void StartTic ()
 {
 
   if (!X_display)
 	return;
 
   while (XPending(X_display))
-	I_GetEvent();
+	GetEvent();
 
   // Warp the pointer back to the middle of the window
   //  or it will wander off - that is, the game will
@@ -331,7 +342,7 @@ void I_StartTic (void)
   mousemoved = false;
 
 }
-*/
+
 
 //
 //I_UpdateNoBlit

@@ -4,6 +4,7 @@ import static data.Defines.PU_STATIC;
 import static data.Defines.pw_allmap;
 import static m.fixed_t.FRACBITS;
 
+import i.DoomSystem;
 import i.DoomSystemInterface;
 
 import java.awt.Frame;
@@ -29,6 +30,7 @@ import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.skill_t;
 import doom.DoomContext;
+import doom.DoomMain;
 import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
@@ -45,26 +47,35 @@ public class AssWipeTester {
 
     public static void main(String[] argv) {
         try {
-    WadLoader W=new WadLoader();
+    DoomMain DC=new DoomMain();
+    
+    WadLoader W=new WadLoader(DC.I);
+    
+    random RND=new random();
+    DC.RND=RND;        
+    DC.W=W;
+    
     W.InitMultipleFiles(new String[] {"doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
 
+    BufferedRenderer V=new BufferedRenderer(640,200);   
+    DC.V=V;
     
+    // Get the palettes
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     byte[] pal=palette.getBuffer().array();
-    IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-    
-    BufferedRenderer V=new BufferedRenderer(640,200,icm);
+    IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);    
+    V.setIcm(icm);
     V.Init();
+    
     
     patch_t titlepic=W.CachePatchName("TITLEPIC", PU_STATIC);
     patch_t credit=W.CachePatchName("HELP1", PU_STATIC);
-    random RND=new random();
-    DoomContext DC=new DoomContext();
     
-    DC.RND=RND;
-    DC.V=V;
+    
+    
+
     
     
     Wiper wipe=new Wiper(DC);
@@ -77,7 +88,7 @@ public class AssWipeTester {
     
     // "Hook" on screen 0.
     BufferedImage bi=((BufferedRenderer)V).screenbuffer[0];
-    
+    //BufferedImage[] pals=V.getBufferedScreens(0, icms);
     CrappyDisplay frame = new CrappyDisplay(bi);
     frame.setTitle("MochaDoom");
     
@@ -88,8 +99,8 @@ public class AssWipeTester {
     //frame.setUndecorated(true);
     frame.setVisible(true);
     frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
-    
-    int tck=DoomSystemInterface.GetTime();
+
+    int tck=DC.I.GetTime();
     long a=System.nanoTime();
     int TICKS=10;
     int frames=0;
@@ -101,7 +112,7 @@ public class AssWipeTester {
                 V.DrawPatch(320, 0, 0, titlepic);
         wipe.EndScreen(0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT);
         
-        int wipestart = DoomSystemInterface.GetTime () - 1;
+        int wipestart = DC.I.GetTime () - 1;
         int nowtime;
         int tics;
         boolean done;
@@ -114,7 +125,7 @@ public class AssWipeTester {
     {
     do
     {
-        nowtime = DoomSystemInterface.GetTime ();
+        nowtime = DC.I.GetTime ();
         tics = nowtime - wipestart;
     } while (tics<1);
     wipestart = nowtime;

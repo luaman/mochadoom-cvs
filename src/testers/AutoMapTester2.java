@@ -16,6 +16,7 @@ import javax.swing.JFrame;
 import m.DoomMenu;
 import m.Menu;
 import m.random;
+import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import st.StatusBar;
@@ -134,13 +135,17 @@ public class AutoMapTester2 {
     ds.wminfo.partime=28595;
 
     StatusBar ST=new StatusBar(ds);
+    ds.ST=ST;
     ST.Start();
     LevelLoader LL=new LevelLoader(ds);
     LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     ds.LL=LL;
     ds.ST=ST;
     DoomAutoMap AM=new Map(ds);
+    ds.AM=AM;
     AM.Start();
+    Actions P=new Actions(ds);
+    ds.P=P;
     
     ST.Responder(new event_t('i'));
     ST.Responder(new event_t('d'));

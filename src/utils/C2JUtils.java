@@ -26,6 +26,13 @@ public class C2JUtils {
         return s1;
     }
     
+    static public char[] strcpy(char[] s1, final char[] s2,int off) {
+        for (int i=0;i<Math.min(s1.length,s2.length-off);i++){
+            s1[i]=s2[i+off];
+        }
+        return s1;
+    }
+    
  
     static public char[] strcpy(char[] s1, String s2) {
         for (int i=0;i<Math.min(s1.length,s2.length());i++){
@@ -69,7 +76,7 @@ public class C2JUtils {
     	int len=0;
     	
     	while(s1[len++]>0){
-    		if (len>s1.length) break;
+    		if (len>=s1.length) break;
             }
     	
     	return len;

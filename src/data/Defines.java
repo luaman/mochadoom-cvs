@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.17 2010/09/22 16:40:02 velktron Exp $
+// $Id: Defines.java,v 1.18 2010/09/24 17:58:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -236,10 +236,10 @@ public static final int    NUMPOWERS=6;
 //
 // Maes: using chars here instead of bytes.
 
-public final static char KEY_RIGHTARROW  =0xae;
-public final static char KEY_LEFTARROW   =0xac;
-public final static char KEY_UPARROW =0xad;
-public final static char KEY_DOWNARROW   =0xaf;
+public final static char KEY_RIGHTARROW  =0x00ae;
+public final static char KEY_LEFTARROW   =0x00ac;
+public final static char KEY_UPARROW =0x00ad;
+public final static char KEY_DOWNARROW   =0x00af;
 public final static char KEY_ESCAPE = 27;
 public final static char KEY_ENTER =  13;
 public final static char KEY_TAB  =   9;
@@ -257,10 +257,10 @@ public final static char KEY_F11     =(0x80+0x57);
 public final static char KEY_F12     =(0x80+0x58);
 
 public final static char KEY_BACKSPACE  = 127;
-public final static char KEY_PAUSE   =0xff;
+public final static char KEY_PAUSE   =0x00ff;
 
-public final static char KEY_EQUALS  =0x3d;
-public final static char KEY_MINUS   =0x2d;
+public final static char KEY_EQUALS  =0x003d;
+public final static char KEY_MINUS   =0x002d;
 
 public final static char KEY_RSHIFT = (0x80+0x36);
 public final static char KEY_RCTRL  = (0x80+0x1d);
@@ -1693,6 +1693,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.17 2010/09/22 16:40:02 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.18 2010/09/24 17:58:39 velktron Exp $";
 }
 

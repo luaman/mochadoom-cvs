@@ -36,20 +36,6 @@ import doom.thinker_t;
 
 public class UnifiedRenderer extends RendererState{
     
-    //////////////////////////////// STATUS ////////////////
-
-    private DoomMain DM;
-    private LevelLoader LL;
-    private WadLoader W;
-    private Segs MySegs;
-    private BSP MyBSP;
-    private Planes MyPlanes;
-    public Things MyThings;
-    private DoomVideoRenderer V;
-    private UnifiedGameMap P;
-    private DoomSystemInterface I;
-    
-    
     public UnifiedRenderer(DoomMain DM) {
       this.DM=DM;
       this.LL=DM.LL;
@@ -2038,10 +2024,13 @@ public class UnifiedRenderer extends RendererState{
 
     private boolean shadow;
 
-      //
-      // R_DrawVisSprite
-      //  mfloorclip and mceilingclip should also be set.
-      //
+      /**
+       * R_DrawVisSprite
+       *  mfloorclip and mceilingclip should also be set.
+       *  
+       * Sprites are actually drawn here.
+       *
+       */ 
       public void
       DrawVisSprite
       ( vissprite_t      vis,
@@ -2104,19 +2093,11 @@ public class UnifiedRenderer extends RendererState{
        */
       public void ProjectSprite (mobj_t thing)
       {
-          int     tr_x;
-          int     tr_y;
-          
-          int     gxt;
-          int     gyt;
-          
-          int     tx;
-          int     tz;
+          int     tr_x,tr_y;          
+          int     gxt,gyt;          
+          int     tx,tz;
 
-          int     xscale;
-          
-          int         x1;
-          int         x2;
+          int     xscale,x1,x2;
 
           spritedef_t    sprdef;
           spriteframe_t  sprframe;
@@ -2144,7 +2125,7 @@ public class UnifiedRenderer extends RendererState{
           // thing is behind view plane?
           if (tz < MINZ)
           return;
-          
+          /* MAES: so projection/tz gives horizontal scale */
           xscale = FixedDiv(projection, tz);
           
           gxt = -FixedMul(tr_x,viewsin); 
@@ -2209,7 +2190,9 @@ public class UnifiedRenderer extends RendererState{
           vis.gzt = thing.z + spritetopoffset[lump];
           vis.texturemid = vis.gzt - viewz;
           vis.x1 = x1 < 0 ? 0 : x1;
-          vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;   
+          vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+          /* This actually determines the general sprite scale) 
+           * iscale = 1/xscale, if this was floating point. */
           iscale = FixedDiv (FRACUNIT, xscale);
 
           if (flip)

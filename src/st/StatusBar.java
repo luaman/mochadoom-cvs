@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.13 2010/09/23 20:36:45 velktron Exp $
+// $Id: StatusBar.java,v 1.14 2010/09/24 17:58:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.14  2010/09/24 17:58:39  velktron
+// Menus and HU  functional -mostly.
+//
 // Revision 1.13  2010/09/23 20:36:45  velktron
 // *** empty log message ***
 //
@@ -114,7 +117,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.13 2010/09/23 20:36:45 velktron Exp $";
+        "$Id: StatusBar.java,v 1.14 2010/09/24 17:58:39 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -127,6 +130,8 @@ public class StatusBar implements DoomStatusBarInterface {
     protected DoomMain DS;
 
     protected random RND;
+    
+    protected DoomSystemInterface I;
 
     // Size of statusbar.
     // Now sensitive for scaling.
@@ -1538,7 +1543,7 @@ public class StatusBar implements DoomStatusBarInterface {
                 h = bi.p.height;
 
                 if (y - ST_Y < 0)
-                    DoomSystemInterface.Error("updateBinIcon: y - ST_Y < 0");
+                    I.Error("updateBinIcon: y - ST_Y < 0");
 
                 if (bi.val)
                     V.DrawPatch(bi.x, bi.y, FG, bi.p);
@@ -1642,7 +1647,7 @@ public class StatusBar implements DoomStatusBarInterface {
                     h = this.p[this.oldinum].height;
 
                     if (y - ST_Y < 0)
-                        DoomSystemInterface.Error("updateMultIcon: y - ST_Y < 0");
+                        I.Error("updateMultIcon: y - ST_Y < 0");
 
                     V.CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
                 }
@@ -1771,7 +1776,7 @@ public class StatusBar implements DoomStatusBarInterface {
             x = this.x - numdigits * w;
 
             if (this.y - ST_Y < 0) {
-                DoomSystemInterface.Error("drawNum: n.y - ST_Y < 0");
+                I.Error("drawNum: n.y - ST_Y < 0");
             }
 
             V.CopyRect(x, this.y - ST_Y, BG, w * numdigits, h, x, n.y, FG);

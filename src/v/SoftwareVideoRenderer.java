@@ -22,6 +22,8 @@ import utils.C2JUtils;
 public abstract class SoftwareVideoRenderer
         implements DoomVideoRenderer {
 
+    DoomSystemInterface I;
+    
  // Now where did these came from? /*[5][256]*/
     public static final short[][] gammatable =
     {
@@ -183,7 +185,7 @@ public abstract class SoftwareVideoRenderer
                   || srcscrn>4
                   || destscrn>4)
           {
-              DoomSystemInterface.Error ("Bad V_CopyRect");
+              I.Error ("Bad V_CopyRect");
           }
       } 
       this.MarkRect (destx, desty, width, height); 
@@ -313,7 +315,7 @@ public abstract class SoftwareVideoRenderer
       {
           System.err.print("Patch origin "+x+","+y +" exceeds LFB\n" );
           // No I_Error abort - what is up with TNT.WAD?
-          DoomSystemInterface.Error("Bad V_DrawPatch in V_DrawPatchFlipped");
+          I.Error("Bad V_DrawPatch in V_DrawPatchFlipped");
           }
       }
    
@@ -444,7 +446,7 @@ public abstract class SoftwareVideoRenderer
        
   if (doRangeCheck(x, y, scrn))
       {
-      DoomSystemInterface.Error("Bad V_DrawBlock");
+      I.Error("Bad V_DrawBlock");
       }
 
    
@@ -483,7 +485,7 @@ public abstract class SoftwareVideoRenderer
        
   if (RANGECHECK){
       if (doRangeCheck(x,y,scrn)){    
-      DoomSystemInterface.Error ("Bad V_DrawBlock");
+      I.Error ("Bad V_DrawBlock");
       }
       
    }

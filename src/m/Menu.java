@@ -69,14 +69,12 @@ public class Menu extends MenuMisc implements DoomMenu{
         this.DM=DM;
         this.V=DM.V;
         this.W=DM.W;
-        this.initMenuItems();
-        this.initMenuRoutines();
-        this.initDrawRoutines();
+        this.HU=DM.HU;
     }
     
     
 
-    /** The fonts  */
+    /** The fonts  ... must "peg" them to those from HU */
     patch_t[] hu_font = new patch_t[HU_FONTSIZE];
 
     /** WTF?! */
@@ -205,6 +203,8 @@ public class Menu extends MenuMisc implements DoomMenu{
     DrawRoutine DrawEpisode, DrawReadThis1, DrawReadThis2, DrawLoad,
             DrawMainMenu, DrawNewGame, DrawOptions, DrawSave, DrawSound;
 
+    /** Initialize menu routines first */
+    
     private void initMenuRoutines() {
         NewGame = new M_NewGame();
         Options = new M_Options();
@@ -226,6 +226,8 @@ public class Menu extends MenuMisc implements DoomMenu{
         QuitResponse = new M_QuitResponse();
     }
 
+    /** Then drawroutines */
+    
     private void initDrawRoutines() {
         DrawEpisode = new M_DrawEpisode();
         DrawNewGame = new M_DrawNewGame();
@@ -241,6 +243,8 @@ public class Menu extends MenuMisc implements DoomMenu{
     
     /** Actual menus. Each can point to an array of menuitems */
     menu_t MainDef, EpiDef,NewDef,OptionsDef,ReadDef1, ReadDef2,SoundDef,LoadDef,SaveDef;
+    
+    /** First initialize those */
     
     private void initMenuItems(){
     
@@ -313,7 +317,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
     // Read This! MENU 1 
 
-    ReadMenu1 = new menuitem_t[] { new menuitem_t(1, "", ReadThis2, (char) 0) };
+    ReadMenu1 = new menuitem_t[] { new menuitem_t(1, "", ReadThis, (char) 0) };
 
     ReadDef1 =
         new menu_t(read1_end, MainDef, ReadMenu1, DrawReadThis1, 280, 185, 0);
@@ -677,6 +681,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
         @Override
         public void invoke(int choice) {
+            System.out.println("In M_ReadThis");
             choice = 0;
             SetupNextMenu(ReadDef1);
         }
@@ -718,7 +723,6 @@ public class Menu extends MenuMisc implements DoomMenu{
                 endstring =
                     endmsg[(DM.gametic % (NUM_QUITMESSAGES - 2)) + 1] + "\n\n"
                             + DOSY;
-
             StartMessage(endstring, QuitResponse, true);
         }
     }
@@ -799,7 +803,7 @@ public class Menu extends MenuMisc implements DoomMenu{
     public void StartMessage(String string, MenuRoutine routine, boolean input) {
         messageLastMenuActive = DM.menuactive;
         messageToPrint = true;
-        messageString = string;
+        messageString = new String(string);
         messageRoutine = routine;
         messageNeedsInput = input;
         DM.menuactive = true; // "true"
@@ -831,7 +835,9 @@ public class Menu extends MenuMisc implements DoomMenu{
     }
 
     /**
-     * Find string height from hu_font chars
+     * Find string height from hu_font chars.
+     * 
+     * Actually it just counts occurences of 'n' and adds height to height.
      */
     private int StringHeight(char[] string) {
         int i;
@@ -869,8 +875,9 @@ public class Menu extends MenuMisc implements DoomMenu{
         cx = x;
         cy = y;
 
-        while (true) {
-            c = ch[chptr++];
+        while (chptr<ch.length) {
+            c = ch[chptr];
+            chptr++;
             if (c == 0)
                 break;
             if (c == '\n') {
@@ -878,7 +885,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 cy += 12;
                 continue;
             }
-
+            
             c = Character.toUpperCase(c) - HU_FONTSTART;
             if (c < 0 || c >= HU_FONTSIZE) {
                 cx += 4;
@@ -888,6 +895,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             w = hu_font[c].width;
             if (cx + w > SCREENWIDTH)
                 break;
+            
             V.DrawPatchDirect(cx, cy, 0, hu_font[c]);
             cx += w;
         }
@@ -899,7 +907,6 @@ public class Menu extends MenuMisc implements DoomMenu{
             return;
 
         int w;
-        char[] ch=string.toCharArray();
         int cx;
         int cy;
 
@@ -909,8 +916,8 @@ public class Menu extends MenuMisc implements DoomMenu{
         cx = x;
         cy = y;
 
-        while (chptr<ch.length) {
-            c = ch[chptr++];
+        while (chptr<string.length()) {
+            c = string.charAt(chptr++);
             if (c == 0)
                 break;
             if (c == '\n') {
@@ -954,6 +961,8 @@ public class Menu extends MenuMisc implements DoomMenu{
         int i;
         ch = 0xFFFF;
 
+        System.out.println("Processing keyevent:" +(ev.type==evtype_t.ev_keydown || ev.type==evtype_t.ev_keyup)+ " value = "+ev.data1);
+        
         // Joystick input
         
         if (ev.type == evtype_t.ev_joystick && joywait < I.GetTime()) {
@@ -1075,7 +1084,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 messageRoutine.invoke(ch);
 
             DM.menuactive = false; // "false"
-            S.StartSound(null, sfxenum_t.sfx_swtchx);
+           // TODO: S.StartSound(null, sfxenum_t.sfx_swtchx);
             return true;
         }
 
@@ -1085,7 +1094,8 @@ public class Menu extends MenuMisc implements DoomMenu{
         }
 
         // F-Keys
-        if (!DM.menuactive)
+        if (!DM.menuactive){
+            System.out.print("Menu NOT active");
             switch (ch) {
             case KEY_MINUS: // Screen size down
                 if (DM.automapactive || chat_on)
@@ -1102,13 +1112,13 @@ public class Menu extends MenuMisc implements DoomMenu{
                 return true;
 
             case KEY_F1: // Help key
+                System.out.println("F1 Pressed");
                 StartControlPanel();
 
                 if (DM.gamemode == GameMode_t.retail)
                     currentMenu = ReadDef2;
                 else
                     currentMenu = ReadDef1;
-
                 itemOn = 0;
                 // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
@@ -1129,36 +1139,36 @@ public class Menu extends MenuMisc implements DoomMenu{
                 StartControlPanel();
                 currentMenu = SoundDef;
                 itemOn = (short) sfx_vol;
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
 
             case KEY_F5: // Detail toggle
                 ChangeDetail.invoke(0);
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
 
             case KEY_F6: // Quicksave
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 QuickSave();
                 return true;
 
             case KEY_F7: // End game
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 EndGame.invoke(0);
                 return true;
 
             case KEY_F8: // Toggle messages
                 ChangeMessages.invoke(0);
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
 
             case KEY_F9: // Quickload
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 QuickLoad();
                 return true;
 
             case KEY_F10: // Quit DOOM
-                S.StartSound(null, sfxenum_t.sfx_swtchn);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 QuitDOOM.invoke(0);
                 return true;
 
@@ -1172,12 +1182,12 @@ public class Menu extends MenuMisc implements DoomMenu{
                 return true;
 
             }
-
+    }
         // Pop-up menu?
         if (!DM.menuactive) {
             if (ch == KEY_ESCAPE) {
                 StartControlPanel();
-             //TODO:   S.StartSound(null, sfxenum_t.sfx_swtchn);
+             //TODO:   ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
                 return true;
             }
             return false;
@@ -1191,7 +1201,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                     itemOn = 0;
                 else
                     itemOn++;
-                //TODO: S.StartSound(null, sfxenum_t.sfx_pstop);
+                //TODO: ; // TODO: S.StartSound(null, sfxenum_t.sfx_pstop);
             } while (currentMenu.menuitems[itemOn].status == -1);
             return true;
 
@@ -1201,14 +1211,14 @@ public class Menu extends MenuMisc implements DoomMenu{
                     itemOn = (short) (currentMenu.numitems - 1);
                 else
                     itemOn--;
-              //TODO:  S.StartSound(null, sfxenum_t.sfx_pstop);
+              //TODO:  ; // TODO: S.StartSound(null, sfxenum_t.sfx_pstop);
             } while (currentMenu.menuitems[itemOn].status == -1);
             return true;
 
         case KEY_LEFTARROW:
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && (currentMenu.menuitems[itemOn].status == 2)) {
-             //TODO:   S.StartSound(null, sfxenum_t.sfx_stnmov);
+             //TODO:   ; // TODO: S.StartSound(null, sfxenum_t.sfx_stnmov);
                 currentMenu.menuitems[itemOn].routine.invoke(0);
             }
             return true;
@@ -1216,30 +1226,35 @@ public class Menu extends MenuMisc implements DoomMenu{
         case KEY_RIGHTARROW:
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && (currentMenu.menuitems[itemOn].status == 2)) {
-             //TODO:   S.StartSound(null, sfxenum_t.sfx_stnmov);
+             //TODO:   ; // TODO: S.StartSound(null, sfxenum_t.sfx_stnmov);
                 currentMenu.menuitems[itemOn].routine.invoke(1);
             }
             return true;
 
-        case KEY_ENTER:
+        case KEY_ENTER: {
+            System.out.println("ENTER pressed on active menu.");
+            System.out.println(currentMenu.menuitems[itemOn].routine);
+            
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && currentMenu.menuitems[itemOn].status != 0) {
                 currentMenu.lastOn = itemOn;
                 if (currentMenu.menuitems[itemOn].status == 2) {
                     currentMenu.menuitems[itemOn].routine.invoke(1); // right
                     // arrow
-              //TODO:      S.StartSound(null, sfxenum_t.sfx_stnmov);
+              //TODO:      ; // TODO: S.StartSound(null, sfxenum_t.sfx_stnmov);
                 } else {
+                    System.out.println("Invoking something...");
                     currentMenu.menuitems[itemOn].routine.invoke(itemOn);
-                    S.StartSound(null, sfxenum_t.sfx_pistol);
+                    ; // TODO: S.StartSound(null, sfxenum_t.sfx_pistol);
                 }
             }
+        }
             return true;
 
         case KEY_ESCAPE:
             currentMenu.lastOn = itemOn;
             ClearMenus();
-            // TODO: S.StartSound(null, sfxenum_t.sfx_swtchx);
+            // TODO: ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchx);
             return true;
 
         case KEY_BACKSPACE:
@@ -1247,7 +1262,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             if (currentMenu.prevMenu != null) {
                 currentMenu = currentMenu.prevMenu;
                 itemOn = (short) currentMenu.lastOn;
-                // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
+                // TODO: ; // TODO: S.StartSound(null, sfxenum_t.sfx_swtchn);
             }
             return true;
 
@@ -1255,13 +1270,13 @@ public class Menu extends MenuMisc implements DoomMenu{
             for (i = itemOn + 1; i < currentMenu.numitems; i++)
                 if (currentMenu.menuitems[i].alphaKey == ch) {
                     itemOn = (short) i;
-                    S.StartSound(null, sfxenum_t.sfx_pstop);
+                    ; // TODO: S.StartSound(null, sfxenum_t.sfx_pstop);
                     return true;
                 }
             for (i = 0; i <= itemOn; i++)
                 if (currentMenu.menuitems[i].alphaKey == ch) {
                     itemOn = (short) i;
-                    S.StartSound(null, sfxenum_t.sfx_pstop);
+                    ; // TODO: S.StartSound(null, sfxenum_t.sfx_pstop);
                     return true;
                 }
             break;
@@ -1302,17 +1317,18 @@ public class Menu extends MenuMisc implements DoomMenu{
             start = 0;
             y = 100 - this.StringHeight(messageString) / 2;
             msstring = messageString.toCharArray();
-            // while(*(messageString+start)) {
-            for (int l = 0; l < messageString.length();l++) 
-                for (int i = 0; i < messageString.length() - start; i++) {
+            while(start<messageString.length()) {
+                int i=0;
+                for ( i = 0; i < messageString.length() - start; i++) 
                     if (msstring[start + i] == '\n') {
                         C2JUtils.memset(string, (char) 0, 40);
                         C2JUtils.strcpy(string, msstring, start, i);
                         start += i + 1;
                         break;
                     }
+                
                     if (i == (messageString.length() - start)) {
-                        C2JUtils.strcpy(string, messageString + start);
+                        C2JUtils.strcpy(string, msstring,start);
                         start += i;
                     }
                     x = 160 - this.StringWidth(string) / 2;
@@ -1374,6 +1390,13 @@ public class Menu extends MenuMisc implements DoomMenu{
      * M_Init
      */
     public void Init() {
+        
+        // Init menus.
+        this.initMenuRoutines();
+        this.initDrawRoutines();
+        this.initMenuItems();
+        this.hu_font=HU.getHUFonts();
+
         currentMenu = MainDef;
         DM.menuactive = false;
         itemOn = (short) currentMenu.lastOn;
@@ -1430,13 +1453,13 @@ public class Menu extends MenuMisc implements DoomMenu{
      * @return
      */
 
-    public int DrawText(int x, int y, boolean direct, char[] string) {
+    public int DrawText(int x, int y, boolean direct, String string) {
         int c;
         int w;
         int ptr = 0;
-
-        while (string[ptr] > 0) {
-            c = Character.toUpperCase(string[ptr]) - HU_FONTSTART;
+        
+        while ((c=string.charAt(ptr)) > 0) {
+            c = Character.toUpperCase(c) - HU_FONTSTART;
             ptr++;
             if (c < 0 || c > HU_FONTSIZE) {
                 x += 4;
@@ -1543,7 +1566,9 @@ public class Menu extends MenuMisc implements DoomMenu{
     class M_DrawReadThis1
             implements DrawRoutine {
 
+        @Override
         public void invoke() {
+            System.out.println("DrawReadThis1 invoked");
             inhelpscreens = true;
             switch (DM.gamemode) {
             case commercial:
@@ -1567,7 +1592,9 @@ public class Menu extends MenuMisc implements DoomMenu{
     class M_DrawReadThis2
             implements DrawRoutine {
 
+        @Override
         public void invoke() {
+            System.out.println("DrawReadThis2 invoked");
             inhelpscreens = true;
             switch (DM.gamemode) {
             case retail:
@@ -1694,7 +1721,7 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int choice) {
             choice = 0;
             if (!DM.usergame) {
-                S.StartSound(null, sfxenum_t.sfx_oof);
+                ; // TODO: S.StartSound(null, sfxenum_t.sfx_oof);
                 return;
             }
 
@@ -1742,7 +1769,6 @@ public class Menu extends MenuMisc implements DoomMenu{
 
             epi = choice;
             SetupNextMenu(NewDef);
-            SetupNextMenu(OptionsDef);
         }
 
     }
@@ -1796,38 +1822,38 @@ public class Menu extends MenuMisc implements DoomMenu{
                 sfxenum_t.sfx_bspact, sfxenum_t.sfx_sgtatk };
 
     /** episodes_e enum */
-    private static int ep1 = 0, ep2 = 1, ep3 = 2, ep4 = 3, ep_end = 4;
+    private static final int ep1 = 0, ep2 = 1, ep3 = 2, ep4 = 3, ep_end = 4;
 
     /** load_e enum */
-    private static int load1 = 0, load2 = 1, load3 = 2, load4 = 3, load5 = 4,
+    private static final int load1 = 0, load2 = 1, load3 = 2, load4 = 3, load5 = 4,
             load6 = 5, load_end = 6;
 
     /** options_e enum; */
 
-    private static int endgame = 0, messages = 1, detail = 2, scrnsize = 3,
+    private static final int endgame = 0, messages = 1, detail = 2, scrnsize = 3,
             option_empty1 = 4, mousesens = 5, option_empty2 = 6, soundvol = 7,
             opt_end = 8;
 
     /** main_e enum; */
-    private static int newgame = 0, options = 1, loadgam = 2, savegame = 3,
+    private static final int  newgame = 0, options = 1, loadgam = 2, savegame = 3,
             readthis = 4, quitdoom = 5, main_end = 6;
 
     /** read_e enum */
-    private static int rdthsempty1 = 0, read1_end = 1;
+    private static final int rdthsempty1 = 0, read1_end = 1;
 
     /** read_2 enum */
-    private static int rdthsempty2 = 0, read2_end = 1;
+    private static final int rdthsempty2 = 0, read2_end = 1;
 
     /**  newgame_e enum;*/
-    static int killthings = 0, toorough = 1, hurtme = 2, violence = 3,
+    public static final int killthings = 0, toorough = 1, hurtme = 2, violence = 3,
             nightmare = 4, newg_end = 5;
     
-    private static String[] gammamsg = { "GAMMALVL0",
+    private static final String[] gammamsg = { "GAMMALVL0",
 
         "GAMMALVL1", "GAMMALVL2", "GAMMALVL3", "GAMMALVL4" };
 
     /** sound_e enum */
-    static int sfx_vol = 0, sfx_empty1 = 1, music_vol = 2, sfx_empty2 = 3,
+    static final int sfx_vol = 0, sfx_empty1 = 1, music_vol = 2, sfx_empty2 = 3,
             sound_end = 4;
     
     

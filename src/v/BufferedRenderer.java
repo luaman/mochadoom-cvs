@@ -13,7 +13,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.7 2010/09/13 15:39:17 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.8 2010/09/24 17:58:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,6 +27,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.8  2010/09/24 17:58:39  velktron
+// Menus and HU  functional -mostly.
+//
 // Revision 1.7  2010/09/13 15:39:17  velktron
 // Moving towards an unified gameplay approach...
 //
@@ -123,7 +126,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.7 2010/09/13 15:39:17 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.8 2010/09/24 17:58:39 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -132,7 +135,18 @@ public BufferedImage[] screenbuffer=new BufferedImage[5];
 
 public BufferedRenderer(int w, int h, IndexColorModel icm) {
     super(w,h);
-    this.icm=icm;
+    this.setIcm(icm);
+}
+
+/** Normally, you only have the palettes available ONLY after you read the palette from disk.
+ *  So use the super contructor, and then this when the palettes are available.
+ *  
+ * @param icm2
+ */
+
+public void setIcm(IndexColorModel icm2) {
+    this.icm=icm2;
+    
 }
 
 public BufferedRenderer(int w, int h) {

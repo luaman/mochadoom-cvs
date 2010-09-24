@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.18 2010/09/23 20:36:45 velktron Exp $
+// $Id: WadLoader.java,v 1.19 2010/09/24 17:58:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.19  2010/09/24 17:58:39  velktron
+// Menus and HU  functional -mostly.
+//
 // Revision 1.18  2010/09/23 20:36:45  velktron
 // *** empty log message ***
 //
@@ -122,21 +125,34 @@ public class WadLoader {
     // GLOBALS
     //
 
-    // Location of each lump on disk.
+    /** Location of each lump on disk. */
     public lumpinfo_t[] lumpinfo;
 
     public WadLoader(DoomSystemInterface I) {
-    	this.I=I;
+        this();
+        this.I=I;
+    }
+
+    public WadLoader() {
+        //this.I=I;
         lumpinfo = new lumpinfo_t[0];
     }
 
+    
     public int numlumps;
 
-    // MAES: probably array of byte[]???
-    // void** lumpcache;
+    /** MAES: probably array of byte[]???
+        void** lumpcache;
 
-    // Actually, loaded objects will be deserialized there (in the worst case
-    // they will be byte[] or ByteBuffer).
+       Actually, loaded objects will be deserialized here 
+       as the general type "CacheableDoomObject" 
+       (in the worst case they will be byte[] or ByteBuffer). 
+       
+       Not to brag, but this system is FAR superior to the inline
+       unmarshaling used in other projects ;-)
+       
+       */
+       
     private CacheableDoomObject[] lumpcache;
 
     private boolean[] preloaded;
@@ -144,12 +160,16 @@ public class WadLoader {
     /** #define strcmpi strcasecmp
      * MAES: this is just capitalization.
      * However we can't manipulate String object in Java directly like this,
-     *  so this must be a return type. */
+     *  so this must be a return type. 
+     *  
+     *  TODO: maybe move this in utils?
+     */
 
     public String strupr(String s) {
         return s.toUpperCase();
     }
 
+    /* ditto */
     public void strupr(char[] s) {
         for (int i = 0; i < s.length; i++) {
             s[i] = Character.toUpperCase(s[i]);

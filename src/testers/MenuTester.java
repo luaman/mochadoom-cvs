@@ -3,6 +3,7 @@ package testers;
 import static data.Defines.KEY_F1;
 import static data.Defines.PU_STATIC;
 
+import hu.HU;
 import i.InputListener;
 
 import java.awt.image.BufferedImage;
@@ -23,7 +24,9 @@ import w.WadLoader;
 import data.Defines;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
+import data.Defines.Language_t;
 import doom.DoomContext;
+import doom.DoomMain;
 import doom.DoomStatus;
 import doom.event_t;
 import doom.player_t;
@@ -41,7 +44,6 @@ public class MenuTester {
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
 
-    DoomStatus ds = new DoomStatus();
     patch_t help1=W.CachePatchName("TITLEPIC", PU_STATIC);
     
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
@@ -60,59 +62,68 @@ public class MenuTester {
             pals[i]=new BufferedImage(icms[i],V.screenbuffer[0].getRaster(), false, null);
            }
         
-    DoomContext DC=new DoomContext();
-    DC.DS=ds;
-    DC.W=W;
-    DC.V=V;
+    DoomMain DM=new DoomMain();
+
+
+    DM.W=W;
+    DM.V=V;
+    HU HU=new HU(DM);
+    HU.Init();
+    DM.HU=HU;
+    DM.gameepisode=1;
+    DM.gamemap=1;
+    DM.gamemission=GameMission_t.doom;
+    DM.gamemode=GameMode_t.shareware;
+    DM.wminfo=new wbstartstruct_t();
+    C2JUtils.initArrayOfObjects(DM.players,player_t.class);
     
-    ds.gameepisode=1;
-    ds.gamemap=1;
-    ds.gamemission=GameMission_t.doom;
-    ds.gamemode=GameMode_t.shareware;
-    ds.wminfo=new wbstartstruct_t();
-    C2JUtils.initArrayOfObjects(ds.players,player_t.class);
+    DM.RND=new random();
+    DM.players[0].cmd=new ticcmd_t();
+    DM.players[0].itemcount=1337;
+    DM.players[0].killcount=1337;
+    DM.players[0].secretcount=1337;
     
-    DC.DS=ds;
-    DC.W=W;
-    DC.V=V;
-    DC.RND=new random();
-    ds.players[0].cmd=new ticcmd_t();
-    ds.players[0].itemcount=1337;
-    ds.players[0].killcount=1337;
-    ds.players[0].secretcount=1337;
-    
-    ds.wminfo.plyr[0].in=true;
-    ds.wminfo.plyr[0].sitems=1337;
-    ds.wminfo.plyr[0].skills=1337;
-    ds.wminfo.plyr[0].stime=28595;
-    ds.wminfo.plyr[0].ssecret=1337;
-    ds.playeringame[0]=true;
-    ds.wminfo.last=6;
-    ds.wminfo.epsd=0;
-    ds.wminfo.maxitems=100;
-    ds.wminfo.maxkills=100;
-    ds.wminfo.maxsecret=100;
-    ds.wminfo.partime=28595;
+    DM.wminfo.plyr[0].in=true;
+    DM.wminfo.plyr[0].sitems=1337;
+    DM.wminfo.plyr[0].skills=1337;
+    DM.wminfo.plyr[0].stime=28595;
+    DM.wminfo.plyr[0].ssecret=1337;
+    DM.playeringame[0]=true;
+    DM.wminfo.last=6;
+    DM.wminfo.epsd=0;
+    DM.wminfo.maxitems=100;
+    DM.wminfo.maxkills=100;
+    DM.wminfo.maxsecret=100;
+    DM.wminfo.partime=28595;
    
-    DoomMenu M=new Menu(DC);
+    DoomMenu M=DM.M=new Menu(DM);
+    DM.language=Language_t.english;
     M.Init();
     CrappyDisplay frame = new CrappyDisplay(pals);
     frame.setTitle("MochaDoom");
-    
-    InputListener in = new InputListener();
-    frame.addComponentListener(in);
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.pack();
     frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
     frame.setVisible(true);
     frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
-    //V.takeScreenShot(0, "menutic19",icm);
-    ds.menuactive=true;        
-        for (int i=0;i<1500;i++){
-
-
-            if (i==40){
+    
+    DM.menuactive=true;        
+        for (int i=0;i<10000;i++){
+            int a=DM.I.GetTime();
+            while (a-DM.I.GetTime()==0){
+                frame.setVisible(true);
+                Thread.sleep(1);               
+            }
+            
+           
+            
+            event_t ev=CrappyDisplay.nextEvent();
+            //System.out.println(ev);
+            if (ev!=null)
+            ((Menu)M).Responder(ev);
+            
+          /*  if (i==40){
             	System.out.println("Pressing enter");
                 M.Responder(new event_t(Defines.KEY_DOWNARROW));
             }
@@ -160,13 +171,14 @@ public class MenuTester {
             if (i==400 || i==650){
             	System.out.println("Pressing escape");
                 M.Responder(new event_t(Defines.KEY_ESCAPE));
-            }
+            } */
+            
             //V.takeScreenShot(0,( "menutic"+i),icm);
-            Thread.sleep(35);
+         
         V.DrawPatch(0,0,0,help1);
         M.Ticker();
         M.Drawer();
-        
+        DM.gametic++;
         frame.update(null);
         System.out.print(frame.processEvents());
         }

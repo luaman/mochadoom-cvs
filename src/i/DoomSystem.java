@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.2 2010/09/23 20:36:45 velktron Exp $
+// $Id: DoomSystem.java,v 1.3 2010/09/24 17:58:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.3  2010/09/24 17:58:39  velktron
+// Menus and HU  functional -mostly.
+//
 // Revision 1.2  2010/09/23 20:36:45  velktron
 // *** empty log message ***
 //
@@ -101,7 +104,7 @@ public byte[] ZoneBase (int	size)
 
 
 
-protected static long basetime=0;
+protected long basetime=0;
 
 /**
  * I_GetTime

@@ -1,6 +1,7 @@
 package m;
 
 import g.DoomGameInterface;
+import hu.HU;
 import i.DoomSystemInterface;
 
 import java.util.Arrays;
@@ -18,7 +19,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.8 2010/09/23 20:36:45 velktron Exp $
+// $Id: MenuMisc.java,v 1.9 2010/09/24 17:58:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -34,6 +35,9 @@ import w.WadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.9  2010/09/24 17:58:39  velktron
+// Menus and HU  functional -mostly.
+//
 // Revision 1.8  2010/09/23 20:36:45  velktron
 // *** empty log message ***
 //
@@ -88,12 +92,13 @@ import w.WadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.8 2010/09/23 20:36:45 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.9 2010/09/24 17:58:39 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;
 WadLoader W;
 DoomVideoRenderer V;
+HU HU;
 
 DoomSystemInterface I;
 DoomSoundInterface S;
