@@ -75,6 +75,7 @@ public class MenuTester {
     DM.gamemission=GameMission_t.doom;
     DM.gamemode=GameMode_t.shareware;
     DM.wminfo=new wbstartstruct_t();
+    DM.usergame=true;
     C2JUtils.initArrayOfObjects(DM.players,player_t.class);
     
     DM.RND=new random();

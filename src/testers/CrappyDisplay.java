@@ -94,6 +94,7 @@ public class CrappyDisplay extends JFrame implements KeyListener{
             
             //in = new InputListener();
             //this.addComponentListener(in);
+            this.setVisible(true);
             g2d = (Graphics2D)drawhere.getGraphics();
         }
         

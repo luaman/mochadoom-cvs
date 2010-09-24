@@ -200,30 +200,44 @@ public class Menu extends MenuMisc implements DoomMenu{
 
     /** DrawRoutine class definitions, replacing "function pointers". */
 
-    DrawRoutine DrawEpisode, DrawReadThis1, DrawReadThis2, DrawLoad,
-            DrawMainMenu, DrawNewGame, DrawOptions, DrawSave, DrawSound;
+    DrawRoutine DrawEpisode, DrawLoad,DrawMainMenu,DrawNewGame,DrawOptions,
+    			DrawReadThis1, DrawReadThis2, DrawSave, DrawSound;
 
     /** Initialize menu routines first */
     
     private void initMenuRoutines() {
-        NewGame = new M_NewGame();
-        Options = new M_Options();
-        ChooseSkill = new M_ChooseSkill();
-        Episode = new M_Episode();
-        EndGame = new M_EndGame();
-        EndGameResponse = new M_EndGameResponse();
-        VerifyNightmare = new M_VerifyNightmare();
-        EndGame = new M_EndGame();
+
+
+
+
         ChangeMessages = new M_ChangeMessages();
         ChangeDetail = new M_ChangeDetail();
-        SizeDisplay = new M_SizeDisplay();
         ChangeSensitivity = new M_ChangeSensitivity();
-        ReadThis = new M_ReadThis();
-        ReadThis2 = new M_ReadThis2();
-        Sound = new M_Sound();
+        ChooseSkill = new M_ChooseSkill();
+        EndGame = new M_EndGame();
+        EndGameResponse = new M_EndGameResponse();
+        Episode = new M_Episode();
+        FinishReadThis=new M_FinishReadThis();
+        LoadGame=new M_LoadGame();
+        LoadSelect=new M_LoadSelect();
+        MusicVol=new M_MusicVol();
+        NewGame = new M_NewGame();
+        Options = new M_Options();
+
+
         QuitDOOM = new M_QuitDOOM();
         QuickLoadResponse = new M_QuickLoadResponse();
         QuitResponse = new M_QuitResponse();
+        
+        ReadThis = new M_ReadThis();
+        ReadThis2 = new M_ReadThis2();
+         
+        SaveGame=new M_SaveGame();
+        SaveSelect= new M_SaveSelect();
+        SfxVol=new M_SfxVol();
+        SizeDisplay = new M_SizeDisplay();
+        Sound = new M_Sound();
+        VerifyNightmare = new M_VerifyNightmare();
     }
 
     /** Then drawroutines */
@@ -234,7 +248,8 @@ public class Menu extends MenuMisc implements DoomMenu{
         DrawReadThis1 = new M_DrawReadThis1();
         DrawReadThis2 = new M_DrawReadThis2();
         DrawOptions = new M_DrawOptions();
-
+        DrawLoad = new M_DrawLoad();
+        DrawSave = new M_DrawSave();
         DrawMainMenu = new M_DrawMainMenu();
     }
 
@@ -317,12 +332,12 @@ public class Menu extends MenuMisc implements DoomMenu{
 
     // Read This! MENU 1 
 
-    ReadMenu1 = new menuitem_t[] { new menuitem_t(1, "", ReadThis, (char) 0) };
+    ReadMenu1 = new menuitem_t[] { new menuitem_t(1, "", ReadThis2, (char) 0) };
 
     ReadDef1 =
         new menu_t(read1_end, MainDef, ReadMenu1, DrawReadThis1, 280, 185, 0);
 
-    // Read This! MENU 1
+    // Read This! MENU 2
 
     ReadMenu2 = new menuitem_t[] 
         { new menuitem_t(1, "", FinishReadThis, (char) 0) };
@@ -454,7 +469,8 @@ public class Menu extends MenuMisc implements DoomMenu{
     //
     // M_SaveGame & Cie.
     //
-    public void DrawSave() {
+    public class M_DrawSave implements DrawRoutine {
+    	public void invoke(){
         int i;
 
         V.DrawPatchDirect(72, 28, 0, W.CachePatchName("M_SAVEG"));
@@ -467,6 +483,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             i = StringWidth(savegamestrings[saveSlot]);
             WriteText(LoadDef.x + i, LoadDef.y + LINEHEIGHT * saveSlot, "_");
         }
+    	}
     }
 
     /**
@@ -488,7 +505,7 @@ public class Menu extends MenuMisc implements DoomMenu{
      * User wants to save. Start string input for M_Responder
      */
 
-    class SaveSelect
+    class M_SaveSelect
             implements MenuRoutine {
         @Override
         public void invoke(int choice) {
@@ -506,7 +523,7 @@ public class Menu extends MenuMisc implements DoomMenu{
     /**
      * Selected from DOOM menu
      */
-    class SaveGame
+    class M_SaveGame
             implements MenuRoutine {
         @Override
         public void invoke(int choice) {
@@ -1115,7 +1132,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 System.out.println("F1 Pressed");
                 StartControlPanel();
 
-                if (DM.gamemode == GameMode_t.retail)
+                if (DM.gamemode == GameMode_t.retail || currentMenu==ReadDef1)
                     currentMenu = ReadDef2;
                 else
                     currentMenu = ReadDef1;
@@ -1756,7 +1773,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
             if ((DM.gamemode == GameMode_t.shareware) && (choice != 0)) {
                 StartMessage(SWSTRING, null, false);
-                SetupNextMenu(ReadDef1);
+                SetupNextMenu(ReadDef2);
                 return;
             }
 
