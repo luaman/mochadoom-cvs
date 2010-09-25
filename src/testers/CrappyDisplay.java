@@ -188,10 +188,10 @@ public class CrappyDisplay extends JFrame implements KeyListener{
             }
                 
             default:
-            if (rc >= KeyEvent.VK_SPACE && rc <= '~')
-                rc = (int) (rc - KeyEvent.FOCUS_EVENT_MASK + ' ');
-            if (rc >= 'A' && rc <= 'Z')
-                rc = rc - 'A' + 'a';
+            /*if (rc >= KeyEvent.VK_SPACE && rc <= KeyEvent.VK_DEAD_TILDE)
+                rc = (int) (rc - KeyEvent.FOCUS_EVENT_MASK + ' ');*/
+            if (rc >= KeyEvent.VK_A && rc <= KeyEvent.VK_Z)
+                rc = rc-KeyEvent.VK_A +'a';
             break;
           }
           

@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomNet.java,v 1.1 2010/09/23 07:31:11 velktron Exp $
+// $Id: DoomNet.java,v 1.2 2010/09/25 17:37:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,11 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: DoomNet.java,v $
+// Revision 1.2  2010/09/25 17:37:13  velktron
+// Lots of changes.
+//
+// The most important is the creation of the AWTDoom frame handling I/O.
+//
 // Revision 1.1  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -49,7 +54,7 @@ package doom;
 //-----------------------------------------------------------------------------
 
 
-//static const char rcsid[] = "$Id: DoomNet.java,v 1.1 2010/09/23 07:31:11 velktron Exp $";
+//static const char rcsid[] = "$Id: DoomNet.java,v 1.2 2010/09/25 17:37:13 velktron Exp $";
 
 
 //#include "m_menu.h"
@@ -119,7 +124,7 @@ int             maketic;
 int		lastnettic;
 int		skiptics;
 int		ticdup;		
-int		maxsend;	// BACKUPTICS/(2*ticdup)-1
+int		maxsend= BACKUPTICS/(2*ticdup)-1;
 
 
 //void D_ProcessEvents (void); 

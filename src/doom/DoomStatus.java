@@ -275,7 +275,7 @@ public class DoomStatus extends DoomContext {
 
     public ticcmd_t[][] netcmds;// [MAXPLAYERS][BACKUPTICS];
 
-    public int ticdup;
+    public int ticdup=1;
 
     protected void initNetGameStuff() {
         this.netbuffer = new doomdata_t();
@@ -290,7 +290,7 @@ public class DoomStatus extends DoomContext {
     // duplicated/externalized
     // in d_game.c and d_game.h, so it makes sense adopting a more unified
     // approach.
-    public gameaction_t gameaction;
+    public gameaction_t gameaction=gameaction_t.ga_nothing;
 
     public boolean sendpause; // send a pause event next tic
 
@@ -460,6 +460,9 @@ public class DoomStatus extends DoomContext {
         return 0;
     }
 
+    public DoomStatus(){
+    	C2JUtils.initArrayOfObjects(players);
+    }
     
     
 

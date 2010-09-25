@@ -70,6 +70,7 @@ public class Menu extends MenuMisc implements DoomMenu{
         this.V=DM.V;
         this.W=DM.W;
         this.HU=DM.HU;
+        this.I=DM.I;
     }
     
     
@@ -978,7 +979,7 @@ public class Menu extends MenuMisc implements DoomMenu{
         int i;
         ch = 0xFFFF;
 
-        System.out.println("Processing keyevent:" +(ev.type==evtype_t.ev_keydown || ev.type==evtype_t.ev_keyup)+ " value = "+ev.data1);
+        //System.out.println("Processing keyevent:" +(ev.type==evtype_t.ev_keydown || ev.type==evtype_t.ev_keyup)+ " value = "+(char)ev.data1);
         
         // Joystick input
         

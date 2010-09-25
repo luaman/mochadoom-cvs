@@ -5,6 +5,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.DataBufferInt;
 import java.awt.image.IndexColorModel;
+import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 
 import m.BBox;
@@ -13,7 +14,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.8 2010/09/24 17:58:39 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.9 2010/09/25 17:37:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,6 +28,11 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.9  2010/09/25 17:37:13  velktron
+// Lots of changes.
+//
+// The most important is the creation of the AWTDoom frame handling I/O.
+//
 // Revision 1.8  2010/09/24 17:58:39  velktron
 // Menus and HU  functional -mostly.
 //
@@ -126,7 +132,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.8 2010/09/24 17:58:39 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.9 2010/09/25 17:37:13 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -341,10 +347,12 @@ public final void changePalette(int pal){
 int[] palette;
 int[] raster;
 
-/** Get a bunch of BufferedImages "pegged" on the same output buffered image,
- *  but with different palettes, defines in icms[]. This is VERY speed efficient
- *  assuming that an IndexedColorModel will be used, rather than a 24-bit canvas,
- *  and memory overhead is minimal. 
+/** Get a bunch of BufferedImages "pegged" on the same output screen of this
+ * Doom Video Renderer, but with a but with different palettes, defined in icms[]
+ *  This is VERY speed efficient assuming that an IndexedColorModel will be used,
+ *  rather than a 24-bit canvas, and memory overhead is minimal. 
+ * 
+ *  Only works with BufferedRenderer though.
  * 
  * @param screen
  * @param icms
@@ -379,6 +387,15 @@ public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
         return b;
         
     }
+
+/** Returns a Raster of one of the internal screen BufferedImages.
+ *  Call ONLY after V.Init() has been called!
+ *  
+ * @param screen
+ */
+public Raster getRaster(int screen){
+	return this.screenbuffer[screen].getRaster();
+}
 
 public void report(BufferedImage[] b){
     System.out.println("Main video buffer "+screens[0]);

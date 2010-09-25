@@ -1,11 +1,13 @@
 package i;
 
+import v.BufferedRenderer;
+import w.WadLoader;
 import doom.DoomMain;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.2 2010/09/23 07:31:11 velktron Exp $
+//$Id: Main.java,v 1.3 2010/09/25 17:37:13 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +22,11 @@ import doom.DoomMain;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.3  2010/09/25 17:37:13  velktron
+//Lots of changes.
+//
+//The most important is the creation of the AWTDoom frame handling I/O.
+//
 //Revision 1.2  2010/09/23 07:31:11  velktron
 //fuck
 //
@@ -39,11 +46,17 @@ import doom.DoomMain;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.2 2010/09/23 07:31:11 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.3 2010/09/25 17:37:13 velktron Exp $";
 
     public static void main(String[] argv){
 
+    	
+    	  // These are the most essential
           DoomMain D=new DoomMain();
+
+          
+          // Create AWT frame, but don't start it yet.
+          
           D.Init();
 
           // Bump argcount +1 to maintain CheckParm behavior

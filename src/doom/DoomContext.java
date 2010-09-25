@@ -4,6 +4,7 @@ import f.Finale;
 import f.Wiper;
 import hu.HU;
 import i.DoomSystemInterface;
+import i.DoomVideoInterface;
 import m.DoomMenu;
 import m.random;
 import p.Actions;
@@ -30,11 +31,13 @@ import automap.DoomAutoMap;
  */
 
 public class DoomContext {
+	
     public DoomMain DM;
     public WadLoader W;
     public random RND;
     public DoomSystemInterface I;
     public DoomSoundInterface S;
+    public DoomVideoInterface VI;
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
     public LevelLoader LL;

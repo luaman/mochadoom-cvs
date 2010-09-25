@@ -3,6 +3,10 @@ package doom;
 // Event structure.
 
 public class event_t {
+	
+	public event_t(){
+		
+	}
 
     public event_t(evtype_t type, int data) {
         this.type = type;
