@@ -4,14 +4,16 @@ package i;
 
 public interface DoomVideoInterface {
 
-	void StartFrame();
+	public void StartFrame();
 
-	void StartTic();
+	public void StartTic();
 
-	void SetPalette(int palette);
+	public void SetPalette(int palette);
 
-	void InitGraphics();
+	public void InitGraphics();
 
-	void FinishUpdate();
+	public void FinishUpdate();
+
+	public void UpdateNoBlit();
 
 }

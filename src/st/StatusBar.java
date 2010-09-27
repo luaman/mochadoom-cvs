@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.15 2010/09/27 02:27:29 velktron Exp $
+// $Id: StatusBar.java,v 1.16 2010/09/27 15:07:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.16  2010/09/27 15:07:44  velktron
+// meh
+//
 // Revision 1.15  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -120,7 +123,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.15 2010/09/27 02:27:29 velktron Exp $";
+        "$Id: StatusBar.java,v 1.16 2010/09/27 15:07:44 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -1739,10 +1742,14 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         //
         public void drawNum(boolean refresh) {
 
+            if (this.numindex==largeammo) return;
+            
             st_number_t n = this;
             int numdigits = this.width;
             int num = 0;
 
+            
+            
             switch (status) {
             case 0:
                 num = ((int[]) this.numarray)[this.numindex];

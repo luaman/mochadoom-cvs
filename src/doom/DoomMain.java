@@ -65,7 +65,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.9 2010/09/27 02:27:29 velktron Exp $
+// $Id: DoomMain.java,v 1.10 2010/09/27 15:07:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,6 +80,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.10  2010/09/27 15:07:44  velktron
+// meh
+//
 // Revision 1.9  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -141,7 +144,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.9 2010/09/27 02:27:29 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.10 2010/09/27 15:07:44 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -231,15 +234,12 @@ public void ProcessEvents ()
 
 
 
-//
-// D_Display
-//  draw current display, possibly wiping it from the previous
-//
+
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
 gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
 // Defined in Renderer.
-int             showMessages;
+//int             showMessages;
 
 //void R_ExecuteSetViewSize ();
 
@@ -249,6 +249,11 @@ private  boolean		inhelpscreensstate = false;
 private  boolean		fullscreen = false;
 private  gamestate_t		oldgamestate = gamestate_t.GS_MINUS_ONE;
 private  int			borderdrawcount;
+
+/**
+ * D_Display
+ * draw current display, possibly wiping it from the previous
+ */
 
 public void Display ()
 {
@@ -316,11 +321,11 @@ public void Display ()
     }
     
     // draw buffered stuff to screen
-    //VI.UpdateNoBlit ();
+    VI.UpdateNoBlit ();
     
     // draw the view directly
     if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic))
-	R.RenderPlayerView (players[displayplayer]);
+	//R.RenderPlayerView (players[displayplayer]);
 
     if (gamestate == gamestate_t.GS_LEVEL && eval(gametic))
 	HU.Drawer ();
@@ -394,7 +399,7 @@ public void Display ()
 	wipestart = nowtime;
 	done = WIPE.ScreenWipe(Wiper.wipe.Melt.ordinal()
 			       , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
-	//VI.UpdateNoBlit ();
+	VI.UpdateNoBlit ();
 	M.Drawer ();                            // menu is drawn even on top of wipes
 	VI.FinishUpdate ();                      // page flip or blit buffer
     } while (!done);
@@ -429,7 +434,6 @@ public void DoomLoop ()
     }
     }
 	
-    VI.InitGraphics ();
 	 AM.Start();
     while (true)
     {
@@ -441,7 +445,7 @@ public void DoomLoop ()
 	{
 	    VI.StartTic ();
 	    ProcessEvents ();
-//	    BuildTiccmd (netcmds[consoleplayer][maketic%BACKUPTICS]);
+  	    BuildTiccmd (netcmds[consoleplayer][maketic%BACKUPTICS]);
 	    if (advancedemo)
 		DoAdvanceDemo ();
 	    M.Ticker ();
@@ -542,11 +546,10 @@ public void DoAdvanceDemo ()
 	gamestate = gamestate_t.GS_DEMOSCREEN;
 	pagename = "TITLEPIC";
 	if ( gamemode == GameMode_t.commercial )
-	  // TODO:  S_StartMusic(mus_dm2ttl);
-	    ;
+	  S.StartMusic(musicenum_t.mus_dm2ttl);
+	    
 	else
-	    //TODO: S_StartMusic (mus_intro); 
-	    ;	  
+	    S.StartMusic (musicenum_t.mus_intro); 
 	break;
       case 1:
 	DeferedPlayDemo ("demo1");
@@ -1169,8 +1172,10 @@ public void Start ()
     //
     System.out.print ("VI_Init: set colormaps.\n");
     byte[] pal=W.CacheLumpName("PLAYPAL", PU_STATIC).getBuffer().array();
-    // set it, but don't start it yet.
+    // set it, create it, but don't make it visible yet.
     VI=new AWTDoom(this,(BufferedRenderer) V,pal);
+    VI.InitGraphics ();
+
     this.ST.updateStatus(this);
 
     // Check for -file in shareware
@@ -1238,6 +1243,8 @@ public void Start ()
 	break;
     }
 
+    
+    
     System.out.print ("M_Init: Init miscellaneous info.\n");
     M.Init ();
 
@@ -1254,7 +1261,7 @@ public void Start ()
     CheckNetGame ();
 
     System.out.print ("S_Init: Setting up sound.\n");
-    // TODO: S_Init (snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
+    S.Init (snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
 
     System.out.print ("HU_Init: Setting up heads up display.\n");
     HU.Init();
@@ -1648,13 +1655,14 @@ public void Start ()
          return true; 
      } 
  */ 
-automapactive=true;
-         if (AM.Responder (ev)) 
-             return true;    // automap ate it 
+//automapactive=true;
+
      if (HU.Responder (ev)) 
          return true;    // chat ate the event 
      if (ST.Responder (ev)) 
-         return true;    // status window ate it 
+         return true;    // status window ate it
+     if (AM.Responder (ev)) 
+         return true;    // automap ate it 
 
      } 
       
@@ -1771,7 +1779,8 @@ automapactive=true;
      if (playeringame[i]) 
      { 
          cmd = players[i].cmd; 
-  
+         System.out.println("Current command:"+cmd);
+         
          //memcpy (cmd, &netcmds[i][buf], sizeof(ticcmd_t));
          netcmds[i][buf].copyTo(cmd);
   
@@ -2462,11 +2471,7 @@ automapactive=true;
  } 
   
 
- //
- // G_InitNew
- // Can be called by the startup code or the menu task,
- // consoleplayer, displayplayer, playeringame[] should be set. 
- //
+
  skill_t d_skill; 
  int     d_episode; 
  int     d_map; 
@@ -2499,6 +2504,12 @@ automapactive=true;
      gameaction = gameaction_t.ga_nothing; 
  } 
 
+ 
+ /**
+  * G_InitNew
+  * Can be called by the startup code or the menu task,
+  * consoleplayer, displayplayer, playeringame[] should be set. 
+  */
  
  public void InitNew
  ( skill_t   skill,

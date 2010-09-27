@@ -44,6 +44,7 @@ public class UnifiedRenderer extends RendererState{
       this.MyBSP=new BSP();
       this.MyPlanes=new Planes();
       this.MyThings=new Things();
+      // We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
       this.V=DM.V;
       this.I=DM.I;
       // Span functions
@@ -77,7 +78,7 @@ public class UnifiedRenderer extends RendererState{
       cliprange_t[]   solidsegs;
 
       public BSP(){
-          solidsegs= new cliprange_t[MAXSEGS];
+          solidsegs= new cliprange_t[MAXSEGS+1];
           C2JUtils.initArrayOfObjects(solidsegs);
           
       }
@@ -109,15 +110,22 @@ public class UnifiedRenderer extends RendererState{
 
   public void ClipSolidWallSegment (int   first,
           int   last ) {
+      
+
       int next;
       int start;
-
+      int maxlast=Integer.MIN_VALUE;
+      
       // Find the first range that touches the range
       //  (adjacent pixels are touching).
       start = 0;
       
-      while (solidsegs[start].last < first-1)
+      try{
+      while (solidsegs[start].last < first-1){
+          if (solidsegs[start].last>maxlast)
+              maxlast=solidsegs[start].last;
       start++;
+      }
 
       if (first < solidsegs[start].first)
       {
@@ -131,7 +139,11 @@ public class UnifiedRenderer extends RendererState{
           
           while (next != start)
           {
-              solidsegs[next] = solidsegs[next-1];
+           // *next=*(next-1);
+          //  FIXME: MAES: I think this is supposed to copy the structs
+          //  solidsegs[next] = solidsegs[next-1].clone();
+              solidsegs[next].copy(solidsegs[next-1]);
+              
           next--;
           }
           solidsegs[next].first = first;
@@ -163,7 +175,7 @@ public class UnifiedRenderer extends RendererState{
           solidsegs[start].last = solidsegs[next].last; 
           //goto crunch;
           
-          crunch:
+          { // crunch code
               if (next == start)
               {
               // Post just extended past the bottom of one post.
@@ -179,6 +191,7 @@ public class UnifiedRenderer extends RendererState{
 
               newend = start+1;
               return;
+          }
       }
       }
       
@@ -189,7 +202,30 @@ public class UnifiedRenderer extends RendererState{
       
       // Remove start+1 to next from the clip list,
       // because start now covers their area.
-    
+      
+      { // crunch code
+          if (next == start)
+          {
+          // Post just extended past the bottom of one post.
+          return;
+          }
+          
+
+          while (next++ != newend)
+          {
+          // Remove a post.
+              solidsegs[++start] = solidsegs[next];
+          }
+
+          newend = start+1;
+          return;
+      }
+      } catch (Exception e){
+          System.out.println("ERROR!! Was looking for stuff bigger than "+last);
+          System.out.println("Maximum found was"+maxlast);
+          System.out.println("Was looking for stuff bigger than "+last);
+      }
+      
   }
 
 
@@ -209,10 +245,9 @@ public class UnifiedRenderer extends RendererState{
       //  (adjacent pixels are touching).
       int startptr=0;
       start = solidsegs[startptr];
-      while (start.last < first-1)
-      startptr++;
-
-      start = solidsegs[startptr];
+      while (start.last < first-1){
+      start = solidsegs[startptr++];
+      }
       
       
       if (first < start.first)
@@ -231,12 +266,16 @@ public class UnifiedRenderer extends RendererState{
       // Bottom contained in start?
       if (last <= start.last)
       return;         
-          
+       
+      //MAES: Java absolutely can't do without a sanity check here.
+      if (startptr>=MAXSEGS-2) return;
+      
       while (last >= solidsegs[startptr+1].first-1)
       {
       // There is a fragment between two posts.
       MySegs.StoreWallRange (start.last + 1, solidsegs[startptr+1].first - 1);
       startptr++;
+      if (startptr>=MAXSEGS-2) return;
       start=solidsegs[startptr];
       
       if (last <= start.last)
@@ -269,6 +308,7 @@ public class UnifiedRenderer extends RendererState{
   //
   public void AddLine (seg_t  line) 
   {
+      System.out.println("Entered AddLine for "+line);
       int         x1;
       int         x2;
       long     angle1;
@@ -297,7 +337,7 @@ public class UnifiedRenderer extends RendererState{
       angle2 -= viewangle;
       
       angle1&=BITS32;
-      angle1&=BITS32;
+      angle2&=BITS32;
       
       tspan = angle1 + clipangle;
       tspan&=BITS32;
@@ -335,8 +375,8 @@ public class UnifiedRenderer extends RendererState{
       angle2&=BITS32;
       //System.out.println(Long.toHexString(angle1));
       //System.out.println(Long.toHexString(angle2));
-      angle1 = ((angle1+ANG90)>>>ANGLETOFINESHIFT);
-      angle2 = ((angle2+ANG90)>>>ANGLETOFINESHIFT);
+      angle1 = ((angle1+ANG90)&BITS32)>>>ANGLETOFINESHIFT;
+      angle2 = ((angle2+ANG90)&BITS32)>>>ANGLETOFINESHIFT;
       //System.out.println(Long.toHexString(angle1));
       //System.out.println(Long.toHexString(angle2));
       x1 = viewangletox[(int) angle1];
@@ -351,7 +391,9 @@ public class UnifiedRenderer extends RendererState{
       // Single sided line?
       
       if (backsector==null) {
+          System.out.println("Entering ClipSolidWallSegment SS");
           ClipSolidWallSegment (x1, x2-1); // to clipsolid
+          System.out.println("Exiting ClipSolidWallSegment");
           return;
           }
           
@@ -359,6 +401,7 @@ public class UnifiedRenderer extends RendererState{
       // Closed door.
       if (backsector.ceilingheight <= frontsector.floorheight
       || backsector.floorheight >= frontsector.ceilingheight) {
+          System.out.println("Entering ClipSolidWallSegment Closed door");
           ClipSolidWallSegment (x1, x2-1);; // to clipsolid    
           return;
           }
@@ -366,6 +409,7 @@ public class UnifiedRenderer extends RendererState{
       // Window.
       if (backsector.ceilingheight != frontsector.ceilingheight
       || backsector.floorheight != frontsector.floorheight) {
+          System.out.println("Entering ClipSolidWallSegment window");
           ClipPassWallSegment (x1, x2-1); // to clippass
           return;
           }
@@ -381,7 +425,8 @@ public class UnifiedRenderer extends RendererState{
       && curline.sidedef.midtexture == 0)
       {
       return;
-      }    
+      }
+      System.out.println("Exiting AddLine for "+line);
   }
 
 
@@ -461,45 +506,54 @@ public class UnifiedRenderer extends RendererState{
       y2 = bspcoord[checkcoord[boxpos][3]];
       
       // check clip list for an open space
-      angle1 = 0xFFFFFFFFL&PointToAngle (x1, y1) - viewangle;
-      angle2 = 0xFFFFFFFFL&PointToAngle (x2, y2) - viewangle;
+      angle1 = PointToAngle (x1, y1) - viewangle;
+      angle2 = PointToAngle (x2, y2) - viewangle;
+      
+      angle1&=BITS32;
+      angle2&=BITS32;
       
       span = angle1 - angle2;
 
+      span&=BITS32;
+      
       // Sitting on a line?
       if (span >= ANG180)
       return true;
       
       tspan = angle1 + clipangle;
-
+      tspan&=BITS32;
+      
       if (tspan > 2*clipangle)
       {
       tspan -= 2*clipangle;
-
+      tspan&=BITS32;
       // Totally off the left edge?
       if (tspan >= span)
           return false;   
 
       angle1 = clipangle;
       }
-      tspan = clipangle - angle2;
+      tspan = (clipangle - angle2)&BITS32;;
       if (tspan > 2*clipangle)
       {
       tspan -= 2*clipangle;
+      tspan&=BITS32;
 
       // Totally off the left edge?
       if (tspan >= span)
           return false;
       
       angle2 = -clipangle;
+      angle2&=BITS32;
       }
 
 
+      
       // Find the first clippost
       //  that touches the source post
       //  (adjacent pixels are touching).
-      angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-      angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
+      angle1 = ((angle1+ANG90)&BITS32)>>>ANGLETOFINESHIFT;
+      angle2 = ((angle2+ANG90)&BITS32)>>>ANGLETOFINESHIFT;
       sx1 = viewangletox[(int) angle1];
       sx2 = viewangletox[(int) angle2];
 
@@ -510,7 +564,8 @@ public class UnifiedRenderer extends RendererState{
       
       int pstart = 0;
       start=solidsegs[pstart];
-      while (start.last < sx2)
+      // FIXME: this overflows
+      while (start.last < sx2 && pstart<MAXSEGS)
       start=solidsegs[pstart++];
       
       if (sx1 >= start.first
@@ -533,8 +588,9 @@ public class UnifiedRenderer extends RendererState{
  * @throws IOException 
    */
   
-  public void Subsector (int num)
+  public void Subsector (int num)  
   {
+      System.out.println("SubSector " + num);
       int         count;
       int        line; // pointer into a list of segs
       subsector_t    sub;
@@ -575,11 +631,13 @@ public class UnifiedRenderer extends RendererState{
           
       MyThings.AddSprites (frontsector); 
 
+      System.out.println("Enter Addline for SubSector " + num+" count "+count);
       while (count-->0)
       {
       AddLine (LL.segs[line]);
       line++;
       }
+      System.out.println("Exit Addline for SubSector " + num);
   }
 
 
@@ -593,12 +651,17 @@ public class UnifiedRenderer extends RendererState{
    */
   public void RenderBSPNode (int bspnum)
   {
+      System.out.println("Processing BSP Node "+bspnum);
+      if (bspnum==33001){
+          System.out.println("shit");
+      }
       node_t  bsp;
       int     side;
 
       // Found a subsector?
-      if ((bspnum & NF_SUBSECTOR)!=0)
+      if (C2JUtils.flags(bspnum ,NF_SUBSECTOR))
       {
+          System.out.println("Subsector found.");
       if (bspnum == -1)           
           Subsector (0);
       else
@@ -612,11 +675,17 @@ public class UnifiedRenderer extends RendererState{
       side = bsp.PointOnSide (viewx, viewy);
 
       // Recursively divide front space.
+      System.out.println("Enter Front space of "+ bspnum);
       RenderBSPNode (bsp.children[side]); 
-
+      System.out.println("Return Front space of "+ bspnum);
+      
       // Possibly divide back space.
-      if (CheckBBox (bsp.bbox[side^1].bbox)) 
-      RenderBSPNode (bsp.children[side^1]);
+      
+      if (CheckBBox (bsp.bbox[side^1].bbox)){
+          System.out.println("Enter Back space of "+bspnum);
+          RenderBSPNode (bsp.children[side^1]);
+          System.out.println("Return Back space of "+bspnum);
+      }
   }
 
   
@@ -1274,7 +1343,7 @@ public class UnifiedRenderer extends RendererState{
           {
               
           //memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
-          System.arraycopy(ceilingclip, start, openings, lastopening,  2*(rw_stopx-start));
+         // FIXME: System.arraycopy(ceilingclip, start, openings, lastopening,  rw_stopx-start);
               
           seg.setSprTopClipPointer(lastopening - start);
           lastopening += rw_stopx - start;
@@ -1284,7 +1353,7 @@ public class UnifiedRenderer extends RendererState{
            && seg.nullSprBottomClip())
           {
           //memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
-              System.arraycopy(floorclip, start, openings, lastopening,  2*(rw_stopx-start));
+  //System.arraycopy(floorclip, start, openings, lastopening,  rw_stopx-start);
           seg.setSprBottomClipPointer(lastopening - start);
           lastopening += rw_stopx - start;    
           }
@@ -1455,8 +1524,8 @@ public class UnifiedRenderer extends RendererState{
 
           // left to right mapping
           // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
-          // Answer: 32-bit unsigned are supposed to roll over. You can % with 0xFFFFFFFFL.
-          angle = (int) (((viewangle-ANG90)>>ANGLETOFINESHIFT)%ANGLEMODULE);
+          // Answer: 32-bit unsigned are supposed to roll over. You can & with 0xFFFFFFFFL.
+          angle = (int) ((viewangle-ANG90&BITS32)>>>ANGLETOFINESHIFT);
           
           // scale will be unit scale at SCREENWIDTH/2 distance
           basexscale = FixedDiv (finecosine[angle],centerxfrac);
@@ -1632,6 +1701,7 @@ public class UnifiedRenderer extends RendererState{
        */
       public void DrawPlanes () 
       {
+          System.out.println("DrawPlanes");
           visplane_t      pln=null; //visplane_t
           int         light;
           int         x;
@@ -1680,7 +1750,8 @@ public class UnifiedRenderer extends RendererState{
                   angle = (int) ((viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT);
                   dc_x = x;
                   dc_source = GetColumn(skytexture, angle);
-                  colfunc.invoke();
+                  // TODO: Until you fix texture compositing, this can't work.
+                  //colfunc.invoke();
               }
               }
               continue;
@@ -2173,7 +2244,7 @@ public class UnifiedRenderer extends RendererState{
           {
           // choose a different rotation based on player view
           ang = PointToAngle (thing.x, thing.y);
-          rot = (int) ((ang-thing.angle+(ANG45/2)*9)>>29);
+          rot = (int) ((ang-thing.angle+(ANG45/2)*9)&BITS32>>>29);
           lump = sprframe.lump[rot];
           flip = (boolean)(sprframe.flip[rot]!=0);
           }
@@ -2270,6 +2341,7 @@ public class UnifiedRenderer extends RendererState{
        */
       public void AddSprites (sector_t sec)
       {
+          System.out.println("AddSprites");
           mobj_t     thing;
           int         lightnum;
 
@@ -2553,6 +2625,7 @@ public class UnifiedRenderer extends RendererState{
           for (ds=ds_p-1 ; ds >= 0 ; ds--)
           {
           // determine if the drawseg obscures the sprite
+              System.out.println("Drawseg "+ds+"of "+(ds_p-1));
               dss=drawsegs[ds];
           if (dss.x1 > spr.x2
               || dss.x2 < spr.x1
@@ -2604,7 +2677,12 @@ public class UnifiedRenderer extends RendererState{
               for (x=r1 ; x<=r2 ; x++)
               if (clipbot[x] == -2)
                   // clipbot[x] = ds->sprbottomclip[x];
-                  clipbot[x] = dss.getSprBottomClip(x);
+                  if (dss.nullSprBottomClip()){
+                      System.out.println("Bottom clipping requested but clip list not present for "+dss);
+                      
+                  } else clipbot[x] = dss.getSprBottomClip(x);
+                  
+              
           }
           else if (silhouette == 2)
           {
@@ -3330,7 +3408,7 @@ public void RenderPlayerView (player_t player)
   // Check for new console commands.
   //NetUpdate ();
   
-  //MyPlanes.DrawPlanes ();
+  MyPlanes.DrawPlanes ();
   
   // Check for new console commands.
   //NetUpdate ();
@@ -4323,6 +4401,9 @@ public void Init ()
 {
 	drawsegs=new drawseg_t[MAXDRAWSEGS];
 	C2JUtils.initArrayOfObjects(drawsegs);
+	
+	// DON'T FORGET ABOUT MEEEEEE!!!11!!!
+	this.screen=V.getScreen(0);
 	
 	InitData ();
    System.out.print("\nR_InitData");

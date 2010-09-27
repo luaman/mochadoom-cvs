@@ -40,5 +40,12 @@ public class ticcmd_t{
          dest.chatchar= chatchar;
          dest.buttons= buttons;
      }
+     
+     public String toString(){
+         StringBuilder str=new StringBuilder();
+         str.append("Buttons" );
+         str.append(Integer.toHexString(this.buttons));
+         return str.toString();
+     }
     
 };

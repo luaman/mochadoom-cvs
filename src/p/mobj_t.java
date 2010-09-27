@@ -291,7 +291,7 @@ public class mobj_t extends thinker_t implements Interceptable   {
         if (state == statenum_t.S_NULL)
         {
             state = null;
-            // TODO:P_RemoveMobj (mobj);
+            //TODO: P.RemoveMobj (mobj);
             return false;
         }
 
@@ -303,7 +303,7 @@ public class mobj_t extends thinker_t implements Interceptable   {
 
         // Modified handling.
         // Call action functions when the state is set
-        if (st.action.getType()==acp1)       
+        if (st.action!=null && st.action.getType()==acp1)       
             {A.dispatch(st.action, this, null);} 
         
         state = st.nextstate;

@@ -1,10 +1,11 @@
 package automap;
+import i.DoomStatusAware;
 import doom.event_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomAutoMap.java,v 1.2 2010/08/26 16:43:42 velktron Exp $
+// $Id: DoomAutoMap.java,v 1.3 2010/09/27 15:07:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,7 +24,7 @@ import doom.event_t;
 //
 //-----------------------------------------------------------------------------
 
-public interface DoomAutoMap {
+public interface DoomAutoMap extends DoomStatusAware {
 
 // Used by ST StatusBar stuff.
 public final int AM_MSGHEADER =(('a'<<24)+('m'<<16));

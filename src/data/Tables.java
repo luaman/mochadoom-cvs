@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.7 2010/09/27 02:27:29 velktron Exp $
+// $Id: Tables.java,v 1.8 2010/09/27 15:07:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.8  2010/09/27 15:07:44  velktron
+// meh
+//
 // Revision 1.7  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -988,7 +991,7 @@ public static final int finesine(int angle){
  * @return
  */
 public static final int finesine(long angle){
-    return finesine[(int) ((angle>>ANGLETOFINESHIFT)%ANGLEMODULE)];
+    return finesine[(int) ((angle>>>ANGLETOFINESHIFT)%ANGLEMODULE)];
 }
 
 /** Use this to get a value from the finecosine table. It will be automatically shifte, 
@@ -1008,7 +1011,7 @@ public static final int finecosine(int angle){
  * @return
  */
 public static final int finecosine(long angle){
-    return finecosine[(int) ((angle>>ANGLETOFINESHIFT)%ANGLEMODULE)];
+    return finecosine[(int) ((angle>>>ANGLETOFINESHIFT)%ANGLEMODULE)];
 }
 
 private Tables(){

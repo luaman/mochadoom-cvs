@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.15 2010/09/27 02:27:29 velktron Exp $
+// $Id: Map.java,v 1.16 2010/09/27 15:07:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.16  2010/09/27 15:07:44  velktron
+// meh
+//
 // Revision 1.15  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -118,7 +121,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.15 2010/09/27 02:27:29 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.16 2010/09/27 15:07:44 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -213,13 +216,9 @@ public static final int M_ZOOMIN =       ((int) (1.02*FRACUNIT));
 // pulls out to 0.5x in 1 second
 public static final int M_ZOOMOUT    =   ((int) (FRACUNIT/1.02));
 
-public Map(DoomContext dC) {
-    this.V=dC.V;
-    this.W=dC.W;
-    this.LL=dC.LL;
-    this.DM=dC.DM;
-    this.ST=dC.ST;
-    
+public Map(DoomContext DC) {
+
+    this.updateStatus(DC);
     // Some initializing...
     this.markpoints=new mpoint_t[AM_NUMMARKPOINTS];
     C2JUtils.initArrayOfObjects(markpoints, mpoint_t.class);
@@ -257,7 +256,7 @@ public static int NUMTRIANGLEGUYLINES;
 private static mline_t[] thintriangle_guy;
 private static int NUMTHINTRIANGLEGUYLINES;
 
-public static void initVectorGraphics(){
+public void initVectorGraphics(){
 
 int R =((8*PLAYERRADIUS)/7);
 player_arrow = new mline_t[]{
@@ -393,8 +392,17 @@ private int markpointnum = 0;
 /** specifies whether to follow the player around */
 private boolean followplayer = true; 
 
-private char[] cheat_amap_seq = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
+private char[] cheat_amap_seq = { 0xb2, 0x26, 0x26, 0x2e, 0xff }; // iddt
 private cheatseq_t cheat_amap = new cheatseq_t( cheat_amap_seq, 0 );
+
+// MAES: STROBE cheat. It's not even cheating, strictly speaking.
+
+private char cheat_strobe_seq[] =
+{ 0x6e, 0xa6, 0xea, 0x2e, 0x6a, 0xf6, 0x62,0xa6, 0xff // vestrobe
+};
+
+private cheatseq_t cheat_strobe = new cheatseq_t( cheat_strobe_seq, 0 );
+
 
 private boolean stopped = true;
 
@@ -686,6 +694,8 @@ public final  void Start ()
     lastlevel = DM.gamemap;
     lastepisode = DM.gameepisode;
     }
+    this.initVectorGraphics();
+    this.LevelInit();
     this.initVariables();
     this.loadPics();
 }
@@ -718,6 +728,9 @@ protected boolean cheatstate=false,bigstate=false;
 /**     static char buffer[20] in AM_Responder */
 protected String buffer;
 
+/** MAES: brought back strobe effect */
+private boolean strobe=false;
+
  /**
  * Handle events (user inputs) in automap mode
  */
@@ -729,7 +742,7 @@ public final  boolean Responder ( event_t  ev )
 
     rc = false;
 
-    System.out.println(ev.data1==AM_STARTKEY);
+    //System.out.println(ev.data1==AM_STARTKEY);
     if (!DM.automapactive)
     {
     if (ev.data1 == AM_STARTKEY)
@@ -811,6 +824,10 @@ public final  boolean Responder ( event_t  ev )
     {
         rc = false;
         cheating = (cheating+1) % 3;
+    }
+    if (cheat_strobe.CheckCheat((char) ev.data1))
+    {
+        strobe=!strobe;
     }
     }
 
@@ -933,7 +950,7 @@ public final  void Ticker ()
         this.changeWindowLoc();
 
     // Update light level
-    updateLightLev();
+    if (strobe)updateLightLev();
 
 }
 
@@ -1302,7 +1319,7 @@ private final  void drawWalls()
     l.ay = LL.lines[i].v1y;
     l.bx = LL.lines[i].v2x;
     l.by = LL.lines[i].v2y;
-    if ((cheating | (LL.lines[i].flags/* & ML_MAPPED*/))!=0)
+    if ((cheating | (LL.lines[i].flags & ML_MAPPED))!=0)
     {
         if (((LL.lines[i].flags & LINE_NEVERSEE) & ~cheating)!=0)
         continue;
@@ -1359,23 +1376,23 @@ private int rotx, roty;
 * 
  * @param x fixed_t
  * @param y fixed_t
- * @param a fixed_t
+ * @param a angle_t
  */
 
 private final  void rotate
 ( int  x,
   int y,
-  int   a )
+  long   a )
 {
     //int tmpx;
 
     rotx =
-    FixedMul(x,finecosine[a>>ANGLETOFINESHIFT])
-    - FixedMul(y,finesine[a>>ANGLETOFINESHIFT]);
+    FixedMul(x,finecosine(a))
+    - FixedMul(y,finesine(a));
     
     roty   =
-    FixedMul(x,finesine[a>>ANGLETOFINESHIFT])
-    + FixedMul(y,finecosine[a>>ANGLETOFINESHIFT]);
+    FixedMul(x,finesine(a))
+    + FixedMul(y,finecosine(a));
 
     //rotx.val = tmpx;
 }
@@ -1385,7 +1402,7 @@ drawLineCharacter
 ( mline_t[]  lineguy,
   int       lineguylines,
   int   scale, // fixed_t
-  int   angle, // angle_t
+  long   angle, // angle_t
   int       color,
   int   x, // fixed_t
   int   y // fixed_t
@@ -1404,9 +1421,14 @@ drawLineCharacter
         l.ax = FixedMul(scale, l.ax);
         l.ay = FixedMul(scale, l.ay);
     }
+    
+   // System.out.print("BAM Angle "+angle+ " for "+FixedFloat.toFloat(l.ax)+ " "+FixedFloat.toFloat(l.ay));
 
     if (angle!=0)
         rotate(l.ax, l.ay, angle);
+//    System.out.print(" rotated by "+90*(angle/ANG90)+"\n" );
+
+    
     // MAES: assign rotations
     	l.ax=rotx;
     	l.ay=roty;
@@ -1426,8 +1448,8 @@ drawLineCharacter
     if (angle!=0)
         rotate(l.bx, l.by, angle);
     // MAES: assign rotations
-	l.ax=rotx;
-	l.ay=roty;
+	l.bx=rotx;
+	l.by=roty;
 
     
     l.bx += x;
@@ -1446,15 +1468,17 @@ public final  void drawPlayers()
     int     their_color = -1;
     int     color;
 
+    //System.out.println(Long.toHexString(plr.mo.angle));
+    
     if (!DM.netgame)
     {
     if (cheating!=0)
         drawLineCharacter
         (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-         (int) plr.mo.angle, WHITE, plr.mo.x, plr.mo.y);
+          (int)plr.mo.angle, WHITE, plr.mo.x, plr.mo.y);
     else
         drawLineCharacter
-        (player_arrow, NUMPLYRLINES, 0, (int) plr.mo.angle,
+        (player_arrow, NUMPLYRLINES, 0,  (int)plr.mo.angle,
          WHITE, plr.mo.x, plr.mo.y);
     return;
     }
@@ -1496,7 +1520,7 @@ public final  void drawThings
     {
         drawLineCharacter
         (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-         16<<FRACBITS, (int) t.angle, colors+lightlev, t.x, t.y);
+         16<<FRACBITS, t.angle, colors+lightlev, t.x, t.y);
         t = (mobj_t)t.snext;
     }
     }
@@ -1532,13 +1556,13 @@ public final  void drawCrosshair(int color)
 public final  void Drawer ()
 {
     if (!DM.automapactive) return;
-    
+    //System.out.println("Drawing map");
     clearFB((byte)BACKGROUND); // BACKGROUND
     if (grid)
     drawGrid(GRIDCOLORS);
     drawWalls();
     drawPlayers();
-    if (cheating==2)
+    //if (cheating==2)
     drawThings(THINGCOLORS, THINGRANGE);
     drawCrosshair(XHAIRCOLORS);
 
@@ -1546,6 +1570,16 @@ public final  void Drawer ()
 
     V.MarkRect(f_x, f_y, f_w, f_h);
 
+}
+
+
+@Override
+public void updateStatus(DoomContext DC) {
+    this.V=DC.V;
+    this.W=DC.W;
+    this.LL=DC.LL;
+    this.DM=DC.DM;
+    this.ST=DC.ST;    
 }
 
 }

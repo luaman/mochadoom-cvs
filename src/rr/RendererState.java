@@ -12,6 +12,7 @@ import static data.Tables.ANG180;
 import static data.Tables.ANG270;
 import static data.Tables.ANG90;
 import static data.Tables.ANGLETOFINESHIFT;
+import static data.Tables.BITS32;
 import static data.Tables.DBITS;
 import static data.Tables.FINEANGLES;
 import static data.Tables.SLOPERANGE;
@@ -157,6 +158,7 @@ public abstract class RendererState {
     
     ///// FROM R_DRAW //////////
     
+    /** OK< this is supposed to "peg" into screen buffer 0. It will work AS LONG AS SOMEONE FUCKING ACTUALLY SETS IT !!!! */
     byte[] screen;
 
     // status bar height at bottom of screen
@@ -838,7 +840,7 @@ public abstract class RendererState {
            else
            {
            // octant 1
-           return ANG90-1-tantoangle[ SlopeDiv(x,y)];
+           return (ANG90-1-tantoangle[ SlopeDiv(x,y)])&BITS32;
            }
        }
        else
@@ -849,12 +851,12 @@ public abstract class RendererState {
            if (x>y)
            {
            // octant 8
-           return -tantoangle[SlopeDiv(y,x)];
+           return (-tantoangle[SlopeDiv(y,x)])&BITS32;
            }
            else
            {
            // octant 7
-           return ANG270+tantoangle[ SlopeDiv(x,y)];
+           return (ANG270+tantoangle[ SlopeDiv(x,y)])&BITS32;
            }
        }
        }
@@ -869,12 +871,12 @@ public abstract class RendererState {
            if (x>y)
            {
            // octant 3
-           return ANG180-1-tantoangle[ SlopeDiv(y,x)];
+           return (ANG180-1-tantoangle[ SlopeDiv(y,x)])&BITS32;
            }
            else
            {
            // octant 2
-           return ANG90+ tantoangle[ SlopeDiv(x,y)];
+           return (ANG90+ tantoangle[ SlopeDiv(x,y)])&BITS32;
            }
        }
        else
@@ -885,12 +887,12 @@ public abstract class RendererState {
            if (x>y)
            {
            // octant 4
-           return ANG180+tantoangle[ SlopeDiv(y,x)];
+           return (ANG180+tantoangle[ SlopeDiv(y,x)])&BITS32;
            }
            else
            {
             // octant 5
-           return ANG270-1-tantoangle[ SlopeDiv(x,y)];
+           return (ANG270-1-tantoangle[ SlopeDiv(x,y)])&BITS32;
            }
        }
        }

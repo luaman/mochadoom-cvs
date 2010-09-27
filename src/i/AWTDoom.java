@@ -695,6 +695,13 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
 		this.update(null);
 		
 	}
+
+
+    @Override
+    public void UpdateNoBlit() {
+        //this.update(null);
+        
+    }
 	
 
 }

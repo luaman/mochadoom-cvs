@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.11 2010/09/27 02:27:29 velktron Exp $
+// $Id: HU.java,v 1.12 2010/09/27 15:07:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.12  2010/09/27 15:07:44  velktron
+// meh
+//
 // Revision 1.11  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -112,7 +115,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.11 2010/09/27 02:27:29 velktron Exp $";
+        "$Id: HU.java,v 1.12 2010/09/27 15:07:44 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader W;
@@ -695,7 +698,7 @@ public class HU implements DoomStatusAware {
 
     public boolean Responder(event_t ev) {
 
-    	System.out.println("Player "+DM.players[0].mo.x);
+    	//System.out.println("Player "+DM.players[0].mo.x);
         char[] macromessage;
         boolean eatkey = false;
 
