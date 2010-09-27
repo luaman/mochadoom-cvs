@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomNet.java,v 1.2 2010/09/25 17:37:13 velktron Exp $
+// $Id: DoomNet.java,v 1.3 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: DoomNet.java,v $
+// Revision 1.3  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.2  2010/09/25 17:37:13  velktron
 // Lots of changes.
 //
@@ -54,7 +57,7 @@ package doom;
 //-----------------------------------------------------------------------------
 
 
-//static const char rcsid[] = "$Id: DoomNet.java,v 1.2 2010/09/25 17:37:13 velktron Exp $";
+//static const char rcsid[] = "$Id: DoomNet.java,v 1.3 2010/09/27 02:27:29 velktron Exp $";
 
 
 //#include "m_menu.h"
@@ -64,7 +67,7 @@ package doom;
 //#include "g_game.h"
 import static data.Defines.*;
 import static data.Limits.*;
-
+import static utils.C2JUtils.*;
 //
 //Network play related stuff.
 //There is a data struct that stores network
@@ -89,9 +92,9 @@ protected static int  DOOMCOM_ID =     0x12345678;
 //protected static int    BACKUPTICS     = 12;
 
 
-// commant_t
-protected  static int CMD_SEND    = 1;
-protected  static int CMD_GET = 2; 
+// command_t
+protected  static short CMD_SEND    = 1;
+protected  static short CMD_GET = 2; 
 
 doomcom_t	doomcom;	
 doomdata_t	netbuffer;		// points inside doomcom
@@ -159,17 +162,23 @@ protected long NetbufferChecksum ()
     c = 0x1234567L;
 
     // FIXME -endianess?
-if (NORMALUNIX)
+if (NORMALUNIX){
     return 0;			// byte order problems
 
 
-    l = (NetbufferSize () - (int)&(((doomdata_t *)0)->retransmitfrom))/4;
+    /* Here it was trying to get the length of a doomdata_t struct up to retransmit from.
+     * l = (NetbufferSize () - (int)&(((doomdata_t *)0)->retransmitfrom))/4;
+     * (int)&(((doomdata_t *)0)->retransmitfrom) evaluates to "4"
+     * Therefore, l= (netbuffersize - 4)/4
+     * 
+     */
+    l = (NetbufferSize () - 4)/4;
     for (i=0 ; i<l ; i++)
-	c += ((unsigned *)&netbuffer->retransmitfrom)[i] * (i+1);
+	c += 0;// TODO: (netbuffer->retransmitfrom)[i] * (i+1);
 
     return c & NCMD_CHECKSUM;
 }
-
+}
 //
 //
 //
@@ -186,7 +195,7 @@ protected int ExpandTics (int low)
     if (delta < -64)
 	return (maketic&~0xff) + 256 + low;
 		
-    I_Error ("ExpandTics: strange value %i at maketic %i",low,maketic);
+    I.Error ("ExpandTics: strange value %i at maketic %i",low,maketic);
     return 0;
 }
 
@@ -200,11 +209,11 @@ HSendPacket
  (int	node,
   int	flags )
 {
-    netbuffer.checksum = NetbufferChecksum () | flags;
+    netbuffer.checksum = (int) (NetbufferChecksum () | flags);
 
-    if (!node)
+    if (node==0)
     {
-	reboundstore = *netbuffer;
+	reboundstore = netbuffer;
 	reboundpacket = true;
 	return;
     }
@@ -213,17 +222,17 @@ HSendPacket
 	return;
 
     if (!netgame)
-	I_Error ("Tried to transmit to another node");
+	I.Error ("Tried to transmit to another node");
 		
     doomcom.command = CMD_SEND;
-    doomcom.remotenode = node;
-    doomcom.datalength = NetbufferSize ();
+    doomcom.remotenode = (short) node;
+    doomcom.datalength = (short) NetbufferSize ();
 	
-    if (debugfile)
+    if (DM.debugfile!=null)
     {
 	int		i;
 	int		realretrans;
-	if (netbuffer.checksum & NCMD_RETRANSMIT)
+	if (flags(netbuffer.checksum , NCMD_RETRANSMIT))
 	    realretrans = ExpandTics (netbuffer.retransmitfrom);
 	else
 	    realretrans = -1;

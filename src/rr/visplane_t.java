@@ -1,5 +1,6 @@
 package rr;
 import static data.Defines.*;
+import utils.C2JUtils;
 //
 //Now what is a visplane, anyway?
 //
@@ -58,8 +59,8 @@ public void setTop(int index, byte value){
     
 }
 
-public byte getTop(int index){
-    return this.data[TOPOFFSET+index];
+public int getTop(int index){
+    return C2JUtils.toUnsignedByte(this.data[TOPOFFSET+index]);
     
 }
 
@@ -68,8 +69,8 @@ public void setBottom(int index, byte value){
     
 }
 
-public byte getBottom(int index){
-    return this.data[BOTTOMOFFSET+index];
+public int getBottom(int index){
+    return C2JUtils.toUnsignedByte(this.data[BOTTOMOFFSET+index]);
     
 }
 

@@ -25,6 +25,7 @@ import static data.Defines.PT_ADDTHINGS;
 import static data.Defines.PT_EARLYOUT;
 import static data.Defines.USERANGE;
 import static data.Defines.VIEWHEIGHT;
+import static data.Defines.acp1;
 import static data.Defines.pw_invulnerability;
 import static data.Defines.pw_strength;
 import static data.Limits.CEILSPEED;
@@ -74,8 +75,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.MapUtils.AproxDistance;
-import static p.MapUtils.eval;
-import static p.MapUtils.flags;
+import static utils.C2JUtils.*;
 import static p.mobj.MF_AMBUSH;
 import static p.mobj.MF_CORPSE;
 import static p.mobj.MF_COUNTITEM;
@@ -101,11 +101,13 @@ import static p.mobj_t.MF_INFLOAT;
 import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import p.UnifiedGameMap.Lights;
+import i.DoomStatusAware;
 import i.DoomSystemInterface;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
 import rr.subsector_t;
+import st.StatusBar;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -116,6 +118,7 @@ import data.Defines.skill_t;
 import data.Defines.slopetype_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
+import doom.DoomContext;
 import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
@@ -133,7 +136,7 @@ import doom.weapontype_t;
     *
     */
 
-public class Actions extends UnifiedGameMap{
+public class Actions extends UnifiedGameMap implements DoomStatusAware{
   // plasma cells for a bfg attack
   private static int BFGCELLS      =  40;      
 
@@ -176,7 +179,7 @@ public class Actions extends UnifiedGameMap{
                 case silentCrushAndRaise:
               break;
                 default:
-              ; // TODO: S_StartSound((mobj_t *)&ceiling.sector.soundorg,sfx_stnmov);
+              S.StartSound(ceiling.sector.soundorg,sfxenum_t.sfx_stnmov);
                        
               // ?
               break;
@@ -218,7 +221,7 @@ public class Actions extends UnifiedGameMap{
               {
                 case silentCrushAndRaise: break;
                 default:
-              ; // TODO:((mobj_t *)&ceiling.sector.soundorg,  sfx_stnmov);
+                	S.StartSound(ceiling.sector.soundorg,  sfxenum_t.sfx_stnmov);
                      
               }
           }
@@ -228,7 +231,7 @@ public class Actions extends UnifiedGameMap{
               switch(ceiling.type)
               {
                 case silentCrushAndRaise:
-              ; // TODO:((mobj_t *)&ceiling.sector.soundorg, sfx_pstop);
+                	S.StartSound(ceiling.sector.soundorg, sfxenum_t.sfx_pstop);
                 case crushAndRaise:
               ceiling.speed = CEILSPEED;
                 case fastCrushAndRaise:
@@ -344,7 +347,7 @@ public class Actions extends UnifiedGameMap{
           
           if (!flags(DM.leveltime,7))
               
-          ; // TODO: S_StartSound((mobj_t *)&floor.sector.soundorg,  sfx_stnmov);
+        	  S.StartSound(floor.sector.soundorg,  sfxenum_t.sfx_stnmov);
           
           if (res == result_e.pastdest)
           {
@@ -374,7 +377,7 @@ public class Actions extends UnifiedGameMap{
           }
           RemoveThinker(floor.thinker);
 
-          ; //TODO: S_StartSound((mobj_t *)&floor.sector.soundorg, sfx_pstop);
+          S.StartSound(floor.sector.soundorg, sfxenum_t.sfx_pstop);
           }
 
       }
@@ -885,17 +888,17 @@ public class Actions extends UnifiedGameMap{
              {
                case blazeRaise:
              door.direction = -1; // time to go back down
-             ; // TODO:((mobj_t *)&door.sector.soundorg,sfx_bdcls);
+             S.StartSound(door.sector.soundorg,sfxenum_t.sfx_bdcls);
              break;
              
                case normal:
              door.direction = -1; // time to go back down
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_dorcls);
+             S.StartSound(door.sector.soundorg, sfxenum_t.sfx_dorcls);
              break;
              
                case close30ThenOpen:
              door.direction = 1;
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
+             S.StartSound(door.sector.soundorg, sfxenum_t.sfx_doropn);
              break;
              
                default:
@@ -913,7 +916,7 @@ public class Actions extends UnifiedGameMap{
                case raiseIn5Mins:
              door.direction = 1;
              door.type = vldoor_e.normal;
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
+             S.StartSound(door.sector.soundorg, sfxenum_t.sfx_doropn);
              break;
              
                default:
@@ -936,7 +939,7 @@ public class Actions extends UnifiedGameMap{
                case blazeClose:
              door.sector.specialdata = null;
              RemoveThinker (door.thinker);  // unlink and free
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_bdcls);
+             S.StartSound(door.sector.soundorg, sfxenum_t.sfx_bdcls);
              break;
              
                case normal:
@@ -964,7 +967,7 @@ public class Actions extends UnifiedGameMap{
              
                default:
              door.direction = 1;
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
+               S.StartSound(door.sector.soundorg, sfxenum_t.sfx_doropn);
              break;
              }
          }
@@ -1030,7 +1033,7 @@ public class Actions extends UnifiedGameMap{
          if (!p.cards[card_t.it_bluecard.ordinal()] && !p.cards[card_t.it_blueskull.ordinal()])
          {
              p.message = PD_BLUEO;
-             ; // TODO:(NULL,sfx_oof);
+             S.StartSound(null,sfxenum_t.sfx_oof);
              return false;
          }
          break;
@@ -1042,7 +1045,7 @@ public class Actions extends UnifiedGameMap{
          if (!p.cards[card_t.it_redcard.ordinal()] && !p.cards[card_t.it_redskull.ordinal()])
          {
              p.message = PD_REDO;
-             ; // TODO:(NULL,sfx_oof);
+             S.StartSound(null,sfxenum_t.sfx_oof);
              return false;
          }
          break;
@@ -1055,7 +1058,7 @@ public class Actions extends UnifiedGameMap{
              !p.cards[card_t.it_yellowskull.ordinal()])
          {
              p.message = PD_YELLOWO;
-             ; // TODO:(NULL,sfx_oof);
+             S.StartSound(null,sfxenum_t.sfx_oof);
              return false;
          }
          break;  
@@ -1103,20 +1106,20 @@ public class Actions extends UnifiedGameMap{
              door.topheight -= 4*FRACUNIT;
              door.direction = -1;
              door.speed = VDOORSPEED * 4;
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_bdcls);
+             S.StartSound(door.sector.soundorg, sfxenum_t.sfx_bdcls);
              break;
              
            case close:
              door.topheight = FindLowestCeilingSurrounding(sec);
              door.topheight -= 4*FRACUNIT;
              door.direction = -1;
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_dorcls);
+             S.StartSound(door.sector.soundorg, sfxenum_t.sfx_dorcls);
              break;
              
            case close30ThenOpen:
              door.topheight = sec.ceilingheight;
              door.direction = -1;
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_dorcls);
+             S.StartSound(door.sector.soundorg, sfxenum_t.sfx_dorcls);
              break;
              
            case blazeRaise:
@@ -1126,7 +1129,7 @@ public class Actions extends UnifiedGameMap{
              door.topheight -= 4*FRACUNIT;
              door.speed = VDOORSPEED * 4;
              if (door.topheight != sec.ceilingheight)
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_bdopn);
+            	 S.StartSound(door.sector.soundorg, sfxenum_t.sfx_bdopn);
              break;
              
            case normal:
@@ -1135,7 +1138,7 @@ public class Actions extends UnifiedGameMap{
              door.topheight = FindLowestCeilingSurrounding(sec);
              door.topheight -= 4*FRACUNIT;
              if (door.topheight != sec.ceilingheight)
-             ; // TODO:((mobj_t *)&door.sector.soundorg, sfx_doropn);
+            	 S.StartSound(door.sector.soundorg, sfxenum_t.sfx_doropn);
              break;
              
            default:
@@ -1176,7 +1179,7 @@ public class Actions extends UnifiedGameMap{
          if (!player.cards[card_t.it_bluecard.ordinal()] && !player.cards[card_t.it_blueskull.ordinal()])
          {
              player.message = PD_BLUEK;
-             ; // TODO:(NULL,sfx_oof);
+             S.StartSound(null,sfxenum_t.sfx_oof);
              return;
          }
          break;
@@ -1190,7 +1193,7 @@ public class Actions extends UnifiedGameMap{
              !player.cards[card_t.it_yellowskull.ordinal()])
          {
              player.message = PD_YELLOWK;
-             ; // TODO:(NULL,sfx_oof);
+             S.StartSound(null,sfxenum_t.sfx_oof);
              return;
          }
          break;
@@ -1203,7 +1206,7 @@ public class Actions extends UnifiedGameMap{
          if (!player.cards[card_t.it_redcard.ordinal()] && !player.cards[card_t.it_redskull.ordinal()])
          {
              player.message = PD_REDK;
-             ; // TODO:(NULL,sfx_oof);
+             S.StartSound(null,sfxenum_t.sfx_oof);
              return;
          }
          break;
@@ -1241,16 +1244,16 @@ public class Actions extends UnifiedGameMap{
           {
             case 117:    // BLAZING DOOR RAISE
             case 118:    // BLAZING DOOR OPEN
-         ; // TODO:((mobj_t *)&sec.soundorg,sfx_bdopn);
+            	S.StartSound(sec.soundorg,sfxenum_t.sfx_bdopn);
          break;
          
             case 1:  // NORMAL DOOR SOUND
             case 31:
-         ; // TODO:((mobj_t *)&sec.soundorg,sfx_doropn);
+            	S.StartSound(sec.soundorg,sfxenum_t.sfx_doropn);
          break;
          
             default: // LOCKED DOOR SOUND
-         ; // TODO:((mobj_t *)&sec.soundorg,sfx_doropn);
+            	S.StartSound(sec.soundorg,sfxenum_t.sfx_doropn);
          break;
           }
          
@@ -1613,7 +1616,7 @@ public class Actions extends UnifiedGameMap{
       if (player.readyweapon == weapontype_t.wp_chainsaw
       && psp.state == states[statenum_t.S_SAW.ordinal()])
       {
-      ; //TODO: S_StartSound (player.mo, sfx_sawidl);
+    	  S.StartSound(player.mo, sfxenum_t.sfx_sawidl);
       }
       
       // check for change
@@ -1803,7 +1806,7 @@ public class Actions extends UnifiedGameMap{
       // turn to face target
       if (eval(linetarget))
       {
-      ; //TODO: S_StartSound (player.mo, sfx_punch);
+    	  S.StartSound(player.mo, sfxenum_t.sfx_punch);
       player.mo.angle = R.PointToAngle2 (player.mo.x,
                            player.mo.y,
                            linetarget.x,
@@ -1834,10 +1837,10 @@ public class Actions extends UnifiedGameMap{
 
       if (!eval(linetarget))
       {
-      ; // TODO: S_StartSound (player.mo, sfx_sawful);
+    	  S.StartSound(player.mo, sfxenum_t.sfx_sawful);
       return;
       }
-      ; // TODO: S_StartSound (player.mo, sfx_sawhit);
+      S.StartSound(player.mo, sfxenum_t.sfx_sawhit);
       
       // turn to face target
       angle = R.PointToAngle2 (player.mo.x, player.mo.y,
@@ -1974,7 +1977,7 @@ public class Actions extends UnifiedGameMap{
   ( player_t player,
     pspdef_t psp ) 
   {
-      // TODO: S_StartSound (player.mo, sfx_pistol);
+	  S.StartSound(player.mo, sfxenum_t.sfx_pistol);
 
       player.mo.SetMobjState ( statenum_t.S_PLAY_ATK2);
       player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
@@ -1998,7 +2001,7 @@ public class Actions extends UnifiedGameMap{
   {
       int     i;
       
-      // TODO: S_StartSound (player.mo, sfx_shotgn);
+      S.StartSound(player.mo, sfxenum_t.sfx_shotgn);
       player.mo.SetMobjState ( statenum_t.S_PLAY_ATK2);
 
       player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
@@ -2029,7 +2032,7 @@ public class Actions extends UnifiedGameMap{
       int     damage;
           
       
-      // TODO: S_StartSound (player.mo, sfx_dshtgn);
+      // TODO: S_StartSound (player.mo, sfxenum_t.sfx_dshtgn);
       player.mo.SetMobjState (statenum_t.S_PLAY_ATK2);
 
       player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]-=2;
@@ -2061,7 +2064,7 @@ public class Actions extends UnifiedGameMap{
   ( player_t player,
     pspdef_t psp ) 
   {
-      // TODO: S_StartSound (player.mo, sfx_pistol);
+      S.StartSound (player.mo, sfxenum_t.sfx_pistol);
 
       if (!eval(player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]))
       return;
@@ -2144,7 +2147,7 @@ public class Actions extends UnifiedGameMap{
   ( player_t player,
     pspdef_t psp )
   {
-     ; // TODO: S_StartSound (player.mo, sfx_bfg);
+	  S.StartSound(player.mo, sfxenum_t.sfx_bfg);
   }
 
   //////////////////////////// MONSTER AND ENEMY FUNCTIONS /////////////
@@ -2241,10 +2244,10 @@ public class Actions extends UnifiedGameMap{
             || actor.type == mobjtype_t.MT_CYBORG)
         {
             // full volume
-            ; // TODO: S_StartSound (NULL, sound);
+        	S.StartSound(null, sound);
         }
         else
-            ; // TODO: S_StartSound (actor, sound);
+        	S.StartSound(actor, sound);
         }
 
         actor.SetMobjState(actor.info.seestate);
@@ -2381,7 +2384,7 @@ public class Actions extends UnifiedGameMap{
         return false;
             
         if (actor.movedir >= 8)
-        DoomSystemInterface.Error ("Weird actor.movedir!");
+        I.Error ("Weird actor.movedir!");
             
         tryx = actor.x + actor.info.speed*xspeed[actor.movedir];
         tryy = actor.y + actor.info.speed*yspeed[actor.movedir];
@@ -2489,7 +2492,7 @@ public class Actions extends UnifiedGameMap{
         angle = (int) actor.angle;
         slope = AimLineAttack (actor, angle, MISSILERANGE);
 
-        ; // TODO: S_StartSound (actor, sfx_pistol);
+        S.StartSound(actor, sfxenum_t.sfx_pistol);
         angle += (RND.P_Random()-RND.P_Random())<<20;
         damage = ((RND.P_Random()%5)+1)*3;
         LineAttack (actor, angle, MISSILERANGE, slope, damage);
@@ -2506,7 +2509,7 @@ public class Actions extends UnifiedGameMap{
         if (actor.target==null)
         return;
 
-        ; // TODO: S_StartSound (actor, sfx_shotgn);
+        S.StartSound(actor, sfxenum_t.sfx_shotgn);
         A_FaceTarget (actor);
         bangle = actor.angle;
         slope = AimLineAttack (actor, bangle, MISSILERANGE);
@@ -2529,7 +2532,7 @@ public class Actions extends UnifiedGameMap{
         if (actor.target==null)
         return;
 
-        ; // TODO: S_StartSound (actor, sfx_shotgn);
+        S.StartSound(actor, sfxenum_t.sfx_shotgn);
         A_FaceTarget (actor);
         bangle = actor.angle;
         slope = AimLineAttack (actor, bangle, MISSILERANGE);
@@ -2597,7 +2600,7 @@ public class Actions extends UnifiedGameMap{
         A_FaceTarget (actor);
         if (EN.CheckMeleeRange (actor))
         {
-        ; // TODO: S_StartSound (actor, sfx_claw);
+        	S.StartSound(actor, sfxenum_t.sfx_claw);
         damage = (RND.P_Random()%8+1)*3;
         DamageMobj (actor.target, actor, actor, damage);
         return;
@@ -2662,7 +2665,7 @@ public class Actions extends UnifiedGameMap{
             
         if (EN.CheckMeleeRange (actor))
         {
-        ; // TODO: S_StartSound (actor, sfx_claw);
+        	S.StartSound(actor, sfxenum_t.sfx_claw);
         damage = (RND.P_Random()%8+1)*10;
         DamageMobj (actor.target, actor, actor, damage);
         return;
@@ -2771,7 +2774,7 @@ public class Actions extends UnifiedGameMap{
         if (actor.target==null)
         return;
         A_FaceTarget (actor);
-        ; // TODO: S_StartSound (actor,sfx_skeswg);
+        S.StartSound(actor,sfxenum_t.sfx_skeswg);
     }
 
     void A_SkelFist (mobj_t     actor)
@@ -2786,7 +2789,7 @@ public class Actions extends UnifiedGameMap{
         if (EN.CheckMeleeRange (actor))
         {
         damage = ((RND.P_Random()%10)+1)*6;
-        ; // TODO: S_StartSound (actor, sfx_skepch);
+        S.StartSound(actor, sfxenum_t.sfx_skepch);
         DamageMobj (actor.target, actor, actor, damage);
         }
     }
@@ -2883,7 +2886,7 @@ public class Actions extends UnifiedGameMap{
                 actor.target = temp;
                         
                 actor.SetMobjState ( statenum_t.S_VILE_HEAL1);
-                ; // TODO: S_StartSound (corpsehit, sfx_slop);
+                S.StartSound(corpsehit, sfxenum_t.sfx_slop);
                 info = corpsehit.info;
                 
                 corpsehit.SetMobjState (info.raisestate);
@@ -2908,7 +2911,7 @@ public class Actions extends UnifiedGameMap{
     //
     void A_VileStart (mobj_t  actor)
     {
-        ; // TODO: S_StartSound (actor, sfx_vilatk);
+    	S.StartSound(actor, sfxenum_t.sfx_vilatk);
     }
 
 
@@ -2919,13 +2922,13 @@ public class Actions extends UnifiedGameMap{
     
     void A_StartFire (mobj_t  actor)
     {
-        // TODO: S_StartSound(actor,sfx_flamst);
+    	S.StartSound(actor,sfxenum_t.sfx_flamst);
         A_Fire(actor);
     }
 
     void A_FireCrackle (mobj_t  actor)
     {
-      // TODO: S_StartSound(actor,sfx_flame);
+    	S.StartSound(actor,sfxenum_t.sfx_flame);
         A_Fire(actor);
     }
 
@@ -2995,7 +2998,7 @@ public class Actions extends UnifiedGameMap{
         if (!EN.CheckSight (actor, actor.target) )
         return;
 
-        ; // TODO: S_StartSound (actor, sfx_barexp);
+        S.StartSound(actor, sfxenum_t.sfx_barexp);
         DamageMobj (actor.target, actor, actor, 20);
         actor.target.momz = 1000*FRACUNIT/actor.target.info.mass;
         
@@ -3026,7 +3029,7 @@ public class Actions extends UnifiedGameMap{
     void A_FatRaise (mobj_t actor)
     {
         A_FaceTarget (actor);
-        ; // TODO: S_StartSound (actor, sfx_manatk);
+        S.StartSound(actor, sfxenum_t.sfx_manatk);
     }
 
 
@@ -3103,7 +3106,7 @@ public class Actions extends UnifiedGameMap{
         dest = actor.target;   
         actor.flags |= MF_SKULLFLY;
 
-        ; // TODO: S_StartSound (actor, actor.info.attacksound);
+        S.StartSound(actor, actor.info.attacksound);
         A_FaceTarget (actor);
         an = (int) (actor.angle >> ANGLETOFINESHIFT);
         actor.momx = FixedMul (SKULLSPEED, finecosine[an]);
@@ -3245,13 +3248,13 @@ public class Actions extends UnifiedGameMap{
 
     void A_XScream (mobj_t  actor)
     {
-        ; // TODO: S_StartSound (actor, sfx_slop); 
+        ; // TODO: S_StartSound (actor, sfxenum_t.sfx_slop); 
     }
 
     void A_Pain (mobj_t  actor)
     {
         if (actor.info.painsound!=null)
-        ; // TODO: S_StartSound (actor, actor.info.painsound);   
+        	S.StartSound(actor, actor.info.painsound);   
     }
 
 
@@ -3428,19 +3431,19 @@ public class Actions extends UnifiedGameMap{
 
     void A_Hoof (mobj_t  mo)
     {
-        ; // TODO: S_StartSound (mo, sfx_hoof);
+    	S.StartSound(mo, sfxenum_t.sfx_hoof);
         A_Chase (mo);
     }
 
     void A_Metal (mobj_t  mo)
     {
-        ; // TODO: S_StartSound (mo, sfx_metal);
+    	S.StartSound(mo, sfxenum_t.sfx_metal);
         A_Chase (mo);
     }
 
     void A_BabyMetal (mobj_t  mo)
     {
-        ; // TODO: S_StartSound (mo, sfx_bspwlk);
+    	S.StartSound(mo, sfxenum_t.sfx_bspwlk);
         A_Chase (mo);
     }
 
@@ -3449,7 +3452,7 @@ public class Actions extends UnifiedGameMap{
     ( player_t player,
       pspdef_t psp )
     {
-        ; // TODO: S_StartSound (player.mo, sfx_dbopn);
+    	S.StartSound(player.mo, sfxenum_t.sfx_dbopn);
     }
 
     void
@@ -3457,7 +3460,7 @@ public class Actions extends UnifiedGameMap{
     ( player_t player,
       pspdef_t psp )
     {
-        ; // TODO: S_StartSound (player.mo, sfx_dbload);
+    	S.StartSound(player.mo, sfxenum_t.sfx_dbload);
     }
 
     void
@@ -3465,7 +3468,7 @@ public class Actions extends UnifiedGameMap{
     ( player_t player,
       pspdef_t psp )
     {
-        ; // TODO: S_StartSound (player.mo, sfx_dbcls);
+    	S.StartSound(player.mo, sfxenum_t.sfx_dbcls);
         A_ReFire(player,psp);
     }
 
@@ -3501,13 +3504,13 @@ public class Actions extends UnifiedGameMap{
         }
         }
         
-        ; // TODO: S_StartSound (NULL,sfx_bossit);
+        S.StartSound(null,sfxenum_t.sfx_bossit);
     }
 
 
     void A_BrainPain (mobj_t    mo)
     {
-     ;   //TODO: ; // TODO: S_StartSound (null,sfx_bospn);
+    	S.StartSound(null,sfxenum_t.sfx_bospn);
     }
 
 
@@ -3532,7 +3535,7 @@ public class Actions extends UnifiedGameMap{
             th.tics = 1;
         }
         
-        ; // TODO: S_StartSound (NULL,sfx_bosdth);
+        S.StartSound(null,sfxenum_t.sfx_bosdth);
     }
 
 
@@ -3584,14 +3587,14 @@ public class Actions extends UnifiedGameMap{
         newmobj.reactiontime =
         (int) (((targ.y - mo.y)/newmobj.momy) / newmobj.state.tics);
 
-        // TODO: S_StartSound(NULL, sfx_bospit);
+        // TODO: S_StartSound(NULL, sfxenum_t.sfx_bospit);
     }
 
 
     // travelling cube sound
     void A_SpawnSound (mobj_t  mo)  
     {
-        ; // TODO: S_StartSound (mo,sfx_boscub);
+        ; // TODO: S_StartSound (mo,sfxenum_t.sfx_boscub);
         A_SpawnFly(mo);
     }
 
@@ -3611,7 +3614,7 @@ public class Actions extends UnifiedGameMap{
 
         // First spawn teleport fog.
         fog = SpawnMobj (targ.x, targ.y, targ.z, mobjtype_t.MT_SPAWNFIRE);
-        ; // TODO: S_StartSound (fog, sfx_telept);
+        ; // TODO: S_StartSound (fog, sfxenum_t.sfx_telept);
 
         // Randomly select monster to spawn.
         r = RND.P_Random ();
@@ -3669,7 +3672,7 @@ public class Actions extends UnifiedGameMap{
           sound =  sfxenum_t.sfx_pdiehi;
           }
           
-         // TODO:  S_StartSound (mo, sound);
+          S.StartSound(mo, sound);
       }
 
 public void P_MobjThinker (mobj_t mobj) {
@@ -3754,14 +3757,14 @@ mo = SpawnMobj (mobj.x,
         mobj.y,
         mobj.subsector.sector.floorheight , mobjtype_t.MT_TFOG); 
 // initiate teleport sound
-; // TODO: (mo, sfx_telept);
+S.StartSound(mo, sfxenum_t.sfx_telept);
 
 // spawn a teleport fog at the new spot
 ss = R.PointInSubsector (x,y); 
 
 mo = SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_TFOG); 
 
-; // TODO: (mo, sfx_telept);
+S.StartSound(mo, sfxenum_t.sfx_telept);
 
 // spawn the new monster
 mthing = mobj.spawnpoint;
@@ -3885,7 +3888,7 @@ y = mthing.y << FRACBITS;
 // spawn a teleport fog at the new spot
 ss = R.PointInSubsector (x,y); 
 mo = SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_IFOG); 
-; // TODO: (mo, sfx_itmbk);
+S.StartSound(mo, sfxenum_t.sfx_itmbk);
 
 // find which type to spawn
 for (i=0 ; i< mobjtype_t.NUMMOBJTYPES.ordinal() ; i++)
@@ -4032,7 +4035,7 @@ if (mthing.type == mobjinfo[i].doomednum)
   break;
 
 if (i==NUMMOBJTYPES)
-DoomSystemInterface.Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
+I.Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
    mthing.type,
    mthing.x, mthing.y);
   
@@ -4152,7 +4155,7 @@ th = SpawnMobj (source.x,
         source.z + 4*8*FRACUNIT, type);
 
 if (th.info.seesound!=null)
-; // TODO: (th, th.info.seesound);
+	S.StartSound(th, th.info.seesound);
 
 th.target = source;    // where it came from
 an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y);  
@@ -4222,7 +4225,7 @@ z = source.z + 4*8*FRACUNIT;
 th = SpawnMobj (x,y,z, type);
 
 if (th.info.seesound!=null)
-; // TODO: (th, th.info.seesound);
+	S.StartSound(th, th.info.seesound);
 
 th.target = source;
 th.angle = an;
@@ -4355,8 +4358,8 @@ CheckMissileSpawn (th);
         
         temp = damage < 100 ? damage : 100;
 
-        if (player == DM.players[DM.consoleplayer]) ;
-            // TODO: I_Tactile (40,10,40+temp*2);
+        if (player == DM.players[DM.consoleplayer]) 
+            I.Tactile (40,10,40+temp*2);
         }
         
         // do the damage    
@@ -4418,7 +4421,7 @@ CheckMissileSpawn (th);
             source.player.killcount++;    
 
         if (target.player!=null) ;
-           // TODO: source.player.frags[target.player-DM.players]++;
+           source.player.frags[target.player.identify()]++;
            // It's probably intended to increment the frags of source player vs target player. Lookup? 
         }
         else if (!DM.netgame && ((target.flags & MF_COUNTKILL)!=0) )
@@ -4439,7 +4442,7 @@ CheckMissileSpawn (th);
                 
         target.flags &= ~MF_SOLID;
         target.player.playerstate = PST_DEAD;
-        //TODO: DropWeapon (target.player); // in PSPR
+        target.player.DropWeapon (); // in PSPR
 
         if (target.player == DM.players[DM.consoleplayer]
             && DM.automapactive)
@@ -4559,13 +4562,13 @@ CheckMissileSpawn (th);
                  
          // spawn teleport fog at source and destination
          fog = SpawnMobj (oldx, oldy, oldz, mobjtype_t.MT_TFOG);
-         // TODO: S_StartSound (fog, sfx_telept);
+         S.StartSound( fog, sfxenum_t.sfx_telept);
          an = (int) (m.angle >> ANGLETOFINESHIFT);
          fog = SpawnMobj (m.x+20*finecosine[an], m.y+20*finesine[an]
                     , thing.z, mobjtype_t.MT_TFOG);
 
          // emit sound, where?
-         // TODO: S_StartSound (fog, sfx_telept);
+         S.StartSound (fog, sfxenum_t.sfx_telept);
          
          // don't move for a bit
          if (thing.player!=null)
@@ -6009,7 +6012,7 @@ mobj_t  thing )
         line_t li;
         
         if (!in.isaline)
-        DoomSystemInterface.Error ("PTR_SlideTraverse: not a line?");
+        I.Error ("PTR_SlideTraverse: not a line?");
             
         li = (line_t) in.d();
         
@@ -6420,7 +6423,7 @@ mobj_t  thing )
         LineOpening (line);
         if (openrange <= 0)
         {
-            ; // TODO: S_StartSound(usething, sfx_noway);
+        	 S.StartSound(usething, sfxenum_t.sfx_noway);
             
             // can't use through a wall
             return false;   
@@ -7602,7 +7605,7 @@ mobj_t  thing )
       int   turnaround;
 
       if (actor.target==null)
-      DoomSystemInterface.Error ("P_NewChaseDir: called with no target");
+      I.Error ("P_NewChaseDir: called with no target");
           
       olddir = actor.movedir;
       turnaround=opposite[olddir];
@@ -7752,7 +7755,7 @@ mobj_t  thing )
           {
           plat.count = plat.wait;
           plat.status = plat_e.waiting;
-          ; // TODO: S_StartSound((mobj_t *)&plat.sector.soundorg,  sfx_pstop);
+          S.StartSound(plat.sector.soundorg,  sfxenum_t.sfx_pstop);
 
           switch(plat.type)
           {
@@ -7798,13 +7801,54 @@ mobj_t  thing )
       }
   }
   
-  public Actions(DoomMain DM){
-            this.DM=DM;
-            this.R=DM.R;
-            this.W=DM.W;
-            this.AM=DM.AM;
-            this.SW=new Switches();
+  public Actions(DoomContext DC){
+	  this.updateStatus(DC);
   }
+
+  //
+  // P_RunThinkers
+  //
+  public void RunThinkers() {
+      thinker_t currentthinker;
+
+      currentthinker = thinkercap.next;
+      while (currentthinker != thinkercap) {
+          if (currentthinker.function == null) {
+              // time to remove it
+              currentthinker.next.prev = currentthinker.prev;
+              currentthinker.prev.next = currentthinker.next;
+          } else {
+              if (currentthinker.function.getType() == acp1)
+                  // Execute thinker's function.
+                  dispatch(currentthinker.function, currentthinker, null);
+          }
+          currentthinker = currentthinker.next;
+      }
+  }
+
+
+
+@Override
+public void updateStatus(DoomContext DC) {
+		this.S=DC.S;
+  		this.LL=DC.LL;
+  		this.RND=DC.RND;
+        this.DM=DC.DM;
+        this.R=DC.R;
+        this.W=DC.W;
+        this.AM=DC.AM;
+        this.SW=new Switches();
+        this.LEV=new Lights();
+        this.SPECS=new Specials();
+        this.PEV=new Plats();
+        this.thinkercap=new thinker_t();
+        this.ST=(StatusBar) DC.ST;
+        this.AM=DC.AM;
+        this.A=this;
+        this.HU=DC.HU;
+        
+        
+}
   
 }
 

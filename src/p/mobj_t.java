@@ -98,6 +98,7 @@ public class mobj_t extends thinker_t implements Interceptable   {
     
         public mobj_t(Actions A){
             this.A=A;
+            this.thinker=new thinker_t();
         }
 
         /** List: thinker links. */

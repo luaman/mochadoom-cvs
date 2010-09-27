@@ -75,8 +75,7 @@ import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.MapUtils.AproxDistance;
 import static p.MapUtils.InterceptVector;
-import static p.MapUtils.eval;
-import static p.MapUtils.flags;
+import static utils.C2JUtils.*;
 import static p.mobj.MF_COUNTITEM;
 import static p.mobj.MF_DROPPED;
 import static p.mobj.MF_NOBLOCKMAP;
@@ -95,7 +94,9 @@ import rr.sector_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
+import s.DoomSoundInterface;
 import st.StatusBar;
+import utils.C2JUtils;
 import w.WadLoader;
 import data.mapthing_t;
 import data.mobjtype_t;
@@ -134,6 +135,8 @@ public class UnifiedGameMap {
     HU HU;
     
     DoomSystemInterface I;
+    
+    DoomSoundInterface S;
 
     // //////////// Internal singletons //////////////
     public Actions A;
@@ -1210,6 +1213,7 @@ public class UnifiedGameMap {
 
         public Plats() {
             activeplats = new plat_t[MAXPLATS];
+            C2JUtils.initArrayOfObjects(activeplats);
         }
 
         plat_t[] activeplats;
@@ -1262,7 +1266,7 @@ public class UnifiedGameMap {
                     // NO MORE DAMAGE, IF APPLICABLE
                     sec.special = 0;
 
-                    // TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
+                    S.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
                     break;
 
                 case raiseAndChange:
@@ -1272,7 +1276,7 @@ public class UnifiedGameMap {
                     plat.wait = 0;
                     plat.status = plat_e.up;
 
-                    // TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_stnmov);
+                    S.StartSound(sec.soundorg,sfxenum_t.sfx_stnmov);
                     break;
 
                 case downWaitUpStay:
@@ -1285,7 +1289,7 @@ public class UnifiedGameMap {
                     plat.high = sec.floorheight;
                     plat.wait = 35 * PLATWAIT;
                     plat.status = plat_e.down;
-                    // TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
+                    S.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
                     break;
 
                 case blazeDWUS:
@@ -1298,7 +1302,7 @@ public class UnifiedGameMap {
                     plat.high = sec.floorheight;
                     plat.wait = 35 * PLATWAIT;
                     plat.status = plat_e.down;
-                    // TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
+                    S.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);
                     break;
 
                 case perpetualRaise:
@@ -1317,7 +1321,7 @@ public class UnifiedGameMap {
                     // Guaranteed to be 0 or 1.
                     plat.status = plat_e.values()[RND.P_Random() & 1];
 
-                    // TODO: S_StartSound((mobj_t *)&sec.soundorg,sfx_pstart);
+                    S.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);;
                     break;
                 }
                 AddActivePlat(plat);
@@ -1741,8 +1745,7 @@ public class UnifiedGameMap {
                                 (short) SW.buttonlist[i].btexture;
                             break;
                         }
-                        ; // TODO:S_StartSound((mobj_t
-                          // *)&buttonlist[i].soundorg,sfx_swtchn);
+                        S.StartSound(SW.buttonlist[i].soundorg,sfxenum_t.sfx_swtchn);
                         // TODO: memset(buttonlist[i],0,sizeof(button_t));
                     }
                 }
@@ -1752,6 +1755,11 @@ public class UnifiedGameMap {
 
     class Switches {
 
+    	public Switches(){
+    		switchlist= new int[MAXSWITCHES * 2];
+    		buttonlist =  new button_t[MAXBUTTONS];
+    		C2JUtils.initArrayOfObjects(buttonlist);
+    	}
         //
         // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
         //
@@ -1805,12 +1813,11 @@ public class UnifiedGameMap {
 
                     new switchlist_t("\0", "\0", 0) };
 
-        int[] switchlist = new int[MAXSWITCHES * 2];
+        int[] switchlist;
 
         int numswitches;
 
-        button_t[] buttonlist = new button_t[MAXBUTTONS];
-
+        button_t[] buttonlist;
         //
         // P_InitSwitchList
         // Only called at game initialization.
@@ -1904,7 +1911,7 @@ public class UnifiedGameMap {
 
             for (i = 0; i < numswitches * 2; i++) {
                 if (switchlist[i] == texTop) {
-                    // TODO: S_StartSound(buttonlist[0].soundorg,sound);
+                    S.StartSound(buttonlist[0].soundorg,sound);
                     LL.sides[line.sidenum[0]].toptexture =
                         (short) switchlist[i ^ 1];
 
@@ -1915,7 +1922,7 @@ public class UnifiedGameMap {
                     return;
                 } else {
                     if (switchlist[i] == texMid) {
-                        ; // TODO:(buttonlist.soundorg,sound);
+                    	 S.StartSound(buttonlist[0].soundorg,sound);
                         LL.sides[line.sidenum[0]].midtexture =
                             (short) switchlist[i ^ 1];
 
@@ -1926,7 +1933,7 @@ public class UnifiedGameMap {
                         return;
                     } else {
                         if (switchlist[i] == texBot) {
-                            ; // TODO:(buttonlist.soundorg,sound);
+                        	 S.StartSound(buttonlist[0].soundorg,sound);
                             LL.sides[line.sidenum[0]].bottomtexture =
                                 (short) switchlist[i ^ 1];
 
@@ -1989,7 +1996,7 @@ public class UnifiedGameMap {
         do {
             if (state == statenum_t.S_NULL) {
                 mobj.state = null;
-                // TODO:P_RemoveMobj (mobj);
+                RemoveMobj (mobj);
                 return false;
             }
 
@@ -2026,8 +2033,7 @@ public class UnifiedGameMap {
         mo.flags &= ~MF_MISSILE;
 
         if (mo.info.deathsound != null)
-            ;
-        // TODO: ; // TODO: (mo, mo.info.deathsound);
+        S.StartSound(mo, mo.info.deathsound);
     }
 
     //
@@ -2041,7 +2047,7 @@ public class UnifiedGameMap {
 
     int iquetail;
 
-    void RemoveMobj(mobj_t mobj) {
+    public void RemoveMobj(mobj_t mobj) {
         if (flags(mobj.flags, MF_SPECIAL) && !flags(mobj.flags, MF_DROPPED)
                 && (mobj.type != mobjtype_t.MT_INV)
                 && (mobj.type != mobjtype_t.MT_INS)) {
@@ -2058,7 +2064,7 @@ public class UnifiedGameMap {
         UnsetThingPosition(mobj);
 
         // stop any playing sound
-        // TODO: S_StopSound (mobj);
+        S.StopSound (mobj);
 
         // free block
         RemoveThinker((thinker_t) mobj);
@@ -2178,26 +2184,7 @@ public class UnifiedGameMap {
     public void AllocateThinker(thinker_t thinker) {
     }
 
-    //
-    // P_RunThinkers
-    //
-    public void RunThinkers() {
-        thinker_t currentthinker;
-
-        currentthinker = thinkercap.next;
-        while (currentthinker != thinkercap) {
-            if (currentthinker.function == null) {
-                // time to remove it
-                currentthinker.next.prev = currentthinker.prev;
-                currentthinker.prev.next = currentthinker.next;
-            } else {
-                if (currentthinker.function.getType() == acp1)
-                    // Execute thinker's function.
-                    A.dispatch(currentthinker.function, currentthinker, null);
-            }
-            currentthinker = currentthinker.next;
-        }
-    }
+  
 
     //
     // P_Init
@@ -2524,8 +2511,7 @@ public class UnifiedGameMap {
         RemoveMobj(special);
         player.bonuscount += player_t.BONUSADD;
         if (player == DM.players[DM.consoleplayer])
-            ;
-        // TODO: S_StartSound (NULL, sound);
+        S.StartSound (null, sound);
     }
 
 } // End unified map

@@ -167,17 +167,7 @@ public abstract class RendererState {
 
     byte[] viewimage;
 
-    int viewwidth;
-
-    int scaledviewwidth;
-
-    int viewheight;
-
-    int viewwindowx;
-
-    int viewwindowy;
-
-    /** These are actually offsets inside screen 0 (or any screen). Therefore anything using
+     /** These are actually offsets inside screen 0 (or any screen). Therefore anything using
      * them should "draw" inside screen 0 */
     int[] ylookup = new int[MAXHEIGHT];
 
@@ -288,19 +278,19 @@ public abstract class RendererState {
    //
    // precalculated math tables
    //
-   public static long           clipangle;
+   public  long           clipangle;
 
    // The viewangletox[viewangle + FINEANGLES/4] lookup
    // maps the visible view angles to screen X coordinates,
    // flattening the arc to a flat projection plane.
    // There will be many angles mapped to the same X. 
 
-   public static final int[]         viewangletox=new int[FINEANGLES/2];
+   public final int[]         viewangletox=new int[FINEANGLES/2];
 
    /** The xtoviewangleangle[] table maps a screen pixel
     * to the lowest viewangle that maps back to x ranges
     * from clipangle to -clipangle. */
-   public static final long[]         xtoviewangle=new long[SCREENWIDTH+1];
+   public final long[]         xtoviewangle=new long[SCREENWIDTH+1];
 
 
    // UNUSED.
@@ -534,8 +524,8 @@ public abstract class RendererState {
     dc_yl = 1;
 
     // .. and high.
-    if (dc_yh == viewheight-1) 
-    dc_yh = viewheight - 2; 
+    if (dc_yh == DM.viewheight-1) 
+    dc_yh = DM.viewheight - 2; 
          
     count = dc_yh - dc_yl; 
 

@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.6 2010/09/22 16:40:02 velktron Exp $
+// $Id: Tables.java,v 1.7 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.7  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.6  2010/09/22 16:40:02  velktron
 // MASSIVE changes in the status passing model.
 // DoomMain and DoomGame unified.
@@ -86,6 +89,9 @@ public final class Tables extends SineCosine{
   /** Mod long angle_t's with this value to cut off rollover */
   public static final long ANGLEMODULE = 0x100000000L;
   
+  /** AND with this to remove unwanted sign extensions */
+  public static final long BITS32 = 0x00000000FFFFFFFFL;
+  
   // Maes: we have to procedurally generate finesine/finecosine, else we run into a Java static limit.
   // Either that, or I split the files. Guess what I did.
  // public static int PRECISION = 10240 ;
@@ -123,7 +129,6 @@ public final class Tables extends SineCosine{
  * rollover compensation (e.g. result=(a+b+c) is wrong, result=(a+b+c)%0xFFFFFFFF
  * is correct and will produce an angle you can "trust".
  * 
- *  So, no adaptation needed?
  * 
  */
   

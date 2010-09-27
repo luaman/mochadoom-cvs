@@ -11,7 +11,7 @@ import static data.Limits.MAXPLAYERS;
 import static data.info.mobjinfo;
 import static data.info.states;
 import static doom.englsh.*;
-import static p.MapUtils.*;
+import static utils.C2JUtils.*;
 import g.DoomGameInterface;
 import hu.HU;
 
@@ -38,7 +38,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
+// $Id: Finale.java,v 1.6 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -59,7 +59,7 @@ import doom.gameaction_t;
 
 public class Finale {
 
-  public static final String rcsid = "$Id: Finale.java,v 1.5 2010/09/23 07:31:11 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.6 2010/09/27 02:27:29 velktron Exp $";
 
   DoomGameInterface G;
   DoomStatus DS;

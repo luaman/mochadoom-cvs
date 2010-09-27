@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.19 2010/09/24 17:58:39 velktron Exp $
+// $Id: WadLoader.java,v 1.20 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.20  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.19  2010/09/24 17:58:39  velktron
 // Menus and HU  functional -mostly.
 //
@@ -900,7 +903,7 @@ public class WadLoader {
     
     public Object CacheLumpName(String name, int tag, Class what)
             {
-            return this.CacheLumpNum(this.GetNumForName(name), tag, what);
+            return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag, what);
             }
 
     //

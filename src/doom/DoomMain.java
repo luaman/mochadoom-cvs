@@ -15,6 +15,7 @@ import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.DoomAutoMap;
+import automap.Map;
 import f.Finale;
 import f.Wiper;
 import g.DoomSaveGame;
@@ -25,16 +26,19 @@ import static doom.englsh.*;
 import data.dstrings;
 import data.mapthing_t;
 import data.mobjtype_t;
+import data.sounds;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.ammotype_t;
 import data.Defines.gamestate_t;
 import data.Defines.skill_t;
+import data.sounds.musicenum_t;
+import data.sounds.sfxenum_t;
 import static data.Defines.NORMALUNIX;
-import rr.Renderer;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.DoomSoundInterface;
+import s.DummySoundDriver;
 import st.StatusBar;
 import utils.C2JUtils;
 import utils.PrintfFormat;
@@ -61,7 +65,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.8 2010/09/25 17:37:13 velktron Exp $
+// $Id: DoomMain.java,v 1.9 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -76,6 +80,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.9  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.8  2010/09/25 17:37:13  velktron
 // Lots of changes.
 //
@@ -134,7 +141,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.8 2010/09/25 17:37:13 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.9 2010/09/27 02:27:29 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -165,7 +172,7 @@ int             startepisode;
 int		startmap;
 boolean		autostart;
 
-DoomFile		debugfile;
+public DoomFile		debugfile;
 
 boolean		advancedemo;
 
@@ -232,7 +239,6 @@ public void ProcessEvents ()
 // wipegamestate can be set to -1 to force a wipe on the next draw
 gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
 // Defined in Renderer.
-boolean setsizeneeded;
 int             showMessages;
 
 //void R_ExecuteSetViewSize ();
@@ -261,7 +267,7 @@ public void Display ()
     redrawsbar = false;
     
     // change the view size if needed
-    if (setsizeneeded)
+    if (R.setsizeneeded)
     {
 	R.ExecuteSetViewSize ();
 	oldgamestate = gamestate_t.GS_MINUS_ONE;                      // force background redraw
@@ -368,6 +374,7 @@ public void Display ()
     // normal update
     if (!wipe)
     {
+    //System.out.print("Tick "+DM.gametic+"\r");
 	VI.FinishUpdate ();              // page flip or blit buffer
 	return;
     }
@@ -387,9 +394,9 @@ public void Display ()
 	wipestart = nowtime;
 	done = WIPE.ScreenWipe(Wiper.wipe.Melt.ordinal()
 			       , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
-	// TODO: I_UpdateNoBlit ();
+	//VI.UpdateNoBlit ();
 	M.Drawer ();                            // menu is drawn even on top of wipes
-	// TODO: I_FinishUpdate ();                      // page flip or blit buffer
+	VI.FinishUpdate ();                      // page flip or blit buffer
     } while (!done);
 }
 
@@ -423,7 +430,7 @@ public void DoomLoop ()
     }
 	
     VI.InitGraphics ();
-
+	 AM.Start();
     while (true)
     {
 	// frame syncronous IO operations
@@ -447,11 +454,11 @@ public void DoomLoop ()
 	    ; // TODO: TryRunTics (); // will run at least one tic (in NET)
 	}
 		
-	// TODO: S.UpdateSounds (players[consoleplayer].mo);// move positional sounds
+	S.UpdateSounds (players[consoleplayer].mo);// move positional sounds
 
 	// Update display, next frame, with current state.
 	Display ();
-/**
+/*
 #ifndef SNDSERV
 	// Sound mixing for the buffer is snychronous.
 	I_UpdateSound();
@@ -558,7 +565,7 @@ public void DoAdvanceDemo ()
 	{
 	    pagetic = 35 * 11;
 	    pagename = "TITLEPIC";
-	   // TODO: S_StartMusic(mus_dm2ttl);
+	    S.StartMusic(musicenum_t.mus_dm2ttl);
 	}
 	else
 	{
@@ -1164,7 +1171,7 @@ public void Start ()
     byte[] pal=W.CacheLumpName("PLAYPAL", PU_STATIC).getBuffer().array();
     // set it, but don't start it yet.
     VI=new AWTDoom(this,(BufferedRenderer) V,pal);
-   // VI.InitGraphics();
+    this.ST.updateStatus(this);
 
     // Check for -file in shareware
     if (modifiedgame)
@@ -1203,7 +1210,6 @@ public void Start ()
 	    try {
             System.in.read();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
@@ -1242,10 +1248,10 @@ public void Start ()
     P.Init ();
 
     System.out.print ("I_Init: Setting up machine state.\n");
-    // TODO: I_Init ();
+    I.Init ();
 
     System.out.print ("D_CheckNetGame: Checking network game status.\n");
-    // TODO: CheckNetGame ();
+    CheckNetGame ();
 
     System.out.print ("S_Init: Setting up sound.\n");
     // TODO: S_Init (snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
@@ -1318,6 +1324,12 @@ public void Start ()
 	    StartTitle ();                // start up intro loop
 
     }
+    
+    // MAES: at this point everything should be set and initialized, so it's
+    // time to make the players aware of the general status of Doom.
+	for (int i=0;i<MAXPLAYERS;i++){
+		players[i].updateStatus(this);
+	}
 
     DoomLoop ();  // never returns
 }
@@ -1636,12 +1648,14 @@ public void Start ()
          return true; 
      } 
  */ 
+automapactive=true;
+         if (AM.Responder (ev)) 
+             return true;    // automap ate it 
      if (HU.Responder (ev)) 
          return true;    // chat ate the event 
      if (ST.Responder (ev)) 
          return true;    // status window ate it 
-     if (AM.Responder (ev)) 
-         return true;    // automap ate it 
+
      } 
       
      if (gamestate == gamestate_t.GS_FINALE) 
@@ -1803,10 +1817,10 @@ public void Start ()
          { 
            case BTS_PAUSE: 
              paused ^= paused; 
-             if (paused) ;
-             // TODO S_PauseSound (); ; 
-             else ;
-             // TODO: S_ResumeSound (); 
+             if (paused)
+             S.PauseSound ();
+             else
+             S.ResumeSound (); 
              break; 
                       
            case BTS_SAVEGAME: 
@@ -1852,9 +1866,12 @@ public void Start ()
  //
 
  /**
-  * G_InitPlayer 
+  * G_InitPlayer
   * Called at the start.
   * Called by the game initialization functions.
+  *
+  * MAES: looks like dead code.
+  *
   */
  
  private void InitPlayer (int player) 
@@ -1974,12 +1991,12 @@ public void Start ()
      x = mthing.x << FRACBITS; 
      y = mthing.y << FRACBITS; 
       
-  //TODO:   if (!CheckPosition (players[playernum].mo, x, y) ) 
-//      return false; 
-  // TODO: Requires implementation of Things
+     if (!P.CheckPosition (players[playernum].mo, x, y) ) 
+    	 //      return false; 
+    	 // TODO: Requires implementation of Things
      // flush an old corpse if needed 
      if (bodyqueslot >= BODYQUESIZE) 
-     // TODO: P_RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]); 
+     P.RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]); 
      bodyque[bodyqueslot%BODYQUESIZE] = players[playernum].mo; 
      bodyqueslot++; 
      
@@ -1993,7 +2010,7 @@ public void Start ()
                , mobjtype_t.MT_TFOG); 
       
      if (players[consoleplayer].viewz != 1) ; 
-     // TODO: S_StartSound (mo, sfx_telept);  // don't start sound on first frame 
+     S.StartSound (mo, sfxenum_t.sfx_telept);  // don't start sound on first frame 
   
      return true; 
  } 
@@ -2493,7 +2510,7 @@ public void Start ()
      if (paused) 
      { 
      paused = false; 
-     // TODO: S_ResumeSound (); 
+     S.ResumeSound (); 
      } 
      
 
@@ -2708,24 +2725,27 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
  public void DeferedPlayDemo (String name) 
  { 
      defdemoname = name; 
-     gameaction = gameaction_t.ga_playdemo; 
+     // TODO: set to nothing for now.
+     gameaction = gameaction_t.ga_nothing; 
  } 
   
  public void DoPlayDemo () 
- { 
-     skill_t skill; 
+  { 
+	 /*
+	 skill_t skill; 
      int             i, episode, map; 
       
      gameaction = gameaction_t.ga_nothing; 
      demobuffer = W.CacheLumpNameAsRawBytes(defdemoname.toUpperCase(), PU_STATIC);
      demo_p = 0;
-     if ( demobuffer[demo_p]++ != VERSION)
+     if ( demobuffer[demo_p] != VERSION)
      {
        System.err.println("Demo is from a different game version!\n");
+       System.err.println("Read "+demobuffer[demo_p]);
        gameaction = gameaction_t.ga_nothing;
        return;
      }
-     
+     demo_p++;
      skill = skill_t.values()[demobuffer[demo_p++]]; 
      episode = demobuffer[demo_p++]; 
      map = demobuffer[demo_p++]; 
@@ -2750,6 +2770,7 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
 
      usergame = false; 
      demoplayback = true; 
+     */
  } 
 
  //
@@ -2763,6 +2784,7 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
      singletics = true; 
 
      defdemoname = name; 
+     
      gameaction = gameaction_t.ga_playdemo; 
  } 
   
@@ -2844,27 +2866,83 @@ public DoomMain(){
 
 public void Init(){
     // Random number generator.
+	this.DM=this;
     this.RND=new random();
     
     // In primis, the video renderer.
     this.V=new BufferedRenderer(320,200);
+    this.S=new DummySoundDriver();
     this.W=new WadLoader(this.I);
     // It's better if these are supplied externally.
     // In secundis, the Wad Loader
 
-    BufferedRenderer V=new BufferedRenderer(320,200);
+    this.WIPE=new Wiper(this);   
     
     // Then the menu...
     this.HU=new HU(this);
     this.M=new Menu(this);
-    
     this.LL=new LevelLoader(this);
-    
     this.R=new UnifiedRenderer(this);
     this.P=new Actions(this);
 
     this.ST=new StatusBar(this);
-    this.WIPE=new Wiper(this);
+    this.AM=new Map(this);
+
+    this.LL.updateStatus(this);
+    this.P.updateStatus(this);
+    this.M.updateStatus(this);
+    this.HU.updateStatus(this);
+    
 }
+
+/** Apparently, some code necessary to set at least ONE player is in here. 
+ *  Go figure.
+ */
+
+public void CheckNetGame ()
+{
+    int             i;
+	
+    /* TODO:
+    for (i=0 ; i<MAXNETNODES ; i++)
+    {
+	nodeingame[i] = false;
+       	nettics[i] = 0;
+	remoteresend[i] = false;	// set when local needs tics
+	resendto[i] = 0;		// which tic to start sending
+    } */
+	
+    // I_InitNetwork sets doomcom and netgame
+    // TODO: I.InitNetwork ();
+    //if (doomcom.id != DOOMCOM_ID)
+	//I_Error ("Doomcom buffer invalid!");
+    
+    /*netbuffer = &doomcom.data;
+    consoleplayer = displayplayer = doomcom.consoleplayer;
+    if (netgame)
+	D_ArbitrateNetStart ();
+
+    printf ("startskill %i  deathmatch: %i  startmap: %i  startepisode: %i\n",
+	    startskill, deathmatch, startmap, startepisode);
+	
+    // read values out of doomcom
+    ticdup = doomcom.ticdup;
+    maxsend = BACKUPTICS/(2*ticdup)-1;
+    if (maxsend<1)
+	maxsend = 1;
+			
+    for (i=0 ; i<doomcom.numplayers ; i++)
+	playeringame[i] = true;
+    for (i=0 ; i<doomcom.numnodes ; i++)
+	nodeingame[i] = true;
+	
+    printf ("player %i of %i (%i nodes)\n",
+	    consoleplayer+1, doomcom.numplayers, doomcom.numnodes); */
+    doomcom.numnodes=1;
+    doomcom.numplayers=1;
+    for (i=0 ; i<doomcom.numplayers ; i++)
+    	playeringame[i] = true;
+}
+
 
 }

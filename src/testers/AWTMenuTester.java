@@ -16,6 +16,7 @@ import java.awt.image.IndexColorModel;
 import javax.swing.JFrame;
 
 import rr.patch_t;
+import s.DummySoundDriver;
 
 import m.DoomMenu;
 import m.Menu;
@@ -29,6 +30,7 @@ import data.Defines;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.Language_t;
+import data.Defines.gamestate_t;
 import doom.DoomContext;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -68,10 +70,13 @@ public class AWTMenuTester {
     AWTDoom frame = new AWTDoom(DM,V,pal);
     DM.I=I;
     DM.VI=frame;
+    DM.S=new DummySoundDriver();
     frame.DM=DM;
     DM.W=W;
     DM.V=V;
+    DM.DM=DM;
     HU HU=new HU(DM);
+    DM.language=Language_t.english;
     HU.Init();
     DM.HU=HU;
     DM.gameepisode=1;
@@ -79,7 +84,9 @@ public class AWTMenuTester {
     DM.gamemission=GameMission_t.doom;
     DM.gamemode=GameMode_t.shareware;
     DM.wminfo=new wbstartstruct_t();
+    // Simulate being in the mid of a level.
     DM.usergame=true;
+    DM.gamestate=gamestate_t.GS_LEVEL;
     C2JUtils.initArrayOfObjects(DM.players,player_t.class);
     
     DM.RND=new random();
@@ -102,16 +109,16 @@ public class AWTMenuTester {
     DM.wminfo.partime=28595;
    
     DoomMenu M=DM.M=new Menu(DM);
-    DM.language=Language_t.english;
+
     M.Init();
     frame.InitGraphics();
-    
+    long a=System.nanoTime();
     DM.menuactive=true;        
         for (int i=0;i<100000;i++){
-            int a=DM.I.GetTime();
-            while (a-DM.I.GetTime()==0){
+            int ba=DM.I.GetTime();
+            while (ba-DM.I.GetTime()==0){
                 frame.setVisible(true);
-                Thread.sleep(10);               
+                //Thread.sleep(1);               
             }
            frame.GetEvent();
            
@@ -124,63 +131,18 @@ public class AWTMenuTester {
             ((Menu)M).Responder(ev);
            }
             
-          /*  if (i==40){
-            	System.out.println("Pressing enter");
-                M.Responder(new event_t(Defines.KEY_DOWNARROW));
-            }
-
-            if (i==60){
-            	System.out.println("Pressing down");
-                M.Responder(new event_t(Defines.KEY_DOWNARROW));
-            }
-            
-            if (i==80){
-            	System.out.println("Pressing escape");
-                M.Responder(new event_t(Defines.KEY_ESCAPE));
-            }
-            if (i==100){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
-            }
-            
-            if (i==120){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
-            }
-            
-            if (i==140){
-            	System.out.println("Pressing escape");
-                M.Responder(new event_t(Defines.KEY_ESCAPE));
-            }
-            
-            if (i==160){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
-            }
-            
-            if (i==160){
-            	System.out.println("Pressing up");
-                M.Responder(new event_t(Defines.KEY_UPARROW));
-            }
-            
-            if (i==300 || i==500|i==550|i==600){
-            	System.out.println("Pressing F1");
-                M.Responder(new event_t(KEY_F1));
-                System.out.println("pressed ");
-            }
-            
-            if (i==400 || i==650){
-            	System.out.println("Pressing escape");
-                M.Responder(new event_t(Defines.KEY_ESCAPE));
-            } */
-            
-            //V.takeScreenShot(0,( "menutic"+i),icm);
+       
          
         V.DrawPatch(0,0,0,help1);
         M.Ticker();
         M.Drawer();
         DM.gametic++;
         frame.FinishUpdate();
+        if (i%100==0){
+        	   long b=System.nanoTime();
+        	    
+        	    System.out.println(i +" frames in " +((b-a)/1e09) +" = "+i/((b-a)/1e09) + " fps");
+        }
         System.out.print(frame.processEvents());
         }
             } catch (Exception e){

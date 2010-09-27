@@ -5,6 +5,10 @@ package rr;
 //
 
 public class drawseg_t {
+	
+	public drawseg_t(){
+		
+	}
 
      /** MAES: was pointer. Not array? */
      public  seg_t      curline;

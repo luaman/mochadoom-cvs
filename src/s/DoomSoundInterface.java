@@ -1,12 +1,13 @@
 package s;
 
+import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import p.mobj_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSoundInterface.java,v 1.1 2010/07/27 14:27:16 velktron Exp $
+// $Id: DoomSoundInterface.java,v 1.2 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -57,7 +58,7 @@ public interface DoomSoundInterface {
 	public void StopSound(mobj_t origin);
 
 	/** Start music using <music_id> from sounds.h */
-	public void StartMusic(int music_id);
+	public void StartMusic(musicenum_t musicenum_t);
 
 	/**
 	 * Start music using <music_id> from sounds.h, and set whether looping
@@ -85,4 +86,6 @@ public interface DoomSoundInterface {
 	public void SetMusicVolume(int volume);
 
 	public void SetSfxVolume(int volume);
+
+	public void StartMusic(int music_id);
 }

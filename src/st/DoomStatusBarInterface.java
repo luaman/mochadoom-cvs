@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomStatusBarInterface.java,v 1.3 2010/08/26 16:43:42 velktron Exp $
+// $Id: DoomStatusBarInterface.java,v 1.4 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,9 +24,11 @@ package st;
 //-----------------------------------------------------------------------------
 
 import static data.Defines.*;
+import i.DoomStatusAware;
+import i.DoomVideoInterface;
 import doom.event_t;
 
-public interface DoomStatusBarInterface {
+public interface DoomStatusBarInterface extends DoomStatusAware{
 
 //
 // STATUS BAR
@@ -48,6 +50,5 @@ public void Start ();
 public void Init ();
 
 public void Stop();
-
 
 }

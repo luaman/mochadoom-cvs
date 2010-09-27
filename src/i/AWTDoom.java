@@ -39,6 +39,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
@@ -86,7 +87,7 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
 									// Screen 0
 	private byte[] RAWSCREEN;	  // RAW SCREEN DATA. Get from the Video Renderer.
 	private IndexColorModel[] cmaps;
-	
+	  Robot robby;
 		Canvas drawhere;
 		/** These are the actual screens */
         BufferedImage[] screens;
@@ -128,6 +129,8 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
         	this.cmap=cmap;
         	this.width=V.getWidth();
         	this.height=V.getHeight();
+        	
+
         // Don't do anything yet until InitGraphics is called.
         }
         
@@ -191,7 +194,7 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
             case KeyEvent.VK_F11: rc = KEY_F11;       break;
             case KeyEvent.VK_F12: rc = KEY_F12;       break;
             
-            //case Event.BACK_SPACE:
+            case KeyEvent.VK_BACK_SPACE:
             case KeyEvent.VK_DELETE:  rc = KEY_BACKSPACE; break;
 
             case KeyEvent.VK_PAUSE:   rc = KEY_PAUSE;     break;
@@ -228,7 +231,7 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
             break;
           }
           
-          System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
+         // System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
 
           return rc;
 
@@ -513,9 +516,14 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
 
       Dimension size = new Dimension();
       size.width = width * multiply;
-      size.height = height * multiply;
+      size.height = 48+height * multiply;
 
-
+      // Create AWT Robot for forcing mouse
+      try {
+      robby=new Robot();
+      } catch (Exception e){
+    	  System.out.println("AWT Robot could not be created, mouse input focus will be loose!");
+      }
 	  // check for command-line display name
 	  if ( (pnum=DM.CheckParm("-disp"))!=0 ) // suggest parentheses around assignment
 		displayname = DM.myargv[pnum+1];
@@ -661,7 +669,23 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
 
 	@Override
 	public void StartTic() {
-		// TODO Auto-generated method stub
+
+		  if (!this.isActive())
+			return;
+
+		//  System.out.println("Getting events...");
+		  while (!eventQueue.isEmpty())
+			GetEvent();
+
+		  // Warp the pointer back to the middle of the window
+		  //  or it will wander off - that is, the game will
+		  //  loose input focus within X11.
+		  if (grabMouse)
+		  {
+			  robby.mouseMove(this.getX()+this.getWidth(), this.getY()+this.getHeight());
+		  } 
+
+		 mousemoved = false;
 		
 	}
 

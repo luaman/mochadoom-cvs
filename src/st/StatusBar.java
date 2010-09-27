@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.14 2010/09/24 17:58:39 velktron Exp $
+// $Id: StatusBar.java,v 1.15 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.15  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.14  2010/09/24 17:58:39  velktron
 // Menus and HU  functional -mostly.
 //
@@ -97,7 +100,9 @@ import static doom.items.*;
 import static data.Tables.*;
 import p.mobj_t;
 
+import i.DoomStatusAware;
 import i.DoomSystemInterface;
+import i.DoomVideoInterface;
 import m.cheatseq_t;
 import m.random;
 import data.sounds.musicenum_t;
@@ -108,16 +113,14 @@ import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import doom.weapontype_t;
-
-import rr.Renderer;
 import rr.UnifiedRenderer;
 import rr.patch_t;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 
-public class StatusBar implements DoomStatusBarInterface {
+public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.14 2010/09/24 17:58:39 velktron Exp $";
+        "$Id: StatusBar.java,v 1.15 2010/09/27 02:27:29 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -127,11 +130,13 @@ public class StatusBar implements DoomStatusBarInterface {
 
     protected UnifiedRenderer R;
 
-    protected DoomMain DS;
+    protected DoomMain DM;
 
     protected random RND;
     
     protected DoomSystemInterface I;
+    
+    protected DoomVideoInterface VI;
 
     // Size of statusbar.
     // Now sensitive for scaling.
@@ -428,7 +433,6 @@ public class StatusBar implements DoomStatusBarInterface {
 
     private static int ST_MAPHEIGHT = 1;
 
-    // MAES: most of this shit was "static".
     // main player in game
     private player_t plyr;
 
@@ -639,12 +643,9 @@ public class StatusBar implements DoomStatusBarInterface {
     // STATUS BAR CODE
     //
 
-    public StatusBar(DoomMain dC) {
-        this.DS=dC;
-        this.V=dC.V;
-        this.W=dC.W;
-        this.RND=dC.RND;
-        this.R=dC.R;
+    public StatusBar(DoomContext DC) {
+    	this.updateStatus(DC);
+    	//this.plyr=DM.players[DM.]
     }
 
     public void refreshBackground() {
@@ -652,7 +653,7 @@ public class StatusBar implements DoomStatusBarInterface {
         if (st_statusbaron) {
             V.DrawPatch(ST_X, 0, BG, sbar);
 
-            if (DS.netgame)
+            if (DM.netgame)
                 V.DrawPatch(ST_FX, 0, BG, faceback);
 
             V.CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
@@ -684,8 +685,8 @@ public class StatusBar implements DoomStatusBarInterface {
     public void Stop() {
         if (st_stopped)
             return;
-
-        // TODO: I_SetPalette (W.CacheLumpNum (lu_palette, PU_CACHE));
+        // Reset palette.
+        VI.SetPalette (0);
 
         st_stopped = true;
     }
@@ -719,7 +720,7 @@ public class StatusBar implements DoomStatusBarInterface {
 
         // if a user keypress...
         else if (ev.type == evtype_t.ev_keydown) {
-            if (!DS.netgame) {
+            if (!DM.netgame) {
                 // b. - enabled for more debug fun.
                 // if (gameskill != sk_nightmare) {
 
@@ -773,7 +774,7 @@ public class StatusBar implements DoomStatusBarInterface {
                     plyr.message = STSTR_MUS;
                     cheat_mus.GetParam(buf);
 
-                    if (DS.gamemode == GameMode_t.commercial) {
+                    if (DM.gamemode == GameMode_t.commercial) {
                         musnum =
                             musicenum_t.mus_runnin.ordinal() + (buf[0] - '0')
                                     * 10 + buf[1] - '0' - 1;
@@ -840,7 +841,7 @@ public class StatusBar implements DoomStatusBarInterface {
                      * players[consoleplayer].mo.x,
                      * players[consoleplayer].mo.y);
                      */
-                    mobj_t mo = DS.players[DS.consoleplayer].mo;
+                    mobj_t mo = DM.players[DM.consoleplayer].mo;
                     plyr.message =
                         "ang=0x" + Long.toHexString(mo.angle) + "0x"
                                 + Integer.toHexString(mo.x) + "0x"
@@ -856,7 +857,7 @@ public class StatusBar implements DoomStatusBarInterface {
 
                 cheat_clev.GetParam(buf);
 
-                if (DS.gamemode == GameMode_t.commercial) {
+                if (DM.gamemode == GameMode_t.commercial) {
                     epsd = 0;
                     map = (buf[0] - '0') * 10 + buf[1] - '0';
                 } else {
@@ -872,19 +873,19 @@ public class StatusBar implements DoomStatusBarInterface {
                     return false;
 
                 // Ohmygod - this is not going to work.
-                if ((DS.gamemode == GameMode_t.retail)
+                if ((DM.gamemode == GameMode_t.retail)
                         && ((epsd > 4) || (map > 9)))
                     return false;
 
-                if ((DS.gamemode == GameMode_t.registered)
+                if ((DM.gamemode == GameMode_t.registered)
                         && ((epsd > 3) || (map > 9)))
                     return false;
 
-                if ((DS.gamemode == GameMode_t.shareware)
+                if ((DM.gamemode == GameMode_t.shareware)
                         && ((epsd > 1) || (map > 9)))
                     return false;
 
-                if ((DS.gamemode == GameMode_t.commercial)
+                if ((DM.gamemode == GameMode_t.commercial)
                         && ((epsd > 1) || (map > 34)))
                     return false;
 
@@ -1108,17 +1109,17 @@ public class StatusBar implements DoomStatusBarInterface {
         updateFaceWidget();
 
         // used by the w_armsbg widget
-        st_notdeathmatch = !DS.deathmatch;
+        st_notdeathmatch = !DM.deathmatch;
 
         // used by w_arms[] widgets
-        st_armson = st_statusbaron && !DS.deathmatch;
+        st_armson = st_statusbaron && !DM.deathmatch;
 
         // used by w_frags widget
-        st_fragson = DS.deathmatch && st_statusbaron;
+        st_fragson = DM.deathmatch && st_statusbaron;
         st_fragscount = 0;
 
         for (i = 0; i < MAXPLAYERS; i++) {
-            if (i != DS.consoleplayer)
+            if (i != DM.consoleplayer)
                 st_fragscount += plyr.frags[i];
             else
                 st_fragscount -= plyr.frags[i];
@@ -1195,10 +1196,10 @@ public class StatusBar implements DoomStatusBarInterface {
         int i;
 
         // used by w_arms[] widgets
-        st_armson = st_statusbaron && !DS.deathmatch;
+        st_armson = st_statusbaron && !DM.deathmatch;
 
         // used by w_frags widget
-        st_fragson = DS.deathmatch && st_statusbaron;
+        st_fragson = DM.deathmatch && st_statusbaron;
 
         w_ready.update(refresh);
 
@@ -1243,7 +1244,7 @@ public class StatusBar implements DoomStatusBarInterface {
 
     public void Drawer(boolean fullscreen, boolean refresh) {
 
-        st_statusbaron = (!fullscreen) || DS.automapactive;
+        st_statusbaron = (!fullscreen) || DM.automapactive;
         st_firsttime = st_firsttime || refresh;
 
         // Do red-/gold-shifts from damage/items
@@ -1303,7 +1304,7 @@ public class StatusBar implements DoomStatusBarInterface {
         }
 
         // face backgrounds for different color players
-        namebuf = ("STFB" + DS.consoleplayer);
+        namebuf = ("STFB" + DM.consoleplayer);
         faceback = W.CachePatchName(namebuf, PU_STATIC);
 
         // status bar background bits
@@ -1359,7 +1360,7 @@ public class StatusBar implements DoomStatusBarInterface {
         int i;
 
         st_firsttime = true;
-        plyr = DS.players[DS.consoleplayer];
+        plyr = DM.players[DM.consoleplayer];
 
         st_clock = 0;
         st_chatstate = st_chatstateenum_t.StartChatState;
@@ -1840,6 +1841,16 @@ public class StatusBar implements DoomStatusBarInterface {
 
     interface StatusBarWidget {
         public void update(boolean refresh);
+    }
+
+	@Override
+	public void updateStatus(DoomContext DC) {
+        this.DM=DC.DM;
+        this.V=DC.V;
+        this.W=DC.W;
+        this.RND=DC.RND;
+        this.R=DC.R;
+        this.VI=DC.VI;
     }
 
 }

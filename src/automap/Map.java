@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.14 2010/09/23 07:31:11 velktron Exp $
+// $Id: Map.java,v 1.15 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.15  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.14  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -112,10 +115,10 @@ DoomStatusBarInterface ST;
 WadLoader W;
 DoomMain DM;
 DoomVideoRenderer V;
-LevelLoader P;    
+LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.14 2010/09/23 07:31:11 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.15 2010/09/27 02:27:29 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -213,7 +216,7 @@ public static final int M_ZOOMOUT    =   ((int) (FRACUNIT/1.02));
 public Map(DoomContext dC) {
     this.V=dC.V;
     this.W=dC.W;
-    this.P=dC.LL;
+    this.LL=dC.LL;
     this.DM=dC.DM;
     this.ST=dC.ST;
     
@@ -223,6 +226,9 @@ public Map(DoomContext dC) {
     
     f_oldloc=new mpoint_t();
     m_paninc=new mpoint_t();
+    
+    this.plr=DM.players[DM.displayplayer];
+    this.scanline=new byte[V.getHeight()*V.getWidth()];
 }
 
 
@@ -491,17 +497,17 @@ public final  void findMinMaxBoundaries()
     min_x = min_y =  MAXINT;
     max_x = max_y = -MAXINT;
   
-    for (int i=0;i<P.numvertexes;i++)
+    for (int i=0;i<LL.numvertexes;i++)
     {
-    if (P.vertexes[i].x < min_x)
-        min_x = P.vertexes[i].x;
-    else if (P.vertexes[i].x > max_x)
-        max_x = P.vertexes[i].x;
+    if (LL.vertexes[i].x < min_x)
+        min_x = LL.vertexes[i].x;
+    else if (LL.vertexes[i].x > max_x)
+        max_x = LL.vertexes[i].x;
     
-    if (P.vertexes[i].y < min_y)
-        min_y = P.vertexes[i].y;
-    else if (P.vertexes[i].y > max_y)
-        max_y = P.vertexes[i].y;
+    if (LL.vertexes[i].y < min_y)
+        min_y = LL.vertexes[i].y;
+    else if (LL.vertexes[i].y > max_y)
+        max_y = LL.vertexes[i].y;
     }
   
     max_w = max_x - min_x;
@@ -723,11 +729,13 @@ public final  boolean Responder ( event_t  ev )
 
     rc = false;
 
+    System.out.println(ev.data1==AM_STARTKEY);
     if (!DM.automapactive)
     {
-    if (ev.type == evtype_t.ev_keydown && ev.data1 == AM_STARTKEY)
+    if (ev.data1 == AM_STARTKEY)
     {
         this.Start ();
+        System.out.println("Automap started");
         DM.viewactive = false;
         rc = true;
     }
@@ -1244,9 +1252,9 @@ private final  void drawGrid(int color)
 
     // Figure out start of vertical gridlines
     start = m_x;
-    if (((start-P.bmaporgx)%(MAPBLOCKUNITS<<FRACBITS))!=0)
+    if (((start-LL.bmaporgx)%(MAPBLOCKUNITS<<FRACBITS))!=0)
     start += (MAPBLOCKUNITS<<FRACBITS)
-        - ((start-P.bmaporgx)%(MAPBLOCKUNITS<<FRACBITS));
+        - ((start-LL.bmaporgx)%(MAPBLOCKUNITS<<FRACBITS));
     end = m_x + m_w;
 
     // draw vertical gridlines
@@ -1261,9 +1269,9 @@ private final  void drawGrid(int color)
 
     // Figure out start of horizontal gridlines
     start = m_y;
-    if (((start-P.bmaporgy)%(MAPBLOCKUNITS<<FRACBITS))!=0)
+    if (((start-LL.bmaporgy)%(MAPBLOCKUNITS<<FRACBITS))!=0)
     start += (MAPBLOCKUNITS<<FRACBITS)
-        - ((start-P.bmaporgy)%(MAPBLOCKUNITS<<FRACBITS));
+        - ((start-LL.bmaporgy)%(MAPBLOCKUNITS<<FRACBITS));
     end = m_y + m_h;
 
     // draw horizontal gridlines
@@ -1288,37 +1296,37 @@ protected  mline_t l=new mline_t();
 private final  void drawWalls()
 {
 
-    for (int i=0;i<P.numlines;i++)
+    for (int i=0;i<LL.numlines;i++)
     {
-    l.ax = P.lines[i].v1x;
-    l.ay = P.lines[i].v1y;
-    l.bx = P.lines[i].v2x;
-    l.by = P.lines[i].v2y;
-    if ((cheating | (P.lines[i].flags/* & ML_MAPPED*/))!=0)
+    l.ax = LL.lines[i].v1x;
+    l.ay = LL.lines[i].v1y;
+    l.bx = LL.lines[i].v2x;
+    l.by = LL.lines[i].v2y;
+    if ((cheating | (LL.lines[i].flags/* & ML_MAPPED*/))!=0)
     {
-        if (((P.lines[i].flags & LINE_NEVERSEE) & ~cheating)!=0)
+        if (((LL.lines[i].flags & LINE_NEVERSEE) & ~cheating)!=0)
         continue;
-        if (P.lines[i].backsector==null)
+        if (LL.lines[i].backsector==null)
         {
         drawMline(l, WALLCOLORS+lightlev);
         }
         else
         {
-        if (P.lines[i].special == 39)
+        if (LL.lines[i].special == 39)
         { // teleporters
             drawMline(l, WALLCOLORS+WALLRANGE/2);
         }
-        else if ((P.lines[i].flags & ML_SECRET)!=0) // secret door
+        else if ((LL.lines[i].flags & ML_SECRET)!=0) // secret door
         {
             if (cheating!=0) drawMline(l, SECRETWALLCOLORS + lightlev);
             else drawMline(l, WALLCOLORS+lightlev);
         }
-        else if (P.lines[i].backsector.floorheight
-               != P.lines[i].frontsector.floorheight) {
+        else if (LL.lines[i].backsector.floorheight
+               != LL.lines[i].frontsector.floorheight) {
             drawMline(l, FDWALLCOLORS + lightlev); // floor level change
         }
-        else if (P.lines[i].backsector.ceilingheight
-               != P.lines[i].frontsector.ceilingheight) {
+        else if (LL.lines[i].backsector.ceilingheight
+               != LL.lines[i].frontsector.ceilingheight) {
             drawMline(l, CDWALLCOLORS+lightlev); // ceiling level change
         }
         else if (cheating!=0) {
@@ -1330,7 +1338,7 @@ private final  void drawWalls()
     else if (plr.powers[pw_allmap]!=0)
     {
     	// Some are never seen even with that!
-        if ((P.lines[i].flags & LINE_NEVERSEE)==0) drawMline(l, GRAYS+3);
+        if ((LL.lines[i].flags & LINE_NEVERSEE)==0) drawMline(l, GRAYS+3);
     }
     }
     
@@ -1480,10 +1488,10 @@ public final  void drawThings
 {
     mobj_t t;
 
-    for (int i=0;i<P.numsectors;i++)
+    for (int i=0;i<LL.numsectors;i++)
     {
     // MAES: get first on the list.
-    t = P.sectors[i].thinglist;
+    t = LL.sectors[i].thinglist;
     while(t!=null)
     {
         drawLineCharacter

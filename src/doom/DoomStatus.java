@@ -146,10 +146,6 @@ public class DoomStatus extends DoomContext {
 
     public boolean noblit;
 
-    public int viewwindowx;
-
-    public int viewwindowy;
-
     public short viewheight;
 
     public int viewwidth;
@@ -165,6 +161,11 @@ public class DoomStatus extends DoomContext {
 
     public int displayplayer;
 
+    // Found in draw_c
+    
+   	public int		viewwindowx;
+   	public int		viewwindowy;
+    
     // -------------------------------------
     // Scores, rating.
     // Statistics on a given map, for intermission.
@@ -206,7 +207,7 @@ public class DoomStatus extends DoomContext {
     public int gametic;
 
     // Bookkeeping on players - state.
-    public player_t[] players = new player_t[MAXPLAYERS];
+    public player_t[] players;
 
     // Alive? Disconnected?
     public boolean[] playeringame = new boolean[MAXPLAYERS];
@@ -277,13 +278,20 @@ public class DoomStatus extends DoomContext {
 
     public int ticdup=1;
 
+    
+    /** MAES: this WAS NOT in the original. 
+     *  Remember to call it!
+     */
     protected void initNetGameStuff() {
         this.netbuffer = new doomdata_t();
         this.doomcom = new doomcom_t();
         this.netcmds = new ticcmd_t[MAXPLAYERS][BACKUPTICS];
 
-        C2JUtils.initArrayOfObjects(localcmds, ticcmd_t.class);
-
+        C2JUtils.initArrayOfObjects(localcmds);
+        for (int i=0;i<MAXPLAYERS;i++){
+        C2JUtils.initArrayOfObjects(netcmds[i]);
+        }
+        
     }
 
     // MAES: Fields specific to DoomGame. A lot of them were
@@ -461,7 +469,11 @@ public class DoomStatus extends DoomContext {
     }
 
     public DoomStatus(){
+    	players = new player_t[MAXPLAYERS];
     	C2JUtils.initArrayOfObjects(players);
+
+    	this.wminfo=new wbstartstruct_t();
+    	initNetGameStuff();
     }
     
     

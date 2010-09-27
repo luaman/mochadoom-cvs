@@ -92,69 +92,6 @@ public class MapUtils {
   #endif */
   }
   
-  /** Returns true if flags are included in arg.
-   * Synonymous with (flags & arg)!=0
-   * 
-   * @param flags
-   * @param arg
-   * @return
-   */
-  public static final boolean flags(int flags, int arg){
-      return ((flags & arg)!=0);
-  }
   
-  /** Returns 1 for true and 0 for false. Useful, given 
-   * the amount of "arithmetic" logical functions in 
-   * legacy code.
-   * 
-   *  Synonymous with (expr?1:0);
-   * 
-   * @param flags
-   * @param arg
-   * @return
-   */
-  public static final int eval(boolean expr){
-      return (expr?1:0);
-  }
-  
-  /** Returns 1 for non-null and 0 for null objects.
-   * Useful, given the amount of "existential" logical 
-   * functions in legacy code.
-   * 
-   *  Synonymous with (expr!=null);
-   * 
-   * @param flags
-   * @param arg
-   * @return
-   */
-  public static final boolean eval(Object expr){
-      return (expr!=null);
-  }
-  
-  /** Returns true for expr!=0, false otherwise.
-   * 
-   * @param flags
-   * @param arg
-   * @return
-   */
-  public static final boolean eval(int expr){
-      return expr!=0;
-  }
-  
-  /** Returns true for expr!=0, false otherwise.
-   * 
-   * @param flags
-   * @param arg
-   * @return
-   */
-  public static final boolean eval(long expr){
-      return expr!=0;
-  }
-    
-  public static final void resetAll(Resettable[] r){
-      for (int i=0;i<r.length;i++){
-          r[i].reset();
-      }
-  }
   
 }

@@ -10,6 +10,7 @@ import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
 import static data.info.sprnames; 
+import i.DoomStatusAware;
 import i.DoomSystemInterface;
 
 import java.io.IOException;
@@ -24,6 +25,7 @@ import rr.seg_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
+import s.DoomSoundInterface;
 import st.DoomStatusBarInterface;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
@@ -46,7 +48,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.8 2010/09/23 20:36:45 velktron Exp $
+// $Id: LevelLoader.java,v 1.9 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,6 +63,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.9  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.8  2010/09/23 20:36:45  velktron
 // *** empty log message ***
 //
@@ -110,18 +115,20 @@ import doom.DoomMain;
 //
 //-----------------------------------------------------------------------------
 
-public class LevelLoader {
+public class LevelLoader implements DoomStatusAware{
 
 /////////////////// Status objects ///////////////////
     
     DoomStatusBarInterface ST;
+    DoomSystemInterface I;
     WadLoader W;
     DoomMain DM;
     DoomVideoRenderer V;
     UnifiedRenderer R;
     Actions P;
+    DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.8 2010/09/23 20:36:45 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.9 2010/09/27 02:27:29 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -696,7 +703,7 @@ public int bmaporgy;
       }
       
       if (addedlines != sector.linecount)
-          DoomSystemInterface.Error ("P_GroupLines: miscounted");
+    	  I.Error ("P_GroupLines: miscounted");
               
       // set the degenmobj_t to the middle of the bounding box
       sector.soundorg.x = (bbox[BOXRIGHT]+bbox[BOXLEFT])/2;
@@ -752,7 +759,7 @@ public int bmaporgy;
       DM.players[DM.consoleplayer].viewz = 1; 
 
       // Make sure all sounds are stopped before Z_FreeTags.
-      //TODO: S_Start ();         
+      S.Start ();         
 
   /*    
   #if 0 // UNUSED
@@ -845,11 +852,19 @@ public int bmaporgy;
   }
 
 
-  public LevelLoader(DoomMain DC){
+  public LevelLoader(DoomContext DC){
+	  this.updateStatus(DC);
+  }
+  
+  @Override
+  public void updateStatus(DoomContext DC){
       this.W=DC.W;
-      this.DM=DC;
+      this.DM=DC.DM;
       this.P=DC.P;
-      this.R=DC.R;   
+      this.R=DC.R;
+      this.I=DC.I;
+      this.S=DC.S;
+	  
   }
 
 

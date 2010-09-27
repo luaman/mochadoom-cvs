@@ -10,6 +10,7 @@ import doom.DoomContext;
 import doom.DoomInterface;
 import doom.DoomMain;
 import doom.DoomStatus;
+import rr.UnifiedRenderer;
 import rr.patch_t;
 import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
@@ -19,7 +20,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.9 2010/09/24 17:58:39 velktron Exp $
+// $Id: MenuMisc.java,v 1.10 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -35,6 +36,9 @@ import w.WadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.10  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.9  2010/09/24 17:58:39  velktron
 // Menus and HU  functional -mostly.
 //
@@ -92,14 +96,14 @@ import w.WadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.9 2010/09/24 17:58:39 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.10 2010/09/27 02:27:29 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;
 WadLoader W;
 DoomVideoRenderer V;
 HU HU;
-
+UnifiedRenderer R;
 DoomSystemInterface I;
 DoomSoundInterface S;
 
@@ -541,7 +545,7 @@ public int ReadFile(String name, byte[] buffer) {
                     + length);
 
     } catch (Exception e) {
-        DoomSystemInterface.Error("Couldn't read file %s (%s)", name, e.getMessage());
+        I.Error("Couldn't read file %s (%s)", name, e.getMessage());
         return -1;
     }
     buffer = buf;

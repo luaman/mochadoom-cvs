@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.10 2010/09/23 15:11:57 velktron Exp $
+// $Id: HU.java,v 1.11 2010/09/27 02:27:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.11  2010/09/27 02:27:29  velktron
+// BEASTLY update
+//
 // Revision 1.10  2010/09/23 15:11:57  velktron
 // A bit closer...
 //
@@ -81,17 +84,21 @@ package hu;
 import static data.Defines.*;
 import static data.Limits.*;
 import static doom.englsh.*;
+import i.DoomStatusAware;
 import utils.C2JUtils;
 import utils.PrintfFormat;
+import v.DoomVideoRenderer;
 
+import m.DoomMenu;
 import m.Menu;
 import m.Swap;
 import rr.UnifiedRenderer;
 import rr.patch_t;
+import s.DoomSoundInterface;
 import w.WadLoader;
+import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.DoomMain;
-import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -103,19 +110,22 @@ import doom.player_t;
  * #include "sounds.h"
  */
 
-public class HU {
+public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.10 2010/09/23 15:11:57 velktron Exp $";
+        "$Id: HU.java,v 1.11 2010/09/27 02:27:29 velktron Exp $";
 
     // MAES: Status and wad data.
-    WadLoader wd;
+    WadLoader W;
 
     DoomMain DM;
 
-    Menu M;
+    DoomMenu M;
 
     UnifiedRenderer R;
+    
+    DoomVideoRenderer V;
 
+    DoomSoundInterface S;
     //
     // Locally used constants, shortcuts.
     // MAES: Some depend on STATE, so moved into constructor.
@@ -140,14 +150,14 @@ public class HU {
 
     protected final static int HU_INPUTHEIGHT = 1;
 
-    protected String[] chat_macros =
+    protected static final String[] chat_macros =
         { HUSTR_CHATMACRO0, HUSTR_CHATMACRO1, HUSTR_CHATMACRO2,
                 HUSTR_CHATMACRO3, HUSTR_CHATMACRO4, HUSTR_CHATMACRO5,
                 HUSTR_CHATMACRO6, HUSTR_CHATMACRO7, HUSTR_CHATMACRO8,
                 HUSTR_CHATMACRO9 };
 
     /** Needs to be seen by DoomGame */
-    public final String[] player_names =
+    public final static String[] player_names =
         { HUSTR_PLRGREEN, HUSTR_PLRINDIGO, HUSTR_PLRBROWN, HUSTR_PLRRED };
 
     char chat_char; // remove later.
@@ -162,11 +172,11 @@ public class HU {
 
     // MAES: these used to be defined in hu_lib. We're going 100$ OO here...
 
-    hu_itext_t[] w_inputbuffer = new hu_itext_t[MAXPLAYERS];
+    hu_itext_t[] w_inputbuffer;
 
-    hu_textline_t w_title = new hu_textline_t();
+    hu_textline_t w_title ;
 
-    hu_itext_t w_chat = new hu_itext_t();
+    hu_itext_t w_chat;
 
     boolean[] always_off = { false };
 
@@ -429,10 +439,17 @@ public class HU {
         return ch < 128 ? frenchKeyMap[ch] : ch;
     }
 
-    public HU(DoomMain DM) {
-        this.DM = DM;
-        this.wd = DM.W;
-        this.R = DM.R;
+    public HU(DoomContext DM) {
+    	this.updateStatus(DM);
+    	
+    	this.w_message=new hu_stext_t();
+
+    	this.w_inputbuffer=new hu_itext_t[MAXPLAYERS];
+    	for (int i=0;i<MAXPLAYERS;i++){
+    		this.w_inputbuffer[i]=new hu_itext_t();
+    	}
+    	this.w_title=new hu_textline_t();
+    	this.w_chat=new hu_itext_t();
     }
 
     /**
@@ -464,7 +481,7 @@ public class HU {
             buffer = xxx.sprintf(j++);
             // hu_font[i] = ((patch_t[]) wd.CacheLumpName(buffer, PU_STATIC);
             hu_font[i] =
-                (patch_t) (wd.CacheLumpName(buffer, PU_STATIC, patch_t.class));
+                (patch_t) (W.CacheLumpName(buffer, PU_STATIC, patch_t.class));
         }
 
         // MAES: Doom's SC had a really fucked up endianness change for height.
@@ -616,11 +633,11 @@ public class HU {
                                 message_on[0] = true;
                                 message_counter = HU_MSGTIMEOUT;
                                 if (DM.gamemode == GameMode_t.commercial)
-                                    // TODO: S_StartSound(0, sfx_radio);
-                                    ;
+                                    S.StartSound(null, sfxenum_t.sfx_radio);
+                                    
                                 else
-                                    // TODO: S_StartSound(0, sfx_tink);
-                                    ;
+                                    S.StartSound(null, sfxenum_t.sfx_tink);
+                                    
                             }
                             w_inputbuffer[i].resetIText();
                         }
@@ -678,6 +695,7 @@ public class HU {
 
     public boolean Responder(event_t ev) {
 
+    	System.out.println("Player "+DM.players[0].mo.x);
         char[] macromessage;
         boolean eatkey = false;
 
@@ -791,7 +809,7 @@ public class HU {
     // ///////////////////////////////// STRUCTS
     // ///////////////////////////////////
 
-    public class hu_itext_t {
+    class hu_itext_t {
 
         // Input Text Line widget
         // (child of Text Line widget)
@@ -806,6 +824,10 @@ public class HU {
 
         boolean laston; // last value of *->on;
 
+  public hu_itext_t(){
+        	
+        }
+        
         public void initIText(int x, int y, patch_t[] font, int startchar,
                 boolean[] on) {
             this.lm = 0; // default left margin is start of text
@@ -885,7 +907,7 @@ public class HU {
     // Scrolling Text window widget
     // (child of Text Line widget)
 
-    public class hu_stext_t {
+    class hu_stext_t {
 
         hu_textline_t[] l = new hu_textline_t[HU_MAXLINES]; // text lines to
 
@@ -900,6 +922,10 @@ public class HU {
 
         boolean laston; // last value of *->on.
 
+        public hu_stext_t(){
+        	
+        }
+        
         public hu_stext_t(int x, int y, int h, patch_t[] font, int startchar,
                 boolean[] on) {
             this.initSText(x, y, h, font, startchar, on);
@@ -908,13 +934,14 @@ public class HU {
         public void initSText(int x, int y, int h, patch_t[] font,
                 int startchar, boolean[] on) {
 
-            int i;
-
+        	for (int i=0;i<HU_MAXLINES;i++){
+        		this.l[i]=new hu_textline_t();
+        	}
             this.h = h;
             this.on = on;
             this.laston = true;
             this.cl = 0;
-            for (i = 0; i < h; i++)
+            for (int i = 0; i < h; i++)
                 this.l[i].initTextLine(x, y - i
                         * (Swap.SHORT(font[0].height) + 1), font, startchar);
 
@@ -1023,7 +1050,7 @@ public class HU {
     // Text Line widget
     // (parent of Scrolling Text and Input Text widgets)
 
-    public class hu_textline_t {
+    class hu_textline_t {
 
         // left-justified position of scrolling text window
         int x;
@@ -1042,6 +1069,10 @@ public class HU {
         // whether this line needs to be udpated
         int needsupdate;
 
+        public hu_textline_t(){
+        	
+        }
+        
         public void clearTextLine() {
             this.len = 0;
             this.l[0] = 0;
@@ -1065,10 +1096,6 @@ public class HU {
             this.f = f;
             this.sc = sc;
             this.clearTextLine();
-        }
-
-        public hu_textline_t() {
-            // TODO Auto-generated constructor stub
         }
 
         public boolean addCharToTextLine(char ch) {
@@ -1133,13 +1160,13 @@ public class HU {
             // draw the new stuff
             x = this.x;
             for (i = 0; i < this.len; i++) {
-                c = Character.toUpperCase(this.l[i]);
+                c = Character.toUpperCase(l[i]);
                 if (c != ' ' && c >= this.sc && c <= '_') {
                     w = Swap.SHORT(this.f[c - this.sc].width);
                     if (x + w > SCREENWIDTH)
                         break;
                     // TODO: must implement renderer!
-                    // V_DrawPatchDirect(x, l->y, FG, l->f[c - l->sc]);
+                    V.DrawPatchDirect(x, y, FG, f[c - sc]);
                     x += w;
                 } else {
                     x += 4;
@@ -1152,7 +1179,7 @@ public class HU {
             if (drawcursor
                     && x + Swap.SHORT(this.f['_' - this.sc].width) <= SCREENWIDTH) {
                 // TODO: Implement V_ stuff!
-                // V_DrawPatchDirect(x, l->y, FG, l->f['_' - l->sc]);
+                V.DrawPatchDirect(x, this.y, FG, this.f['_' - this.sc]);
             }
         }
 
@@ -1201,4 +1228,15 @@ public class HU {
         
         return this.hu_font;
     }
+
+	@Override
+	public void updateStatus(DoomContext DM) {
+        this.DM = DM.DM;
+        this.W = DM.W;
+        this.R = DM.R;
+        this.V=DM.V;
+        this.S=DM.S;
+        this.M=(Menu) DM.M;
+		
+	}
 }

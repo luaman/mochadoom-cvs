@@ -1,5 +1,6 @@
 package doom;
 
+import i.DoomStatusAware;
 import i.DoomSystemInterface;
 
 import java.util.Arrays;
@@ -12,6 +13,7 @@ import data.Defines.ammotype_t;
 import data.Defines.card_t;
 import data.Defines.skill_t;
 import data.Defines.statenum_t;
+import data.sounds.sfxenum_t;
 import static data.Defines.*;
 import static data.SineCosine.finecosine;
 import static data.SineCosine.finesine;
@@ -19,14 +21,14 @@ import static data.Tables.*;
 import static m.fixed_t.*;
 import static data.info.*;
 import static p.mobj.*;
-import p.UnifiedGameMap;
-import static p.MapUtils.*;
 import p.Actions;
 import p.mobj_t;
 import p.pspdef_t;
 import rr.RendererState;
 import rr.sector_t;
-import static p.MapUtils.flags;
+import s.DoomSoundInterface;
+import utils.C2JUtils;
+import static utils.C2JUtils.*;
 import static data.Limits.*;
 import static doom.items.weaponinfo;
 import static p.mobj.MF_SHADOW;
@@ -52,12 +54,23 @@ import static p.mobj.MF_SHADOW;
  */
 
 public class player_t /*extends mobj_t */
-        implements Cloneable
+        implements Cloneable ,DoomStatusAware
         {
+	
+    /** Probably doomguy needs to know what the fuck is going on */
+    private DoomMain DM;
+    private Actions P;
+    private RendererState R;
+    private random RND;
+    private DoomSystemInterface I;
+    private DoomSoundInterface S;
+	
+    /* Fugly hack to "reset" the player. Not worth the fugliness.
     public static player_t nullplayer;
     static {
         nullplayer = new player_t();
     }
+    */
 
     public player_t() {
         powers = new int[NUMPOWERS];
@@ -67,7 +80,11 @@ public class player_t /*extends mobj_t */
         cards = new boolean[card_t.NUMCARDS.ordinal()];
         weaponowned = new boolean[NUMWEAPONS];
         psprites = new pspdef_t[NUMPSPRITES];
+        C2JUtils.initArrayOfObjects(psprites);
         this.mo=new mobj_t();
+        readyweapon=weapontype_t.wp_fist;
+        this.cmd=new ticcmd_t();
+        //weaponinfo=new weaponinfo_t();
     }
 
     public final static int CF_NOCLIP = 1; // No damage, no health loss.
@@ -202,7 +219,7 @@ public class player_t /*extends mobj_t */
         Arrays.fill(this.maxammo, 0);
         Arrays.fill(this.powers, 0);
         Arrays.fill(this.weaponowned, false);
-        Arrays.fill(this.psprites, null);
+        //Arrays.fill(this.psprites, null);
         this.armortype = 0;
         this.attackdown = false;
         this.attacker = null;
@@ -290,7 +307,7 @@ public class player_t /*extends mobj_t */
             return false;
 
         if (ammo < 0 || ammo > NUMAMMO)
-            DoomSystemInterface.Error("P_GiveAmmo: bad type %i", ammo);
+            I.Error("P_GiveAmmo: bad type %i", ammo);
 
         if (this.ammo[ammo] == maxammo[ammo])
             return false;
@@ -387,7 +404,7 @@ public class player_t /*extends mobj_t */
             pendingweapon = weapn;
 
             if (this ==DM.players[DM.consoleplayer])
-                // TODO: S_StartSound (null, sfx_wpnup);
+                S.StartSound (null, sfxenum_t.sfx_wpnup);
                 return false;
         }
 
@@ -564,7 +581,7 @@ public class player_t /*extends mobj_t */
         break;
                 
           default:
-        DoomSystemInterface.Error ("P_PlayerInSpecialSector: unknown special %i", sector.special);
+        I.Error ("P_PlayerInSpecialSector: unknown special %i", sector.special);
         break;
         };
     }    
@@ -812,11 +829,7 @@ SetPsprite
     
     private boolean onground;
 
-    /** Probably doomguy needs to know what the fuck is going on */
-    private DoomMain DM;
-    private Actions P;
-    private RendererState R;
-    private random RND;
+
         	
     /* psprnum_t enum */
     public static int ps_weapon=0,
@@ -926,7 +939,7 @@ SetPsprite
         pendingweapon = readyweapon;
             
         if (pendingweapon == weapontype_t.wp_chainsaw)
-        // TODO: S_StartSound (mo, sfxenum_t.sfx_sawup);
+        S.StartSound (mo, sfxenum_t.sfx_sawup);
             
         newstate = weaponinfo[pendingweapon.ordinal()].upstate;
 
@@ -1027,7 +1040,7 @@ SetPsprite
     // P_DropWeapon
     // Player died, so put the weapon away.
     //
-    public void DropWeapon (player_t player)
+    public void DropWeapon ()
     {
         this.SetPsprite (
               ps_weapon,
@@ -1209,6 +1222,18 @@ SetPsprite
         PlayerThink(this);
         
     }
+
+	@Override
+	public void updateStatus(DoomContext DC) {
+	    this.DM=DC.DM;
+	    this.P=DC.P;
+	    this.R=DC.R;
+	    this.RND=DC.RND;
+	    this.I=DC.I;
+	    this.S=DC.S;
+	    
+		
+	}
 
 
 

@@ -285,6 +285,7 @@ public class UnifiedRenderer extends RendererState{
       // Clip to view edges.
       // OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
       span = angle1 - angle2;
+      span&=BITS32;
       
       // Back side? I.e. backface culling?
       if (span >= ANG180)
@@ -295,10 +296,15 @@ public class UnifiedRenderer extends RendererState{
       angle1 -= viewangle;
       angle2 -= viewangle;
       
+      angle1&=BITS32;
+      angle1&=BITS32;
+      
       tspan = angle1 + clipangle;
+      tspan&=BITS32;
       if (tspan > 2*clipangle)
       {
       tspan -= 2*clipangle;
+      tspan&=BITS32;
 
       // Totally off the left edge?
       if (tspan >= span)
@@ -307,20 +313,32 @@ public class UnifiedRenderer extends RendererState{
       angle1 = clipangle;
       }
       tspan = clipangle - angle2;
+      tspan&=BITS32;
       if (tspan > 2*clipangle)
       {
       tspan -= 2*clipangle;
+      tspan&=BITS32;
 
       // Totally off the left edge?
       if (tspan >= span)
           return; 
       angle2 = -clipangle;
+      angle2 &=BITS32;
       }
       
       // The seg is in the view range,
       // but not necessarily visible.
-      angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-      angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
+      
+      //System.out.println(Long.toHexString(angle1));
+      //System.out.println(Long.toHexString(angle2));
+      angle1&=BITS32;
+      angle2&=BITS32;
+      //System.out.println(Long.toHexString(angle1));
+      //System.out.println(Long.toHexString(angle2));
+      angle1 = ((angle1+ANG90)>>>ANGLETOFINESHIFT);
+      angle2 = ((angle2+ANG90)>>>ANGLETOFINESHIFT);
+      //System.out.println(Long.toHexString(angle1));
+      //System.out.println(Long.toHexString(angle2));
       x1 = viewangletox[(int) angle1];
       x2 = viewangletox[(int) angle2];
 
@@ -918,7 +936,7 @@ public class UnifiedRenderer extends RendererState{
           return;     
               
       if( RANGECHECK){
-          if (start >=viewwidth || start > stop)
+          if (start >=DM.viewwidth || start > stop)
           I.Error ("Bad R_RenderWallRange: %i to %i", start , stop);
       }
           
@@ -1154,15 +1172,15 @@ public class UnifiedRenderer extends RendererState{
 
           if (segtextured)
           {
-          offsetangle = rw_normalangle-rw_angle1;
+          offsetangle = (rw_normalangle-rw_angle1)&BITS32;
           
           if (offsetangle > ANG180)
-              offsetangle = -offsetangle;
+              offsetangle = (-offsetangle)&BITS32;
 
           if (offsetangle > ANG90)
               offsetangle = ANG90;
 
-          sineval = finesine[(int) (offsetangle >>>ANGLETOFINESHIFT)];
+          sineval = finesine(offsetangle);
           rw_offset = FixedMul (hyp, sineval);
 
           if (rw_normalangle-rw_angle1 < ANG180)
@@ -1357,7 +1375,7 @@ public class UnifiedRenderer extends RendererState{
         int       x2 )
       {
           // MAES: angle_t
-          int angle;
+          long angle;
           // 
           int distance;
           int length;
@@ -1366,7 +1384,7 @@ public class UnifiedRenderer extends RendererState{
       if (RANGECHECK){
           if (x2 < x1
           || x1<0
-          || x2>=DM.viewwidth
+          || x2>=DM.DM.viewwidth
           || y>DM.viewheight)
           {
           I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
@@ -1388,9 +1406,9 @@ public class UnifiedRenderer extends RendererState{
           }
           
           length = FixedMul (distance,distscale[x1]);
-          angle = (int) ((viewangle + xtoviewangle[x1])>>ANGLETOFINESHIFT);
-          ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-          ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+          angle = (viewangle + xtoviewangle[x1])&BITS32;
+          ds_xfrac = viewx + FixedMul(finecosine(angle), length);
+          ds_yfrac = -viewy - FixedMul(finesine(angle), length);
 
           if (fixedcolormap!=null)
           ds_colormap = fixedcolormap;
@@ -1423,7 +1441,7 @@ public class UnifiedRenderer extends RendererState{
           int angle;
           
           // opening / clipping determination
-          for (int i=0 ; i<DM.viewwidth ; i++)
+          for (int i=0 ; i<DM.DM.viewwidth ; i++)
           {
           floorclip[i] = DM.viewheight;
           ceilingclip[i] = -1;
@@ -1581,6 +1599,7 @@ public class UnifiedRenderer extends RendererState{
         int       t2,
         int       b2 )
       {
+    	  //t1=C2JUtils.toUnsignedByte(t1);
           while (t1 < t2 && t1<=b1)
           {
           this.MapPlane (t1,spanstart[t1],x-1);
@@ -2170,7 +2189,7 @@ public class UnifiedRenderer extends RendererState{
           x1 = (centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS;
 
           // off the right side?
-          if (x1 > viewwidth)
+          if (x1 > DM.viewwidth)
           return;
           
           tx +=  spritewidth[lump];
@@ -2190,7 +2209,7 @@ public class UnifiedRenderer extends RendererState{
           vis.gzt = thing.z + spritetopoffset[lump];
           vis.texturemid = vis.gzt - viewz;
           vis.x1 = x1 < 0 ? 0 : x1;
-          vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;
+          vis.x2 = x2 >= DM.viewwidth ? DM.viewwidth-1 : x2;
           /* This actually determines the general sprite scale) 
            * iscale = 1/xscale, if this was floating point. */
           iscale = FixedDiv (FRACUNIT, xscale);
@@ -2320,7 +2339,7 @@ public class UnifiedRenderer extends RendererState{
           x1 = (centerxfrac + FixedMul (tx,pspritescale) ) >>FRACBITS;
 
           // off the right side
-          if (x1 > viewwidth)
+          if (x1 > DM.viewwidth)
           return;     
 
           tx +=  spritewidth[lump];
@@ -2335,7 +2354,7 @@ public class UnifiedRenderer extends RendererState{
           vis.mobjflags = 0;
           vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp.sy-spritetopoffset[lump]);
           vis.x1 = x1 < 0 ? 0 : x1;
-          vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;   
+          vis.x2 = x2 >= DM.viewwidth ? DM.viewwidth-1 : x2;   
           vis.scale = pspritescale<<detailshift;
           
           if (flip)
@@ -2448,9 +2467,16 @@ public class UnifiedRenderer extends RendererState{
 
           // Tranverses the master visspite list, and "links"
           // each sprite to one another in order of appearance. This is O(n)
-          for (int ds=0 ; ds<vissprite_p ; ds++)
+          // FIXME: it can't start at 0.
+          
+          vissprites[0].next=vissprites[Math.min(1,vissprite_p)];
+          for (int ds=1 ; ds<vissprite_p ; ds++)
           {
               vissprites[ds].next = vissprites[ds+1];
+              // This is bullshit. Dunno how they got away with it in C, it would cause
+              // a garbage pointer, which was not a problem because unsorted was "poked in"
+              // anyway. Fuck that shit, John Romero. 
+              
               vissprites[ds].prev = vissprites[ds-1];
           }
           
@@ -2607,7 +2633,7 @@ public class UnifiedRenderer extends RendererState{
           for (x = spr.x1 ; x<=spr.x2 ; x++)
           {
           if (clipbot[x] == -2)       
-              clipbot[x] = (short) viewheight;
+              clipbot[x] = (short) DM.viewheight;
           // ?? What's this bullshit?
           if (cliptop[x] == -2)
               cliptop[x] = -1;
@@ -2721,7 +2747,7 @@ public class UnifiedRenderer extends RendererState{
       if (finetangent[i] > FRACUNIT*2)
           t = -1;
       else if (finetangent[i] < -FRACUNIT*2)
-          t = DM.viewwidth+1;
+          t = DM.DM.viewwidth+1;
       else
       {
           t = FixedMul (finetangent[i], focallength);
@@ -2729,8 +2755,8 @@ public class UnifiedRenderer extends RendererState{
 
           if (t < -1)
           t = -1;
-          else if (t>DM.viewwidth+1)
-          t = DM.viewwidth+1;
+          else if (t>DM.DM.viewwidth+1)
+          t = DM.DM.viewwidth+1;
       }
       viewangletox[i] = t;
       }
@@ -2738,7 +2764,7 @@ public class UnifiedRenderer extends RendererState{
       // Scan viewangletox[] to generate xtoviewangle[]:
       //  xtoviewangle will give the smallest view angle
       //  that maps to x. 
-      for (x=0;x<=DM.viewwidth;x++)
+      for (x=0;x<=DM.DM.viewwidth;x++)
       {
       i = 0;
       while (viewangletox[i]>x)
@@ -2754,8 +2780,8 @@ public class UnifiedRenderer extends RendererState{
       
       if (viewangletox[i] == -1)
           viewangletox[i] = 0;
-      else if (viewangletox[i] == DM.viewwidth+1)
-          viewangletox[i]  = DM.viewwidth;
+      else if (viewangletox[i] == DM.DM.viewwidth+1)
+          viewangletox[i]  = DM.DM.viewwidth;
       }
       
       clipangle = xtoviewangle[0];
@@ -2882,7 +2908,7 @@ public void DrawMaskedColumn (column_t column)
             DrawColumn.invoke();
         }
         
-         //colfunc.invoke(); 
+         colfunc.invoke(); 
     }
     //column = (column_t *)(  (byte *)column + column.length + 4);
     }
@@ -2982,24 +3008,24 @@ public void VideoErase(int ofs, int count) {
      int ofs;
      int i;
 
-     if (scaledviewwidth == SCREENWIDTH)
+     if (DM.scaledviewwidth == SCREENWIDTH)
          return;
 
-     top = ((SCREENHEIGHT - SBARHEIGHT) - viewheight) / 2;
-     side = (SCREENWIDTH - scaledviewwidth) / 2;
+     top = ((SCREENHEIGHT - SBARHEIGHT) - DM.viewheight) / 2;
+     side = (SCREENWIDTH - DM.scaledviewwidth) / 2;
 
      // copy top and one line of left side
      this.VideoErase(0, top * SCREENWIDTH + side);
 
      // copy one line of right side and bottom
-     ofs = (viewheight + top) * SCREENWIDTH - side;
+     ofs = (DM.viewheight + top) * SCREENWIDTH - side;
      this.VideoErase(ofs, top * SCREENWIDTH + side);
 
      // copy sides using wraparound
      ofs = top * SCREENWIDTH + SCREENWIDTH - side;
      side <<= 1;
 
-     for (i = 1; i < viewheight; i++) {
+     for (i = 1; i < DM.viewheight; i++) {
          this.VideoErase(ofs, side);
          ofs += SCREENWIDTH;
      }
@@ -3030,7 +3056,7 @@ public void VideoErase(int ofs, int count) {
 
      String name;
 
-     if (scaledviewwidth == 320)
+     if (DM.scaledviewwidth == 320)
          return;
 
      if (DM.gamemode == GameMode_t.commercial)
@@ -3059,38 +3085,38 @@ public void VideoErase(int ofs, int count) {
          }
      }
 
-     patch = (patch_t) W.CacheLumpName("brdr_t", PU_CACHE, patch_t.class);
+     patch = (patch_t) W.CachePatchName("BRDR_T", PU_CACHE);
 
-     for (x = 0; x < scaledviewwidth; x += 8)
-         V.DrawPatch(viewwindowx + x, viewwindowy - 8, 1, patch);
-     patch = (patch_t) W.CacheLumpName("brdr_b", PU_CACHE, patch_t.class);
+     for (x = 0; x < DM.scaledviewwidth; x += 8)
+         V.DrawPatch(DM.viewwindowx + x, DM.viewwindowy - 8, 1, patch);
+     patch = (patch_t) W.CachePatchName("BRDR_B", PU_CACHE);
 
-     for (x = 0; x < scaledviewwidth; x += 8)
-         V.DrawPatch(viewwindowx + x, viewwindowy + viewheight, 1, patch);
-     patch = (patch_t) W.CacheLumpName("brdr_l", PU_CACHE, patch_t.class);
+     for (x = 0; x < DM.scaledviewwidth; x += 8)
+         V.DrawPatch(DM.viewwindowx + x, DM.viewwindowy + DM.viewheight, 1, patch);
+     patch = (patch_t) W.CachePatchName("BRDR_L", PU_CACHE);
 
-     for (y = 0; y < viewheight; y += 8)
-         V.DrawPatch(viewwindowx - 8, viewwindowy + y, 1, patch);
-     patch = (patch_t) W.CacheLumpName("brdr_r", PU_CACHE, patch_t.class);
+     for (y = 0; y < DM.viewheight; y += 8)
+         V.DrawPatch(DM.viewwindowx - 8, DM.viewwindowy + y, 1, patch);
+     patch = (patch_t) W.CachePatchName("BRDR_R", PU_CACHE);
 
-     for (y = 0; y < viewheight; y += 8)
-         V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + y, 1,
+     for (y = 0; y < DM.viewheight; y += 8)
+         V.DrawPatch(DM.viewwindowx + DM.scaledviewwidth, DM.viewwindowy + y, 1,
              patch);
 
      // Draw beveled edge. Top-left
-     V.DrawPatch(viewwindowx - 8, viewwindowy - 8, 1, (patch_t) W
-             .CacheLumpName("brdr_tl", PU_CACHE, patch_t.class));
+     V.DrawPatch(DM.viewwindowx - 8, DM.viewwindowy - 8, 1, (patch_t) W
+             .CachePatchName("BRDR_TL", PU_CACHE));
 
      // Top-right.
-     V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy - 8, 1,
-         (patch_t) W.CacheLumpName("brdr_tr", PU_CACHE, patch_t.class));
+     V.DrawPatch(DM.viewwindowx + DM.scaledviewwidth, DM.viewwindowy - 8, 1,
+         (patch_t) W.CachePatchName("BRDR_TR", PU_CACHE));
 
      // Bottom-left
-     V.DrawPatch(viewwindowx - 8, viewwindowy + viewheight, 1,
-         (patch_t) W.CacheLumpName("brdr_bl", PU_CACHE, patch_t.class));
+     V.DrawPatch(DM.viewwindowx - 8, DM.viewwindowy + DM.viewheight, 1,
+         (patch_t) W.CachePatchName("BRDR_BL", PU_CACHE));
      // Bottom-right.
-     V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
-         (patch_t) W.CacheLumpName("brdr_br", PU_CACHE, patch_t.class));
+     V.DrawPatch(DM.viewwindowx + DM.scaledviewwidth, DM.viewwindowy + DM.viewheight, 1,
+         (patch_t) W.CachePatchName("BRDR_BR", PU_CACHE));
  }
 
  /**
@@ -3106,21 +3132,21 @@ public void VideoErase(int ofs, int count) {
      // Handle resize,
      // e.g. smaller view windows
      // with border and/or status bar.
-     viewwindowx = (SCREENWIDTH - width) >> 1;
+     DM.viewwindowx = (SCREENWIDTH - width) >> 1;
 
      // Column offset. For windows.
      for (i = 0; i < width; i++)
-         columnofs[i] = viewwindowx + i;
+         columnofs[i] = DM.viewwindowx + i;
 
      // Samw with base row offset.
      if (width == SCREENWIDTH)
-         viewwindowy = 0;
+    	 DM.viewwindowy = 0;
      else
-         viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
+    	 DM.viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
 
      // Preclaculate all row offsets.
      for (i = 0; i < height; i++)
-         ylookup[i] = /* screens[0] + */(i + viewwindowy) * SCREENWIDTH;
+         ylookup[i] = /* screens[0] + */(i + DM.viewwindowy) * SCREENWIDTH;
  }
  
  
@@ -3200,9 +3226,12 @@ public void VideoErase(int ofs, int count) {
             spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
             // Lowres/blocky mode does it twice,
             // while scale is adjusted appropriately.
-            screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
-            screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
-
+            // TODO: proper colormaps.
+            //screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+            //screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+            
+            screen[dest++] = ds_source[pds_source+spot];
+            screen[dest++] = ds_source[pds_source+spot];
             f_xfrac += ds_xstep;
             f_yfrac += ds_ystep;
 
@@ -3301,7 +3330,7 @@ public void RenderPlayerView (player_t player)
   // Check for new console commands.
   //NetUpdate ();
   
-  MyPlanes.DrawPlanes ();
+  //MyPlanes.DrawPlanes ();
   
   // Check for new console commands.
   //NetUpdate ();
@@ -3327,8 +3356,8 @@ public void SetupFrame (player_t player)
 
  viewz = player.viewz;
  
- viewsin = finesine[(int) (viewangle>>ANGLETOFINESHIFT)];
- viewcos = finecosine[(int) (viewangle>>ANGLETOFINESHIFT)];
+ viewsin = finesine[(int) (viewangle>>>ANGLETOFINESHIFT)];
+ viewcos = finecosine[(int) (viewangle>>>ANGLETOFINESHIFT)];
  
  sscount = 0;
  
@@ -3357,6 +3386,7 @@ public void SetupFrame (player_t player)
  * The change will take effect next refresh.
  */
 
+// Who can set this? A: The Menu.
 public boolean      setsizeneeded;
 int     setblocks;
 int     setdetail;
@@ -3366,6 +3396,7 @@ public void SetViewSize
 ( int       blocks,
 int       detail )
 {
+	System.out.println("SetViewSize");
  setsizeneeded = true;
  setblocks = blocks;
  setdetail = detail;
@@ -3402,10 +3433,10 @@ public void ExecuteSetViewSize ()
     }
     
     detailshift = setdetail;
-    viewwidth = DM.scaledviewwidth>>detailshift;
+    DM.viewwidth = DM.scaledviewwidth>>detailshift;
     
     centery = viewheight/2;
-    centerx = viewwidth/2;
+    centerx = DM.viewwidth/2;
     centerxfrac=(centerx<<FRACBITS);
     centeryfrac=(centery<<FRACBITS);
     projection=centerxfrac;
@@ -3446,12 +3477,12 @@ public void ExecuteSetViewSize ()
     dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
     dy = Math.abs(dy);
     // MAES: yslope is a field in "r_plane.c" so it should really be in the Rendering Context.
-    MyPlanes.yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+    MyPlanes.yslope[i] = FixedDiv ( (DM.viewwidth<<detailshift)/2*FRACUNIT, dy);
     }
     
-    for (i=0 ; i<viewwidth ; i++)
+    for (i=0 ; i<DM.viewwidth ; i++)
     {
-    cosadj = Math.abs(finecosine[(int) (xtoviewangle[i]>>ANGLETOFINESHIFT)]);
+    cosadj = Math.abs(finecosine(i));
     MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
     }
     
@@ -3462,7 +3493,7 @@ public void ExecuteSetViewSize ()
     startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
     for (j=0 ; j<MAXLIGHTSCALE ; j++)
     {
-        level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
+        level = startmap - j*SCREENWIDTH/(DM.viewwidth<<detailshift)/DISTMAP;
         
         if (level < 0)
         level = 0;
@@ -4285,16 +4316,20 @@ public void InitSkyMap ()
  */
   
 public int  detailLevel;
-public int  screenblocks;
+public int  screenblocks=9; // has default
 
 public void Init ()
+
 {
-   InitData ();
+	drawsegs=new drawseg_t[MAXDRAWSEGS];
+	C2JUtils.initArrayOfObjects(drawsegs);
+	
+	InitData ();
    System.out.print("\nR_InitData");
    InitPointToAngle ();
    System.out.print("\nR_InitPointToAngle");
    InitTables ();
-   // ds.viewwidth / ds.viewheight / detailLevel are set by the defaults
+   // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
    System.out.print ("\nR_InitTables");
 
    SetViewSize (screenblocks, detailLevel);

@@ -46,4 +46,8 @@ public interface DoomVideoRenderer {
     
     public void takeScreenShot(int screen, String imagefile, IndexColorModel icm) throws IOException;
     
+    public int getWidth();
+    
+    public int getHeight();
+    
 }

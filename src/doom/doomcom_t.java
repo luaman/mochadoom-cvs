@@ -1,6 +1,10 @@
 package doom;
 
 public class doomcom_t {
+	
+		public doomcom_t(){
+			
+		}
 
         // Supposed to be DOOMCOM_ID?
         // Maes: was "long", but they intend 32-bit "int" here. Hurray for C's consistency!
