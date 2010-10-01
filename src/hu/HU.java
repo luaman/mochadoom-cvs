@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.12 2010/09/27 15:07:44 velktron Exp $
+// $Id: HU.java,v 1.13 2010/10/01 16:47:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.13  2010/10/01 16:47:51  velktron
+// Fixed tab interception.
+//
 // Revision 1.12  2010/09/27 15:07:44  velktron
 // meh
 //
@@ -106,16 +109,10 @@ import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 
-/*
- * #include <ctype.h> #include "doomdef.h" #include "z_zone.h" #include
- * "m_swap.h" #include "hu_stuff.h" #include "hu_lib.h" #include "w_wad.h"
- * #include "s_sound.h" #include "doomstat.h" // Data. #include "dstrings.h"
- * #include "sounds.h"
- */
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.12 2010/09/27 15:07:44 velktron Exp $";
+        "$Id: HU.java,v 1.13 2010/10/01 16:47:51 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader W;
@@ -183,7 +180,8 @@ public class HU implements DoomStatusAware {
 
     boolean[] always_off = { false };
 
-    boolean[] chat_on = new boolean[1];
+    // Needs to be referenced by one of the widgets.
+    public boolean[] chat_on = new boolean[1];
 
     // MAES: Ugly hack which allows it to be passed as reference. Sieg heil!
     boolean[] message_on = new boolean[1];
@@ -483,8 +481,7 @@ public class HU implements DoomStatusAware {
         for (i = 0; i < HU_FONTSIZE; i++) {
             buffer = xxx.sprintf(j++);
             // hu_font[i] = ((patch_t[]) wd.CacheLumpName(buffer, PU_STATIC);
-            hu_font[i] =
-                (patch_t) (W.CacheLumpName(buffer, PU_STATIC, patch_t.class));
+            hu_font[i] = (W.CachePatchName(buffer, PU_STATIC));
         }
 
         // MAES: Doom's SC had a really fucked up endianness change for height.

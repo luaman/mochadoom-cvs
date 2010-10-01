@@ -32,12 +32,15 @@ import i.InputListener;
 import java.awt.AWTEvent;
 import java.awt.Canvas;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Event;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.Toolkit;
@@ -74,7 +77,7 @@ import doom.evtype_t;
  * @author Velktron
  *
  */
-public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMotionListener, DoomVideoInterface,DoomEventInterface{
+public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener, DoomVideoInterface,DoomEventInterface{
 
      /**
 	 * 
@@ -231,7 +234,7 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
             break;
           }
           
-         // System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
+         System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
 
           return rc;
 
@@ -584,6 +587,20 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
       drawhere.addMouseListener(this);
       drawhere.addMouseMotionListener(this);
       
+      final Component me=this;
+      
+      // AWT: tab is a special case :-/
+      KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {  
+          public boolean dispatchKeyEvent(KeyEvent e) {    
+            if (e.getKeyCode() == KeyEvent.VK_TAB) {      
+                addEvent(new KeyEvent(me, KeyEvent.KEY_PRESSED, System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
+
+            }  
+            return false;
+          }
+        });
+
+      
       // AWT: create cursors.
       this.normal=this.getCursor();
       this.hidden=this.createInvisibleCursor();
@@ -699,10 +716,14 @@ public class AWTDoom extends JFrame implements KeyListener,MouseListener,MouseMo
 
     @Override
     public void UpdateNoBlit() {
-        //this.update(null);
+        this.update(null);
         
     }
-	
+    
+	@Override
+    public boolean dispatchKeyEvent(KeyEvent e) {
+	return false;
+	}
 
 }
 

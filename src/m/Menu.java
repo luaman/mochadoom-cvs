@@ -92,17 +92,13 @@ public class Menu extends MenuMisc implements DoomMenu{
 
     boolean message_dontfuckwithme;
 
-    /** in heads-up code */
-    
-    boolean chat_on; 
-
     /** defaulted values */
     
     int mouseSensitivity; // has default
 
     /** Show messages has default, 0 = off, 1 = on */
 
-    private int showMessages;
+    private int showMessages=1;
 
     /**
      * showMessages can be read outside of Menu, but not modified. Menu has the
@@ -1131,14 +1127,14 @@ public class Menu extends MenuMisc implements DoomMenu{
            // System.out.print("Menu NOT active");
             switch (ch) {
             case KEY_MINUS: // Screen size down
-                if (DM.automapactive || chat_on)
+                if (DM.automapactive || HU.chat_on[0])
                     return false;
                 SizeDisplay.invoke(0);
                 S.StartSound(null, sfxenum_t.sfx_stnmov);
                 return true;
 
             case KEY_EQUALS: // Screen size up
-                if (DM.automapactive || chat_on)
+                if (DM.automapactive || HU.chat_on[0])
                     return false;
                 SizeDisplay.invoke(1);
                 S.StartSound(null, sfxenum_t.sfx_stnmov);

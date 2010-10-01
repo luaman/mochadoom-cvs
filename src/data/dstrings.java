@@ -2,7 +2,7 @@ package data;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dstrings.java,v 1.3 2010/09/22 16:40:02 velktron Exp $
+// $Id: dstrings.java,v 1.4 2010/10/01 16:47:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package data;
 // GNU General Public License for more details.
 //
 // $Log: dstrings.java,v $
+// Revision 1.4  2010/10/01 16:47:51  velktron
+// Fixed tab interception.
+//
 // Revision 1.3  2010/09/22 16:40:02  velktron
 // MASSIVE changes in the status passing model.
 // DoomMain and DoomGame unified.
@@ -50,7 +53,7 @@ import static doom.englsh.*;
 
 public class dstrings{
 
-//public static const char rcsid[] = "$Id: dstrings.java,v 1.3 2010/09/22 16:40:02 velktron Exp $";
+//public static const char rcsid[] = "$Id: dstrings.java,v 1.4 2010/10/01 16:47:51 velktron Exp $";
 
 
     // Misc. other strings.
@@ -73,7 +76,7 @@ public class dstrings{
     public static final int NUM_QUITMESSAGES= 22;
 
 
-public static String[] endmsg=
+public static final String[] endmsg=
 {
   // DOOM1
   QUITMSG,

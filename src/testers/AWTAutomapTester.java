@@ -84,10 +84,7 @@ public class AWTAutomapTester {
     DM.W=W;
     DM.V=V;
     DM.DM=DM;
-    HU HU=new HU(DM);    
     DM.language=Language_t.english;
-    HU.Init();
-    DM.HU=HU;
     DM.gameepisode=1;
     DM.gamemap=1;
     DM.gamemission=GameMission_t.doom;
@@ -125,32 +122,36 @@ public class AWTAutomapTester {
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
     DM.R=new UnifiedRenderer(DM); 
+    HU HU=DM.HU=new HU(DM);
     
     DM.P.updateStatus(DM);
-    LL.updateStatus(DM);
     M.updateStatus(DM);
     ST.updateStatus(DM);
     AM.updateStatus(DM);
+    HU.updateStatus(DM);
+    LL.updateStatus(DM);
     DM.R.Init();
     DM.P.Init();
+    HU.Init();
     LL.SetupLevel(1, 2, 0, skill_t.sk_hard);
     ST.Init();
-    M.Init();
-    
+    M.Init();    
     ST.Start();
     AM.LevelInit();
     AM.Start();
+    HU.Start();
+   // M.StartControlPanel();
     
 
     long a=System.nanoTime();
     
     DM.menuactive=false;
-    DM.automapactive=true;
+    DM.automapactive=false;
         for (int i=0;i<100000;i++){
             int ba=DM.I.GetTime();
             while (ba-DM.I.GetTime()==0){
-                frame.setVisible(true);
-                //Thread.sleep(1);               
+               // Don't do that! frame.setVisible(true);
+                Thread.sleep(1);               
             }
            frame.GetEvent();
            
@@ -160,9 +161,9 @@ public class AWTAutomapTester {
 
             //System.out.println(ev);
             if (ev!=null){
-            
-            AM.Responder(ev);
-            M.Responder(ev);
+                AM.Responder(ev);
+                M.Responder(ev);
+            HU.Responder(ev);
             ST.Responder(ev);
            }
            }
@@ -170,12 +171,15 @@ public class AWTAutomapTester {
        
          
         //V.DrawPatch(0,0,0,help1);
-        //M.Ticker();
-        //M.Drawer();
         AM.Ticker();
         AM.Drawer();
+        HU.Ticker();
+        HU.Drawer();
         ST.Ticker();
         ST.Drawer(false,true);
+        M.Ticker();
+        M.Drawer();
+
         DM.gametic++;
         frame.FinishUpdate();
         if (i%100==0){

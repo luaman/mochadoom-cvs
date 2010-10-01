@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.16 2010/09/27 15:07:44 velktron Exp $
+// $Id: Map.java,v 1.17 2010/10/01 16:47:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.17  2010/10/01 16:47:51  velktron
+// Fixed tab interception.
+//
 // Revision 1.16  2010/09/27 15:07:44  velktron
 // meh
 //
@@ -121,7 +124,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.16 2010/09/27 15:07:44 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.17 2010/10/01 16:47:51 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -671,7 +674,7 @@ public final  void Stop ()
 
     this.unloadPics();
     DM.automapactive = false;
-    // TODO: could it be modified by the Responder?
+    // This is the only way to notify the status bar responder that we're exiting the automap.
     ST.Responder(st_notify_ex);
     stopped = true;
 }
@@ -1376,23 +1379,23 @@ private int rotx, roty;
 * 
  * @param x fixed_t
  * @param y fixed_t
- * @param a angle_t
+ * @param a angle_t -> this should be a LUT-ready BAM.
  */
 
 private final  void rotate
 ( int  x,
   int y,
-  long   a )
+  int   a )
 {
     //int tmpx;
 
     rotx =
-    FixedMul(x,finecosine(a))
-    - FixedMul(y,finesine(a));
+    FixedMul(x,finecosine[a])
+    - FixedMul(y,finesine[a]);
     
     roty   =
-    FixedMul(x,finesine(a))
-    + FixedMul(y,finecosine(a));
+    FixedMul(x,finesine[a])
+    + FixedMul(y,finecosine[a]);
 
     //rotx.val = tmpx;
 }
@@ -1402,7 +1405,7 @@ drawLineCharacter
 ( mline_t[]  lineguy,
   int       lineguylines,
   int   scale, // fixed_t
-  long   angle, // angle_t
+  int   angle, // This should be a LUT-ready angle.
   int       color,
   int   x, // fixed_t
   int   y // fixed_t
@@ -1475,10 +1478,10 @@ public final  void drawPlayers()
     if (cheating!=0)
         drawLineCharacter
         (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-          (int)plr.mo.angle, WHITE, plr.mo.x, plr.mo.y);
+          toBAMIndex((int)plr.mo.angle), WHITE, plr.mo.x, plr.mo.y);
     else
         drawLineCharacter
-        (player_arrow, NUMPLYRLINES, 0,  (int)plr.mo.angle,
+        (player_arrow, NUMPLYRLINES, 0,  toBAMIndex((int)plr.mo.angle),
          WHITE, plr.mo.x, plr.mo.y);
     return;
     }
@@ -1520,7 +1523,7 @@ public final  void drawThings
     {
         drawLineCharacter
         (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-         16<<FRACBITS, t.angle, colors+lightlev, t.x, t.y);
+         16<<FRACBITS, toBAMIndex(t.angle), colors+lightlev, t.x, t.y);
         t = (mobj_t)t.snext;
     }
     }

@@ -117,8 +117,8 @@ public class AWTMenuTester {
         for (int i=0;i<100000;i++){
             int ba=DM.I.GetTime();
             while (ba-DM.I.GetTime()==0){
-                frame.setVisible(true);
-                //Thread.sleep(1);               
+                //Don't do that! frame.setVisible(true);
+                Thread.sleep(1);               
             }
            frame.GetEvent();
            

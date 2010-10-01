@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.8 2010/09/27 15:07:44 velktron Exp $
+// $Id: Tables.java,v 1.9 2010/10/01 16:47:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.9  2010/10/01 16:47:51  velktron
+// Fixed tab interception.
+//
 // Revision 1.8  2010/09/27 15:07:44  velktron
 // meh
 //
@@ -94,6 +97,10 @@ public final class Tables extends SineCosine{
   
   /** AND with this to remove unwanted sign extensions */
   public static final long BITS32 = 0x00000000FFFFFFFFL;
+  
+  /** Sign elimination */
+  public static final int BITS31 = 0x7FFFFFFF;
+
   
   // Maes: we have to procedurally generate finesine/finecosine, else we run into a Java static limit.
   // Either that, or I split the files. Guess what I did.
@@ -1017,6 +1024,71 @@ public static final int finecosine(long angle){
 private Tables(){
     
 }
+
+/** Compare BAM angles in 32-bit format 
+ *  "Greater or Equal" bam0>bam1
+ * */
+
+public static final boolean GE(int bam0, int bam1){
+    // Handle easy case.
+    if (bam0==bam1) return true;
+    
+    // bam0 is greater than 180 degrees.
+    if (bam0<0 && bam1>=0) return true;
+    // bam1 is greater than 180 degrees.
+    if (bam0>=0 && bam1<0) return false;
+    
+    // Both "greater than 180", No other way to compare.
+    bam0&=BITS31;
+    bam1&=BITS31;        
+    return bam0>bam1;
+}
+
+public static final boolean GT(int bam0, int bam1){       
+    // bam0 is greater than 180 degrees.
+    if (bam0<0 && bam1>=0) return true;
+    // bam1 is greater than 180 degrees.
+    if (bam0>=0 && bam1<0) return false;
+    
+    // Both "greater than 180", No other way to compare.
+    bam0&=BITS31;
+    bam1&=BITS31;        
+    return bam0>bam1;
+}
+
+public static final int BAMDiv(int bam0, int bam1){       
+    // bam0 is greater than 180 degrees.
+    if (bam0>=0) return bam0/bam1;
+    // bam0 is greater than 180 degrees.
+    // We have to make is so that ANG270 0xC0000000 becomes ANG135, aka 60000000
+    if (bam1>=0)
+    return (int) ((long)(0x0FFFFFFFFL&bam0)/bam1);
+    
+    return (int) ((long)(0x0FFFFFFFFL&bam0)/(0x0FFFFFFFFL&bam1));
+}
+
+/** Converts a long angle to a LUT-ready angle (13 bits, between 0-8192). 
+ * 
+ * @param angle
+ * @return
+ */
+
+public static final int toBAMIndex(long angle){
+    return (int) ((angle>>>ANGLETOFINESHIFT)%ANGLEMODULE);
+}
+
+/** Converts an 32-bit int angle to a LUT-ready angle (13 bits, between 0-8192). 
+ * 
+ * @param angle
+ * @return
+ */
+
+public static final int toBAMIndex(int angle){
+    return angle>>>ANGLETOFINESHIFT;
+}
+
+
+
 
 }
 
