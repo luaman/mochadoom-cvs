@@ -37,7 +37,7 @@ public int         patch;
 /** for color translation and shadow draw,
  * maxbright frames as well.
  * 
- * Use paired with colormapO;
+ * Use paired with pcolormap;
  */ 
 public byte[]   colormap;
 

@@ -94,6 +94,36 @@ public class DoomStatus extends DoomContext {
 
     /** Use this instead of "deathmatch=2" which is bullshit. */
     public boolean altdeath;
+    
+    //////////// STUFF SHARED WITH THE RENDERER ///////////////
+    
+    // -------------------------
+    // Status flags for refresh.
+    //
+
+    public boolean nodrawers;
+
+    public boolean noblit;
+    
+    public boolean viewactive;
+    
+    // Player taking events, and displaying.
+    public int consoleplayer;
+
+    public int displayplayer;
+    
+    // Depending on view size - no status bar?
+    // Note that there is no way to disable the
+    // status bar explicitely.
+    public boolean statusbaractive;
+
+    public boolean automapactive; // In AutoMap mode?
+
+    public boolean menuactive; // Menu overlayed?
+
+    public boolean paused; // Game Pause?
+    
+    
 
     // -------------------------
     // Internal parameters for sound rendering.
@@ -125,46 +155,6 @@ public class DoomStatus extends DoomContext {
 
     public int snd_DesiredSfxDevice;
 
-    // -------------------------
-    // Status flags for refresh.
-    //
-
-    // Depending on view size - no status bar?
-    // Note that there is no way to disable the
-    // status bar explicitely.
-    public boolean statusbaractive;
-
-    public boolean automapactive; // In AutoMap mode?
-
-    public boolean menuactive; // Menu overlayed?
-
-    public boolean paused; // Game Pause?
-
-    public boolean viewactive;
-
-    public boolean nodrawers;
-
-    public boolean noblit;
-
-    public short viewheight;
-
-    public int viewwidth;
-
-    public int scaledviewwidth;
-
-    // This one is related to the 3-screen display mode.
-    // ANG90 = left side, ANG270 = right
-    public int viewangleoffset;
-
-    // Player taking events, and displaying.
-    public int consoleplayer;
-
-    public int displayplayer;
-
-    // Found in draw_c
-    
-   	public int		viewwindowx;
-   	public int		viewwindowy;
     
     // -------------------------------------
     // Scores, rating.

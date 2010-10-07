@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.13 2010/10/01 16:47:51 velktron Exp $
+// $Id: HU.java,v 1.14 2010/10/07 15:42:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.14  2010/10/07 15:42:16  velktron
+// *** empty log message ***
+//
 // Revision 1.13  2010/10/01 16:47:51  velktron
 // Fixed tab interception.
 //
@@ -112,7 +115,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.13 2010/10/01 16:47:51 velktron Exp $";
+        "$Id: HU.java,v 1.14 2010/10/07 15:42:16 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader W;
@@ -1195,22 +1198,22 @@ public class HU implements DoomStatusAware {
             // and the text must either need updating or refreshing
             // (because of a recent change back from the automap)
 
-            if (!automapactive && (DM.viewwindowx != 0)
+            if (!automapactive && (R.viewwindowx != 0)
                     && (this.needsupdate > 0)) {
                 lh = this.f[0].height + 1;
 
                 for (int y = this.y, yoffset = y * SCREENWIDTH; y < this.y + lh; y++, yoffset +=
                     SCREENWIDTH) {
                     // Stuff is probably in am_map??
-                    if (y < DM.viewwindowy
-                            || y >= DM.viewwindowy + DM.viewheight)
+                    if (y < R.viewwindowy
+                            || y >= R.viewwindowy + R.viewheight)
                         R.VideoErase(yoffset, SCREENWIDTH); // erase entire
                     // line
                     else {
-                        R.VideoErase(yoffset, DM.viewwindowx); // erase left
+                        R.VideoErase(yoffset, R.viewwindowx); // erase left
                         // border
-                        R.VideoErase(yoffset + DM.viewwindowx + DM.viewwidth,
-                            DM.viewwindowx);
+                        R.VideoErase(yoffset + R.viewwindowx + R.viewwidth,
+                            R.viewwindowx);
                         // erase right border
                     }
                 }

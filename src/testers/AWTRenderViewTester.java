@@ -58,7 +58,7 @@ public class AWTRenderViewTester {
         	
     // Create a Wad file loader.
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"doom.wad","easy.wad"});
     
     System.out.println("Total lumps read: "+W.numlumps);
     patch_t help1=W.CachePatchName("TITLEPIC", PU_STATIC);
@@ -110,6 +110,7 @@ public class AWTRenderViewTester {
     DM.wminfo.plyr[0].skills=1337;
     DM.wminfo.plyr[0].stime=28595;
     DM.wminfo.plyr[0].ssecret=1337;
+    
     DM.playeringame[0]=true;
     DM.wminfo.last=6;
     DM.wminfo.epsd=0;
@@ -133,7 +134,7 @@ public class AWTRenderViewTester {
     AM.updateStatus(DM);
     DM.R.Init();
     DM.P.Init();
-    LL.SetupLevel(1, 2, 0, skill_t.sk_hard);
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     ST.Init();
     M.Init();
     
@@ -149,8 +150,8 @@ public class AWTRenderViewTester {
         for (int i=0;i<100000;i++){
             int ba=DM.I.GetTime();
             while (ba-DM.I.GetTime()==0){
-                frame.setVisible(true);
-                //Thread.sleep(1);               
+                //frame.setVisible(true);
+                Thread.sleep(1);               
             }
            frame.GetEvent();
            
@@ -173,10 +174,11 @@ public class AWTRenderViewTester {
         //M.Ticker();
         //M.Drawer();
         AM.Ticker();
-        AM.Drawer();
-        ST.Ticker();
-        ST.Drawer(false,true);
+        //AM.Drawer();
+        ST.Ticker();        
+        DM.players[0].viewz=40;
         DM.R.RenderPlayerView(DM.players[0]);
+        ST.Drawer(false,true);
         System.out.println("Rendered"+DM.gametic);
         DM.gametic++;
         frame.FinishUpdate();

@@ -145,8 +145,8 @@ public class AWTAutomapTester {
 
     long a=System.nanoTime();
     
-    DM.menuactive=false;
-    DM.automapactive=false;
+    DM.R.menuactive=false;
+    DM.R.automapactive=false;
         for (int i=0;i<100000;i++){
             int ba=DM.I.GetTime();
             while (ba-DM.I.GetTime()==0){

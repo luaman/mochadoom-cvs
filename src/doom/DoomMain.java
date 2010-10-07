@@ -65,7 +65,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.10 2010/09/27 15:07:44 velktron Exp $
+// $Id: DoomMain.java,v 1.11 2010/10/07 15:42:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,6 +80,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.11  2010/10/07 15:42:16  velktron
+// *** empty log message ***
+//
 // Revision 1.10  2010/09/27 15:07:44  velktron
 // meh
 //
@@ -144,7 +147,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.10 2010/09/27 15:07:44 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.11 2010/10/07 15:42:16 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -299,12 +302,12 @@ public void Display ()
 	    break;
 	if (automapactive)
 	    AM.Drawer ();
-	if (wipe || (viewheight != 200 && fullscreen) )
+	if (wipe || (R.viewheight != 200 && fullscreen) )
 	    redrawsbar = true;
 	if (inhelpscreensstate && !inhelpscreens)
 	    redrawsbar = true;              // just put away the help screen
-	ST.Drawer (viewheight == 200, redrawsbar );
-	fullscreen = viewheight == 200;
+	ST.Drawer (R.viewheight == 200, redrawsbar );
+	fullscreen = R.viewheight == 200;
 	break;
 
       case GS_INTERMISSION:
@@ -342,7 +345,7 @@ public void Display ()
     }
 
     // see if the border needs to be updated to the screen
-    if (gamestate == gamestate_t.GS_LEVEL && !automapactive && scaledviewwidth != 320)
+    if (gamestate == gamestate_t.GS_LEVEL && !automapactive && R.scaledviewwidth != 320)
     {
 	if (menuactive || menuactivestate || !viewactivestate)
 	    borderdrawcount = 3;
@@ -365,8 +368,8 @@ public void Display ()
 	if (automapactive)
 	    y = 4;
 	else
-	    y = viewwindowy+4;
-	    V.DrawPatchDirect(viewwindowx+(scaledviewwidth-68)/2,
+	    y = R.viewwindowy+4;
+	    V.DrawPatchDirect(R.viewwindowx+(R.scaledviewwidth-68)/2,
 			  y,0,W.CachePatchName ("M_PAUSE", PU_CACHE));
     }
 

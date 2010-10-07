@@ -113,7 +113,7 @@ public class AWTMenuTester {
     M.Init();
     frame.InitGraphics();
     long a=System.nanoTime();
-    DM.menuactive=true;        
+    DM.R.menuactive=true;        
         for (int i=0;i<100000;i++){
             int ba=DM.I.GetTime();
             while (ba-DM.I.GetTime()==0){

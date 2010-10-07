@@ -69,7 +69,6 @@ public class AutoMapTester {
     Defines.SCREENHEIGHT=200;
     
     DoomContext DC=new DoomContext();
-    DC.DS=ds;
     DC.W=W;
     DC.V=V;
     DC.RND=new random();

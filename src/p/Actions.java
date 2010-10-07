@@ -2032,7 +2032,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       int     damage;
           
       
-      // TODO: S_StartSound (player.mo, sfxenum_t.sfx_dshtgn);
+      S.StartSound (player.mo, sfxenum_t.sfx_dshtgn);
       player.mo.SetMobjState (statenum_t.S_PLAY_ATK2);
 
       player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]-=2;
@@ -3239,10 +3239,10 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
         || actor.type == mobjtype_t.MT_CYBORG)
         {
         // full volume
-        ; // TODO: S_StartSound (NULL, sound);
+        S.StartSound (null, sound);
         }
         else
-        ; // TODO: S_StartSound (actor, sound);
+        S.StartSound (actor, sound);
     }
 
 
