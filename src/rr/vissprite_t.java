@@ -41,8 +41,8 @@ public int         patch;
  */ 
 public byte[]   colormap;
 
-/** pointer into colormap */
-public int pcolormap;
+/* pointer into colormap
+public int pcolormap; */
 
 public int         mobjflags;
 

@@ -76,8 +76,17 @@ public class UnifiedRenderer extends RendererState{
     
     ///////////////// COMMON RENDERING GLOBALS ////////////////
     
+    /* ON COLORMAPS: they are supposed to be "from this color to some other color" mappings.
+     * "Color" means an index in the palette, like those used in screen. Their contents
+     * should be bytes, although their indexing has to be "unsigned bytes" the very least.
+     * 
+     * Lengths: for some reas
+     * 
+     */
+    
+    
     /** "peg" this to the one from RendererData */
-    byte[] colormaps;
+    byte[][] colormaps;
     
     //// FROM SEGS ////
     /** angle_t */
@@ -118,8 +127,8 @@ public class UnifiedRenderer extends RendererState{
     int     pixhigh,pixlow,pixhighstep,pixlowstep,
     topfrac,    topstep,bottomfrac, bottomstep;
 
-    /** lighttable_t */
-    byte[]   walllights;
+    /** lighttable_t** */
+    byte[][]   walllights;
 
     short[]     maskedtexturecol;
     
@@ -316,10 +325,16 @@ public class UnifiedRenderer extends RendererState{
    // Also wtf @ this hack....this points to approx 1/4th of the finesine table, but what happens if I read past it?
    // int[]        finecosine = finesine[FINEANGLES/4];
 
-   // TODO:
-   public byte[][]     scalelight=new byte[LIGHTLEVELS][MAXLIGHTSCALE];
-   public byte[]       scalelightfixed=new byte[MAXLIGHTSCALE];
-   public byte[][]     zlight=new byte[LIGHTLEVELS][MAXLIGHTZ];
+   /* MAES: what's going on with light tables here. OK...so these should be
+    * "unsigned bytes", since, after all, they'll be used as pointers inside an
+    * array to finally pick a color, so they should be expanded to shorts.
+    * 
+    */
+   
+   
+   public byte[][][]     scalelight=new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
+   public byte[][]       scalelightfixed=new byte[MAXLIGHTSCALE][];
+   public byte[][][]     zlight=new byte[LIGHTLEVELS][MAXLIGHTZ][];
 
    // bumped light from gun blasts
    public static int           extralight;         
@@ -391,7 +406,7 @@ public class UnifiedRenderer extends RendererState{
                // Thus the "green" ramp of the player 0 sprite
                // is mapped to gray, red, black/indigo.
                screen[dest] =
-                   dc_colormap[dc_translation[dc_source[dc_source_ofs+(frac >> FRACBITS)]]];
+                   dc_colormap[0x00FF&dc_translation[dc_source[dc_source_ofs+(frac >> FRACBITS)]]];
                dest += SCREENWIDTH;
 
                frac += fracstep;
@@ -416,7 +431,7 @@ public class UnifiedRenderer extends RendererState{
        int dest; // As pointer
        // fixed_t
        int frac, fracstep;
-
+       int plot;
        // How much we should draw
        count = dc_yh - dc_yl;
 
@@ -439,7 +454,7 @@ public class UnifiedRenderer extends RendererState{
        // which is the only mapping to be done.
        fracstep = dc_iscale;
        frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
+       
        // Inner loop that does the actual texture mapping,
        // e.g. a DDA-lile scaling.
        // This is as fast as it gets.
@@ -452,10 +467,10 @@ public class UnifiedRenderer extends RendererState{
             * dc_source was probably just a pointer to a decompressed
             *  column...right? Right.
             */  
-           int plot=((frac >> FRACBITS) & 127);
-           System.out.println("DrawMaskedColumn: "+(dest%SCREENWIDTH)+" , "+(dest/SCREENWIDTH)+'\t'+dc_source_ofs+' '+plot);
-           System.out.println(dc_source[dc_source_ofs+plot]);
-           screen[dest] = (byte) dc_colormap[dc_source[dc_source_ofs+plot]];
+          
+           //System.out.println("DrawMaskedColumn: "+(dest%SCREENWIDTH)+" , "+(dest/SCREENWIDTH)+'\t'+dc_source_ofs+' '+plot);
+           //System.out.println(dc_source[dc_source_ofs+plot]);
+           screen[dest] = dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
 
            /* MAES: ok, so we have (from inside out):
             * 
@@ -503,16 +518,16 @@ public class UnifiedRenderer extends RendererState{
 
        fracstep = dc_iscale;
        frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
+       //int spot=(frac >>> FRACBITS) & 127;
        do {
-           int plot=(frac >>> FRACBITS) & 127;
+           
            // Hack. Does not work correctly.
            // MAES: that's good to know.
            screen[dest2] =
                screen[dest] =
-                   dc_colormap[dc_source[dc_source_ofs+plot]+128];
+                   dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
            
-           System.out.println("Drawing "+(dest2%SCREENWIDTH)+" , "+(dest2/SCREENWIDTH));
+          // System.out.println("Drawing "+(dest2%SCREENWIDTH)+" , "+(dest2/SCREENWIDTH));
            dest += SCREENWIDTH;
            dest2 += SCREENWIDTH;
            frac += fracstep;
@@ -603,7 +618,7 @@ public class UnifiedRenderer extends RendererState{
     //  a pixel that is either one column
     //  left or right of the current one.
     // Add index from colormap to index.
-    screen[dest] = colormaps[6*256+screen[dest+fuzzoffset[fuzzpos]]]; 
+    screen[dest] = colormaps[6][0x00FF&screen[dest+fuzzoffset[fuzzpos]]]; 
 
     // Clamp table lookup index.
     if (++fuzzpos == FUZZTABLE) 
@@ -703,10 +718,10 @@ public class UnifiedRenderer extends RendererState{
 
    int ds_x2;
 
-   /** DrawSpan colormap. Use along with dso */
+   /** DrawSpan colormap. */
    byte[] ds_colormap;
-   /** pointer into colormap */
-   int pds_colormap; // its index.
+   /* pointer into colormap
+   int pds_colormap; */
 
    /** fixed_t */
    int ds_xfrac;
@@ -1773,8 +1788,8 @@ public class UnifiedRenderer extends RendererState{
               if (index >=  MAXLIGHTSCALE )
                   index = MAXLIGHTSCALE-1;
 
-              dc_colormap = walllights;
-              dco=index;
+              dc_colormap = walllights[index];
+              //dco=index;
               }
                   
               sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
@@ -1873,8 +1888,8 @@ public class UnifiedRenderer extends RendererState{
               if (index >=  MAXLIGHTSCALE )
               index = MAXLIGHTSCALE-1;
 
-              dc_colormap = walllights;
-              dco=index;
+              dc_colormap = walllights[index];
+              //dco=index;
               dc_x = rw_x;
               dc_iscale = (int) (0xffffffffL / rw_scale);
           }
@@ -2331,7 +2346,7 @@ public class UnifiedRenderer extends RendererState{
           {
               
           //memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
-         // FIXME: System.arraycopy(ceilingclip, start, openings, lastopening,  rw_stopx-start);
+        // System.arraycopy(ceilingclip, start, openings, lastopening,  rw_stopx-start);
               
           seg.setSprTopClipPointer(lastopening - start);
           lastopening += rw_stopx - start;
@@ -2381,7 +2396,7 @@ public class UnifiedRenderer extends RendererState{
       //
       // texture mapping
       //
-      byte[]       planezlight;
+      byte[][]       planezlight;
       /** To treat as fixed_t */
       int         planeheight;
       /** To treat at fixed_t */
@@ -2476,8 +2491,8 @@ public class UnifiedRenderer extends RendererState{
           if (index >= MAXLIGHTZ )
               index = MAXLIGHTZ-1;
 
-          ds_colormap = planezlight;
-          pds_colormap=index;
+          ds_colormap = planezlight[index];
+          //pds_colormap=index;
           }
           
           ds_y = y;
@@ -2726,7 +2741,7 @@ public class UnifiedRenderer extends RendererState{
               //  i.e. colormaps[0] is used.
               // Because of this hack, sky is not affected
               //  by INVUL inverse mapping.
-              dc_colormap = colormaps;
+              dc_colormap = colormaps[0];
               dc_texturemid = skytexturemid;
               for (x=pln.minx ; x <= pln.maxx ; x++)
               {
@@ -2827,7 +2842,7 @@ public class UnifiedRenderer extends RendererState{
       int     pspritescale;
       int     pspriteiscale;
 
-      byte[]  spritelights;
+      byte[][]  spritelights;
 
       /** constant arrays
          used for psprite clipping and initializing clipping */
@@ -2844,7 +2859,7 @@ public class UnifiedRenderer extends RendererState{
        * Local function for R_InitSprites.
        */
       
-      public void
+      private void
       InstallSpriteLump
       ( int       lump,
         int  frame,
@@ -2852,7 +2867,7 @@ public class UnifiedRenderer extends RendererState{
         boolean   flipped )
       {
           
-          System.out.println("Trying to install "+spritename+" Frame "+ (char)('A'+frame)+" rot "+(rotation) +" . Should have rotations: "+sprtemp[frame].rotate); 
+         // System.out.println("Trying to install "+spritename+" Frame "+ (char)('A'+frame)+" rot "+(rotation) +" . Should have rotations: "+sprtemp[frame].rotate); 
           int     r;
           
           if (frame >= 29 || rotation > 8)
@@ -3299,13 +3314,13 @@ public class UnifiedRenderer extends RendererState{
           {
           // fixed map
           vis.colormap = fixedcolormap;
-          vis.pcolormap=0;
+          //vis.pcolormap=0;
           }
           else if ((thing.frame & FF_FULLBRIGHT)!=0)
           {
           // full bright
-          vis.colormap = colormaps;
-          vis.pcolormap=0;
+          vis.colormap = colormaps[0];
+          //vis.pcolormap=0;
           }
           
           else
@@ -3316,8 +3331,8 @@ public class UnifiedRenderer extends RendererState{
           if (index >= MAXLIGHTSCALE) 
               index = MAXLIGHTSCALE-1;
 
-          vis.colormap = spritelights;
-          vis.pcolormap=index;
+          vis.colormap = spritelights[index];
+          //vis.pcolormap=index;
           }   
       }
 
@@ -3445,19 +3460,18 @@ public class UnifiedRenderer extends RendererState{
           {
           // fixed color
           vis.colormap = fixedcolormap;
-          vis.pcolormap=0;
+          //vis.pcolormap=0;
           }
           else if ((psp.state.frame & FF_FULLBRIGHT)!=0)
           {
           // full bright
-          vis.colormap = colormaps;
-          vis.pcolormap=0;
+          vis.colormap = colormaps[0];
+          //vis.pcolormap=0;
           }
           else
           {
           // local light
-          vis.colormap = spritelights;
-          vis.pcolormap=MAXLIGHTSCALE-1;
+          vis.colormap = spritelights[MAXLIGHTSCALE-1];
           }
           
           DrawVisSprite (vis, vis.x1, vis.x2);
@@ -3888,7 +3902,8 @@ public class UnifiedRenderer extends RendererState{
           if (level >= NUMCOLORMAPS)
           level = NUMCOLORMAPS-1;
 
-          zlight[i][j] = colormaps[level*256];
+  	    //zlight[i][j] = colormaps + level*256;
+          zlight[i][j] = colormaps[level];
       }
       }
   }
@@ -4251,7 +4266,7 @@ public void VideoErase(int ofs, int count) {
 
          // Lookup pixel from flat texture tile,
          // re-index using light/colormap.
-         screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+         screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
 
          // Next step in u,v.
          f_xfrac += ds_xstep;
@@ -4294,12 +4309,12 @@ public void VideoErase(int ofs, int count) {
             // Lowres/blocky mode does it twice,
             // while scale is adjusted appropriately.
             // TODO: proper colormaps.
-            //screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
-            //screen[dest++] = ds_colormap[pds_colormap+ds_source[pds_source+spot]];
+            screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
+            screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
             
-            screen[dest++] = ds_source[pds_source+spot];
-            screen[dest++] = ds_source[pds_source+spot];
-            f_xfrac += ds_xstep;
+            //screen[dest++] = ds_source[spot];
+            //screen[dest++] = ds_source[spot];
+            //f_xfrac += ds_xstep;
             f_yfrac += ds_ystep;
 
         } while (count-- != 0);
@@ -4335,25 +4350,25 @@ public void VideoErase(int ofs, int count) {
          xtemp = position >> 26;
          spot = xtemp | ytemp;
          position += step;
-         screen[dest] = colormap[source[spot]];
+         screen[dest] = colormap[0x00FF&source[spot]];
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
          xtemp = position >> 26;
          spot = xtemp | ytemp;
          position += step;
-         screen[dest+1] = colormap[source[spot]];
+         screen[dest+1] = colormap[0x00FF&source[spot]];
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
          xtemp = position >> 26;
          spot = xtemp | ytemp;
          position += step;
-         screen[dest+2] = colormap[source[spot]];
+         screen[dest+2] = colormap[0x00FF&source[spot]];
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
          xtemp = position >> 26;
          spot = xtemp | ytemp;
          position += step;
-         screen[dest+3] = colormap[source[spot]];
+         screen[dest+3] = colormap[0x00FF&source[spot]];
          count -= 4;
          dest += 4;
      }
@@ -4364,7 +4379,7 @@ public void VideoErase(int ofs, int count) {
          xtemp = position >> 26;
          spot = xtemp | ytemp;
          position += step;
-         screen[dest++] = colormap[source[spot]];
+         screen[dest++] = colormap[0x00FF&source[spot]];
          count--;
      }
  }
@@ -4430,14 +4445,14 @@ public void SetupFrame (player_t player)
  
  if (player.fixedcolormap!=0)
  {
- fixedcolormap =colormaps;
+ fixedcolormap =colormaps[player.fixedcolormap];
  // Offset by fixedcolomap
- pfixedcolormap =player.fixedcolormap*256;
+ //pfixedcolormap =player.fixedcolormap*256;
  
  walllights = scalelightfixed;
 
  for (i=0 ; i<MAXLIGHTSCALE ; i++)
-     scalelightfixed[i] = fixedcolormap[pfixedcolormap];
+     scalelightfixed[i] = fixedcolormap;
  }
  else
  fixedcolormap = null;
@@ -4518,7 +4533,7 @@ public void ExecuteSetViewSize ()
     }
     else {
     
-    colfunc = basecolfunc = DrawColumnLow;
+    colfunc = basecolfunc = DrawColumn;
     fuzzcolfunc =DrawFuzzColumn;
     transcolfunc = DrawTranslatedColumn;
     spanfunc = DrawSpanLow;
@@ -4567,7 +4582,7 @@ public void ExecuteSetViewSize ()
         if (level >= NUMCOLORMAPS)
         level = NUMCOLORMAPS-1;
 
-        scalelight[i][j] = colormaps[level*256];
+        scalelight[i][j] = colormaps[level];
     }
     }
 }
@@ -5194,10 +5209,16 @@ public void InitSkyMap ()
       // Load in the light tables, 
       //  256 byte align tables.
       lump = W.GetNumForName("COLORMAP"); 
-      length = W.LumpLength (lump) + 255; 
-      colormaps = new byte[length];
-      ByteBuffer b=ByteBuffer.wrap(colormaps);
+      length = W.LumpLength (lump) + 256;
+      colormaps = new byte[(length/256)][256];
+      byte[] tmp=new byte[length];
+      System.out.println("Colomaps: "+colormaps.length);
+      ByteBuffer b=ByteBuffer.wrap(tmp);
       W.ReadLump (lump,b);
+      
+      for (int i=0;i<colormaps.length;i++){
+    	  System.arraycopy(tmp, i*256, colormaps[i], 0, 256);
+      }
      // colormaps = (byte *)( ((int)colormaps + 255)&~0xff); 
        
   }
