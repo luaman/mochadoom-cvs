@@ -65,7 +65,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.11 2010/10/07 15:42:16 velktron Exp $
+// $Id: DoomMain.java,v 1.12 2010/10/08 16:55:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,6 +80,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.12  2010/10/08 16:55:50  velktron
+// Duh
+//
 // Revision 1.11  2010/10/07 15:42:16  velktron
 // *** empty log message ***
 //
@@ -147,7 +150,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.11 2010/10/07 15:42:16 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.12 2010/10/08 16:55:50 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -1573,12 +1576,12 @@ public void Start ()
       || ( gamemission == GameMission_t.pack_tnt )
       || ( gamemission == GameMission_t.pack_plut ) )
      {
-     skytexture = R.TextureNumForName ("SKY3");
+     R.skytexture = R.TextureNumForName ("SKY3");
      if (gamemap < 12)
-         skytexture = R.TextureNumForName ("SKY1");
+         R.skytexture = R.TextureNumForName ("SKY1");
      else
          if (gamemap < 21)
-         skytexture = R.TextureNumForName ("SKY2");
+         R.skytexture = R.TextureNumForName ("SKY2");
      }
 
      levelstarttic = gametic;        // for time calculation
@@ -2608,27 +2611,27 @@ public void Start ()
      // set the sky map for the episode
      if ( gamemode == GameMode_t.commercial)
      {
-     skytexture = R.TextureNumForName ("SKY3");
+     R.skytexture = R.TextureNumForName ("SKY3");
      if (gamemap < 12)
-         skytexture = R.TextureNumForName ("SKY1");
+         R.skytexture = R.TextureNumForName ("SKY1");
      else
          if (gamemap < 21)
-         skytexture = R.TextureNumForName ("SKY2");
+             R.skytexture = R.TextureNumForName ("SKY2");
      }
      else
      switch (episode) 
      { 
        case 1: 
-         skytexture = R.TextureNumForName ("SKY1"); 
+           R.skytexture = R.TextureNumForName ("SKY1"); 
          break; 
        case 2: 
-         skytexture = R.TextureNumForName ("SKY2"); 
+           R.skytexture = R.TextureNumForName ("SKY2"); 
          break; 
        case 3: 
-         skytexture = R.TextureNumForName ("SKY3"); 
+           R.skytexture = R.TextureNumForName ("SKY3"); 
          break; 
        case 4:   // Special Edition sky
-         skytexture = R.TextureNumForName ("SKY4");
+           R.skytexture = R.TextureNumForName ("SKY4");
          break;
      } 
   
@@ -2640,8 +2643,6 @@ public void Start ()
  // DEMO RECORDING 
  // 
  protected static final int DEMOMARKER =0x80;
-
-public int skytexture;      
 
 
 public  void ReadDemoTiccmd (ticcmd_t cmd) 

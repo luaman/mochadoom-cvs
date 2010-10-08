@@ -29,7 +29,10 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
      * only [width] used the [0] is &columnofs[width] */
     public int[]         columnofs;     
     /** The ACTUAL data is here, nicely deserialized (well, almost) */
-    public column_t[] columns;       
+    public column_t[] columns;
+    
+    /** Added for debug aid purposes */
+    public String name;
     
     @Override
     public void read(DoomFile f) throws IOException{

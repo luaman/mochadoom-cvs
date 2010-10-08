@@ -31,12 +31,15 @@ import w.DoomBuffer;
 import w.WadLoader;
 import w.name8;
 import data.Defines.GameMode_t;
+import data.Tables;
 import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
 
 public class UnifiedRenderer extends RendererState{
+    
+    private static final boolean DEBUG=false;
     
     public UnifiedRenderer(DoomMain DM) {
       this.DM=DM;
@@ -169,12 +172,6 @@ public class UnifiedRenderer extends RendererState{
     
     ///// FROM R_DATA, R_MAIN ////
     
-    //////////////////////////////////From r_sky.c /////////////////////////////////////
-
-    int skyflatnum;
-    int skytexture;
-    int skytexturemid;
-    
     ///// FROM R_DRAW //////////
     
     /** OK< this is supposed to "peg" into screen buffer 0. It will work AS LONG AS SOMEONE FUCKING ACTUALLY SETS IT !!!! */
@@ -293,7 +290,7 @@ public class UnifiedRenderer extends RendererState{
 
    public player_t     viewplayer;
 
-   // 0 = high, 1 = low
+   // 0 = high, 1 = low. Normally only the menu and the interface can change that.
    public int          detailshift;    
 
    //
@@ -431,7 +428,7 @@ public class UnifiedRenderer extends RendererState{
        int dest; // As pointer
        // fixed_t
        int frac, fracstep;
-       int plot;
+       
        // How much we should draw
        count = dc_yh - dc_yl;
 
@@ -467,14 +464,14 @@ public class UnifiedRenderer extends RendererState{
             * dc_source was probably just a pointer to a decompressed
             *  column...right? Right.
             */  
-          
-           //System.out.println("DrawMaskedColumn: "+(dest%SCREENWIDTH)+" , "+(dest/SCREENWIDTH)+'\t'+dc_source_ofs+' '+plot);
-           //System.out.println(dc_source[dc_source_ofs+plot]);
+           if (DEBUG) System.out.println((frac >> FRACBITS)&127);
            screen[dest] = dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
 
+           
            /* MAES: ok, so we have (from inside out):
             * 
-            * frac is a fixed-point number representing a pointer inside a column.
+            * frac is a fixed-point number representing a pointer inside a column. It gets shifted to an integer,
+            * and AND-ed with 128 (this causes vertical column tiling).
             * 
             * 
             */
@@ -1108,30 +1105,33 @@ public class UnifiedRenderer extends RendererState{
    * Does handle solid walls,
    *  e.g. single sided LineDefs (middle texture)
    *  that entirely block the view.
-   * @throws IOException 
+   *  
+   *  Handles "clipranges" for a solid wall, aka
+   *  where it blocks the view.
+   *  
+   * @param first starting y coord?  
+   * @param last ending y coord?
    */ 
 
   public void ClipSolidWallSegment (int   first,
           int   last ) {
-      
 
       int next;
       int start;
-      int maxlast=Integer.MIN_VALUE;
+     // int maxlast=Integer.MIN_VALUE;
       
-      // Find the first range that touches the range
-      //  (adjacent pixels are touching).
-      start = 0;
-      
-      try{
-      while (solidsegs[start].last < first-1){
-          if (solidsegs[start].last>maxlast)
-              maxlast=solidsegs[start].last;
-      start++;
-      }
+      start = 0; // within solidsegs
 
+      // Find the first cliprange that touches the range.
+      // Actually, the first one not completely hiding it (its last must be lower than first.
+
+      while (solidsegs[start].last < first-1)
+      start++;
+      
+      // The post begins above the last found cliprange...
       if (first < solidsegs[start].first)
       {
+      // ..and ends before it:
       if (last < solidsegs[start].first-1)
       {
           // Post is entirely visible (above start),
@@ -1189,7 +1189,8 @@ public class UnifiedRenderer extends RendererState{
               while (next++ != newend)
               {
               // Remove a post.
-                  solidsegs[++start] = solidsegs[next];
+              // MAES: this is a struct copy.
+                  solidsegs[++start].copy(solidsegs[next]);
               }
 
               newend = start+1;
@@ -1217,18 +1218,13 @@ public class UnifiedRenderer extends RendererState{
           while (next++ != newend)
           {
           // Remove a post.
-              solidsegs[++start] = solidsegs[next];
+           // MAES: this is a struct copy.
+              solidsegs[++start].copy(solidsegs[next]);
           }
 
           newend = start+1;
           return;
-      }
-      } catch (Exception e){
-          System.out.println("ERROR!! Was looking for stuff bigger than "+last);
-          System.out.println("Maximum found was"+maxlast);
-          System.out.println("Was looking for stuff bigger than "+last);
-      }
-      
+      }      
   }
 
 
@@ -1311,7 +1307,7 @@ public class UnifiedRenderer extends RendererState{
   //
   public void AddLine (seg_t  line) 
   {
-      System.out.println("Entered AddLine for "+line);
+      if (DEBUG) System.out.println("Entered AddLine for "+line);
       int         x1;
       int         x2;
       long     angle1;
@@ -1394,9 +1390,9 @@ public class UnifiedRenderer extends RendererState{
       // Single sided line?
       
       if (backsector==null) {
-          System.out.println("Entering ClipSolidWallSegment SS");
+          if (DEBUG) System.out.println("Entering ClipSolidWallSegment SS");
           ClipSolidWallSegment (x1, x2-1); // to clipsolid
-          System.out.println("Exiting ClipSolidWallSegment");
+          if (DEBUG) System.out.println("Exiting ClipSolidWallSegment");
           return;
           }
           
@@ -1404,7 +1400,7 @@ public class UnifiedRenderer extends RendererState{
       // Closed door.
       if (backsector.ceilingheight <= frontsector.floorheight
       || backsector.floorheight >= frontsector.ceilingheight) {
-          System.out.println("Entering ClipSolidWallSegment Closed door");
+          if (DEBUG)  System.out.println("Entering ClipSolidWallSegment Closed door");
           ClipSolidWallSegment (x1, x2-1);; // to clipsolid    
           return;
           }
@@ -1412,7 +1408,7 @@ public class UnifiedRenderer extends RendererState{
       // Window.
       if (backsector.ceilingheight != frontsector.ceilingheight
       || backsector.floorheight != frontsector.floorheight) {
-          System.out.println("Entering ClipSolidWallSegment window");
+          if (DEBUG) System.out.println("Entering ClipSolidWallSegment window");
           ClipPassWallSegment (x1, x2-1); // to clippass
           return;
           }
@@ -1429,7 +1425,7 @@ public class UnifiedRenderer extends RendererState{
       {
       return;
       }
-      System.out.println("Exiting AddLine for "+line);
+      if (DEBUG) System.out.println("Exiting AddLine for "+line);
   }
 
 
@@ -1585,17 +1581,20 @@ public class UnifiedRenderer extends RendererState{
 
   /**
    * R_Subsector
+   *  
    * Determine floor/ceiling planes.
    * Add sprites of things in sector.
    * Draw one or more line segments.
- * @throws IOException 
+   * 
+   * @param num Subsector from subsector_t list in Lever Loader.
+   *      
    */
   
   public void Subsector (int num)  
   {
       System.out.println("SubSector " + num);
       int         count;
-      int        line; // pointer into a list of segs
+      int        line; // pointer into a list of segs instead of seg_t
       subsector_t    sub;
       int psub=0;
       
@@ -1620,6 +1619,7 @@ public class UnifiedRenderer extends RendererState{
                     frontsector.lightlevel);
       }
       else
+          // FIXME: unclear what would happen with a null visplane used
           floorplane = -1; // in lieu of NULL
       
       if (frontsector.ceilingheight > viewz 
@@ -1817,22 +1817,20 @@ public class UnifiedRenderer extends RendererState{
        * Can draw or mark the starting pixel of floor and ceiling
        *  textures.
        * CALLED: CORE LOOPING ROUTINE.
-     * @throws IOException 
+       *
        */
       
       public void RenderSegLoop () 
       {
-          long     angle; // angle_t
+          int     angle; // angle_t
           int     index;
-          int         yl;
-          int         yh;
+          int         yl; // low
+          int         yh; // hight
           int         mid;
           int     texturecolumn=0; // fixed_t
           int         top;
           int         bottom;
-
-          //texturecolumn = 0;                // shut up compiler warning
-          
+         
           for ( ; rw_x < rw_stopx ; rw_x++)
           {
           // mark floor / ceiling areas
@@ -1879,7 +1877,7 @@ public class UnifiedRenderer extends RendererState{
           if (segtextured)
           {
               // calculate texture offset
-              angle = (rw_centerangle + xtoviewangle[rw_x])>>>ANGLETOFINESHIFT;
+              angle = Tables.toBAMIndex(rw_centerangle + xtoviewangle[rw_x]);
               texturecolumn = rw_offset-FixedMul(finetangent[(int) angle],rw_distance);
               texturecolumn >>= FRACBITS;
               // calculate lighting
@@ -1891,7 +1889,7 @@ public class UnifiedRenderer extends RendererState{
               dc_colormap = walllights[index];
               //dco=index;
               dc_x = rw_x;
-              dc_iscale = (int) (0xffffffffL / rw_scale);
+              dc_iscale = (int) (0xffffffffL / (long)(0xFFFFFFFFL&rw_scale));
           }
           
           // draw the wall tiers
@@ -1900,8 +1898,9 @@ public class UnifiedRenderer extends RendererState{
               // single sided line
               dc_yl = yl;
               dc_yh = yh;
-              dc_texturemid = rw_midtexturemid;
+              dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
+              System.out.println("Drawing"+textures[midtexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
               colfunc.invoke();
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
@@ -2346,7 +2345,7 @@ public class UnifiedRenderer extends RendererState{
           {
               
           //memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
-        // System.arraycopy(ceilingclip, start, openings, lastopening,  rw_stopx-start);
+          System.arraycopy(ceilingclip, start, openings, lastopening,  rw_stopx-start);
               
           seg.setSprTopClipPointer(lastopening - start);
           lastopening += rw_stopx - start;
@@ -2356,7 +2355,7 @@ public class UnifiedRenderer extends RendererState{
            && seg.nullSprBottomClip())
           {
           //memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
-  //System.arraycopy(floorclip, start, openings, lastopening,  rw_stopx-start);
+          System.arraycopy(floorclip, start, openings, lastopening,  rw_stopx-start);
           seg.setSprBottomClipPointer(lastopening - start);
           lastopening += rw_stopx - start;    
           }
@@ -2528,7 +2527,7 @@ public class UnifiedRenderer extends RendererState{
           // left to right mapping
           // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
           // Answer: 32-bit unsigned are supposed to roll over. You can & with 0xFFFFFFFFL.
-          angle = (int) ((viewangle-ANG90&BITS32)>>>ANGLETOFINESHIFT);
+          angle = (int) Tables.toBAMIndex(viewangle-ANG90);
           
           // scale will be unit scale at SCREENWIDTH/2 distance
           basexscale = FixedDiv (finecosine[angle],centerxfrac);
@@ -2538,6 +2537,8 @@ public class UnifiedRenderer extends RendererState{
 
       /**
        * R_FindPlane
+       * 
+       * Finds a visplane with the specified height, picnum and light level.
        * 
        * @param height (fixed_t)
        * @param picnum
@@ -2566,12 +2567,17 @@ public class UnifiedRenderer extends RendererState{
               chk=visplanes[check];
           if (height == chk.height
               && picnum == chk.picnum
-              && lightlevel ==chk.lightlevel) break;
+              && lightlevel ==chk.lightlevel) {
+              //  Found a visplane with the desired specs.
+              break;
+              }
           }
                   
           if (check < lastvisplane)
           return check;
-              
+          
+          
+          // Found a visplane, but we can't add anymore.
           if (lastvisplane == MAXVISPLANES)
           I.Error ("R_FindPlane: no more visplanes");
               
@@ -2745,9 +2751,10 @@ public class UnifiedRenderer extends RendererState{
               dc_texturemid = skytexturemid;
               for (x=pln.minx ; x <= pln.maxx ; x++)
               {
+            
               dc_yl = pln.getTop(x);
               dc_yh = pln.getBottom(x);
-
+              
               if (dc_yl <= dc_yh)
               {
                   angle = (int) ((viewangle + xtoviewangle[x])>>>ANGLETOSKYSHIFT);
@@ -2884,27 +2891,31 @@ public class UnifiedRenderer extends RendererState{
           
           if (rotation == 0)
           {
-              /* FIXME: notice how comparisons are done with strict literals         
-               * ( .rotate == false and .rotate == true) which are actually 0 and 1,
-               * and true isn't just "any nonzero value" in this context.
-               * This happens because normally rotate should be -1 at this point (!),
-               * as nothing else can change it.
+              /* MAES: notice how comparisons are done with strict literals
+               * (true and alse) which are actually defined to be 0 and 1,
+               * rather than assuming that true is "any nonzero value".
+               * This happens because rotate's value could be -1 at this point (!),
+               * if a series of circumstances occur. Therefore it's actually 
+               * a "tri-state", and the comparion 0=false and "anything else"=true
+               * was not good enough in this case. A value of -1 doesn't yield either
+               * true or false here. 
                * 
-               * Therefore both are actually cases of "should not happen"
                */
               
               // the lump should be used for all rotations
           if (sprtemp[frame].rotate == 0){
-              // MAES: Explanation: we stumbled upon this lump before, and decided that this frame should have no more
-              // rotations, hence we bomb.
+              /* MAES: Explanation: we stumbled upon this lump before, and decided that this frame should have no more
+               * rotations, hence we bomb.
+               */
               I.Error ("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump", spritename, 'A'+frame);
           }
 
           // This should NEVER happen!
           if (sprtemp[frame].rotate == 1) {
-              //MAES: This can only happen if we decided that a sprite's frame was already decided to have
-              // rotations, but now we stumble upon another occurence of "rotation 0". Or if you use naive
-              // true/false evaluation for .rotate ( -1 is also an admissible value).
+              /* MAES: This can only happen if we decided that a sprite's frame was already decided to have
+               * rotations, but now we stumble upon another occurence of "rotation 0". Or if you use naive
+               * true/false evaluation for .rotate ( -1 is also an admissible value).
+               */
               I.Error ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);          
           }
           
@@ -3362,7 +3373,6 @@ public class UnifiedRenderer extends RendererState{
           lightnum = (sec.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
           if (lightnum < 0)       
-              // TODO: these are probably meant to be array aliases/arrays in the middle of other arrays.
           spritelights = scalelight[0];
           else if (lightnum >= LIGHTLEVELS)
           spritelights = scalelight[LIGHTLEVELS-1];
@@ -4064,7 +4074,9 @@ public void DrawMaskedColumn (byte[] column)
 
 /**
  * Copy a screen buffer.
- *
+ * Actually, it's hardcoded to copy stuff from screen 1 to screen 0.
+ * Used to overlay stuff like beveled edges that don't need to be updated that often. * 
+ * 
  *   LFB copy.
  *   This might not be a good idea if memcpy
  *   is not optiomal, e.g. byte by byte on
@@ -4074,7 +4086,7 @@ public void DrawMaskedColumn (byte[] column)
 public void VideoErase(int ofs, int count) {
 
     // memcpy (screens[0]+ofs, screens[1]+ofs, count);
-    System.arraycopy(V.getScreen(0), ofs, V.getScreen(1), ofs, count);
+    System.arraycopy(V.getScreen(1), ofs, V.getScreen(0), ofs, count);
 
 }
 
@@ -4118,13 +4130,14 @@ public void VideoErase(int ofs, int count) {
 
  /**
   * R_FillBackScreen
-  * Fills the back screen with a pattern
-  * for variable screen sizes
-  * Also draws a beveled edge.
+  * Fills the back screen with a pattern for variable screen sizes
+  * Also draws a beveled edge. This is actually stored in screen 1, 
+  * and is only OCCASIONALLY written to screen 1 (the visible one)
+  * by calling R_VideoErase.
   */
  
  public void FillBackScreen() {
-     byte[] src;
+     flat_t src;
      byte[] dest;
      int x;
      int y;
@@ -4146,21 +4159,23 @@ public void VideoErase(int ofs, int count) {
      else
          name = name1;
 
-     // MAES: do a RAW get here? :-S
-     src = W.CacheLumpName(name, PU_CACHE).getBuffer().array();
+     /* This is a flat we're reading here */
+     src = (flat_t) (W.CacheLumpName(name, PU_CACHE,flat_t.class));
      dest = V.getScreen(1);
      int destPos = 0;
 
+     /* This part actually draws the border itself, without bevels */
+     
      for (y = 0; y < SCREENHEIGHT - SBARHEIGHT; y++) {
          for (x = 0; x < SCREENWIDTH / 64; x++) {
              // memcpy (dest, src+((y&63)<<6), 64);
-             System.arraycopy(src, ((y & 63) << 6), dest, destPos, 64);
+             System.arraycopy(src.data, ((y & 63) << 6), dest, destPos, 64);
              destPos += 64;
          }
 
          if ((SCREENWIDTH & 63) != 0) {
              // memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
-             System.arraycopy(src, ((y & 63) << 6), dest, destPos,
+             System.arraycopy(src.data, ((y & 63) << 6), dest, destPos,
                  SCREENWIDTH & 63);
 
              destPos += (SCREENWIDTH & 63);
@@ -4220,7 +4235,7 @@ public void VideoErase(int ofs, int count) {
      for (i = 0; i < width; i++)
          columnofs[i] = viewwindowx + i;
 
-     // Samw with base row offset.
+     // SamE with base row offset.
      if (width == SCREENWIDTH)
     	 viewwindowy = 0;
      else
@@ -4308,13 +4323,11 @@ public void VideoErase(int ofs, int count) {
             spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
             // Lowres/blocky mode does it twice,
             // while scale is adjusted appropriately.
-            // TODO: proper colormaps.
+
             screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
             screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
             
-            //screen[dest++] = ds_source[spot];
-            //screen[dest++] = ds_source[spot];
-            //f_xfrac += ds_xstep;
+            f_xfrac += ds_xstep;
             f_yfrac += ds_ystep;
 
         } while (count-- != 0);
@@ -4473,6 +4486,12 @@ public boolean      setsizeneeded;
 int     setblocks;
 int     setdetail;
 
+/**
+ * 
+ * 
+ * @param blocks 11 is full screen, 9 default.
+ * @param detail 0= high, 1 =low.
+ */
 
 public void SetViewSize
 ( int       blocks,
@@ -4500,7 +4519,7 @@ public void ExecuteSetViewSize ()
     
     setsizeneeded = false;
 
-    
+    // 11 Blocks means "full screen"
     
     if (setblocks == 11)
     {
@@ -4522,8 +4541,8 @@ public void ExecuteSetViewSize ()
     centeryfrac=(centery<<FRACBITS);
     projection=centerxfrac;
 
-    
-    if (detailshift!=0)
+    // High detail
+    if (detailshift==0)
     {
         
     colfunc = basecolfunc =DrawColumn;
@@ -4532,8 +4551,8 @@ public void ExecuteSetViewSize ()
     spanfunc = DrawSpan;
     }
     else {
-    
-    colfunc = basecolfunc = DrawColumn;
+    // Low detail
+    colfunc = basecolfunc = DrawColumnLow;
     fuzzcolfunc =DrawFuzzColumn;
     transcolfunc = DrawTranslatedColumn;
     spanfunc = DrawSpanLow;
@@ -4633,12 +4652,18 @@ public void InitSkyMap ()
   public int     numspritelumps;
 
   public int     numtextures;
+  
+  /* The unchached textures themselves, stored just as patch lists and various properties */
   public texture_t[] textures;
 
-
+  /** Width per texture? */
   int[]            texturewidthmask;
   /** fixed_t[] needed for texture pegging */
-  public int[]        textureheight;      
+  
+  /** How tall each composite texture is supposed to be */
+  public int[]        textureheight;    
+  
+  /** How large each composite texture is supposed to be */
   int[]            texturecompositesize;
   /** Tells us which patch lump covers which column of which texture */
   short[][]         texturecolumnlump;
@@ -4661,14 +4686,13 @@ public void InitSkyMap ()
   int[]    spritewidth,spriteoffset,spritetopoffset;
   
   /* MAPTEXTURE_T CACHING
-   * When a texture is first needed,
-   *  it counts the number of composite columns
-   *  required in the texture and allocates space
-   *  for a column directory and any new columns.
-   * The directory will simply point inside other patches
-   *  if there is only one patch in a given column,
-   *  but any columns with multiple patches
-   *  will have new column_ts generated.
+   * When a texture is first needed, it counts the number of 
+   * composite columns required in the texture and allocates space
+   * for a column directory and any new columns.
+   * 
+   *  The directory will simply point inside other patches if there 
+   *  is only one patch in a given column but any columns 
+   *  with multiple patches will have new column_ts generated.
    */
 
   /**
@@ -4754,7 +4778,7 @@ public void InitSkyMap ()
       byte[][]       block;
       texture_t      texture;
       texpatch_t[]     patch;  
-      patch_t        realpatch;
+      patch_t        realpatch=null;
       int         x;
       int         x1;
       int         x2;
@@ -4785,10 +4809,15 @@ public void InitSkyMap ()
       patch = texture.patches;
      
       
+      
       // For each patch in the texture...
       for (int i=0 ;i<texture.patchcount; i++)
       {
-      realpatch = (patch_t) W.CacheLumpNum(patch[i].patch, PU_CACHE, patch_t.class);
+
+      realpatch = W.CachePatchNum(patch[i].patch, PU_CACHE);
+          if (realpatch.name=="SKY1"){
+              System.out.println("Sky found!");
+          }
       x1 = patch[i].originx;
       x2 = x1 + realpatch.width;
 
@@ -4943,18 +4972,21 @@ public void InitSkyMap ()
       col &= texturewidthmask[tex];
       lump = texturecolumnlump[tex][col];
       
-      // So if this is zero, texture is not composite?
-      if (lump > 0)
+      // If pointing inside a non-zero, positive lump, then it's not a composite texture.
+      // Read from disk.
+      if (lump > 0){
           // This will actually return a pointer to a patch's columns.
-          // That is, to the ONE column exactly.
-      return ((patch_t)W.CacheLumpNum(lump,PU_CACHE,patch_t.class)).columns[col].data;
-
-      if (texturecomposite[tex]==null)
-      GenerateComposite (tex);
+          // That is, to the ONE column exactly.{
+          this.dc_source_ofs=3;
+          patch_t r=W.CachePatchNum(lump,PU_CACHE);
+      return r.columns[col].data;
+  }
+      // Texture should be composite, but it doesn't yet exist. Create it. 
+      if (texturecomposite[tex]==null) GenerateComposite (tex);
 
       // This implies that texturecomposite actually stores raw, compressed columns,
       // or else those "ofs" would go in-between.
-      
+      this.dc_source_ofs=0;
       return texturecomposite[tex][col];
   }
 
@@ -5374,7 +5406,7 @@ public void InitSkyMap ()
       //  while the sky texture is stored like
       //  a wall texture, with an episode dependend
       //  name.
-      texturepresent[DM.skytexture] = true;
+      texturepresent[skytexture] = true;
       
       texturememory = 0;
       for (i=0 ; i<numtextures ; i++)

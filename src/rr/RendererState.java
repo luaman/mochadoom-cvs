@@ -65,4 +65,11 @@ public abstract class RendererState {
     // ANG90 = left side, ANG270 = right
     public int viewangleoffset;
     
+    //////////////////////////////////From r_sky.c /////////////////////////////////////
+
+    int skyflatnum;
+    // This is also in DM, but one is enough, really.
+    public int skytexture;
+    int skytexturemid;
+    
 }

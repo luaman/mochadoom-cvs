@@ -141,12 +141,16 @@ public class AWTRenderViewTester {
     ST.Start();
     AM.LevelInit();
     AM.Start();
+    DM.R.SetViewSize(10, 0);
     DM.R.ExecuteSetViewSize();
-
+    DM.R.skytexture=DM.R.TextureNumForName("SKY1");
     long a=System.nanoTime();
     
     DM.menuactive=false;
     DM.automapactive=true;
+    DM.R.FillBackScreen();
+    DM.R.DrawViewBorder();
+        
         for (int i=0;i<100000;i++){
             int ba=DM.I.GetTime();
             while (ba-DM.I.GetTime()==0){
@@ -169,7 +173,7 @@ public class AWTRenderViewTester {
            }
             
        
-         
+           
         //V.DrawPatch(0,0,0,help1);
         //M.Ticker();
         //M.Drawer();
@@ -178,8 +182,9 @@ public class AWTRenderViewTester {
         ST.Ticker();        
         DM.players[0].viewheight=100;
         //DM.R.viewheight=121;
+        
         DM.R.RenderPlayerView(DM.players[0]);
-        ST.Drawer(false,true);
+       // ST.Drawer(false,true);
         System.out.println("Rendered"+DM.gametic);
         DM.gametic++;
         frame.FinishUpdate();

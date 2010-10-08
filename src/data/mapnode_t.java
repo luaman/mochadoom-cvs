@@ -22,7 +22,10 @@ public class mapnode_t
     /** Bounding box for each child, clip against view frustum. */
     public short[][] bbox;
 
-    /** If NF_SUBSECTOR its a subsector, else it's a node of another subtree. */
+    /** If NF_SUBSECTOR its a subsector, else it's a node of another subtree. 
+     *  In simpler words: if the first bit is set, strip it and use the rest
+     *  as a subtree index. Else it's a node index.
+     * */
     public char[] children = new char[2]; // MAES: used to be unsigned short.
 
     public static int sizeOf() {

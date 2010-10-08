@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.20 2010/09/27 02:27:29 velktron Exp $
+// $Id: WadLoader.java,v 1.21 2010/10/08 16:55:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.21  2010/10/08 16:55:50  velktron
+// Duh
+//
 // Revision 1.20  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -737,6 +740,10 @@ public class WadLoader {
 
                         ((CacheableDoomObject) lumpcache[lump])
                                 .unpack((ByteBuffer) thebuffer);
+                        
+                        if (what==patch_t.class) {
+                            ((patch_t)lumpcache[lump]).name=this.lumpinfo[lump].name;
+                        }
                         // replace lump with parsed object.
                     } else {
                         lumpcache[lump] = (CacheableDoomObject) thebuffer;

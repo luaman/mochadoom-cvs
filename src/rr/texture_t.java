@@ -42,4 +42,17 @@ public class texture_t {
         }
     }
     
+    @Override
+    public String toString(){
+        StringBuilder sb=new StringBuilder();
+        sb.append(name);
+        sb.append(" Height ");
+        sb.append(height);
+        sb.append(" Width ");
+        sb.append(width);
+        sb.append(" Patchcount ");
+        sb.append(patchcount);
+        return sb.toString();
+            
+        }    
 }

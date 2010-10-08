@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.9 2010/10/01 16:47:51 velktron Exp $
+// $Id: Tables.java,v 1.10 2010/10/08 16:55:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.10  2010/10/08 16:55:50  velktron
+// Duh
+//
 // Revision 1.9  2010/10/01 16:47:51  velktron
 // Fixed tab interception.
 //
@@ -1067,17 +1070,18 @@ public static final int BAMDiv(int bam0, int bam1){
     return (int) ((long)(0x0FFFFFFFFL&bam0)/(0x0FFFFFFFFL&bam1));
 }
 
-/** Converts a long angle to a LUT-ready angle (13 bits, between 0-8192). 
- * 
+/** Converts a long angle to a BAM LUT-ready angle (13 bits, between 0-8192). 
+ *  Cuts away rollover. 
+ *  
  * @param angle
  * @return
  */
 
 public static final int toBAMIndex(long angle){
-    return (int) ((angle>>>ANGLETOFINESHIFT)%ANGLEMODULE);
+    return (int) ((angle&BITS32)>>>ANGLETOFINESHIFT);
 }
 
-/** Converts an 32-bit int angle to a LUT-ready angle (13 bits, between 0-8192). 
+/** Converts an 32-bit int angle to a BAM LUT-ready angle (13 bits, between 0-8192). 
  * 
  * @param angle
  * @return
