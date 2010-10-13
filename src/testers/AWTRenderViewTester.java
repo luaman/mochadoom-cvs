@@ -58,7 +58,7 @@ public class AWTRenderViewTester {
         	
     // Create a Wad file loader.
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad","easy.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"});
     
     System.out.println("Total lumps read: "+W.numlumps);
     patch_t help1=W.CachePatchName("TITLEPIC", PU_STATIC);
@@ -181,10 +181,10 @@ public class AWTRenderViewTester {
         //AM.Drawer();
         ST.Ticker();        
         DM.players[0].viewheight=100;
-        //DM.R.viewheight=121;
+        DM.R.viewheight=121;
         
         DM.R.RenderPlayerView(DM.players[0]);
-       // ST.Drawer(false,true);
+        ST.Drawer(false,true);
         System.out.println("Rendered"+DM.gametic);
         DM.gametic++;
         frame.FinishUpdate();

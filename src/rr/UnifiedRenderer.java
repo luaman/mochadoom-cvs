@@ -1900,7 +1900,7 @@ public class UnifiedRenderer extends RendererState{
               dc_yh = yh;
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
-              System.out.println("Drawing"+textures[midtexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
+              System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
               colfunc.invoke();
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
@@ -1922,6 +1922,7 @@ public class UnifiedRenderer extends RendererState{
                   dc_yl = yl;
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
+                  System.out.println("Drawing column"+(texturecolumn&127)+" of top texture "+textures[toptexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
                   dc_source = GetColumn(toptexture,texturecolumn);
                   colfunc.invoke();
                   ceilingclip[rw_x] = (short) mid;
@@ -4669,6 +4670,10 @@ public void InitSkyMap ()
   short[][]         texturecolumnlump;
   /** This is supposed to store indexes into a patch_t lump which point to the columns themselves 
    *  Instead, we're going to return indexes to columns inside a particular patch.
+   *  In the case of patches inside a non-cached multi-patch texture (e.g. those made of non-overlapping
+   *  patches), we're storing indexes INSIDE A PARTICULAR PATCH. E.g. for STARTAN1, which is made of two
+   *  32-px wide patches, it should go something like 0, 1,2 ,3...31, 0,1,2,....31.
+   *  
    * */
   char[][]    texturecolumnofs;
   
@@ -4798,8 +4803,7 @@ public void InitSkyMap ()
       for (int i=0;i<texture.width;i++)
           block[i]=new byte[texture.height];
       
-      // This is the only place where those can be actually modified.
-      // They are still null at this point.
+
       collump = texturecolumnlump[texnum];
       colofs = texturecolumnofs[texnum];
       
@@ -4879,6 +4883,9 @@ public void InitSkyMap ()
       
       // We don't know ho large the texture will be, yet, but it will be a multiple of its height.
       texturecompositesize[texnum] = 0;
+
+      // This is the only place where those can be actually modified.
+      // They are still null at this point.
       collump = texturecolumnlump[texnum];
       colofs = texturecolumnofs[texnum];
       
@@ -4915,12 +4922,21 @@ public void InitSkyMap ()
           patchcount[x]++;
           // Column "x" of composite texture "texnum" is covered by this patch.
           collump[x] = (short) patch[i].patch;
+          
           /* This is supposed to be a raw pointer to the beginning of the column
            * data, as it appears inside the PATCH.
            * 
            * Instead, we can return the actual column index (x-x1)
+           * As an example, the second patch of STARTAN1 (width 64) starts
+           * at column 32. Therefore colofs should be something like
+           * 0,1,2,...,31,0,1,....31, indicating that the 32-th column of
+           * STARTAN1 is the 0-th column of the patch that is assigned to that column
+           * (the latter can be looked up in texturecolumnlump[texnum].
+           * 
+           * Any questions?
+           * 
            */
-          colofs[x] = (char) (realpatch.columnofs[x-x1]+3);
+          colofs[x] = (char) (x-x1);
           // This implies that colofs[x] is 0 for a void column?
               
       } // end column of patch.
@@ -4967,19 +4983,20 @@ public void InitSkyMap ()
   ( int       tex,
     int       col ) 
   {
-      int     lump;
+      int     lump,ofs;
       
       col &= texturewidthmask[tex];
       lump = texturecolumnlump[tex][col];
+      ofs=texturecolumnofs[tex][col];
       
       // If pointing inside a non-zero, positive lump, then it's not a composite texture.
       // Read from disk.
       if (lump > 0){
           // This will actually return a pointer to a patch's columns.
           // That is, to the ONE column exactly.{
-          this.dc_source_ofs=3;
+         // this.dc_source_ofs=3;
           patch_t r=W.CachePatchNum(lump,PU_CACHE);
-      return r.columns[col].data;
+      return r.columns[ofs].data;
   }
       // Texture should be composite, but it doesn't yet exist. Create it. 
       if (texturecomposite[tex]==null) GenerateComposite (tex);
