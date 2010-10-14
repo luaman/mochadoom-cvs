@@ -246,7 +246,7 @@ public class DoomStatus extends DoomContext {
     // Needed to store the number of the dummy sky flat.
     // Used for rendering,
     // as well as tracking projectiles etc.
-    public int skyflatnum;
+    //public int skyflatnum;
 
     // TODO: Netgame stuff (buffers and pointers, i.e. indices).
 

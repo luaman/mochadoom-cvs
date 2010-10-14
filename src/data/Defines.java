@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.18 2010/09/24 17:58:39 velktron Exp $
+// $Id: Defines.java,v 1.19 2010/10/14 18:37:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -128,7 +128,7 @@ public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 public static int SCREENWIDTH = 320;
 //SCREEN_MUL*BASE_WIDTH //320
-public static short SCREENHEIGHT= 200;
+public static int SCREENHEIGHT= 200;
 //(int)(SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO) //200
 
 // State updates, number of tics / second.
@@ -1693,6 +1693,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.18 2010/09/24 17:58:39 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.19 2010/10/14 18:37:14 velktron Exp $";
 }
 

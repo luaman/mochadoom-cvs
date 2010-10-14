@@ -134,7 +134,7 @@ public class UnifiedRenderer extends RendererState{
     byte[][]   walllights;
 
     short[]     maskedtexturecol;
-    
+    int pmaskedtexturecol=0;
     ///// FROM PLANES //////
     
     /**
@@ -1592,7 +1592,7 @@ public class UnifiedRenderer extends RendererState{
   
   public void Subsector (int num)  
   {
-      System.out.println("SubSector " + num);
+      if (DEBUG) System.out.println("SubSector " + num);
       int         count;
       int        line; // pointer into a list of segs instead of seg_t
       subsector_t    sub;
@@ -1634,13 +1634,13 @@ public class UnifiedRenderer extends RendererState{
           
       MyThings.AddSprites (frontsector); 
 
-      System.out.println("Enter Addline for SubSector " + num+" count "+count);
+      if (DEBUG) System.out.println("Enter Addline for SubSector " + num+" count "+count);
       while (count-->0)
       {
       AddLine (LL.segs[line]);
       line++;
       }
-      System.out.println("Exit Addline for SubSector " + num);
+      if (DEBUG) System.out.println("Exit Addline for SubSector " + num);
   }
 
 
@@ -1654,9 +1654,9 @@ public class UnifiedRenderer extends RendererState{
    */
   public void RenderBSPNode (int bspnum)
   {
-      System.out.println("Processing BSP Node "+bspnum);
+      if (DEBUG)  System.out.println("Processing BSP Node "+bspnum);
       if (bspnum==33001){
-          System.out.println("shit");
+          if (DEBUG) System.out.println("shit");
       }
       node_t  bsp;
       int     side;
@@ -1664,7 +1664,7 @@ public class UnifiedRenderer extends RendererState{
       // Found a subsector?
       if (C2JUtils.flags(bspnum ,NF_SUBSECTOR))
       {
-          System.out.println("Subsector found.");
+          if (DEBUG)  System.out.println("Subsector found.");
       if (bspnum == -1)           
           Subsector (0);
       else
@@ -1678,16 +1678,16 @@ public class UnifiedRenderer extends RendererState{
       side = bsp.PointOnSide (viewx, viewy);
 
       // Recursively divide front space.
-      System.out.println("Enter Front space of "+ bspnum);
+      if (DEBUG)  System.out.println("Enter Front space of "+ bspnum);
       RenderBSPNode (bsp.children[side]); 
-      System.out.println("Return Front space of "+ bspnum);
+      if (DEBUG) System.out.println("Return Front space of "+ bspnum);
       
       // Possibly divide back space.
       
       if (CheckBBox (bsp.bbox[side^1].bbox)){
-          System.out.println("Enter Back space of "+bspnum);
+          if (DEBUG) System.out.println("Enter Back space of "+bspnum);
           RenderBSPNode (bsp.children[side^1]);
-          System.out.println("Return Back space of "+bspnum);
+          if (DEBUG) System.out.println("Return Back space of "+bspnum);
       }
   }
 
@@ -1746,7 +1746,7 @@ public class UnifiedRenderer extends RendererState{
           // Get the list
           maskedtexturecol = ds.getMaskedTextureColList();
           // And this is the pointer.
-          int pmtc=ds.getMaskedTextureColPointer();
+          pmaskedtexturecol = ds.getMaskedTextureColPointer();
 
           rw_scalestep = ds.scalestep;        
           spryscale = ds.scale1 + (x1 - ds.x1)*rw_scalestep;
@@ -1779,7 +1779,7 @@ public class UnifiedRenderer extends RendererState{
           for (dc_x = x1 ; dc_x <= x2 ; dc_x++)
           {
           // calculate lighting
-          if (maskedtexturecol[dc_x] != Short.MAX_VALUE)
+          if (maskedtexturecol[pmaskedtexturecol+dc_x] != Short.MAX_VALUE)
           {
               if (fixedcolormap==null)
               {
@@ -1796,11 +1796,11 @@ public class UnifiedRenderer extends RendererState{
               dc_iscale = (int) (0xffffffffL / spryscale);
               
               // draw the texture
-              col.data = GetColumn(texnum,maskedtexturecol[dc_x]);// -3);
+              col.data = GetColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
               col.setFromData();
                   
               DrawMaskedColumn (col);
-              maskedtexturecol[dc_x] = Short.MAX_VALUE;
+              maskedtexturecol[pmaskedtexturecol+dc_x] = Short.MAX_VALUE;
           }
           spryscale += rw_scalestep;
           }
@@ -1900,7 +1900,7 @@ public class UnifiedRenderer extends RendererState{
               dc_yh = yh;
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
-              System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
+              if (DEBUG) System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+dc_yl+" "+dc_yh+" maximum allowed "+textures[midtexture].width);
               colfunc.invoke();
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
@@ -1922,8 +1922,9 @@ public class UnifiedRenderer extends RendererState{
                   dc_yl = yl;
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
-                  System.out.println("Drawing column"+(texturecolumn&127)+" of top texture "+textures[toptexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
+                  if (DEBUG) System.out.println("Drawing column"+(texturecolumn&127)+" of top texture "+textures[toptexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
                   dc_source = GetColumn(toptexture,texturecolumn);
+                  dc_source_ofs=0;
                   colfunc.invoke();
                   ceilingclip[rw_x] = (short) mid;
               }
@@ -1971,7 +1972,7 @@ public class UnifiedRenderer extends RendererState{
               {
               // save texturecol
               //  for backdrawing of masked mid texture
-              maskedtexturecol[rw_x] = (short) texturecolumn;
+              maskedtexturecol[pmaskedtexturecol+rw_x] = (short) texturecolumn;
               }
           }
               
@@ -2036,6 +2037,9 @@ public class UnifiedRenderer extends RendererState{
           seg.x1 = rw_x = start;
           seg.x2 = stop;
           seg.curline = curline;
+          /* This is the only place it's ever explicitly assigned.
+           * Therefore it always starts at stop+1.
+           */   
           rw_stopx = stop+1;
           
           // calculate scale at both ends and step
@@ -2234,7 +2238,9 @@ public class UnifiedRenderer extends RendererState{
           {
               // masked midtexture
               maskedtexture = true;
-              seg.setMaskedTextureCol(maskedtexturecol, lastopening - rw_x);
+              maskedtexturecol = openings;
+              pmaskedtexturecol=lastopening - rw_x;
+              seg.setMaskedTextureCol(maskedtexturecol, pmaskedtexturecol);
               lastopening += rw_stopx - rw_x;
           }
           }
@@ -2255,6 +2261,7 @@ public class UnifiedRenderer extends RendererState{
           sineval = finesine(offsetangle);
           rw_offset = FixedMul (hyp, sineval);
 
+          // We can do that if angles are "bonified" at this point.
           if (rw_normalangle-rw_angle1 < ANG180)
               rw_offset = -rw_offset;
 
@@ -2344,21 +2351,29 @@ public class UnifiedRenderer extends RendererState{
           if ( ((seg.silhouette & SIL_TOP)!=0 || maskedtexture)
            && seg.nullSprTopClip())
           {
-              
+              if (start>rw_stopx)
+                  System.out.println("SHOULD'T HAPPEN");
+                  else{
+
           //memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
           System.arraycopy(ceilingclip, start, openings, lastopening,  rw_stopx-start);
               
           seg.setSprTopClipPointer(lastopening - start);
           lastopening += rw_stopx - start;
+                  }
           }
           // no floor clipping?
           if ( ((seg.silhouette & SIL_BOTTOM)!=0 || maskedtexture)
            && seg.nullSprBottomClip())
-          {
+         {
           //memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
+              if (start>rw_stopx)
+                  if (DEBUG) System.out.println("SHOULD'T HAPPEN");
+              else{
           System.arraycopy(floorclip, start, openings, lastopening,  rw_stopx-start);
           seg.setSprBottomClipPointer(lastopening - start);
-          lastopening += rw_stopx - start;    
+          lastopening += rw_stopx - start;
+              }
           }
 
           if (maskedtexture && (seg.silhouette&SIL_TOP)==0)
@@ -2478,7 +2493,7 @@ public class UnifiedRenderer extends RendererState{
           }
           
           length = FixedMul (distance,distscale[x1]);
-          angle = (viewangle + xtoviewangle[x1])&BITS32;
+          angle = addAngles(viewangle ,xtoviewangle[x1]);
           ds_xfrac = viewx + FixedMul(finecosine(angle), length);
           ds_yfrac = -viewy - FixedMul(finesine(angle), length);
 
@@ -2556,7 +2571,7 @@ public class UnifiedRenderer extends RendererState{
           int check; // visplane_t* 
           visplane_t chk=null;
           
-          if (picnum == DM.skyflatnum)
+          if (picnum == skyflatnum)
           {
           height = 0;         // all skys map together
           lightlevel = 0;
@@ -2711,7 +2726,7 @@ public class UnifiedRenderer extends RendererState{
        */
       public void DrawPlanes () 
       {
-          System.out.println("DrawPlanes");
+          if (DEBUG) System.out.println("DrawPlanes");
           visplane_t      pln=null; //visplane_t
           int         light;
           int         x;
@@ -2740,7 +2755,7 @@ public class UnifiedRenderer extends RendererState{
 
           
           // sky flat
-          if (pln.picnum == DM.skyflatnum)
+          if (pln.picnum == skyflatnum)
           {
               dc_iscale = pspriteiscale>>detailshift;
               
@@ -2758,7 +2773,7 @@ public class UnifiedRenderer extends RendererState{
               
               if (dc_yl <= dc_yh)
               {
-                  angle = (int) ((viewangle + xtoviewangle[x])>>>ANGLETOSKYSHIFT);
+                  angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                   dc_x = x;
                   dc_source = GetColumn(skytexture, angle);
                   // TODO: Until you fix texture compositing, this can't work.
@@ -2772,6 +2787,11 @@ public class UnifiedRenderer extends RendererState{
           ds_source = ((flat_t)W.CacheLumpNum(firstflat +
                          flattranslation[pln.picnum],
                          PU_STATIC,flat_t.class)).data;
+          
+          
+          if (ds_source.length==0){
+              new Exception().printStackTrace();
+          }
           
           planeheight = Math.abs(pln.height-viewz);
           light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
@@ -3150,7 +3170,8 @@ public class UnifiedRenderer extends RendererState{
           
           
           patch = W.CachePatchNum (vis.patch+firstspritelump,PU_CACHE);
-
+          
+          
           dc_colormap = vis.colormap;
           
           if (dc_colormap==null)
@@ -3182,6 +3203,8 @@ public class UnifiedRenderer extends RendererState{
               I.Error ("R_DrawSpriteRange: bad texturecolumn");
       }
           column = patch.columns[texturecolumn];
+          System.out.println(">>>>>>>>>>>>>>>>>>   Drawing column "+texturecolumn+" of  "+W.lumpinfo[vis.patch+firstspritelump].name +" at scale "+Integer.toHexString(vis.xiscale));
+              
           DrawMaskedColumn(column);
           }
 
@@ -3357,7 +3380,7 @@ public class UnifiedRenderer extends RendererState{
        */
       public void AddSprites (sector_t sec)
       {
-          System.out.println("AddSprites");
+          if (DEBUG) System.out.println("AddSprites");
           mobj_t     thing;
           int         lightnum;
 
@@ -3685,6 +3708,7 @@ public class UnifiedRenderer extends RendererState{
           if (spr.gzt <= dss.tsilheight)
               silhouette &= ~SIL_TOP;
                   
+          // BOTTOM clipping
           if (silhouette == 1)
           {
               // bottom sil
@@ -3692,7 +3716,7 @@ public class UnifiedRenderer extends RendererState{
               if (clipbot[x] == -2)
                   // clipbot[x] = ds->sprbottomclip[x];
                   if (dss.nullSprBottomClip()){
-                      System.out.println("Bottom clipping requested but clip list not present for "+dss);
+                      if (DEBUG) System.out.println("Bottom clipping requested but clip list not present for "+dss);
                       
                   } else clipbot[x] = dss.getSprBottomClip(x);
                   
@@ -3988,17 +4012,21 @@ public void DrawMaskedColumn (column_t column)
     if (dc_yl <= dc_yh)
     {
         // Set pointer inside column to current post's data
-        // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
-        dc_source_ofs = column.postofs[i] + 3;
+        // Remember, it goes {postlen}{postdelta}{pad}[data]{pad} 
+        dc_source_ofs = column.postofs[i];
         dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
-        // dc_source = (byte *)column + 3 - column.topdelta;
-
+        System.out.println("Data to draw: "+(dc_yh-dc_yl));
+        System.out.println("Data left in this post: "+column.postlen[i]);
+        System.out.println("Basetexturemid "+Integer.toHexString(basetexturemid));
+        System.out.println("column.postdeltas["+i+"] "+column.postdeltas[i]);
+        System.out.println("dc_texturemid "+Integer.toHexString(dc_texturemid));
+        
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
         if (MyThings.shadow){
-            DrawFuzzColumn.invoke();
+            colfunc=DrawFuzzColumn;
         } else {
-            DrawColumn.invoke();
+            colfunc=DrawColumn;
         }
         
          colfunc.invoke(); 
@@ -4250,16 +4278,25 @@ public void VideoErase(int ofs, int count) {
  
  /**
   * Draws the actual span.
+  * 
+  * ds_frac, ds_yfrac, ds_x2, ds_x1, ds_xstep and ds_ystep must be set.
+  * 
   */
  
  class R_DrawSpan implements colfunc_t {
+     
+
+     
      public void invoke(){
+
+         
      int f_xfrac; // fixed_t
      int f_yfrac; // fixed_t
      int dest;
      int count;
      int spot;
-
+     try {
+     
      if (RANGECHECK) {
          if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
                  || ds_y > SCREENHEIGHT) {
@@ -4289,7 +4326,10 @@ public void VideoErase(int ofs, int count) {
          f_yfrac += ds_ystep;
 
      } while (count-- != 0);
- }
+     } catch (ArrayIndexOutOfBoundsException e){
+         System.err.println("ds_source only has "+ds_source.length);
+     }
+     }
  }
  
  class R_DrawSpanLow implements colfunc_t{
@@ -4616,10 +4656,11 @@ public void ExecuteSetViewSize ()
  * Called whenever the view size changes.
  */
 
-public void InitSkyMap ()
+public int InitSkyMap ()
 {
     skyflatnum = FlatNumForName ( SKYFLATNAME );
     skytexturemid = 100*FRACUNIT;
+    return skyflatnum;
 }
 
 
@@ -4994,7 +5035,7 @@ public void InitSkyMap ()
       if (lump > 0){
           // This will actually return a pointer to a patch's columns.
           // That is, to the ONE column exactly.{
-         // this.dc_source_ofs=3;
+          this.dc_source_ofs=3;
           patch_t r=W.CachePatchNum(lump,PU_CACHE);
       return r.columns[ofs].data;
   }
@@ -5199,17 +5240,31 @@ public void InitSkyMap ()
   //
   protected void InitFlats ()
   {
-      int     i;
       
-      firstflat = W.GetNumForName ("F_START") + 1;
-      lastflat = W.GetNumForName ("F_END") - 1;
-      numflats = lastflat - firstflat + 1;
+      /* Actually, flats start with F_START AND F1_START.
+       * Due to the way C loads stuff, even if you pointed at a zero sized
+       * marker "flat", loading would succeed anyway...I think.
+       */
+      
+      firstflat=2+W.GetNumForName ("F_START");
+      
+      lastflat = W.GetNumForName ("F_END") - 2;
+      numflats = lastflat - firstflat;
       
       // Create translation table for global animation.
-      flattranslation = new int[numflats+1];
+      flattranslation = new int[numflats];
       
-      for (i=0 ; i<numflats ; i++)
+      System.out.println("*********** FLAT VERIFICATION ************");
+      for (int i=0 ; i<numflats ; i++) {
           flattranslation[i] = i;
+          System.out.println("Flat "+i+" actual "+(firstflat+i)+" actual name "+W.lumpinfo[firstflat+i].name + " verification "+this.FlatNumForName(W.lumpinfo[firstflat+i].name));
+          
+          }
+      
+      
+      
+      // HACK: flat "0" starts at 
+      
   }
 
 
@@ -5314,6 +5369,7 @@ public void InitSkyMap ()
         if (i == -1) {
             I.Error("R_FlatNumForName: %s not found", name);
         }
+        
         return i - firstflat;
     }
 
@@ -5517,8 +5573,8 @@ public void Init ()
    System.out.print ("\nR_InitPlanes");
    InitLightTables ();
    System.out.print("\nR_InitLightTables");
-   InitSkyMap ();
-   System.out.print("\nR_InitSkyMap");
+   
+   System.out.print("\nR_InitSkyMap: "+InitSkyMap ());
    InitTranslationTables ();
    System.out.print("\nR_InitTranslationsTables");
    

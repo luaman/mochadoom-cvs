@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.10 2010/10/08 16:55:50 velktron Exp $
+// $Id: Tables.java,v 1.11 2010/10/14 18:37:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.11  2010/10/14 18:37:14  velktron
+// Rendering kinda works. Wow.
+//
 // Revision 1.10  2010/10/08 16:55:50  velktron
 // Duh
 //
@@ -1089,6 +1092,12 @@ public static final int toBAMIndex(long angle){
 
 public static final int toBAMIndex(int angle){
     return angle>>>ANGLETOFINESHIFT;
+}
+
+/** Add two long angles and correct for overflow */
+
+public static long addAngles(long a, long b) {
+    return ((a+b)&BITS32);
 }
 
 

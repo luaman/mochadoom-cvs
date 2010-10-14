@@ -67,7 +67,7 @@ public abstract class RendererState {
     
     //////////////////////////////////From r_sky.c /////////////////////////////////////
 
-    int skyflatnum;
+    public int skyflatnum;
     // This is also in DM, but one is enough, really.
     public int skytexture;
     int skytexturemid;

@@ -65,7 +65,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.12 2010/10/08 16:55:50 velktron Exp $
+// $Id: DoomMain.java,v 1.13 2010/10/14 18:37:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,6 +80,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.13  2010/10/14 18:37:14  velktron
+// Rendering kinda works. Wow.
+//
 // Revision 1.12  2010/10/08 16:55:50  velktron
 // Duh
 //
@@ -150,7 +153,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.12 2010/10/08 16:55:50 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.13 2010/10/14 18:37:14 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -1568,7 +1571,7 @@ public void Start ()
      //  a flat. The data is in the WAD only because
      //  we look for an actual index, instead of simply
      //  setting one.
-     skyflatnum = R.FlatNumForName ( SKYFLATNAME );
+     R.skyflatnum = R.FlatNumForName ( SKYFLATNAME );
 
      // DOOM determines the sky texture to be used
      // depending on the current episode, and the game version.

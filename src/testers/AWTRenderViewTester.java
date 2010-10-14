@@ -58,8 +58,9 @@ public class AWTRenderViewTester {
         	
     // Create a Wad file loader.
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
-    
+    W.InitMultipleFiles(new String[] {"doom1.wad","easy.wad"});
+    //Defines.SCREENHEIGHT=HEIGHT;
+    //Defines.SCREENHEIGHT=WIDTH;
     System.out.println("Total lumps read: "+W.numlumps);
     patch_t help1=W.CachePatchName("TITLEPIC", PU_STATIC);
 
@@ -141,7 +142,7 @@ public class AWTRenderViewTester {
     ST.Start();
     AM.LevelInit();
     AM.Start();
-    DM.R.SetViewSize(10, 0);
+    DM.R.SetViewSize(11, 0);
     DM.R.ExecuteSetViewSize();
     DM.R.skytexture=DM.R.TextureNumForName("SKY1");
     long a=System.nanoTime();
@@ -151,12 +152,12 @@ public class AWTRenderViewTester {
     DM.R.FillBackScreen();
     DM.R.DrawViewBorder();
         
-        for (int i=0;i<100000;i++){
+        for (int i=0;i<20000;i++){
             int ba=DM.I.GetTime();
-            while (ba-DM.I.GetTime()==0){
+            /*while (ba-DM.I.GetTime()==0){
                 //frame.setVisible(true);
                 Thread.sleep(1);               
-            }
+            }*/
            frame.GetEvent();
            
            for ( ; DM.eventtail != DM.eventhead ; DM.eventtail = (++DM.eventtail)&(MAXEVENTS-1) )
@@ -180,12 +181,14 @@ public class AWTRenderViewTester {
         AM.Ticker();
         //AM.Drawer();
         ST.Ticker();        
-        DM.players[0].viewheight=100;
-        DM.R.viewheight=121;
+        DM.players[0].viewz=(40)<<16;
+        //DM.players[0].mo.x+=0x10000;
+        DM.players[0].mo.y+=0x10000;
+       // DM.players[0].mo.angle=(long) (0x40000000L+Math.sin(((double)(i%20)/200.0))*0x20000000);
         
         DM.R.RenderPlayerView(DM.players[0]);
         ST.Drawer(false,true);
-        System.out.println("Rendered"+DM.gametic);
+        //System.out.println("Rendered"+DM.gametic);
         DM.gametic++;
         frame.FinishUpdate();
         if (i%100==0){
