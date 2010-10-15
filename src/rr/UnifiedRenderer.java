@@ -1877,8 +1877,8 @@ public class UnifiedRenderer extends RendererState{
           if (segtextured)
           {
               // calculate texture offset
-              angle = Tables.toBAMIndex(rw_centerangle + xtoviewangle[rw_x]);
-              texturecolumn = rw_offset-FixedMul(finetangent[(int) angle],rw_distance);
+              angle = Tables.toBAMIndex((rw_centerangle + xtoviewangle[rw_x])&BITS32);
+              texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
               texturecolumn >>= FRACBITS;
               // calculate lighting
               index = rw_scale>>LIGHTSCALESHIFT;
@@ -1900,8 +1900,13 @@ public class UnifiedRenderer extends RendererState{
               dc_yh = yh;
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
-              if (DEBUG) System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+dc_yl+" "+dc_yh+" maximum allowed "+textures[midtexture].width);
+              //if (DEBUG) 
+                  //System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+rw_x+" and between "+dc_yl+" and "+dc_yh+" maximum allowed "+dc_source.length);
+                  try {
               colfunc.invoke();
+                  } catch (ArrayIndexOutOfBoundsException e){
+                      //FIXME: enough of that!!! 
+                  }
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
           }
@@ -1955,7 +1960,14 @@ public class UnifiedRenderer extends RendererState{
                   dc_texturemid = rw_bottomtexturemid;
                   dc_source = GetColumn(bottomtexture,
                               texturecolumn);
+                  //System.out.println("Max data length:"+dc_source.length);
+                  try{
                   colfunc.invoke();
+                  }catch (ArrayIndexOutOfBoundsException e){
+                      //TODO: fix errors. Is this supposed to occur?
+                  }
+                  
+                  
                   floorclip[rw_x] = (short) mid;
               }
               else
@@ -2370,9 +2382,13 @@ public class UnifiedRenderer extends RendererState{
               if (start>rw_stopx)
                   if (DEBUG) System.out.println("SHOULD'T HAPPEN");
               else{
+                  try {
           System.arraycopy(floorclip, start, openings, lastopening,  rw_stopx-start);
           seg.setSprBottomClipPointer(lastopening - start);
           lastopening += rw_stopx - start;
+                  } catch (ArrayIndexOutOfBoundsException e){
+                      // FIXME: shit happens.
+                  }
               }
           }
 
@@ -3203,9 +3219,9 @@ public class UnifiedRenderer extends RendererState{
               I.Error ("R_DrawSpriteRange: bad texturecolumn");
       }
           column = patch.columns[texturecolumn];
-          System.out.println(">>>>>>>>>>>>>>>>>>   Drawing column "+texturecolumn+" of  "+W.lumpinfo[vis.patch+firstspritelump].name +" at scale "+Integer.toHexString(vis.xiscale));
+          //System.out.println(">>>>>>>>>>>>>>>>>>   Drawing column "+texturecolumn+" of  "+W.lumpinfo[vis.patch+firstspritelump].name +" at scale "+Integer.toHexString(vis.xiscale));
               
-          DrawMaskedColumn(column);
+          DrawMaskedColumn(column.data);
           }
 
           colfunc = basecolfunc;
@@ -3885,7 +3901,7 @@ public class UnifiedRenderer extends RendererState{
       i = 0;
       while (viewangletox[i]>x)
           i++;
-      xtoviewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
+      xtoviewangle[x] = addAngles((i<<ANGLETOFINESHIFT),-ANG90);
       }
       
       // Take out the fencepost cases from viewangletox.
@@ -3992,6 +4008,7 @@ public void DrawMaskedColumn (column_t column)
     basetexturemid = dc_texturemid;
     // That's true for the whole column.
     dc_source = column.data;
+    dc_source_ofs=3;
     
     // for each post...
     for (int i=0;i<column.posts;i++ ) 
@@ -4013,13 +4030,14 @@ public void DrawMaskedColumn (column_t column)
     {
         // Set pointer inside column to current post's data
         // Remember, it goes {postlen}{postdelta}{pad}[data]{pad} 
-        dc_source_ofs = column.postofs[i];
+        
+        /*System.out.println("Post offset "+i+" = "+column.postofs[i]+ " Post length "+i+" = "+column.postlen[i]);
         dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
-        System.out.println("Data to draw: "+(dc_yh-dc_yl));
-        System.out.println("Data left in this post: "+column.postlen[i]);
-        System.out.println("Basetexturemid "+Integer.toHexString(basetexturemid));
-        System.out.println("column.postdeltas["+i+"] "+column.postdeltas[i]);
-        System.out.println("dc_texturemid "+Integer.toHexString(dc_texturemid));
+        System.out.println("\tData to draw: "+(dc_yh-dc_yl));
+        System.out.println("\tData left in this post: "+column.postlen[i]);
+        System.out.println("\tBasetexturemid "+Integer.toHexString(basetexturemid));
+        System.out.println("\tcolumn.postdeltas["+i+"] "+column.postdeltas[i]);
+        System.out.println("\tdc_texturemid "+(dc_texturemid>>FRACBITS));*/
         
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
@@ -4028,10 +4046,13 @@ public void DrawMaskedColumn (column_t column)
         } else {
             colfunc=DrawColumn;
         }
-        
-         colfunc.invoke(); 
+        try{
+         colfunc.invoke();
+        } catch (ArrayIndexOutOfBoundsException e){
+        }
     }
     //column = (column_t *)(  (byte *)column + column.length + 4);
+    dc_source_ofs +=column.postlen[i]+1;
     }
     
     dc_texturemid = basetexturemid;
@@ -4050,6 +4071,7 @@ public void DrawMaskedColumn (byte[] column)
 {
     int     topscreen;
     int     bottomscreen;
+    int length;
     int basetexturemid; // fixed_t
     int topdelta;
     
@@ -4059,13 +4081,13 @@ public void DrawMaskedColumn (byte[] column)
     int pointer=0;
     
     // for each post...
-    while(column[pointer]!=0xFF)
+    while((topdelta=toUnsignedByte(column[pointer]))!=0xFF)
     {
     // calculate unclipped screen coordinates
     //  for post
-        topdelta=toUnsignedByte(column[pointer+1]);
     topscreen = sprtopscreen + spryscale*topdelta;
-    bottomscreen = topscreen + spryscale*toUnsignedByte(column[pointer+2]);
+        length=toUnsignedByte(column[pointer+1]);
+    bottomscreen = topscreen + spryscale*length;
 
     dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
     dc_yh = (bottomscreen-1)>>FRACBITS;
@@ -4081,19 +4103,16 @@ public void DrawMaskedColumn (byte[] column)
         // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
         dc_source_ofs = pointer+3;
         dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
-        // dc_source = (byte *)column + 3 - column.topdelta;
 
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
-        if (MyThings.shadow){
-            DrawFuzzColumn.invoke();
-        } else {
-            DrawColumn.invoke();
+        try {
+        colfunc.invoke();
+        } catch (ArrayIndexOutOfBoundsException e){
+            // FIXME: happens way too often.
         }
-        
-        // colfunc (); 
     }
-    //column = (column_t *)(  (byte *)column + column.length + 4);
+    pointer+=length + 4;
     }
     
     dc_texturemid = basetexturemid;
@@ -5035,7 +5054,8 @@ public int InitSkyMap ()
       if (lump > 0){
           // This will actually return a pointer to a patch's columns.
           // That is, to the ONE column exactly.{
-          this.dc_source_ofs=3;
+          // If the caller needs access to a raw column, we must point 3 bytes "ahead".
+          dc_source_ofs=3;
           patch_t r=W.CachePatchNum(lump,PU_CACHE);
       return r.columns[ofs].data;
   }
@@ -5044,6 +5064,7 @@ public int InitSkyMap ()
 
       // This implies that texturecomposite actually stores raw, compressed columns,
       // or else those "ofs" would go in-between.
+      // The source offset int this case is 0, else we'll skip over stuff.
       this.dc_source_ofs=0;
       return texturecomposite[tex][col];
   }

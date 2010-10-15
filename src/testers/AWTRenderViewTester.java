@@ -58,7 +58,7 @@ public class AWTRenderViewTester {
         	
     // Create a Wad file loader.
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad","easy.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad","long.wad"});
     //Defines.SCREENHEIGHT=HEIGHT;
     //Defines.SCREENHEIGHT=WIDTH;
     System.out.println("Total lumps read: "+W.numlumps);
@@ -183,8 +183,8 @@ public class AWTRenderViewTester {
         ST.Ticker();        
         DM.players[0].viewz=(40)<<16;
         //DM.players[0].mo.x+=0x10000;
-        DM.players[0].mo.y+=0x10000;
-       // DM.players[0].mo.angle=(long) (0x40000000L+Math.sin(((double)(i%20)/200.0))*0x20000000);
+        DM.players[0].mo.y+=0x100000;
+       // DM.players[0].mo.angle=(long) (0x40000000L-i*0x250000)&0xFFFFFFFFL;
         
         DM.R.RenderPlayerView(DM.players[0]);
         ST.Drawer(false,true);
