@@ -22,6 +22,7 @@ import m.fixed_t;
 
 import i.DoomSystemInterface;
 import p.LevelLoader;
+import p.MapUtils;
 import p.UnifiedGameMap;
 import p.mobj_t;
 import p.pspdef_t;
@@ -40,6 +41,9 @@ import doom.thinker_t;
 public class UnifiedRenderer extends RendererState{
     
     private static final boolean DEBUG=false;
+    // HACK: An all zeroes array used for fast clearing of certain visplanes.
+    private static int[]           BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
+    
     
     public UnifiedRenderer(DoomMain DM) {
       this.DM=DM;
@@ -150,6 +154,9 @@ public class UnifiedRenderer extends RendererState{
 
     protected visplane_t[]      visplanes=new visplane_t[MAXVISPLANES];
 
+    /** openings is supposed to show where "openings" in visplanes start and end e.g.
+     *  due to sprites, windows etc.
+     */
     short[]         openings=new short[MAXOPENINGS];
     /** Maes: this is supposed to be a pointer inside openings */
     int           lastopening;//=new Short((short) 0);
@@ -464,7 +471,7 @@ public class UnifiedRenderer extends RendererState{
             * dc_source was probably just a pointer to a decompressed
             *  column...right? Right.
             */  
-           if (DEBUG) System.out.println((frac >> FRACBITS)&127);
+           //if (DEBUG) System.out.println((frac >> FRACBITS)&127);
            screen[dest] = dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
 
            
@@ -844,11 +851,12 @@ public class UnifiedRenderer extends RendererState{
 
    public long
    PointToAngle
-   ( int   xx,
-     int   yy )
+   ( int   x,
+     int   y )
    {   
-       int x=xx- viewx;
-       int y=yy- viewy;
+       // This way, we are actually working with vectors emanating from our current position.
+       x-= viewx;
+       y-= viewy;
        
        if ( (x==0) && (y==0) )
        return 0;
@@ -879,7 +887,7 @@ public class UnifiedRenderer extends RendererState{
            if (x>y)
            {
            // octant 8
-           return (-tantoangle[SlopeDiv(y,x)])&BITS32;
+           return -tantoangle[SlopeDiv(y,x)];
            }
            else
            {
@@ -899,7 +907,7 @@ public class UnifiedRenderer extends RendererState{
            if (x>y)
            {
            // octant 3
-           return (ANG180-1-tantoangle[ SlopeDiv(y,x)])&BITS32;
+           return ((ANG180-1)-tantoangle[ SlopeDiv(y,x)])&BITS32;
            }
            else
            {
@@ -920,7 +928,7 @@ public class UnifiedRenderer extends RendererState{
            else
            {
             // octant 5
-           return (ANG270-1-tantoangle[ SlopeDiv(x,y)])&BITS32;
+           return ((ANG270-1)-tantoangle[ SlopeDiv(x,y)])&BITS32;
            }
        }
        }
@@ -962,8 +970,8 @@ public class UnifiedRenderer extends RendererState{
    }
    */
 
-       anglea = (int) (ANG90 + (visangle-viewangle));
-       angleb = (int) (ANG90 + (visangle-rw_normalangle));
+       anglea = (int) (ANG90 + addAngles(visangle,-viewangle));
+       angleb = (int) (ANG90 + addAngles(visangle,-rw_normalangle));
 
        // both sines are allways positive
        sinea = finesine[anglea>>>ANGLETOFINESHIFT]; 
@@ -1084,9 +1092,13 @@ public class UnifiedRenderer extends RendererState{
       }
       
 
-  //
-  // R_ClearDrawSegs
-  //
+  /**
+   * R_ClearDrawSegs
+   * 
+   * The drawseg list is reset by pointing back at 0.
+   * 
+   * 
+   */
   public void ClearDrawSegs ()
   {
       ds_p = 0;
@@ -1102,9 +1114,9 @@ public class UnifiedRenderer extends RendererState{
 
   /**
    * R_ClipSolidWallSegment
-   * Does handle solid walls,
-   *  e.g. single sided LineDefs (middle texture)
-   *  that entirely block the view.
+   * 
+   * Does handle solid walls, single sided LineDefs (middle texture)
+   * that entirely block the view VERTICALLY.
    *  
    *  Handles "clipranges" for a solid wall, aka
    *  where it blocks the view.
@@ -1128,39 +1140,56 @@ public class UnifiedRenderer extends RendererState{
       while (solidsegs[start].last < first-1)
       start++;
       
-      // The post begins above the last found cliprange...
+      // If the post begins above the lastly found cliprange...
       if (first < solidsegs[start].first)
       {
-      // ..and ends before it:
+      // ..and ends above it, too (no overlapping)
       if (last < solidsegs[start].first-1)
       {
-          // Post is entirely visible (above start),
-          //  so insert a new clippost.
+          // ... then the post is entirely visible (above start),
+          //  so insert a new clippost. Calling this function 
+          // tells the renderer that there is an obstruction.
+          // TODO: determine WHERE this info is actually saved.
           MySegs.StoreWallRange (first, last);
+          
+          // Newend should have a value of 2 if we are at the beginning of a new frame.
           next = newend;
           newend++;
           
           while (next != start)
           {
            // *next=*(next-1);
-          //  FIXME: MAES: I think this is supposed to copy the structs
-          //  solidsegs[next] = solidsegs[next-1].clone();
+          /*  MAES: I think this is supposed to copy the structs
+           * 
+           * solidsegs[next] = solidsegs[next-1].clone();
+           *
+           * OK, so basically the last solidseg copies its previous,
+           * and so on until we reach the start. This means that at some
+           * point, the value of the start solidseg is duplicated.
+           */
+              
               solidsegs[next].copy(solidsegs[next-1]);
               
           next--;
           }
+          
+          // At this point, next points at start.
+          // Therefore, start
           solidsegs[next].first = first;
           solidsegs[next].last = last;
           return;
       }
           
-      // There is a fragment above *start.
+      // There is a fragment above *start. This can occur if it a
+      // post does start before another, but its lower edge overlaps (partial, upper occlusion)
       MySegs.StoreWallRange (first, solidsegs[start].first - 1);
       // Now adjust the clip size.
       solidsegs[start].first = first; 
       }
 
-      // Bottom contained in start?
+      // We can reach this only if a post starts AFTER another 
+
+      // Bottom contained in start? Obviously it won't be visible.
       if (last <= solidsegs[start].last)
       return;         
           
@@ -1238,20 +1267,18 @@ public class UnifiedRenderer extends RendererState{
   //
   public void  ClipPassWallSegment (int   first,
           int   last ) {
-      cliprange_t start;
-
+     
       // Find the first range that touches the range
       //  (adjacent pixels are touching).
-      int startptr=0;
-      start = solidsegs[startptr];
-      while (start.last < first-1){
-      start = solidsegs[startptr++];
-      }
+      int start=0;
+      
+      while (solidsegs[start].last < first-1)
+      start++;
       
       
-      if (first < start.first)
+      if (first < solidsegs[start].first)
       {
-      if (last < start.first-1)
+      if (last < solidsegs[start].first-1)
       {
           // Post is entirely visible (above start).
           MySegs.StoreWallRange (first, last);
@@ -1259,39 +1286,47 @@ public class UnifiedRenderer extends RendererState{
       }
           
       // There is a fragment above *start.
-      MySegs.StoreWallRange (first, start.first - 1);
+      MySegs.StoreWallRange (first, solidsegs[start].first - 1);
       }
 
       // Bottom contained in start?
-      if (last <= start.last)
+      if (last <= solidsegs[start].last)
       return;         
        
       //MAES: Java absolutely can't do without a sanity check here.
-      if (startptr>=MAXSEGS-2) return;
+      //if (startptr>=MAXSEGS-2) return;
       
-      while (last >= solidsegs[startptr+1].first-1)
+      while (last >= solidsegs[start+1].first-1)
       {
       // There is a fragment between two posts.
-      MySegs.StoreWallRange (start.last + 1, solidsegs[startptr+1].first - 1);
-      startptr++;
-      if (startptr>=MAXSEGS-2) return;
-      start=solidsegs[startptr];
+      MySegs.StoreWallRange (solidsegs[start].last + 1, solidsegs[start+1].first - 1);
+      start++;
+      //if (startptr>=MAXSEGS-2) return;
+      //start=solidsegs[startptr];
       
-      if (last <= start.last)
+      if (last <= solidsegs[start].last)
           return;
       }
       
       // There is a fragment after *next.
-      MySegs.StoreWallRange (start.last + 1, last);
+      MySegs.StoreWallRange (solidsegs[start].last + 1, last);
   }
 
 
 
   /**
    * R_ClearClipSegs
+   * 
+   * Clears the clipping segs list. The list is actually fixed size
+   * for efficiency reasons, so it just tells Doom to use the first
+   * two solidsegs, which are "neutered". It's interesting to note
+   * how the solidsegs begin and end just "outside" the visible borders of
+   * the screen. 
+   * 
+   * 
    */
 
-  public void ClearClipSegs ()
+  private void ClearClipSegs ()
   {
       solidsegs[0].first = -0x7fffffff;
       solidsegs[0].last = -1;
@@ -1300,11 +1335,15 @@ public class UnifiedRenderer extends RendererState{
       newend = 2; // point so solidsegs[2];
   }
 
-  //
-  // R_AddLine
-  // Clips the given segment
-  // and adds any visible pieces to the line list.
-  //
+  /**
+   * R_AddLine
+   * 
+   *  Called after a SubSector BSP trasversal ends up in a "final" subsector.
+   *  
+   *  Clips the given segment
+   *  and adds any visible pieces to the line list.
+   *  
+   */
   public void AddLine (seg_t  line) 
   {
       if (DEBUG) System.out.println("Entered AddLine for "+line);
@@ -1323,8 +1362,7 @@ public class UnifiedRenderer extends RendererState{
       
       // Clip to view edges.
       // OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
-      span = angle1 - angle2;
-      span&=BITS32;
+      span = addAngles(angle1,- angle2);
       
       // Back side? I.e. backface culling?
       if (span >= ANG180)
@@ -1338,9 +1376,9 @@ public class UnifiedRenderer extends RendererState{
       angle1&=BITS32;
       angle2&=BITS32;
       
-      tspan = angle1 + clipangle;
-      tspan&=BITS32;
-      if (tspan > 2*clipangle)
+      tspan = addAngles(angle1, clipangle);
+      
+      if (tspan > ((2*clipangle)&BITS32))
       {
       tspan -= 2*clipangle;
       tspan&=BITS32;
@@ -1351,9 +1389,9 @@ public class UnifiedRenderer extends RendererState{
       
       angle1 = clipangle;
       }
-      tspan = clipangle - angle2;
-      tspan&=BITS32;
-      if (tspan > 2*clipangle)
+      tspan = addAngles(clipangle, - angle2);
+
+      if (tspan > ((2*clipangle)&BITS32))
       {
       tspan -= 2*clipangle;
       tspan&=BITS32;
@@ -1368,16 +1406,8 @@ public class UnifiedRenderer extends RendererState{
       // The seg is in the view range,
       // but not necessarily visible.
       
-      //System.out.println(Long.toHexString(angle1));
-      //System.out.println(Long.toHexString(angle2));
-      angle1&=BITS32;
-      angle2&=BITS32;
-      //System.out.println(Long.toHexString(angle1));
-      //System.out.println(Long.toHexString(angle2));
       angle1 = ((angle1+ANG90)&BITS32)>>>ANGLETOFINESHIFT;
       angle2 = ((angle2+ANG90)&BITS32)>>>ANGLETOFINESHIFT;
-      //System.out.println(Long.toHexString(angle1));
-      //System.out.println(Long.toHexString(angle2));
       x1 = viewangletox[(int) angle1];
       x2 = viewangletox[(int) angle2];
 
@@ -1390,7 +1420,7 @@ public class UnifiedRenderer extends RendererState{
       // Single sided line?
       
       if (backsector==null) {
-          if (DEBUG) System.out.println("Entering ClipSolidWallSegment SS");
+          if (DEBUG) System.out.println("Entering ClipSolidWallSegment SS with params " + x1 +" " + (x2-1));
           ClipSolidWallSegment (x1, x2-1); // to clipsolid
           if (DEBUG) System.out.println("Exiting ClipSolidWallSegment");
           return;
@@ -1400,7 +1430,7 @@ public class UnifiedRenderer extends RendererState{
       // Closed door.
       if (backsector.ceilingheight <= frontsector.floorheight
       || backsector.floorheight >= frontsector.ceilingheight) {
-          if (DEBUG)  System.out.println("Entering ClipSolidWallSegment Closed door");
+          if (DEBUG)  System.out.println("Entering ClipSolidWallSegment Closed door with params " + x1 +" " + (x2-1));
           ClipSolidWallSegment (x1, x2-1);; // to clipsolid    
           return;
           }
@@ -1408,7 +1438,7 @@ public class UnifiedRenderer extends RendererState{
       // Window.
       if (backsector.ceilingheight != frontsector.ceilingheight
       || backsector.floorheight != frontsector.floorheight) {
-          if (DEBUG) System.out.println("Entering ClipSolidWallSegment window");
+          if (DEBUG) System.out.println("Entering ClipSolidWallSegment window with params " + x1 +" " + (x2-1));
           ClipPassWallSegment (x1, x2-1); // to clippass
           return;
           }
@@ -1423,6 +1453,7 @@ public class UnifiedRenderer extends RendererState{
       && backsector.lightlevel == frontsector.lightlevel
       && curline.sidedef.midtexture == 0)
       {
+      System.out.println("NOTHING DRAWN!");
       return;
       }
       if (DEBUG) System.out.println("Exiting AddLine for "+line);
@@ -1592,7 +1623,7 @@ public class UnifiedRenderer extends RendererState{
   
   public void Subsector (int num)  
   {
-      if (DEBUG) System.out.println("SubSector " + num);
+      if (DEBUG) System.out.println("\t\tSubSector " + num + " Rendered");
       int         count;
       int        line; // pointer into a list of segs instead of seg_t
       subsector_t    sub;
@@ -1603,7 +1634,7 @@ public class UnifiedRenderer extends RendererState{
       I.Error ("R_Subsector: ss %i with numss = %i",
            num,
            LL.numsubsectors);
-  }
+          }
 
       sscount++;
       sub = LL.subsectors[num];
@@ -1620,6 +1651,7 @@ public class UnifiedRenderer extends RendererState{
       }
       else
           // FIXME: unclear what would happen with a null visplane used
+          // It's never checked explicitly for either condition, just called straight.
           floorplane = -1; // in lieu of NULL
       
       if (frontsector.ceilingheight > viewz 
@@ -1630,7 +1662,7 @@ public class UnifiedRenderer extends RendererState{
                       frontsector.lightlevel);
       }
       else
-          ceilingplane = -1;
+          ceilingplane = -1; // In lieu of NULL. Will bomb if actually used.
           
       MyThings.AddSprites (frontsector); 
 
@@ -1655,13 +1687,11 @@ public class UnifiedRenderer extends RendererState{
   public void RenderBSPNode (int bspnum)
   {
       if (DEBUG)  System.out.println("Processing BSP Node "+bspnum);
-      if (bspnum==33001){
-          if (DEBUG) System.out.println("shit");
-      }
+
       node_t  bsp;
       int     side;
 
-      // Found a subsector?
+      // Found a subsector? Then further decision are taken, in, well, SubSector.
       if (C2JUtils.flags(bspnum ,NF_SUBSECTOR))
       {
           if (DEBUG)  System.out.println("Subsector found.");
@@ -1676,18 +1706,19 @@ public class UnifiedRenderer extends RendererState{
       
       // Decide which side the view point is on.
       side = bsp.PointOnSide (viewx, viewy);
+      if (DEBUG)  System.out.println("\tView side: "+ side);
 
       // Recursively divide front space.
-      if (DEBUG)  System.out.println("Enter Front space of "+ bspnum);
+      if (DEBUG)  System.out.println("\tEnter Front space of "+ bspnum);
       RenderBSPNode (bsp.children[side]); 
-      if (DEBUG) System.out.println("Return Front space of "+ bspnum);
+      if (DEBUG) System.out.println("\tReturn Front space of "+ bspnum);
       
       // Possibly divide back space.
       
       if (CheckBBox (bsp.bbox[side^1].bbox)){
-          if (DEBUG) System.out.println("Enter Back space of "+bspnum);
+          if (DEBUG) System.out.println("\tEnter Back space of "+bspnum);
           RenderBSPNode (bsp.children[side^1]);
-          if (DEBUG) System.out.println("Return Back space of "+bspnum);
+          if (DEBUG) System.out.println("\tReturn Back space of "+bspnum);
       }
   }
 
@@ -1887,7 +1918,6 @@ public class UnifiedRenderer extends RendererState{
               index = MAXLIGHTSCALE-1;
 
               dc_colormap = walllights[index];
-              //dco=index;
               dc_x = rw_x;
               dc_iscale = (int) (0xffffffffL / (long)(0xFFFFFFFFL&rw_scale));
           }
@@ -1902,11 +1932,11 @@ public class UnifiedRenderer extends RendererState{
               dc_source = GetColumn(midtexture,texturecolumn);
               //if (DEBUG) 
                   //System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+rw_x+" and between "+dc_yl+" and "+dc_yh+" maximum allowed "+dc_source.length);
-                  try {
+               //   try {
               colfunc.invoke();
-                  } catch (ArrayIndexOutOfBoundsException e){
-                      //FIXME: enough of that!!! 
-                  }
+                //  } catch (ArrayIndexOutOfBoundsException e){
+                //      //FIXME: enough of that!!! 
+                //  }
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
           }
@@ -2001,7 +2031,7 @@ public class UnifiedRenderer extends RendererState{
        * R_StoreWallRange
        * A wall segment will be drawn
        *  between start and stop pixels (inclusive).
-     * @throws IOException 
+       * @throws IOException 
        */
       
       public void
@@ -2009,6 +2039,9 @@ public class UnifiedRenderer extends RendererState{
       ( int   start,
         int   stop ) 
       {
+          
+          if (DEBUG) System.out.println("\t\t\t\tStorewallrange called between "+start+" and "+stop);
+          
           int     hyp; //fixed_t
           int     sineval; //fixed_t
           long     distangle, offsetangle; // angle_t
@@ -2034,15 +2067,15 @@ public class UnifiedRenderer extends RendererState{
           linedef.flags |= ML_MAPPED;
           
           // calculate rw_distance for scale calculation
-          rw_normalangle = curline.angle + ANG90;
+          rw_normalangle = addAngles(curline.angle,ANG90);
           offsetangle = Math.abs(rw_normalangle-rw_angle1);
           
           if (offsetangle > ANG90)
           offsetangle = ANG90;
 
-          distangle = ANG90 - offsetangle;
+          distangle = addAngles(ANG90, - offsetangle);
           hyp = PointToDist (curline.v1.x, curline.v1.y);
-          sineval = finesine[(int) (distangle>>>ANGLETOFINESHIFT)];
+          sineval = finesine(distangle);
           rw_distance = FixedMul (hyp, sineval);
               
           
@@ -2262,7 +2295,7 @@ public class UnifiedRenderer extends RendererState{
 
           if (segtextured)
           {
-          offsetangle = (rw_normalangle-rw_angle1)&BITS32;
+          offsetangle = addAngles(rw_normalangle,-rw_angle1);
           
           if (offsetangle > ANG180)
               offsetangle = (-offsetangle)&BITS32;
@@ -2274,11 +2307,11 @@ public class UnifiedRenderer extends RendererState{
           rw_offset = FixedMul (hyp, sineval);
 
           // We can do that if angles are "bonified" at this point.
-          if (rw_normalangle-rw_angle1 < ANG180)
+          if (addAngles(rw_normalangle,-rw_angle1 )< ANG180)
               rw_offset = -rw_offset;
 
           rw_offset += sidedef.textureoffset + curline.offset;
-          rw_centerangle = ANG90 + viewangle - rw_normalangle;
+          rw_centerangle = addAngles((ANG90 + viewangle), - rw_normalangle);
           
           // calculate light table
           //  use different light tables
@@ -2360,39 +2393,29 @@ public class UnifiedRenderer extends RendererState{
 
           
           // save sprite clipping info ... no top clipping?
-          if ( ((seg.silhouette & SIL_TOP)!=0 || maskedtexture)
+          if ( (C2JUtils.flags(seg.silhouette , SIL_TOP) || maskedtexture)
            && seg.nullSprTopClip())
           {
-              if (start>rw_stopx)
-                  System.out.println("SHOULD'T HAPPEN");
-                  else{
 
           //memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
           System.arraycopy(ceilingclip, start, openings, lastopening,  rw_stopx-start);
               
-          seg.setSprTopClipPointer(lastopening - start);
+          seg.setSprTopClip(openings, lastopening - start);
+          //seg.setSprTopClipPointer();
           lastopening += rw_stopx - start;
-                  }
           }
           // no floor clipping?
-          if ( ((seg.silhouette & SIL_BOTTOM)!=0 || maskedtexture)
+          if ( (C2JUtils.flags(seg.silhouette,SIL_BOTTOM) || maskedtexture)
            && seg.nullSprBottomClip())
          {
           //memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
-              if (start>rw_stopx)
-                  if (DEBUG) System.out.println("SHOULD'T HAPPEN");
-              else{
-                  try {
           System.arraycopy(floorclip, start, openings, lastopening,  rw_stopx-start);
-          seg.setSprBottomClipPointer(lastopening - start);
+          seg.setSprBottomClip(openings, lastopening - start);
           lastopening += rw_stopx - start;
-                  } catch (ArrayIndexOutOfBoundsException e){
-                      // FIXME: shit happens.
-                  }
               }
-          }
+          
 
-          if (maskedtexture && (seg.silhouette&SIL_TOP)==0)
+          if (maskedtexture && C2JUtils.flags(seg.silhouette,SIL_TOP))
           {
           seg.silhouette |= SIL_TOP;
           seg.tsilheight = Integer.MIN_VALUE;
@@ -2439,6 +2462,8 @@ public class UnifiedRenderer extends RendererState{
 
       /** To treat as fixed_t */
       int[]           cachedheight=new int[SCREENHEIGHT];
+      
+      
       /** To treat as fixed_t */
       int[]           cacheddistance=new int[SCREENHEIGHT];
       /** To treat as fixed_t */
@@ -2458,19 +2483,22 @@ public class UnifiedRenderer extends RendererState{
       }
 
 
-      //
-      // R_MapPlane
-      //
-      // Uses global vars:
-      //  planeheight
-      //  ds_source
-      //  basexscale
-      //  baseyscale
-      //  viewx
-      //  viewy
-      //
-      // BASIC PRIMITIVE
-      //
+      /**
+       * R_MapPlane
+       *
+       * Called only by R_MakeSpans.
+       * 
+       * Uses global vars:
+       * planeheight
+       *  ds_source
+       *  basexscale
+       *  baseyscale
+       *  viewx
+       *  viewy
+       *
+       * BASIC PRIMITIVE
+       */
+      
       public void
       MapPlane
       ( int       y,
@@ -2523,7 +2551,6 @@ public class UnifiedRenderer extends RendererState{
               index = MAXLIGHTZ-1;
 
           ds_colormap = planezlight[index];
-          //pds_colormap=index;
           }
           
           ds_y = y;
@@ -2535,26 +2562,37 @@ public class UnifiedRenderer extends RendererState{
       }
 
 
-      //
-      // R_ClearPlanes
-      // At begining of frame.
-      //
-      public void ClearPlanes ()
-      {
+      /**
+       * R_ClearPlanes
+       * At begining of frame.
+       * 
+       */
+      
+      
+      private void ClearPlanes ()
+      {              
           int angle;
           
-          // opening / clipping determination
+          /* View planes are cleared at the beginning of 
+           * every plane, by setting them "just outside"
+           * the borders of the screen (-1 and viewheight).
+           * 
+           */
+          
           for (int i=0 ; i<viewwidth ; i++)
           {
           floorclip[i] =(short) viewheight;
           ceilingclip[i] = -1;
           }
 
-          lastvisplane = 1;
-          lastopening = openings[0];
+          // Point to #1 in visplane list? OK... ?!
+          lastvisplane = 1;          
+          
+          // We point back to the first opening of the list openings[0], again.
+          lastopening = 0;
           
           // texture calculation
-          //memset (cachedheight, 0, sizeof(cachedheight));
+          System.arraycopy(BLANKCACHEDHEIGHT,0,cachedheight, 0, BLANKCACHEDHEIGHT.length);
 
           // left to right mapping
           // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
@@ -2630,6 +2668,7 @@ public class UnifiedRenderer extends RendererState{
 
       /**
        * R_CheckPlane
+       * 
        */
       
       public int
@@ -2700,44 +2739,40 @@ public class UnifiedRenderer extends RendererState{
 
       /**
        * R_MakeSpans
+       * 
+       * Called only by DrawPlanes.
+       * 
        */
 
-      public void MakeSpans
-      ( int       x,
-        int       t1,
-        int       b1,
-        int       t2,
-        int       b2 )
-      {
-    	  //t1=C2JUtils.toUnsignedByte(t1);
-          while (t1 < t2 && t1<=b1)
-          {
-          this.MapPlane (t1,spanstart[t1],x-1);
-          t1++;
-          }
-          while (b1 > b2 && b1>=t1)
-          {
-          this.MapPlane (b1,spanstart[b1],x-1);
-          b1--;
-          }
-          
-          while (t2 < t1 && t2<=b2)
-          {
-          spanstart[t2] = x;
-          t2++;
-          }
-          while (b2 > b1 && b2>=t2)
-          {
-          spanstart[b2] = x;
-          b2--;
-          }
-      }
+        public void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+            while (t1 < t2 && t1 <= b1) {
+                this.MapPlane(t1, spanstart[t1], x - 1);
+                t1++;
+            }
+            while (b1 > b2 && b1 >= t1) {
+                this.MapPlane(b1, spanstart[b1], x - 1);
+                b1--;
+            }
+
+            while (t2 < t1 && t2 <= b2) {
+                spanstart[t2] = x;
+                t2++;
+            }
+            while (b2 > b1 && b2 >= t2) {
+                spanstart[b2] = x;
+                b2--;
+            }
+        }
 
 
 
       /**
        * R_DrawPlanes
        * At the end of each frame.
+       * 
+       * This also means that visplanes must have been set BEFORE we called this
+       * function. Therefore, look for errors behind.
+       * 
        * @throws IOException 
        */
       public void DrawPlanes () 
@@ -2775,10 +2810,11 @@ public class UnifiedRenderer extends RendererState{
           {
               dc_iscale = pspriteiscale>>detailshift;
               
-              // Sky is allways drawn full bright,
-              //  i.e. colormaps[0] is used.
-              // Because of this hack, sky is not affected
-              //  by INVUL inverse mapping.
+              /* Sky is allways drawn full bright,
+               * i.e. colormaps[0] is used.
+               * Because of this hack, sky is not affected
+               * by INVUL inverse mapping.
+               */    
               dc_colormap = colormaps[0];
               dc_texturemid = skytexturemid;
               for (x=pln.minx ; x <= pln.maxx ; x++)
@@ -3392,7 +3428,10 @@ public class UnifiedRenderer extends RendererState{
 
       /**
        * R_AddSprites
+       * 
        * During BSP traversal, this adds sprites by sector.
+       * 
+       * 
        */
       public void AddSprites (sector_t sec)
       {
@@ -4464,13 +4503,21 @@ public void VideoErase(int ofs, int count) {
  
  /**
   * R_RenderView
+  * 
+  * As you can guess, this renders the player view of a particular player object.
+  * In practice, it could render the view of any mobj too, provided you adapt the
+  * SetupFrame method (where the viewing variables are set).
+  * 
   */
  
 public void RenderPlayerView (player_t player)
 {   
+    
+  // Viewing variables are set according to the player's mobj. Interesting hacks like
+  // free cameras or monster views can be done.
   SetupFrame (player);
 
-  // Clear buffers.
+  // Clear buffers. 
   MyBSP.ClearClipSegs ();
   MyBSP.ClearDrawSegs ();
   MyPlanes.ClearPlanes ();
@@ -4485,6 +4532,7 @@ public void RenderPlayerView (player_t player)
   // Check for new console commands.
   //NetUpdate ();
   
+  // FIXME: it's buggy as hell.
   MyPlanes.DrawPlanes ();
   
   // Check for new console commands.
@@ -4506,7 +4554,7 @@ public void SetupFrame (player_t player)
  viewplayer = player;
  viewx = player.mo.x;
  viewy = player.mo.y;
- viewangle = player.mo.angle + viewangleoffset;
+ viewangle = addAngles(player.mo.angle , viewangleoffset);
  extralight = player.extralight;
 
  viewz = player.viewz;

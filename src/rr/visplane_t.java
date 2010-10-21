@@ -1,8 +1,14 @@
 package rr;
 import static data.Defines.*;
 import utils.C2JUtils;
+/** Now what is a visplane, anyway?
+ *  Basically, it's a big buffer representing
+ *  a top and a bottom ro
+ * 
+ * @author admin
+ *
+ */
 //
-//Now what is a visplane, anyway?
 //
 
 public class visplane_t{
@@ -38,7 +44,7 @@ public byte      pad4;*/
 
 byte data[];
 
-
+// Hack to allow quick clearing of visplanes.
 protected static byte[] clearvisplane=new byte[SCREENWIDTH];
 
 
@@ -50,13 +56,11 @@ public void clearTop(){
 
 /** "Clear" the bottom with FF's.  */
 public void clearBottom(){
-    System.arraycopy(clearvisplane, 0, this.data, BOTTOMOFFSET, SCREENWIDTH);
-      
+    System.arraycopy(clearvisplane, 0, this.data, BOTTOMOFFSET, SCREENWIDTH);      
 }
 
 public void setTop(int index, byte value){
-    this.data[TOPOFFSET+index]=value;
-    
+    this.data[TOPOFFSET+index]=value;    
 }
 
 public int getTop(int index){
