@@ -5580,14 +5580,14 @@ mobj_t  thing )
         y = trace.y + FixedMul (trace.dy, frac);
         z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
-        if (li.frontsector.ceilingpic == DM.skyflatnum)
+        if (li.frontsector.ceilingpic == R.skyflatnum)
         {
             // don't shoot the sky!
             if (z > li.frontsector.ceilingheight)
             return false;
             
             // it's a sky hack wall
-            if  (li.backsector!=null && li.backsector.ceilingpic == DM.skyflatnum)
+            if  (li.backsector!=null && li.backsector.ceilingpic == R.skyflatnum)
             return false;       
         }
 
@@ -6241,7 +6241,7 @@ mobj_t  thing )
       // explode a missile
       if (ceilingline!=null &&
           ceilingline.backsector!=null &&
-          ceilingline.backsector.ceilingpic == DM.skyflatnum)
+          ceilingline.backsector.ceilingpic == R.skyflatnum)
       {
           // Hack to prevent missiles exploding
           // against the sky.

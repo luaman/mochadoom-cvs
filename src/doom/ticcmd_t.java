@@ -1,6 +1,17 @@
 package doom;
 
-public class ticcmd_t{
+public class ticcmd_t implements DatagramSerializable{
+    
+    // The length datagrams are supposed to have, for full compatibility.
+    
+    public static final int TICCMDLEN=8;
+    
+    // Initializes ticcmd buffer, too.
+    
+    public ticcmd_t(){
+        this.buffer=new byte[TICCMDLEN];
+    }
+    
     /** *2048 for move */
     public byte forwardmove;
 
@@ -13,12 +24,20 @@ public class ticcmd_t{
     /** checks for net game */
     public short consistancy;
     
-    /** MAES: these are unsigned bytes :-( */
+    /** MAES: these are unsigned bytes :-( 
+     *  However over networks, if we wish for vanilla compatibility,
+     *  these must be reduced to 8-bit "chars"
+     * */
 
     public char chatchar, buttons; 
 
     /** replaces G_CmdChecksum (ticcmd_t cmd) */
 
+    /////////////////////////////////////////////
+    
+    // For datagram serialization
+    private byte[] buffer;
+    
     public int getChecksum(ticcmd_t cmd) {
         int sum = 0;
         sum += forwardmove;
@@ -47,5 +66,53 @@ public class ticcmd_t{
          str.append(Integer.toHexString(this.buttons));
          return str.toString();
      }
-    
+
+    @Override
+    public byte[] pack() {
+        buffer[0]=forwardmove;
+        buffer[1]=sidemove;        
+        buffer[2]=(byte) (angleturn>>>8);
+        buffer[3]=(byte) (angleturn&0x00FF);
+        buffer[4]=(byte) (consistancy>>>8);
+        buffer[5]=(byte) (consistancy&0x00FF);
+
+        // We only send 8 bytes because the original length was 8 bytes.
+        buffer[6]=(byte) (chatchar&0x00FF);
+        buffer[7]=(byte) (buttons&0x00FF);
+        
+        return buffer;
+    }
+
+    @Override
+    public void pack(byte[] buf, int offset) {
+        buf[0+offset]=forwardmove;
+        buf[1+offset]=sidemove;        
+        buf[2+offset]=(byte) (angleturn>>>8);
+        buf[3+offset]=(byte) (angleturn&0x00FF);
+        buf[4+offset]=(byte) (consistancy>>>8);
+        buf[5+offset]=(byte) (consistancy&0x00FF);
+
+        // We only send 8 bytes because the original length was 8 bytes.
+        buf[6+offset]=(byte) (chatchar&0x00FF);
+        buf[7+offset]=(byte) (buttons&0x00FF);
+        
+    }
+
+    @Override
+    public void unpack(byte[] buf) {
+        unpack(buf,0);        
+        }
+
+    @Override
+    public void unpack(byte[] buf, int offset) {
+        forwardmove=buf[0+offset];
+        sidemove=   buf[1+offset];        
+        angleturn=(short)(buf[2+offset]<<8|buf[3+offset]);
+        consistancy=(short)(buf[4+offset]<<8|buf[5+offset]);
+        // We blow these up to full chars.
+        chatchar=(char)(0x00FF& buf[6+offset]);
+        buttons=(char) (0x00FF& buf[7+offset]);
+        
+    }
+   
 };

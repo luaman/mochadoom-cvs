@@ -24,6 +24,7 @@ import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import p.LevelLoader;
 import p.UnifiedGameMap;
+import i.DoomStatusAware;
 import i.DoomSystemInterface;
 import m.fixed_t;
 import rr.UnifiedRenderer.BSP;
@@ -33,10 +34,11 @@ import rr.UnifiedRenderer.Things;
 import rr.UnifiedRenderer.colfunc_t;
 import v.DoomVideoRenderer;
 import w.WadLoader;
+import doom.DoomContext;
 import doom.DoomMain;
 import doom.player_t;
 
-public abstract class RendererState {
+public abstract class RendererState implements DoomStatusAware{
 
     //////////////////////////////// STATUS ////////////////
 
@@ -71,5 +73,14 @@ public abstract class RendererState {
     // This is also in DM, but one is enough, really.
     public int skytexture;
     int skytexturemid;
+    
+    public void updateStatus(DoomContext DC){
+        this.DM=DC.DM;
+        this.LL=DC.LL;
+        this.W=DC.W;
+        this.V=DC.V;
+        this.P=DC.P;
+        this.I=DC.I;
+    }
     
 }

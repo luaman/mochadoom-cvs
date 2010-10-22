@@ -20,25 +20,20 @@ import java.util.Arrays;
 
 import m.fixed_t;
 
-import i.DoomSystemInterface;
-import p.LevelLoader;
-import p.MapUtils;
-import p.UnifiedGameMap;
 import p.mobj_t;
 import p.pspdef_t;
 import utils.C2JUtils;
-import v.DoomVideoRenderer;
 import w.DoomBuffer;
-import w.WadLoader;
 import w.name8;
 import data.Defines.GameMode_t;
 import data.Tables;
+import doom.DoomContext;
 import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
 
-public class UnifiedRenderer extends RendererState{
+public class UnifiedRenderer extends RendererState {
     
     private static final boolean DEBUG=false;
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
@@ -2586,7 +2581,7 @@ public class UnifiedRenderer extends RendererState{
           }
 
           // Point to #1 in visplane list? OK... ?!
-          lastvisplane = 1;          
+          lastvisplane = 0;          
           
           // We point back to the first opening of the list openings[0], again.
           lastopening = 0;
@@ -2632,7 +2627,7 @@ public class UnifiedRenderer extends RendererState{
           }
           
           // Find visplane with the desired attributes
-          for (check=0; check<lastvisplane; check++)
+          for (check=0; check<=lastvisplane; check++)
           {
               chk=visplanes[check];
           if (height == chk.height
@@ -5648,6 +5643,14 @@ public void Init ()
    System.out.print("\nR_InitTranslationsTables");
    
    framecount = 0;
+}
+
+
+
+@Override
+public void updateStatus(DoomContext DC) {
+    // TODO Auto-generated method stub
+    
 }
  
   

@@ -59,7 +59,7 @@ public class AWTRenderViewTester {
         	
     // Create a Wad file loader.
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad", "frugal.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad",/* "frugal.wad"*/});
     
     //Defines.SCREENHEIGHT=HEIGHT;
     //Defines.SCREENHEIGHT=WIDTH;
@@ -136,7 +136,7 @@ public class AWTRenderViewTester {
     AM.updateStatus(DM);
     DM.R.Init();
     DM.P.Init();
-    LL.SetupLevel(1, 2, 0, skill_t.sk_hard);
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     ST.Init();
     M.Init();
     
@@ -152,6 +152,9 @@ public class AWTRenderViewTester {
     DM.automapactive=true;
     DM.R.FillBackScreen();
     DM.R.DrawViewBorder();
+    
+    int ox=DM.players[0].mo.x;
+    int oy=DM.players[0].mo.y;
         
         for (int i=0;i<20000;i++){
             int ba=DM.I.GetTime();
@@ -180,13 +183,13 @@ public class AWTRenderViewTester {
         //AM.Drawer();
         ST.Ticker();        
         DM.players[0].viewz=(40)<<16;
-        //DM.players[0].mo.x+=0x10000;
-        //DM.players[0].mo.y+=0x100000;
-       DM.players[0].mo.angle=(long)(i* 0x090000L)&0xFFFFFFFFL;
+        DM.players[0].mo.x=ox+(int) (665535*Math.sin(2*Math.PI*i/20000.0));
+        DM.players[0].mo.y=oy+(int) (665535*Math.cos(2*Math.PI*i/20000.0));
+        DM.players[0].mo.angle=(long)(i* 0x1000000L)&0xFFFFFFFFL;
        //System.out.println(">>>>>>>>>>>>>>>>>> VIEW ANGLE "+360.0*(DM.players[0].mo.angle>>19)/8192.0); 
        
         DM.R.RenderPlayerView(DM.players[0]);
-        ST.Drawer(false,true);
+        //ST.Drawer(false,true);
         //System.out.println("Rendered"+DM.gametic);
         
         DM.gametic++;
@@ -197,10 +200,10 @@ public class AWTRenderViewTester {
         	    System.out.println(i +" frames in " +((b-a)/1e09) +" = "+i/((b-a)/1e09) + " fps");
         }
         System.out.print(frame.processEvents());
-        /*while (ba-DM.I.GetTime()==0){
+        while (ba-DM.I.GetTime()==0){
             //frame.setVisible(true);
             Thread.sleep(10);               
-        }*/
+        }
         }
             } catch (Exception e){
                 e.printStackTrace();

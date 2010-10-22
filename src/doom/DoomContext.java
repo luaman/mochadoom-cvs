@@ -3,6 +3,7 @@ package doom;
 import f.Finale;
 import f.Wiper;
 import hu.HU;
+import i.DoomNetworkInterface;
 import i.DoomSystemInterface;
 import i.DoomVideoInterface;
 import m.DoomMenu;
@@ -40,6 +41,8 @@ public class DoomContext {
     public DoomVideoInterface VI;
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
+    public DoomNetworkInterface DNI;
+    public DoomNet DN;    
     public LevelLoader LL;
     public DoomMenu M;
     public Actions P;

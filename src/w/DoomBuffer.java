@@ -188,6 +188,21 @@ public class DoomBuffer implements CacheableDoomObject  {
         this.buffer.rewind();
         
     }
-    
 
+    public static int getBEInt(byte[] buf) {        
+        return (buf[0]<<24|buf[1]<<16|buf[2]<<8|buf[3]);
+    }
+    
+    public static int getLEInt(byte[] buf) {        
+        return (buf[3]<<24|buf[2]<<16|buf[1]<<24|buf[0]);
+    }
+    
+    public static short getBEShort(byte[] buf) {        
+        return (short) (buf[0]<<8|buf[1]);
+    }
+    
+    public static short getLEShort(byte[] buf) {        
+        return (short) (buf[0]<<8|buf[1]);
+    }
+    
 }

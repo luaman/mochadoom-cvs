@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomNet.java,v 1.3 2010/09/27 02:27:29 velktron Exp $
+// $Id: DoomNet.java,v 1.4 2010/10/22 16:22:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: DoomNet.java,v $
+// Revision 1.4  2010/10/22 16:22:44  velktron
+// Renderer works stably enough but a ton of bleeding. Started working on netcode.
+//
 // Revision 1.3  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -57,7 +60,7 @@ package doom;
 //-----------------------------------------------------------------------------
 
 
-//static const char rcsid[] = "$Id: DoomNet.java,v 1.3 2010/09/27 02:27:29 velktron Exp $";
+//static const char rcsid[] = "$Id: DoomNet.java,v 1.4 2010/10/22 16:22:44 velktron Exp $";
 
 
 //#include "m_menu.h"
@@ -67,6 +70,7 @@ package doom;
 //#include "g_game.h"
 import static data.Defines.*;
 import static data.Limits.*;
+import static doom.NetConsts.*;
 import static utils.C2JUtils.*;
 //
 //Network play related stuff.
@@ -79,22 +83,7 @@ import static utils.C2JUtils.*;
 
 public class DoomNet extends DoomStatus{
 
-protected static int	NCMD_EXIT=		0x80000000;
-protected static int   	NCMD_RETRANSMIT		=0x40000000;
-protected static int   	NCMD_SETUP		=0x20000000;
-protected static int   NCMD_KILL	=	0x10000000;	// kill game
-protected static int   	NCMD_CHECKSUM	= 	0x0fffffff;
 
-protected static int  DOOMCOM_ID =     0x12345678;
-
-
-//Networking and tick handling related. Moved to DEFINES
-//protected static int    BACKUPTICS     = 12;
-
-
-// command_t
-protected  static short CMD_SEND    = 1;
-protected  static short CMD_GET = 2; 
 
 doomcom_t	doomcom;	
 doomdata_t	netbuffer;		// points inside doomcom
@@ -237,17 +226,19 @@ HSendPacket
 	else
 	    realretrans = -1;
 
-	fprintf (debugfile,"send (%i + %i, R %i) [%i] ",
-		 ExpandTics(netbuffer.starttic),
-		 netbuffer.numtics, realretrans, doomcom.datalength);
+	DM.debugfile.writeString("send ("+ExpandTics(netbuffer.starttic)+", "+netbuffer.numtics + ", R "+
+	    realretrans+ "["+ doomcom.datalength+"]");
 	
 	for (i=0 ; i<doomcom.datalength ; i++)
-	    fprintf (debugfile,"%i ",((byte *)netbuffer)[i]);
+	    
+	    // TODO: get a serialized string representation.
+	    DM.debugfile.writeString(netbuffer.toString());
 
-	fprintf (debugfile,"\n");
+	DM.debugfile.writeChar('\n');
+
     }
 
-    I_NetCmd ();
+    I.NetCmd ();
 }
 
 //

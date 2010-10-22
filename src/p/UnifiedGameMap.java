@@ -491,7 +491,7 @@ public class UnifiedGameMap {
     // C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
     int intercept_p;
 
-    public divline_t trace;
+    public divline_t trace=new divline_t();
 
     boolean earlyout;
 

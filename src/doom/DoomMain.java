@@ -65,7 +65,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.13 2010/10/14 18:37:14 velktron Exp $
+// $Id: DoomMain.java,v 1.14 2010/10/22 16:22:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,6 +80,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.14  2010/10/22 16:22:44  velktron
+// Renderer works stably enough but a ton of bleeding. Started working on netcode.
+//
 // Revision 1.13  2010/10/14 18:37:14  velktron
 // Rendering kinda works. Wow.
 //
@@ -153,7 +156,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.13 2010/10/14 18:37:14 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.14 2010/10/22 16:22:44 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -334,7 +337,7 @@ public void Display ()
     
     // draw the view directly
     if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic))
-	//R.RenderPlayerView (players[displayplayer]);
+	R.RenderPlayerView (players[displayplayer]);
 
     if (gamestate == gamestate_t.GS_LEVEL && eval(gametic))
 	HU.Drawer ();
@@ -443,7 +446,7 @@ public void DoomLoop ()
     }
     }
 	
-	 AM.Start();
+	AM.Start();
     while (true)
     {
 	// frame syncronous IO operations
@@ -1888,7 +1891,7 @@ public void Start ()
   * Called at the start.
   * Called by the game initialization functions.
   *
-  * MAES: looks like dead code.
+  * MAES: looks like dead code. It's never called.
   *
   */
  
@@ -2910,6 +2913,8 @@ public void Init(){
     this.P.updateStatus(this);
     this.M.updateStatus(this);
     this.HU.updateStatus(this);
+    this.R.updateStatus(this);
+    
     
 }
 
