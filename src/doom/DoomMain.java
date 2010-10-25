@@ -1,6 +1,7 @@
 package doom;
 
 import i.AWTDoom;
+import i.DoomNetworkInterface;
 import i.DoomSystem;
 import i.DoomSystemInterface;
 import i.DoomVideoInterface;
@@ -22,6 +23,14 @@ import g.DoomSaveGame;
 import hu.HU;
 import m.Menu;
 import m.random;
+import static doom.NetConsts.CMD_GET;
+import static doom.NetConsts.CMD_SEND;
+import static doom.NetConsts.DOOMCOM_ID;
+import static doom.NetConsts.NCMD_CHECKSUM;
+import static doom.NetConsts.NCMD_EXIT;
+import static doom.NetConsts.NCMD_KILL;
+import static doom.NetConsts.NCMD_RETRANSMIT;
+import static doom.NetConsts.NCMD_SETUP;
 import static doom.englsh.*;
 import data.dstrings;
 import data.mapthing_t;
@@ -34,7 +43,10 @@ import data.Defines.gamestate_t;
 import data.Defines.skill_t;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
+import static data.Defines.BACKUPTICS;
+import static data.Defines.KEY_ESCAPE;
 import static data.Defines.NORMALUNIX;
+import static data.Defines.VERSION;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.DoomSoundInterface;
@@ -65,7 +77,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.14 2010/10/22 16:22:44 velktron Exp $
+// $Id: DoomMain.java,v 1.15 2010/10/25 15:57:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -80,6 +92,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.15  2010/10/25 15:57:19  velktron
+// Work on netcode...needs moar though.
+//
 // Revision 1.14  2010/10/22 16:22:44  velktron
 // Renderer works stably enough but a ton of bleeding. Started working on netcode.
 //
@@ -156,7 +171,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.14 2010/10/22 16:22:44 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.15 2010/10/25 15:57:19 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
@@ -2820,7 +2835,7 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
  =================== 
  */ 
   
- private boolean CheckDemoStatus () 
+ boolean CheckDemoStatus () 
  { 
      int             endtime; 
       
@@ -2967,5 +2982,846 @@ public void CheckNetGame ()
     	playeringame[i] = true;
 }
 
+/** Since it's so intimately tied, it's less troublesome to just keep everything in a single file
+ * 
+ * @author Velktron
+ *
+ */
+
+class DoomNet {
+    
+doomcom_t   doomcom;    
+doomdata_t  netbuffer;      // points inside doomcom
+DoomFile debugfile;
+StringBuilder sb;
+
+
+//
+// NETWORKING
+//
+// gametic is the tic about to (or currently being) run
+// maketic is the tick that hasn't had control made for it yet
+// nettics[] has the maketics for all players 
+//
+// a gametic cannot be run until nettics[] > gametic for all players
+//
+public static int   RESENDCOUNT =10;
+public static int   PL_DRONE    =0x80;  // bit flag in doomdata->player
+
+ticcmd_t[]  localcmds= new ticcmd_t[BACKUPTICS];
+
+ticcmd_t [][]       netcmds=new ticcmd_t [MAXPLAYERS][BACKUPTICS];
+int[]           nettics=new int[MAXNETNODES];
+boolean[]       nodeingame=new boolean[MAXNETNODES];        // set false as nodes leave game
+boolean[]       remoteresend=new boolean[MAXNETNODES];      // set when local needs tics
+int[]       resendto=new int[MAXNETNODES];          // set when remote needs tics
+int[]       resendcount=new int[MAXNETNODES];
+
+int[]       nodeforplayer=new int[MAXPLAYERS];
+
+int             maketic;
+int     lastnettic;
+int     skiptics;
+int     ticdup;     
+int     maxsend= BACKUPTICS/(2*ticdup)-1;
+
+
+//void D_ProcessEvents (void); 
+//void G_BuildTiccmd (ticcmd_t *cmd); 
+//void D_DoAdvanceDemo (void);
+ 
+boolean     reboundpacket;
+doomdata_t  reboundstore;
+
+
+
+// 
+//
+//123
+
+/** MAES: interesting. After testing it was found to return the following size:
+ *  (8*(netbuffer.numtics+1));
+ */
+
+int NetbufferSize ()
+{
+//    return (int)(((doomdata_t)0).cmds[netbuffer.numtics]);
+    return (8*(netbuffer.numtics+1));
+}
+
+
+protected long NetbufferChecksum ()
+{
+    long        c;
+    int     i,l;
+
+    c = 0x1234567L;
+
+    // FIXME -endianess?
+if (NORMALUNIX){
+    return 0;           // byte order problems
+
+
+    /* Here it was trying to get the length of a doomdata_t struct up to retransmit from.
+     * l = (NetbufferSize () - (int)&(((doomdata_t *)0)->retransmitfrom))/4;
+     * (int)&(((doomdata_t *)0)->retransmitfrom) evaluates to "4"
+     * Therefore, l= (netbuffersize - 4)/4
+     * 
+     */
+    l = (NetbufferSize () - 4)/4;
+    for (i=0 ; i<l ; i++)
+    c += 0;// TODO: (netbuffer->retransmitfrom)[i] * (i+1);
+
+    return c & NCMD_CHECKSUM;
+}
+}
+//
+//
+//
+protected int ExpandTics (int low)
+{
+    int delta;
+    
+    delta = low - (maketic&0xff);
+    
+    if (delta >= -64 && delta <= 64)
+    return (maketic&~0xff) + low;
+    if (delta > 64)
+    return (maketic&~0xff) - 256 + low;
+    if (delta < -64)
+    return (maketic&~0xff) + 256 + low;
+        
+    I.Error ("ExpandTics: strange value %i at maketic %i",low,maketic);
+    return 0;
+}
+
+
+
+//
+// HSendPacket
+//
+void
+HSendPacket
+ (int   node,
+  int   flags )
+{
+    netbuffer.checksum = (int) (NetbufferChecksum () | flags);
+
+    if (node==0)
+    {
+    reboundstore = netbuffer;
+    reboundpacket = true;
+    return;
+    }
+
+    if (DM.demoplayback)
+    return;
+
+    if (!DM.netgame)
+    I.Error ("Tried to transmit to another node");
+        
+    doomcom.command = CMD_SEND;
+    doomcom.remotenode = (short) node;
+    doomcom.datalength = (short) NetbufferSize ();
+    
+    if (DM.debugfile!=null)
+    {
+    int     i;
+    int     realretrans;
+    if (flags(netbuffer.checksum , NCMD_RETRANSMIT))
+        realretrans = ExpandTics (netbuffer.retransmitfrom);
+    else
+        realretrans = -1;
+
+    DM.debugfile.writeString("send ("+ExpandTics(netbuffer.starttic)+", "+netbuffer.numtics + ", R "+
+        realretrans+ "["+ doomcom.datalength+"]");
+    
+    for (i=0 ; i<doomcom.datalength ; i++)
+        
+        // TODO: get a serialized string representation.
+        DM.debugfile.writeString(netbuffer.toString());
+
+    DM.debugfile.writeChar('\n');
+
+    }
+
+    DNI.NetCmd ();
+}
+
+//
+// HGetPacket
+// Returns false if no packet is waiting
+//
+private boolean HGetPacket ()
+{   
+    // Fugly way of "clearing" the buffer.
+    sb.setLength(0);
+    if (reboundpacket)
+    {
+    // FIXME: MAES: this looks like a struct copy 
+    *netbuffer = reboundstore;
+    doomcom.remotenode = 0;
+    reboundpacket = false;
+    return true;
+    }
+
+    // If not actually a netgame (e.g. single player, demo) return.
+    if (!DM.netgame)
+    return false;
+
+    if (DM.demoplayback)
+    return false;
+        
+    doomcom.command = CMD_GET;
+    DNI.NetCmd ();
+    
+    // Invalid node?
+    if (doomcom.remotenode == -1)
+    return false;
+
+    if (doomcom.datalength != NetbufferSize ())
+    {
+    if (eval(debugfile))
+        debugfile.writeString("bad packet length "+doomcom.datalength+"\n");
+        return false;
+    }
+    
+    if (NetbufferChecksum () != (netbuffer.checksum&NCMD_CHECKSUM) )
+    {
+    if (eval(debugfile))
+        debugfile.writeString("bad packet checksum\n");
+    return false;
+    }
+
+    if (eval(debugfile))
+    {
+    int     realretrans;
+    int i;
+            
+    if (flags(netbuffer.checksum , NCMD_SETUP))
+        debugfile.writeString("setup packet\n");
+    else
+    {
+        if (flags(netbuffer.checksum , NCMD_RETRANSMIT))
+        realretrans = ExpandTics (netbuffer.retransmitfrom);
+        else
+        realretrans = -1;
+        
+        sb.append("get ");
+        sb.append(doomcom.remotenode);
+        sb.append(" = (");
+        sb.append(ExpandTics(netbuffer.starttic));
+        sb.append(" + ");
+        sb.append(netbuffer.numtics);
+        sb.append(", R ");
+        sb.append(realretrans);
+        sb.append(")[");
+        sb.append(doomcom.datalength);
+        sb.append("]");
+        
+        debugfile.writeString(sb.toString());
+        
+        // Trick: force update of internal buffer.
+        netbuffer.pack();
+        
+        /* TODO: Could it be actually writing stuff beyond the boundaries of a single doomdata object?
+         * A doomcom object has a lot of header info, and a single "raw" data placeholder, which by now
+         * should be inside netbuffer....right?
+         * 
+         * 
+         */
+        
+        
+        for (i=0 ; i<doomcom.datalength ; i++)
+            debugfile.writeString(Integer.toHexString(netbuffer.buffer[i]));
+            debugfile.writeChar( '\n');
+            }
+    }
+    return true;    
+}
+
+
+//
+// GetPackets
+//
+StringBuilder exitmsg=new StringBuilder(80);
+
+public void GetPackets ()
+{
+    int     netconsole;
+    int     netnode;
+    ticcmd_t    src, dest;
+    int     realend;
+    int     realstart;
+             
+    while ( HGetPacket() )
+    {
+    if (flags(netbuffer.checksum , NCMD_SETUP))
+        continue;       // extra setup packet
+            
+    netconsole = netbuffer.player & ~PL_DRONE;
+    netnode = doomcom.remotenode;
+    
+    // to save bytes, only the low byte of tic numbers are sent
+    // Figure out what the rest of the bytes are
+    realstart = ExpandTics (netbuffer.starttic);        
+    realend = (realstart+netbuffer.numtics);
+    
+    // check for exiting the game
+    if (flags(netbuffer.checksum , NCMD_EXIT))
+    {
+        if (!nodeingame[netnode])
+        continue;
+        nodeingame[netnode] = false;
+        playeringame[netconsole] = false;
+        exitmsg.insert(0, "Player 1 left the game");
+        exitmsg.setCharAt(7,(char) (exitmsg.charAt(7)+netconsole));
+        players[consoleplayer].message = exitmsg.toString();
+        if (demorecording)
+        DM.CheckDemoStatus ();
+        continue;
+    }
+    
+    // check for a remote game kill
+    if (flags(netbuffer.checksum , NCMD_KILL))
+        I.Error ("Killed by network driver");
+
+    nodeforplayer[netconsole] = netnode;
+    
+    // check for retransmit request
+    if ( resendcount[netnode] <= 0 
+         && flags(netbuffer.checksum , NCMD_RETRANSMIT) )
+    {
+        resendto[netnode] = ExpandTics(netbuffer.retransmitfrom);
+        if (eval(debugfile)){
+        sb.setLength(0);
+        sb.append("retransmit from ");
+        sb.append(resendto[netnode]);
+        sb.append('\n');
+        debugfile.writeString(sb.toString());
+        resendcount[netnode] = RESENDCOUNT;
+        }
+    }
+    else
+        resendcount[netnode]--;
+    
+    // check for out of order / duplicated packet       
+    if (realend == nettics[netnode])
+        continue;
+            
+    if (realend < nettics[netnode])
+    {
+        if (eval(debugfile)){
+            sb.setLength(0);
+            sb.append("out of order packet (");
+            sb.append(realstart);
+            sb.append(" + ");
+            sb.append(netbuffer.numtics);
+           sb.append(")\n");
+           debugfile.writeString(sb.toString());
+           }
+           continue;
+    }
+    
+    // check for a missed packet
+    if (realstart > nettics[netnode])
+    {
+        // stop processing until the other system resends the missed tics
+        if (eval(debugfile)) {
+            sb.setLength(0);
+            sb.append("missed tics from ");
+            sb.append(netnode);
+            sb.append(" (");
+            sb.append(realstart);
+            sb.append(" - ");
+            sb.append(nettics[netnode]);
+           sb.append(")\n");
+           debugfile.writeString(sb.toString());
+        }
+        remoteresend[netnode] = true;
+        continue;
+    }
+
+    // update command store from the packet
+        {
+        int     start;
+
+        remoteresend[netnode] = false;
+        
+        start = nettics[netnode] - realstart;       
+        src = netbuffer.cmds[start];
+
+        while (nettics[netnode] < realend)
+        {
+        dest = netcmds[netconsole][nettics[netnode]%BACKUPTICS];
+        nettics[netnode]++;
+        // MAES: this is a struct copy.
+        src.copyTo(dest);
+        // Advance src
+        start++;
+        }
+    }
+    }
+}
+
+
+//
+// NetUpdate
+// Builds ticcmds for console player,
+// sends out a packet
+//
+int      gametime;
+
+public void NetUpdate ()
+{
+    int             nowtime;
+    int             newtics;
+    int             i,j;
+    int             realstart;
+    int             gameticdiv;
+    
+    // check time
+    nowtime = I.GetTime ()/ticdup;
+    newtics = nowtime - gametime;
+    gametime = nowtime;
+    
+    if (newtics <= 0)   // nothing new to update
+    goto listen; 
+
+    if (skiptics <= newtics)
+    {
+    newtics -= skiptics;
+    skiptics = 0;
+    }
+    else
+    {
+    skiptics -= newtics;
+    newtics = 0;
+    }
+    
+        
+    netbuffer.player = (byte) consoleplayer;
+    
+    // build new ticcmds for console player
+    gameticdiv = gametic/ticdup;
+    for (i=0 ; i<newtics ; i++)
+    {
+    VI.StartTic ();
+    ProcessEvents ();
+    if (maketic - gameticdiv >= BACKUPTICS/2-1)
+        break;          // can't hold any more
+    
+    //printf ("mk:%i ",maketic);
+    BuildTiccmd (localcmds[maketic%BACKUPTICS]);
+    maketic++;
+    }
+
+
+    if (singletics)
+    return;         // singletic update is syncronous
+    
+    // send the packet to the other nodes
+    for (i=0 ; i<doomcom.numnodes ; i++)
+    if (nodeingame[i])
+    {
+        netbuffer.starttic = (byte) (realstart = resendto[i]);
+        netbuffer.numtics = (byte) (maketic - realstart);
+        if (netbuffer.numtics > BACKUPTICS)
+        I.Error ("NetUpdate: netbuffer.numtics > BACKUPTICS");
+
+        resendto[i] = maketic - doomcom.extratics;
+
+        for (j=0 ; j< netbuffer.numtics ; j++)
+        netbuffer.cmds[j] = 
+            localcmds[(realstart+j)%BACKUPTICS];
+                    
+        if (remoteresend[i])
+        {
+        netbuffer.retransmitfrom = (byte) nettics[i];
+        HSendPacket (i, NCMD_RETRANSMIT);
+        }
+        else
+        {
+        netbuffer.retransmitfrom = 0;
+        HSendPacket (i, 0);
+        }
+    }
+    
+    // listen for other packets
+  listen:
+    GetPackets ();
+}
+
+
+
+//
+// CheckAbort
+//
+private void CheckAbort ()
+{
+    event_t *ev;
+    int     stoptic;
+    
+    stoptic = I_GetTime () + 2; 
+    while (I_GetTime() < stoptic) 
+    I_StartTic (); 
+    
+    I_StartTic ();
+    for ( ; eventtail != eventhead 
+          ; eventtail = (++eventtail)&(MAXEVENTS-1) ) 
+    { 
+    ev = &events[eventtail]; 
+    if (ev.type == ev_keydown && ev.data1 == KEY_ESCAPE)
+        I_Error ("Network game synchronization aborted.");
+    } 
+}
+
+boolean[] gotinfo=new boolean[MAXNETNODES];
+
+//
+// D_ArbitrateNetStart
+//
+public void ArbitrateNetStart ()
+{
+    int     i;
+    autostart = true;
+    
+    // Clear it up...
+    Arrays.fill(gotinfo,false);
+    
+    if (doomcom.consoleplayer!=0)
+    {
+    // listen for setup info from key player
+    System.out.println("listening for network start info...\n");
+    while (true)
+    {
+        CheckAbort ();
+        if (!HGetPacket ())
+        continue;
+        if (flags(netbuffer.checksum , NCMD_SETUP))
+        {
+        if (netbuffer.player != VERSION)
+            I.Error ("Different DOOM versions cannot play a net game!");
+        startskill = skill_t.values()[netbuffer.retransmitfrom & 15];
+        
+        // Deathmatch
+        if (((netbuffer.retransmitfrom & 0xc0) >> 6)==1) 
+        deathmatch = true;
+        else
+            // Cooperative
+              if (((netbuffer.retransmitfrom & 0xc0) >> 6)==2) 
+                  altdeath = true;
+
+        nomonsters = (netbuffer.retransmitfrom & 0x20) > 0;
+        respawnparm = (netbuffer.retransmitfrom & 0x10) > 0;
+        startmap = netbuffer.starttic & 0x3f;
+        startepisode = netbuffer.starttic >> 6;
+        return;
+        }
+    }
+    }
+    else
+    {
+    // key player, send the setup info
+    System.out.println("sending network start info...\n");
+    do
+    {
+        CheckAbort ();
+        for (i=0 ; i<doomcom.numnodes ; i++)
+        {
+        netbuffer.retransmitfrom = (byte) startskill.ordinal();
+        if (deathmatch)
+            netbuffer.retransmitfrom |= (1<<6);
+        else
+          if (altdeath)
+                netbuffer.retransmitfrom |= (2<<6);
+        if (nomonsters)
+            netbuffer.retransmitfrom |= 0x20;
+        if (respawnparm)
+            netbuffer.retransmitfrom |= 0x10;
+        netbuffer.starttic = (byte) (startepisode * 64 + startmap);
+        netbuffer.player = VERSION;
+        netbuffer.numtics = 0;
+        HSendPacket (i, NCMD_SETUP);
+        }
+
+//#if 1
+        for(i = 10 ; (i>0)  &&  HGetPacket(); --i)
+        {
+        if((netbuffer.player&0x7f) < MAXNETNODES)
+            gotinfo[netbuffer.player&0x7f] = true;
+        }
+/*
+        while (HGetPacket ())
+        {
+        gotinfo[netbuffer.player&0x7f] = true;
+        }
+ */
+
+        for (i=1 ; i<doomcom.numnodes ; i++)
+        if (!gotinfo[i])
+            break;
+    } while (i < doomcom.numnodes);
+    }
+}
+
+//
+// D_CheckNetGame
+// Works out player numbers among the net participants
+//
+
+private void CheckNetGame ()
+{
+    int             i;
+    
+    for (i=0 ; i<MAXNETNODES ; i++)
+    {
+    nodeingame[i] = false;
+        nettics[i] = 0;
+    remoteresend[i] = false;    // set when local needs tics
+    resendto[i] = 0;        // which tic to start sending
+    }
+    
+    // I_InitNetwork sets doomcom and netgame
+    DNI.InitNetwork ();
+    if (doomcom.id != DOOMCOM_ID)
+    I.Error ("Doomcom buffer invalid!");
+    
+    netbuffer = doomcom.data;
+    consoleplayer = displayplayer = doomcom.consoleplayer;
+    if (netgame)
+    ArbitrateNetStart ();
+
+//    printf ("startskill %i  deathmatch: %i  startmap: %i  startepisode: %i\n",
+//        startskill, deathmatch, startmap, startepisode);
+
+    {
+        sb.setLength(0);
+        sb.append("startskill ");
+        sb.append(startskill);
+        sb.append("  deathmatch: ");
+        sb.append(deathmatch);
+        sb.append("  startmap: ");
+        sb.append(startmap);
+        sb.append("  startepisode: ");
+        sb.append(startepisode);
+        sb.append('\n');
+        System.out.println(sb);
+    }
+    
+    
+    // read values out of doomcom
+    ticdup = doomcom.ticdup;
+    maxsend = BACKUPTICS/(2*ticdup)-1;
+    if (maxsend<1)
+    maxsend = 1;
+            
+    for (i=0 ; i<doomcom.numplayers ; i++)
+    playeringame[i] = true;
+    for (i=0 ; i<doomcom.numnodes ; i++)
+    nodeingame[i] = true;
+    
+    //printf ("player %i of %i (%i nodes)\n",
+    //    consoleplayer+1, doomcom.numplayers, doomcom.numnodes);
+
+    {
+        sb.setLength(0);
+        sb.append("startskill ");
+        sb.append(startskill);
+        sb.append("  deathmatch: ");
+        sb.append(deathmatch);
+        sb.append("  startmap: ");
+        sb.append(startmap);
+        sb.append("  startepisode: ");
+        sb.append(startepisode);
+        sb.append('\n');
+        System.out.println(sb);
+    }
+    
+}
+
+
+//
+// D_QuitNetGame
+// Called before quitting to leave a net game
+// without hanging the other players
+//
+public void QuitNetGame ()
+{
+    int             i, j;
+    
+    if (eval(debugfile))
+        try {
+            debugfile.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        
+    if (!netgame || !usergame || consoleplayer == -1 || demoplayback)
+    return;
+    
+    // send a bunch of packets for security
+    netbuffer.player = (byte) consoleplayer;
+    netbuffer.numtics = 0;
+    for (i=0 ; i<4 ; i++)
+    {
+    for (j=1 ; j<doomcom.numnodes ; j++)
+        if (nodeingame[j])
+        HSendPacket (j, NCMD_EXIT);
+    I.WaitVBL (1);
+    }
+}
+
+
+
+//
+// TryRunTics
+//
+int[] frametics=new int[4];
+int frameon;
+boolean[] frameskip=new boolean[4];
+int oldnettics;
+int  oldentertics;
+
+public void TryRunTics ()
+{
+    int     i;
+    int     lowtic;
+    int     entertic;
+
+    int     realtics;
+    int     availabletics;
+    int     counts;
+    int     numplaying;
+    
+    // get real tics        
+    entertic = I.GetTime ()/ticdup;
+    realtics = entertic - oldentertics;
+    oldentertics = entertic;
+    
+    // get available tics
+    NetUpdate ();
+    
+    lowtic = MAXINT;
+    numplaying = 0;
+    for (i=0 ; i<doomcom.numnodes ; i++)
+    {
+    if (nodeingame[i])
+    {
+        numplaying++;
+        if (nettics[i] < lowtic)
+        lowtic = nettics[i];
+    }
+    }
+    availabletics = lowtic - gametic/ticdup;
+    
+    // decide how many tics to run
+    if (realtics < availabletics-1)
+    counts = realtics+1;
+    else if (realtics < availabletics)
+    counts = realtics;
+    else
+    counts = availabletics;
+    
+    if (counts < 1)
+    counts = 1;
+        
+    frameon++;
+
+    if (eval(debugfile)){
+        sb.setLength(0);
+        sb.append( "=======real: ");
+        sb.append(realtics);
+        sb.append("  avail: ");
+        sb.append(availabletics);
+        sb.append("  game: ");
+        sb.append(counts);
+        sb.append("\n");
+        debugfile.writeString(sb.toString());
+    }
+
+    if (!demoplayback)
+    {   
+    // ideally nettics[0] should be 1 - 3 tics above lowtic
+    // if we are consistantly slower, speed up time
+    for (i=0 ; i<MAXPLAYERS ; i++)
+        if (playeringame[i])
+        break;
+    if (consoleplayer == i)
+    {
+        // the key player does not adapt
+    }
+    else
+    {
+        if (nettics[0] <= nettics[nodeforplayer[i]])
+        {
+        gametime--;
+        // printf ("-");
+        }
+        frameskip[frameon&3] = oldnettics > nettics[nodeforplayer[i]];
+        oldnettics = nettics[0];
+        if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3])
+        {
+        skiptics = 1;
+        // printf ("+");
+        }
+    }
+    }// demoplayback
+    
+    // wait for new tics if needed
+    while (lowtic < gametic/ticdup + counts)    
+    {
+    NetUpdate ();   
+    lowtic = MAXINT;
+    
+    for (i=0 ; i<doomcom.numnodes ; i++)
+        if (nodeingame[i] && nettics[i] < lowtic)
+        lowtic = nettics[i];
+    
+    if (lowtic < gametic/ticdup)
+        I.Error ("TryRunTics: lowtic < gametic");
+                
+    // don't stay in here forever -- give the menu a chance to work
+    if (I.GetTime ()/ticdup - entertic >= 20)
+    {
+        M.Ticker ();
+        return;
+    } 
+    }
+    
+    // run the count * ticdup dics
+    while (counts-->0)
+    {
+    for (i=0 ; i<ticdup ; i++)
+    {
+        if (gametic/ticdup > lowtic)
+        I.Error ("gametic>lowtic");
+        if (advancedemo)
+        DM.DoAdvanceDemo ();
+        M.Ticker ();
+        Ticker ();
+        gametic++;
+        
+        // modify command for duplicated tics
+        if (i != ticdup-1)
+        {
+        ticcmd_t    cmd;
+        int         buf;
+        int         j;
+                
+        buf = (gametic/ticdup)%BACKUPTICS; 
+        for (j=0 ; j<MAXPLAYERS ; j++)
+        {
+            cmd = netcmds[j][buf];
+            cmd.chatchar = 0;
+            if (flags(cmd.buttons , BT_SPECIAL))
+            cmd.buttons = 0;
+        }
+        }
+    }
+    NetUpdate ();   // check for new console commands
+    }
+}
+}
 
 }

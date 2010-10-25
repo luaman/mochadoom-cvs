@@ -23,7 +23,7 @@ public interface DatagramSerializable {
         
         /** Packs object into a byte array suitable to send over 
          * datagram networks. The array is supplied externally 
-         * (good for daisy-chaining stuff)
+         * (good for daisy-chaining stuff into a single packet).
          * 
          * @return
          */
@@ -31,7 +31,8 @@ public interface DatagramSerializable {
         public void pack(byte[] buf, int offset);
         
         /** Deserializes an object from a given byte buffer.
-         *  Only the first (sizeof) bytes will be used.
+         *  Only the first (sizeof) bytes will be used, dependant
+         *  on each object's implementation.
          * 
          */
         
@@ -39,7 +40,8 @@ public interface DatagramSerializable {
         
         /** Deserializes an object from a given byte buffer.
          *  Only the first (sizeof) bytes will be used, starting
-         *  from a specified offset. 
+         *  from a specified offset, dependant on each object's 
+         *  implementation.
          */
         public void unpack(byte[] buf, int offset);
         

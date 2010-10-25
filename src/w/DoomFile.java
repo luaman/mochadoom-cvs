@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.7 2010/09/22 16:40:02 velktron Exp $
+//$Id: DoomFile.java,v 1.8 2010/10/25 15:57:19 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -156,15 +156,19 @@ public class DoomFile extends RandomAccessFile {
 
    
    /** Writes a length specified string to a file. */
-   public void writeString(String s) throws IOException {
+   public void writeString(String s) {
        if (s == null) {
            writeInt(-1);
            return;
        }
 
        writeInt(s.length());
+       try { 
        if (s.length() != 0)
            writeBytes(s);
+       } catch (Exception e){
+           System.err.println("writeString "+s+" to DoomFile failed!");
+       }
    }
 
    /** Writes a String with a specified len to a file.

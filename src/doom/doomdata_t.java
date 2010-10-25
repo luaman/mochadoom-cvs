@@ -12,6 +12,11 @@ public class doomdata_t implements DatagramSerializable {
      // High bit is retransmit request.
      /** MAES: was "unsigned" */
      public int        checksum; 
+     
+     /* CAREFUL!!! Those "bytes" are actually unsigned
+      * 
+      */
+     
      /** Only valid if NCMD_RETRANSMIT. */     
      public byte        retransmitfrom;
      
