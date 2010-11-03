@@ -42,7 +42,7 @@ public class DoomContext {
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
     public DoomNetworkInterface DNI;
-    public DoomNet DN;    
+    public DoomMain.DoomNet DN;    
     public LevelLoader LL;
     public DoomMenu M;
     public Actions P;

@@ -48,7 +48,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.9 2010/09/27 02:27:29 velktron Exp $
+// $Id: LevelLoader.java,v 1.10 2010/11/03 16:48:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +63,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.10  2010/11/03 16:48:04  velktron
+// "Bling" view angles fixed (perhaps related to the "bleeding line bug"?)
+//
 // Revision 1.9  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -128,7 +131,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.9 2010/09/27 02:27:29 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.10 2010/11/03 16:48:04 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -259,7 +262,7 @@ public int bmaporgy;
       li.v1 = vertexes[ml.v1];
       li.v2 = vertexes[ml.v2];
                       
-      li.angle = (ml.angle)<<16;
+      li.angle = ((ml.angle)<<16)&0xFFFFFFFFL;
       li.offset = (ml.offset)<<16;
       linedef = ml.linedef;
       li.linedef = ldef= lines[linedef];

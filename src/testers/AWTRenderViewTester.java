@@ -59,7 +59,7 @@ public class AWTRenderViewTester {
         	
     // Create a Wad file loader.
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad",/* "frugal.wad"*/});
+    W.InitMultipleFiles(new String[] {"doom1.wad","easy.wad"});
     
     //Defines.SCREENHEIGHT=HEIGHT;
     //Defines.SCREENHEIGHT=WIDTH;
@@ -153,8 +153,9 @@ public class AWTRenderViewTester {
     DM.R.FillBackScreen();
     DM.R.DrawViewBorder();
     
-    int ox=DM.players[0].mo.x;
+    // Center on "bloody mess" in E1M1
     int oy=DM.players[0].mo.y;
+    int ox=DM.players[0].mo.x;
         
         for (int i=0;i<20000;i++){
             int ba=DM.I.GetTime();
@@ -182,11 +183,12 @@ public class AWTRenderViewTester {
         AM.Ticker();
         //AM.Drawer();
         ST.Ticker();        
-        DM.players[0].viewz=(40)<<16;
-        DM.players[0].mo.x=ox+(int) (665535*Math.sin(2*Math.PI*i/20000.0));
-        DM.players[0].mo.y=oy+(int) (665535*Math.cos(2*Math.PI*i/20000.0));
-        DM.players[0].mo.angle=(long)(i* 0x1000000L)&0xFFFFFFFFL;
-       //System.out.println(">>>>>>>>>>>>>>>>>> VIEW ANGLE "+360.0*(DM.players[0].mo.angle>>19)/8192.0); 
+        DM.players[0].viewz=(30)<<16;
+        //DM.players[0].mo.x=ox+(int) ((64<<16)*Math.cos(2*Math.PI*i/500.0));
+        //DM.players[0].mo.y=oy+(int) ((64<<16)*Math.sin(2*Math.PI*i/500.0));
+        //DM.players[0].mo.angle= ((long)(0xFFFFFFFFL*(Math.atan2(DM.players[0].mo.y-oy,DM.players[0].mo.x-ox)+Math.PI)/(2*Math.PI)))&0xFFFFFFFFL;
+        DM.players[0].mo.angle=(DM.players[0].mo.angle+0x100000)&0xFFFFFFFFL;
+        System.out.println(">>>>>>>>>>>>>>>>>> VIEW ANGLE "+360.0*(DM.players[0].mo.angle>>19)/8192.0); 
        
         DM.R.RenderPlayerView(DM.players[0]);
         //ST.Drawer(false,true);
@@ -194,16 +196,15 @@ public class AWTRenderViewTester {
         
         DM.gametic++;
         frame.FinishUpdate();
-        if (i%100==0){
+        if (i%1==0){
         	   long b=System.nanoTime();
         	    
         	    System.out.println(i +" frames in " +((b-a)/1e09) +" = "+i/((b-a)/1e09) + " fps");
         }
         System.out.print(frame.processEvents());
-        while (ba-DM.I.GetTime()==0){
-            //frame.setVisible(true);
+        /*while (ba-DM.I.GetTime()==0){
             Thread.sleep(10);               
-        }
+        }*/
         }
             } catch (Exception e){
                 e.printStackTrace();

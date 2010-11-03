@@ -430,9 +430,13 @@ public class UnifiedRenderer extends RendererState {
        int dest; // As pointer
        // fixed_t
        int frac, fracstep;
-       
-       // How much we should draw
+       // Something gross happens.
+       boolean gross=false;
+       byte colmask=127;
        count = dc_yh - dc_yl;
+       // How much we should draw
+       //count = Math.min(dc_yh - dc_yl,dc_source.length-dc_source_ofs-1);
+       //colmask = (byte) Math.min(dc_source.length-dc_source_ofs-1,127);
 
        // Zero length, column does not exceed a pixel.
        if (count < 0)
@@ -444,6 +448,15 @@ public class UnifiedRenderer extends RendererState {
                            dc_x);
        }
 
+       // Trying to draw a masked column? Then something gross will happen.
+       /*if (count>=dc_source.length-dc_source_ofs) {
+           int diff=count-(dc_source.length-dc_source_ofs);
+           count=dc_source.length-dc_source_ofs-1;
+           dc_source_ofs=0;
+           //dc_yl=dc_yh-count;
+           gross=true;
+       }*/
+       
        // Framebuffer destination address.
        // Use ylookup LUT to avoid multiply with ScreenWidth.
        // Use columnofs LUT for subwindows?
@@ -466,8 +479,8 @@ public class UnifiedRenderer extends RendererState {
             * dc_source was probably just a pointer to a decompressed
             *  column...right? Right.
             */  
-           //if (DEBUG) System.out.println((frac >> FRACBITS)&127);
-           screen[dest] = dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
+          // if (gross) System.out.println(frac >> FRACBITS);
+           screen[dest] = dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & colmask)]];
 
            
            /* MAES: ok, so we have (from inside out):
@@ -849,6 +862,8 @@ public class UnifiedRenderer extends RendererState {
    ( int   x,
      int   y )
    {   
+       // MAES: note how we don't use &BITS32 here. That is because we know that the maximum possible
+       // value of tantoangle is angle
        // This way, we are actually working with vectors emanating from our current position.
        x-= viewx;
        y-= viewy;
@@ -871,7 +886,7 @@ public class UnifiedRenderer extends RendererState {
            else
            {
            // octant 1
-           return (ANG90-1-tantoangle[ SlopeDiv(x,y)])&BITS32;
+           return (ANG90-1-tantoangle[ SlopeDiv(x,y)]);
            }
        }
        else
@@ -887,7 +902,7 @@ public class UnifiedRenderer extends RendererState {
            else
            {
            // octant 7
-           return (ANG270+tantoangle[ SlopeDiv(x,y)])&BITS32;
+           return ANG270+tantoangle[ SlopeDiv(x,y)];
            }
        }
        }
@@ -902,12 +917,12 @@ public class UnifiedRenderer extends RendererState {
            if (x>y)
            {
            // octant 3
-           return ((ANG180-1)-tantoangle[ SlopeDiv(y,x)])&BITS32;
+           return (ANG180-1-tantoangle[ SlopeDiv(y,x)]);
            }
            else
            {
            // octant 2
-           return (ANG90+ tantoangle[ SlopeDiv(x,y)])&BITS32;
+           return (ANG90+ tantoangle[ SlopeDiv(x,y)]);
            }
        }
        else
@@ -918,34 +933,35 @@ public class UnifiedRenderer extends RendererState {
            if (x>y)
            {
            // octant 4
-           return (ANG180+tantoangle[ SlopeDiv(y,x)])&BITS32;
+           return (ANG180+tantoangle[ SlopeDiv(y,x)]);
            }
            else
            {
             // octant 5
-           return ((ANG270-1)-tantoangle[ SlopeDiv(x,y)])&BITS32;
+           return (ANG270-1-tantoangle[ SlopeDiv(x,y)]);
            }
        }
        }
-       // FIXME: Unreachable?!
-       //return 0;
+       // This is actually unreachable.
+      // return 0;
    }
    
-   //
-   // R_ScaleFromGlobalAngle
-   // Returns the texture mapping scale
-   //  for the current line (horizontal span)
-   //  at the given angle.
-   // rw_distance must be calculated first.
-   //
+   /**
+    * R_ScaleFromGlobalAngle
+    * Returns the texture mapping scale
+    *  for the current line (horizontal span)
+    *  at the given angle.
+    * rw_distance must be calculated first.
+    */
+   
    public int ScaleFromGlobalAngle (long visangle)
    {
-       int         scale;
-       int         anglea;
-       int         angleb;
+       int         scale; // fixed_t
+       long         anglea;
+       long         angleb;
        int         sinea;
        int         sineb;
-       int         num;
+       int         num; // fixed_t
        int         den;
 
        // UNUSED
@@ -965,12 +981,12 @@ public class UnifiedRenderer extends RendererState {
    }
    */
 
-       anglea = (int) (ANG90 + addAngles(visangle,-viewangle));
-       angleb = (int) (ANG90 + addAngles(visangle,-rw_normalangle));
+       anglea = (ANG90 +visangle-viewangle)&BITS32;
+       angleb = (ANG90 +visangle-rw_normalangle)&BITS32;
 
        // both sines are allways positive
-       sinea = finesine[anglea>>>ANGLETOFINESHIFT]; 
-       sineb = finesine[angleb>>>ANGLETOFINESHIFT];
+       sinea = finesine(anglea); 
+       sineb = finesine(angleb);
        num = FixedMul(projection,sineb)<<detailshift;
        den = FixedMul(rw_distance,sinea);
 
@@ -1045,6 +1061,22 @@ public class UnifiedRenderer extends RendererState {
        dx = Math.abs(x - viewx);
        dy = Math.abs(y - viewy);
        
+       // Sanity check, else it's going to bomb.
+       /* if (dx==0){
+           //
+           if (dy>0) angle= Tables.toBAMIndex(ANG90);
+           else           
+           if (dy<0) angle= Tables.toBAMIndex(ANG270);
+           else
+                     angle= 0;     
+       }
+       
+       else { */
+       
+       // If something is farther north/south than west/east, it gets swapped. 
+       // Probably as a crude way to avoid divisions by zero. This divides
+       // the field into octants, rather than quadrants, where the biggest angle to consider is 45...right?
+       
        if (dy>dx)
        {
        temp = dx;
@@ -1052,8 +1084,19 @@ public class UnifiedRenderer extends RendererState {
        dy = temp;
        }
        
-       angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+(int)ANG90) >>> ANGLETOFINESHIFT;
-
+       
+       /* If both dx and dy are zero, this is going to bomb.
+          Fixeddiv will return MAXINT aka 7FFFFFFF, >> DBITS will make it 3FFFFFF,
+          which is enough to break tantoangle[]. 
+          
+          In the original C code, this probably didn't matter: there would probably be garbage orientations
+          thrown all around. However this is unacceptable in Java however.
+       */
+       
+       angle=Math.max( FixedDiv(dy,dx), 2048)>>DBITS;
+           
+       angle = (int) (((tantoangle[angle ]+ANG90)&BITS32) >> ANGLETOFINESHIFT);
+       
        // use as cosine
        dist = FixedDiv (dx, finesine[angle] ); 
        
@@ -1091,7 +1134,6 @@ public class UnifiedRenderer extends RendererState {
    * R_ClearDrawSegs
    * 
    * The drawseg list is reset by pointing back at 0.
-   * 
    * 
    */
   public void ClearDrawSegs ()
@@ -1448,7 +1490,7 @@ public class UnifiedRenderer extends RendererState {
       && backsector.lightlevel == frontsector.lightlevel
       && curline.sidedef.midtexture == 0)
       {
-      System.out.println("NOTHING DRAWN!");
+     // System.out.println("NOTHING DRAWN!");
       return;
       }
       if (DEBUG) System.out.println("Exiting AddLine for "+line);
@@ -1622,8 +1664,7 @@ public class UnifiedRenderer extends RendererState {
       int         count;
       int        line; // pointer into a list of segs instead of seg_t
       subsector_t    sub;
-      int psub=0;
-      
+            
   if (RANGECHECK){
       if (num>=LL.numsubsectors)
       I.Error ("R_Subsector: ss %i with numss = %i",
@@ -1903,7 +1944,7 @@ public class UnifiedRenderer extends RendererState {
           if (segtextured)
           {
               // calculate texture offset
-              angle = Tables.toBAMIndex((rw_centerangle + xtoviewangle[rw_x])&BITS32);
+              angle = Tables.toBAMIndex(rw_centerangle + xtoviewangle[rw_x]);
               texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
               texturecolumn >>= FRACBITS;
               // calculate lighting
@@ -1914,7 +1955,7 @@ public class UnifiedRenderer extends RendererState {
 
               dc_colormap = walllights[index];
               dc_x = rw_x;
-              dc_iscale = (int) (0xffffffffL / (long)(0xFFFFFFFFL&rw_scale));
+              dc_iscale = (int) (0xffffffffL / rw_scale);
           }
           
           // draw the wall tiers
@@ -1925,12 +1966,13 @@ public class UnifiedRenderer extends RendererState {
               dc_yh = yh;
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
+              //System.out.println("DC_ISCALE: "+dc_iscale+" " +rw_scale);
               //if (DEBUG) 
                   //System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+rw_x+" and between "+dc_yl+" and "+dc_yh+" maximum allowed "+dc_source.length);
-               //   try {
+                  //try {
               colfunc.invoke();
-                //  } catch (ArrayIndexOutOfBoundsException e){
-                //      //FIXME: enough of that!!! 
+                //} catch (ArrayIndexOutOfBoundsException e){                    
+                //    System.out.println(e.getMessage()+" maximum acceptable "+dc_source.length);
                 //  }
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
@@ -2039,7 +2081,8 @@ public class UnifiedRenderer extends RendererState {
           
           int     hyp; //fixed_t
           int     sineval; //fixed_t
-          long     distangle, offsetangle; // angle_t
+          int     distangle;
+          long offsetangle; // angle_t
           int     vtop; // fixed_t
           int         lightnum;
           drawseg_t seg;
@@ -2063,16 +2106,25 @@ public class UnifiedRenderer extends RendererState {
           
           // calculate rw_distance for scale calculation
           rw_normalangle = addAngles(curline.angle,ANG90);
-          offsetangle = Math.abs(rw_normalangle-rw_angle1);
+          
+          /* MAES: ok, this is a tricky spot. angle_t's are supposed to be always positive
+           * 32-bit unsigned integers, so a subtraction should be always positive by definition, right?
+           * WRONG: this fucking spot caused "blind spots" at certain angles because ONLY HERE angles are
+           * supposed to be treated as SIGNED and result in differences <180 degrees -_-
+           * 
+           * The only way to coerce this behavior is to cast both as signed ints. 
+           * 
+           */  
+          offsetangle = Math.abs((int)rw_normalangle-(int)rw_angle1);
           
           if (offsetangle > ANG90)
           offsetangle = ANG90;
 
-          distangle = addAngles(ANG90, - offsetangle);
+          // It should fit even in a signed int, by now.
+          distangle = (int) (ANG90 - offsetangle);
           hyp = PointToDist (curline.v1.x, curline.v1.y);
           sineval = finesine(distangle);
           rw_distance = FixedMul (hyp, sineval);
-              
           
           seg.x1 = rw_x = start;
           seg.x2 = stop;
@@ -2083,8 +2135,9 @@ public class UnifiedRenderer extends RendererState {
           rw_stopx = stop+1;
           
           // calculate scale at both ends and step
+          // FIXME: this is the ONLY place where rw_scale is set.
           seg.scale1 = rw_scale = 
-          ScaleFromGlobalAngle (viewangle + xtoviewangle[start]);
+          ScaleFromGlobalAngle ((viewangle + xtoviewangle[start]));
           
           if (stop > start )
           {
@@ -2302,7 +2355,7 @@ public class UnifiedRenderer extends RendererState {
           rw_offset = FixedMul (hyp, sineval);
 
           // We can do that if angles are "bonified" at this point.
-          if (addAngles(rw_normalangle,-rw_angle1 )< ANG180)
+          if (rw_normalangle-rw_angle1 < ANG180)
               rw_offset = -rw_offset;
 
           rw_offset += sidedef.textureoffset + curline.offset;
@@ -2592,7 +2645,7 @@ public class UnifiedRenderer extends RendererState {
           // left to right mapping
           // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
           // Answer: 32-bit unsigned are supposed to roll over. You can & with 0xFFFFFFFFL.
-          angle = (int) Tables.toBAMIndex(viewangle-ANG90);
+          angle = (int) Tables.toBAMIndex((viewangle-ANG90)&BITS32);
           
           // scale will be unit scale at SCREENWIDTH/2 distance
           basexscale = FixedDiv (finecosine[angle],centerxfrac);
@@ -2603,7 +2656,10 @@ public class UnifiedRenderer extends RendererState {
       /**
        * R_FindPlane
        * 
-       * Finds a visplane with the specified height, picnum and light level.
+       * Checks whether a visplane with the specified height, picnum and light 
+       * level exists among those already created. This looks like a half-assed 
+       * attempt at reusing already existing visplanes, rather than creating new 
+       * ones. The tricky part is understanding what happens if one DOESN'T exist.
        * 
        * @param height (fixed_t)
        * @param picnum
@@ -3215,7 +3271,7 @@ public class UnifiedRenderer extends RendererState {
           int     frac; // fixed_t
           patch_t        patch;
           
-          
+          // At this point, the view angle (and patch) has already been chosen. Go back.
           patch = W.CachePatchNum (vis.patch+firstspritelump,PU_CACHE);
           
           
@@ -3252,7 +3308,7 @@ public class UnifiedRenderer extends RendererState {
           column = patch.columns[texturecolumn];
           //System.out.println(">>>>>>>>>>>>>>>>>>   Drawing column "+texturecolumn+" of  "+W.lumpinfo[vis.patch+firstspritelump].name +" at scale "+Integer.toHexString(vis.xiscale));
               
-          DrawMaskedColumn(column.data);
+          DrawMaskedColumn(column);
           }
 
           colfunc = basecolfunc;
@@ -3329,8 +3385,9 @@ public class UnifiedRenderer extends RendererState {
           if (sprframe.rotate!=0)
           {
           // choose a different rotation based on player view
+          // FIXME: this is obviously wrong.
           ang = PointToAngle (thing.x, thing.y);
-          rot = (int) ((ang-thing.angle+(ANG45/2)*9)&BITS32>>>29);
+          rot = (int) ((ang-thing.angle+(ANG45*9)/2)&BITS32)>>>29;
           lump = sprframe.lump[rot];
           flip = (boolean)(sprframe.flip[rot]!=0);
           }
@@ -3470,12 +3527,13 @@ public class UnifiedRenderer extends RendererState {
           int         x2;
           spritedef_t    sprdef;
           spriteframe_t  sprframe;
+          vissprite_t vis;
           int         lump;
           boolean     flip;
           
-          // vissprite_t     avis; ?
+          // 
           
-          // decide which patch to use
+          // decide which patch to use (in terms of angle?)
       if(RANGECHECK){
           if ( psp.state.sprite.ordinal() >= numsprites)
           I.Error ("R_ProjectSprite: invalid sprite number %i ",
@@ -3489,7 +3547,9 @@ public class UnifiedRenderer extends RendererState {
       }
           sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK ];
 
+          // Base frame for "angle 0" aka viewed from dead-front.
           lump = sprframe.lump[0];
+          // TODO: where can this be set?
           flip = (boolean)(sprframe.flip[0]!=0);
           
           // calculate edges of the shape
@@ -3510,7 +3570,7 @@ public class UnifiedRenderer extends RendererState {
           return;
           
           // store information in a vissprite
-          //vis = avis;
+          vis = avis;
           vis.mobjflags = 0;
           vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp.sy-spritetopoffset[lump]);
           vis.x1 = x1 < 0 ? 0 : x1;
@@ -3562,7 +3622,8 @@ public class UnifiedRenderer extends RendererState {
       }
 
       /** used inside DrawPSprite, better make this static */
-      protected vissprite_t    vis=new vissprite_t();
+          //vis=new vissprite_t();
+          protected vissprite_t avis=new vissprite_t();
 
       /** R_DrawPlayerSprites */
       
@@ -3822,6 +3883,7 @@ public class UnifiedRenderer extends RendererState {
          int ds;
          drawseg_t dss;
           
+         // Well, it sorts visspite objects.
           SortVisSprites ();
 
           // Sprite "0" not visible?
@@ -4075,7 +4137,7 @@ public void DrawMaskedColumn (column_t column)
         
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
-        if (MyThings.shadow){
+        if (!MyThings.shadow){
             colfunc=DrawFuzzColumn;
         } else {
             colfunc=DrawColumn;
@@ -4685,7 +4747,8 @@ public void ExecuteSetViewSize ()
     
     for (i=0 ; i<viewwidth ; i++)
     {
-    cosadj = Math.abs(finecosine(i));
+    // MAES: In this spot we must interpet it as SIGNED, else it's pointless, right?
+    cosadj = Math.abs((int)finecosine(i));
     MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
     }
     

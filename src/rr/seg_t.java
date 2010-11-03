@@ -25,7 +25,7 @@ public class seg_t{
    public int offset;
 
    /** (angle_t) */
-   public int angle;
+   public long angle;
 
    // MAES: all were single pointers.
    

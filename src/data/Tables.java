@@ -5,7 +5,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.11 2010/10/14 18:37:14 velktron Exp $
+// $Id: Tables.java,v 1.12 2010/11/03 16:48:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.12  2010/11/03 16:48:04  velktron
+// "Bling" view angles fixed (perhaps related to the "bleeding line bug"?)
+//
 // Revision 1.11  2010/10/14 18:37:14  velktron
 // Rendering kinda works. Wow.
 //
@@ -170,7 +173,7 @@ public static final int DBITS=FRACBITS-SLOPEBITS;
 
 
 /** Any denominator smaller than 512 will result in 
- *  maximum slope (90 degrees, or a "tan" of 2048)
+ *  maximum slope (45 degrees, or an index into tantoangle of 2048)
  * 
  */
 public static final int SlopeDiv ( int	num, int den)
@@ -184,6 +187,10 @@ public static final int SlopeDiv ( int	num, int den)
 
     return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
+
+/** Practical limits are -/+ 2607 for "infinity".
+ * 
+ */
 
 public final static int[] finetangent =
 {
@@ -706,19 +713,12 @@ public final static int[] finetangent =
 
 // MAES: original range 2049
 // This obviously 
-// Range goes from 0x00000000 to 0x2000000, so in theory plain ints should be enough...
+// Range goes from 0x00000000 to 0x20000000, so in theory plain ints should be enough...
 
-/** This maps a value 0-2048 to a fixed point number ranging from 0 to 8192 in value
- * some of the first values:
+/** This maps a value 0-2048 to a BAM unsigned integer angle, ranging from 0x0 to 0x2000000:
  * 
- * 0.0
- * 5.0929565
- * 10.185913
- * 15.278854
- * 20.371796
- * ...
- * 8192 (presumably for an angle of 90 degrees).
- * 
+ * In practice, this means there are only tangent values for angles up to 45 degrees. 
+ *  
  * These values are valid BAM measurements in the first quadrant
  * 
  * 

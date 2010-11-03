@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.8 2010/08/26 16:43:42 velktron Exp $
+// $Id: fixed_t.java,v 1.9 2010/11/03 16:48:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.9  2010/11/03 16:48:04  velktron
+// "Bling" view angles fixed (perhaps related to the "bleeding line bug"?)
+//
 // Revision 1.8  2010/08/26 16:43:42  velktron
 // Automap functional, biatch.
 //
@@ -104,7 +107,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.8 2010/08/26 16:43:42 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.9 2010/11/03 16:48:04 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -179,16 +182,6 @@ public void FixedMul
 }
 
 
-public static fixed_t
-FixedDiv
-( fixed_t	a,
-  fixed_t	b )
-{
-    if ( (Math.abs(a.val)>>14) >= Math.abs(b.val))
-	return (a.val^b.val)<0 ? new fixed_t(Integer.MIN_VALUE) : new fixed_t(Integer.MAX_VALUE);
-    return FixedDiv2 (a,b);
-}
-
 public static int
 FixedDiv
 ( int   a,
@@ -199,62 +192,6 @@ FixedDiv
     return FixedDiv2 (a,b);
 }
 
-public static void
-FixedDiv
-( fixed_t   a,
-        fixed_t b, fixed_t c)
-{
-    if ( (Math.abs(a.val)>>14) >= Math.abs(b.val)){
-        if ((a.val^b.val)<0) {
-            c.set(Integer.MIN_VALUE);
-        }
-        else { 
-            c.set(Integer.MAX_VALUE);
-        } 
-        return;
-    }
-    FixedDiv2 (a,b,c);
-}
-
-
-public static void
-FixedDiv2
-( fixed_t   a,
-        fixed_t b, fixed_t c )
-{
-	
-//c.set((int)((((long)a.val)<<16) / (long)b.val));
-
-    c.set((int)((((long)a.val)<<16) / (long)b.val));
-      
-//c.set((int)(((double)a.val) / ((double)b.val) * FRACUNIT));
-
-//if (c >= 2147483648.0 || c < -2147483648.0)
-//I_Error("FixedDiv: divide by zero");
-//return new fixed_t((int)c);*/
-}
-
-
-public static fixed_t
-FixedDiv2
-( fixed_t	a,
-  fixed_t	b )
-{
-
-    /*
-    int c;
-    c = (int)(((long)a.val<<16) / (long)b.val);
-    return new fixed_t(c);
-     */
-    
-    double c;
-
-    c = ((double)a.val) / ((double)b.val) * FRACUNIT;
-
-//    if (c >= 2147483648.0 || c < -2147483648.0)
-//	I_Error("FixedDiv: divide by zero");
-    return new fixed_t((int)c);
-}
 
 public static int
 FixedDiv2
@@ -263,19 +200,19 @@ FixedDiv2
 {
 
     
-    int c;
+    /*int c;
     c = (int)(((long)a<<16) / (long)b);
-    return c;
+    return c;*/
     
-    /*
+    
     double c;
 
     c = ((double)a) / ((double)b) * FRACUNIT;
 
-//    if (c >= 2147483648.0 || c < -2147483648.0)
-//  I_Error("FixedDiv: divide by zero");
+  if (c >= 2147483648.0 || c < -2147483648.0)
+      throw new ArithmeticException("FixedDiv: divide by zero");
  
- return (int)c;*/
+ return (int)c;
 }
 
 @Override

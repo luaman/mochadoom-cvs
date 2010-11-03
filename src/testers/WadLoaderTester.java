@@ -49,7 +49,7 @@ public class WadLoaderTester {
     ds.gamemission=GameMission_t.doom;
     
     DoomContext DC=new DoomContext();
-    DC.DS=ds;
+    //DC.DM=DC;
     DC.W=W;
     
     // Testing "Heads Up" clases. Notice how we pass "doomstate" and "WadLoader" as instances,
