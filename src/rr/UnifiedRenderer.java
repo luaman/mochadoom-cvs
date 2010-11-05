@@ -298,7 +298,10 @@ public class UnifiedRenderer extends RendererState {
    //
    // precalculated math tables
    //
-   public  long           clipangle;
+   private  long           clipangle;
+   
+   // Set to 2*clipangle later.
+   private  long CLIPANGLE2;
 
    // The viewangletox[viewangle + FINEANGLES/4] lookup
    // maps the visible view angles to screen X coordinates,
@@ -755,6 +758,7 @@ public class UnifiedRenderer extends RendererState {
    /** just for profiling */
    int dscount;
 
+
    
    ////////////// SOME UTILITY METHODS /////////////
 
@@ -1162,7 +1166,7 @@ public class UnifiedRenderer extends RendererState {
    * @param last ending y coord?
    */ 
 
-  public void ClipSolidWallSegment (int   first,
+  private void ClipSolidWallSegment (int   first,
           int   last ) {
 
       int next;
@@ -1302,7 +1306,7 @@ public class UnifiedRenderer extends RendererState {
   // Does handle windows,
   //  e.g. LineDefs with upper and lower texture.
   //
-  public void  ClipPassWallSegment (int   first,
+  private void  ClipPassWallSegment (int   first,
           int   last ) {
      
       // Find the first range that touches the range
@@ -1377,11 +1381,11 @@ public class UnifiedRenderer extends RendererState {
    * 
    *  Called after a SubSector BSP trasversal ends up in a "final" subsector.
    *  
-   *  Clips the given segment
-   *  and adds any visible pieces to the line list.
+   *  Clips the given segment and adds any visible pieces to the line list.
+   *  It also contructct
    *  
    */
-  public void AddLine (seg_t  line) 
+  private void AddLine (seg_t  line) 
   {
       if (DEBUG) System.out.println("Entered AddLine for "+line);
       int         x1;
@@ -1399,6 +1403,7 @@ public class UnifiedRenderer extends RendererState {
       
       // Clip to view edges.
       // OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
+            
       span = addAngles(angle1,- angle2);
       
       // Back side? I.e. backface culling?
@@ -1415,9 +1420,9 @@ public class UnifiedRenderer extends RendererState {
       
       tspan = addAngles(angle1, clipangle);
       
-      if (tspan > ((2*clipangle)&BITS32))
+      if (tspan >CLIPANGLE2)
       {
-      tspan -= 2*clipangle;
+      tspan -= CLIPANGLE2;
       tspan&=BITS32;
 
       // Totally off the left edge?
@@ -1428,9 +1433,9 @@ public class UnifiedRenderer extends RendererState {
       }
       tspan = addAngles(clipangle, - angle2);
 
-      if (tspan > ((2*clipangle)&BITS32))
+      if (tspan > CLIPANGLE2)
       {
-      tspan -= 2*clipangle;
+      tspan -=CLIPANGLE2;
       tspan&=BITS32;
 
       // Totally off the left edge?
@@ -1590,9 +1595,9 @@ public class UnifiedRenderer extends RendererState {
       tspan = angle1 + clipangle;
       tspan&=BITS32;
       
-      if (tspan > 2*clipangle)
+      if (tspan > CLIPANGLE2)
       {
-      tspan -= 2*clipangle;
+      tspan -= CLIPANGLE2;
       tspan&=BITS32;
       // Totally off the left edge?
       if (tspan >= span)
@@ -1601,9 +1606,9 @@ public class UnifiedRenderer extends RendererState {
       angle1 = clipangle;
       }
       tspan = (clipangle - angle2)&BITS32;;
-      if (tspan > 2*clipangle)
+      if (tspan > CLIPANGLE2)
       {
-      tspan -= 2*clipangle;
+      tspan -= CLIPANGLE2;
       tspan&=BITS32;
 
       // Totally off the left edge?
@@ -1653,6 +1658,8 @@ public class UnifiedRenderer extends RendererState {
    * Determine floor/ceiling planes.
    * Add sprites of things in sector.
    * Draw one or more line segments.
+   * It also alters the visplane list! 
+   * 
    * 
    * @param num Subsector from subsector_t list in Lever Loader.
    *      
@@ -1660,7 +1667,7 @@ public class UnifiedRenderer extends RendererState {
   
   public void Subsector (int num)  
   {
-      if (DEBUG) System.out.println("\t\tSubSector " + num + " Rendered");
+      if (DEBUG) System.out.println("\t\tSubSector " + num + " to render");
       int         count;
       int        line; // pointer into a list of segs instead of seg_t
       subsector_t    sub;
@@ -1675,10 +1682,12 @@ public class UnifiedRenderer extends RendererState {
       sscount++;
       sub = LL.subsectors[num];
       frontsector = sub.sector;
+      System.out.println("Frontsector to render :"+frontsector);
       count = sub.numlines;
       //line = LL.segs[sub.firstline];
       line=sub.firstline;
 
+  //    System.out.println("Trying to find an existing FLOOR visplane...");
       if (frontsector.floorheight < viewz)
       {
       floorplane = MyPlanes.FindPlane (frontsector.floorheight,
@@ -1689,6 +1698,8 @@ public class UnifiedRenderer extends RendererState {
           // FIXME: unclear what would happen with a null visplane used
           // It's never checked explicitly for either condition, just called straight.
           floorplane = -1; // in lieu of NULL
+      
+     // System.out.println("Trying to find an existing CEILING visplane...");
       
       if (frontsector.ceilingheight > viewz 
       || frontsector.ceilingpic == skyflatnum)
@@ -1917,8 +1928,8 @@ public class UnifiedRenderer extends RendererState {
 
               if (top <= bottom)
               {
-                  visplanes[ceilingplane].setTop(rw_x,(byte) top);
-                  visplanes[ceilingplane].setBottom(rw_x, (byte) bottom);
+                  visplanes[ceilingplane].setTop(rw_x,(char) top);
+                  visplanes[ceilingplane].setBottom(rw_x, (char) bottom);
               }
           }
               
@@ -1935,8 +1946,8 @@ public class UnifiedRenderer extends RendererState {
               top = ceilingclip[rw_x]+1;
               if (top <= bottom)
               {
-              visplanes[floorplane].setTop(rw_x, (byte) top);
-              visplanes[floorplane].setBottom(rw_x, (byte) bottom);
+              visplanes[floorplane].setTop(rw_x, (char) top);
+              visplanes[floorplane].setBottom(rw_x,  (char) bottom);
               }
           }
           
@@ -2066,18 +2077,23 @@ public class UnifiedRenderer extends RendererState {
 
       /**
        * R_StoreWallRange
-       * A wall segment will be drawn
-       *  between start and stop pixels (inclusive).
+       * A wall segment will be drawn  between start and stop pixels (inclusive).
+       * This is the only place where markceiling/markfloor can be set.
+       * Can only be called from ClipSolidWallSegment and ClipPassWallSegment.
+       * 
+       * 
        * @throws IOException 
        */
       
-      public void
+      private void
       StoreWallRange
       ( int   start,
         int   stop ) 
       {
           
-          if (DEBUG) System.out.println("\t\t\t\tStorewallrange called between "+start+" and "+stop);
+          //if (DEBUG) 
+          
+          System.out.println("\t\t\t\tStorewallrange called between "+start+" and "+stop);
           
           int     hyp; //fixed_t
           int     sineval; //fixed_t
@@ -2431,11 +2447,16 @@ public class UnifiedRenderer extends RendererState {
           }
           
           // render it
-          if (markceiling)
+          // FIXME: problem: certain ranges of visplanes are not checked at all.
+          if (markceiling){
+              System.out.println("Markceiling");
           ceilingplane = MyPlanes.CheckPlane(ceilingplane, rw_x, rw_stopx-1);
+          }
           
-          if (markfloor)
+          if (markfloor){
+              System.out.println("Markfloor");
           floorplane = MyPlanes.CheckPlane (floorplane, rw_x, rw_stopx-1);
+          }
 
           RenderSegLoop ();
 
@@ -2536,10 +2557,12 @@ public class UnifiedRenderer extends RendererState {
        *
        * Called only by R_MakeSpans.
        * 
+       * This is where the actual span drawing function is called.
+       * 
        * Uses global vars:
        * planeheight
-       *  ds_source
-       *  basexscale
+       *  ds_source -> flat data has already been set.
+       *  basexscale -> actual drawing angle and position is computed from these
        *  baseyscale
        *  viewx
        *  viewy
@@ -2547,15 +2570,15 @@ public class UnifiedRenderer extends RendererState {
        * BASIC PRIMITIVE
        */
       
-      public void
+      private void
       MapPlane
       ( int       y,
         int       x1,
         int       x2 )
       {
           // MAES: angle_t
-          long angle;
-          // 
+          int angle;
+          // fixed_t
           int distance;
           int length;
           int index;
@@ -2585,9 +2608,9 @@ public class UnifiedRenderer extends RendererState {
           }
           
           length = FixedMul (distance,distscale[x1]);
-          angle = addAngles(viewangle ,xtoviewangle[x1]);
-          ds_xfrac = viewx + FixedMul(finecosine(angle), length);
-          ds_yfrac = -viewy - FixedMul(finesine(angle), length);
+          angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>ANGLETOFINESHIFT);
+          ds_xfrac = viewx + FixedMul(finecosine[angle], length);
+          ds_yfrac = -viewy - FixedMul(finesine[angle], length);
 
           if (fixedcolormap!=null)
           ds_colormap = fixedcolormap;
@@ -2645,7 +2668,7 @@ public class UnifiedRenderer extends RendererState {
           // left to right mapping
           // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
           // Answer: 32-bit unsigned are supposed to roll over. You can & with 0xFFFFFFFFL.
-          angle = (int) Tables.toBAMIndex((viewangle-ANG90)&BITS32);
+          angle = (int) Tables.toBAMIndex(viewangle-ANG90);
           
           // scale will be unit scale at SCREENWIDTH/2 distance
           basexscale = FixedDiv (finecosine[angle],centerxfrac);
@@ -2660,6 +2683,7 @@ public class UnifiedRenderer extends RendererState {
        * level exists among those already created. This looks like a half-assed 
        * attempt at reusing already existing visplanes, rather than creating new 
        * ones. The tricky part is understanding what happens if one DOESN'T exist.
+       * Called only from within R_Subsector (so while we're still trasversing stuff).
        * 
        * @param height (fixed_t)
        * @param picnum
@@ -2673,6 +2697,7 @@ public class UnifiedRenderer extends RendererState {
         int       picnum,
         int       lightlevel )
       {
+          //System.out.println("\tChecking for visplane merging...");
           int check; // visplane_t* 
           visplane_t chk=null;
           
@@ -2694,22 +2719,25 @@ public class UnifiedRenderer extends RendererState {
               }
           }
                   
-          if (check < lastvisplane)
+          if (check < lastvisplane){
+              //System.out.println("\t found visplane "+check);
           return check;
-          
+          }          
           
           // Found a visplane, but we can't add anymore.
           if (lastvisplane == MAXVISPLANES)
           I.Error ("R_FindPlane: no more visplanes");
-              
+          
+          
+          // Add a visplane
           lastvisplane++;
-
+          //System.out.println("\tadded new visplane at position"+check);
           chk.height = height;
           chk.picnum = picnum;
           chk.lightlevel = lightlevel;
           chk.minx = SCREENWIDTH;
           chk.maxx = -1;
-          
+          //System.out.println("\t to "+chk);
           //memset (chk.top,0xff,sizeof(chk.top));
           chk.clearTop();
               
@@ -2720,6 +2748,10 @@ public class UnifiedRenderer extends RendererState {
       /**
        * R_CheckPlane
        * 
+       * Called from within StoreWallRange
+       * 
+       * Presumably decides if a visplane should be split or not?
+       * 
        */
       
       public int
@@ -2728,23 +2760,61 @@ public class UnifiedRenderer extends RendererState {
         int       start,
         int       stop )
       {
+          
+          System.out.println("Checkplane "+index+" between "+start+" and "+stop);
+          
+          // Interval ?
           int     intrl;
           int     intrh;
-          int     unionl;
+          
+          // Union?
+          int     unionl;          
           int     unionh;
+          // OK, so we check out ONE particular visplane.
           visplane_t pl=visplanes[index];
+          
+          System.out.println("Checking out plane "+pl);
+          
           int x;
           
+          /* If start is smaller than the plane's min... 
+           * 
+           * start     minx         maxx       stop
+           *   |       |            |          |
+           *   --------PPPPPPPPPPPPPP-----------
+           * 
+           */
           if (start < pl.minx)
           {
           intrl = pl.minx;
           unionl = start;
+          /* Then we will have this: 
+           * 
+           * unionl    intrl        maxx       stop
+           *   |       |            |          |
+           *   --------PPPPPPPPPPPPPP-----------
+           */
+          
           }
           else
-          {
+          {              
           unionl = pl.minx;
           intrl = start;
+          
+          /* else we will have this: 
+           * 
+           *      union1 intrl      maxx       stop
+           *           |      |     |          |
+           *   --------PPPPPPPPPPPPPP-----------
+           *   
+           * unionl comes before intrl in any case.  
+           *   
+           */          
           }
+          
+          /* Same as before, for for stop and maxx.
+           * This time, intrh comes before unionh.
+           */
           
           if (stop > pl.maxx)
           {
@@ -2757,20 +2827,30 @@ public class UnifiedRenderer extends RendererState {
           intrh = stop;
           }
 
+          /* An interval is now defined, which is entirely contained in the
+           * visplane. 
+           */
+
+          // If the value FF is NOT stored ANYWWHERE inside it, we bail out early
           for (x=intrl ; x<= intrh ; x++)
-          if (pl.getTop(x) != 0xff)
+              if (pl.getTop(x) != 0x000000ffL)
               break;
 
+          // This can only occur if the loop above completes,
+          // else the visplane we were checking has non-visible/clipped
+          // portions within that range: we must split.
+          
           if (x > intrh)
           {
+          // Merge the visplane
           pl.minx = unionl;
           pl.maxx = unionh;
-
+          System.out.println("Plane modified as follows "+pl);
           // use the same one
           return index;      
           }
           
-          // make a new visplane
+          // SPLIT: make a new visplane
           visplanes[lastvisplane].height = pl.height;
           visplanes[lastvisplane].picnum = pl.picnum;
           visplanes[lastvisplane].lightlevel = pl.lightlevel;
@@ -2784,7 +2864,8 @@ public class UnifiedRenderer extends RendererState {
               
           //return pl;
           
-          return lastvisplane;
+          System.out.println("New plane created: "+pl);
+          return lastvisplane-1;
       }
 
 
@@ -2792,10 +2873,28 @@ public class UnifiedRenderer extends RendererState {
        * R_MakeSpans
        * 
        * Called only by DrawPlanes.
+       * If you wondered where the actual boundaries for the visplane
+       * flood-fill are laid out, this is it.
+       * 
+       * The system of coords seems to be defining a sort of cone.          
+       *          
+       * 
+       * @param x Horizontal position
+       * @param t1 Top-left y coord?
+       * @param b1 Bottom-left y coord?
+       * @param t2 Top-right y coord ?
+       * @param b2 Bottom-right y coord ?
        * 
        */
 
-        public void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+        private void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+            
+            System.out.println("Makespans "+ x+ " : "+ t1+" "+
+                b1+ " "+
+                t2+" "+
+                b2);
+            
+            // If t1 = [sentinel value] then this part won't be executed.
             while (t1 < t2 && t1 <= b1) {
                 this.MapPlane(t1, spanstart[t1], x - 1);
                 t1++;
@@ -2805,11 +2904,19 @@ public class UnifiedRenderer extends RendererState {
                 b1--;
             }
 
+            // So...if t1 for some reason is < t2, we increase t2 AND store the current x
+            // at spanstart [t2] :-S
             while (t2 < t1 && t2 <= b2) {
+                System.out.println("Increasing t2");
                 spanstart[t2] = x;
                 t2++;
             }
+
+            // So...if t1 for some reason b2 > b1, we decrease b2 AND store the current x
+            // at spanstart [t2] :-S
+
             while (b2 > b1 && b2 >= t2) {
+                System.out.println("Decreasing b2");
                 spanstart[b2] = x;
                 b2--;
             }
@@ -2828,7 +2935,7 @@ public class UnifiedRenderer extends RendererState {
        */
       public void DrawPlanes () 
       {
-          if (DEBUG) System.out.println("DrawPlanes");
+          System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes");
           visplane_t      pln=null; //visplane_t
           int         light;
           int         x;
@@ -2852,6 +2959,8 @@ public class UnifiedRenderer extends RendererState {
           for (int pl = 0 ; pl < lastvisplane ;  pl++)
           {
               pln=visplanes[pl];
+              System.out.println(pln);
+              
           if (pln.minx > pln.maxx)
               continue;
 
@@ -2907,17 +3016,23 @@ public class UnifiedRenderer extends RendererState {
 
           planezlight = zlight[light];
 
-          pln.setTop(pln.maxx+1,(byte) 0xff);
-          pln.setTop(pln.minx-1, (byte) 0xff);
+          // We set those values at the border of a plane's top to a "sentinel" value...ok.
+          pln.setTop(pln.maxx+1,(char) 0xffff);
+          pln.setTop(pln.minx-1, (char) 0xffff);
           
           stop = pln.maxx + 1;
 
+          
           for (x=pln.minx ; x<= stop ; x++)
-          {
+              
+          {   
+              
+              
               MakeSpans(x,pln.getTop(x-1),
                   pln.getBottom(x-1),
                   pln.getTop(x),
                   pln.getBottom(x));
+             
           }
           
           //Z_ChangeTag (ds_source, PU_CACHE);
@@ -4013,6 +4128,8 @@ public class UnifiedRenderer extends RendererState {
       }
       
       clipangle = xtoviewangle[0];
+      // OPTIMIZE: assign constant for optimization.
+      CLIPANGLE2=(2*clipangle)&BITS32;
   }
 
 
@@ -4410,8 +4527,11 @@ public void VideoErase(int ofs, int count) {
      int dest;
      int count;
      int spot;
-     try {
      
+     System.out.println("R_DrawSpan: "+ds_x1+" to "+ds_x2+" at "+ ds_y);
+     
+     
+         
      if (RANGECHECK) {
          if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
                  || ds_y > SCREENHEIGHT) {
@@ -4440,10 +4560,7 @@ public void VideoErase(int ofs, int count) {
          f_xfrac += ds_xstep;
          f_yfrac += ds_ystep;
 
-     } while (count-- != 0);
-     } catch (ArrayIndexOutOfBoundsException e){
-         System.err.println("ds_source only has "+ds_source.length);
-     }
+     } while (count-- > 0);
      }
  }
  
@@ -5375,23 +5492,18 @@ public int InitSkyMap ()
       
       firstflat=2+W.GetNumForName ("F_START");
       
-      lastflat = W.GetNumForName ("F_END") - 2;
+      lastflat = W.GetNumForName ("F_END") - 1;
       numflats = lastflat - firstflat;
       
       // Create translation table for global animation.
       flattranslation = new int[numflats];
       
-      System.out.println("*********** FLAT VERIFICATION ************");
+      //System.out.println("*********** FLAT VERIFICATION ************");
       for (int i=0 ; i<numflats ; i++) {
           flattranslation[i] = i;
-          System.out.println("Flat "+i+" actual "+(firstflat+i)+" actual name "+W.lumpinfo[firstflat+i].name + " verification "+this.FlatNumForName(W.lumpinfo[firstflat+i].name));
+          //System.out.println("Flat "+i+" actual "+(firstflat+i)+" actual name "+W.lumpinfo[firstflat+i].name + " verification "+this.FlatNumForName(W.lumpinfo[firstflat+i].name));
           
-          }
-      
-      
-      
-      // HACK: flat "0" starts at 
-      
+          } 
   }
 
 

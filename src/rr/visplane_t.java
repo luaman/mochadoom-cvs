@@ -18,7 +18,7 @@ public class visplane_t{
     public static final int BOTTOMOFFSET=SCREENWIDTH+TOPOFFSET+MIDDLEPADDING;
     
     public visplane_t(){
-        this.data=new byte[4+2*SCREENWIDTH];
+        this.data=new char[4+2*SCREENWIDTH];
     }
     
     
@@ -42,10 +42,10 @@ public byte      pad3;
 public byte[]      bottom=new byte [SCREENWIDTH];
 public byte      pad4;*/
 
-byte data[];
+char data[];
 
 // Hack to allow quick clearing of visplanes.
-protected static byte[] clearvisplane=new byte[SCREENWIDTH];
+protected static char[] clearvisplane=new char[SCREENWIDTH];
 
 
 /** "Clear" the top with FF's.  */
@@ -59,28 +59,56 @@ public void clearBottom(){
     System.arraycopy(clearvisplane, 0, this.data, BOTTOMOFFSET, SCREENWIDTH);      
 }
 
-public void setTop(int index, byte value){
+public void setTop(int index, char value){
     this.data[TOPOFFSET+index]=value;    
 }
 
-public int getTop(int index){
-    return C2JUtils.toUnsignedByte(this.data[TOPOFFSET+index]);
+public char getTop(int index){
+    return this.data[TOPOFFSET+index];
     
 }
 
-public void setBottom(int index, byte value){
+public void setBottom(int index, char value){
     this.data[BOTTOMOFFSET+index]=value;
     
 }
 
 public int getBottom(int index){
-    return C2JUtils.toUnsignedByte(this.data[BOTTOMOFFSET+index]);
+    return this.data[BOTTOMOFFSET+index];
     
 }
 
 static{
     for (int i=0;i<clearvisplane.length;i++)
-        clearvisplane[i]=(byte) 0xFF;
+        clearvisplane[i]=(char) 0xFFFF;
 }
+
+
+public String toString(){
+    sb.setLength(0);
+    sb.append("Visplane\n");
+    sb.append('\t');
+    sb.append("Height: ");
+    sb.append(this.height);
+    sb.append('\t');
+    sb.append("Min-Max: ");
+    sb.append(this.minx);
+    sb.append('-');
+    sb.append(this.maxx);
+    sb.append('\t');
+    sb.append("Picnum: ");    
+    sb.append(this.picnum);
+    sb.append('\t');
+    sb.append("Lightlevel: ");
+    sb.append(this.lightlevel);
+
+    return sb.toString();
+    
+    
+}
+
+
+static StringBuilder sb=new StringBuilder();
+
 
 };

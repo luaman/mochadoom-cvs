@@ -53,6 +53,28 @@ public class sector_t {
      public line_t[] lines;
      
      /** Use for internal identification */
-     public int id;
+     public int id;     
+     
+     public String toString(){
+         sb.setLength(0);
+         sb.append("Sector\n");
+         sb.append('\t');
+         sb.append("FloorHeight: ");
+         sb.append(Integer.toHexString(this.floorheight));
+         sb.append('\t');
+         sb.append("Ceilingheight: ");
+         sb.append(Integer.toHexString(this.ceilingheight));
+         sb.append('\t');
+         sb.append("Floorpic: ");
+         sb.append(this.floorpic);
+         sb.append('\t');
+         sb.append("Ceilingpic: ");
+         sb.append(this.ceilingpic);
+         return sb.toString();
+         
+     }
+
+
+     static StringBuilder sb=new StringBuilder();
      
  }
