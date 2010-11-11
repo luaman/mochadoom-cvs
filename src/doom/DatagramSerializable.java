@@ -14,7 +14,8 @@ package doom;
 public interface DatagramSerializable {
     
         /** Packs object into a byte array suitable to send over 
-         * datagram networks.
+         * datagram networks. Typically, objects cache this array
+         * for later use, and is availabe through cached()
          * 
          * @return
          */
@@ -32,8 +33,8 @@ public interface DatagramSerializable {
         
         /** Deserializes an object from a given byte buffer.
          *  Only the first (sizeof) bytes will be used, dependant
-         *  on each object's implementation.
-         * 
+         *  on each object's implementation. Will NOT also copy
+         *  the byte[] caches. 
          */
         
         public void unpack(byte[] buf);
@@ -45,5 +46,11 @@ public interface DatagramSerializable {
          */
         public void unpack(byte[] buf, int offset);
         
+        /** Only use this if you are 100% sure that the object's content
+         *  won't have changed since the last call of pack(). 
+         *
+         * @return Should return the underlying byte[] array directly.
+         */
+        public byte[] cached();
        
 }

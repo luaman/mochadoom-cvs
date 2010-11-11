@@ -77,7 +77,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.15 2010/10/25 15:57:19 velktron Exp $
+// $Id: DoomMain.java,v 1.16 2010/11/11 15:31:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -92,6 +92,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.16  2010/11/11 15:31:28  velktron
+// Fixed "warped floor" error.
+//
 // Revision 1.15  2010/10/25 15:57:19  velktron
 // Work on netcode...needs moar though.
 //
@@ -171,10 +174,12 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.15 2010/10/25 15:57:19 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.16 2010/11/11 15:31:28 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;
+public static int   RESENDCOUNT =10;
+public static int   PL_DRONE    =0x80;  // bit flag in doomdata->player
 
 public String[]		wadfiles=new String[MAXWADFILES];
 
@@ -326,12 +331,12 @@ public void Display ()
 	    break;
 	if (automapactive)
 	    AM.Drawer ();
-	if (wipe || (R.viewheight != 200 && fullscreen) )
+	if (wipe || (R.viewheight != SCREENHEIGHT && fullscreen) )
 	    redrawsbar = true;
 	if (inhelpscreensstate && !inhelpscreens)
 	    redrawsbar = true;              // just put away the help screen
-	ST.Drawer (R.viewheight == 200, redrawsbar );
-	fullscreen = R.viewheight == 200;
+	ST.Drawer (R.viewheight == SCREENHEIGHT, redrawsbar );
+	fullscreen = R.viewheight == SCREENHEIGHT;
 	break;
 
       case GS_INTERMISSION:
@@ -369,7 +374,7 @@ public void Display ()
     }
 
     // see if the border needs to be updated to the screen
-    if (gamestate == gamestate_t.GS_LEVEL && !automapactive && R.scaledviewwidth != 320)
+    if (gamestate == gamestate_t.GS_LEVEL && !automapactive && R.scaledviewwidth != SCREENWIDTH)
     {
 	if (menuactive || menuactivestate || !viewactivestate)
 	    borderdrawcount = 3;
@@ -400,7 +405,7 @@ public void Display ()
 
     // menus go directly to the screen
     M.Drawer ();          // menu is drawn even on top of everything
-    // TODO: NetUpdate ();         // send out any new accumulation
+    NetUpdate ();         // send out any new accumulation
 
 
     // normal update
@@ -548,7 +553,7 @@ public void AdvanceDemo ()
 
 //
 // This cycles through the demo sequences.
-// FIXME - version dependend demo numbers?
+// FIXME - version dependant demo numbers?
 //
 public void DoAdvanceDemo ()
 {
@@ -2027,9 +2032,9 @@ public void Start ()
      x = mthing.x << FRACBITS; 
      y = mthing.y << FRACBITS; 
       
-     if (!P.CheckPosition (players[playernum].mo, x, y) ) 
-    	 //      return false; 
-    	 // TODO: Requires implementation of Things
+     if (!P.CheckPosition (players[playernum].mo, x, y) )
+         return false;
+     
      // flush an old corpse if needed 
      if (bodyqueslot >= BODYQUESIZE) 
      P.RemoveMobj (bodyque[bodyqueslot%BODYQUESIZE]); 
@@ -2902,9 +2907,9 @@ public DoomMain(){
 
 public void Init(){
     // Random number generator.
-	this.DM=this;
-    this.RND=new random();
     
+	this.DM=this;
+	this.RND=new random();    
     // In primis, the video renderer.
     this.V=new BufferedRenderer(320,200);
     this.S=new DummySoundDriver();
@@ -2933,66 +2938,18 @@ public void Init(){
     
 }
 
-/** Apparently, some code necessary to set at least ONE player is in here. 
- *  Go figure.
- */
 
-public void CheckNetGame ()
-{
-    int             i;
-	
-    /* TODO:
-    for (i=0 ; i<MAXNETNODES ; i++)
-    {
-	nodeingame[i] = false;
-       	nettics[i] = 0;
-	remoteresend[i] = false;	// set when local needs tics
-	resendto[i] = 0;		// which tic to start sending
-    } */
-	
-    // I_InitNetwork sets doomcom and netgame
-    // TODO: I.InitNetwork ();
-    //if (doomcom.id != DOOMCOM_ID)
-	//I_Error ("Doomcom buffer invalid!");
-    
-    /*netbuffer = &doomcom.data;
-    consoleplayer = displayplayer = doomcom.consoleplayer;
-    if (netgame)
-	D_ArbitrateNetStart ();
 
-    printf ("startskill %i  deathmatch: %i  startmap: %i  startepisode: %i\n",
-	    startskill, deathmatch, startmap, startepisode);
-	
-    // read values out of doomcom
-    ticdup = doomcom.ticdup;
-    maxsend = BACKUPTICS/(2*ticdup)-1;
-    if (maxsend<1)
-	maxsend = 1;
-			
-    for (i=0 ; i<doomcom.numplayers ; i++)
-	playeringame[i] = true;
-    for (i=0 ; i<doomcom.numnodes ; i++)
-	nodeingame[i] = true;
-	
-    printf ("player %i of %i (%i nodes)\n",
-	    consoleplayer+1, doomcom.numplayers, doomcom.numnodes); */
-    doomcom.numnodes=1;
-    doomcom.numplayers=1;
-    for (i=0 ; i<doomcom.numplayers ; i++)
-    	playeringame[i] = true;
-}
-
-/** Since it's so intimately tied, it's less troublesome to just keep everything in a single file
+/** Since it's so intimately tied, it's less troublesome to merge the "main" and "network"
+ *  code. 
  * 
  * @author Velktron
  *
  */
 
-class DoomNet {
-    
+   
 doomcom_t   doomcom;    
 doomdata_t  netbuffer;      // points inside doomcom
-DoomFile debugfile;
 StringBuilder sb;
 
 
@@ -3005,8 +2962,6 @@ StringBuilder sb;
 //
 // a gametic cannot be run until nettics[] > gametic for all players
 //
-public static int   RESENDCOUNT =10;
-public static int   PL_DRONE    =0x80;  // bit flag in doomdata->player
 
 ticcmd_t[]  localcmds= new ticcmd_t[BACKUPTICS];
 
@@ -3023,7 +2978,7 @@ int             maketic;
 int     lastnettic;
 int     skiptics;
 int     ticdup;     
-int     maxsend= BACKUPTICS/(2*ticdup)-1;
+int     maxsend; // BACKUPTICS/(2*ticdup)-1;
 
 
 //void D_ProcessEvents (void); 
@@ -3058,7 +3013,7 @@ protected long NetbufferChecksum ()
     c = 0x1234567L;
 
     // FIXME -endianess?
-if (NORMALUNIX){
+if (NORMALUNIX)
     return 0;           // byte order problems
 
 
@@ -3070,10 +3025,11 @@ if (NORMALUNIX){
      */
     l = (NetbufferSize () - 4)/4;
     for (i=0 ; i<l ; i++)
+            // TODO: checksum would be better computer in the netbuffer itself.
+            // The C code actually takes all fields into account.
     c += 0;// TODO: (netbuffer->retransmitfrom)[i] * (i+1);
 
     return c & NCMD_CHECKSUM;
-}
 }
 //
 //
@@ -3103,7 +3059,7 @@ protected int ExpandTics (int low)
 void
 HSendPacket
  (int   node,
-  int   flags )
+  int   flags ) 
 {
     netbuffer.checksum = (int) (NetbufferChecksum () | flags);
 
@@ -3139,11 +3095,8 @@ HSendPacket
     for (i=0 ; i<doomcom.datalength ; i++)
         
         // TODO: get a serialized string representation.
-        DM.debugfile.writeString(netbuffer.toString());
-
-    DM.debugfile.writeChar('\n');
-
-    }
+        DM.debugfile.writeString(netbuffer.toString()+"\n");
+        }
 
     DNI.NetCmd ();
 }
@@ -3152,14 +3105,14 @@ HSendPacket
 // HGetPacket
 // Returns false if no packet is waiting
 //
-private boolean HGetPacket ()
+private boolean HGetPacket () 
 {   
     // Fugly way of "clearing" the buffer.
     sb.setLength(0);
     if (reboundpacket)
     {
     // FIXME: MAES: this looks like a struct copy 
-    *netbuffer = reboundstore;
+    netbuffer.copyFrom(reboundstore);
     doomcom.remotenode = 0;
     reboundpacket = false;
     return true;
@@ -3231,11 +3184,16 @@ private boolean HGetPacket ()
          * 
          */
         
-        
-        for (i=0 ; i<doomcom.datalength ; i++)
-            debugfile.writeString(Integer.toHexString(netbuffer.buffer[i]));
+        try{
+        for (i=0 ; i<doomcom.datalength ; i++) {
+            debugfile.writeString(Integer.toHexString(netbuffer.cached()[i]));
             debugfile.writeChar( '\n');
             }
+            }
+        catch( IOException e){
+        // "Drown" IOExceptions here.
+        }
+    }
     }
     return true;    
 }
@@ -3246,7 +3204,7 @@ private boolean HGetPacket ()
 //
 StringBuilder exitmsg=new StringBuilder(80);
 
-public void GetPackets ()
+public void GetPackets () 
 {
     int     netconsole;
     int     netnode;
@@ -3386,7 +3344,12 @@ public void NetUpdate ()
     gametime = nowtime;
     
     if (newtics <= 0)   // nothing new to update
-    goto listen; 
+    {
+        // listen for other packets
+        GetPackets ();
+        return;
+    } else {
+ 
 
     if (skiptics <= newtics)
     {
@@ -3446,10 +3409,8 @@ public void NetUpdate ()
         HSendPacket (i, 0);
         }
     }
-    
-    // listen for other packets
-  listen:
-    GetPackets ();
+    }
+
 }
 
 
@@ -3459,20 +3420,20 @@ public void NetUpdate ()
 //
 private void CheckAbort ()
 {
-    event_t *ev;
+    event_t ev;
     int     stoptic;
     
-    stoptic = I_GetTime () + 2; 
-    while (I_GetTime() < stoptic) 
-    I_StartTic (); 
+    stoptic = I.GetTime () + 2; 
+    while (I.GetTime() < stoptic) 
+    VI.StartTic (); 
     
-    I_StartTic ();
+    VI.StartTic ();
     for ( ; eventtail != eventhead 
           ; eventtail = (++eventtail)&(MAXEVENTS-1) ) 
     { 
-    ev = &events[eventtail]; 
-    if (ev.type == ev_keydown && ev.data1 == KEY_ESCAPE)
-        I_Error ("Network game synchronization aborted.");
+    ev = events[eventtail]; 
+    if (ev.type == evtype_t.ev_keydown && ev.data1 == KEY_ESCAPE)
+        I.Error ("Network game synchronization aborted.");
     } 
 }
 
@@ -3822,6 +3783,4 @@ public void TryRunTics ()
     NetUpdate ();   // check for new console commands
     }
 }
-}
-
 }

@@ -14,7 +14,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.9 2010/09/25 17:37:13 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.10 2010/11/11 15:31:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,6 +28,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.10  2010/11/11 15:31:28  velktron
+// Fixed "warped floor" error.
+//
 // Revision 1.9  2010/09/25 17:37:13  velktron
 // Lots of changes.
 //
@@ -132,7 +135,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.9 2010/09/25 17:37:13 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.10 2010/11/11 15:31:28 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -348,9 +351,11 @@ int[] palette;
 int[] raster;
 
 /** Get a bunch of BufferedImages "pegged" on the same output screen of this
- * Doom Video Renderer, but with a but with different palettes, defined in icms[]
+ *  Doom Video Renderer, but with a but with different palettes, defined in icms[]
  *  This is VERY speed efficient assuming that an IndexedColorModel will be used,
- *  rather than a 24-bit canvas, and memory overhead is minimal. 
+ *  rather than a 24-bit canvas, and memory overhead is minimal. Call this ONLY
+ *  ONCE when initializing the video renderer, else it will invalidate pretty much
+ *  everything in an ongoing game.
  * 
  *  Only works with BufferedRenderer though.
  * 
@@ -366,15 +371,17 @@ public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
 
         // Create the first of the screens.
         this.icm=icms[screen];
-        setScreen(0,this.getWidth(),this.getHeight());
+        // This will create the first buffered image (and its data array)/
+        // as screenbuffer "screen". Usually this is screen 0.
+        setScreen(screen,this.getWidth(),this.getHeight());
+
         b[screen]=this.screenbuffer[screen];
             
         
-        // MEGA hack: all images share the same raster data.
+        // MEGA hack: all images share the same raster data as screenbuffer[screen].
         WritableRaster r=    screenbuffer[screen].getRaster();
         
-        
-        
+        // Create the rest of the screens (with different palettes) on the same raster.
         for (int i=0;i<icms.length;i++){
             if (i!=screen)
             b[i]=new BufferedImage(icms[i],r, false,null);

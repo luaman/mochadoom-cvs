@@ -30,13 +30,17 @@ public class doomdata_t implements DatagramSerializable {
         C2JUtils.initArrayOfObjects(cmds);
         // Enough space for its own header + the ticcmds;
         buffer=new byte[DOOMDATALEN];
+        // This "pegs" the ByteBuffer to this particular array.
+        // Separate updates are not necessary.
         bbuf=ByteBuffer.wrap(buffer);
     }
     
     // Used for datagram serialization.
-    public byte[] buffer;
+    private byte[] buffer;
     private ByteBuffer bbuf;
 
+    
+    
     @Override
     public byte[] pack() {        
         
@@ -92,5 +96,22 @@ public class doomdata_t implements DatagramSerializable {
     public void selfUnpack(){
         unpack(this.buffer);
     }
+    
+    public void copyFrom(doomdata_t source) {        
+        /*this.checksum=source.checksum;
+        this.numtics=source.numtics;
+        this.player=source.player;
+        this.retransmitfrom=source.retransmitfrom;
+        this.starttic=source.starttic;*/
+        // This should be enough to alter the ByteBuffer too.
+        System.arraycopy(source.cached(), 0, this.buffer, 0, DOOMDATALEN);
+        // This should set all fields
+        selfUnpack();        
+        }
+    
+    @Override
+     public byte[] cached(){
+         return this.buffer;
+     }
 
  }

@@ -73,6 +73,21 @@ import doom.evtype_t;
  *  of the IVideo methods.
  * 
  *  Uses 8-bit buffered images and switchable IndexColorModels.
+ *  
+ *  It's really basic, but allows testing and user interaction.
+ *  Heavily based on the original LinuxDoom X11 implementation, and
+ *  is similar in goals: just a functional, reference implementation
+ *  to build upon whatever fancy extensions you like.
+ *  
+ *  The only "hitch" is that this implementation expects to be 
+ *  initialized upon a BufferedRenderer with multiple images per 
+ *  screen buffer in order to perform the palette switching trick.
+ *  
+ *  The images themselves don't have to be "BufferedImage",
+ *  and in theory it could be possible to use e.g. MemoryImageSource
+ *  for the same purpose . Oh well.
+ *    
+ *  
  * 
  * @author Velktron
  *
@@ -93,7 +108,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	  Robot robby;
 		Canvas drawhere;
 		/** These are the actual screens */
-        BufferedImage[] screens;
+        Image[] screens;
         int palette=0;
         Dimension size;
         Image crap;
@@ -449,17 +464,9 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	protected Cursor createInvisibleCursor()
 
 	{
-
 	Dimension bestCursorDim = Toolkit.getDefaultToolkit().getBestCursorSize(2, 2);
-
 	BufferedImage transparentImage = new BufferedImage(bestCursorDim.width, bestCursorDim.height, BufferedImage.TYPE_INT_ARGB);
-
-	Cursor hiddenCursor = Toolkit.getDefaultToolkit( ).createCustomCursor(transparentImage,
-
-	new Point(1, 1),
-
-	"HiddenCursor");
-
+	Cursor hiddenCursor = Toolkit.getDefaultToolkit( ).createCustomCursor(transparentImage,	new Point(1, 1),	"HiddenCursor");
 	return hiddenCursor;
 	}
 
@@ -474,12 +481,12 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	 * The actual palettes and fixed IndexColorModels are created 
 	 * upon graphics initialization and cannot be changed (however
 	 * they can be switched between), unless I switch to an explicit 
-	 * INT_RGB canvas, which however has only 80% of a BYTE_INDEXED
-	 * one.
+	 * INT_RGB canvas, which however has only 80% performence 
+	 * of a BYTE_INDEXED one.
 	 *  
 	 *  So, actually, we just switch to the proper BufferedImage
 	 *  for display (the raster data is shared, which allows
-	 *  this hack to work).
+	 *  this hack to work with minimal overhead).
 	 */
 	
 	@Override
@@ -527,6 +534,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
       } catch (Exception e){
     	  System.out.println("AWT Robot could not be created, mouse input focus will be loose!");
       }
+      
 	  // check for command-line display name
 	  if ( (pnum=DM.CheckParm("-disp"))!=0 ) // suggest parentheses around assignment
 		displayname = DM.myargv[pnum+1];
@@ -628,7 +636,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	    }
 	  } else {
 		  // Allow it to pull from some default location?
-		  System.err.println("Palletes could not be set up. Bye");
+		  System.err.println("Palettes could not be set up. Bye");
 		  System.exit(-1);
 	  }
 	    

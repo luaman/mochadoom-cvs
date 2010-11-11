@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.16 2010/09/27 15:07:44 velktron Exp $
+// $Id: StatusBar.java,v 1.17 2010/11/11 15:31:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.17  2010/11/11 15:31:28  velktron
+// Fixed "warped floor" error.
+//
 // Revision 1.16  2010/09/27 15:07:44  velktron
 // meh
 //
@@ -123,7 +126,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.16 2010/09/27 15:07:44 velktron Exp $";
+        "$Id: StatusBar.java,v 1.17 2010/11/11 15:31:28 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -460,8 +463,11 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     // whether in automap or first-person
     private st_stateenum_t st_gamestate;
 
-    // whether left-side main status bar is active
-    private Boolean st_statusbaron=false;
+    /** whether left-side main status bar is active. This fugly hax
+     *  (and others like it) are necessary in order to have something
+     *  close to a pointer.
+     */
+    private boolean[] st_statusbaron={false};
 
     // whether status bar chat is active
     private boolean st_chat;
@@ -470,16 +476,16 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     private boolean st_oldchat;
 
     // whether chat window has the cursor on
-    private boolean st_cursoron;
+    private boolean[] st_cursoron={false};
 
     /** !deathmatch */
-    private Boolean st_notdeathmatch=true;
+    private boolean[] st_notdeathmatch={true};
 
     /** !deathmatch && st_statusbaron */
-    private Boolean st_armson=true;
+    private boolean[] st_armson={true};
 
     /** !deathmatch */
-    private Boolean st_fragson=false;
+    private boolean[] st_fragson={false};
 
     // main bar left
     private patch_t sbar;
@@ -543,7 +549,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     // / END WIDGETS ////
 
     // number of frags so far in deathmatch
-    private Integer st_fragscount=0;
+    private int[] st_fragscount={0};
 
     // used to use appopriately pained face
     private int st_oldhealth = -1;
@@ -653,7 +659,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
     public void refreshBackground() {
 
-        if (st_statusbaron) {
+        if (st_statusbaron[0]) {
             V.DrawPatch(ST_X, 0, BG, sbar);
 
             if (DM.netgame)
@@ -1112,20 +1118,20 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         updateFaceWidget();
 
         // used by the w_armsbg widget
-        st_notdeathmatch = !DM.deathmatch;
+        st_notdeathmatch[0] = !DM.deathmatch;
 
         // used by w_arms[] widgets
-        st_armson = st_statusbaron && !DM.deathmatch;
+        st_armson[0] = st_statusbaron[0] && !(DM.altdeath||DM.deathmatch);
 
         // used by w_frags widget
-        st_fragson = DM.deathmatch && st_statusbaron;
-        st_fragscount = 0;
+        st_fragson[0] = (DM.altdeath||DM.deathmatch) && st_statusbaron[0];
+        st_fragscount[0] = 0;
 
         for (i = 0; i < MAXPLAYERS; i++) {
             if (i != DM.consoleplayer)
-                st_fragscount += plyr.frags[i];
+                st_fragscount[0] += plyr.frags[i];
             else
-                st_fragscount -= plyr.frags[i];
+                st_fragscount[0] -= plyr.frags[i];
         }
 
         // get rid of chat window if up because of message
@@ -1199,10 +1205,10 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         int i;
 
         // used by w_arms[] widgets
-        st_armson = st_statusbaron && !DM.deathmatch;
+        st_armson[0] = st_statusbaron[0] && !(DM.deathmatch);
 
         // used by w_frags widget
-        st_fragson = DM.deathmatch && st_statusbaron;
+        st_fragson[0] = DM.deathmatch && st_statusbaron[0];
 
         w_ready.update(refresh);
 
@@ -1247,7 +1253,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
     public void Drawer(boolean fullscreen, boolean refresh) {
 
-        st_statusbaron = (!fullscreen) || DM.automapactive;
+        st_statusbaron[0] = (!fullscreen) || DM.automapactive;
         st_firsttime = st_firsttime || refresh;
 
         // Do red-/gold-shifts from damage/items
@@ -1369,9 +1375,9 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         st_chatstate = st_chatstateenum_t.StartChatState;
         st_gamestate = st_stateenum_t.FirstPersonState;
 
-        st_statusbaron = true;
+        st_statusbaron[0] = true;
         st_oldchat = st_chat = false;
-        st_cursoron = false;
+        st_cursoron[0] = false;
 
         st_faceindex[0] = 0;
         st_palette = -1;
@@ -1404,7 +1410,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         w_ready =
             new st_number_t(ST_AMMOX, ST_AMMOY, tallnum, plyr.ammo,
                     weaponinfo[plyr.readyweapon.ordinal()].ammo.ordinal(),
-                    st_statusbaron, ST_AMMOWIDTH);
+                    st_statusbaron, 0,ST_AMMOWIDTH);
 
         // the last weapon type
         w_ready.data = plyr.readyweapon.ordinal();
@@ -1412,19 +1418,19 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         // health percentage
         w_health =
             new st_percent_t(ST_HEALTHX, ST_HEALTHY, tallnum, plyr.health,
-                    0, st_statusbaron, tallpercent);
+                    0, st_statusbaron,0, tallpercent);
 
         // arms background
         w_armsbg =
-            new st_binicon_t(ST_ARMSBGX, ST_ARMSBGY, armsbg, st_notdeathmatch,
-                    st_statusbaron);
+            new st_binicon_t(ST_ARMSBGX, ST_ARMSBGY, armsbg, st_notdeathmatch,0,
+                    st_statusbaron,0);
 
         // weapons owned
         for (i = 0; i < 6; i++) {
             w_arms[i] =
                 new st_multicon_t(ST_ARMSX + (i % 3) * ST_ARMSXSPACE, ST_ARMSY
                         + (i / 3) * ST_ARMSYSPACE, arms[i], plyr.weaponowned,
-                        i + 1, st_armson);
+                        i + 1, st_armson,0);
         }
 
         // frags sum
@@ -1434,65 +1440,65 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                                                                              // passing
                                                                              // an
                                                                              // integer.
-                    st_fragson, ST_FRAGSWIDTH);
+                    st_fragson,0, ST_FRAGSWIDTH);
 
         // faces
         w_faces =
             new st_multicon_t(ST_FACESX, ST_FACESY, faces, st_faceindex, 0,
-                    st_statusbaron);
+                    st_statusbaron,0);
 
         // armor percentage - should be colored later
         w_armor =
             new st_percent_t(ST_ARMORX, ST_ARMORY, tallnum, plyr.armorpoints,
-                    0, st_statusbaron, tallpercent);
+                    0, st_statusbaron, 0,tallpercent);
 
         // keyboxes 0-2
         w_keyboxes[0] =
             new st_multicon_t(ST_KEY0X, ST_KEY0Y, keys, keyboxes, 0,
-                    st_statusbaron);
+                    st_statusbaron,0);
 
         w_keyboxes[1] =
             new st_multicon_t(ST_KEY1X, ST_KEY1Y, keys, keyboxes, 1,
-                    st_statusbaron);
+                    st_statusbaron,0);
 
         w_keyboxes[2] =
             new st_multicon_t(ST_KEY2X, ST_KEY2Y, keys, keyboxes, 2,
-                    st_statusbaron);
+                    st_statusbaron,0);
 
         // ammo count (all four kinds)
 
         w_ammo[0] =
             new st_number_t(ST_AMMO0X, ST_AMMO0Y, shortnum, plyr.ammo, 0,
-                    st_statusbaron, ST_AMMO0WIDTH);
+                    st_statusbaron,0, ST_AMMO0WIDTH);
 
         w_ammo[1] =
             new st_number_t(ST_AMMO1X, ST_AMMO1Y, shortnum, plyr.ammo, 1,
-                    st_statusbaron, ST_AMMO1WIDTH);
+                    st_statusbaron,0, ST_AMMO1WIDTH);
 
         w_ammo[2] =
             new st_number_t(ST_AMMO2X, ST_AMMO2Y, shortnum, plyr.ammo, 2,
-                    st_statusbaron, ST_AMMO2WIDTH);
+                    st_statusbaron,0, ST_AMMO2WIDTH);
 
         w_ammo[3] =
             new st_number_t(ST_AMMO3X, ST_AMMO3Y, shortnum, plyr.ammo, 3,
-                    st_statusbaron, ST_AMMO3WIDTH);
+                    st_statusbaron,0, ST_AMMO3WIDTH);
 
         // max ammo count (all four kinds)
         w_maxammo[0] =
             new st_number_t(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, plyr.maxammo,
-                    0, st_statusbaron, ST_MAXAMMO0WIDTH);
+                    0, st_statusbaron,0, ST_MAXAMMO0WIDTH);
 
         w_maxammo[1] =
             new st_number_t(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, plyr.maxammo,
-                    1, st_statusbaron, ST_MAXAMMO1WIDTH);
+                    1, st_statusbaron,0, ST_MAXAMMO1WIDTH);
 
         w_maxammo[2] =
             new st_number_t(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, plyr.maxammo,
-                    2, st_statusbaron, ST_MAXAMMO2WIDTH);
+                    2, st_statusbaron,0, ST_MAXAMMO2WIDTH);
 
         w_maxammo[3] =
             new st_number_t(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, plyr.maxammo,
-                    3, st_statusbaron, ST_MAXAMMO3WIDTH);
+                    3, st_statusbaron,0, ST_MAXAMMO3WIDTH);
 
     }
 
@@ -1509,27 +1515,31 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         // last icon value
         boolean oldval;
 
-        // pointer to current icon status
-        Boolean val;
+        /** pointer to current icon status */
+        boolean[] val;
+        int valindex;
 
-        // pointer to boolean
-        // stating whether to update icon
-        Boolean on;
-
+        /** pointer to boolean
+            stating whether to update icon */
+        boolean[] on;
+        int onindex;
+        
         patch_t p; // icon
 
         int data; // user data
 
         // Binary Icon widget routines
 
-        public st_binicon_t(int x, int y, patch_t i, Boolean val, Boolean on) {
+        public st_binicon_t(int x, int y, patch_t i, boolean[] val, int valindex, boolean[] on, int onindex) {
             this.x = x;
             this.y = y;
             this.oldval = false;
             this.val = val;
+            this.valindex=valindex;
             this.on = on;
+            this.onindex=onindex;
             this.p = i;
-            this.val=false;
+            this.val[valindex]=false;;
         }
 
         @Override
@@ -1540,7 +1550,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
             int w;
             int h;
 
-            if (bi.on && (bi.oldval != ((bi.val || refresh)))) {
+            if (bi.on[onindex] && (bi.oldval != ((bi.val[valindex] || refresh)))) {
                 x = bi.x - bi.p.leftoffset;
                 y = bi.y - bi.p.topoffset;
                 w = bi.p.width;
@@ -1549,12 +1559,12 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                 if (y - ST_Y < 0)
                     I.Error("updateBinIcon: y - ST_Y < 0");
 
-                if (bi.val)
+                if (bi.val[valindex])
                     V.DrawPatch(bi.x, bi.y, FG, bi.p);
                 else
                     V.CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
 
-                bi.oldval = bi.val;
+                bi.oldval = bi.val[valindex];
             }
 
         }
@@ -1575,13 +1585,14 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         int oldinum;
 
         /** pointer to current icon, if not an array type. */
-        Object iarray;
+        int[] iarray;
 
         int inum;
 
         // pointer to boolean stating
         // whether to update icon
-        Boolean on;
+        boolean[] on;
+        int onindex;
 
         // list of icons
         patch_t[] p;
@@ -1589,7 +1600,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         // user data
         int data;
 
-        /** special status 0=boolean[] 1=integer[] 2=Integer -1= unspecified */
+        /** special status 0=boolean[] 1=integer[] -1= unspecified */
         int status = -1;
 
         protected boolean[] asboolean;
@@ -1597,7 +1608,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         protected int[] asint;
 
         public st_multicon_t(int x, int y, patch_t[] il, Object iarray,
-                int inum, Boolean on) {
+                int inum, boolean []on,int onindex) {
             this.x = x;
             this.y = y;
             this.oldinum = -1;
@@ -1611,12 +1622,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                 if (iarray instanceof int[]){
                     status = 1;
                 asint = (int[]) iarray;               
-            }  else
-            if (iarray instanceof Integer) {
-                    status = 2;
-                this.iarray = (Integer) iarray;
-
-            }
+            }  
         }
 
         @Override
@@ -1635,14 +1641,11 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                 break;
             case 1:
                 thevalue = asint[inum];
-                break;
-            case 2:
-                thevalue =((Integer)iarray).intValue();
-                break;
+                break;            
             }
 
             // Unified treatment of boolean and integer references
-            if (this.on && ((this.oldinum != thevalue) || refresh)
+            if (this.on[onindex] && ((this.oldinum != thevalue) || refresh)
                     && (thevalue != -1)) {
                 if (this.oldinum != -1) {
                     x = this.x - this.p[this.oldinum].leftoffset;
@@ -1678,16 +1681,20 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         int oldnum;
 
         /**
-         * Array in which to point with num. Alternatively, Integer object that
-         * carries over
+         * Array in which to point with num. 
+         * 
+         * Fun fact: initially I tried to use Integer and Boolean, but those are
+         * immutable -_-. Fuck that, Java.
+         * 
          */
-        Object numarray;
+        int[] numarray;
 
         /** pointer to current value. Of course makes sense only for arrays. */
         int numindex;
 
         /** pointer to boolean stating whether to update number */
-        Boolean on;
+        boolean[] on;
+        int onindex;
 
         /** list of patches for 0-9 */
         patch_t[] p;
@@ -1695,43 +1702,22 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         /** user data */
         int data;
 
-        protected int status = -1;
-
         // Number widget routines
 
-        public st_number_t(int x, int y, patch_t[] pl, Object numarray,
-                int numindex, Boolean on, int width) {
-            if (numarray instanceof int[]) {
-                // int array passed.
-                status = 0;
-                init(x, y, pl, (int[]) numarray, numindex, on, width);
-            } else if (numarray instanceof Integer) {
-                // Reference is to Integer.
-                status = 1;
-                init(x, y, pl, (Integer) numarray, on, width);
-            }
-        }
+        public st_number_t(int x, int y, patch_t[] pl, int[] numarray,
+                int numindex, boolean[] on,int onindex, int width) {
+                init(x, y, pl, numarray, numindex, on,onindex, width);
+                    }
 
-        public void init(int x, int y, patch_t[] pl, Integer numarray,
-                Boolean on, int width) {
+        public void init(int x, int y, patch_t[] pl, int[] numarray,int numindex,
+                boolean[] on, int onindex, int width) {
             this.x = x;
             this.y = y;
             this.oldnum = 0;
             this.width = width;
             this.numarray = numarray;
             this.on = on;
-            this.p = pl;
-        }
-
-        public void init(int x, int y, patch_t[] pl, int[] numarray,
-                int numindex, Boolean on, int width) {
-            this.x = x;
-            this.y = y;
-            this.oldnum = 0;
-            this.width = width;
-            this.numarray = numarray;
-            this.numindex = numindex;
-            this.on = on;
+            this.onindex=onindex;
             this.p = pl;
         }
 
@@ -1746,18 +1732,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
             
             st_number_t n = this;
             int numdigits = this.width;
-            int num = 0;
-
-            
-            
-            switch (status) {
-            case 0:
-                num = ((int[]) this.numarray)[this.numindex];
-                break;
-            case 1:
-                num = ((Integer) this.numarray).intValue();
-                break;
-            }
+            int num = ((int[]) this.numarray)[this.numindex];
 
             int w = this.p[0].width;
             int h = this.p[0].height;
@@ -1813,7 +1788,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
         @Override
         public void update(boolean refresh) {
-            if (this.on)
+            if (this.on[onindex])
                 drawNum(refresh);
         }
 
@@ -1830,15 +1805,15 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         // percent sign graphic
         patch_t p;
 
-        public st_percent_t(int x, int y, patch_t[] pl, Object numarray,
-                int numindex, Boolean on, patch_t percent) {
-            n = new st_number_t(x, y, pl, numarray, numindex, on, 3);
+        public st_percent_t(int x, int y, patch_t[] pl, int[] numarray,
+                int numindex, boolean[] on, int onindex, patch_t percent) {
+            n = new st_number_t(x, y, pl, numarray, numindex, on,onindex, 3);
             p = percent;
         }
 
         @Override
         public void update(boolean refresh) {
-            if (refresh && this.n.on)
+            if (refresh && this.n.on[0])
                 V.DrawPatch(n.x, n.y, FG, p);
 
             n.update(refresh);

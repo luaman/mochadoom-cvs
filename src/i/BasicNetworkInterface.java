@@ -4,8 +4,10 @@ import static data.Defines.*;
 import static data.Limits.*;
 import static doom.NetConsts.*;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
@@ -13,14 +15,13 @@ import w.DoomBuffer;
 
 import doom.DoomContext;
 import doom.DoomMain;
-import doom.DoomNet;
 import doom.doomcom_t;
 import doom.doomdata_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BasicNetworkInterface.java,v 1.1 2010/10/22 16:22:43 velktron Exp $
+// $Id: BasicNetworkInterface.java,v 1.2 2010/11/11 15:31:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -35,6 +36,9 @@ import doom.doomdata_t;
 // GNU General Public License for more details.
 //
 // $Log: BasicNetworkInterface.java,v $
+// Revision 1.2  2010/11/11 15:31:28  velktron
+// Fixed "warped floor" error.
+//
 // Revision 1.1  2010/10/22 16:22:43  velktron
 // Renderer works stably enough but a ton of bleeding. Started working on netcode.
 //
@@ -47,20 +51,25 @@ public class BasicNetworkInterface
         implements DoomNetworkInterface {
 
 
-  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.1 2010/10/22 16:22:43 velktron Exp $";
+  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.2 2010/11/11 15:31:28 velktron Exp $";
 
   ////////////// STATUS ///////////
   
   DoomSystemInterface I;
   DoomMain DM;
-  DoomNet DN;
+  
+  // Mirror those in Doomstat.
+  String[] myargv;
+  int myargc;
   
   public void BasicNetworkInterface(DoomContext DC){
       this.DM=DC.DM;
-      this.DN=DC.DN;
+      this.myargv=DM.myargv;
+      this.myargc=DM.myargc;
       sw=new doomdata_t();
       // We can do that since the buffer is reused.
-      swp=new DatagramPacket(sw.buffer,sw.buffer.length);
+      // Note: this will effectively tie doomdata and the datapacket.
+      swp=new DatagramPacket(sw.cached(),sw.cached().length);
       
       
   }
@@ -118,13 +127,13 @@ public class BasicNetworkInterface
   
   
   // MAES: closest java equivalent
-  InetSocketAddress sendaddress[]=new InetSocketAddress[MAXNETNODES];
+  Socket sendaddress[]=new Socket[MAXNETNODES];
 
 //void    (*netget) (void);
 //void    (*netsend) (void);
 
   
-  interface NetFunction() {
+  interface NetFunction {
       public void invoke();
   }
   
@@ -135,8 +144,8 @@ public class BasicNetworkInterface
   //
   private DatagramSocket UDPsocket ()
   {
-      DatagramSocket s;
-      String err;
+      DatagramSocket s = null;
+      String err=null;
       
       // allocate a socket
       try {
@@ -211,7 +220,11 @@ public class BasicNetworkInterface
       // The socket already contains the address it needs,
       // and the packet's buffer is already modified. Send away.
     
-      sendsocket.send(swp);
+      try {
+        sendsocket.send(swp);
+    } catch (IOException e) {
+        I.Error ("SendPacket error: %s",e.getMessage());
+    }
       
       /*c = sendto (sendsocket , &sw, doomcom.datalength
           ,0,(void *)&sendaddress[doomcom.remotenode]
@@ -231,11 +244,12 @@ public class BasicNetworkInterface
   {
       int         i;
       int         c;
-      InetSocketAddress  fromaddress;
+      Socket  fromaddress; // Only IPV4. Yeah.
       int         fromlen;
       doomdata_t      sw;
                   
-      fromlen = sizeof(fromaddress);
+      //fromlen = fromaddress.sizeof(fromaddress);
+      fromlen = 4;
       // Receive back into swp.
       try {
       insocket.receive(swp);
@@ -253,14 +267,22 @@ public class BasicNetworkInterface
 
       {
       //static int first=1;
-      if (first)
-          System.out.println("len="+c+":p=[0x"+Integer.toHexString(sw.checksum)+" 0x"+ DoomBuffer.getBEInt(sw.buffer[4]));
+      if (first){
+          sb.setLength(0);
+          sb.append("len=");
+          sb.append(c);
+          sb.append(":p=[0x");
+          sb.append(Integer.toHexString(sw.checksum));
+          sb.append(" 0x");
+          sb.append(DoomBuffer.getBEInt(sw.retransmitfrom,sw.starttic,sw.player,sw.numtics));
+          System.out.println(sb.toString());
       first = false;
+      }
       }
 
       // find remote node number
       for (i=0 ; i<doomcom.numnodes ; i++)
-      if ( fromaddress.getAddress() equals(sendaddress[i].getAddress()))
+      if ( fromaddress.getInetAddress().equals(sendaddress[i].getInetAddress()))
           break;
 
       if (i == doomcom.numnodes)
@@ -270,8 +292,8 @@ public class BasicNetworkInterface
       return;
       }
       
-      doomcom.remotenode = i;            // good packet from a game player
-      doomcom.datalength = c;
+      doomcom.remotenode = (short) i;            // good packet from a game player
+      doomcom.datalength = (short) c;
       
       // byte swap
       netbuffer.checksum = ntohl(sw.checksum);
@@ -292,15 +314,16 @@ public class BasicNetworkInterface
   }
 
 
-
-  int GetLocalAddress ()
+/* Doesn't seem to be used anywhere
+  
+  private int GetLocalAddress ()
   {
-      char        hostname[1024];
-      struct hostent* hostentry;  // host information entry
+      String        hostname;
+      HostEntry hostentry;  // host information entry
       int         v;
 
       // get local address
-      v = gethostname (hostname, sizeof(hostname));
+      v = gethostname (hostname);
       if (v == -1)
       I_Error ("GetLocalAddress : gethostname: errno %d",errno);
       
@@ -309,16 +332,12 @@ public class BasicNetworkInterface
       I_Error ("GetLocalAddress : gethostbyname: couldn't get local host");
           
       return *(int *)hostentry.h_addr_list[0];
-  }
+  }*/
 
 
   //
   // I_InitNetwork
   //
-  void I_InitNetwork ()
-  {
-      
-  }
     
     @Override
     public void InitNetwork() {
@@ -327,14 +346,13 @@ public class BasicNetworkInterface
         int         p;
         struct hostent* hostentry;  // host information entry
         
-        doomcom = malloc (sizeof (*doomcom) );
-        memset (doomcom, 0, sizeof(*doomcom) );
-        
+        doomcom = new doomcom_t();
+                
         // set up for network
-        i = M_CheckParm ("-dup");
-        if (i && i< myargc-1)
+        i = DM.CheckParm ("-dup");
+        if ((i!=0) && i< DM.myargc-1)
         {
-        doomcom.ticdup = myargv[i+1][0]-'0';
+        doomcom.ticdup = (short) (DM.myargv[i+1].charAt(0)-'0');
         if (doomcom.ticdup < 1)
             doomcom.ticdup = 1;
         if (doomcom.ticdup > 9)
@@ -343,43 +361,43 @@ public class BasicNetworkInterface
         else
         doomcom. ticdup = 1;
         
-        if (M_CheckParm ("-extratic"))
+        if (DM.CheckParm ("-extratic")!=0)
         doomcom. extratics = 1;
         else
         doomcom. extratics = 0;
             
-        p = M_CheckParm ("-port");
-        if (p && p<myargc-1)
+        p = DM.CheckParm ("-port");
+        if ((p!=0) && (p<DM.myargc-1))
         {
-        DOOMPORT = atoi (myargv[p+1]);
-        printf ("using alternate port %i\n",DOOMPORT);
+        DOOMPORT = Integer.parseInt(DM.myargv[p+1]);
+        System.out.println ("using alternate port "+DOOMPORT);
         }
         
         // parse network game options,
         //  -net <consoleplayer> <host> <host> ...
-        i = M_CheckParm ("-net");
-        if (!i)
+        i = DM.CheckParm ("-net");
+        if (i==0)
         {
         // single player game
-        netgame = false;
+        DM.netgame = false;
         doomcom.id = DOOMCOM_ID;
         doomcom.numplayers = doomcom.numnodes = 1;
-        doomcom.deathmatch = false;
+        doomcom.deathmatch = 0; // false
         doomcom.consoleplayer = 0;
         return;
         }
 
         netsend = PacketSend;
         netget = PacketGet;
-        netgame = true;
+        DM.netgame = true;
 
         // parse player number and host list
-        doomcom.consoleplayer = myargv[i+1][0]-'1';
+        doomcom.consoleplayer = (short) (myargv[i+1].charAt(0)-'1');
 
         doomcom.numnodes = 1;  // this node for sure
         
         i++;
-        while (++i < myargc && myargv[i][0] != '-')
+        while (++i < myargc && myargv[i].charAt(0) != '-')
         {
         sendaddress[doomcom.numnodes].sin_family = AF_INET;
         sendaddress[doomcom.numnodes].sin_port = htons(DOOMPORT);
@@ -426,4 +444,7 @@ public class BasicNetworkInterface
 
     }
 
+    // Instance StringBuilder
+    private StringBuilder sb=new StringBuilder();
+    
 }

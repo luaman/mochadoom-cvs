@@ -36,6 +36,7 @@ import doom.thinker_t;
 public class UnifiedRenderer extends RendererState {
     
     private static final boolean DEBUG=false;
+    private static final boolean DEBUG2=false;
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
     private static int[]           BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
     
@@ -1682,12 +1683,12 @@ public class UnifiedRenderer extends RendererState {
       sscount++;
       sub = LL.subsectors[num];
       frontsector = sub.sector;
-      System.out.println("Frontsector to render :"+frontsector);
+      //System.out.println("Frontsector to render :"+frontsector);
       count = sub.numlines;
       //line = LL.segs[sub.firstline];
       line=sub.firstline;
 
-  //    System.out.println("Trying to find an existing FLOOR visplane...");
+      if (DEBUG) System.out.println("Trying to find an existing FLOOR visplane...");
       if (frontsector.floorheight < viewz)
       {
       floorplane = MyPlanes.FindPlane (frontsector.floorheight,
@@ -2091,8 +2092,7 @@ public class UnifiedRenderer extends RendererState {
         int   stop ) 
       {
           
-          //if (DEBUG) 
-          
+          if (DEBUG2)      
           System.out.println("\t\t\t\tStorewallrange called between "+start+" and "+stop);
           
           int     hyp; //fixed_t
@@ -2449,12 +2449,12 @@ public class UnifiedRenderer extends RendererState {
           // render it
           // FIXME: problem: certain ranges of visplanes are not checked at all.
           if (markceiling){
-              System.out.println("Markceiling");
+              //System.out.println("Markceiling");
           ceilingplane = MyPlanes.CheckPlane(ceilingplane, rw_x, rw_stopx-1);
           }
           
           if (markfloor){
-              System.out.println("Markfloor");
+              //System.out.println("Markfloor");
           floorplane = MyPlanes.CheckPlane (floorplane, rw_x, rw_stopx-1);
           }
 
@@ -2523,9 +2523,11 @@ public class UnifiedRenderer extends RendererState {
       /** To treat as fixed_t */
       int         planeheight;
       /** To treat at fixed_t */
-      int[]           yslope=new int[SCREENHEIGHT];
+      int[]           yslope=new int[SCREENHEIGHT];      
+      float[]           yslopef=new float[SCREENHEIGHT];
       /** To treat as fixed_t */
       int[]           distscale=new int[SCREENWIDTH];
+      float[]           distscalef=new float[SCREENWIDTH];
       /** To treat as fixed_t */
       int         basexscale, baseyscale;
 
@@ -2578,9 +2580,11 @@ public class UnifiedRenderer extends RendererState {
       {
           // MAES: angle_t
           int angle;
+          float dangle;
           // fixed_t
           int distance;
           int length;
+          float dlength;
           int index;
           
       if (RANGECHECK){
@@ -2596,7 +2600,7 @@ public class UnifiedRenderer extends RendererState {
           if (planeheight != cachedheight[y])
           {
           cachedheight[y] = planeheight;
-          distance = cacheddistance[y] = FixedMul (planeheight, yslope[y]);
+          distance = cacheddistance[y] = FixedMul (planeheight , yslope[y]);
           ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
           ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
           }
@@ -2608,10 +2612,17 @@ public class UnifiedRenderer extends RendererState {
           }
           
           length = FixedMul (distance,distscale[x1]);
-          angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>ANGLETOFINESHIFT);
+          angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
           ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-          ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+          ds_yfrac = -viewy - FixedMul(finecosine[(angle-2048)&0x1FFF], length);
 
+          // FIXME: alternate, more FPU-friendly implementation.
+          //dlength = distance*distscalef[x1];
+          //dangle = (float) (2*Math.PI*(float)((viewangle +xtoviewangle[x1])&BITS32)/((float)0xFFFFFFFFL));
+          //ds_xfrac = viewx + (int)(Math.cos(dangle)* length);
+          //ds_yfrac = -viewy -(int)(Math.sin(dangle)* length);
+
+          
           if (fixedcolormap!=null)
           ds_colormap = fixedcolormap;
           else
@@ -2761,7 +2772,7 @@ public class UnifiedRenderer extends RendererState {
         int       stop )
       {
           
-          System.out.println("Checkplane "+index+" between "+start+" and "+stop);
+          if (DEBUG2) System.out.println("Checkplane "+index+" between "+start+" and "+stop);
           
           // Interval ?
           int     intrl;
@@ -2773,7 +2784,7 @@ public class UnifiedRenderer extends RendererState {
           // OK, so we check out ONE particular visplane.
           visplane_t pl=visplanes[index];
           
-          System.out.println("Checking out plane "+pl);
+          if (DEBUG2) System.out.println("Checking out plane "+pl);
           
           int x;
           
@@ -2845,7 +2856,7 @@ public class UnifiedRenderer extends RendererState {
           // Merge the visplane
           pl.minx = unionl;
           pl.maxx = unionh;
-          System.out.println("Plane modified as follows "+pl);
+          //System.out.println("Plane modified as follows "+pl);
           // use the same one
           return index;      
           }
@@ -2864,7 +2875,7 @@ public class UnifiedRenderer extends RendererState {
               
           //return pl;
           
-          System.out.println("New plane created: "+pl);
+          //System.out.println("New plane created: "+pl);
           return lastvisplane-1;
       }
 
@@ -2889,10 +2900,10 @@ public class UnifiedRenderer extends RendererState {
 
         private void MakeSpans(int x, int t1, int b1, int t2, int b2) {
             
-            System.out.println("Makespans "+ x+ " : "+ t1+" "+
+            /*System.out.println("Makespans "+ x+ " : "+ t1+" "+
                 b1+ " "+
                 t2+" "+
-                b2);
+                b2); */
             
             // If t1 = [sentinel value] then this part won't be executed.
             while (t1 < t2 && t1 <= b1) {
@@ -2907,7 +2918,7 @@ public class UnifiedRenderer extends RendererState {
             // So...if t1 for some reason is < t2, we increase t2 AND store the current x
             // at spanstart [t2] :-S
             while (t2 < t1 && t2 <= b2) {
-                System.out.println("Increasing t2");
+                //System.out.println("Increasing t2");
                 spanstart[t2] = x;
                 t2++;
             }
@@ -2916,7 +2927,7 @@ public class UnifiedRenderer extends RendererState {
             // at spanstart [t2] :-S
 
             while (b2 > b1 && b2 >= t2) {
-                System.out.println("Decreasing b2");
+                //System.out.println("Decreasing b2");
                 spanstart[b2] = x;
                 b2--;
             }
@@ -2935,7 +2946,7 @@ public class UnifiedRenderer extends RendererState {
        */
       public void DrawPlanes () 
       {
-          System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes");
+          //System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes");
           visplane_t      pln=null; //visplane_t
           int         light;
           int         x;
@@ -2959,7 +2970,7 @@ public class UnifiedRenderer extends RendererState {
           for (int pl = 0 ; pl < lastvisplane ;  pl++)
           {
               pln=visplanes[pl];
-              System.out.println(pln);
+             if (DEBUG2) System.out.println(pln);
               
           if (pln.minx > pln.maxx)
               continue;
@@ -2988,7 +2999,6 @@ public class UnifiedRenderer extends RendererState {
                   angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                   dc_x = x;
                   dc_source = GetColumn(skytexture, angle);
-                  // TODO: Until you fix texture compositing, this can't work.
                   colfunc.invoke();
               }
               }
@@ -4528,9 +4538,7 @@ public void VideoErase(int ofs, int count) {
      int count;
      int spot;
      
-     System.out.println("R_DrawSpan: "+ds_x1+" to "+ds_x2+" at "+ ds_y);
-     
-     
+     //System.out.println("R_DrawSpan: "+ds_x1+" to "+ds_x2+" at "+ ds_y);
          
      if (RANGECHECK) {
          if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
@@ -4858,15 +4866,19 @@ public void ExecuteSetViewSize ()
     {
     dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
     dy = Math.abs(dy);
-    // MAES: yslope is a field in "r_plane.c" so it should really be in the Rendering Context.
     MyPlanes.yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+    MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
     }
     
+    double cosadjf;
     for (i=0 ; i<viewwidth ; i++)
     {
     // MAES: In this spot we must interpet it as SIGNED, else it's pointless, right?
-    cosadj = Math.abs((int)finecosine(i));
+    // MAES: this spot caused the "warped floor bug", now fixed. Don't forget xtoviewangle[i]!    
+    cosadj = Math.abs(finecosine(xtoviewangle[i]));
+    cosadjf = Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
     MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
+    MyPlanes.distscalef[i] = (float) (1.0/cosadjf);
     }
     
     // Calculate the light levels to use
