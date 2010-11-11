@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.9 2010/11/03 16:48:04 velktron Exp $
+// $Id: fixed_t.java,v 1.10 2010/11/11 23:39:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.10  2010/11/11 23:39:53  velktron
+// Fixed texture alignment bug
+//
 // Revision 1.9  2010/11/03 16:48:04  velktron
 // "Bling" view angles fixed (perhaps related to the "bleeding line bug"?)
 //
@@ -107,7 +110,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.9 2010/11/03 16:48:04 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.10 2010/11/11 23:39:53 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -130,7 +133,7 @@ public static int FixedMul
     return (int)(((long) a * (long ) b.val) >>> FRACBITS);
 }
 
-public static int FixedMul
+public static final int FixedMul
 ( int   a,
   int   b )
 {

@@ -80,7 +80,7 @@ public int getBottom(int index){
 
 static{
     for (int i=0;i<clearvisplane.length;i++)
-        clearvisplane[i]=(char) 0xFFFF;
+        clearvisplane[i]=Character.MAX_VALUE;
 }
 
 

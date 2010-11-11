@@ -1478,7 +1478,7 @@ public class UnifiedRenderer extends RendererState {
           return;
           }
 
-      // Window.
+      // Window. This includes same-level floors with different textures
       if (backsector.ceilingheight != frontsector.ceilingheight
       || backsector.floorheight != frontsector.floorheight) {
           if (DEBUG) System.out.println("Entering ClipSolidWallSegment window with params " + x1 +" " + (x2-1));
@@ -1666,9 +1666,9 @@ public class UnifiedRenderer extends RendererState {
    *      
    */
   
-  public void Subsector (int num)  
+  private void Subsector (int num)  
   {
-      if (DEBUG) System.out.println("\t\tSubSector " + num + " to render");
+      System.out.println("\t\tSubSector " + num + " to render");
       int         count;
       int        line; // pointer into a list of segs instead of seg_t
       subsector_t    sub;
@@ -1682,8 +1682,9 @@ public class UnifiedRenderer extends RendererState {
 
       sscount++;
       sub = LL.subsectors[num];
+      
       frontsector = sub.sector;
-      //System.out.println("Frontsector to render :"+frontsector);
+      System.out.println("Frontsector to render :"+frontsector);
       count = sub.numlines;
       //line = LL.segs[sub.firstline];
       line=sub.firstline;
@@ -1739,7 +1740,7 @@ public class UnifiedRenderer extends RendererState {
       node_t  bsp;
       int     side;
 
-      // Found a subsector? Then further decision are taken, in, well, SubSector.
+      // Found a subsector? Then further decisions are taken, in, well, SubSector.
       if (C2JUtils.flags(bspnum ,NF_SUBSECTOR))
       {
           if (DEBUG)  System.out.println("Subsector found.");
@@ -1939,6 +1940,8 @@ public class UnifiedRenderer extends RendererState {
           if (yh >= floorclip[rw_x])
               yh = floorclip[rw_x]-1;
 
+          // A particular seg has been identified as a floor marker.
+          
           if (markfloor)
           {
               top = yh+1;
@@ -2361,8 +2364,9 @@ public class UnifiedRenderer extends RendererState {
           {
           offsetangle = addAngles(rw_normalangle,-rw_angle1);
           
+          // Another "tricky spot": negative of an unsigned number? 
           if (offsetangle > ANG180)
-              offsetangle = (-offsetangle)&BITS32;
+              offsetangle = (-(int)offsetangle)&BITS32;
 
           if (offsetangle > ANG90)
               offsetangle = ANG90;
@@ -2370,12 +2374,16 @@ public class UnifiedRenderer extends RendererState {
           sineval = finesine(offsetangle);
           rw_offset = FixedMul (hyp, sineval);
 
-          // We can do that if angles are "bonified" at this point.
-          if (rw_normalangle-rw_angle1 < ANG180)
+          // Another bug: we CAN'T assume that the result won't wrap around.
+          // If that assumption is made, then texture alignment issues appear
+          if (((rw_normalangle-rw_angle1)&BITS32) < ANG180)
               rw_offset = -rw_offset;
 
           rw_offset += sidedef.textureoffset + curline.offset;
-          rw_centerangle = addAngles((ANG90 + viewangle), - rw_normalangle);
+          // This is OK, however: we can add as much shit as we want,
+          // as long as we trim it to the 32 LSB. Proof as to why
+          // this is always true is left as an exercise to the reader.
+          rw_centerangle = (ANG90 + viewangle - rw_normalangle)&BITS32;
           
           // calculate light table
           //  use different light tables
@@ -2742,13 +2750,13 @@ public class UnifiedRenderer extends RendererState {
           
           // Add a visplane
           lastvisplane++;
-          //System.out.println("\tadded new visplane at position"+check);
+          System.out.println("\tadded new visplane at position"+check);
           chk.height = height;
           chk.picnum = picnum;
           chk.lightlevel = lightlevel;
           chk.minx = SCREENWIDTH;
           chk.maxx = -1;
-          //System.out.println("\t to "+chk);
+          System.out.println("\t to "+chk);
           //memset (chk.top,0xff,sizeof(chk.top));
           chk.clearTop();
               
@@ -2844,7 +2852,7 @@ public class UnifiedRenderer extends RendererState {
 
           // If the value FF is NOT stored ANYWWHERE inside it, we bail out early
           for (x=intrl ; x<= intrh ; x++)
-              if (pl.getTop(x) != 0x000000ffL)
+              if (pl.getTop(x) != Character.MAX_VALUE)
               break;
 
           // This can only occur if the loop above completes,
@@ -2946,7 +2954,7 @@ public class UnifiedRenderer extends RendererState {
        */
       public void DrawPlanes () 
       {
-          //System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes");
+          System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "+ lastvisplane);
           visplane_t      pln=null; //visplane_t
           int         light;
           int         x;
@@ -2970,7 +2978,8 @@ public class UnifiedRenderer extends RendererState {
           for (int pl = 0 ; pl < lastvisplane ;  pl++)
           {
               pln=visplanes[pl];
-             if (DEBUG2) System.out.println(pln);
+             //if (DEBUG2) 
+              System.out.println(pln);
               
           if (pln.minx > pln.maxx)
               continue;
@@ -3033,17 +3042,12 @@ public class UnifiedRenderer extends RendererState {
           stop = pln.maxx + 1;
 
           
-          for (x=pln.minx ; x<= stop ; x++)
-              
-          {   
-              
-              
-              MakeSpans(x,pln.getTop(x-1),
-                  pln.getBottom(x-1),
-                  pln.getTop(x),
-                  pln.getBottom(x));
-             
-          }
+          for (x=pln.minx ; x<= stop ; x++) {
+        	  MakeSpans(x,pln.getTop(x-1),
+              pln.getBottom(x-1),
+              pln.getTop(x),
+              pln.getBottom(x));
+          	}
           
           //Z_ChangeTag (ds_source, PU_CACHE);
           }
@@ -4714,7 +4718,7 @@ public void RenderPlayerView (player_t player)
   // Check for new console commands.
   //NetUpdate ();
   
-  // FIXME: it's buggy as hell.
+  // FIXME: "Warped floor" fixed, now to fix same-height visplane bleeding.
   MyPlanes.DrawPlanes ();
   
   // Check for new console commands.

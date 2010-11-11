@@ -41,8 +41,7 @@ public class DoomContext {
     public DoomVideoInterface VI;
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
-    public DoomNetworkInterface DNI;
-    public DoomMain.DoomNet DN;    
+    public DoomNetworkInterface DNI;  
     public LevelLoader LL;
     public DoomMenu M;
     public Actions P;
