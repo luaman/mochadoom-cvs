@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.17 2010/10/01 16:47:51 velktron Exp $
+// $Id: Map.java,v 1.18 2010/11/12 13:37:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.18  2010/11/12 13:37:25  velktron
+// Rationalized the LUT system - now it's 100% procedurally generated.
+//
 // Revision 1.17  2010/10/01 16:47:51  velktron
 // Fixed tab interception.
 //
@@ -95,13 +98,11 @@ import static data.Defines.*;
 import static data.Limits.*;
 import static m.fixed_t.*;
 import static doom.englsh.*;
-import static data.SineCosine.*;
 import static data.Tables.*;
 import p.LevelLoader;
 import p.mobj_t;
 import doom.DoomContext;
 import doom.DoomMain;
-import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -110,7 +111,6 @@ import st.DoomStatusBarInterface;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.WadLoader;
-import m.FixedFloat;
 import m.cheatseq_t;
 
 public class Map implements DoomAutoMap{
@@ -124,7 +124,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.17 2010/10/01 16:47:51 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.18 2010/11/12 13:37:25 velktron Exp $";
 
 /*
 #include <stdio.h>

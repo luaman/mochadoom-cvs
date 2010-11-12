@@ -1,11 +1,7 @@
 package doom;
 
 import i.AWTDoom;
-import i.DoomNetworkInterface;
 import i.DoomSystem;
-import i.DoomSystemInterface;
-import i.DoomVideoInterface;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -15,27 +11,16 @@ import static data.dstrings.*;
 import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
-import automap.DoomAutoMap;
 import automap.Map;
-import f.Finale;
 import f.Wiper;
-import g.DoomSaveGame;
 import hu.HU;
 import m.Menu;
 import m.random;
-import static doom.NetConsts.CMD_GET;
-import static doom.NetConsts.CMD_SEND;
-import static doom.NetConsts.DOOMCOM_ID;
-import static doom.NetConsts.NCMD_CHECKSUM;
-import static doom.NetConsts.NCMD_EXIT;
-import static doom.NetConsts.NCMD_KILL;
-import static doom.NetConsts.NCMD_RETRANSMIT;
-import static doom.NetConsts.NCMD_SETUP;
+import static doom.NetConsts.*;
 import static doom.englsh.*;
 import data.dstrings;
 import data.mapthing_t;
 import data.mobjtype_t;
-import data.sounds;
 import data.Defines.GameMission_t;
 import data.Defines.GameMode_t;
 import data.Defines.ammotype_t;
@@ -49,35 +34,27 @@ import static data.Defines.NORMALUNIX;
 import static data.Defines.VERSION;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
-import s.DoomSoundInterface;
 import s.DummySoundDriver;
 import st.StatusBar;
 import utils.C2JUtils;
 import utils.PrintfFormat;
 import v.BufferedRenderer;
-import v.DoomVideoRenderer;
 import w.DoomFile;
-import w.EndLevel;
 import w.WadLoader;
 import static data.Defines.*;
 import static data.Limits.*;
-import static data.SineCosine.finecosine;
-import static data.SineCosine.finesine;
-import static data.Tables.ANG45;
-import static data.Tables.ANGLETOFINESHIFT;
+import static data.Tables.*;
 import static data.dstrings.SAVEGAMENAME;
 import static data.info.mobjinfo;
 import static data.info.states;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
-import static p.MapUtils.*;
-import static p.mobj_t.*;
 import static utils.C2JUtils.*;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.16 2010/11/11 15:31:28 velktron Exp $
+// $Id: DoomMain.java,v 1.17 2010/11/12 13:37:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -92,6 +69,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.17  2010/11/12 13:37:25  velktron
+// Rationalized the LUT system - now it's 100% procedurally generated.
+//
 // Revision 1.16  2010/11/11 15:31:28  velktron
 // Fixed "warped floor" error.
 //
@@ -174,7 +154,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.16 2010/11/11 15:31:28 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.17 2010/11/12 13:37:25 velktron Exp $";
 
 public static final int	BGCOLOR=		7;
 public static final int	FGCOLOR		=8;

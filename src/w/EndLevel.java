@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.5 2010/09/23 07:31:11 velktron Exp $
+// $Id: EndLevel.java,v 1.6 2010/11/12 13:37:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.6  2010/11/12 13:37:25  velktron
+// Rationalized the LUT system - now it's 100% procedurally generated.
+//
 // Revision 1.5  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -56,17 +59,19 @@ package w;
 
 import static data.Defines.*;
 import static data.Limits.*;
+import i.DoomStatusAware;
 import data.Defines.GameMode_t;
+import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
-import doom.DoomStatus;
+import doom.DoomMain;
 import doom.event_t;
 import doom.player_t;
 import doom.wbplayerstruct_t;
 import doom.wbstartstruct_t;
 import m.random;
 import rr.*;
-import utils.C2JUtils;
+import s.DoomSoundInterface;
 import utils.PrintfFormat;
 import v.DoomVideoRenderer;
 
@@ -77,11 +82,12 @@ import v.DoomVideoRenderer;
  *
  */
 
-public class EndLevel{
+public class EndLevel implements DoomStatusAware{
 
     ////////////////// STATUS ///////////////////
-    private DoomStatus DS;
+    private DoomMain DS;
     private DoomVideoRenderer V;
+    private DoomSoundInterface S;
     private WadLoader W;
     private random RND;
     
@@ -243,11 +249,8 @@ patch_t[]		num=new patch_t[10];
 
 
 public EndLevel(DoomContext DC) {
-    this.DS=DC.DS;
-    this.V=DC.V;
-    this.W=DC.W;
-    this.RND=DC.RND;
-    //this.wbs=new wbstartstruct_t();
+    this.updateStatus(DC);
+   
     this.Start(DS.wminfo);
 }
 
@@ -764,15 +767,15 @@ protected void updateDeathmatchStats()
 	}
 	
 
-	// TODO:S_StartSound(0, sfx_barexp);
+	S.StartSound(null, sfxenum_t.sfx_barexp);
 	dm_state = 4;
     }
 
     
     if (dm_state == 2)
     {
-	if ((bcnt&3)==0);
-	    // TODO: S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	     S.StartSound(null, sfxenum_t.sfx_pistol);
 	
 	stillticking = false;
 
@@ -811,7 +814,7 @@ protected void updateDeathmatchStats()
 	}
 	if (!stillticking)
 	{
-	 // TODO:   S_StartSound(0, sfx_barexp);
+	    S.StartSound(null,sfxenum_t.sfx_barexp);
 	    dm_state++;
 	}
 
@@ -820,7 +823,7 @@ protected void updateDeathmatchStats()
     {
 	if (acceleratestage!=0)
 	{
-	   // TODO: S_StartSound(0, sfx_slop);
+	    S.StartSound(null, sfxenum_t.sfx_slop);
 
 	    if ( DS.gamemode == GameMode_t.commercial)
 		initNoState();
@@ -849,9 +852,7 @@ protected void drawDeathmatchStats()
     int		y;
     int		w;
     
-    int		lh;	// line height
-
-    lh = WI_SPACINGY;
+    int		lh = WI_SPACINGY; // line height
 
     slamBackground();
     
@@ -991,14 +992,14 @@ protected void updateNetgameStats()
 	    if (dofrags!=0)
 		cnt_frags[i] = fragSum(i);
 	}
-	// TODO:S_StartSound(0, sfx_barexp);
+	S.StartSound(null, sfxenum_t.sfx_barexp);
 	ng_state = 10;
     }
 
     if (ng_state == 2)
     {
-	if ((bcnt&3)==0);
-	    // TODO:S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	    S.StartSound(null,  sfxenum_t.sfx_pistol);
 
 	stillticking = false;
 
@@ -1017,14 +1018,14 @@ protected void updateNetgameStats()
 	
 	if (!stillticking)
 	{
-	  //TODO:S_StartSound(0, sfx_barexp);
+	    S.StartSound(null,  sfxenum_t.sfx_barexp);
 	    ng_state++;
 	}
     }
     else if (ng_state == 4)
     {
-	if ((bcnt&3)==0);
-	  //TODO: S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	   S.StartSound(null,  sfxenum_t.sfx_pistol);
 
 	stillticking = false;
 
@@ -1041,14 +1042,14 @@ protected void updateNetgameStats()
 	}
 	if (!stillticking)
 	{
-	  //TODO: S_StartSound(0, sfx_barexp);
+	   S.StartSound(null,  sfxenum_t.sfx_barexp);
 	    ng_state++;
 	}
     }
     else if (ng_state == 6)
     {
-	if ((bcnt&3)==0);
-	  //TODO: S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	   S.StartSound(null,  sfxenum_t.sfx_pistol);
 
 	stillticking = false;
 
@@ -1067,14 +1068,14 @@ protected void updateNetgameStats()
 	
 	if (!stillticking)
 	{
-	    //TODO:S_StartSound(0, sfx_barexp);
+	    S.StartSound(null, sfxenum_t.sfx_barexp);
 	    ng_state += 1 + 2*~dofrags;
 	}
     }
     else if (ng_state == 8)
     {
-	if ((bcnt&3)==0);
-	  //TODO:S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	  S.StartSound(null,  sfxenum_t.sfx_pistol);
 
 	stillticking = false;
 
@@ -1093,7 +1094,7 @@ protected void updateNetgameStats()
 	
 	if (!stillticking)
 	{
-	  //TODO:S_StartSound(0, sfx_pldeth);
+	    S.StartSound(null,  sfxenum_t.sfx_pldeth);
 	    ng_state++;
 	}
     }
@@ -1101,7 +1102,7 @@ protected void updateNetgameStats()
     {
 	if (acceleratestage!=0)
 	{
-	  //TODO: S_StartSound(0, sfx_sgcock);
+	   S.StartSound(null,  sfxenum_t.sfx_sgcock);
 	    if ( DS.gamemode == GameMode_t.commercial )
 		initNoState();
 	    else
@@ -1203,7 +1204,7 @@ protected void updateStats()
 	cnt_secret[0] = (plrs[me].ssecret * 100) / wbs.maxsecret;
 	cnt_time = plrs[me].stime / TICRATE;
 	cnt_par = wbs.partime / TICRATE;
-	// TODO:S_StartSound(0, sfx_barexp);
+	S.StartSound(null,  sfxenum_t.sfx_barexp);
 	sp_state = 10;
     }
 
@@ -1211,13 +1212,13 @@ protected void updateStats()
     {
 	cnt_kills[0] += 2;
 
-	if ((bcnt&3)==0);
-	    //TODO: S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	     S.StartSound(null,  sfxenum_t.sfx_pistol);
 
 	if (cnt_kills[0] >= (plrs[me].skills * 100) / wbs.maxkills)
 	{
 	    cnt_kills[0] = (plrs[me].skills * 100) / wbs.maxkills;
-	   // TODO: S_StartSound(0, sfx_barexp);
+	    S.StartSound(null, sfxenum_t.sfx_barexp);
 	    sp_state++;
 	}
     }
@@ -1225,13 +1226,13 @@ protected void updateStats()
     {
 	cnt_items[0] += 2;
 
-	if ((bcnt&3)==0);
-	    // TODO: S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	     S.StartSound(null, sfxenum_t.sfx_pistol);
 
 	if (cnt_items[0] >= (plrs[me].sitems * 100) / wbs.maxitems)
 	{
 	    cnt_items[0] = (plrs[me].sitems * 100) / wbs.maxitems;
-	    // TODO: S_StartSound(0, sfx_barexp);
+	     S.StartSound(null, sfxenum_t.sfx_barexp);
 	    sp_state++;
 	}
     }
@@ -1239,21 +1240,21 @@ protected void updateStats()
     {
 	cnt_secret[0] += 2;
 
-	if ((bcnt&3)==0);
-	    // TODO: S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	     S.StartSound(null, sfxenum_t.sfx_pistol);
 
 	if (cnt_secret[0] >= (plrs[me].ssecret * 100) / wbs.maxsecret)
 	{
 	    cnt_secret[0] = (plrs[me].ssecret * 100) / wbs.maxsecret;
-	    // TODO: S_StartSound(0, sfx_barexp);
+	     S.StartSound(null, sfxenum_t.sfx_barexp);
 	    sp_state++;
 	}
     }
 
     else if (sp_state == COUNT_TIME)
     {
-	if ((bcnt&3)==0);
-	   // TODO: S_StartSound(0, sfx_pistol);
+	if ((bcnt&3)==0)
+	    S.StartSound(null, sfxenum_t.sfx_pistol);
 
 	cnt_time += 3;
 
@@ -1268,7 +1269,7 @@ protected void updateStats()
 
 	    if (cnt_time >= plrs[me].stime / TICRATE)
 	    {
-		// TODO: S_StartSound(0, sfxenum_t.sfx_barexp);
+		 S.StartSound(null, sfxenum_t.sfx_barexp);
 		sp_state++;
 	    }
 	}
@@ -1277,7 +1278,7 @@ protected void updateStats()
     {
 	if (acceleratestage!=0)
 	{
-	    // TODO: S_StartSound(0, sfxenum_t.sfx_sgcock);
+	     S.StartSound(null, sfxenum_t.sfx_sgcock);
 
 	    if (DS.gamemode == GameMode_t.commercial)
 		initNoState();
@@ -1372,11 +1373,10 @@ public void Ticker()
     {
 	// intermission music
   	if ( DS.gamemode == GameMode_t.commercial )
-  	    ;
-  	//TODO: S_ChangeMusic(mus_dm2int, true);
+  	
+  	    S.ChangeMusic(musicenum_t.mus_dm2int.ordinal(), true);
 	else
-	    ;
-	  //TODO: S_ChangeMusic(mus_inter, true); 
+	    S.ChangeMusic(musicenum_t.mus_inter.ordinal(), true); 
     }
 
     checkForAccelerate();
@@ -1737,6 +1737,17 @@ protected int NG_STATSX(){
 
 protected static boolean RNGCHECK(int what, int min, int max){
     return (what>=min && what <=max)?true:false;
+}
+
+@Override
+public void updateStatus(DoomContext DC) {
+    this.DS=DC.DM;
+    this.V=DC.V;
+    this.W=DC.W;
+    this.RND=DC.RND;
+    this.S=DC.S;
+
+    
 }
 
 }

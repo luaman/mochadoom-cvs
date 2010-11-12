@@ -6,8 +6,6 @@ import static data.Limits.*;
 import static doom.player_t.*;
 
 import static p.mobj_t.*;
-import static data.SineCosine.finecosine;
-import static data.SineCosine.finesine;
 import static data.Tables.*;
 import static m.fixed_t.*;
 import static m.BBox.*;

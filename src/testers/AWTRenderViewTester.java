@@ -40,6 +40,7 @@ import data.Defines.GameMode_t;
 import data.Defines.Language_t;
 import data.Defines.gamestate_t;
 import data.Defines.skill_t;
+import data.Tables;
 import doom.DoomContext;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -56,10 +57,13 @@ public class AWTRenderViewTester {
     
     public static void main(String[] argv) {
         try {
-        	
+    
+            Tables.InitTables();
+            
     // Create a Wad file loader.
+    
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad","weird.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"});
     
     //Defines.SCREENHEIGHT=HEIGHT;
     //Defines.SCREENHEIGHT=WIDTH;

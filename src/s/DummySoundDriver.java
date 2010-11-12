@@ -15,7 +15,7 @@ import data.sounds.sfxenum_t;
 public class DummySoundDriver implements DoomSoundInterface{
 
 	@Override
-	public void ChangeMusic(int music_id, int looping) {
+	public void ChangeMusic(int music_id, boolean looping) {
 		// TODO Auto-generated method stub
 		
 	}

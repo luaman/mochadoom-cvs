@@ -1,42 +1,17 @@
 package rr;
 
-import static data.Defines.RANGECHECK;
-import static data.Defines.SCREENHEIGHT;
-import static data.Defines.SCREENWIDTH;
-import static data.Limits.MAXHEIGHT;
-import static data.Limits.MAXOPENINGS;
-import static data.Limits.MAXVISPLANES;
-import static data.Limits.MAXWIDTH;
-import static data.SineCosine.finesine;
-import static data.Tables.ANG180;
-import static data.Tables.ANG270;
-import static data.Tables.ANG90;
-import static data.Tables.ANGLETOFINESHIFT;
-import static data.Tables.BITS32;
-import static data.Tables.DBITS;
-import static data.Tables.FINEANGLES;
-import static data.Tables.SLOPERANGE;
-import static data.Tables.SlopeDiv;
-import static data.Tables.tantoangle;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FRACUNIT;
-import static m.fixed_t.FixedDiv;
-import static m.fixed_t.FixedMul;
 import p.LevelLoader;
 import p.UnifiedGameMap;
 import i.DoomStatusAware;
 import i.DoomSystemInterface;
-import m.fixed_t;
 import rr.UnifiedRenderer.BSP;
 import rr.UnifiedRenderer.Planes;
 import rr.UnifiedRenderer.Segs;
 import rr.UnifiedRenderer.Things;
-import rr.UnifiedRenderer.colfunc_t;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 import doom.DoomContext;
 import doom.DoomMain;
-import doom.player_t;
 
 public abstract class RendererState implements DoomStatusAware{
 

@@ -114,5 +114,10 @@ public class ticcmd_t implements DatagramSerializable{
         buttons=(char) (0x00FF& buf[7+offset]);
         
     }
+
+    @Override
+    public byte[] cached() {
+        return this.buffer;
+    }
    
 };

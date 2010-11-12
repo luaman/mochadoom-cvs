@@ -40,8 +40,6 @@ import static data.Limits.MAXSKULLS;
 import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.NUMBRAINTARGETS;
 import static data.Limits.NUMMOBJTYPES;
-import static data.SineCosine.finecosine;
-import static data.SineCosine.finesine;
 import static data.Tables.ANG180;
 import static data.Tables.ANG270;
 import static data.Tables.ANG45;
