@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.17 2010/11/11 15:31:28 velktron Exp $
+// $Id: StatusBar.java,v 1.18 2010/11/14 20:30:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.18  2010/11/14 20:30:29  velktron
+// Resolution changes...kind of.
+//
 // Revision 1.17  2010/11/11 15:31:28  velktron
 // Fixed "warped floor" error.
 //
@@ -126,7 +129,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.17 2010/11/11 15:31:28 velktron Exp $";
+        "$Id: StatusBar.java,v 1.18 2010/11/14 20:30:29 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -146,7 +149,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
     // Size of statusbar.
     // Now sensitive for scaling.
-    public static int ST_HEIGHT = 32 * SCREEN_MUL;
+    public static int ST_HEIGHT = (int) (32 * SCREEN_MUL);
 
     public static int ST_WIDTH = SCREENWIDTH;
 

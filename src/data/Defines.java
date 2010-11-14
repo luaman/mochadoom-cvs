@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.19 2010/10/14 18:37:14 velktron Exp $
+// $Id: Defines.java,v 1.20 2010/11/14 20:30:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -119,20 +119,19 @@ public static int BASE_WIDTH =     320;
 //  scaling e.g. to 2. Drawing of status bar,
 //  menues etc. is tied to the scale implied
 //  by the graphics.
-public static int SCREEN_MUL =1;
+public static float SCREEN_MUL =(float) 1.5;
 public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 // Defines suck. C sucks.
 // C++ might sucks for OOP, but it sure is a better C.
 // So there.
 
-public static int SCREENWIDTH = 320;
+public static final int SCREENWIDTH = (int) (BASE_WIDTH*SCREEN_MUL);
 //SCREEN_MUL*BASE_WIDTH //320
-public static int SCREENHEIGHT= 200;
-//(int)(SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO) //200
+public static final int SCREENHEIGHT= (int) (SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO); //200
 
 // State updates, number of tics / second.
-public static int TICRATE = 35;
+public static final int TICRATE = 35;
 
 // The current state of the game: whether we are
 // playing, gazing at the intermission screen,
@@ -1693,6 +1692,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.19 2010/10/14 18:37:14 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.20 2010/11/14 20:30:29 velktron Exp $";
 }
 

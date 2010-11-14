@@ -24,7 +24,7 @@ public final class Limits {
 
 	// These are only used in the renderer, effectively putting
 	// a limit to the size of lookup tables for screen buffers.
-	public static final int MAXWIDTH = 1120;
+	public static final int MAXWIDTH = 1280;
 	public static final int MAXHEIGHT = 832;
 
 	// Command line/file limits

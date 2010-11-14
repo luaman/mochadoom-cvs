@@ -1,6 +1,5 @@
 package testers;
 
-import static data.Defines.KEY_F1;
 import static data.Defines.PU_STATIC;
 import static data.Limits.MAXEVENTS;
 
@@ -8,12 +7,6 @@ import hu.HU;
 import i.AWTDoom;
 import i.DoomSystem;
 import i.DoomSystemInterface;
-import i.InputListener;
-
-import java.awt.image.BufferedImage;
-import java.awt.image.IndexColorModel;
-
-import javax.swing.JFrame;
 
 import p.Actions;
 import p.LevelLoader;
@@ -21,17 +14,13 @@ import p.LevelLoader;
 import automap.Map;
 
 import rr.UnifiedRenderer;
-import rr.patch_t;
 import s.DummySoundDriver;
 import st.StatusBar;
 
 import m.DoomMenu;
-import m.FixedFloat;
 import m.Menu;
 import m.random;
-import utils.C2JUtils;
 import v.BufferedRenderer;
-import v.SimpleRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
 import data.Defines;
@@ -41,19 +30,16 @@ import data.Defines.Language_t;
 import data.Defines.gamestate_t;
 import data.Defines.skill_t;
 import data.Tables;
-import doom.DoomContext;
 import doom.DoomMain;
-import doom.DoomStatus;
 import doom.event_t;
-import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
 
 /** This is a very simple tester for Menu module  */
 
 public class AWTRenderViewTester {
-    public static final int WIDTH=320;
-    public static final int HEIGHT=200;
+    public static final int WIDTH=Defines.SCREENWIDTH;
+    public static final int HEIGHT=Defines.SCREENHEIGHT;
     
     public static void main(String[] argv) {
         try {
@@ -63,10 +49,8 @@ public class AWTRenderViewTester {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad", "easy.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad","cross.wad"});
     
-    //Defines.SCREENHEIGHT=HEIGHT;
-    //Defines.SCREENHEIGHT=WIDTH;
     System.out.println("Total lumps read: "+W.numlumps);
 
     // Read the palette.
@@ -191,7 +175,7 @@ public class AWTRenderViewTester {
         //DM.players[0].mo.x=ox+(int) ((12864<<16)*Math.cos(2*Math.PI*i/500.0));
         //DM.players[0].mo.y=oy+(int) ((64<<16)*Math.sin(2*Math.PI*i/500.0));
         //DM.players[0].mo.angle= ((long)(0xFFFFFFFFL*(Math.atan2(DM.players[0].mo.y-oy,DM.players[0].mo.x-ox)+Math.PI)/(2*Math.PI)))&0xFFFFFFFFL;
-        DM.players[0].mo.angle=(DM.players[0].mo.angle-0x200000)&0xFFFFFFFFL;
+        DM.players[0].mo.angle=(DM.players[0].mo.angle-0x800000)&0xFFFFFFFFL;
         //System.out.println(">>>>>>>>>>>>>>>>>> VIEW ANGLE "+360.0*(DM.players[0].mo.angle>>19)/8192.0); 
        
         DM.R.RenderPlayerView(DM.players[0]);
@@ -206,9 +190,9 @@ public class AWTRenderViewTester {
         	    System.out.println(i +" frames in " +((b-a)/1e09) +" = "+i/((b-a)/1e09) + " fps");
         }
        // System.out.print(frame.processEvents());
-        /*while (ba-DM.I.GetTime()>-70){
+        while (ba-DM.I.GetTime()==0){
             Thread.sleep(10);               
-        }*/
+        }
         }
             } catch (Exception e){
                 e.printStackTrace();

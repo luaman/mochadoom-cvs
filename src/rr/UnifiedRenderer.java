@@ -2628,13 +2628,13 @@ public class UnifiedRenderer extends RendererState {
           length = FixedMul (distance,distscale[x1]);
           angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
           ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-          ds_yfrac = -viewy - FixedMul(finecosine[(angle-2048)&0x1FFF], length);
+          ds_yfrac = -viewy - FixedMul(finesine[angle], length);
 
           // FIXME: alternate, more FPU-friendly implementation.
-          //dlength = distance*distscalef[x1];
-          //dangle = (float) (2*Math.PI*(float)((viewangle +xtoviewangle[x1])&BITS32)/((float)0xFFFFFFFFL));
-          //ds_xfrac = viewx + (int)(Math.cos(dangle)* length);
-          //ds_yfrac = -viewy -(int)(Math.sin(dangle)* length);
+          //dlength = (distance);//*distscalef[x1];
+          //dangle = (float) (2*Math.PI*(double)((viewangle +xtoviewangle[x1])&BITS32)/((double)0xFFFFFFFFL));
+          //ds_xfrac = viewx + (int)(Math.cos(dangle)* dlength);
+          //ds_yfrac = -viewy -(int)(Math.sin(dangle)* dlength);
 
           
           if (fixedcolormap!=null)
@@ -4423,7 +4423,7 @@ public void VideoErase(int ofs, int count) {
 
      String name;
 
-     if (scaledviewwidth == 320)
+     if (scaledviewwidth == SCREENWIDTH)
          return;
 
      if (DM.gamemode == GameMode_t.commercial)

@@ -161,7 +161,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
            
            //Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
            //voli.getGraphics().drawImage(bi,0,0,null);
-           g2d.drawImage(screens[palette],0,0,this);
+           g2d.drawImage(screens[palette],0,20,this);
            
         }
         
