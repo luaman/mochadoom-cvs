@@ -57,7 +57,8 @@ public class sector_t {
      
      public String toString(){
          sb.setLength(0);
-         sb.append("Sector\n");
+         sb.append("Sector id: ");
+         sb.append(id);
          sb.append('\t');
          sb.append("FloorHeight: ");
          sb.append(Integer.toHexString(this.floorheight));

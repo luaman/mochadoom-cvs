@@ -6,7 +6,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.13 2010/11/12 13:37:25 velktron Exp $
+// $Id: Tables.java,v 1.14 2010/11/14 20:00:21 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.14  2010/11/14 20:00:21  velktron
+// Bleeding floor bug fixed!
+//
 // Revision 1.13  2010/11/12 13:37:25  velktron
 // Rationalized the LUT system - now it's 100% procedurally generated.
 //
@@ -392,7 +395,7 @@ public static void InitTables(){
     
     a=(float)((i<<5)/65536.0);
     t=(int)((float)(2*Math.atan(a)/PI)*0x40000000); 
-    System.out.println(tantoangle[i] = t);
+    tantoangle[i] = t;
     }
     
     }

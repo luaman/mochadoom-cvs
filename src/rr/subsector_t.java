@@ -24,5 +24,25 @@ public class subsector_t {
 	public sector_t sector;
 	public short numlines;
 	public short firstline;
+	
+	public String toString(){
+		sb.setLength(0);
+		sb.append("Subsector");
+		sb.append('\t');
+		sb.append("Sector: ");
+		sb.append(sector);
+		sb.append('\t');
+		sb.append("numlines ");
+		sb.append(numlines);
+		sb.append('\t');
+		sb.append("firstline ");
+		sb.append(firstline);
+		return sb.toString();
+		
+		
+	}
+	
+	private static StringBuilder sb=new StringBuilder();
+	
 
 }

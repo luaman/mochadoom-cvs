@@ -1381,7 +1381,9 @@ public class UnifiedRenderer extends RendererState {
    *  Called after a SubSector BSP trasversal ends up in a "final" subsector.
    *  
    *  Clips the given segment and adds any visible pieces to the line list.
-   *  It also contructct
+   *  It also determines what kind of boundary (line) visplane clipping
+   *  should be performed. E.g. window, final 1-sided line, closed door etc.)
+   *  CAREFUL: was the source of much frustration with visplanes...
    *  
    */
   private void AddLine (seg_t  line) 
@@ -1397,8 +1399,8 @@ public class UnifiedRenderer extends RendererState {
       curline = line;
 
       // OPTIMIZE: quickly reject orthogonal back sides.
-      angle1 = PointToAngle (line.v1.x, line.v1.y);
-      angle2 = PointToAngle (line.v2.x, line.v2.y);
+      angle1 = PointToAngle (line.v1x, line.v1y);
+      angle2 = PointToAngle (line.v2x, line.v2y);
       
       // Clip to view edges.
       // OPTIMIZE: make constant out of 2*clipangle (FIELDOFVIEW).
@@ -1494,9 +1496,15 @@ public class UnifiedRenderer extends RendererState {
       && backsector.lightlevel == frontsector.lightlevel
       && curline.sidedef.midtexture == 0)
       {
-     // System.out.println("NOTHING DRAWN!");
       return;
       }
+      
+      // If nothing of the previous holds, then we are
+      // treating the case of same-level, differently
+      // textured floors. ACHTUNG, this caused the "bleeding floor"
+      // bug, which is now fixed.
+      // Fucking GOTOs....
+      ClipPassWallSegment (x1, x2-1); // to clippass
       if (DEBUG) System.out.println("Exiting AddLine for "+line);
   }
 
@@ -1666,7 +1674,7 @@ public class UnifiedRenderer extends RendererState {
   
   private void Subsector (int num)  
   {
-      System.out.println("\t\tSubSector " + num + " to render");
+      if(DEBUG)System.out.println("\t\tSubSector " + num + " to render");
       int         count;
       int        line; // pointer into a list of segs instead of seg_t
       subsector_t    sub;
@@ -1682,7 +1690,7 @@ public class UnifiedRenderer extends RendererState {
       sub = LL.subsectors[num];
       
       frontsector = sub.sector;
-      System.out.println("Frontsector to render :"+frontsector);
+      if(DEBUG) System.out.println("Frontsector to render :"+frontsector);
       count = sub.numlines;
       //line = LL.segs[sub.firstline];
       line=sub.firstline;
@@ -1809,9 +1817,9 @@ public class UnifiedRenderer extends RendererState {
           
           lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
-          if (curline.v1.y == curline.v2.y)
+          if (curline.v1y == curline.v2y)
           lightnum--;
-          else if (curline.v1.x == curline.v2.x)
+          else if (curline.v1x == curline.v2x)
           lightnum++;
 
           if (lightnum < 0)       
@@ -2139,7 +2147,7 @@ public class UnifiedRenderer extends RendererState {
 
           // It should fit even in a signed int, by now.
           distangle = (int) (ANG90 - offsetangle);
-          hyp = PointToDist (curline.v1.x, curline.v1.y);
+          hyp = PointToDist (curline.v1x, curline.v1y);
           sineval = finesine(distangle);
           rw_distance = FixedMul (hyp, sineval);
           
@@ -2391,9 +2399,9 @@ public class UnifiedRenderer extends RendererState {
           {
               lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
-              if (curline.v1.y == curline.v2.y)
+              if (curline.v1y == curline.v2y)
               lightnum--;
-              else if (curline.v1.x == curline.v2.x)
+              else if (curline.v1x == curline.v2x)
               lightnum++;
 
               if (lightnum < 0)       
@@ -2737,7 +2745,6 @@ public class UnifiedRenderer extends RendererState {
           }
                   
           if (check < lastvisplane){
-              //System.out.println("\t found visplane "+check);
           return check;
           }          
           
@@ -2748,13 +2755,11 @@ public class UnifiedRenderer extends RendererState {
           
           // Add a visplane
           lastvisplane++;
-          System.out.println("\tadded new visplane at position"+check);
           chk.height = height;
           chk.picnum = picnum;
           chk.lightlevel = lightlevel;
           chk.minx = SCREENWIDTH;
           chk.maxx = -1;
-          System.out.println("\t to "+chk);
           //memset (chk.top,0xff,sizeof(chk.top));
           chk.clearTop();
               
@@ -2906,11 +2911,6 @@ public class UnifiedRenderer extends RendererState {
 
         private void MakeSpans(int x, int t1, int b1, int t2, int b2) {
             
-            /*System.out.println("Makespans "+ x+ " : "+ t1+" "+
-                b1+ " "+
-                t2+" "+
-                b2); */
-            
             // If t1 = [sentinel value] then this part won't be executed.
             while (t1 < t2 && t1 <= b1) {
                 this.MapPlane(t1, spanstart[t1], x - 1);
@@ -2952,7 +2952,7 @@ public class UnifiedRenderer extends RendererState {
        */
       public void DrawPlanes () 
       {
-          System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "+ lastvisplane);
+    	  if(DEBUG) System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "+ lastvisplane);
           visplane_t      pln=null; //visplane_t
           int         light;
           int         x;
@@ -2976,8 +2976,7 @@ public class UnifiedRenderer extends RendererState {
           for (int pl = 0 ; pl < lastvisplane ;  pl++)
           {
               pln=visplanes[pl];
-             //if (DEBUG2) 
-              System.out.println(pln);
+             if (DEBUG2) System.out.println(pln);
               
           if (pln.minx > pln.maxx)
               continue;

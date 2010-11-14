@@ -20,6 +20,8 @@ public class seg_t{
    /** To be used as references */
    public vertex_t   v1, v2;
 
+   /** Local caching. Spares us using one extra reference level */
+   public int v1x,v1y,v2x,v2y;
    
    /** (fixed_t) */
    public int offset;
@@ -175,5 +177,31 @@ public class seg_t{
       // back side
       return 1;           
   }
+  
+  public String toString(){
+      sb.setLength(0);
+      sb.append("Seg\n");
+      //sb.append(id);
+      sb.append("Frontsector:\t ");
+      sb.append(this.frontsector);
+      sb.append("\n\t");
+      sb.append("Backsector:\t ");
+      sb.append(this.backsector);
+      sb.append("\n\t");
+      sb.append(Integer.toHexString(this.v1.x));
+      sb.append('\t');
+      sb.append(Integer.toHexString(this.v1.y));
+      sb.append('\t');
+      sb.append(Integer.toHexString(this.v2.x));
+      sb.append('\t');
+      sb.append(Integer.toHexString(this.v2.y));
+      sb.append('\n');
+
+      return sb.toString();
+      
+  }
+
+
+  static StringBuilder sb=new StringBuilder();
    
 }
