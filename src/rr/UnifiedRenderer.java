@@ -51,7 +51,7 @@ public class UnifiedRenderer extends RendererState {
       this.V=DM.V;
       this.I=DM.I;
       // Span functions
-      DrawSpan=new R_DrawSpan();
+      DrawSpan=new R_DrawSpanUnrolled();
       DrawSpanLow=new R_DrawSpanLow();
      
   }
@@ -206,6 +206,11 @@ public class UnifiedRenderer extends RendererState {
      */
     byte[] dc_colormap;
     
+    /** Adapted from R. Killough's Boom code. Used to accelerate drawing of power-of-two textures.
+     *  
+     */
+    int dc_texheight;
+    
     /** Offset. use as dc_colormap[dco+<shit>]. Also, when you set dc_colormap = crap[index],
      *  set dc_colormap=crap and  dco=index */
     int dco;
@@ -249,7 +254,7 @@ public class UnifiedRenderer extends RendererState {
     public static final int LIGHTZSHIFT    = 20;
 
    /** Fineangles in the SCREENWIDTH wide window. */
-   public static final int FIELDOFVIEW   =   2048;   
+   public static final int FIELDOFVIEW   =   FINEANGLES/4;   
    
    /** killough: viewangleoffset is a legacy from the pre-v1.2 days, when Doom
     *  had Left/Mid/Right viewing. +/-ANG90 offsets were placed here on each
@@ -499,6 +504,168 @@ public class UnifiedRenderer extends RendererState {
    }
    }
    
+   /** EI VITTU, this gives a clean 25% boost. Da fack...
+    * 
+    * 
+    * @author admin
+    *
+    */
+   
+   class R_DrawColumnUnrolled implements colfunc_t{
+       
+       /* That's shit, doesn't help.
+       private final int SCREENWIDTH2=SCREENWIDTH*2;
+       private final int SCREENWIDTH3=SCREENWIDTH*3;
+       private final int SCREENWIDTH4=SCREENWIDTH*4;
+       private final int SCREENWIDTH5=SCREENWIDTH*5;
+       private final int SCREENWIDTH6=SCREENWIDTH*6;
+       private final int SCREENWIDTH7=SCREENWIDTH*7;
+       private final int SCREENWIDTH8=SCREENWIDTH*8;
+       */
+       
+       public void invoke(){ 
+       int         count; 
+       byte[]       source;
+       int       dest;
+       byte[]       colormap;
+       
+       // These are all "unsigned". Watch out for bit shifts!
+       int        frac, fracstep, fracstep2,fracstep3, fracstep4;   
+    
+       count = dc_yh - dc_yl + 1; 
+
+       source = dc_source;
+       dc_source_ofs+=15;
+       colormap = dc_colormap;      
+       dest = ylookup[dc_yl] + columnofs[dc_x];  
+        
+       fracstep = dc_iscale<<9; 
+       frac = (dc_texturemid + (dc_yl-centery)*dc_iscale)<<9; 
+    
+       fracstep2 = fracstep+fracstep;
+       fracstep3 = fracstep2+fracstep;
+       fracstep4 = fracstep3+fracstep;
+       
+       while (count >= 8) 
+       { 
+           screen[dest] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
+       screen[dest +SCREENWIDTH] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep)>>>25]]; 
+       screen[dest + SCREENWIDTH*2] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep2)>>>25]]; 
+       screen[dest + SCREENWIDTH*3] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep3)>>>25]];
+       
+       frac += fracstep4; 
+
+       screen[dest + SCREENWIDTH*4] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
+       screen[dest + SCREENWIDTH*5] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep)>>>25]]; 
+       screen[dest + SCREENWIDTH*6] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep2)>>>25]]; 
+       screen[dest + SCREENWIDTH*7] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep3)>>>25]]; 
+
+       frac += fracstep4; 
+       dest += SCREENWIDTH*8; 
+       count -= 8;
+       } 
+       
+       while (count > 0)
+       { 
+           screen[dest] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
+       dest += SCREENWIDTH; 
+       frac += fracstep; 
+       count--;
+       } 
+   }
+   }
+   
+   /** Adapted from Killough's Boom code.
+    * 
+    * 
+    * @author admin
+    *
+    */
+   
+   class R_DrawColumnBoom implements colfunc_t{
+       
+   public void invoke() 
+   { 
+     int              count; 
+     int dest;            // killough
+     int  frac;            // killough
+     int fracstep;     
+     
+     count = dc_yh - dc_yl + 1; 
+
+     if (count <= 0)    // Zero length, column does not exceed a pixel.
+       return; 
+                                    
+   if (RANGECHECK) {
+     if (dc_x >= SCREENWIDTH
+         || dc_yl < 0
+         || dc_yh >= SCREENHEIGHT) 
+       I.Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
+   } 
+
+     // Framebuffer destination address.
+     // Use ylookup LUT to avoid multiply with ScreenWidth.
+     // Use columnofs LUT for subwindows? 
+
+     dest = ylookup[dc_yl] + columnofs[dc_x];  
+
+     // Determine scaling, which is the only mapping to be done.
+
+     fracstep = dc_iscale; 
+     frac = dc_texturemid + (dc_yl-centery)*fracstep; 
+
+     // Inner loop that does the actual texture mapping,
+     //  e.g. a DDA-lile scaling.
+     // This is as fast as it gets.       (Yeah, right!!! -- killough)
+     //
+     // killough 2/1/98: more performance tuning
+
+     {
+       final byte[] source = dc_source;       
+        final byte[] colormap = dc_colormap; 
+       int heightmask = dc_texheight-1;
+       if ((dc_texheight & heightmask)!=0)   // not a power of 2 -- killough
+         {
+           heightmask++;
+           heightmask <<= FRACBITS;
+             
+           if (frac < 0)
+             while ((frac += heightmask) <  0);
+           else
+             while (frac >= heightmask)
+               frac -= heightmask;
+             
+           do
+             {
+               // Re-map color indices from wall texture column
+               //  using a lighting/special effects LUT.
+               
+               // heightmask is the Tutti-Frutti fix -- killough
+               
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS))]];
+               dest += SCREENWIDTH; 
+               if ((frac += fracstep) >= heightmask)
+                 frac -= heightmask;
+             } 
+           while (--count>0);
+         }
+      else
+         {
+           while ((count-=2)>=0)   // texture height is a power of 2 -- killough
+             {
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;     
+             }
+           if ((count & 1)!=0)
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+         } 
+     }
+   }
+   }
    
    class R_DrawColumnLow implements colfunc_t{
        public void invoke(){
@@ -680,7 +847,9 @@ public class UnifiedRenderer extends RendererState {
    int     spryscale;
    int     sprtopscreen;
    short[]      mfloorclip;
+   int p_mfloorclip;
    short[]      mceilingclip;
+   int p_mceilingclip;
    
    //
    // INITIALIZATION FUNCTIONS
@@ -1806,6 +1975,8 @@ public class UnifiedRenderer extends RendererState {
           int     lightnum;
           int     texnum;
           
+          //System.out.print("RenderMaskedSegRange from "+x1 +" to "+ x2);
+          
           // Calculate light table.
           // Use different light tables
           //   for horizontal / vertical / diagonal. Diagonal?
@@ -1814,7 +1985,7 @@ public class UnifiedRenderer extends RendererState {
           frontsector = curline.frontsector;
           backsector = curline.backsector;
           texnum = texturetranslation[curline.sidedef.midtexture];
-          
+          //System.out.print(" for texture "+textures[texnum].name+"\n:");
           lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
           if (curline.v1y == curline.v2y)
@@ -1822,26 +1993,23 @@ public class UnifiedRenderer extends RendererState {
           else if (curline.v1x == curline.v2x)
           lightnum++;
 
-          if (lightnum < 0)       
-          walllights = scalelight[0];
-          else if (lightnum >= LIGHTLEVELS)
-          walllights = scalelight[LIGHTLEVELS-1];
-          else
-          walllights = scalelight[lightnum];
+          // Killough code.
+          walllights = lightnum >= LIGHTLEVELS ? scalelight[LIGHTLEVELS-1] :
+              lightnum <  0           ? scalelight[0] : scalelight[lightnum];
 
           // Get the list
           maskedtexturecol = ds.getMaskedTextureColList();
           // And this is the pointer.
           pmaskedtexturecol = ds.getMaskedTextureColPointer();
-
+                    
           rw_scalestep = ds.scalestep;        
           spryscale = ds.scale1 + (x1 - ds.x1)*rw_scalestep;
           
           // TODO: add the pointers for those somewhere
           mfloorclip = ds.getSprBottomClipList();
-          
+          p_mfloorclip=ds.getSprBottomClipPointer();
           mceilingclip = ds.getSprTopClipList();
-          
+          p_mceilingclip=ds.getSprTopClipPointer();
           // find positioning
           if ((curline.linedef.flags & ML_DONTPEGBOTTOM)!=0)
           {
@@ -1869,13 +2037,12 @@ public class UnifiedRenderer extends RendererState {
           {
               if (fixedcolormap==null)
               {
-              index = spryscale>>LIGHTSCALESHIFT;
+              index = spryscale>>>LIGHTSCALESHIFT;
 
               if (index >=  MAXLIGHTSCALE )
                   index = MAXLIGHTSCALE-1;
 
               dc_colormap = walllights[index];
-              //dco=index;
               }
                   
               sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
@@ -1883,9 +2050,9 @@ public class UnifiedRenderer extends RendererState {
               
               // draw the texture
               col.data = GetColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
-              col.setFromData();
+              //col.setFromData();
                   
-              DrawMaskedColumn (col);
+              DrawMaskedColumn (col.data);
               maskedtexturecol[pmaskedtexturecol+dc_x] = Short.MAX_VALUE;
           }
           spryscale += rw_scalestep;
@@ -1985,16 +2152,17 @@ public class UnifiedRenderer extends RendererState {
               // single sided line
               dc_yl = yl;
               dc_yh = yh;
+              dc_texheight = textureheight[midtexture]>>FRACBITS; // killough
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
               //System.out.println("DC_ISCALE: "+dc_iscale+" " +rw_scale);
               //if (DEBUG) 
-                  //System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+rw_x+" and between "+dc_yl+" and "+dc_yh+" maximum allowed "+dc_source.length);
-                  //try {
+                  // System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+rw_x+" and between "+dc_yl+" and "+dc_yh+" maximum allowed "+dc_source.length);
+                  try {
               colfunc.invoke();
-                //} catch (ArrayIndexOutOfBoundsException e){                    
-                //    System.out.println(e.getMessage()+" maximum acceptable "+dc_source.length);
-                //  }
+              } catch (ArrayIndexOutOfBoundsException e){                    
+                    System.out.println(e.getMessage()+" maximum acceptable "+dc_source.length);
+                  }
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
           }
@@ -2015,9 +2183,11 @@ public class UnifiedRenderer extends RendererState {
                   dc_yl = yl;
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
-                  if (DEBUG) System.out.println("Drawing column"+(texturecolumn&127)+" of top texture "+textures[toptexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
+                  dc_texheight=textureheight[toptexture]>>FRACBITS;
+                  if (DEBUG); 
+                      //System.out.println("Drawing column"+(texturecolumn&127)+" of top texture "+textures[toptexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
                   dc_source = GetColumn(toptexture,texturecolumn);
-                  dc_source_ofs=0;
+                  //dc_source_ofs=0;
                   colfunc.invoke();
                   ceilingclip[rw_x] = (short) mid;
               }
@@ -2046,10 +2216,12 @@ public class UnifiedRenderer extends RendererState {
                   dc_yl = mid;
                   dc_yh = yh;
                   dc_texturemid = rw_bottomtexturemid;
+                  dc_texheight=textureheight[bottomtexture]>>FRACBITS;
                   dc_source = GetColumn(bottomtexture,
                               texturecolumn);
                   //System.out.println("Max data length:"+dc_source.length);
                   try{
+                  //dc_source_ofs=0;
                   colfunc.invoke();
                   }catch (ArrayIndexOutOfBoundsException e){
                       //TODO: fix errors. Is this supposed to occur?
@@ -2641,7 +2813,7 @@ public class UnifiedRenderer extends RendererState {
           ds_colormap = fixedcolormap;
           else
           {
-          index = distance >> LIGHTZSHIFT;
+          index = distance >>> LIGHTZSHIFT;
           
           if (index >= MAXLIGHTZ )
               index = MAXLIGHTZ-1;
@@ -3004,6 +3176,7 @@ public class UnifiedRenderer extends RendererState {
               {
                   angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                   dc_x = x;
+                  dc_texheight=textureheight[skytexture]>>FRACBITS;
                   dc_source = GetColumn(skytexture, angle);
                   colfunc.invoke();
               }
@@ -3773,7 +3946,9 @@ public class UnifiedRenderer extends RendererState {
           
           // clip to screen bounds
           mfloorclip = screenheightarray;
+          p_mfloorclip=0;
           mceilingclip = negonearray;
+          p_mceilingclip=0;
           
           // add all active psprites
           for (i=0, psp=viewplayer.psprites[i];
@@ -3993,7 +4168,9 @@ public class UnifiedRenderer extends RendererState {
           }
               
           mfloorclip = clipbot;
+          p_mfloorclip=0;
           mceilingclip = cliptop;
+          p_mceilingclip=0;
           DrawVisSprite (spr, spr.x1, spr.x2);
       }
 
@@ -4094,7 +4271,7 @@ public class UnifiedRenderer extends RendererState {
       // Calc focallength
       //  so FIELDOFVIEW angles covers SCREENWIDTH.
       focallength = FixedDiv (centerxfrac,
-                  finetangent[FINEANGLES/4+FIELDOFVIEW/2] );
+                  finetangent[QUARTERMARK+FIELDOFVIEW/2] );
       
       for (i=0 ; i<FINEANGLES/2 ; i++)
       {
@@ -4232,7 +4409,7 @@ public void DrawMaskedColumn (column_t column)
     basetexturemid = dc_texturemid;
     // That's true for the whole column.
     dc_source = column.data;
-    dc_source_ofs=3;
+    dc_source_ofs=0;
     
     // for each post...
     for (int i=0;i<column.posts;i++ ) 
@@ -4245,12 +4422,13 @@ public void DrawMaskedColumn (column_t column)
     dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
     dc_yh = (bottomscreen-1)>>FRACBITS;
         
-    if (dc_yh >= mfloorclip[dc_x])
-        dc_yh = mfloorclip[dc_x]-1;
-    if (dc_yl <= mceilingclip[dc_x])
-        dc_yl = mceilingclip[dc_x]+1;
+    if (dc_yh >= mfloorclip[p_mfloorclip+dc_x])
+        dc_yh = mfloorclip[p_mfloorclip+dc_x]-1;
+    if (dc_yl <= mceilingclip[p_mceilingclip+dc_x])
+        dc_yl = mceilingclip[p_mceilingclip+dc_x]+1;
 
-    if (dc_yl <= dc_yh)
+    // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
+    if (dc_yl <= dc_yh && dc_yh < viewheight)
     {
         // Set pointer inside column to current post's data
         // Remember, it goes {postlen}{postdelta}{pad}[data]{pad} 
@@ -4265,7 +4443,9 @@ public void DrawMaskedColumn (column_t column)
         
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
-        if (!MyThings.shadow){
+        dc_source_ofs+=3;
+        dc_texheight=0; // killough
+        if (MyThings.shadow){
             colfunc=DrawFuzzColumn;
         } else {
             colfunc=DrawColumn;
@@ -4276,7 +4456,7 @@ public void DrawMaskedColumn (column_t column)
         }
     }
     //column = (column_t *)(  (byte *)column + column.length + 4);
-    dc_source_ofs +=column.postlen[i]+1;
+    dc_source_ofs +=column.postlen[i];
     }
     
     dc_texturemid = basetexturemid;
@@ -4310,18 +4490,19 @@ public void DrawMaskedColumn (byte[] column)
     // calculate unclipped screen coordinates
     //  for post
     topscreen = sprtopscreen + spryscale*topdelta;
-        length=toUnsignedByte(column[pointer+1]);
+    length=toUnsignedByte(column[pointer+1]);
     bottomscreen = topscreen + spryscale*length;
 
     dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
     dc_yh = (bottomscreen-1)>>FRACBITS;
         
-    if (dc_yh >= mfloorclip[dc_x])
-        dc_yh = mfloorclip[dc_x]-1;
-    if (dc_yl <= mceilingclip[dc_x])
-        dc_yl = mceilingclip[dc_x]+1;
+    if (dc_yh >= mfloorclip[p_mfloorclip+dc_x])
+        dc_yh = mfloorclip[p_mfloorclip+dc_x]-1;
+    if (dc_yl <= mceilingclip[p_mceilingclip+dc_x])
+        dc_yl = mceilingclip[p_mceilingclip+dc_x]+1;
 
-    if (dc_yl <= dc_yh)
+    // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
+    if (dc_yl <= dc_yh && dc_yh < viewheight)
     {
         // Set pointer inside column to current post's data
         // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
@@ -4330,7 +4511,9 @@ public void DrawMaskedColumn (byte[] column)
 
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
+        dc_texheight=0;
         try {
+            
         colfunc.invoke();
         } catch (ArrayIndexOutOfBoundsException e){
             // FIXME: happens way too often.
@@ -4595,8 +4778,8 @@ public void VideoErase(int ofs, int count) {
         f_yfrac = ds_yfrac;
 
         // Blocky mode, need to multiply by 2.
-        ds_x1 <<= 1;
-        ds_x2 <<= 1;
+        //ds_x1 <<= 1;
+        //ds_x2 <<= 1;
 
         dest = ylookup[ds_y] + columnofs[ds_x1];
 
@@ -4612,18 +4795,22 @@ public void VideoErase(int ofs, int count) {
             f_xfrac += ds_xstep;
             f_yfrac += ds_ystep;
 
-        } while (count-- != 0);
+        } while (count-- >0);
         
     }
      
  }
  
  
- /** UNUSED.
-  * Loop unrolled by 4.
+ /** Drawspan loop unrolled by 4.
+  *  
+  *  MAES: it actually does give a small speed boost (120 -> 130 fps with a Mul of 3.0)
+  * 
   */
  
- public void R_DrawSpan() {
+ class R_DrawSpanUnrolled implements colfunc_t {
+     
+     public void invoke(){
      int position, step;
      byte[] source;
      byte[] colormap;
@@ -4642,25 +4829,25 @@ public void VideoErase(int ofs, int count) {
      while (count >= 4) {
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
-         xtemp = position >> 26;
+         xtemp = position >>> 26;
          spot = xtemp | ytemp;
-         position += step;
+         position += step;         
          screen[dest] = colormap[0x00FF&source[spot]];
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
-         xtemp = position >> 26;
+         xtemp = position >>> 26;
          spot = xtemp | ytemp;
          position += step;
          screen[dest+1] = colormap[0x00FF&source[spot]];
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
-         xtemp = position >> 26;
+         xtemp = position >>> 26;
          spot = xtemp | ytemp;
          position += step;
          screen[dest+2] = colormap[0x00FF&source[spot]];
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
-         xtemp = position >> 26;
+         xtemp = position >>> 26;
          spot = xtemp | ytemp;
          position += step;
          screen[dest+3] = colormap[0x00FF&source[spot]];
@@ -4671,12 +4858,14 @@ public void VideoErase(int ofs, int count) {
      while (count > 0) {
          ytemp = position >> 4;
          ytemp = ytemp & 4032;
-         xtemp = position >> 26;
+         xtemp = position >>> 26;
          spot = xtemp | ytemp;
          position += step;
          screen[dest++] = colormap[0x00FF&source[spot]];
          count--;
      }
+ }
+     
  }
  
  

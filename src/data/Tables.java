@@ -6,7 +6,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.14 2010/11/14 20:00:21 velktron Exp $
+// $Id: Tables.java,v 1.15 2010/11/15 17:15:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.15  2010/11/15 17:15:54  velktron
+// Fixed masked columns rendering, introduced unrolled span and column functions from Boom (thanks, Lee Killough :-)
+//
 // Revision 1.14  2010/11/14 20:00:21  velktron
 // Bleeding floor bug fixed!
 //
@@ -105,8 +108,19 @@ public final class Tables {
     public static final String rcsid="$Id:";
 
    public static final double PI =             3.141592657;
-      
-  public static final int FINEANGLES  =    8192;
+
+   /** Normally set to 12, and this sets the value of other constants too.
+    *  Howevever changing it will also distort the view, resulting in a 
+    *  nightmare-like vision. There are some practical minimum and 
+    *  maximums as well.
+    *  
+    * 
+    */
+   
+  public static final int BITSPRECISION = 12;
+  public static final int FINEANGLES  =    2<<BITSPRECISION;
+  public static final int FINETANS = FINEANGLES/2; // 4096 for normal precision.
+  public static final int QUARTERMARK = 2<<BITSPRECISION-2;
   public static final int FINEMASK =       (FINEANGLES-1);
   /** Mod long angle_t's with this value to cut off rollover */
   public static final long ANGLEMODULE = 0x100000000L;
@@ -123,7 +137,7 @@ public final class Tables {
  // public static int PRECISION = 10240 ;
 
   /** 0x100000000 to 0x2000 */
-  public static final int ANGLETOFINESHIFT =   19;
+  public static final int ANGLETOFINESHIFT =   31-BITSPRECISION;
   
 /* Binary Angle Measurement.
  * Some maths: their definition means that a range of 2pi is actually
@@ -165,8 +179,8 @@ public static final long ANG45 =  0x20000000L,
                         ANG180 =     0x80000000L,
                         ANG270 =     0xc0000000L;
 
-public static final int SLOPERANGE =    2048;
-public static final int SLOPEBITS  =     11;
+public static final int SLOPERANGE =    (2<<(BITSPRECISION-2)); // Normally 2048.
+public static final int SLOPEBITS  =     BITSPRECISION-1;
 public static final int DBITS=FRACBITS-SLOPEBITS;
 
 //  typedef unsigned angle_t;
@@ -183,7 +197,7 @@ public static final int DBITS=FRACBITS-SLOPEBITS;
  * range... so 17-bit accuracy? heh.
  */
 
-public static final int[] finesine=new int[10240];
+public static final int[] finesine=new int[FINEANGLES+QUARTERMARK];
 public static final int[] finecosine=new int[FINEANGLES];
 
 /** Any denominator smaller than 512 will result in 
@@ -206,7 +220,7 @@ public static final int SlopeDiv ( int	num, int den)
  * 
  */
 
-public final static int[] finetangent=new int[4096];
+public final static int[] finetangent=new int[FINETANS];
 
 
 // MAES: original range 2049
@@ -368,14 +382,14 @@ public static void InitTables(){
     } 
     
     // finesine table
-    for (i=0 ; i<5*FINEANGLES/4 ; i++)
+    for (i=0 ; i<FINEANGLES+QUARTERMARK ; i++)
     {
     // OPTIMIZE: mirror...
     a = (float)((i+0.5)*PI*2)/FINEANGLES;
     t = (int)(FRACUNIT*Math.sin (a));
     finesine[i] = t;
-    if (i>=2048){
-        finecosine[i-2048] = t;
+    if (i>=QUARTERMARK){
+        finecosine[i-QUARTERMARK] = t;
         }
     }
     
@@ -390,10 +404,10 @@ public static void InitTables(){
      *  We make this into a float (?), then use trigonometric ATAN, and then go to BAM.
      */    
     
-    for (i=0 ; i<2049 ; i++)
+    for (i=0 ; i<SLOPERANGE+1 ; i++)
     {
     
-    a=(float)((i<<5)/65536.0);
+    a=(float)((i<<DBITS)/65536.0);
     t=(int)((float)(2*Math.atan(a)/PI)*0x40000000); 
     tantoangle[i] = t;
     }

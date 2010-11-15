@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.20 2010/11/14 20:30:29 velktron Exp $
+// $Id: Defines.java,v 1.21 2010/11/15 17:15:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -42,7 +42,7 @@ import w.animenum_t;
 // Global parameters/defines.
 //
 // DOOM version
-public class Defines{
+public final class Defines{
     
     /** Seems to be 109 for shareware 1.9, wtf is this*/
 public static final int VERSION =  110 ;
@@ -119,7 +119,7 @@ public static int BASE_WIDTH =     320;
 //  scaling e.g. to 2. Drawing of status bar,
 //  menues etc. is tied to the scale implied
 //  by the graphics.
-public static float SCREEN_MUL =(float) 1.5;
+public static float SCREEN_MUL =(float) 3.0;
 public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 // Defines suck. C sucks.
@@ -1692,6 +1692,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.20 2010/11/14 20:30:29 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.21 2010/11/15 17:15:54 velktron Exp $";
 }
 

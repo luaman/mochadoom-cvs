@@ -49,7 +49,7 @@ public class AWTRenderViewTester {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad","cross.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"/*,"masked.wad"*/});
     
     System.out.println("Total lumps read: "+W.numlumps);
 
@@ -142,11 +142,10 @@ public class AWTRenderViewTester {
     DM.R.DrawViewBorder();
     
     // Center on "bloody mess" in E1M1
-    DM.players[0].mo.y+=128<<16;
+    //DM.players[0].mo.y+=256<<16;
     //DM.players[0].mo.x+=1650<<16;
-        
+        int pl=0;
         for (int i=0;i<20000;i++){
-            int ba=DM.I.GetTime();
    
            frame.GetEvent();
            
@@ -171,7 +170,7 @@ public class AWTRenderViewTester {
         AM.Ticker();
         //AM.Drawer();
         ST.Ticker();        
-        DM.players[0].viewz=(30)<<16;
+        DM.players[0].viewz=(50)<<16;
         //DM.players[0].mo.x=ox+(int) ((12864<<16)*Math.cos(2*Math.PI*i/500.0));
         //DM.players[0].mo.y=oy+(int) ((64<<16)*Math.sin(2*Math.PI*i/500.0));
         //DM.players[0].mo.angle= ((long)(0xFFFFFFFFL*(Math.atan2(DM.players[0].mo.y-oy,DM.players[0].mo.x-ox)+Math.PI)/(2*Math.PI)))&0xFFFFFFFFL;
@@ -184,15 +183,17 @@ public class AWTRenderViewTester {
         
         DM.gametic++;
         frame.FinishUpdate();
-        if (i%500==0){
+        if (i%200==0){
         	   long b=System.nanoTime();
-        	    
-        	    System.out.println(i +" frames in " +((b-a)/1e09) +" = "+i/((b-a)/1e09) + " fps");
+        	    //frame.setPalette((pl++)%14);
+        	    System.out.println((200) +" frames in " +((b-a)/1e09) +" = "+200/((b-a)/1e09) + " fps");
+        	    a=b;
         }
+        
        // System.out.print(frame.processEvents());
-        while (ba-DM.I.GetTime()==0){
+        /*while (ba-DM.I.GetTime()>-1){
             Thread.sleep(10);               
-        }
+        }*/
         }
             } catch (Exception e){
                 e.printStackTrace();
