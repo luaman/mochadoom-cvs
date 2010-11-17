@@ -18,7 +18,7 @@ import static data.Defines.*;
 import static data.Tables.*;
 import static m.fixed_t.*;
 import static data.info.*;
-import static p.mobj.*;
+import static p.mobj_t.*;
 import p.Actions;
 import p.mobj_t;
 import p.pspdef_t;
@@ -29,7 +29,7 @@ import utils.C2JUtils;
 import static utils.C2JUtils.*;
 import static data.Limits.*;
 import static doom.items.weaponinfo;
-import static p.mobj.MF_SHADOW;
+import static p.mobj_t.MF_SHADOW;
 
 /**
  * Extended player object info: player_t The player data structure depends on a
@@ -80,6 +80,8 @@ public class player_t /*extends mobj_t */
         psprites = new pspdef_t[NUMPSPRITES];
         C2JUtils.initArrayOfObjects(psprites);
         this.mo=new mobj_t();
+        // If a player doesn't reference himself through his object, he will have an existential crisis.
+        this.mo.player=this;
         readyweapon=weapontype_t.wp_fist;
         this.cmd=new ticcmd_t();
         //weaponinfo=new weaponinfo_t();
@@ -245,10 +247,8 @@ public class player_t /*extends mobj_t */
      */
 
     public void Thrust(long angle, int move) {
-        angle >>= ANGLETOFINESHIFT;
-
-        mo.momx += FixedMul(move, finecosine[(int) angle]);
-        mo.momy += FixedMul(move, finesine[(int) angle]);
+        mo.momx += FixedMul(move, finecosine(angle));
+        mo.momy += FixedMul(move, finesine( angle));
     }
 
     
@@ -256,21 +256,19 @@ public class player_t /*extends mobj_t */
      * P_MovePlayer
      */
     public void MovePlayer() {
-        ticcmd_t cmd;
-
-        cmd = this.cmd;
+        ticcmd_t cmd = this.cmd;
 
         mo.angle += (cmd.angleturn << 16);
-
+      
         // Do not let the player control movement
         // if not onground.
         onground = (mo.z <= mo.floorz);
 
         if (cmd.forwardmove != 0 && onground)
-            Thrust(mo.angle, cmd.forwardmove * 2048);
+            Thrust(mo.angle&BITS32, cmd.forwardmove * 2048);
 
         if (cmd.sidemove != 0 && onground)
-            Thrust(mo.angle - ANG90, cmd.sidemove * 2048);
+            Thrust((mo.angle - ANG90)&BITS32, cmd.sidemove * 2048);
 
         if ((cmd.forwardmove != 0 || cmd.sidemove != 0)
                 && mo.state == states[statenum_t.S_PLAY.ordinal()]) {
@@ -608,7 +606,7 @@ public void CalcHeight ()
   FixedMul (mo.momx, mo.momx)
   + FixedMul (mo.momy,mo.momy);
   
-  bob >>= 2;
+  bob >>>= 2;
 
   if (bob>MAXBOB)
   bob = MAXBOB;
@@ -1233,7 +1231,21 @@ SetPsprite
 		
 	}
 
+	public String toString(){
+		sb.setLength(0);
+		sb.append("player");
+		sb.append(" momx ");
+		sb.append(this.mo.momx);
+		sb.append(" momy ");
+		sb.append(this.mo.momy);
+		sb.append(" x ");
+		sb.append(this.mo.x);
+		sb.append(" y ");
+		sb.append(this.mo.y);
+		return sb.toString();
+	}
 
+	private static StringBuilder sb=new StringBuilder();
 
 
    

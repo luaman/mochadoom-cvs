@@ -16,6 +16,7 @@ import rr.UnifiedRenderer;
 import st.StatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import w.DoomFile;
 import w.EndLevel;
 import w.WadLoader;
 import data.Defines;
@@ -38,6 +39,15 @@ import data.Defines.skill_t;
 
 public class DoomStatus extends DoomContext {
 
+	public static final int	BGCOLOR=		7;
+	public static final int	FGCOLOR		=8;
+	public static int   RESENDCOUNT =10;
+	public static int   PL_DRONE    =0x80;  // bit flag in doomdata->player
+
+	public String[]		wadfiles=new String[MAXWADFILES];
+
+	boolean         drone;
+	
     /** Command line parametersm, actually defined in d_main.c */
     public boolean nomonsters; // checkparm of -nomonsters
 
@@ -47,6 +57,11 @@ public class DoomStatus extends DoomContext {
 
     public boolean devparm; // DEBUG: launched with -devparm
 
+ // MAES: declared as "extern", shared with Menu.java
+    public  boolean	inhelpscreens;
+
+    boolean		advancedemo;
+    
     // ///////// Local to doomstat.c ////////////
     /** Game Mode - identify IWAD as shareware, retail etc. */
 
@@ -223,23 +238,30 @@ public class DoomStatus extends DoomContext {
     //
 
     // File handling stuff.
-    public char[] basedefault = new char[1024];
+   // public char[] basedefault = new char[1024];
 
-    // public System.File debugfile;
+    /** primary wad file */
+    String		wadfile;
+    /**  directory of development maps */
+    String		mapdir;           
+    /** default file */
+    String basedefault;      
+    
+    public DoomFile debugfile;
 
     // if true, load all graphics at level load
     public boolean precache;
 
     // wipegamestate can be set to -1
     // to force a wipe on the next draw
-    public gamestate_t wipegamestate;
-
-    /** To be used as pointed value */
-    public int mouseSensitivity;
-
-    // ?
+ // wipegamestate can be set to -1 to force a wipe on the next draw
+    public gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
+    
+    public int             mouseSensitivity=5;
+    
     // debug flag to cancel adaptiveness
-    public boolean singletics;
+    // Set to true during timedemos.
+    public boolean singletics=true;
 
     public int bodyqueslot;
 
@@ -265,15 +287,12 @@ public class DoomStatus extends DoomContext {
     public int[] nettics = new int[MAXNETNODES];
 
     public ticcmd_t[][] netcmds;// [MAXPLAYERS][BACKUPTICS];
-
-    public int ticdup=1;
-
-    
+      
     /** MAES: this WAS NOT in the original. 
      *  Remember to call it!
      */
     protected void initNetGameStuff() {
-        this.netbuffer = new doomdata_t();
+        //this.netbuffer = new doomdata_t();
         this.doomcom = new doomcom_t();
         this.netcmds = new ticcmd_t[MAXPLAYERS][BACKUPTICS];
 
@@ -323,25 +342,25 @@ public class DoomStatus extends DoomContext {
 
     protected byte[] savebuffer;
 
-    /** controls (have defaults) */
+    /* TODO Proper reconfigurable controls. Defaults hardcoded for now. T3h h4x, d00d. */
 
-    public int key_right;
+    public int key_right=KEY_RIGHTARROW;
 
-    public int key_left;
+    public int key_left=KEY_LEFTARROW;
 
-    public int key_up;
+    public int key_up=KEY_UPARROW;
 
-    public int key_down;
+    public int key_down=KEY_DOWNARROW;
 
-    public int key_strafeleft;
+    public int key_strafeleft=',';
 
-    public int key_straferight;
+    public int key_straferight='.';
 
-    public int key_fire;
+    public int key_fire=KEY_RCTRL;
 
-    public int key_use;
+    public int key_use=' ';
 
-    public int key_strafe;
+    public int key_strafe=KEY_RALT;
 
     public int key_speed;
 

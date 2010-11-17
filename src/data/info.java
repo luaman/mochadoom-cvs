@@ -2,14 +2,14 @@ package data;
 
 import static data.sounds.*;
 import static m.fixed_t.*;
-import static p.mobj.*;
+import static p.mobj_t.*;
 import data.Defines.statenum_t;
 import doom.think_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.4 2010/09/27 02:27:29 velktron Exp $
+// $Id: info.java,v 1.5 2010/11/17 23:55:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.5  2010/11/17 23:55:06  velktron
+// Kind of playable/controllable.
+//
 // Revision 1.4  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -56,7 +59,7 @@ import doom.think_t;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.4 2010/09/27 02:27:29 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.5 2010/11/17 23:55:06 velktron Exp $";
 
 // Data.
 //#include "sounds.h"

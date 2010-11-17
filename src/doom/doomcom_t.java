@@ -3,6 +3,7 @@ package doom;
 public class doomcom_t {
 	
 		public doomcom_t(){
+			this.data=new doomdata_t();
 			
 		}
 
@@ -51,6 +52,6 @@ public class doomcom_t {
         public short       drone;      
 
         // The packet data to be sent.
-        doomdata_t      data;
+        public doomdata_t      data;
         
     }

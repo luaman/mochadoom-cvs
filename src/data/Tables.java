@@ -6,7 +6,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.15 2010/11/15 17:15:54 velktron Exp $
+// $Id: Tables.java,v 1.16 2010/11/17 23:55:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.16  2010/11/17 23:55:06  velktron
+// Kind of playable/controllable.
+//
 // Revision 1.15  2010/11/15 17:15:54  velktron
 // Fixed masked columns rendering, introduced unrolled span and column functions from Boom (thanks, Lee Killough :-)
 //
@@ -257,7 +260,7 @@ public static final int finesine(int angle){
  * @return
  */
 public static final int finesine(long angle){
-    return finesine[(int) ((angle>>>ANGLETOFINESHIFT)%ANGLEMODULE)];
+    return finesine[(int) ((angle>>>ANGLETOFINESHIFT)&BITS32)];
 }
 
 /** Use this to get a value from the finecosine table. It will be automatically shifte, 

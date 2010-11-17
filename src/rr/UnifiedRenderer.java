@@ -90,7 +90,7 @@ public class UnifiedRenderer extends RendererState {
     byte[][] colormaps;
     
     //// FROM SEGS ////
-    /** angle_t */
+    /** angle_t, used after adding ANG90 in StoreWallRange */
     long     rw_normalangle;
     
  // OPTIMIZE: closed two sided lines as single sided
@@ -2132,8 +2132,13 @@ public class UnifiedRenderer extends RendererState {
           if (segtextured)
           {
               // calculate texture offset
+        	  try{
               angle = Tables.toBAMIndex(rw_centerangle + xtoviewangle[rw_x]);
               texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
+        	  } catch (ArrayIndexOutOfBoundsException e){
+        		  e.printStackTrace();
+        	  }
+    
               texturecolumn >>= FRACBITS;
               // calculate lighting
               index = rw_scale>>LIGHTSCALESHIFT;
@@ -2543,7 +2548,7 @@ public class UnifiedRenderer extends RendererState {
           offsetangle = addAngles(rw_normalangle,-rw_angle1);
           
           // Another "tricky spot": negative of an unsigned number? 
-          if (offsetangle > ANG180)
+          if (offsetangle >ANG180)
               offsetangle = (-(int)offsetangle)&BITS32;
 
           if (offsetangle > ANG90)

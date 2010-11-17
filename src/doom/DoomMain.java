@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringTokenizer;
+
+import n.DummyNetworkDriver;
 import static data.dstrings.*;
 import p.Actions;
 import p.LevelLoader;
@@ -18,6 +20,7 @@ import m.Menu;
 import m.random;
 import static doom.NetConsts.*;
 import static doom.englsh.*;
+import data.Tables;
 import data.dstrings;
 import data.mapthing_t;
 import data.mobjtype_t;
@@ -54,7 +57,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.17 2010/11/12 13:37:25 velktron Exp $
+// $Id: DoomMain.java,v 1.18 2010/11/17 23:55:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -69,6 +72,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.18  2010/11/17 23:55:06  velktron
+// Kind of playable/controllable.
+//
 // Revision 1.17  2010/11/12 13:37:25  velktron
 // Rationalized the LUT system - now it's 100% procedurally generated.
 //
@@ -152,51 +158,9 @@ import static utils.C2JUtils.*;
 //
 //-----------------------------------------------------------------------------
 
-public class DoomMain extends DoomStatus {
+public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.17 2010/11/12 13:37:25 velktron Exp $";
-
-public static final int	BGCOLOR=		7;
-public static final int	FGCOLOR		=8;
-public static int   RESENDCOUNT =10;
-public static int   PL_DRONE    =0x80;  // bit flag in doomdata->player
-
-public String[]		wadfiles=new String[MAXWADFILES];
-
-
-public boolean		devparm;	// started game with -devparm
-public boolean         nomonsters;	// checkparm of -nomonsters
-boolean         respawnparm;	// checkparm of -respawn
-public boolean         fastparm;	// checkparm of -fast
-
-boolean         drone;
-
-boolean		singletics = true; // debug flag to cancel adaptiveness
-
-
-
-//extern int soundVolume;
-//extern  int	sfxVolume;
-//extern  int	musicVolume;
-
-// MAES: declared as "extern", shared with Menu.java
-public  boolean	inhelpscreens;
-
-skill_t		startskill;
-int             startepisode;
-int		startmap;
-boolean		autostart;
-
-public DoomFile		debugfile;
-
-boolean		advancedemo;
-
-/** primary wad file */
-String		wadfile;
-/**  directory of development maps */
-String		mapdir;           
-/** default file */
-String basedefault;      
+public static final String rcsid = "$Id: DoomMain.java,v 1.18 2010/11/17 23:55:06 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -243,23 +207,12 @@ public void ProcessEvents ()
     }
 }
 
-
-
-
-
-
-// wipegamestate can be set to -1 to force a wipe on the next draw
-gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
-// Defined in Renderer.
-//int             showMessages;
-
-//void R_ExecuteSetViewSize ();
-
+// "static" to Display, don't move.
 private  boolean		viewactivestate = false;
 private  boolean		menuactivestate = false;
 private  boolean		inhelpscreensstate = false;
 private  boolean		fullscreen = false;
-private  gamestate_t		oldgamestate = gamestate_t.GS_MINUS_ONE;
+private  gamestate_t	oldgamestate = gamestate_t.GS_MINUS_ONE;
 private  int			borderdrawcount;
 
 /**
@@ -269,7 +222,6 @@ private  int			borderdrawcount;
 
 public void Display ()
 {
-
     int				nowtime;
     int				tics;
     int				wipestart;
@@ -391,8 +343,9 @@ public void Display ()
     // normal update
     if (!wipe)
     {
-    //System.out.print("Tick "+DM.gametic+"\r");
-	VI.FinishUpdate ();              // page flip or blit buffer
+    //System.out.print("Tick "+DM.gametic+"\t");
+	//System.out.print(DM.players[0]);
+    VI.FinishUpdate ();              // page flip or blit buffer
 	return;
     }
     
@@ -415,6 +368,17 @@ public void Display ()
 	M.Drawer ();                            // menu is drawn even on top of wipes
 	VI.FinishUpdate ();                      // page flip or blit buffer
     } while (!done);
+    wipestart = I.GetTime ();
+    
+    // Fixme: lame way to limit speed :-/
+    while (wipestart-I.GetTime()>-1){
+    	try {
+			Thread.sleep(10);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }
 }
 
 
@@ -467,7 +431,7 @@ public void DoomLoop ()
 	}
 	else
 	{
-	    ; // TODO: TryRunTics (); // will run at least one tic (in NET)
+	    TryRunTics (); // will run at least one tic (in NET)
 	}
 		
 	S.UpdateSounds (players[consoleplayer].mo);// move positional sounds
@@ -498,11 +462,11 @@ int             pagetic;
 String pagename;
 
 
-//
-// D_PageTicker
-// Handles timing for warped projection
-//
-public final void PageTicker ()
+/**
+* D_PageTicker
+* Handles timing for warped projection
+*/
+private final void PageTicker ()
 {
     if (--pagetic < 0)
 	AdvanceDemo ();
@@ -514,8 +478,9 @@ public final void PageTicker ()
  * D_PageDrawer
  */
 
-public void PageDrawer ()
+private void PageDrawer ()
 {
+	System.out.println("Pagename "+pagename);
     V.DrawPatch (0,0, 0, W.CachePatchName(pagename, PU_CACHE));
 }
 
@@ -1255,7 +1220,8 @@ public void Start ()
 	break;
     }
 
-    
+    System.out.print ("Tables.InitTables: Init trigonometric LUTs.\n");
+    Tables.InitTables();
     
     System.out.print ("M_Init: Init miscellaneous info.\n");
     M.Init ();
@@ -1432,12 +1398,12 @@ public void Start ()
   
      if (gamekeydown[key_up]) 
      {
-     // fprintf(stderr, "up\n");
+     System.err.print("up\n");
      forward += forwardmove[speed]; 
      }
      if (gamekeydown[key_down]) 
      {
-     // fprintf(stderr, "down\n");
+     System.err.print("down\n");
      forward -= forwardmove[speed]; 
      }
      if (joyymove < 0) 
@@ -1660,13 +1626,13 @@ public void Start ()
   
      if (gamestate == gamestate_t.GS_LEVEL) 
      { 
- /** 
-     if (devparm && ev.type == ev_keydown && ev.data1 == ';') 
+ 
+     if (devparm && ev.type == evtype_t.ev_keydown && ev.data1 == ';') 
      { 
-         G_DeathMatchSpawnPlayer (0); 
+         DeathMatchSpawnPlayer (0); 
          return true; 
      } 
- */ 
+  
 //automapactive=true;
 
      if (HU.Responder (ev)) 
@@ -1791,7 +1757,7 @@ public void Start ()
      if (playeringame[i]) 
      { 
          cmd = players[i].cmd; 
-         System.out.println("Current command:"+cmd);
+         //System.out.println("Current command:"+cmd);
          
          //memcpy (cmd, &netcmds[i][buf], sizeof(ticcmd_t));
          netcmds[i][buf].copyTo(cmd);
@@ -1808,7 +1774,7 @@ public void Start ()
          
          //extern char *player_names[4];
          //sprintf (turbomessage, "%s is turbo!",player_names[i]);
-         players[consoleplayer].message = HU.player_names[i]+turbomessage;
+         players[consoleplayer].message = hu.HU.player_names[i]+turbomessage;
          }
              
          if (netgame && !netdemo && (gametic%ticdup)==0 ) 
@@ -1909,11 +1875,12 @@ public void Start ()
   
   
 
- //
- // G_PlayerFinishLevel
- // Can when a player completes a level.
- //
- private void PlayerFinishLevel (int player) 
+ /**
+  * G_PlayerFinishLevel
+  * Can when a player completes a level.
+  */
+ 
+ private final void PlayerFinishLevel (int player) 
  { 
      player_t   p; 
       
@@ -2149,7 +2116,7 @@ public void Start ()
  //
  boolean     secretexit; 
   
- public void ExitLevel () 
+ public final void ExitLevel () 
  { 
      secretexit = false; 
      gameaction = gameaction_t.ga_completed; 
@@ -2889,14 +2856,16 @@ public void Init(){
     // Random number generator.
     
 	this.DM=this;
+	this.DNI=new DummyNetworkDriver(this);
 	this.RND=new random();    
     // In primis, the video renderer.
-    this.V=new BufferedRenderer(320,200);
+    this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
     this.S=new DummySoundDriver();
     this.W=new WadLoader(this.I);
     // It's better if these are supplied externally.
     // In secundis, the Wad Loader
 
+    
     this.WIPE=new Wiper(this);   
     
     // Then the menu...
@@ -2920,17 +2889,16 @@ public void Init(){
 
 
 
-/** Since it's so intimately tied, it's less troublesome to merge the "main" and "network"
+/* Since it's so intimately tied, it's less troublesome to merge the "main" and "network"
  *  code. 
  * 
- * @author Velktron
- *
  */
 
-   
-doomcom_t   doomcom;    
-doomdata_t  netbuffer;      // points inside doomcom
-StringBuilder sb;
+
+/** To be initialized by the DoomNetworkingInterface via a setter */
+//private  doomcom_t   doomcom;   
+//private  doomdata_t  netbuffer;      // points inside doomcom
+private StringBuilder sb=new StringBuilder();
 
 
 //
@@ -2943,9 +2911,9 @@ StringBuilder sb;
 // a gametic cannot be run until nettics[] > gametic for all players
 //
 
-ticcmd_t[]  localcmds= new ticcmd_t[BACKUPTICS];
+//ticcmd_t[]  localcmds= new ticcmd_t[BACKUPTICS];
 
-ticcmd_t [][]       netcmds=new ticcmd_t [MAXPLAYERS][BACKUPTICS];
+//ticcmd_t [][]       netcmds=new ticcmd_t [MAXPLAYERS][BACKUPTICS];
 int[]           nettics=new int[MAXNETNODES];
 boolean[]       nodeingame=new boolean[MAXNETNODES];        // set false as nodes leave game
 boolean[]       remoteresend=new boolean[MAXNETNODES];      // set when local needs tics
@@ -2957,7 +2925,23 @@ int[]       nodeforplayer=new int[MAXPLAYERS];
 int             maketic;
 int     lastnettic;
 int     skiptics;
-int     ticdup;     
+private int     ticdup;
+
+
+public int getTicdup() {
+	return ticdup;
+}
+
+
+public void setTicdup(int ticdup) {
+	this.ticdup = ticdup;
+}
+
+
+
+
+
+
 int     maxsend; // BACKUPTICS/(2*ticdup)-1;
 
 
@@ -3302,14 +3286,9 @@ public void GetPackets ()
     }
 }
 
-
-//
-// NetUpdate
-// Builds ticcmds for console player,
-// sends out a packet
-//
 int      gametime;
 
+@Override
 public void NetUpdate ()
 {
     int             nowtime;
@@ -3553,6 +3532,7 @@ private void CheckNetGame ()
     
     // read values out of doomcom
     ticdup = doomcom.ticdup;
+    // MAES: ticdup must not be zero at this point. Obvious, no?
     maxsend = BACKUPTICS/(2*ticdup)-1;
     if (maxsend<1)
     maxsend = 1;
@@ -3624,6 +3604,7 @@ boolean[] frameskip=new boolean[4];
 int oldnettics;
 int  oldentertics;
 
+@Override
 public void TryRunTics ()
 {
     int     i;
@@ -3762,5 +3743,17 @@ public void TryRunTics ()
     }
     NetUpdate ();   // check for new console commands
     }
+}
+
+
+@Override
+public doomcom_t getDoomCom() {
+	return this.doomcom;
+}
+
+
+@Override
+public void setDoomCom(doomcom_t doomcom) {
+	this.doomcom=doomcom;
 }
 }

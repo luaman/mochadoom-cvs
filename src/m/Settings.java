@@ -95,7 +95,7 @@ static public void applySetting(DoomContext DC, Settings s,String value){
        DC.M.setShowMessages(val);
    }
     }
-/*
+
 new default_t("key_right",&key_right, KEY_RIGHTARROW),
 new default_t("key_left",&key_left, KEY_LEFTARROW),
 new default_t("key_up",&key_up, KEY_UPARROW),

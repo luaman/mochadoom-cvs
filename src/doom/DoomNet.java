@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomNet.java,v 1.5 2010/10/25 15:57:19 velktron Exp $
+// $Id: DoomNet.java,v 1.6 2010/11/17 23:55:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: DoomNet.java,v $
+// Revision 1.6  2010/11/17 23:55:06  velktron
+// Kind of playable/controllable.
+//
 // Revision 1.5  2010/10/25 15:57:19  velktron
 // Work on netcode...needs moar though.
 //
@@ -63,7 +66,7 @@ package doom;
 //-----------------------------------------------------------------------------
 
 
-//static const char rcsid[] = "$Id: DoomNet.java,v 1.5 2010/10/25 15:57:19 velktron Exp $";
+//static const char rcsid[] = "$Id: DoomNet.java,v 1.6 2010/11/17 23:55:06 velktron Exp $";
 
 
 //#include "m_menu.h"
@@ -76,10 +79,11 @@ import static data.Limits.*;
 import static doom.NetConsts.*;
 import static utils.C2JUtils.*;
 
-import i.DoomNetworkInterface;
 import i.DoomSystemInterface;
 
 import java.util.Arrays;
+
+import n.DoomNetworkInterface;
 //
 //Network play related stuff.
 //There is a data struct that stores network

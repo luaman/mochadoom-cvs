@@ -74,30 +74,8 @@ import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.*;
-import static p.mobj.MF_AMBUSH;
-import static p.mobj.MF_CORPSE;
-import static p.mobj.MF_COUNTITEM;
-import static p.mobj.MF_COUNTKILL;
-import static p.mobj.MF_DROPOFF;
-import static p.mobj.MF_DROPPED;
-import static p.mobj.MF_JUSTATTACKED;
-import static p.mobj.MF_NOBLOOD;
-import static p.mobj.MF_NOCLIP;
-import static p.mobj.MF_NOGRAVITY;
-import static p.mobj.MF_NOTDMATCH;
-import static p.mobj.MF_PICKUP;
-import static p.mobj.MF_SHADOW;
-import static p.mobj.MF_SHOOTABLE;
-import static p.mobj.MF_SKULLFLY;
-import static p.mobj.MF_SOLID;
-import static p.mobj.MF_SPAWNCEILING;
-import static p.mobj.MF_SPECIAL;
-import static p.mobj.MF_TELEPORT;
-import static p.mobj.MF_TRANSSHIFT;
-import static p.mobj_t.MF_FLOAT;
-import static p.mobj_t.MF_INFLOAT;
-import static p.mobj_t.MF_JUSTHIT;
-import static p.mobj_t.MF_MISSILE;
+
+import static p.mobj_t.*;
 import p.UnifiedGameMap.Lights;
 import i.DoomStatusAware;
 import i.DoomSystemInterface;
@@ -106,6 +84,7 @@ import rr.sector_t;
 import rr.side_t;
 import rr.subsector_t;
 import st.StatusBar;
+import data.Tables;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -1583,7 +1562,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       switch (action){
           case A_KeenDie:
                   A_KeenDie((mobj_t)a);
-              break;              
+              break;
+          case P_MobjThinker:
+        	  P_MobjThinker((mobj_t)a);
       }
       
   }
@@ -3673,6 +3654,13 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           S.StartSound(mo, sound);
       }
 
+/** Causes object to move and perform actions. \
+ *  Can only be called through the Actions dispatcher.
+ * 
+ * @param mobj
+ */
+      
+      
 public void P_MobjThinker (mobj_t mobj) {
 // momentum movement
 if (mobj.momx!=0
@@ -3682,7 +3670,7 @@ if (mobj.momx!=0
 XYMovement(mobj);
 
 // FIXME: decent NOP/NULL/Nil function pointer please.
-if (mobj.thinker.function == null)
+if (mobj.function == null)
 return;     // mobj was removed
 }
 if ( (mobj.z != mobj.floorz)
@@ -3691,7 +3679,7 @@ if ( (mobj.z != mobj.floorz)
 mobj.ZMovement ();
 
 // FIXME: decent NOP/NULL/Nil function pointer please.
-if (mobj.thinker.function == null)
+if (mobj.function == null)
 return;     // mobj was removed
 }
 
@@ -3845,9 +3833,9 @@ mobj.z = mobj.ceilingz - mobj.info.height;
 else 
 mobj.z = z;
 
-mobj.thinker.function=think_t.P_MobjThinker;
+mobj.function=think_t.P_MobjThinker;
 
-AddThinker (mobj.thinker);
+AddThinker (mobj);
 
 return mobj;
 }
@@ -6178,7 +6166,8 @@ mobj_t  thing )
     protected final static int FRICTION =       0xe800;
 
     public void XYMovement (mobj_t mo) 
-    {   
+    {
+    System.out.println("XYMovement");
     int     ptryx, ptryy; // pointers to fixed_t ???
     player_t   player;
     int  xmove, ymove; // fixed_t
@@ -6841,12 +6830,12 @@ mobj_t  thing )
         usething = player.mo;
         
         // Normally this shouldn't cause problems?
-        angle = (int) (player.mo.angle >> ANGLETOFINESHIFT);
+        angle = Tables.toBAMIndex(player.mo.angle);
 
         x1 = player.mo.x;
         y1 = player.mo.y;
-        x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angle];
-        y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
+        x2 = x1 + (USERANGE>>>FRACBITS)*finecosine[angle];
+        y2 = y1 + (USERANGE>>>FRACBITS)*finesine[angle];
         
         PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR.UseTraverse );
     }
@@ -6974,7 +6963,8 @@ mobj_t  thing )
 
      // for ( int list = blockmaplump[offset] ; *list != -1 ; list++)
      
-         for (int list=offset;LL.blockmaplump[list]!=-1;list++){
+         for (int list=offset;(list<LL.lines.length && LL.blockmaplump[list]!=-1);list++){
+        	 // FIXME: can overflow :-/
              ld = LL.lines[list];
      if (ld.validcount == R.validcount)
          continue;   // line has already been checked
@@ -7801,6 +7791,7 @@ mobj_t  thing )
   
   public Actions(DoomContext DC){
 	  this.updateStatus(DC);
+	  this.thinkercap=new thinker_t();
   }
 
   //
@@ -7828,6 +7819,8 @@ mobj_t  thing )
 
 @Override
 public void updateStatus(DoomContext DC) {
+		this.I=DC.I;
+		this.DG=DC.DG;
 		this.S=DC.S;
   		this.LL=DC.LL;
   		this.RND=DC.RND;
@@ -7839,14 +7832,11 @@ public void updateStatus(DoomContext DC) {
         this.LEV=new Lights();
         this.SPECS=new Specials();
         this.PEV=new Plats();
-        this.thinkercap=new thinker_t();
-        this.ST=(StatusBar) DC.ST;
+        this.ST= (StatusBar) DC.ST;
         this.AM=DC.AM;
         this.A=this;
         this.HU=DC.HU;
-        
-        
-}
+		}
   
 }
 

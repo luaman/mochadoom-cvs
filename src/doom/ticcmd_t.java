@@ -60,11 +60,23 @@ public class ticcmd_t implements DatagramSerializable{
          dest.buttons= buttons;
      }
      
+     private static StringBuilder sb=new StringBuilder();
+     
      public String toString(){
-         StringBuilder str=new StringBuilder();
-         str.append("Buttons" );
-         str.append(Integer.toHexString(this.buttons));
-         return str.toString();
+         sb.setLength(0);
+         sb.append(" forwardmove ");
+         sb.append(Integer.toHexString(this.forwardmove)); 
+         sb.append(" sidemove ");
+         sb.append(Integer.toHexString(this.sidemove)); 
+         sb.append(" angleturn ");
+         sb.append(Integer.toHexString(this.angleturn)); 
+         sb.append(" consistancy ");
+         sb.append(Integer.toHexString(this.consistancy));      
+         sb.append(" chatchar ");
+         sb.append(chatchar);         
+        sb.append(" buttons ");
+         sb.append(Integer.toHexString(this.buttons));
+         return sb.toString();
      }
 
     @Override

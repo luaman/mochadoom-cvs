@@ -1,6 +1,5 @@
 package doom;
 
-import p.mobj;
 import p.mobj_t;
 import p.pspdef_t;
 

@@ -1,9 +1,9 @@
-package i;
+package n;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomNetworkInterface.java,v 1.1 2010/10/22 16:22:43 velktron Exp $
+// $Id: DoomSystemNetworking.java,v 1.1 2010/11/17 23:55:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,7 +22,7 @@ package i;
 //
 //-----------------------------------------------------------------------------
 
-public interface DoomNetworkInterface{
+public interface DoomSystemNetworking{
 
 
 // Called by D_DoomMain.
@@ -35,7 +35,10 @@ public void NetCmd ();
 
 //-----------------------------------------------------------------------------
 //
-// $Log: DoomNetworkInterface.java,v $
+// $Log: DoomSystemNetworking.java,v $
+// Revision 1.1  2010/11/17 23:55:06  velktron
+// Kind of playable/controllable.
+//
 // Revision 1.1  2010/10/22 16:22:43  velktron
 // Renderer works stably enough but a ton of bleeding. Started working on netcode.
 //

@@ -1,8 +1,11 @@
-package i;
+package n;
 
 import static data.Defines.*;
 import static data.Limits.*;
 import static doom.NetConsts.*;
+
+import i.DoomStatusAware;
+import i.DoomSystemInterface;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -21,7 +24,7 @@ import doom.doomdata_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BasicNetworkInterface.java,v 1.2 2010/11/11 15:31:28 velktron Exp $
+// $Id: BasicNetworkInterface.java,v 1.1 2010/11/17 23:55:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -36,6 +39,9 @@ import doom.doomdata_t;
 // GNU General Public License for more details.
 //
 // $Log: BasicNetworkInterface.java,v $
+// Revision 1.1  2010/11/17 23:55:06  velktron
+// Kind of playable/controllable.
+//
 // Revision 1.2  2010/11/11 15:31:28  velktron
 // Fixed "warped floor" error.
 //
@@ -48,10 +54,10 @@ import doom.doomdata_t;
 //-----------------------------------------------------------------------------
 
 public class BasicNetworkInterface
-        implements DoomNetworkInterface {
+        implements DoomNetworkInterface, DoomStatusAware {
 
 
-  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.2 2010/11/11 15:31:28 velktron Exp $";
+  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.1 2010/11/17 23:55:06 velktron Exp $";
 
   ////////////// STATUS ///////////
   
@@ -129,8 +135,10 @@ public class BasicNetworkInterface
   // MAES: closest java equivalent
   Socket sendaddress[]=new Socket[MAXNETNODES];
 
-//void    (*netget) (void);
-//void    (*netsend) (void);
+  
+  // Maes: oh great. More function pointer "fun".
+  NetFunction netget;
+  NetFunction netsend;
 
   
   interface NetFunction {
@@ -244,12 +252,20 @@ public class BasicNetworkInterface
   {
       int         i;
       int         c;
+<<<<<<< BasicNetworkInterface.java
+      Inet4Address  fromaddress;
+=======
       Socket  fromaddress; // Only IPV4. Yeah.
+>>>>>>> 1.2
       int         fromlen;
       doomdata_t      sw;
                   
+<<<<<<< BasicNetworkInterface.java
+      // FIXME: no use for that fromlen = sizeof(fromaddress);
+=======
       //fromlen = fromaddress.sizeof(fromaddress);
       fromlen = 4;
+>>>>>>> 1.2
       // Receive back into swp.
       try {
       insocket.receive(swp);
@@ -282,7 +298,11 @@ public class BasicNetworkInterface
 
       // find remote node number
       for (i=0 ; i<doomcom.numnodes ; i++)
+<<<<<<< BasicNetworkInterface.java
+      if ( fromaddress.equals(sendaddress[i].getAddress()))
+=======
       if ( fromaddress.getInetAddress().equals(sendaddress[i].getInetAddress()))
+>>>>>>> 1.2
           break;
 
       if (i == doomcom.numnodes)
@@ -433,18 +453,24 @@ public class BasicNetworkInterface
     public void NetCmd() {
         if (DM.doomcom.command == CMD_SEND)
         {
-        netsend ();
+        netsend.invoke ();
         }
         else if (doomcom.command == CMD_GET)
         {
-        netget ();
+        netget.invoke ();
         }
         else
-        I_Error ("Bad net cmd: %i\n",doomcom.command);
+        I.Error ("Bad net cmd: %i\n",doomcom.command);
 
     }
 
     // Instance StringBuilder
     private StringBuilder sb=new StringBuilder();
+
+	@Override
+	public void updateStatus(DoomContext DC) {
+		// TODO Auto-generated method stub
+		
+	}
     
 }

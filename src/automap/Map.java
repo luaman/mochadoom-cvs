@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.18 2010/11/12 13:37:25 velktron Exp $
+// $Id: Map.java,v 1.19 2010/11/17 23:55:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.19  2010/11/17 23:55:06  velktron
+// Kind of playable/controllable.
+//
 // Revision 1.18  2010/11/12 13:37:25  velktron
 // Rationalized the LUT system - now it's 100% procedurally generated.
 //
@@ -124,7 +127,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.18 2010/11/12 13:37:25 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.19 2010/11/17 23:55:06 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -565,7 +568,7 @@ public final  void changeWindowLoc()
 
 public final  void initVariables()
 {
-    int pnum;
+    int pnum=0;
 
     DM.automapactive = true;
     fb = V.getScreen(0);
@@ -583,10 +586,11 @@ public final  void initVariables()
 
     // find player to center on initially
     if (!DM.playeringame[pnum = DM.consoleplayer])
-    for (pnum=0;pnum<MAXPLAYERS;pnum++)
+    for (pnum=0;pnum<MAXPLAYERS;pnum++){
+    	System.out.println(pnum);
         if (DM.playeringame[pnum])
         break;
-  
+    	}
     plr = DM.players[pnum];
     m_x = plr.mo.x - m_w/2;
     m_y = plr.mo.y - m_h/2;

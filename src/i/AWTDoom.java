@@ -132,6 +132,8 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		protected AWTEvent AWTevent;
 		protected byte[] cmap;
 		private int maxpalettes;
+		private int SCREENHEIGHT;
+		private int SCREENWIDTH;
 
 		/** Gimme some raw palette RGB data.
 		 *  I will do the rest
@@ -140,9 +142,10 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		 *   lump in the IWAD!!!).
 		 * 
 		 */
-
+     
         public AWTDoom(DoomMain DM, BufferedRenderer V, byte[] cmap) {
         	this.DM=DM;
+        	this.I=DM.I;
         	this.V= V;
         	this.cmap=cmap;
         	this.width=V.getWidth();
@@ -152,7 +155,6 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
         // Don't do anything yet until InitGraphics is called.
         }
         
-     
         public void setPalette(int pal){
             this.palette=pal;            
         }
@@ -458,7 +460,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	* NASTY hack to hide the cursor.
 	* 
 	* Create a 'hidden' cursor by using a transparent image
-	*	* ...return the invisible cursor
+	* ...return the invisible cursor
 	*/
 
 	protected Cursor createInvisibleCursor()
@@ -684,6 +686,9 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		screens[0] = (unsigned char *) malloc (SCREENWIDTH * SCREENHEIGHT);*/
 
 	  screens=V.getBufferedScreens(0, cmaps);
+	  RAWSCREEN=V.getScreen(0);
+	  SCREENHEIGHT=V.getHeight();
+	  SCREENWIDTH=V.getWidth();
 	} 
 
 	@Override
@@ -714,9 +719,28 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		
 	}
 
+	private int lasttic;
 
 	@Override
 	public void FinishUpdate() {
+	    int		tics;
+	    int		i;
+	    
+	    // draws little dots on the bottom of the screen
+	    if (true)
+	    {
+
+		i = I.GetTime();
+		tics = i - lasttic;
+		lasttic = i;
+		if (tics > 20) tics = 20;
+
+		for (i=0 ; i<tics*2 ; i+=2)
+		    RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
+		for ( ; i<20*2 ; i+=2)
+			RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
+	    
+	    }
 		this.update(null);
 		
 	}
@@ -724,7 +748,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 
     @Override
     public void UpdateNoBlit() {
-        this.update(null);
+        //this.update(null);
         
     }
     

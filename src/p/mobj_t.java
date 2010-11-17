@@ -98,11 +98,15 @@ public class mobj_t extends thinker_t implements Interceptable   {
     
         public mobj_t(Actions A){
             this.A=A;
-            this.thinker=new thinker_t();
+            // A mobj_t is ALSO a thinker, as it always contains the struct.
+            // Don't fall for C's trickery ;-)
+            //this.thinker=new thinker_t();
         }
 
-        /** List: thinker links. */
-        public thinker_t       thinker;
+        /* List: thinker links. */
+        //public thinker_t       thinker;
+        
+        
 
         /** (fixed_t) Info for drawing: position. */
         public int     x,y,z;

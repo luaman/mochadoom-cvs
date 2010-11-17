@@ -76,11 +76,11 @@ import static m.fixed_t.FixedMul;
 import static p.MapUtils.AproxDistance;
 import static p.MapUtils.InterceptVector;
 import static utils.C2JUtils.*;
-import static p.mobj.MF_COUNTITEM;
-import static p.mobj.MF_DROPPED;
-import static p.mobj.MF_NOBLOCKMAP;
-import static p.mobj.MF_NOSECTOR;
-import static p.mobj.MF_SPECIAL;
+import static p.mobj_t.MF_COUNTITEM;
+import static p.mobj_t.MF_DROPPED;
+import static p.mobj_t.MF_NOBLOCKMAP;
+import static p.mobj_t.MF_NOSECTOR;
+import static p.mobj_t.MF_SPECIAL;
 import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import automap.DoomAutoMap;
@@ -106,6 +106,7 @@ import data.Defines.ammotype_t;
 import data.Defines.card_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
+import doom.DoomGame;
 import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
@@ -130,6 +131,8 @@ public class UnifiedGameMap {
 
     DoomMain DM;
 
+    DoomGame DG;
+    
     StatusBar ST;
 
     HU HU;
@@ -1694,7 +1697,7 @@ public class UnifiedGameMap {
             if (levelTimer == true) {
                 levelTimeCount--;
                 if (levelTimeCount == 0)
-                    DM.ExitLevel();
+                    DG.ExitLevel();
             }
 
             // ANIMATE FLATS AND TEXTURES GLOBALLY

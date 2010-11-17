@@ -1,9 +1,9 @@
 package doom;
 
+import n.DoomSystemNetworking;
 import f.Finale;
 import f.Wiper;
 import hu.HU;
-import i.DoomNetworkInterface;
 import i.DoomSystemInterface;
 import i.DoomVideoInterface;
 import m.DoomMenu;
@@ -34,6 +34,7 @@ import automap.DoomAutoMap;
 public class DoomContext {
 	
     public DoomMain DM;
+    public DoomGame DG;
     public WadLoader W;
     public random RND;
     public DoomSystemInterface I;
@@ -41,7 +42,8 @@ public class DoomContext {
     public DoomVideoInterface VI;
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
-    public DoomNetworkInterface DNI;  
+    public DoomSystemNetworking DNI;
+    public DoomGameNetworking DGN;
     public LevelLoader LL;
     public DoomMenu M;
     public Actions P;
