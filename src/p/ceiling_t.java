@@ -7,13 +7,7 @@ import m.fixed_t;
 
 public class ceiling_t extends SectorAction{
 
-        public ceiling_t(){
-            this.thinker=new thinker_t();
-        }    
-
         public ceiling_e   type;
-        // MAES: was *
-        public sector_t   sector;
         /** fixed_t */
         int bottomheight;
         /** fixed_t */

@@ -57,7 +57,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.18 2010/11/17 23:55:06 velktron Exp $
+// $Id: DoomMain.java,v 1.19 2010/11/22 01:17:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +72,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.19  2010/11/22 01:17:16  velktron
+// Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
+//
 // Revision 1.18  2010/11/17 23:55:06  velktron
 // Kind of playable/controllable.
 //
@@ -160,7 +163,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.18 2010/11/17 23:55:06 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.19 2010/11/22 01:17:16 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1169,7 +1172,7 @@ public void Start ()
 	int i;
 	
 	if ( gamemode == GameMode_t.shareware)
-	    I.Error("\nYou cannot -file with the shareware version. Register!");
+	    System.out.println("\nYou cannot -file with the shareware version. Register!");
 
 	// Check for fake IWAD with right name,
 	// but w/o all the lumps of the registered version. 

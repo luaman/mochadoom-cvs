@@ -6,7 +6,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.16 2010/11/17 23:55:06 velktron Exp $
+// $Id: Tables.java,v 1.17 2010/11/22 01:17:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.17  2010/11/22 01:17:16  velktron
+// Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
+//
 // Revision 1.16  2010/11/17 23:55:06  velktron
 // Kind of playable/controllable.
 //
@@ -205,16 +208,19 @@ public static final int[] finecosine=new int[FINEANGLES];
 
 /** Any denominator smaller than 512 will result in 
  *  maximum slope (45 degrees, or an index into tantoangle of 2048)
+ *  The original method used unsigned args. So if this returns NEGATIVES
+ *  in any way, it means you fucked up. Another "consistency" for Doom.
+ *  Even though it was called upon fixed_t signed numbers.
  * 
  */
-public static final int SlopeDiv ( int	num, int den)
+public static final int SlopeDiv ( long	num, long den)
 {
     int 	ans;
     
     if (den < 512)
 	return SLOPERANGE;
 
-    ans = (num<<3)/(den>>>8);
+    ans = (int) ((num<<3)/(den>>>8));
 
     return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }

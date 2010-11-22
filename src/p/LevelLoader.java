@@ -48,7 +48,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.11 2010/11/14 20:00:21 velktron Exp $
+// $Id: LevelLoader.java,v 1.12 2010/11/22 01:17:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +63,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.12  2010/11/22 01:17:16  velktron
+// Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
+//
 // Revision 1.11  2010/11/14 20:00:21  velktron
 // Bleeding floor bug fixed!
 //
@@ -134,7 +137,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.11 2010/11/14 20:00:21 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.12 2010/11/22 01:17:16 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -172,7 +175,7 @@ public class LevelLoader implements DoomStatusAware{
   // Blockmap size.
   int     bmapwidth;
   int     bmapheight; // size in mapblocks
-  short[]      blockmap;   // int for larger maps
+  int[]      blockmap;   // int for larger maps
   // offsets in blockmap are from here
   short[]      blockmaplump;       
   /** (fixed_t) origin of block map */
@@ -576,7 +579,11 @@ public int bmaporgy;
 
   /**
    * P_LoadBlockMap
- * @throws IOException 
+   * @throws IOException
+   * 
+   *  TODO: generate BLOCKMAP dynamically to
+   *  handle missing cases and increase accuracy.
+   *  
    */
   public void LoadBlockMap (int lump) throws IOException
   {
@@ -586,28 +593,27 @@ public int bmaporgy;
       DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
       count=W.LumpLength(lump)/2;
       blockmaplump=new short[count];
-      blockmap=new short[count-4];
+
       data.setOrder(ByteOrder.LITTLE_ENDIAN);
       data.rewind();
       data.readShortArray(blockmaplump, count);
-
-      //blockmap = blockmaplump+4;
-      // Maes: skips first FOUR shorts?
-      for (i=0 ; i<count-4 ; i++){
-          blockmap[i]=blockmaplump[i+4];
-      }
-
-      for (i=0 ; i<count ; i++)
-      // MAES: not needed
-      //blockmaplump[i] = blockmaplump[i];
+      
+      // Maes: first four shorts are header data.
           
       bmaporgx = blockmaplump[0]<<FRACBITS;
       bmaporgy = blockmaplump[1]<<FRACBITS;
       bmapwidth = blockmaplump[2];
       bmapheight = blockmaplump[3];
-      
-      // clear out mobj chains
       count = bmapwidth*bmapheight;
+      
+      blockmap=new int[count];
+      
+      // Expanding to int, can't use arraycopy.
+      for (i=0;i<count;i++){
+    	  blockmap[i]=blockmaplump[i+4];
+      }
+      // clear out mobj chains
+      
       blocklinks = new mobj_t[count];
       C2JUtils.initArrayOfObjects(blocklinks, mobj_t.class);
   }

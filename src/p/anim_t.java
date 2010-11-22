@@ -10,6 +10,10 @@ package p;
 
 
 public class anim_t {
+	
+		public anim_t(){
+			
+		}
     
       public anim_t(boolean istexture, int picnum, int basepic, int numpics,
             int speed) {

@@ -27,8 +27,7 @@ import static data.Limits.MAXSWITCHES;
 import static data.Limits.MAX_ADJOINING_SECTORS;
 import static data.Limits.PLATSPEED;
 import static data.Limits.PLATWAIT;
-import static data.Tables.ANG270;
-import static data.Tables.ANG90;
+import static data.Tables.*;
 import static data.info.mobjinfo;
 import static data.info.sprnames;
 import static data.info.states;
@@ -98,6 +97,7 @@ import s.DoomSoundInterface;
 import st.StatusBar;
 import utils.C2JUtils;
 import w.WadLoader;
+import data.Defines;
 import data.mapthing_t;
 import data.mobjtype_t;
 import data.state_t;
@@ -698,9 +698,9 @@ public class UnifiedGameMap {
 
             flash = new lightflash_t();
 
-            AddThinker(flash.thinker);
+            AddThinker((thinker_t)flash);
 
-            flash.thinker.function = think_t.T_LightFlash;
+            flash.function = think_t.T_LightFlash;
             flash.sector = sector;
             flash.maxlight = sector.lightlevel;
 
@@ -741,12 +741,12 @@ public class UnifiedGameMap {
 
             flash = new strobe_t();
 
-            AddThinker(flash.thinker);
+            AddThinker(flash);
 
             flash.sector = sector;
             flash.darktime = fastOrSlow;
             flash.brighttime = STROBEBRIGHT;
-            flash.thinker.function = think_t.T_StrobeFlash;
+            flash.function = think_t.T_StrobeFlash;
             flash.maxlight = sector.lightlevel;
             flash.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
 
@@ -870,12 +870,12 @@ public class UnifiedGameMap {
 
             g = new glow_t();
 
-            AddThinker(g.thinker);
+            AddThinker(g);
 
             g.sector = sector;
             g.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
             g.maxlight = sector.lightlevel;
-            g.thinker.function = think_t.T_Glow;
+            g.function = think_t.T_Glow;
             g.direction = -1;
 
             sector.special = 0;
@@ -1189,9 +1189,9 @@ public class UnifiedGameMap {
 
                 if (!allaround) {
                     an =
-                        R.PointToAngle2(actor.x, actor.y, player.mo.x,
+                        (R.PointToAngle2(actor.x, actor.y, player.mo.x,
                             player.mo.y)
-                                - actor.angle;
+                                - actor.angle)&BITS32;
 
                     if (an > ANG90 && an < ANG270) {
                         dist =
@@ -1250,12 +1250,12 @@ public class UnifiedGameMap {
                 // Find lowest & highest floors around sector
                 rtn = true;
                 plat = new plat_t();
-                AddThinker(plat.thinker);
+                AddThinker(plat);
 
                 plat.type = type;
                 plat.sector = sec;
                 plat.sector.specialdata = plat;
-                plat.thinker.function = think_t.T_PlatRaise;
+                plat.function = think_t.T_PlatRaise;
                 plat.crush = false;
                 plat.tag = line.tag;
 
@@ -1339,7 +1339,7 @@ public class UnifiedGameMap {
                 if ((activeplats[i] != null) && (activeplats[i].tag == tag)
                         && (activeplats[i].status == plat_e.in_stasis)) {
                     (activeplats[i]).status = (activeplats[i]).oldstatus;
-                    (activeplats[i]).thinker.function = think_t.T_PlatRaise;
+                    (activeplats[i]).function = think_t.T_PlatRaise;
                 }
         }
 
@@ -1352,7 +1352,7 @@ public class UnifiedGameMap {
                         && (activeplats[j].tag == line.tag)) {
                     (activeplats[j]).oldstatus = (activeplats[j]).status;
                     (activeplats[j]).status = plat_e.in_stasis;
-                    (activeplats[j]).thinker.function = null;
+                    (activeplats[j]).function = null;
                 }
         }
 
@@ -1372,7 +1372,7 @@ public class UnifiedGameMap {
             for (i = 0; i < MAXPLATS; i++)
                 if (plat == activeplats[i]) {
                     (activeplats[i]).sector.specialdata = null;
-                    RemoveThinker((activeplats[i]).thinker);
+                    RemoveThinker(activeplats[i]);
                     activeplats[i] = null;
 
                     return;
@@ -1618,49 +1618,14 @@ public class UnifiedGameMap {
                 new animdef_t(true, "BFALL4", "BFALL1", 8),
                 new animdef_t(true, "SFALL4", "SFALL1", 8),
                 new animdef_t(true, "WFALL4", "WFALL1", 8),
-                new animdef_t(true, "DBRAIN4", "DBRAIN1", 8),
-                // Maes: what bullshit. {-1}? Really?!
-                new animdef_t(false, "", "", 0) };
+                new animdef_t(true, "DBRAIN4", "DBRAIN1", 8)
+        };
+                // MAES: this was a cheap trick to mark the end of the sequence
+                // with a value of "-1".
+                // It won't work in Java, so just use animdefs.length-1
+                // new animdef_t(false, "", "", 0) };
 
-    /**
-     * These are NOT the same anims found in defines. Dunno why they fucked up
-     * this one so bad
-     */
-    private anim_t[] anims = new anim_t[MAXANIMS];
-
-    public void InitPicAnims() {
-        anim_t lstanim = null;
-        // Init animation. MAES: sneaky base pointer conversion ;-)
-        int lastanim = 0;
-        // MAES: for (i=0 ; animdefs[i].istexture != -1 ; i++)
-        for (int i = 0; animdefs[i].istexture; i++) {
-
-            if (animdefs[i].istexture) {
-                // different episode ?
-                if (R.CheckTextureNumForName(animdefs[i].startname) == -1)
-                    continue;
-                lstanim = anims[lastanim];
-                lstanim.picnum = R.TextureNumForName(animdefs[i].endname);
-                lstanim.basepic = R.TextureNumForName(animdefs[i].startname);
-            } else {
-                if (W.CheckNumForName(animdefs[i].startname) == -1)
-                    continue;
-
-                lstanim.picnum = R.FlatNumForName(animdefs[i].endname);
-                lstanim.basepic = R.FlatNumForName(animdefs[i].startname);
-            }
-
-            lstanim.istexture = animdefs[i].istexture;
-            lstanim.numpics = lstanim.picnum - lstanim.basepic + 1;
-
-            if (lstanim.numpics < 2)
-                I.Error("P_InitPicAnims: bad cycle from %s to %s",
-                    animdefs[i].startname, animdefs[i].endname);
-
-            lstanim.speed = animdefs[i].speed;
-            lastanim++;
-        }
-    }
+    
 
     //
     // SPECIAL SPAWNING
@@ -1674,7 +1639,13 @@ public class UnifiedGameMap {
         public static final int ok = 0, crushed = 1, pastdest = 2;
 
         public short numlinespecials;
-
+        
+        /**
+         * These are NOT the same anims found in defines. Dunno why they fucked up
+         * this one so badly. Even the type has the same name, but is entirely
+         * different. No way they could be overlapped/unionized either. So WTF.
+         * Really. WTF.
+         */
         public anim_t[] anims = new anim_t[MAXANIMS];
 
         // MAES: was a pointer
@@ -1752,6 +1723,42 @@ public class UnifiedGameMap {
                         // TODO: memset(buttonlist[i],0,sizeof(button_t));
                     }
                 }
+        }
+
+        public void InitPicAnims() {
+        	C2JUtils.initArrayOfObjects(anims);
+            anim_t lstanim; 
+            // Init animation. MAES: sneaky base pointer conversion ;-)
+            this.lastanim = 0;
+            // MAES: for (i=0 ; animdefs[i].istexture != -1 ; i++)
+            for (int i = 0; i<animdefs.length-1; i++) {
+            	lstanim= anims[this.lastanim];
+                if (animdefs[i].istexture) {
+                    // different episode ?
+                    if (R.CheckTextureNumForName(animdefs[i].startname) == -1)
+                        continue;
+                    // So, if it IS a valid texture, it goes straight into anims.
+                    lstanim.picnum = R.TextureNumForName(animdefs[i].endname);
+                    lstanim.basepic = R.TextureNumForName(animdefs[i].startname);
+                } else { // If not a texture, it's a flat.
+                    if (W.CheckNumForName(animdefs[i].startname) == -1)
+                        continue;
+                    System.out.println(animdefs[i]);
+                    // Otherwise, lstanim seems to go nowhere :-/
+                    lstanim.picnum = R.FlatNumForName(animdefs[i].endname);
+                    lstanim.basepic = R.FlatNumForName(animdefs[i].startname);
+                }
+
+                lstanim.istexture = animdefs[i].istexture;
+                lstanim.numpics = lstanim.picnum - lstanim.basepic + 1;
+
+                if (lstanim.numpics < 2)
+                    I.Error("P_InitPicAnims: bad cycle from %s to %s",
+                        animdefs[i].startname, animdefs[i].endname);
+
+                lstanim.speed = animdefs[i].speed;
+                this.lastanim++;
+            }
         }
 
     }
@@ -2195,7 +2202,7 @@ public class UnifiedGameMap {
     public void Init() {
         // TODO:
         SW.InitSwitchList();
-        InitPicAnims();
+        SPECS.InitPicAnims();
         R.InitSprites(sprnames);
     }
 

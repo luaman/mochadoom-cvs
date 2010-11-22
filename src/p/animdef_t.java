@@ -20,4 +20,22 @@ public boolean istexture;  // if false, it is a flat
 public String  endname; // MAES: used to be char[9].
 public String  startname; // MAES: used to be char[9].
 public int     speed;
+
+public String toString(){
+	sb.setLength(0);
+	sb.append("animdef_t");	
+	sb.append(" texture ");
+	sb.append(istexture);
+	sb.append(" start ");
+	sb.append(startname);
+	sb.append(" end ");
+	sb.append(endname);
+	sb.append(" speed " );
+	sb.append(speed);
+	return sb.toString();
+	
+}
+
+private static StringBuilder sb=new StringBuilder();
+
 }

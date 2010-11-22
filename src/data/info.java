@@ -9,7 +9,7 @@ import doom.think_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.5 2010/11/17 23:55:06 velktron Exp $
+// $Id: info.java,v 1.6 2010/11/22 01:17:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.6  2010/11/22 01:17:16  velktron
+// Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
+//
 // Revision 1.5  2010/11/17 23:55:06  velktron
 // Kind of playable/controllable.
 //
@@ -59,7 +62,7 @@ import doom.think_t;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.5 2010/11/17 23:55:06 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.6 2010/11/22 01:17:16 velktron Exp $";
 
 // Data.
 //#include "sounds.h"
@@ -4701,5 +4704,12 @@ public static mobjinfo_t[] mobjinfo = {
 	statenum_t.S_NULL		// raisestate
     )
 };
+
+static {
+// Need to set them to simulate pointer-like operations.
+	for (int i=0;i<states.length;i++){
+		states[i].id=i;
+}
+}
 }
 

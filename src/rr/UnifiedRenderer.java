@@ -1069,7 +1069,7 @@ public class UnifiedRenderer extends RendererState {
            if (x>y)
            {
            // octant 8
-           return -tantoangle[SlopeDiv(y,x)];
+           return (-tantoangle[SlopeDiv(y,x)])&BITS32;
            }
            else
            {
@@ -5809,6 +5809,8 @@ public int InitSkyMap ()
      
     public int FlatNumForName(String name) {
         int i;
+        
+        System.out.println("Checking for "+name);
 
         i = W.CheckNumForName(name);
 

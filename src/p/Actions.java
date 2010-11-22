@@ -40,15 +40,7 @@ import static data.Limits.MAXSKULLS;
 import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.NUMBRAINTARGETS;
 import static data.Limits.NUMMOBJTYPES;
-import static data.Tables.ANG180;
-import static data.Tables.ANG270;
-import static data.Tables.ANG45;
-import static data.Tables.ANG90;
-import static data.Tables.ANGLETOFINESHIFT;
-import static data.Tables.FINEANGLES;
-import static data.Tables.FINEMASK;
-import static data.Tables.finecosine;
-import static data.Tables.finesine;
+import static data.Tables.*;
 import static data.info.mobjinfo;
 import static data.info.states;
 import static doom.englsh.PD_BLUEK;
@@ -279,7 +271,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           if (activeceilings[i] == c)
           {
               activeceilings[i].sector.specialdata = null;
-              RemoveThinker (activeceilings[i].thinker);
+              RemoveThinker (activeceilings[i]);
               activeceilings[i] = null;
               break;
           }
@@ -302,7 +294,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               && (activeceilings[i].direction == 0))
           {
               activeceilings[i].direction = activeceilings[i].olddirection;
-              activeceilings[i].thinker.function
+              activeceilings[i].function
                 = think_t.T_MoveCeiling;
           }
           }
@@ -352,7 +344,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               break;
               }
           }
-          RemoveThinker(floor.thinker);
+          RemoveThinker(floor);
 
           S.StartSound(floor.sector.soundorg, sfxenum_t.sfx_pstop);
           }
@@ -393,9 +385,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           // new door thinker
           rtn = true;
           ceiling = new ceiling_t();
-          AddThinker (ceiling.thinker);
+          AddThinker (ceiling);
           sec.specialdata = ceiling;
-          ceiling.thinker.function = think_t.T_MoveCeiling;
+          ceiling.function = think_t.T_MoveCeiling;
           ceiling.sector = sec;
           ceiling.crush = false;
           
@@ -477,9 +469,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               
               //  Spawn rising slime
               floor = new floormove_t();
-              AddThinker (floor.thinker);
+              AddThinker (floor);
               s2.specialdata = floor;
-              floor.thinker.function = think_t.T_MoveFloor;
+              floor.function = think_t.T_MoveFloor;
               floor.type = floor_e.donutRaise;
               floor.crush = false;
               floor.direction = 1;
@@ -491,9 +483,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               
               //  Spawn lowering donut-hole
               floor = new floormove_t();
-              AddThinker (floor.thinker);
+              AddThinker (floor);
               s1.specialdata = floor;
-              floor.thinker.function = think_t.T_MoveFloor;
+              floor.function = think_t.T_MoveFloor;
               floor.type = floor_e.lowerFloor;
               floor.crush = false;
               floor.direction = -1;
@@ -531,9 +523,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           // new floor thinker
           rtn = true;
           floor = new floormove_t();
-          AddThinker (floor.thinker);
+          AddThinker (floor);
           sec.specialdata = floor;
-          floor.thinker.function = think_t.T_MoveFloor;
+          floor.function = think_t.T_MoveFloor;
           floor.type = floortype;
           floor.crush = false;
 
@@ -711,7 +703,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               && (activeceilings[i].direction != 0))
           {
               activeceilings[i].olddirection = activeceilings[i].direction;
-              activeceilings[i].thinker.function = null;
+              activeceilings[i].function = null;
               activeceilings[i].direction = 0;       // in-stasis
               rtn = 1;
           }
@@ -759,9 +751,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           // new floor thinker
           rtn = true;
           floor = new floormove_t ();
-          AddThinker (floor.thinker);
+          AddThinker (floor);
           sec.specialdata = floor;
-          floor.thinker.function = think_t.T_MoveFloor;
+          floor.function = think_t.T_MoveFloor;
           floor.direction = 1;
           floor.sector = sec;
           switch(type)
@@ -813,10 +805,10 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               secnum = newsecnum;
               floor = new floormove_t();
 
-              AddThinker (floor.thinker);
+              AddThinker (floor);
 
               sec.specialdata = floor;
-              floor.thinker.function = think_t.T_MoveFloor;
+              floor.function = think_t.T_MoveFloor;
               floor.direction = 1;
               floor.sector = sec;
               floor.speed = speed;
@@ -915,14 +907,14 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
                case blazeRaise:
                case blazeClose:
              door.sector.specialdata = null;
-             RemoveThinker (door.thinker);  // unlink and free
+             RemoveThinker (door);  // unlink and free
              S.StartSound(door.sector.soundorg, sfxenum_t.sfx_bdcls);
              break;
              
                case normal:
                case close:
              door.sector.specialdata = null;
-             RemoveThinker (door.thinker);  // unlink and free
+             RemoveThinker (door);  // unlink and free
              break;
              
                case close30ThenOpen:
@@ -971,7 +963,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
                case blazeOpen:
                case open:
              door.sector.specialdata = null;
-             RemoveThinker (door.thinker);  // unlink and free
+             RemoveThinker (door);  // unlink and free
              break;
              
                default:
@@ -1067,10 +1059,10 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
          // new door thinker
          rtn = true;
          door = new vldoor_t();
-         AddThinker (door.thinker);
+         AddThinker (door);
          sec.specialdata = door;
 
-         door.thinker.function = think_t.T_VerticalDoor;
+         door.function = think_t.T_VerticalDoor;
          door.sector = sec;
          door.type = type;
          door.topwait = VDOORWAIT;
@@ -1237,9 +1229,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           
           // new door thinker
           door = new vldoor_t();
-          AddThinker (door.thinker);
+          AddThinker (door);
           sec.specialdata = door;
-          door.thinker.function = think_t.T_VerticalDoor;
+          door.function = think_t.T_VerticalDoor;
           door.sector = sec;
           door.direction = 1;
           door.speed = VDOORSPEED;
@@ -1288,12 +1280,12 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
          
           door = new vldoor_t();
 
-          AddThinker (door.thinker);
+          AddThinker (door);
 
           sec.specialdata = door;
           sec.special = 0;
 
-          door.thinker.function = think_t.T_VerticalDoor;
+          door.function = think_t.T_VerticalDoor;
           door.sector = sec;
           door.direction = 0;
           door.type = vldoor_e.normal;
@@ -1314,12 +1306,12 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
          
           door = new vldoor_t();
           
-          AddThinker (door.thinker);
+          AddThinker (door);
 
           sec.specialdata = door;
           sec.special = 0;
 
-          door.thinker.function = think_t.T_VerticalDoor;
+          door.function = think_t.T_VerticalDoor;
           door.sector = sec;
           door.direction = 2;
           door.type = vldoor_e.raiseIn5Mins;
@@ -1560,11 +1552,246 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
   
   public void dispatch(think_t action, Object a, Object b){
       switch (action){
-          case A_KeenDie:
-                  A_KeenDie((mobj_t)a);
-              break;
           case P_MobjThinker:
         	  P_MobjThinker((mobj_t)a);
+        	  break;
+          case A_Light0:
+        	  A_Light0((player_t)a,(pspdef_t) b);
+        	  break;
+          case A_WeaponReady:
+        	  A_WeaponReady((player_t)a,(pspdef_t) b);
+        	  break;        	  
+          case  A_Lower:
+        	  A_Lower((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_Raise:
+        	  A_Raise((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_Punch:
+        	  A_Punch((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_ReFire:
+        	  A_ReFire((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_FirePistol:
+        	  A_FirePistol((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_Light1:
+        	  A_Light1((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_FireShotgun:
+        	  A_FireShotgun((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_Light2:
+        	  A_Light2((player_t)a,(pspdef_t) b);
+        	  break;
+          case  A_FireShotgun2:
+        	  A_FireShotgun2((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_CheckReload:
+        	  A_CheckReload((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_OpenShotgun2:
+        	  A_OpenShotgun2((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_LoadShotgun2:
+        	  A_LoadShotgun2((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_CloseShotgun2:
+        	  A_CloseShotgun2((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_FireCGun:
+        	  A_FireCGun((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_GunFlash:
+        	  A_GunFlash((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_FireMissile:
+        	  A_FireMissile((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_Saw:
+        	  A_Saw((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_FirePlasma:
+        	  A_FirePlasma((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_BFGsound:
+        	  A_BFGsound((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_FireBFG:
+        	  A_FireBFG((player_t)a,(pspdef_t)b);
+        	  break;
+          case  A_BFGSpray:
+        	  A_BFGSpray((mobj_t)a);
+        	  break;
+          case  A_Explode:
+        	  A_Explode((mobj_t)a);
+        	  break;
+          case  A_Pain:
+        	  A_Pain((mobj_t)a);
+        	  break;
+          case  A_PlayerScream:
+        	  A_PlayerScream((mobj_t)a);
+        	  break;
+          case  A_Fall:
+        	  A_Fall((mobj_t)a);
+        	  break;
+          case  A_XScream:
+        	  A_XScream((mobj_t)a);
+        	  break;
+          case  A_Look:
+        	  A_Look((mobj_t)a);
+        	  break;
+          case  A_Chase:
+        	  A_Chase((mobj_t)a);
+        	  break;
+          case  A_FaceTarget:
+        	  A_FaceTarget((mobj_t)a);
+        	  break;
+          case  A_PosAttack:
+        	  A_PosAttack((mobj_t)a);
+        	  break;
+          case  A_Scream:
+        	  A_Scream((mobj_t)a);
+        	  break;
+          case  A_SPosAttack:
+        	  A_SPosAttack((mobj_t)a);
+        	  break;
+          case  A_VileChase:
+        	  A_VileChase((mobj_t)a);
+        	  break;
+          case  A_VileStart:
+        	  A_VileStart((mobj_t)a);
+        	  break;
+          case  A_VileTarget:
+        	  A_VileTarget((mobj_t)a);
+        	  break;
+          case  A_VileAttack:
+        	  A_VileAttack((mobj_t)a);
+        	  break;
+          case  A_StartFire:
+        	  A_StartFire((mobj_t)a);
+        	  break;
+          case  A_Fire:
+        	  A_Fire((mobj_t)a);
+        	  break;
+          case  A_FireCrackle:
+        	  A_FireCrackle((mobj_t)a);
+        	  break;
+          case  A_Tracer:
+        	  A_Tracer((mobj_t)a);
+        	  break;
+          case  A_SkelWhoosh:
+        	  A_SkelWhoosh((mobj_t)a);
+        	  break;
+          case  A_SkelFist:
+        	  A_SkelFist((mobj_t)a);
+        	  break;
+          case  A_SkelMissile:
+        	  A_SkelMissile((mobj_t)a);
+        	  break;
+          case  A_FatRaise:
+        	  A_FatRaise((mobj_t)a);
+        	  break;
+          case  A_FatAttack1:
+        	  A_FatAttack1((mobj_t)a);
+        	  break;
+          case  A_FatAttack2:
+        	  A_FatAttack1((mobj_t)a);
+        	  break;
+          case  A_FatAttack3:
+        	  A_FatAttack1((mobj_t)a);
+        	  break;
+          case  A_BossDeath:
+        	  A_BossDeath((mobj_t)a);
+        	  break;
+          case  A_CPosAttack:
+        	  A_CPosAttack((mobj_t)a);
+        	  break;
+          case  A_CPosRefire:
+        	  A_CPosRefire((mobj_t)a);
+        	  break;
+          case  A_TroopAttack:
+        	  A_TroopAttack((mobj_t)a);
+        	  break;
+          case  A_SargAttack:
+        	  A_SargAttack((mobj_t)a);
+        	  break;
+          case  A_HeadAttack:
+        	  A_HeadAttack((mobj_t)a);
+        	  break;
+          case  A_BruisAttack:
+        	  A_BruisAttack((mobj_t)a);
+        	  break;
+          case  A_SkullAttack:
+        	  A_SkullAttack((mobj_t)a);
+        	  break;
+          case  A_Metal:
+        	  A_Metal((mobj_t)a);
+        	  break;
+          case  A_SpidRefire:
+        	  A_SpidRefire((mobj_t)a);
+        	  break;
+          case  A_BabyMetal:
+        	  A_BabyMetal((mobj_t)a);
+        	  break;
+          case  A_BspiAttack:
+        	  A_BspiAttack((mobj_t)a);
+        	  break;
+          case  A_Hoof:
+        	  A_Hoof((mobj_t)a);
+        	  break;
+          case  A_CyberAttack:
+        	  A_CyberAttack((mobj_t)a);
+        	  break;
+          case  A_PainAttack:
+        	  A_PainAttack((mobj_t) a);
+        	  break;
+          case  A_PainDie:
+        	  A_PainDie((mobj_t) a);
+        	  break;
+          case  A_KeenDie:
+              A_KeenDie((mobj_t)a);
+              break;
+          case  A_BrainPain:
+        	  break;
+          case  A_BrainScream:
+        	  break;
+          case  A_BrainDie:
+        	  break;
+          case  A_BrainAwake:
+        	  break;        	  
+          case  A_BrainSpit:
+        	  break;
+          case  A_SpawnSound:
+        	  break;
+          case  A_SpawnFly:
+        	  break;
+          case  A_BrainExplode:
+        	  break;
+          case  T_FireFlicker:
+        	  break;
+          case 	T_LightFlash:
+        	  this.LEV.LightFlash((lightflash_t) a);
+        	  break;
+          case	T_StrobeFlash:
+        	  this.LEV.StrobeFlash((strobe_t) a);
+        	  break;
+          case	T_Glow:
+        	  this.LEV.Glow((glow_t) a);
+        	  break;
+          case	T_MoveCeiling:
+        	  this.MoveCeiling((ceiling_t) a);
+        	  break;
+          case	T_MoveFloor:
+        	  this.MoveFloor((floormove_t) a);
+        	  break;
+          case	T_VerticalDoor:
+        	  this.VerticalDoor((line_t)a,(mobj_t) b);
+        	  break;
+          case	T_PlatRaise:
+        	  this.PlatRaise((plat_t)a);
+          	break;
       }
       
   }
@@ -1778,7 +2005,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       damage *= 10;
 
       angle = player.mo.angle;
-      angle += (RND.P_Random()-RND.P_Random())<<18;
+      angle = (angle+(RND.P_Random()-RND.P_Random())<<18)&BITS32;
       slope = AimLineAttack (player.mo, angle, MELEERANGE);
       LineAttack (player.mo, angle, MELEERANGE, slope, damage);
 
@@ -1809,6 +2036,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       damage = 2*(RND.P_Random ()%10+1);
       angle = player.mo.angle;
       angle += (RND.P_Random()-RND.P_Random())<<18;
+      angle&=BITS32;
       
       // use meleerange + 1 se the puff doesn't skip the flash
       slope = AimLineAttack (player.mo, angle, MELEERANGE+1);
@@ -2095,7 +2323,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       // offset angles from its attack angle
       for (i=0 ; i<40 ; i++)
       {
-      an = mo.angle - ANG90/2 + ANG90/40*i;
+      an = (mo.angle - ANG90/2 + ANG90/40*i)&BITS32;
 
       // mo.target is the originator (player)
       //  of the missile
@@ -4148,9 +4376,9 @@ an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y);
 
 // fuzzy player
 if (flags(dest.flags , MF_SHADOW))
-an += (RND.P_Random()-RND.P_Random())<<20;  
+an += (RND.P_Random()-RND.P_Random())<<20; 
 
-th.angle = an;
+th.angle = an&BITS32;;
 //an >>= ANGLETOFINESHIFT;
 th.momx = FixedMul (th.info.speed, finecosine(an));
 th.momy = FixedMul (th.info.speed, finesine(an));
@@ -4189,17 +4417,20 @@ slope = AimLineAttack (source, an, 16*64*FRACUNIT);
 if (linetarget==null)
 {
 an += 1<<26;
+an&=BITS32;
 slope = AimLineAttack (source, an, 16*64*FRACUNIT);
 
 if (linetarget==null)
 {
   an -= 2<<26;
+  an&=BITS32;
   slope = AimLineAttack (source, an, 16*64*FRACUNIT);
 }
 
 if (linetarget==null)
 {
   an = source.angle;
+  // angle should be "sane"..right?
   slope = 0;
 }
 }
@@ -4215,7 +4446,7 @@ if (th.info.seesound!=null)
 
 th.target = source;
 th.angle = an;
-an>>=ANGLETOFINESHIFT;
+an>>>=ANGLETOFINESHIFT;
 th.momx = FixedMul( th.info.speed,
        finecosine[(int) an]);
 th.momy = FixedMul( th.info.speed,
@@ -5777,10 +6008,10 @@ mobj_t  thing )
         // because mobj_ts are grouped into mapblocks
         // based on their origin point, and can overlap
         // into adjacent blocks by up to MAXRADIUS units.
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>>MAPBLOCKSHIFT;
+        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>>MAPBLOCKSHIFT;
+        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>>MAPBLOCKSHIFT;
+        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>>MAPBLOCKSHIFT;
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
@@ -5788,10 +6019,10 @@ mobj_t  thing )
             return false;
         
         // check lines
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy)>>MAPBLOCKSHIFT;
+        xl = (tmbbox[BOXLEFT] - LL.bmaporgx)>>>MAPBLOCKSHIFT;
+        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx)>>>MAPBLOCKSHIFT;
+        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy)>>>MAPBLOCKSHIFT;
+        yh = (tmbbox[BOXTOP] - LL.bmaporgy)>>>MAPBLOCKSHIFT;
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
@@ -6377,7 +6608,7 @@ mobj_t  thing )
     {
         int x2,y2;
         
-        angle >>= ANGLETOFINESHIFT;
+        angle >>>= ANGLETOFINESHIFT;
         shootthing = t1;
         la_damage = damage;
         x2 = t1.x + (distance>>FRACBITS)*finecosine[(int) angle];
@@ -6945,6 +7176,7 @@ mobj_t  thing )
     public boolean BlockLinesIterator ( int           x,int           y,PIT func )
     {
      int         offset;
+     int 		lineinblock;
      line_t     ld;
      
      if (x<0
@@ -6955,17 +7187,18 @@ mobj_t  thing )
      return true;
      }
      
+     // This gives us the index to look up
+     
      offset = y*LL.bmapwidth+x;
      
-     //offset = *(blockmap+offset);
-
-     //offset = *(blockmap+offset);
+     // The index contains yet another offset, but this time 
+     // in "shorts".
+     offset = LL.blockmap[offset];
 
      // for ( int list = blockmaplump[offset] ; *list != -1 ; list++)
      
-         for (int list=offset;(list<LL.lines.length && LL.blockmaplump[list]!=-1);list++){
-        	 // FIXME: can overflow :-/
-             ld = LL.lines[list];
+         for (int list=offset;(lineinblock=LL.blockmaplump[list])!=-1;list++){
+             ld = LL.lines[lineinblock];
      if (ld.validcount == R.validcount)
          continue;   // line has already been checked
 
