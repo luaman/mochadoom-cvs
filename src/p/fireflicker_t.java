@@ -1,22 +1,41 @@
 package p;
 
-import rr.sector_t;
-import doom.thinker_t;
+import m.random;
+import rr.SectorAction;
 
 //
 // P_LIGHTS
 //
 
-public class fireflicker_t {
+public class fireflicker_t extends SectorAction{
 	
-	public fireflicker_t(){
-		this.thinker=new thinker_t();
-	}
-		
-     public thinker_t   thinker;
-     public sector_t   sector;
+     private random RND;
+    
      public int     count;
      public int     maxlight;
      public int     minlight;
+     
+     public fireflicker_t(random RND){
+         this.RND=RND;
+     }
+     
+     //
+     // T_FireFlicker
+     //
+     public void FireFlicker() {
+         int amount;
+
+         if (--count != 0)
+             return;
+
+         amount = (RND.P_Random() & 3) * 16;
+
+         if (sector.lightlevel - amount < minlight)
+             sector.lightlevel = (short) minlight;
+         else
+             sector.lightlevel = (short) (maxlight - amount);
+
+         count = 4;
+     }
      
  } 

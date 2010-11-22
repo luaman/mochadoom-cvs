@@ -1,5 +1,7 @@
 package p;
 
+import static p.ChaseDirections.*;
+import static p.DoorDefines.*;
 import static data.Defines.BASETHRESHOLD;
 import static data.Defines.BT_ATTACK;
 import static data.Defines.FLOATSPEED;
@@ -64,6 +66,14 @@ import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
+import static p.ChaseDirections.DI_EAST;
+import static p.ChaseDirections.DI_NODIR;
+import static p.ChaseDirections.DI_NORTH;
+import static p.ChaseDirections.DI_SOUTH;
+import static p.ChaseDirections.DI_SOUTHEAST;
+import static p.ChaseDirections.DI_WEST;
+import static p.ChaseDirections.diags;
+import static p.ChaseDirections.opposite;
 import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.*;
 
@@ -109,9 +119,6 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
   // plasma cells for a bfg attack
   private static int BFGCELLS      =  40;      
 
-
-      public static final int VDOORSPEED = FRACUNIT * 2;
-      public static final int VDOORWAIT = 150;
       
       //
       // CEILINGS
@@ -243,7 +250,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       //
       // Add an active ceiling
       //
-      void AddActiveCeiling(ceiling_t c)
+      private void AddActiveCeiling(ceiling_t c)
       {
           int     i;
           
@@ -302,9 +309,10 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       
       
 
-      //
-      // MOVE A FLOOR TO IT'S DESTINATION (UP OR DOWN)
-      //
+      /**
+       * MOVE A FLOOR TO IT'S DESTINATION (UP OR DOWN)
+       *
+       */
       void MoveFloor(floormove_t floor)
       {
           result_e    res;
@@ -415,7 +423,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               break;
 
             case raiseToHighest:
-              ceiling.topheight = FindHighestCeilingSurrounding(sec);
+              ceiling.topheight = sec.FindHighestCeilingSurrounding();
               ceiling.direction = 1;
               ceiling.speed = CEILSPEED;
               break;
@@ -459,7 +467,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               continue;
                   
           rtn = true;
-          s2 = getNextSector(s1.lines[0],s1);
+          s2 = s1.lines[0].getNextSector(s1);
           for (i = 0;i < s2.linecount;i++)
           {
               if ((!flags(s2.lines[i].flags , ML_TWOSIDED)) ||
@@ -536,7 +544,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               floor.sector = sec;
               floor.speed = FLOORSPEED;
               floor.floordestheight = 
-              FindHighestFloorSurrounding(sec);
+              sec.FindHighestFloorSurrounding();
               break;
 
             case lowerFloorToLowest:
@@ -544,7 +552,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               floor.sector = sec;
               floor.speed = FLOORSPEED;
               floor.floordestheight = 
-              FindLowestFloorSurrounding(sec);
+              sec.FindLowestFloorSurrounding();
               break;
 
             case turboLower:
@@ -552,7 +560,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               floor.sector = sec;
               floor.speed = FLOORSPEED * 4;
               floor.floordestheight = 
-              FindHighestFloorSurrounding(sec);
+              sec.FindHighestFloorSurrounding();
               if (floor.floordestheight != sec.floorheight)
               floor.floordestheight += 8*FRACUNIT;
               break;
@@ -564,7 +572,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               floor.sector = sec;
               floor.speed = FLOORSPEED;
               floor.floordestheight = 
-              FindLowestCeilingSurrounding(sec);
+              sec.FindLowestCeilingSurrounding();
               if (floor.floordestheight > sec.ceilingheight)
               floor.floordestheight = sec.ceilingheight;
               floor.floordestheight -= (8*FRACUNIT)*
@@ -576,7 +584,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               floor.sector = sec;
               floor.speed = FLOORSPEED*4;
               floor.floordestheight = 
-              FindNextHighestFloor(sec,sec.floorheight);
+              sec.FindNextHighestFloor(sec.floorheight);
               break;
 
             case raiseFloorToNearest:
@@ -584,7 +592,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               floor.sector = sec;
               floor.speed = FLOORSPEED;
               floor.floordestheight = 
-              FindNextHighestFloor(sec,sec.floorheight);
+              sec.FindNextHighestFloor(sec.floorheight);
               break;
 
             case raiseFloor24:
@@ -648,7 +656,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
               floor.sector = sec;
               floor.speed = FLOORSPEED;
               floor.floordestheight = 
-              FindLowestFloorSurrounding(sec);
+              sec.FindLowestFloorSurrounding();
               floor.texture = sec.floorpic;
 
               for (i = 0; i < sec.linecount; i++)
@@ -997,8 +1005,8 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           {
             case 99: // Blue Lock
             case 133:
-         if ( p==null )
-             return false;
+/*         if ( p==null )
+             return false; */
          if (!p.cards[card_t.it_bluecard.ordinal()] && !p.cards[card_t.it_blueskull.ordinal()])
          {
              p.message = PD_BLUEO;
@@ -1009,8 +1017,8 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
          
             case 134: // Red Lock
             case 135:
-         if ( p==null )
-             return false;
+ /*        if ( p==null )
+             return false; */
          if (!p.cards[card_t.it_redcard.ordinal()] && !p.cards[card_t.it_redskull.ordinal()])
          {
              p.message = PD_REDO;
@@ -1021,8 +1029,8 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
          
             case 136:    // Yellow Lock
             case 137:
-         if ( p==null )
-             return false;
+ /*        if ( p==null )
+             return false; */
          if (!p.cards[card_t.it_yellowcard.ordinal()] &&
              !p.cards[card_t.it_yellowskull.ordinal()])
          {
@@ -1037,7 +1045,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       }
 
 
-      boolean
+      public boolean
       DoDoor
       ( line_t   line,
         vldoor_e type )
@@ -1071,7 +1079,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
          switch(type)
          {
            case blazeClose:
-             door.topheight = FindLowestCeilingSurrounding(sec);
+             door.topheight = sec.FindLowestCeilingSurrounding();
              door.topheight -= 4*FRACUNIT;
              door.direction = -1;
              door.speed = VDOORSPEED * 4;
@@ -1079,7 +1087,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
              break;
              
            case close:
-             door.topheight = FindLowestCeilingSurrounding(sec);
+             door.topheight = sec.FindLowestCeilingSurrounding();
              door.topheight -= 4*FRACUNIT;
              door.direction = -1;
              S.StartSound(door.sector.soundorg, sfxenum_t.sfx_dorcls);
@@ -1094,7 +1102,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
            case blazeRaise:
            case blazeOpen:
              door.direction = 1;
-             door.topheight = FindLowestCeilingSurrounding(sec);
+             door.topheight = sec.FindLowestCeilingSurrounding();
              door.topheight -= 4*FRACUNIT;
              door.speed = VDOORSPEED * 4;
              if (door.topheight != sec.ceilingheight)
@@ -1104,7 +1112,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
            case normal:
            case open:
              door.direction = 1;
-             door.topheight = FindLowestCeilingSurrounding(sec);
+             door.topheight = sec.FindLowestCeilingSurrounding();
              door.topheight -= 4*FRACUNIT;
              if (door.topheight != sec.ceilingheight)
             	 S.StartSound(door.sector.soundorg, sfxenum_t.sfx_doropn);
@@ -1266,61 +1274,14 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           }
           
           // find the top and bottom of the movement range
-          door.topheight = FindLowestCeilingSurrounding(sec);
+          door.topheight = sec.FindLowestCeilingSurrounding();
           door.topheight -= 4*FRACUNIT;
       }
 
 
-      //
-      // Spawn a door that closes after 30 seconds
-      //
-      public void SpawnDoorCloseIn30 (sector_t sec)
-      {
-          vldoor_t   door;
-         
-          door = new vldoor_t();
+    
 
-          AddThinker (door);
-
-          sec.specialdata = door;
-          sec.special = 0;
-
-          door.function = think_t.T_VerticalDoor;
-          door.sector = sec;
-          door.direction = 0;
-          door.type = vldoor_e.normal;
-          door.speed = VDOORSPEED;
-          door.topcountdown = 30 * 35;
-      }
-
-      /**
-       * Spawn a door that opens after 5 minutes
-       */
       
-      public void
-      SpawnDoorRaiseIn5Mins
-      ( sector_t sec,
-        int      secnum )
-      {
-          vldoor_t   door;
-         
-          door = new vldoor_t();
-          
-          AddThinker (door);
-
-          sec.specialdata = door;
-          sec.special = 0;
-
-          door.function = think_t.T_VerticalDoor;
-          door.sector = sec;
-          door.direction = 2;
-          door.type = vldoor_e.raiseIn5Mins;
-          door.speed = VDOORSPEED;
-          door.topheight = FindLowestCeilingSurrounding(sec);
-          door.topheight -= 4*FRACUNIT;
-          door.topwait = VDOORWAIT;
-          door.topcountdown = 5 * 60 * 35;
-      }
 
 
 
@@ -1772,13 +1733,13 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           case  T_FireFlicker:
         	  break;
           case 	T_LightFlash:
-        	  this.LEV.LightFlash((lightflash_t) a);
+              ((lightflash_t) a).LightFlash();
         	  break;
           case	T_StrobeFlash:
-        	  this.LEV.StrobeFlash((strobe_t) a);
+        	  ((strobe_t) a).StrobeFlash();
         	  break;
           case	T_Glow:
-        	  this.LEV.Glow((glow_t) a);
+        	  ((glow_t) a).Glow();
         	  break;
           case	T_MoveCeiling:
         	  this.MoveCeiling((ceiling_t) a);
@@ -2524,7 +2485,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
         && EN.CheckMeleeRange (actor))
         {
         if (actor.info.attacksound!=null)
-            ; // TODO: S_StartSound (actor, actor.info.attacksound);
+           S.StartSound (actor, actor.info.attacksound);
 
         actor.SetMobjState(actor.info.meleestate);
         return;
@@ -2570,7 +2531,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
         if (actor.info.activesound!=null
         && RND.P_Random() < 3)
         {
-        ; // TODO: S_StartSound (actor, actor.info.activesound);
+            S.StartSound (actor, actor.info.activesound);
         }
     }
     
@@ -2640,6 +2601,134 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
         return true; 
     }
 
+    private void NewChaseDir (mobj_t actor)
+    {
+        // fixed_t
+        int deltax,deltay;
+        
+        //dirtype
+        int   d[]=new int[3];
+        
+        int     tdir;
+        int   olddir;
+        // dirtypes
+        int   turnaround;
+
+        if (actor.target==null)
+        I.Error ("P_NewChaseDir: called with no target");
+            
+        olddir = actor.movedir;
+        turnaround=opposite[olddir];
+
+        deltax = actor.target.x - actor.x;
+        deltay = actor.target.y - actor.y;
+
+        if (deltax>10*FRACUNIT)
+        d[1]= DI_EAST;
+        else if (deltax<-10*FRACUNIT)
+        d[1]= DI_WEST;
+        else
+        d[1]=DI_NODIR;
+
+        if (deltay<-10*FRACUNIT)
+        d[2]= DI_SOUTH;
+        else if (deltay>10*FRACUNIT)
+        d[2]= DI_NORTH;
+        else
+        d[2]=DI_NODIR;
+
+        // try direct route
+        if (d[1] != DI_NODIR
+        && d[2] != DI_NODIR)
+        {
+        actor.movedir = diags[(eval(deltay<0)<<1)+eval(deltax>0)];
+        if (actor.movedir != turnaround && TryWalk(actor))
+            return;
+        }
+
+        // try other directions
+        if (RND.P_Random() > 200
+        ||  Math.abs(deltay)>Math.abs(deltax))
+        {
+        tdir=d[1];
+        d[1]=d[2];
+        d[2]=tdir;
+        }
+
+        if (d[1]==turnaround)
+        d[1]=DI_NODIR;
+        if (d[2]==turnaround)
+        d[2]=DI_NODIR;
+        
+        if (d[1]!=DI_NODIR)
+        {
+        actor.movedir = d[1];
+        if (TryWalk(actor))
+        {
+            // either moved forward or attacked
+            return;
+        }
+        }
+
+        if (d[2]!=DI_NODIR)
+        {
+        actor.movedir =d[2];
+
+        if (TryWalk(actor))
+            return;
+        }
+
+        // there is no direct path to the player,
+        // so pick another direction.
+        if (olddir!=DI_NODIR)
+        {
+        actor.movedir =olddir;
+
+        if (TryWalk(actor))
+            return;
+        }
+
+        // randomly determine direction of search
+        if (flags(RND.P_Random(),1))   
+        {
+        for ( tdir=DI_EAST;
+              tdir<=DI_SOUTHEAST;
+              tdir++ )
+        {
+            if (tdir!=turnaround)
+            {
+            actor.movedir =tdir;
+            
+            if ( TryWalk(actor) )
+                return;
+            }
+        }
+        }
+        else
+        {
+        for ( tdir=DI_SOUTHEAST;
+              tdir != (DI_EAST-1);
+              tdir-- )
+        {
+            if (tdir!=turnaround)
+            {
+            actor.movedir =tdir;
+            
+            if ( TryWalk(actor) )
+                return;
+            }
+        }
+        }
+
+        if (turnaround !=  DI_NODIR)
+        {
+        actor.movedir =turnaround;
+        if ( TryWalk(actor) )
+            return;
+        }
+
+        actor.movedir = DI_NODIR;  // can not move
+    }
     
 
     /**
@@ -2653,7 +2742,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
      * If a door is in the way,
      * an OpenDoor call is made to start it opening.
      */
-    boolean TryWalk (mobj_t actor)
+    private boolean TryWalk (mobj_t actor)
     {   
         if (!Move (actor))
         {
@@ -3455,7 +3544,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
 
     void A_XScream (mobj_t  actor)
     {
-        ; // TODO: S_StartSound (actor, sfxenum_t.sfx_slop); 
+        S.StartSound (actor, sfxenum_t.sfx_slop); 
     }
 
     void A_Pain (mobj_t  actor)
@@ -3794,14 +3883,14 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
         newmobj.reactiontime =
         (int) (((targ.y - mo.y)/newmobj.momy) / newmobj.state.tics);
 
-        // TODO: S_StartSound(NULL, sfxenum_t.sfx_bospit);
+         S.StartSound(null, sfxenum_t.sfx_bospit);
     }
 
 
     // travelling cube sound
     void A_SpawnSound (mobj_t  mo)  
     {
-        ; // TODO: S_StartSound (mo,sfxenum_t.sfx_boscub);
+        S.StartSound (mo,sfxenum_t.sfx_boscub);
         A_SpawnFly(mo);
     }
 
@@ -3821,7 +3910,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
 
         // First spawn teleport fog.
         fog = SpawnMobj (targ.x, targ.y, targ.z, mobjtype_t.MT_SPAWNFIRE);
-        ; // TODO: S_StartSound (fog, sfxenum_t.sfx_telept);
+        S.StartSound (fog, sfxenum_t.sfx_telept);
 
         // Randomly select monster to spawn.
         r = RND.P_Random ();
@@ -4723,8 +4812,7 @@ CheckMissileSpawn (th);
  {
      int     i;
      int     tag;
-     mobj_t  m;
-     @SuppressWarnings("unused")
+     mobj_t  m;     
      mobj_t  fog;
      int an;
      thinker_t   thinker;
@@ -6041,7 +6129,7 @@ mobj_t  thing )
      * @param y fixed_t
      * 
     */
-    boolean
+    private boolean
     TryMove
     ( mobj_t    thing,
       int   x,
@@ -6552,7 +6640,7 @@ mobj_t  thing )
      * @param angle long
      * @param distance int
      */
-   int
+   private int
    AimLineAttack
     ( mobj_t   t1,
       long   angle,
@@ -7728,28 +7816,28 @@ mobj_t  thing )
       {
         case 1:
           // FLICKERING LIGHTS
-          LEV.SpawnLightFlash (sector);
+            sector.SpawnLightFlash ();
           break;
 
         case 2:
           // STROBE FAST
-            LEV.SpawnStrobeFlash(sector,Lights.FASTDARK,0);
+            sector.SpawnStrobeFlash(FASTDARK,0);
           break;
           
         case 3:
           // STROBE SLOW
-            LEV.SpawnStrobeFlash(sector,Lights.SLOWDARK,0);
+            sector.SpawnStrobeFlash(SLOWDARK,0);
           break;
           
         case 4:
           // STROBE FAST/DEATH SLIME
-            LEV.SpawnStrobeFlash(sector,Lights.FASTDARK,0);
+            sector.SpawnStrobeFlash(FASTDARK,0);
           sector.special = 4;
           break;
           
         case 8:
           // GLOWING LIGHT
-            LEV.SpawnGlowingLight(sector);
+            sector.SpawnGlowingLight();
           break;
         case 9:
           // SECRET SECTOR
@@ -7758,26 +7846,26 @@ mobj_t  thing )
           
         case 10:
           // DOOR CLOSE IN 30 SECONDS
-          SpawnDoorCloseIn30 (sector);
+          sector.SpawnDoorCloseIn30 ();
           break;
           
         case 12:
           // SYNC STROBE SLOW
-            LEV.SpawnStrobeFlash (sector, Lights.SLOWDARK, 1);
+            sector.SpawnStrobeFlash (SLOWDARK, 1);
           break;
 
         case 13:
           // SYNC STROBE FAST
-            LEV.SpawnStrobeFlash (sector, Lights.FASTDARK, 1);
+            sector.SpawnStrobeFlash ( FASTDARK, 1);
           break;
 
         case 14:
           // DOOR RAISE IN 5 MINUTES
-            SpawnDoorRaiseIn5Mins (sector, i);
+            sector.SpawnDoorRaiseIn5Mins (i);
           break;
           
         case 17:
-            LEV.SpawnFireFlicker(sector);
+            sector.SpawnFireFlicker();
           break;
       }
       }
@@ -7812,134 +7900,7 @@ mobj_t  thing )
       //  P_InitSlidingDoorFrames();
   }
   
-  void NewChaseDir (mobj_t actor)
-  {
-      // fixed_t
-      int deltax,deltay;
-      
-      //dirtype
-      int   d[]=new int[3];
-      
-      int     tdir;
-      int   olddir;
-      // dirtypes
-      int   turnaround;
-
-      if (actor.target==null)
-      I.Error ("P_NewChaseDir: called with no target");
-          
-      olddir = actor.movedir;
-      turnaround=opposite[olddir];
-
-      deltax = actor.target.x - actor.x;
-      deltay = actor.target.y - actor.y;
-
-      if (deltax>10*FRACUNIT)
-      d[1]= DI_EAST;
-      else if (deltax<-10*FRACUNIT)
-      d[1]= DI_WEST;
-      else
-      d[1]=DI_NODIR;
-
-      if (deltay<-10*FRACUNIT)
-      d[2]= DI_SOUTH;
-      else if (deltay>10*FRACUNIT)
-      d[2]= DI_NORTH;
-      else
-      d[2]=DI_NODIR;
-
-      // try direct route
-      if (d[1] != DI_NODIR
-      && d[2] != DI_NODIR)
-      {
-      actor.movedir = diags[(eval(deltay<0)<<1)+eval(deltax>0)];
-      if (actor.movedir != turnaround && TryWalk(actor))
-          return;
-      }
-
-      // try other directions
-      if (RND.P_Random() > 200
-      ||  Math.abs(deltay)>Math.abs(deltax))
-      {
-      tdir=d[1];
-      d[1]=d[2];
-      d[2]=tdir;
-      }
-
-      if (d[1]==turnaround)
-      d[1]=DI_NODIR;
-      if (d[2]==turnaround)
-      d[2]=DI_NODIR;
-      
-      if (d[1]!=DI_NODIR)
-      {
-      actor.movedir = d[1];
-      if (TryWalk(actor))
-      {
-          // either moved forward or attacked
-          return;
-      }
-      }
-
-      if (d[2]!=DI_NODIR)
-      {
-      actor.movedir =d[2];
-
-      if (TryWalk(actor))
-          return;
-      }
-
-      // there is no direct path to the player,
-      // so pick another direction.
-      if (olddir!=DI_NODIR)
-      {
-      actor.movedir =olddir;
-
-      if (TryWalk(actor))
-          return;
-      }
-
-      // randomly determine direction of search
-      if (flags(RND.P_Random(),1))   
-      {
-      for ( tdir=DI_EAST;
-            tdir<=DI_SOUTHEAST;
-            tdir++ )
-      {
-          if (tdir!=turnaround)
-          {
-          actor.movedir =tdir;
-          
-          if ( TryWalk(actor) )
-              return;
-          }
-      }
-      }
-      else
-      {
-      for ( tdir=DI_SOUTHEAST;
-            tdir != (DI_EAST-1);
-            tdir-- )
-      {
-          if (tdir!=turnaround)
-          {
-          actor.movedir =tdir;
-          
-          if ( TryWalk(actor) )
-              return;
-          }
-      }
-      }
-
-      if (turnaround !=  DI_NODIR)
-      {
-      actor.movedir =turnaround;
-      if ( TryWalk(actor) )
-          return;
-      }
-
-      actor.movedir = DI_NODIR;  // can not move
-  }
+  
   
   /**
    * Move a plat up and down
@@ -7960,7 +7921,7 @@ mobj_t  thing )
           || plat.type == plattype_e.raiseToNearestAndChange)
       {
           if (!flags(DM.leveltime,7))
-          ; //TODO: S_StartSound((mobj_t *)&plat.sector.soundorg, sfx_stnmov);
+          S.StartSound(plat.sector.soundorg, sfxenum_t.sfx_stnmov);
       }
       
                   
@@ -7968,7 +7929,7 @@ mobj_t  thing )
       {
           plat.count = plat.wait;
           plat.status = plat_e.down;
-          ;// TODO: S_StartSound((mobj_t *)&plat.sector.soundorg, sfx_pstart);
+          S.StartSound(plat.sector.soundorg, sfxenum_t.sfx_pstart);
       }
       else
       {
@@ -8015,7 +7976,7 @@ mobj_t  thing )
           plat.status = plat_e.up;
           else
           plat.status = plat_e.down;
-          //TODO: S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstart);
+          S.StartSound(plat.sector.soundorg,sfxenum_t.sfx_pstart);
       }
         case  in_stasis:
       break;

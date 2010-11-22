@@ -48,7 +48,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.12 2010/11/22 01:17:16 velktron Exp $
+// $Id: LevelLoader.java,v 1.13 2010/11/22 14:54:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +63,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.13  2010/11/22 14:54:53  velktron
+// Greater objectification of sectors etc.
+//
 // Revision 1.12  2010/11/22 01:17:16  velktron
 // Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
 //
@@ -137,7 +140,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.12 2010/11/22 01:17:16 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.13 2010/11/22 14:54:53 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -352,6 +355,8 @@ public int bmaporgy;
       ss.tag = ms.tag;
       ss.thinglist = null;
       ss.id=i;
+      ss.TL=this.P;
+      ss.RND=this.DM.RND;
       }
 
   }

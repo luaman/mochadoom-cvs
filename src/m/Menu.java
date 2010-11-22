@@ -1693,7 +1693,7 @@ public class Menu extends MenuMisc implements DoomMenu{
         @Override
         public void invoke(int choice) {
             // warning: unused parameter `int choice'
-            choice = 0;
+            //choice = 0;
             showMessages = 1 - showMessages;
 
             if (showMessages == 0)

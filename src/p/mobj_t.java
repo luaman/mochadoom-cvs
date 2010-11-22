@@ -15,8 +15,6 @@ import data.mobjtype_t;
 import data.spritenum_t;
 import data.state_t;
 import data.Defines.statenum_t;
-import doom.ActionType;
-import doom.acp1;
 import doom.player_t;
 import doom.thinker_t;
 
@@ -447,6 +445,12 @@ public class mobj_t extends thinker_t implements Interceptable   {
         }
         }
     } 
+    
+
+   
+
+    
+    
     
     private random RND;
     

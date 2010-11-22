@@ -53,6 +53,10 @@ public class UnifiedRenderer extends RendererState {
       // Span functions
       DrawSpan=new R_DrawSpanUnrolled();
       DrawSpanLow=new R_DrawSpanLow();
+      DrawTranslatedColumn=new R_DrawTranslatedColumn();
+      DrawFuzzColumn=new R_DrawFuzzColumn();
+      DrawColumnLow=new R_DrawColumnLow();
+      DrawColumn=new R_DrawColumnBoom();
      
   }
 
@@ -363,10 +367,10 @@ public class UnifiedRenderer extends RendererState {
    protected colfunc_t transcolfunc;
    protected colfunc_t spanfunc;
 
-   protected colfunc_t DrawTranslatedColumn=new R_DrawTranslatedColumn();
-   protected colfunc_t DrawFuzzColumn=new R_DrawFuzzColumn();
-   protected colfunc_t DrawColumnLow=new R_DrawColumnLow();
-   protected colfunc_t DrawColumn=new R_DrawColumn();
+   protected colfunc_t DrawTranslatedColumn;
+   protected colfunc_t DrawFuzzColumn;
+   protected colfunc_t DrawColumnLow;
+   protected colfunc_t DrawColumn;
    /** to be set in UnifiedRenderer */
    protected colfunc_t DrawSpan,DrawSpanLow;
    
@@ -651,8 +655,14 @@ public class UnifiedRenderer extends RendererState {
          }
       else
          {
-           while ((count-=2)>=0)   // texture height is a power of 2 -- killough
+           while ((count-=4)>=0)   // texture height is a power of 2 -- killough
              {
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
                screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;

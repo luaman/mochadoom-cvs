@@ -2,11 +2,13 @@ package rr;
 
 import p.Interceptable;
 import p.divline_t;
+import static data.Defines.ML_TWOSIDED;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.*;
+import static utils.C2JUtils.flags;
 import data.Defines.slopetype_t;
 import doom.thinker_t;
 
@@ -157,6 +159,22 @@ public class line_t implements Interceptable{
        return -1;
       }
 
+      /**
+       * getNextSector()
+       * Return sector_t * of sector next to current.
+       * NULL if not two-sided line
+       */
+      
+      public sector_t getNextSector(sector_t sec) {
+          if (!flags(flags, ML_TWOSIDED))
+              return null;
 
+          if (frontsector == sec)
+              return backsector;
+
+          return frontsector;
+      }
+      
+      
       
     }

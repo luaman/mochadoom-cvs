@@ -1,5 +1,6 @@
 package p;
 
+import static p.DoorDefines.*;
 import static data.Defines.ITEMQUESIZE;
 import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MELEERANGE;
@@ -24,50 +25,14 @@ import static data.Limits.MAXLINEANIMS;
 import static data.Limits.MAXPLATS;
 import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.MAXSWITCHES;
-import static data.Limits.MAX_ADJOINING_SECTORS;
 import static data.Limits.PLATSPEED;
 import static data.Limits.PLATWAIT;
 import static data.Tables.*;
 import static data.info.mobjinfo;
 import static data.info.sprnames;
 import static data.info.states;
-import static doom.englsh.GOTARMBONUS;
-import static doom.englsh.GOTARMOR;
-import static doom.englsh.GOTBACKPACK;
-import static doom.englsh.GOTBERSERK;
-import static doom.englsh.GOTBFG9000;
-import static doom.englsh.GOTBLUECARD;
-import static doom.englsh.GOTBLUESKUL;
-import static doom.englsh.GOTCELL;
-import static doom.englsh.GOTCELLBOX;
-import static doom.englsh.GOTCHAINGUN;
-import static doom.englsh.GOTCHAINSAW;
-import static doom.englsh.GOTCLIP;
-import static doom.englsh.GOTCLIPBOX;
-import static doom.englsh.GOTHTHBONUS;
-import static doom.englsh.GOTINVIS;
-import static doom.englsh.GOTINVUL;
-import static doom.englsh.GOTLAUNCHER;
-import static doom.englsh.GOTMAP;
-import static doom.englsh.GOTMEDIKIT;
-import static doom.englsh.GOTMEDINEED;
-import static doom.englsh.GOTMEGA;
-import static doom.englsh.GOTMSPHERE;
-import static doom.englsh.GOTPLASMA;
-import static doom.englsh.GOTREDCARD;
-import static doom.englsh.GOTREDSKULL;
-import static doom.englsh.GOTROCKBOX;
-import static doom.englsh.GOTROCKET;
-import static doom.englsh.GOTSHELLBOX;
-import static doom.englsh.GOTSHELLS;
-import static doom.englsh.GOTSHOTGUN;
-import static doom.englsh.GOTSHOTGUN2;
-import static doom.englsh.GOTSTIM;
-import static doom.englsh.GOTSUIT;
-import static doom.englsh.GOTSUPER;
-import static doom.englsh.GOTVISOR;
-import static doom.englsh.GOTYELWCARD;
-import static doom.englsh.GOTYELWSKUL;
+import static doom.englsh.*;
+
 import static doom.items.weaponinfo;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
@@ -115,7 +80,7 @@ import doom.weapontype_t;
 
 // // FROM SIGHT
 
-public class UnifiedGameMap {
+public class UnifiedGameMap implements ThinkerList{
 
     // ///////////////// STATUS ///////////////////
 
@@ -179,187 +144,32 @@ public class UnifiedGameMap {
         return LL.sides[(LL.sectors[currentSector].lines[line]).sidenum[side]];
     }
 
-    //
-    // getSector()
-    // Will return a sector_t
-    // given the number of the current sector,
-    // the line number and the side (0/1) that you want.
-    //
+    /**
+     * getSector()
+     * Will return a sector_t
+     * given the number of the current sector,
+     * the line number and the side (0/1) that you want.
+     */
+    
     sector_t getSector(int currentSector, int line, int side) {
         return LL.sides[(LL.sectors[currentSector].lines[line]).sidenum[side]].sector;
     }
 
-    //
-    // twoSided()
-    // Given the sector number and the line number,
-    // it will tell you whether the line is two-sided or not.
-    //
-    boolean twoSided(int sector, int line) {
+    /**
+     * twoSided()
+     * Given the sector number and the line number,
+     * it will tell you whether the line is two-sided or not.
+     */
+    
+    protected boolean twoSided(int sector, int line) {
         return flags((LL.sectors[sector].lines[line]).flags, ML_TWOSIDED);
     }
 
-    //
-    // getNextSector()
-    // Return sector_t * of sector next to current.
-    // NULL if not two-sided line
-    //
-    sector_t getNextSector(line_t line, sector_t sec) {
-        if (!flags(line.flags, ML_TWOSIDED))
-            return null;
-
-        if (line.frontsector == sec)
-            return line.backsector;
-
-        return line.frontsector;
-    }
-
-    //
-    // P_FindLowestFloorSurrounding()
-    // FIND LOWEST FLOOR HEIGHT IN SURROUNDING SECTORS
-    //
-    int FindLowestFloorSurrounding(sector_t sec) {
-        int i;
-        line_t check;
-        sector_t other;
-        int floor = sec.floorheight;
-
-        for (i = 0; i < sec.linecount; i++) {
-            check = sec.lines[i];
-            other = getNextSector(check, sec);
-
-            if (other == null)
-                continue;
-
-            if (other.floorheight < floor)
-                floor = other.floorheight;
-        }
-        return floor;
-    }
-
     /**
-     * P_FindHighestFloorSurrounding() FIND HIGHEST FLOOR HEIGHT IN SURROUNDING
-     * SECTORS
-     * 
-     * @param sec
+     * RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
      */
-    int FindHighestFloorSurrounding(sector_t sec) {
-        int i;
-        line_t check;
-        sector_t other;
-        int floor = -500 * FRACUNIT;
-
-        for (i = 0; i < sec.linecount; i++) {
-            check = sec.lines[i];
-            other = getNextSector(check, sec);
-
-            if (other == null)
-                continue;
-
-            if (other.floorheight > floor)
-                floor = other.floorheight;
-        }
-        return floor;
-    }
-
-    /**
-     * P_FindNextHighestFloor FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS
-     * Note: this should be doable w/o a fixed array.
-     * 
-     * @param sec
-     * @param currentheight
-     * @return fixed
-     */
-
-    int FindNextHighestFloor(sector_t sec, int currentheight) {
-        int i;
-        int h;
-        int min;
-        line_t check;
-        sector_t other;
-        int height = currentheight;
-
-        int heightlist[] = new int[MAX_ADJOINING_SECTORS];
-
-        for (i = 0, h = 0; i < sec.linecount; i++) {
-            check = sec.lines[i];
-            other = getNextSector(check, sec);
-
-            if (other == null)
-                continue;
-
-            if (other.floorheight > height)
-                heightlist[h++] = other.floorheight;
-
-            // Check for overflow. Exit.
-            if (h >= MAX_ADJOINING_SECTORS) {
-                System.err
-                        .print("Sector with more than 20 adjoining sectors\n");
-                break;
-            }
-        }
-
-        // Find lowest height in list
-        if (h == 0)
-            return currentheight;
-
-        min = heightlist[0];
-
-        // Range checking?
-        for (i = 1; i < h; i++)
-            if (heightlist[i] < min)
-                min = heightlist[i];
-
-        return min;
-    }
-
-    //
-    // FIND LOWEST CEILING IN THE SURROUNDING SECTORS
-    //
-    int FindLowestCeilingSurrounding(sector_t sec) {
-        int i;
-        line_t check;
-        sector_t other;
-        int height = MAXINT;
-
-        for (i = 0; i < sec.linecount; i++) {
-            check = sec.lines[i];
-            other = getNextSector(check, sec);
-
-            if (other == null)
-                continue;
-
-            if (other.ceilingheight < height)
-                height = other.ceilingheight;
-        }
-        return height;
-    }
-
-    //
-    // FIND HIGHEST CEILING IN THE SURROUNDING SECTORS
-    //
-    int FindHighestCeilingSurrounding(sector_t sec) {
-        int i;
-        line_t check;
-        sector_t other;
-        int height = 0;
-
-        for (i = 0; i < sec.linecount; i++) {
-            check = sec.lines[i];
-            other = getNextSector(check, sec);
-
-            if (other == null)
-                continue;
-
-            if (other.ceilingheight > height)
-                height = other.ceilingheight;
-        }
-        return height;
-    }
-
-    //
-    // RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
-    //
-    int FindSectorFromLineTag(line_t line, int start) {
+    
+    protected int FindSectorFromLineTag(line_t line, int start) {
         int i;
 
         for (i = start + 1; i < LL.numsectors; i++)
@@ -369,28 +179,7 @@ public class UnifiedGameMap {
         return -1;
     }
 
-    //
-    // Find minimum light from an adjacent sector
-    //
-    int FindMinSurroundingLight(sector_t sector, int max) {
-        int i;
-        int min;
-        line_t line;
-        sector_t check;
-
-        min = max;
-        for (i = 0; i < sector.linecount; i++) {
-            line = sector.lines[i];
-            check = getNextSector(line, sector);
-
-            if (check == null)
-                continue;
-
-            if (check.lightlevel < min)
-                min = check.lightlevel;
-        }
-        return min;
-    }
+    
 
     // //////////////////// FROM p_maputl.c ////////////////////
 
@@ -610,157 +399,6 @@ public class UnifiedGameMap {
     // end class
 
     class Lights {
-        public static final int GLOWSPEED = 8;
-
-        public static final int STROBEBRIGHT = 5;
-
-        public static final int FASTDARK = 15;
-
-        public static final int SLOWDARK = 35;
-
-        //
-        // FIRELIGHT FLICKER
-        //
-
-        //
-        // T_FireFlicker
-        //
-        void FireFlicker(fireflicker_t flick) {
-            int amount;
-
-            if (--flick.count != 0)
-                return;
-
-            amount = (RND.P_Random() & 3) * 16;
-
-            if (flick.sector.lightlevel - amount < flick.minlight)
-                flick.sector.lightlevel = (short) flick.minlight;
-            else
-                flick.sector.lightlevel = (short) (flick.maxlight - amount);
-
-            flick.count = 4;
-        }
-
-        //
-        // P_SpawnFireFlicker
-        //
-        void SpawnFireFlicker(sector_t sector) {
-            fireflicker_t flick;
-
-            // Note that we are resetting sector attributes.
-            // Nothing special about it during gameplay.
-            sector.special = 0;
-
-            flick = new fireflicker_t();
-
-            AddThinker(flick.thinker);
-
-            flick.thinker.function = think_t.T_FireFlicker;
-            flick.sector = sector;
-            flick.maxlight = sector.lightlevel;
-            flick.minlight =
-                FindMinSurroundingLight(sector, sector.lightlevel) + 16;
-            flick.count = 4;
-        }
-
-        //
-        // BROKEN LIGHT FLASHING
-        //
-
-        //
-        // T_LightFlash
-        // Do flashing lights.
-        //
-        void LightFlash(lightflash_t flash) {
-            if (--flash.count != 0)
-                return;
-
-            if (flash.sector.lightlevel == flash.maxlight) {
-                flash.sector.lightlevel = (short) flash.minlight;
-                flash.count = (RND.P_Random() & flash.mintime) + 1;
-            } else {
-                flash.sector.lightlevel = (short) flash.maxlight;
-                flash.count = (RND.P_Random() & flash.maxtime) + 1;
-            }
-
-        }
-
-        //
-        // P_SpawnLightFlash
-        // After the map has been loaded, scan each sector
-        // for specials that spawn thinkers
-        //
-        void SpawnLightFlash(sector_t sector) {
-            lightflash_t flash;
-
-            // nothing special about it during gameplay
-            sector.special = 0;
-
-            flash = new lightflash_t();
-
-            AddThinker((thinker_t)flash);
-
-            flash.function = think_t.T_LightFlash;
-            flash.sector = sector;
-            flash.maxlight = sector.lightlevel;
-
-            flash.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
-            flash.maxtime = 64;
-            flash.mintime = 7;
-            flash.count = (RND.P_Random() & flash.maxtime) + 1;
-        }
-
-        //
-        // STROBE LIGHT FLASHING
-        //
-
-        //
-        // T_StrobeFlash
-        //
-        void StrobeFlash(strobe_t flash) {
-            if (--flash.count != 0)
-                return;
-
-            if (flash.sector.lightlevel == flash.minlight) {
-                flash.sector.lightlevel = (short) flash.maxlight;
-                flash.count = flash.brighttime;
-            } else {
-                flash.sector.lightlevel = (short) flash.minlight;
-                flash.count = flash.darktime;
-            }
-
-        }
-
-        //
-        // P_SpawnStrobeFlash
-        // After the map has been loaded, scan each sector
-        // for specials that spawn thinkers
-        //
-        void SpawnStrobeFlash(sector_t sector, int fastOrSlow, int inSync) {
-            strobe_t flash;
-
-            flash = new strobe_t();
-
-            AddThinker(flash);
-
-            flash.sector = sector;
-            flash.darktime = fastOrSlow;
-            flash.brighttime = STROBEBRIGHT;
-            flash.function = think_t.T_StrobeFlash;
-            flash.maxlight = sector.lightlevel;
-            flash.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
-
-            if (flash.minlight == flash.maxlight)
-                flash.minlight = 0;
-
-            // nothing special about it during gameplay
-            sector.special = 0;
-
-            if (inSync == 0)
-                flash.count = (RND.P_Random() & 7) + 1;
-            else
-                flash.count = 1;
-        }
 
         //
         // Start strobing lights (usually from a trigger)
@@ -775,7 +413,7 @@ public class UnifiedGameMap {
                 if (sec.specialdata != null)
                     continue;
 
-                SpawnStrobeFlash(sec, SLOWDARK, 0);
+                sec.SpawnStrobeFlash(SLOWDARK, 0);
             }
         }
 
@@ -796,7 +434,7 @@ public class UnifiedGameMap {
                     min = sector.lightlevel;
                     for (i = 0; i < sector.linecount; i++) {
                         templine = sector.lines[i];
-                        tsec = getNextSector(templine, sector);
+                        tsec = templine.getNextSector(sector);
                         if (tsec == null)
                             continue;
                         if (tsec.lightlevel < min)
@@ -825,7 +463,7 @@ public class UnifiedGameMap {
                     if (bright == 0) {
                         for (int j = 0; j < sector.linecount; j++) {
                             templine = sector.lines[j];
-                            temp = getNextSector(templine, sector);
+                            temp = templine.getNextSector( sector);
 
                             if (temp == null)
                                 continue;
@@ -839,87 +477,7 @@ public class UnifiedGameMap {
             }
         }
 
-        //
-        // Spawn glowing light
-        //
-
-        void Glow(glow_t g) {
-            switch (g.direction) {
-            case -1:
-                // DOWN
-                g.sector.lightlevel -= GLOWSPEED;
-                if (g.sector.lightlevel <= g.minlight) {
-                    g.sector.lightlevel += GLOWSPEED;
-                    g.direction = 1;
-                }
-                break;
-
-            case 1:
-                // UP
-                g.sector.lightlevel += GLOWSPEED;
-                if (g.sector.lightlevel >= g.maxlight) {
-                    g.sector.lightlevel -= GLOWSPEED;
-                    g.direction = -1;
-                }
-                break;
-            }
-        }
-
-        void SpawnGlowingLight(sector_t sector) {
-            glow_t g;
-
-            g = new glow_t();
-
-            AddThinker(g);
-
-            g.sector = sector;
-            g.minlight = FindMinSurroundingLight(sector, sector.lightlevel);
-            g.maxlight = sector.lightlevel;
-            g.function = think_t.T_Glow;
-            g.direction = -1;
-
-            sector.special = 0;
-        }
-
     }
-
-    public static final int DI_EAST = 0;
-
-    public static final int DI_NORTHEAST = 1;
-
-    public static final int DI_NORTH = 2;
-
-    public static final int DI_NORTHWEST = 3;
-
-    public static final int DI_WEST = 4;
-
-    public static final int DI_SOUTHWEST = 5;
-
-    public static final int DI_SOUTH = 6;
-
-    public static final int DI_SOUTHEAST = 7;
-
-    public static final int DI_NODIR = 8;
-
-    public static final int NUMDIR = 9;
-
-    //
-    // P_NewChaseDir related LUT.
-    //
-    public final static int opposite[] =
-        { DI_WEST, DI_SOUTHWEST, DI_SOUTH, DI_SOUTHEAST, DI_EAST, DI_NORTHEAST,
-                DI_NORTH, DI_NORTHWEST, DI_NODIR };
-
-    public final static int diags[] =
-        { DI_NORTHWEST, DI_NORTHEAST, DI_SOUTHWEST, DI_SOUTHEAST };
-
-    public final static int[] xspeed =
-        { FRACUNIT, 47000, 0, -47000, -FRACUNIT, -47000, 0, 47000 }; // all
-                                                                     // fixed
-
-    public final static int[] yspeed =
-        { 0, 47000, FRACUNIT, 47000, 0, -47000, -FRACUNIT, -47000 }; // all
-                                                                     // fixed
 
     class Enemies {
 
@@ -1115,11 +673,12 @@ public class UnifiedGameMap {
             }
         }
 
-        //
-        // P_NoiseAlert
-        // If a monster yells at a player,
-        // it will alert other monsters to the player.
-        //
+        /**
+         * P_NoiseAlert
+         * If a monster yells at a player,
+         * it will alert other monsters to the player.
+         */
+        
         void NoiseAlert(mobj_t target, mobj_t emmiter) {
             soundtarget = target;
             R.validcount++;
@@ -1263,7 +822,7 @@ public class UnifiedGameMap {
                 case raiseToNearestAndChange:
                     plat.speed = PLATSPEED / 2;
                     sec.floorpic = LL.sides[line.sidenum[0]].sector.floorpic;
-                    plat.high = FindNextHighestFloor(sec, sec.floorheight);
+                    plat.high = sec.FindNextHighestFloor(sec.floorheight);
                     plat.wait = 0;
                     plat.status = plat_e.up;
                     // NO MORE DAMAGE, IF APPLICABLE
@@ -1284,7 +843,7 @@ public class UnifiedGameMap {
 
                 case downWaitUpStay:
                     plat.speed = PLATSPEED * 4;
-                    plat.low = FindLowestFloorSurrounding(sec);
+                    plat.low = sec.FindLowestFloorSurrounding();
 
                     if (plat.low > sec.floorheight)
                         plat.low = sec.floorheight;
@@ -1297,7 +856,7 @@ public class UnifiedGameMap {
 
                 case blazeDWUS:
                     plat.speed = PLATSPEED * 8;
-                    plat.low = FindLowestFloorSurrounding(sec);
+                    plat.low = sec.FindLowestFloorSurrounding();
 
                     if (plat.low > sec.floorheight)
                         plat.low = sec.floorheight;
@@ -1310,12 +869,12 @@ public class UnifiedGameMap {
 
                 case perpetualRaise:
                     plat.speed = PLATSPEED;
-                    plat.low = FindLowestFloorSurrounding(sec);
+                    plat.low = sec.FindLowestFloorSurrounding();
 
                     if (plat.low > sec.floorheight)
                         plat.low = sec.floorheight;
 
-                    plat.high = FindHighestFloorSurrounding(sec);
+                    plat.high = sec.FindHighestFloorSurrounding();
 
                     if (plat.high < sec.floorheight)
                         plat.high = sec.floorheight;
