@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 
 import m.BBox;
+import rr.RendererState;
+import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.line_t;
 import rr.node_t;
@@ -48,7 +50,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.13 2010/11/22 14:54:53 velktron Exp $
+// $Id: LevelLoader.java,v 1.14 2010/11/22 21:41:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +65,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.14  2010/11/22 21:41:22  velktron
+// Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
+//
 // Revision 1.13  2010/11/22 14:54:53  velktron
 // Greater objectification of sectors etc.
 //
@@ -136,11 +141,12 @@ public class LevelLoader implements DoomStatusAware{
     WadLoader W;
     DoomMain DM;
     DoomVideoRenderer V;
-    UnifiedRenderer R;
+    RendererState R;
+    TextureManager TM;
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.13 2010/11/22 14:54:53 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.14 2010/11/22 21:41:22 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -348,8 +354,8 @@ public int bmaporgy;
           ss = sectors[i];
       ss.floorheight = ms.floorheight<<FRACBITS;
       ss.ceilingheight = ms.ceilingheight<<FRACBITS;
-      ss.floorpic = (short) R.FlatNumForName(ms.floorpic);
-      ss.ceilingpic = (short) R.FlatNumForName(ms.ceilingpic);
+      ss.floorpic = (short) TM.FlatNumForName(ms.floorpic);
+      ss.ceilingpic = (short) TM.FlatNumForName(ms.ceilingpic);
       ss.lightlevel = ms.lightlevel;
       ss.special = ms.special;
       ss.tag = ms.tag;
@@ -574,9 +580,9 @@ public int bmaporgy;
           
       sd.textureoffset = (msd.textureoffset)<<FRACBITS;
       sd.rowoffset = (msd.rowoffset)<<FRACBITS;
-      sd.toptexture = (short) R.TextureNumForName(msd.toptexture);
-      sd.bottomtexture = (short) R.TextureNumForName(msd.bottomtexture);
-      sd.midtexture = (short) R.TextureNumForName(msd.midtexture);
+      sd.toptexture = (short) TM.TextureNumForName(msd.toptexture);
+      sd.bottomtexture = (short) TM.TextureNumForName(msd.bottomtexture);
+      sd.midtexture = (short) TM.TextureNumForName(msd.midtexture);
       sd.sector = sectors[msd.sector];
       }
   }
@@ -864,7 +870,7 @@ public int bmaporgy;
 
       // preload graphics
       if (DM.precache){
-      R.PrecacheLevel ();
+      TM.PrecacheLevel ();
       }
 
       } catch (Exception e){
@@ -886,6 +892,7 @@ public int bmaporgy;
       this.R=DC.R;
       this.I=DC.I;
       this.S=DC.S;
+      this.TM=DC.TM;
 	  
   }
 

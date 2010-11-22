@@ -49,8 +49,11 @@ import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import automap.DoomAutoMap;
 import hu.HU;
+import i.DoomStatusAware;
 import i.DoomSystemInterface;
 import m.random;
+import rr.RendererState;
+import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.line_t;
 import rr.node_t;
@@ -71,6 +74,7 @@ import data.Defines.ammotype_t;
 import data.Defines.card_t;
 import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
+import doom.DoomContext;
 import doom.DoomGame;
 import doom.DoomMain;
 import doom.player_t;
@@ -80,7 +84,7 @@ import doom.weapontype_t;
 
 // // FROM SIGHT
 
-public class UnifiedGameMap implements ThinkerList{
+public abstract class UnifiedGameMap implements ThinkerList{
 
     // ///////////////// STATUS ///////////////////
 
@@ -90,7 +94,9 @@ public class UnifiedGameMap implements ThinkerList{
 
     random RND;
 
-    UnifiedRenderer R;
+    RendererState R;
+    
+    TextureManager TM;
 
     LevelLoader LL;
 
@@ -1240,9 +1246,9 @@ public class UnifiedGameMap implements ThinkerList{
                         anim.basepic
                                 + ((DM.leveltime / anim.speed + i) % anim.numpics);
                     if (anim.istexture)
-                        R.texturetranslation[i] = pic;
+                        TM.setTextureTranslation(i,pic);
                     else
-                        R.flattranslation[i] = pic;
+                        TM.setFlatTranslation(i,pic);
                 }
             }
 
@@ -1294,18 +1300,18 @@ public class UnifiedGameMap implements ThinkerList{
             	lstanim= anims[this.lastanim];
                 if (animdefs[i].istexture) {
                     // different episode ?
-                    if (R.CheckTextureNumForName(animdefs[i].startname) == -1)
+                    if (TM.CheckTextureNumForName(animdefs[i].startname) == -1)
                         continue;
                     // So, if it IS a valid texture, it goes straight into anims.
-                    lstanim.picnum = R.TextureNumForName(animdefs[i].endname);
-                    lstanim.basepic = R.TextureNumForName(animdefs[i].startname);
+                    lstanim.picnum = TM.TextureNumForName(animdefs[i].endname);
+                    lstanim.basepic = TM.TextureNumForName(animdefs[i].startname);
                 } else { // If not a texture, it's a flat.
                     if (W.CheckNumForName(animdefs[i].startname) == -1)
                         continue;
                     System.out.println(animdefs[i]);
                     // Otherwise, lstanim seems to go nowhere :-/
-                    lstanim.picnum = R.FlatNumForName(animdefs[i].endname);
-                    lstanim.basepic = R.FlatNumForName(animdefs[i].startname);
+                    lstanim.picnum = TM.FlatNumForName(animdefs[i].endname);
+                    lstanim.basepic = TM.FlatNumForName(animdefs[i].startname);
                 }
 
                 lstanim.istexture = animdefs[i].istexture;
@@ -1419,9 +1425,9 @@ public class UnifiedGameMap implements ThinkerList{
                      * R_TextureNumForName(alphSwitchList[i].name1);
                      */
                     switchlist[index++] =
-                        R.TextureNumForName(alphSwitchList[i].name1);
+                        TM.TextureNumForName(alphSwitchList[i].name1);
                     switchlist[index++] =
-                        R.TextureNumForName(alphSwitchList[i].name2);
+                        TM.TextureNumForName(alphSwitchList[i].name2);
                 }
             }
         }
@@ -1762,7 +1768,7 @@ public class UnifiedGameMap implements ThinkerList{
         // TODO:
         SW.InitSwitchList();
         SPECS.InitPicAnims();
-        R.InitSprites(sprnames);
+        TM.InitSprites(sprnames);
     }
 
     /**
@@ -2082,5 +2088,6 @@ public class UnifiedGameMap implements ThinkerList{
         if (player == DM.players[DM.consoleplayer])
         S.StartSound (null, sound);
     }
+
 
 } // End unified map

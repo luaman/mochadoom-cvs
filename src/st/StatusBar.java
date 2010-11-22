@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.19 2010/11/17 23:55:06 velktron Exp $
+// $Id: StatusBar.java,v 1.20 2010/11/22 21:41:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.20  2010/11/22 21:41:22  velktron
+// Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
+//
 // Revision 1.19  2010/11/17 23:55:06  velktron
 // Kind of playable/controllable.
 //
@@ -125,6 +128,7 @@ import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import doom.weapontype_t;
+import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.patch_t;
 import v.DoomVideoRenderer;
@@ -132,7 +136,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.19 2010/11/17 23:55:06 velktron Exp $";
+        "$Id: StatusBar.java,v 1.20 2010/11/22 21:41:22 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -140,7 +144,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
     protected WadLoader W;
 
-    protected UnifiedRenderer R;
+    protected RendererState R;
 
     protected DoomMain DM;
 
@@ -1837,7 +1841,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         this.V=DC.V;
         this.W=DC.W;
         this.RND=DC.RND;
-        this.R=DC.R;
+        this.R= DC.R;
         this.VI=DC.VI;
         this.I=DC.I;
     }

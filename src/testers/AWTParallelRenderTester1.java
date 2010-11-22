@@ -13,6 +13,7 @@ import p.LevelLoader;
 
 import automap.Map;
 
+import rr.ParallelRenderer;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.DummySoundDriver;
@@ -38,7 +39,7 @@ import doom.wbstartstruct_t;
 
 /** This is a very simple tester for Menu module  */
 
-public class AWTRenderViewTester {
+public class AWTParallelRenderTester1 {
     public static final int WIDTH=Defines.SCREENWIDTH;
     public static final int HEIGHT=Defines.SCREENHEIGHT;
     
@@ -116,7 +117,7 @@ public class AWTRenderViewTester {
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
-    DM.R=new UnifiedRenderer(DM); 
+    DM.R=new ParallelRenderer(DM); 
     DM.TM=(TextureManager)(DM.R);
     
     DM.P.updateStatus(DM);
@@ -135,7 +136,7 @@ public class AWTRenderViewTester {
     AM.Start();
     DM.R.SetViewSize(11, 0);
     DM.R.ExecuteSetViewSize();
-    ((UnifiedRenderer)DM.R).skytexture=52;
+    ((ParallelRenderer)DM.R).skytexture=52;
     long a=System.nanoTime();
     
     DM.menuactive=false;

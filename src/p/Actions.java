@@ -634,16 +634,16 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
                 {
                     side = getSide(secnum,i,0);
                     if (side.bottomtexture >= 0)
-                    if (R.textureheight[side.bottomtexture] < 
+                    if (TM.getTextureheight(side.bottomtexture) < 
                         minsize)
                         minsize = 
-                        R.textureheight[side.bottomtexture];
+                        TM.getTextureheight(side.bottomtexture);
                     side = getSide(secnum,i,1);
                     if (side.bottomtexture >= 0)
-                    if (R.textureheight[side.bottomtexture] < 
+                    if (TM.getTextureheight(side.bottomtexture) < 
                         minsize)
                         minsize = 
-                        R.textureheight[side.bottomtexture];
+                        TM.getTextureheight(side.bottomtexture);
                 }
                 }
                 floor.floordestheight =
@@ -7965,7 +7965,7 @@ mobj_t  thing )
       {
           plat.count = plat.wait;
           plat.status = plat_e.waiting;
-          //TODO: S_StartSound((mobj_t *)&plat.sector.soundorg,sfx_pstop);
+          S.StartSound(plat.sector.soundorg,sfxenum_t.sfx_pstop);
       }
       break;
       
@@ -8030,6 +8030,7 @@ public void updateStatus(DoomContext DC) {
         this.AM=DC.AM;
         this.A=this;
         this.HU=DC.HU;
+        this.TM=DC.TM;
 		}
   
 }

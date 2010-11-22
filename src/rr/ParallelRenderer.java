@@ -15,7 +15,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
+import RunQueues.DynAlloc;
+import RunQueues.DynAllocShare;
+import RunQueues.FastBarrier;
+import RunQueues.RunQueue;
 import m.fixed_t;
 
 import p.mobj_t;
@@ -25,21 +33,31 @@ import w.DoomBuffer;
 import w.name8;
 import data.Defines.GameMode_t;
 import data.Tables;
-import doom.DoomContext;
 import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
 
-public class UnifiedRenderer extends RendererState implements TextureManager {
-    
+public class ParallelRenderer extends RendererState implements TextureManager {
+	///// PARALLEL OBJECTS /////
+	private final static int MAXTHREADS=1;
+	private Executor tp;
+	private VisplaneWorker[] vpw;
+	private FastBarrier visplanebarrier;
+	private DynAllocShare dyn;
+	
+	Segs MySegs;
+	BSP MyBSP;
+	Planes MyPlanes;
+	Things MyThings ;
+	
     private static final boolean DEBUG=false;
     private static final boolean DEBUG2=false;
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
     private static int[]           BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
     
     
-    public UnifiedRenderer(DoomMain DM) {
+    public ParallelRenderer(DoomMain DM) {
       this.DM=DM;
       this.LL=DM.LL;
       this.W=DM.W;
@@ -57,7 +75,23 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
       DrawFuzzColumn=new R_DrawFuzzColumn();
       DrawColumnLow=new R_DrawColumnLow();
       DrawColumn=new R_DrawColumnBoom();
-     
+      
+      // Prepare parallel stuff
+      tp=   Executors.newFixedThreadPool(MAXTHREADS);
+      // Prepare the barrier for MAXTHREADS + main thread.
+      visplanebarrier=new FastBarrier(MAXTHREADS+1);
+      
+  	  dyn=new DynAllocShare();
+      vpw=new VisplaneWorker[MAXTHREADS];
+      
+      for (int i=0;i<MAXTHREADS;i++){
+      vpw[i]=new VisplaneWorker(visplanebarrier);
+      vpw[i].id=i+1;
+      
+
+      }
+      
+      
   }
 
     
@@ -263,13 +297,12 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
    /** killough: viewangleoffset is a legacy from the pre-v1.2 days, when Doom
     *  had Left/Mid/Right viewing. +/-ANG90 offsets were placed here on each
     *  node, by d_net.c, to set up a L/M/R session. */
-   public static final int viewangleoffset=0;
+   public static final long viewangleoffset=ANG90;
 
    /** Use in conjunction with pfixedcolormap */
    byte[]      fixedcolormap;
-   /** Use in conjunction with fixedcolormap[] */
-   int pfixedcolormap;
-   //lighttable_t[][]  walllights;
+   /* UNUSED Use in conjunction with fixedcolormap[]
+   int pfixedcolormap; */
 
    public int          centerx;
    public int          centery;
@@ -3136,11 +3169,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
       public void DrawPlanes () 
       {
     	  if(DEBUG) System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "+ lastvisplane);
-          visplane_t      pln=null; //visplane_t
-          int         light;
-          int         x;
-          int         stop;
-          int         angle;
+
                       
       if (RANGECHECK){
           if (ds_p > MAXDRAWSEGS)
@@ -3156,86 +3185,404 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
                lastopening );
       }
 
-          for (int pl = 0 ; pl < lastvisplane ;  pl++)
-          {
-              pln=visplanes[pl];
-             if (DEBUG2) System.out.println(pln);
-              
-          if (pln.minx > pln.maxx)
-              continue;
+      	dyn.reset(lastvisplane,MAXTHREADS,lastvisplane/MAXTHREADS);
+      		
+   //   	vpw[0].setRange(0,lastvisplane/2);
+   //   	vpw[1].setRange(lastvisplane/2,lastvisplane);
+      	
+      	for (int i=0;i<MAXTHREADS;i++)
+      		tp.execute(vpw[i]);
+      
+      	
+      	// Wait, and hope for the best.
+			visplanebarrier.gather(0);
 
-          
-          // sky flat
-          if (pln.picnum == skyflatnum)
-          {
-              dc_iscale = pspriteiscale>>detailshift;
-              
-              /* Sky is allways drawn full bright,
-               * i.e. colormaps[0] is used.
-               * Because of this hack, sky is not affected
-               * by INVUL inverse mapping.
-               */    
-              dc_colormap = colormaps[0];
-              dc_texturemid = skytexturemid;
-              for (x=pln.minx ; x <= pln.maxx ; x++)
-              {
-            
-              dc_yl = pln.getTop(x);
-              dc_yh = pln.getBottom(x);
-              
-              if (dc_yl <= dc_yh)
-              {
-                  angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
-                  dc_x = x;
-                  dc_texheight=textureheight[skytexture]>>FRACBITS;
-                  dc_source = GetColumn(skytexture, angle);
-                  colfunc.invoke();
-              }
-              }
-              continue;
-          }
-          
-          // regular flat
-          ds_source = ((flat_t)W.CacheLumpNum(firstflat +
-                         flattranslation[pln.picnum],
-                         PU_STATIC,flat_t.class)).data;
-          
-          
-          if (ds_source.length==0){
-              new Exception().printStackTrace();
-          }
-          
-          planeheight = Math.abs(pln.height-viewz);
-          light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
-
-          if (light >= LIGHTLEVELS)
-              light = LIGHTLEVELS-1;
-
-          if (light < 0)
-              light = 0;
-
-          planezlight = zlight[light];
-
-          // We set those values at the border of a plane's top to a "sentinel" value...ok.
-          pln.setTop(pln.maxx+1,(char) 0xffff);
-          pln.setTop(pln.minx-1, (char) 0xffff);
-          
-          stop = pln.maxx + 1;
-
-          
-          for (x=pln.minx ; x<= stop ; x++) {
-        	  MakeSpans(x,pln.getTop(x-1),
-              pln.getBottom(x-1),
-              pln.getTop(x),
-              pln.getBottom(x));
-          	}
-          
-          //Z_ChangeTag (ds_source, PU_CACHE);
-          }
+		// Reset it for our next use...
+		//visplanebarrier.reset();
+      	
+      	
       }
 
   } // End Plane class
       
+  class VisplaneWorker implements Runnable{
+
+	private DynAlloc.Range range=new DynAlloc.Range();
+	public int id;
+	int startvp;  
+	int endvp;
+	int planeheight;
+	byte[][] planezlight;
+	int basexscale;
+	int baseyscale;
+    int[] cachedheight;
+    int[] cacheddistance;
+    int[] cachedxstep;
+    int[] cachedystep;
+    int[] distscale;
+    int[] yslope;
+	int dc_texturemid;
+	int dc_texheight;
+	int dc_iscale;
+	byte[] dc_colormap, dc_source, ds_source;
+    int dc_yl;
+    int dc_yh;
+    int dc_x;
+    int dc_y;
+    int ds_x;
+    int ds_y;
+    int ds_x1;
+    int ds_x2;
+    int ds_xstep;
+    int ds_xfrac;
+    int ds_ystep;
+    int ds_yfrac;
+    int dc_source_ofs;
+    
+	public VisplaneWorker(FastBarrier barrier){
+		  this.barrier=barrier;
+	      // Alias to those of Planes.
+	      cachedheight=MyPlanes.cachedheight;
+	      cacheddistance=MyPlanes.cacheddistance;
+	      cachedxstep=MyPlanes.cachedxstep;
+	      cachedystep=MyPlanes.cachedystep;
+	      distscale=MyPlanes.distscale;
+	      yslope=MyPlanes.yslope;
+
+	}
+	
+	@Override
+	public void run() {
+        visplane_t      pln=null; //visplane_t
+    	// These must override the global ones
+
+
+        int         light;
+        int         x;
+        int         stop;
+        int         angle;
+
+        // Now it's a good moment to set them.
+        basexscale=MyPlanes.basexscale;
+        baseyscale=MyPlanes.baseyscale;
+        
+		 while(dyn.alloc(range))
+         {
+			 for (int pl= range.start; pl <=range.end; pl++) {
+             pln=visplanes[pl];
+            if (DEBUG2) System.out.println(pln);
+             
+         if (pln.minx > pln.maxx)
+             continue;
+
+         
+         // sky flat
+         if (pln.picnum == skyflatnum)
+         {
+             dc_iscale = pspriteiscale>>detailshift;
+             
+             /* Sky is allways drawn full bright,
+              * i.e. colormaps[0] is used.
+              * Because of this hack, sky is not affected
+              * by INVUL inverse mapping.
+              */    
+             dc_colormap = colormaps[0];
+             dc_texturemid = skytexturemid;
+             for (x=pln.minx ; x <= pln.maxx ; x++)
+             {
+           
+             dc_yl = pln.getTop(x);
+             dc_yh = pln.getBottom(x);
+             
+             if (dc_yl <= dc_yh)
+             {
+                 angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
+                 dc_x = x;
+                 dc_texheight=textureheight[skytexture]>>FRACBITS;
+                 dc_source = VPlaneGetColumn(skytexture, angle);
+                 colfunc();
+             }
+             }
+             continue;
+         }
+         
+         // regular flat
+         ds_source = ((flat_t)W.CacheLumpNum(firstflat +
+                        flattranslation[pln.picnum],
+                        PU_STATIC,flat_t.class)).data;
+         
+         
+         if (ds_source.length==0){
+             new Exception().printStackTrace();
+         }
+         
+         planeheight = Math.abs(pln.height-viewz);
+         light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
+
+         if (light >= LIGHTLEVELS)
+             light = LIGHTLEVELS-1;
+
+         if (light < 0)
+             light = 0;
+
+         planezlight = zlight[light];
+
+         // We set those values at the border of a plane's top to a "sentinel" value...ok.
+         pln.setTop(pln.maxx+1,(char) 0xffff);
+         pln.setTop(pln.minx-1, (char) 0xffff);
+         
+         stop = pln.maxx + 1;
+
+         
+         for (x=pln.minx ; x<= stop ; x++) {
+       	  MakeSpans(x,pln.getTop(x-1),
+             pln.getBottom(x-1),
+             pln.getTop(x),
+             pln.getBottom(x));
+         	}
+         
+         }
+         }
+		 
+		 // We're done, wait.
+
+			barrier.gather(this.id);
+
+     }
+		
+
+	public void setRange(int startvp, int endvp) {
+		this.startvp=startvp;
+		this.endvp=endvp;
+		
+	}
+	
+	/**
+     * R_MakeSpans
+     * 
+     * Called only by DrawPlanes.
+     * If you wondered where the actual boundaries for the visplane
+     * flood-fill are laid out, this is it.
+     * 
+     * The system of coords seems to be defining a sort of cone.          
+     *          
+     * 
+     * @param x Horizontal position
+     * @param t1 Top-left y coord?
+     * @param b1 Bottom-left y coord?
+     * @param t2 Top-right y coord ?
+     * @param b2 Bottom-right y coord ?
+     * 
+     */
+
+      private void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+          
+          // If t1 = [sentinel value] then this part won't be executed.
+          while (t1 < t2 && t1 <= b1) {
+              this.MapPlane(t1, spanstart[t1], x - 1);
+              t1++;
+          }
+          while (b1 > b2 && b1 >= t1) {
+              this.MapPlane(b1, spanstart[b1], x - 1);
+              b1--;
+          }
+
+          // So...if t1 for some reason is < t2, we increase t2 AND store the current x
+          // at spanstart [t2] :-S
+          while (t2 < t1 && t2 <= b2) {
+              //System.out.println("Increasing t2");
+              spanstart[t2] = x;
+              t2++;
+          }
+
+          // So...if t1 for some reason b2 > b1, we decrease b2 AND store the current x
+          // at spanstart [t2] :-S
+
+          while (b2 > b1 && b2 >= t2) {
+              //System.out.println("Decreasing b2");
+              spanstart[b2] = x;
+              b2--;
+          }
+      }
+      
+      /**
+       * R_MapPlane
+       *
+       * Called only by R_MakeSpans.
+       * 
+       * This is where the actual span drawing function is called.
+       * 
+       * Uses global vars:
+       * planeheight
+       *  ds_source -> flat data has already been set.
+       *  basexscale -> actual drawing angle and position is computed from these
+       *  baseyscale
+       *  viewx
+       *  viewy
+       *
+       * BASIC PRIMITIVE
+       */
+      
+      private void
+      MapPlane
+      ( int       y,
+        int       x1,
+        int       x2 )
+      {
+          // MAES: angle_t
+          int angle;
+          // fixed_t
+          int distance;
+          int length;
+          int index;
+          
+      if (RANGECHECK){
+          if (x2 < x1
+          || x1<0
+          || x2>=viewwidth
+          || y>viewheight)
+          {
+          I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+          }
+      }
+
+          if (planeheight != cachedheight[y])
+          {
+          cachedheight[y] = planeheight;
+          distance = cacheddistance[y] = FixedMul (planeheight , yslope[y]);
+          ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
+          ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
+          }
+          else
+          {
+          distance = cacheddistance[y];
+          ds_xstep = cachedxstep[y];
+          ds_ystep = cachedystep[y];
+          }
+          
+          length = FixedMul (distance,distscale[x1]);
+          angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
+          ds_xfrac = viewx + FixedMul(finecosine[angle], length);
+          ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+
+          if (fixedcolormap!=null)
+          ds_colormap = fixedcolormap;
+          else
+          {
+          index = distance >>> LIGHTZSHIFT;
+          
+          if (index >= MAXLIGHTZ )
+              index = MAXLIGHTZ-1;
+
+          ds_colormap = planezlight[index];
+          }
+          
+          ds_y = y;
+          ds_x1 = x1;
+          ds_x2 = x2;
+
+          // high or low detail
+          colfunc();    
+      }
+      
+      // Each thread has its own copy of a colfun.
+      private void colfunc(){
+    	     int position, step;
+    	     byte[] source;
+    	     byte[] colormap;
+    	     int dest;
+    	     int count;
+    	     int spot;
+    	     int xtemp;
+    	     int ytemp;
+    	     
+    	     position = ((ds_xfrac << 10) & 0xffff0000) | ((ds_yfrac >> 6) & 0xffff);
+    	     step = ((ds_xstep << 10) & 0xffff0000) | ((ds_ystep >> 6) & 0xffff);
+    	     source = ds_source;
+    	     colormap = ds_colormap;
+    	     dest = ylookup[ds_y] + columnofs[ds_x1];
+    	     count = ds_x2 - ds_x1 + 1;
+    	     while (count >= 4) {
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;         
+    	         screen[dest] = colormap[0x00FF&source[spot]];
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest+1] = colormap[0x00FF&source[spot]];
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest+2] = colormap[0x00FF&source[spot]];
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest+3] = colormap[0x00FF&source[spot]];
+    	         count -= 4;
+    	         dest += 4;
+    	     }
+    	     
+    	     while (count > 0) {
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest++] = colormap[0x00FF&source[spot]];
+    	         count--;
+    	     }
+    	 }
+      
+      /**
+       * R_GetColumn
+     * @throws IOException 
+       */
+      public byte[] VPlaneGetColumn
+      ( int       tex,
+        int       col ) 
+      {
+          int     lump,ofs;
+          
+          col &= texturewidthmask[tex];
+          lump = texturecolumnlump[tex][col];
+          ofs=texturecolumnofs[tex][col];
+          
+          // If pointing inside a non-zero, positive lump, then it's not a composite texture.
+          // Read from disk.
+          if (lump > 0){
+              // This will actually return a pointer to a patch's columns.
+              // That is, to the ONE column exactly.{
+              // If the caller needs access to a raw column, we must point 3 bytes "ahead".
+              dc_source_ofs=3;
+              patch_t r=W.CachePatchNum(lump,PU_CACHE);
+          return r.columns[ofs].data;
+      }
+          // Texture should be composite, but it doesn't yet exist. Create it. 
+          if (texturecomposite[tex]==null) GenerateComposite (tex);
+
+          // This implies that texturecomposite actually stores raw, compressed columns,
+          // or else those "ofs" would go in-between.
+          // The source offset int this case is 0, else we'll skip over stuff.
+          this.dc_source_ofs=0;
+          return texturecomposite[tex][col];
+      }
+      
+      // Private to each thread.
+      int[]           spanstart=new int[SCREENHEIGHT];
+      int[]           spanstop=new int [SCREENHEIGHT];
+      FastBarrier barrier;
+      
+  }
+  
 /** Refresh of things, i.e. objects represented by sprites. */
   
   class Things{
@@ -4915,7 +5262,7 @@ public void RenderPlayerView (player_t player)
   // Check for new console commands.
   //NetUpdate ();
   
-  // FIXME: "Warped floor" fixed, now to fix same-height visplane bleeding.
+  // "Warped floor" fixed, same-height visplane merging fixed.
   MyPlanes.DrawPlanes ();
   
   // Check for new console commands.
@@ -4970,6 +5317,15 @@ public void SetupFrame (player_t player)
  * Do not really change anything here,
  * because it might be in the middle of a refresh.
  * The change will take effect next refresh.
+ */
+
+// Who can set this? A: The Menu.
+public boolean      setsizeneeded;
+int     setblocks;
+int     setdetail;
+
+/**
+ * 
  * 
  * @param blocks 11 is full screen, 9 default.
  * @param detail 0= high, 1 =low.
@@ -6025,7 +6381,6 @@ public void Init ()
    
    framecount = 0;
 }
-
 
 @Override
 public final int getTextureheight(int texnum) {

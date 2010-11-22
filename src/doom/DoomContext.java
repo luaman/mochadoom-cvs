@@ -10,6 +10,9 @@ import m.DoomMenu;
 import m.random;
 import p.Actions;
 import p.LevelLoader;
+import rr.Renderer;
+import rr.RendererState;
+import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.DoomSoundInterface;
 import st.DoomStatusBarInterface;
@@ -47,11 +50,12 @@ public class DoomContext {
     public LevelLoader LL;
     public DoomMenu M;
     public Actions P;
-    public UnifiedRenderer R;
+    public RendererState R;
     public HU HU;
     public UnifiedRenderer RD;
     public DoomAutoMap AM;
     public Finale F;
     public EndLevel WI;
     public Wiper WIPE;
+    public TextureManager TM;
 }

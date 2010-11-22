@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.15 2010/11/22 14:54:53 velktron Exp $
+// $Id: HU.java,v 1.16 2010/11/22 21:41:21 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.16  2010/11/22 21:41:21  velktron
+// Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
+//
 // Revision 1.15  2010/11/22 14:54:53  velktron
 // Greater objectification of sectors etc.
 //
@@ -104,6 +107,8 @@ import v.DoomVideoRenderer;
 import m.DoomMenu;
 import m.Menu;
 import m.Swap;
+import rr.Renderer;
+import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.patch_t;
 import s.DoomSoundInterface;
@@ -118,7 +123,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.15 2010/11/22 14:54:53 velktron Exp $";
+        "$Id: HU.java,v 1.16 2010/11/22 21:41:21 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader W;
@@ -127,7 +132,7 @@ public class HU implements DoomStatusAware {
 
     DoomMenu M;
 
-    UnifiedRenderer R;
+    RendererState R;
     
     DoomVideoRenderer V;
 
@@ -1245,7 +1250,7 @@ public class HU implements DoomStatusAware {
 	public void updateStatus(DoomContext DM) {
         this.DM = DM.DM;
         this.W = DM.W;
-        this.R = DM.R;
+        this.R = (RendererState) DM.R;
         this.V=DM.V;
         this.S=DM.S;
         this.M=(Menu) DM.M;

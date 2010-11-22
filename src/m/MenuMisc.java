@@ -10,6 +10,7 @@ import doom.DoomContext;
 import doom.DoomInterface;
 import doom.DoomMain;
 import doom.DoomStatus;
+import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.patch_t;
 import s.DoomSoundInterface;
@@ -20,7 +21,7 @@ import w.WadLoader;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.10 2010/09/27 02:27:29 velktron Exp $
+// $Id: MenuMisc.java,v 1.11 2010/11/22 21:41:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -36,6 +37,9 @@ import w.WadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.11  2010/11/22 21:41:22  velktron
+// Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
+//
 // Revision 1.10  2010/09/27 02:27:29  velktron
 // BEASTLY update
 //
@@ -96,14 +100,14 @@ import w.WadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.10 2010/09/27 02:27:29 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.11 2010/11/22 21:41:22 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;
 WadLoader W;
 DoomVideoRenderer V;
 HU HU;
-UnifiedRenderer R;
+RendererState R;
 DoomSystemInterface I;
 DoomSoundInterface S;
 

@@ -22,6 +22,7 @@ import static p.mobj_t.*;
 import p.Actions;
 import p.mobj_t;
 import p.pspdef_t;
+import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.sector_t;
 import s.DoomSoundInterface;
@@ -58,7 +59,7 @@ public class player_t /*extends mobj_t */
     /** Probably doomguy needs to know what the fuck is going on */
     private DoomMain DM;
     private Actions P;
-    private UnifiedRenderer R;
+    private RendererState R;
     private random RND;
     private DoomSystemInterface I;
     private DoomSoundInterface S;

@@ -48,6 +48,7 @@ import i.DoomStatusAware;
 
 import java.io.IOException;
 
+import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.patch_t;
 import utils.C2JUtils;
@@ -80,7 +81,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 	        this.HU=DM.HU;
 	        this.I=DM.I;
 	        this.S=DM.S;
-	        this.R=DM.R;
+	        this.R=(RendererState) DM.R;
 		
 	}
     

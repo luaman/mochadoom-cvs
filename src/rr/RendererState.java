@@ -13,7 +13,7 @@ import w.WadLoader;
 import doom.DoomContext;
 import doom.DoomMain;
 
-public abstract class RendererState implements DoomStatusAware{
+public abstract class RendererState implements DoomStatusAware, Renderer{
 
     //////////////////////////////// STATUS ////////////////
 
@@ -48,6 +48,18 @@ public abstract class RendererState implements DoomStatusAware{
     // This is also in DM, but one is enough, really.
     public int skytexture;
     int skytexturemid;
+
+
+    /** Increment every time a check is made 
+     *  For some reason, this needs to be visible even by enemies thinking :-S*/
+    public int validcount = 1;     
+    
+
+ /** Who can set this? A: The Menu. */
+ public boolean      setsizeneeded;
+ protected int     setblocks;
+ protected int     setdetail;
+
     
     public void updateStatus(DoomContext DC){
         this.DM=DC.DM;
