@@ -31,5 +31,7 @@ public interface TextureManager {
 	public void setFlatTranslation(int flatnum,int amount);
 
 	public int CheckTextureNumForName(String texnamem);
+
+    public void InitTextureMapping();
 		
 }

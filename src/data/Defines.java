@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.23 2010/11/22 21:41:22 velktron Exp $
+// $Id: Defines.java,v 1.24 2010/11/24 14:51:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -119,7 +119,7 @@ public static int BASE_WIDTH =     320;
 //  scaling e.g. to 2. Drawing of status bar,
 //  menues etc. is tied to the scale implied
 //  by the graphics.
-public static float SCREEN_MUL =(float) 3.0;
+public static float SCREEN_MUL =(float) 4.0;
 public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 // Defines suck. C sucks.
@@ -1692,6 +1692,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.23 2010/11/22 21:41:22 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.24 2010/11/24 14:51:10 velktron Exp $";
 }
 

@@ -19,11 +19,6 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-
-import RunQueues.DynAlloc;
-import RunQueues.DynAllocShare;
-import RunQueues.FastBarrier;
-import RunQueues.RunQueue;
 import m.fixed_t;
 
 import p.mobj_t;
@@ -40,11 +35,38 @@ import doom.thinker_t;
 
 public class ParallelRenderer extends RendererState implements TextureManager {
 	///// PARALLEL OBJECTS /////
-	private final static int MAXTHREADS=1;
+	private final static int NUMWALLTHREADS=2;
+	private final static int NUMFLOORTHREADS=1;
 	private Executor tp;
 	private VisplaneWorker[] vpw;
-	private FastBarrier visplanebarrier;
-	private DynAllocShare dyn;
+	
+	private CyclicBarrier visplanebarrier;
+	
+	/** Stored wall rendering instructions. They can be at most 3*SCREENWIDTH
+	 * (if there are low, mid and high textures on every column of the screen)
+	 * Remember to init them and set screen and ylookup for all of them.
+	 * 
+	 * Their max number is static and work partitioning can be done in any way,
+	 * as long as you keep track of how many there are in any given frame.
+	 * This value is stored inside RWIcount. 
+	 * 
+	 * TODO: there are cases when more than 3*SCREENWIDTH instructions need to be stored.
+	 *       therefore we really need a resizeable array here, but ArrayList is way too
+	 *       slow for our needs. Storing a whole wall is not an option, as,
+	 *       once again, a wall may have a variable number of columns and an irregular
+	 *       height profile -> we'd need to look into visplanes ugh...
+	 *       
+	 * 
+	 */
+		
+	private RenderWallInstruction[] RWI=new RenderWallInstruction[3*SCREENWIDTH];
+	
+	/** Increment this as you submit RWI to the "queue". Remember to reset to 0 when you have drawn everything!
+	 * 
+	 */
+	private int RWIcount=0;
+	
+	private RenderWallExecutor[] RWIExec=new RenderWallExecutor[NUMWALLTHREADS];
 	
 	Segs MySegs;
 	BSP MyBSP;
@@ -77,16 +99,15 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       DrawColumn=new R_DrawColumnBoom();
       
       // Prepare parallel stuff
-      tp=   Executors.newFixedThreadPool(MAXTHREADS);
+      tp=   Executors.newFixedThreadPool(NUMWALLTHREADS+NUMFLOORTHREADS);
       // Prepare the barrier for MAXTHREADS + main thread.
-      visplanebarrier=new FastBarrier(MAXTHREADS+1);
+      visplanebarrier=new CyclicBarrier(NUMWALLTHREADS+NUMFLOORTHREADS+1);
       
-  	  dyn=new DynAllocShare();
-      vpw=new VisplaneWorker[MAXTHREADS];
+      vpw=new VisplaneWorker[NUMFLOORTHREADS];
       
-      for (int i=0;i<MAXTHREADS;i++){
+      for (int i=0;i<NUMFLOORTHREADS;i++){
       vpw[i]=new VisplaneWorker(visplanebarrier);
-      vpw[i].id=i+1;
+      vpw[i].id=i;
       
 
       }
@@ -461,6 +482,23 @@ public class ParallelRenderer extends RendererState implements TextureManager {
     * constant z depth. Thus a special case loop for very fast rendering can be
     * used. It has also been used with Wolfenstein 3D. MAES: this is called
     * mostly from inside Draw and from an external "Renderer"
+    * 
+    * uses: 
+    *       ylookup <- global, fixed.
+    *       FRACBITS
+
+    *       Externally supplied, wall-dependent:
+    *       
+    *       dc_x
+    *       dc_yh
+    *       dc_yl
+    *       columnofs
+    *       dc_source
+    *       dc_source_ofs
+    *       dc_colormap
+    *       dc_iscale
+    *       centery
+    *       dc_texturemid
     */
 
    class R_DrawColumn implements colfunc_t{
@@ -2104,10 +2142,13 @@ public class ParallelRenderer extends RendererState implements TextureManager {
 
       /**
        * R_RenderSegLoop
-       * Draws zero, one, or two textures (and possibly a masked
-       *  texture) for walls.
-       * Can draw or mark the starting pixel of floor and ceiling
-       *  textures.
+       * Draws zero, one, or two textures (and possibly a masked texture) 
+       * for walls. Can draw or mark the starting pixel of floor and ceiling 
+       * textures. Also sets the actual sprite clipping info (where sprites should be cut)
+       * 
+       * Since rw_x ranges are non-overlapping, rendering all walls means completing
+       * the clipping list as well.
+       * 
        * CALLED: CORE LOOPING ROUTINE.
        *
        */
@@ -2196,17 +2237,14 @@ public class ParallelRenderer extends RendererState implements TextureManager {
               // single sided line
               dc_yl = yl;
               dc_yh = yh;
-              dc_texheight = textureheight[midtexture]>>FRACBITS; // killough
+              dc_texheight = 128;// textureheight[midtexture]>>FRACBITS; // killough
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
-              //System.out.println("DC_ISCALE: "+dc_iscale+" " +rw_scale);
-              //if (DEBUG) 
-                  // System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+rw_x+" and between "+dc_yl+" and "+dc_yh+" maximum allowed "+dc_source.length);
-                  try {
-              colfunc.invoke();
-              } catch (ArrayIndexOutOfBoundsException e){                    
-                    System.out.println(e.getMessage()+" maximum acceptable "+dc_source.length);
-                  }
+
+              StoreRenderingInstruction();
+              /*centery, dc_iscale, dc_source_ofs, dc_texturemid, dc_x, dc_yh, dc_yl, 
+                                        columnofs, dc_colormap, dc_source);*/
+              
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
           }
@@ -2228,10 +2266,10 @@ public class ParallelRenderer extends RendererState implements TextureManager {
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
                   dc_texheight=textureheight[toptexture]>>FRACBITS;
-                  if (DEBUG); 
-                      //System.out.println("Drawing column"+(texturecolumn&127)+" of top texture "+textures[toptexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
                   dc_source = GetColumn(toptexture,texturecolumn);
-                  //dc_source_ofs=0;
+
+                  StoreRenderingInstruction();
+                  
                   colfunc.invoke();
                   ceilingclip[rw_x] = (short) mid;
               }
@@ -2263,14 +2301,8 @@ public class ParallelRenderer extends RendererState implements TextureManager {
                   dc_texheight=textureheight[bottomtexture]>>FRACBITS;
                   dc_source = GetColumn(bottomtexture,
                               texturecolumn);
-                  //System.out.println("Max data length:"+dc_source.length);
-                  try{
-                  //dc_source_ofs=0;
-                  colfunc.invoke();
-                  }catch (ArrayIndexOutOfBoundsException e){
-                      //TODO: fix errors. Is this supposed to occur?
-                  }
-                  
+
+                  StoreRenderingInstruction();
                   
                   floorclip[rw_x] = (short) mid;
               }
@@ -2298,7 +2330,34 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           }
       }
 
-
+      /** Parallel version. Since there's so much crap to take into account when rendering, the number of
+       * walls to render is unknown a-priori and the BSP trasversal itself is not worth parallelizing,
+       * it makes more sense to store "rendering instructions" as quickly as the BSP can be transversed,
+       * and then execute those in parallel. Also saves on having to duplicate way too much status.
+       *  
+       *  
+       */
+      
+      private final void StoreRenderingInstruction(){
+          /*(int centery, int dc_iscale, int dc_source_ofs, int dc_texturemid,
+          int dc_x, int dc_yh, int dc_yl, int[] columnofs, byte[] dc_colormap, byte[] dc_source){*/
+          if (RWIcount>=RWI.length){
+              ResizeRWIBuffer();
+          }
+              
+          RWI[RWIcount].centery=centery;
+          RWI[RWIcount].dc_iscale=dc_iscale;
+          RWI[RWIcount].dc_x=dc_x;
+          RWI[RWIcount].dc_yh=dc_yh;
+          RWI[RWIcount].dc_yl=dc_yl;
+          RWI[RWIcount].columnofs=columnofs;
+          RWI[RWIcount].dc_colormap=dc_colormap;
+          RWI[RWIcount].dc_source=dc_source;
+          RWI[RWIcount].dc_source_ofs=dc_source_ofs;
+          RWI[RWIcount].dc_texturemid=dc_texturemid;
+          RWI[RWIcount].dc_texheight=dc_texheight;
+          RWIcount++;
+      }
 
 
       /**
@@ -2677,7 +2736,6 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           }
           
           // render it
-          // FIXME: problem: certain ranges of visplanes are not checked at all.
           if (markceiling){
               //System.out.println("Markceiling");
           ceilingplane = MyPlanes.CheckPlane(ceilingplane, rw_x, rw_stopx-1);
@@ -2690,6 +2748,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
 
           RenderSegLoop ();
 
+          // After rendering is actually performed, clipping is set.
           
           // save sprite clipping info ... no top clipping?
           if ( (C2JUtils.flags(seg.silhouette , SIL_TOP) || maskedtexture)
@@ -3185,52 +3244,41 @@ public class ParallelRenderer extends RendererState implements TextureManager {
                lastopening );
       }
 
-      	dyn.reset(lastvisplane,MAXTHREADS,lastvisplane/MAXTHREADS);
       		
    //   	vpw[0].setRange(0,lastvisplane/2);
    //   	vpw[1].setRange(lastvisplane/2,lastvisplane);
       	
-      	for (int i=0;i<MAXTHREADS;i++)
+      	for (int i=0;i<NUMFLOORTHREADS;i++)
       		tp.execute(vpw[i]);
-      
-      	
-      	// Wait, and hope for the best.
-			visplanebarrier.gather(0);
-
-		// Reset it for our next use...
-		//visplanebarrier.reset();
-      	
-      	
       }
 
   } // End Plane class
       
   class VisplaneWorker implements Runnable{
 
-	private DynAlloc.Range range=new DynAlloc.Range();
 	public int id;
 	int startvp;  
 	int endvp;
-	int planeheight;
-	byte[][] planezlight;
-	int basexscale;
-	int baseyscale;
+	int vpw_planeheight;
+	byte[][] vpw_planezlight;
+	int vpw_basexscale;
+	int vpw_baseyscale;
     int[] cachedheight;
     int[] cacheddistance;
     int[] cachedxstep;
     int[] cachedystep;
     int[] distscale;
     int[] yslope;
-	int dc_texturemid;
-	int dc_texheight;
-	int dc_iscale;
-	byte[] dc_colormap, dc_source, ds_source;
-    int dc_yl;
-    int dc_yh;
-    int dc_x;
-    int dc_y;
-    int ds_x;
-    int ds_y;
+	int vpw_dc_texturemid;
+	int vpw_dc_texheight;
+	int vpw_dc_iscale;
+	byte[] vpw_dc_colormap, vpw_dc_source, vpw_ds_source,vpw_ds_colormap;
+    int vpw_dc_yl;
+    int vpw_dc_yh;
+    int vpw_dc_x;
+    int vpw_dc_y;
+    int vpw_ds_x;
+    int vpw_ds_y;
     int ds_x1;
     int ds_x2;
     int ds_xstep;
@@ -3239,7 +3287,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
     int ds_yfrac;
     int dc_source_ofs;
     
-	public VisplaneWorker(FastBarrier barrier){
+	public VisplaneWorker(CyclicBarrier barrier){
 		  this.barrier=barrier;
 	      // Alias to those of Planes.
 	      cachedheight=MyPlanes.cachedheight;
@@ -3263,12 +3311,10 @@ public class ParallelRenderer extends RendererState implements TextureManager {
         int         angle;
 
         // Now it's a good moment to set them.
-        basexscale=MyPlanes.basexscale;
-        baseyscale=MyPlanes.baseyscale;
+        vpw_basexscale=MyPlanes.basexscale;
+        vpw_baseyscale=MyPlanes.baseyscale;
         
-		 while(dyn.alloc(range))
-         {
-			 for (int pl= range.start; pl <=range.end; pl++) {
+			 for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
              pln=visplanes[pl];
             if (DEBUG2) System.out.println(pln);
              
@@ -3299,24 +3345,24 @@ public class ParallelRenderer extends RendererState implements TextureManager {
                  angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                  dc_x = x;
                  dc_texheight=textureheight[skytexture]>>FRACBITS;
-                 dc_source = VPlaneGetColumn(skytexture, angle);
-                 colfunc();
+                 dc_source = GetColumn(skytexture, angle);
+                 colfunc.invoke();
              }
              }
              continue;
          }
          
          // regular flat
-         ds_source = ((flat_t)W.CacheLumpNum(firstflat +
+         vpw_ds_source = ((flat_t)W.CacheLumpNum(firstflat +
                         flattranslation[pln.picnum],
                         PU_STATIC,flat_t.class)).data;
          
          
-         if (ds_source.length==0){
+         if (vpw_ds_source.length==0){
              new Exception().printStackTrace();
          }
          
-         planeheight = Math.abs(pln.height-viewz);
+         vpw_planeheight = Math.abs(pln.height-viewz);
          light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
 
          if (light >= LIGHTLEVELS)
@@ -3325,7 +3371,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
          if (light < 0)
              light = 0;
 
-         planezlight = zlight[light];
+         vpw_planezlight = zlight[light];
 
          // We set those values at the border of a plane's top to a "sentinel" value...ok.
          pln.setTop(pln.maxx+1,(char) 0xffff);
@@ -3342,11 +3388,17 @@ public class ParallelRenderer extends RendererState implements TextureManager {
          	}
          
          }
-         }
-		 
 		 // We're done, wait.
 
-			barrier.gather(this.id);
+			try {
+                barrier.await();
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            } catch (BrokenBarrierException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 
      }
 		
@@ -3446,12 +3498,12 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           }
       }
 
-          if (planeheight != cachedheight[y])
+          if (vpw_planeheight != cachedheight[y])
           {
-          cachedheight[y] = planeheight;
-          distance = cacheddistance[y] = FixedMul (planeheight , yslope[y]);
-          ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
-          ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
+          cachedheight[y] = vpw_planeheight;
+          distance = cacheddistance[y] = FixedMul (vpw_planeheight , yslope[y]);
+          ds_xstep = cachedxstep[y] = FixedMul (distance,vpw_basexscale);
+          ds_ystep = cachedystep[y] = FixedMul (distance,vpw_baseyscale);
           }
           else
           {
@@ -3466,7 +3518,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           ds_yfrac = -viewy - FixedMul(finesine[angle], length);
 
           if (fixedcolormap!=null)
-          ds_colormap = fixedcolormap;
+          vpw_ds_colormap = fixedcolormap;
           else
           {
           index = distance >>> LIGHTZSHIFT;
@@ -3474,19 +3526,19 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           if (index >= MAXLIGHTZ )
               index = MAXLIGHTZ-1;
 
-          ds_colormap = planezlight[index];
+          vpw_ds_colormap = vpw_planezlight[index];
           }
           
-          ds_y = y;
+          vpw_ds_y = y;
           ds_x1 = x1;
           ds_x2 = x2;
 
           // high or low detail
-          colfunc();    
+          spanfunc();    
       }
       
       // Each thread has its own copy of a colfun.
-      private void colfunc(){
+      private void spanfunc(){
     	     int position, step;
     	     byte[] source;
     	     byte[] colormap;
@@ -3498,9 +3550,9 @@ public class ParallelRenderer extends RendererState implements TextureManager {
     	     
     	     position = ((ds_xfrac << 10) & 0xffff0000) | ((ds_yfrac >> 6) & 0xffff);
     	     step = ((ds_xstep << 10) & 0xffff0000) | ((ds_ystep >> 6) & 0xffff);
-    	     source = ds_source;
-    	     colormap = ds_colormap;
-    	     dest = ylookup[ds_y] + columnofs[ds_x1];
+    	     source = vpw_ds_source;
+    	     colormap = vpw_ds_colormap;
+    	     dest = ylookup[vpw_ds_y] + columnofs[ds_x1];
     	     count = ds_x2 - ds_x1 + 1;
     	     while (count >= 4) {
     	         ytemp = position >> 4;
@@ -3542,44 +3594,10 @@ public class ParallelRenderer extends RendererState implements TextureManager {
     	     }
     	 }
       
-      /**
-       * R_GetColumn
-     * @throws IOException 
-       */
-      public byte[] VPlaneGetColumn
-      ( int       tex,
-        int       col ) 
-      {
-          int     lump,ofs;
-          
-          col &= texturewidthmask[tex];
-          lump = texturecolumnlump[tex][col];
-          ofs=texturecolumnofs[tex][col];
-          
-          // If pointing inside a non-zero, positive lump, then it's not a composite texture.
-          // Read from disk.
-          if (lump > 0){
-              // This will actually return a pointer to a patch's columns.
-              // That is, to the ONE column exactly.{
-              // If the caller needs access to a raw column, we must point 3 bytes "ahead".
-              dc_source_ofs=3;
-              patch_t r=W.CachePatchNum(lump,PU_CACHE);
-          return r.columns[ofs].data;
-      }
-          // Texture should be composite, but it doesn't yet exist. Create it. 
-          if (texturecomposite[tex]==null) GenerateComposite (tex);
-
-          // This implies that texturecomposite actually stores raw, compressed columns,
-          // or else those "ofs" would go in-between.
-          // The source offset int this case is 0, else we'll skip over stuff.
-          this.dc_source_ofs=0;
-          return texturecomposite[tex][col];
-      }
-      
       // Private to each thread.
       int[]           spanstart=new int[SCREENHEIGHT];
       int[]           spanstop=new int [SCREENHEIGHT];
-      FastBarrier barrier;
+      CyclicBarrier barrier;
       
   }
   
@@ -4752,6 +4770,56 @@ public void InitTranslationTables() {
 }
 
 /**
+ * R_InitRWISubsystem
+ * 
+ * Initialize RWIs and RWI Executors.
+ * Pegs them to the RWI, ylookup and screen[0].
+ */
+
+private void InitRWISubsystem() {
+
+    C2JUtils.initArrayOfObjects(RWI);
+    
+    for (int i=0;i<NUMWALLTHREADS;i++){
+        RWIExec[i]=new RenderWallExecutor(ylookup, screen,RWI,visplanebarrier);
+    }
+}
+
+/** Resizes RWI buffer, updates executors. Sorry for the hackish implementation
+ *  but ArrayList and pretty much everything in Collections is way too slow
+ *  for what we're trying to accomplish.
+ * 
+ */
+
+private void ResizeRWIBuffer() {
+    RenderWallInstruction[] tmp=new RenderWallInstruction[RWI.length*2];
+    System.arraycopy(RWI, 0, tmp, 0, RWI.length);
+    
+    C2JUtils.initArrayOfObjects(tmp,RWI.length,tmp.length);
+    
+    // Bye bye, old RWI.
+    RWI=tmp;   
+    
+    for (int i=0;i<NUMWALLTHREADS;i++){
+        RWIExec[i].updateRWI(RWI);
+    }
+    
+    System.out.println("RWI Buffer resized. Actual capacity "+RWI.length);
+}
+
+
+private void RenderRWIPipeline() {
+
+    for (int i=0;i<NUMWALLTHREADS;i++){
+        RWIExec[i].setRange((i*RWIcount)/NUMWALLTHREADS, ((i+1)*RWIcount)/NUMWALLTHREADS);
+        tp.execute(RWIExec[i]);
+    }
+    
+    //System.out.println("RWI count"+RWIcount);
+    RWIcount=0;
+}
+
+/**
  * R_DrawMaskedColumn
  * Used for sprites and masked mid textures.
  * Masked means: partly transparent, i.e. stored
@@ -5036,7 +5104,7 @@ public void VideoErase(int ofs, int count) {
   * differently elsewhere...
   */
 
- public void InitBuffer(int width, int height) {
+ private void InitBuffer(int width, int height) {
      int i;
 
      // Handle resize,
@@ -5259,19 +5327,28 @@ public void RenderPlayerView (player_t player)
   // The head node is the last node output.
   MyBSP.RenderBSPNode (LL.numnodes-1);
   
+  RenderRWIPipeline();
   // Check for new console commands.
   //NetUpdate ();
   
   // "Warped floor" fixed, same-height visplane merging fixed.
   MyPlanes.DrawPlanes ();
   
+  try {
+    visplanebarrier.await();
+} catch (Exception e){
+    e.printStackTrace();
+}
+
+  
   // Check for new console commands.
   //NetUpdate ();
   
   MyThings.DrawMasked ();
 
+    
   // Check for new console commands.
- // NetUpdate ();             
+  //NetUpdate ();             
 }
 
 //
@@ -6378,6 +6455,9 @@ public void Init ()
    System.out.print("\nR_InitSkyMap: "+InitSkyMap ());
    InitTranslationTables ();
    System.out.print("\nR_InitTranslationsTables");
+   
+   System.out.print("\nR_InitRWISubsystem: ");
+   InitRWISubsystem();
    
    framecount = 0;
 }

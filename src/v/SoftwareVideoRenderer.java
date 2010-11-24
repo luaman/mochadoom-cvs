@@ -239,7 +239,6 @@ public abstract class SoftwareVideoRenderer
        
    w = patch.width; 
    desttop = x+this.width*y; 
-   int abspos=desttop;
    // For each column..
    int destPos;
    int ptr=0;

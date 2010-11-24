@@ -35,6 +35,7 @@ import static data.Defines.BACKUPTICS;
 import static data.Defines.KEY_ESCAPE;
 import static data.Defines.NORMALUNIX;
 import static data.Defines.VERSION;
+import rr.ParallelRenderer;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
@@ -58,7 +59,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.20 2010/11/22 21:41:21 velktron Exp $
+// $Id: DoomMain.java,v 1.21 2010/11/24 14:51:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -73,6 +74,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.21  2010/11/24 14:51:10  velktron
+// Parallel Renderer complete, almost 100% gains on a Quad ;-)
+//
 // Revision 1.20  2010/11/22 21:41:21  velktron
 // Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
 //
@@ -167,7 +171,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.20 2010/11/22 21:41:21 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.21 2010/11/24 14:51:10 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -2879,7 +2883,7 @@ public void Init(){
     this.HU=new HU(this);
     this.M=new Menu(this);
     this.LL=new LevelLoader(this);
-    this.R=new UnifiedRenderer(this);
+    this.R=new ParallelRenderer(this);
     this.P=new Actions(this);
 
     this.ST=new StatusBar(this);
