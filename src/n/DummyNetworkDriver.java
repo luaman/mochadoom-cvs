@@ -15,7 +15,7 @@ import i.DoomSystemInterface;
  *  Allows running single-player games without an actual network.
  *  Hopefully, it will be replaced by a real UDP-based driver one day.
  *  
- * @author Kaptain Zyklon
+ * @author Velktron
  *
  */
 

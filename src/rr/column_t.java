@@ -35,7 +35,7 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
 	public int posts;
 	/** Positions of posts inside the raw data (point at headers) */
 	public int[] postofs; 
-	/** Posts lengths, intended as actual drawable pixels. Add +4 to get the whole post length */
+	/** Posts lengths, intended as actual drawable pixels.  Add +4 to get the whole post length */
 	public short[] postlen;
 	/** Vertical offset of each post. In theory it should be possible to quickly
 	 *  clip to the next visible post when drawing a column */
@@ -61,7 +61,7 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
 
 	        // Read one more byte...this should be the post length.
 	        postlen=(short)C2JUtils.toUnsignedByte(buf.get());
-	        guesspostlens[postno++]=postlen;
+	        guesspostlens[postno++]=(short) (1+postlen);
 	        
 	        // So, we already read 2 bytes (topdelta + length)
 	        // Two further bytes are padding so we can safely skip 2+2+postlen bytes until the next post

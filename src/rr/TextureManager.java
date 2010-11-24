@@ -6,7 +6,7 @@ import java.io.IOException;
  *  by an implementing class. As of now, the renderer does both, though it's
  *  not really the most ideal.
  *  
- * @author Kaptain Zyklon
+ * @author Velktron
  *
  */
 

@@ -35,7 +35,7 @@ import doom.thinker_t;
 
 public class ParallelRenderer extends RendererState implements TextureManager {
 	///// PARALLEL OBJECTS /////
-	private final static int NUMWALLTHREADS=2;
+	private final static int NUMWALLTHREADS=1;
 	private final static int NUMFLOORTHREADS=1;
 	private Executor tp;
 	private VisplaneWorker[] vpw;
@@ -884,10 +884,6 @@ public class ParallelRenderer extends RendererState implements TextureManager {
     } while (count-->0); 
  } 
  }
- 
- 
-   
-   
    // MAES: More renderer fields from segs.
 
    //OPTIMIZE: closed two sided lines as single sided
@@ -3952,7 +3948,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           {
           // NULL colormap = shadow draw
           shadow=true;
-          colfunc = fuzzcolfunc;
+          colfunc =fuzzcolfunc;// fuzzcolfunc;
           }
           else if ((vis.mobjflags & MF_TRANSLATION)!=0)
           {
@@ -4854,31 +4850,29 @@ public void DrawMaskedColumn (column_t column)
     {
         // Set pointer inside column to current post's data
         // Remember, it goes {postlen}{postdelta}{pad}[data]{pad} 
-        
-        /*System.out.println("Post offset "+i+" = "+column.postofs[i]+ " Post length "+i+" = "+column.postlen[i]);
+       
+    	// NOTE: commenting this out make sprites appear "crippled".
+    	// Can be used for comedic or freakout effect :-p
+    	// However you need to turn exception catching for bounds on.
         dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
-        System.out.println("\tData to draw: "+(dc_yh-dc_yl));
-        System.out.println("\tData left in this post: "+column.postlen[i]);
-        System.out.println("\tBasetexturemid "+Integer.toHexString(basetexturemid));
-        System.out.println("\tcolumn.postdeltas["+i+"] "+column.postdeltas[i]);
-        System.out.println("\tdc_texturemid "+(dc_texturemid>>FRACBITS));*/
         
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
         dc_source_ofs+=3;
         dc_texheight=0; // killough
-        if (MyThings.shadow){
+        /*if (MyThings.shadow){
             colfunc=DrawFuzzColumn;
         } else {
             colfunc=DrawColumn;
-        }
-        try{
+        } */
+        //try{
          colfunc.invoke();
-        } catch (ArrayIndexOutOfBoundsException e){
-        }
+        //} catch (ArrayIndexOutOfBoundsException e){
+        //}
     }
     //column = (column_t *)(  (byte *)column + column.length + 4);
-    dc_source_ofs +=column.postlen[i];
+    dc_source_ofs +=column.postlen[i]; // After the first column, +1 to 
+    
     }
     
     dc_texturemid = basetexturemid;

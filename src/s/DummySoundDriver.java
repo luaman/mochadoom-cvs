@@ -8,7 +8,7 @@ import data.sounds.sfxenum_t;
  *  commenting out ALL sound-related code. Hopefully
  *  it will be superseded by a real sound driver one day.
  * 
- * @author Kaptain Zyklon
+ * @author Velktron
  *
  */
 

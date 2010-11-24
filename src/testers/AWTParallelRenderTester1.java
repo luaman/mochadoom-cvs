@@ -146,7 +146,7 @@ public class AWTParallelRenderTester1 {
     
     // Center on "bloody mess" in E1M1
     DM.players[0].mo.y+=420<<16;
-    //DM.players[0].mo.x+=1350<<16;
+    DM.players[0].mo.x+=-450<<16;
         int pl=0;
         for (int i=0;i<20000;i++){
    

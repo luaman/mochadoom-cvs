@@ -4,7 +4,7 @@ package m;
  *  So any class implementing them will implement this interface, and
  *  we can have a single class type for all of them.
  * 
- * @author Kaptain Zyklon
+ * @author Velktron
  *
  */
 public interface MenuRoutine {
