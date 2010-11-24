@@ -1,5 +1,6 @@
 package rr;
 
+import static data.Tables.ANG90;
 import p.LevelLoader;
 import p.UnifiedGameMap;
 import i.DoomStatusAware;
@@ -38,9 +39,12 @@ public abstract class RendererState implements DoomStatusAware, Renderer{
 
     public int scaledviewwidth;
 
-    // This one is related to the 3-screen display mode.
-    // ANG90 = left side, ANG270 = right
-    public int viewangleoffset;
+    /** killough: viewangleoffset is a legacy from the pre-v1.2 days, when Doom
+     *  had Left/Mid/Right viewing. +/-ANG90 offsets were placed here on each
+     *  node, by d_net.c, to set up a L/M/R session. */
+    
+    public static final long viewangleoffset=0;
+
     
     //////////////////////////////////From r_sky.c /////////////////////////////////////
 
@@ -60,6 +64,25 @@ public abstract class RendererState implements DoomStatusAware, Renderer{
  protected int     setblocks;
  protected int     setdetail;
 
+ /**
+  * R_SetViewSize
+  * Do not really change anything here,
+  * because it might be in the middle of a refresh.
+  * The change will take effect next refresh.
+  * 
+  * @param blocks 11 is full screen, 9 default.
+  * @param detail 0= high, 1 =low.
+  */
+
+ public void SetViewSize
+ ( int       blocks,
+ int       detail )
+ {
+     System.out.println("SetViewSize");
+  setsizeneeded = true;
+  setblocks = blocks;
+  setdetail = detail;
+ }
     
     public void updateStatus(DoomContext DC){
         this.DM=DC.DM;

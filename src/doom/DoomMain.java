@@ -37,7 +37,6 @@ import static data.Defines.NORMALUNIX;
 import static data.Defines.VERSION;
 import rr.ParallelRenderer;
 import rr.TextureManager;
-import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.DummySoundDriver;
 import st.StatusBar;
@@ -59,7 +58,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.21 2010/11/24 14:51:10 velktron Exp $
+// $Id: DoomMain.java,v 1.22 2010/11/24 17:34:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -74,6 +73,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.22  2010/11/24 17:34:08  velktron
+// Parallel Renderer complete, almost 100% gains on a Quad ;-)
+//
 // Revision 1.21  2010/11/24 14:51:10  velktron
 // Parallel Renderer complete, almost 100% gains on a Quad ;-)
 //
@@ -171,7 +173,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.21 2010/11/24 14:51:10 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.22 2010/11/24 17:34:08 velktron Exp $";
 
 //
 // EVENT HANDLING

@@ -260,11 +260,6 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
    /** Fineangles in the SCREENWIDTH wide window. */
    public static final int FIELDOFVIEW   =   FINEANGLES/4;   
    
-   /** killough: viewangleoffset is a legacy from the pre-v1.2 days, when Doom
-    *  had Left/Mid/Right viewing. +/-ANG90 offsets were placed here on each
-    *  node, by d_net.c, to set up a L/M/R session. */
-   public static final int viewangleoffset=0;
-
    /** Use in conjunction with pfixedcolormap */
    byte[]      fixedcolormap;
    /** Use in conjunction with fixedcolormap[] */
@@ -4964,27 +4959,6 @@ public void SetupFrame (player_t player)
  framecount++;
  validcount++;
 }
-
-/**
- * R_SetViewSize
- * Do not really change anything here,
- * because it might be in the middle of a refresh.
- * The change will take effect next refresh.
- * 
- * @param blocks 11 is full screen, 9 default.
- * @param detail 0= high, 1 =low.
- */
-
-public void SetViewSize
-( int       blocks,
-int       detail )
-{
-	System.out.println("SetViewSize");
- setsizeneeded = true;
- setblocks = blocks;
- setdetail = detail;
-}
-
 
 /**
  * R_ExecuteSetViewSize
