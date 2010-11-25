@@ -10,7 +10,7 @@ public final class DoorDefines {
     
     
     // Lights
-    public static final int GLOWSPEED = 8;
+    public static final int GLOWSPEED = 5;
 
     public static final int STROBEBRIGHT = 5;
 

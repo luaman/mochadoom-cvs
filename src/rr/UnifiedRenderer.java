@@ -137,29 +137,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
 
     short[]     maskedtexturecol;
     int pmaskedtexturecol=0;
-    ///// FROM PLANES //////
-    
-    /**
-     * Clip values are the solid pixel bounding the range.
-     *  floorclip starts out SCREENHEIGHT
-     *  ceilingclip starts out -1
-     */
-    short[]         floorclip=new short[SCREENWIDTH],   ceilingclip=new short[SCREENWIDTH];
-    
-    /** visplane_t*,  treat as indexes into visplanes */
-    public int       lastvisplane, floorplane,   ceilingplane;
-    
-
-    protected visplane_t[]      visplanes=new visplane_t[MAXVISPLANES];
-
-    /** openings is supposed to show where "openings" in visplanes start and end e.g.
-     *  due to sprites, windows etc.
-     */
-    short[]         openings=new short[MAXOPENINGS];
-    /** Maes: this is supposed to be a pointer inside openings */
-    int           lastopening;//=new Short((short) 0);
-
-    
+        
     ///// FROM BSP /////////
     
     /** pointer to drawsegs */
@@ -1868,7 +1846,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
       if (DEBUG) System.out.println("Trying to find an existing FLOOR visplane...");
       if (frontsector.floorheight < viewz)
       {
-      floorplane = MyPlanes.FindPlane (frontsector.floorheight,
+      floorplane = FindPlane (frontsector.floorheight,
                     frontsector.floorpic,
                     frontsector.lightlevel);
       }
@@ -1882,7 +1860,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
       if (frontsector.ceilingheight > viewz 
       || frontsector.ceilingpic == skyflatnum)
       {
-          ceilingplane = MyPlanes.FindPlane (frontsector.ceilingheight,
+          ceilingplane = FindPlane (frontsector.ceilingheight,
                       frontsector.ceilingpic,
                       frontsector.lightlevel);
       }
@@ -2877,74 +2855,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
           basexscale = FixedDiv (finecosine[angle],centerxfrac);
           baseyscale = -FixedDiv (finesine[angle],centerxfrac);
       }
-
-
-      /**
-       * R_FindPlane
-       * 
-       * Checks whether a visplane with the specified height, picnum and light 
-       * level exists among those already created. This looks like a half-assed 
-       * attempt at reusing already existing visplanes, rather than creating new 
-       * ones. The tricky part is understanding what happens if one DOESN'T exist.
-       * Called only from within R_Subsector (so while we're still trasversing stuff).
-       * 
-       * @param height (fixed_t)
-       * @param picnum
-       * @param lightlevel
-       * @return was visplane_t*, returns index into visplanes[]
-       */
-
-      public int
-      FindPlane
-      ( int   height,
-        int       picnum,
-        int       lightlevel )
-      {
-          //System.out.println("\tChecking for visplane merging...");
-          int check; // visplane_t* 
-          visplane_t chk=null;
-          
-          if (picnum == skyflatnum)
-          {
-          height = 0;         // all skys map together
-          lightlevel = 0;
-          }
-          
-          // Find visplane with the desired attributes
-          for (check=0; check<=lastvisplane; check++)
-          {
-              chk=visplanes[check];
-          if (height == chk.height
-              && picnum == chk.picnum
-              && lightlevel ==chk.lightlevel) {
-              //  Found a visplane with the desired specs.
-              break;
-              }
-          }
-                  
-          if (check < lastvisplane){
-          return check;
-          }          
-          
-          // Found a visplane, but we can't add anymore.
-          if (lastvisplane == MAXVISPLANES)
-          I.Error ("R_FindPlane: no more visplanes");
-          
-          
-          // Add a visplane
-          lastvisplane++;
-          chk.height = height;
-          chk.picnum = picnum;
-          chk.lightlevel = lightlevel;
-          chk.minx = SCREENWIDTH;
-          chk.maxx = -1;
-          //memset (chk.top,0xff,sizeof(chk.top));
-          chk.clearTop();
-              
-          return check;
-      }
-
-
+      
       /**
        * R_CheckPlane
        * 

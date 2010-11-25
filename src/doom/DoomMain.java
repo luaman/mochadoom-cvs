@@ -58,7 +58,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.22 2010/11/24 17:34:08 velktron Exp $
+// $Id: DoomMain.java,v 1.23 2010/11/25 15:59:21 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -73,6 +73,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.23  2010/11/25 15:59:21  velktron
+// Fixed visplane overflows and findplane blinking.
+//
 // Revision 1.22  2010/11/24 17:34:08  velktron
 // Parallel Renderer complete, almost 100% gains on a Quad ;-)
 //
@@ -173,7 +176,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.22 2010/11/24 17:34:08 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.23 2010/11/25 15:59:21 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -208,7 +211,7 @@ public void ProcessEvents ()
 	
     // IF STORE DEMO, DO NOT ACCEPT INPUT
     if ( ( gamemode == GameMode_t.commercial )
-	 && (W.CheckNumForName("map01")<0) )
+	 && (W.CheckNumForName("MAP01")<0) )
       return;
 	
     for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )

@@ -4,7 +4,7 @@ import m.random;
 import rr.SectorAction;
 
 //
-// P_LIGHTS
+// BROKEN LIGHT EFFECT
 //
 
 public class lightflash_t extends SectorAction {
@@ -31,10 +31,10 @@ public class lightflash_t extends SectorAction {
             return;
 
         if (sector.lightlevel == maxlight) {
-            sector.lightlevel = (short) minlight;
+            sector.lightlevel = (short)minlight;
             count = (RND.P_Random() & mintime) + 1;
         } else {
-            sector.lightlevel = (short) maxlight;
+            sector.lightlevel = (short)maxlight;
             count = (RND.P_Random() & maxtime) + 1;
         }
 

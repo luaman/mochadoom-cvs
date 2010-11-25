@@ -192,27 +192,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
 
     short[]     maskedtexturecol;
     int pmaskedtexturecol=0;
-    ///// FROM PLANES //////
-    
-    /**
-     * Clip values are the solid pixel bounding the range.
-     *  floorclip starts out SCREENHEIGHT
-     *  ceilingclip starts out -1
-     */
-    short[]         floorclip=new short[SCREENWIDTH],   ceilingclip=new short[SCREENWIDTH];
-    
-    /** visplane_t*,  treat as indexes into visplanes */
-    public int       lastvisplane, floorplane,   ceilingplane;
-    
 
-    protected visplane_t[]      visplanes=new visplane_t[MAXVISPLANES];
-
-    /** openings is supposed to show where "openings" in visplanes start and end e.g.
-     *  due to sprites, windows etc.
-     */
-    short[]         openings=new short[MAXOPENINGS];
-    /** Maes: this is supposed to be a pointer inside openings */
-    int           lastopening;//=new Short((short) 0);
 
     
     ///// FROM BSP /////////
@@ -1936,7 +1916,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       if (DEBUG) System.out.println("Trying to find an existing FLOOR visplane...");
       if (frontsector.floorheight < viewz)
       {
-      floorplane = MyPlanes.FindPlane (frontsector.floorheight,
+      floorplane = FindPlane (frontsector.floorheight,
                     frontsector.floorpic,
                     frontsector.lightlevel);
       }
@@ -1950,7 +1930,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       if (frontsector.ceilingheight > viewz 
       || frontsector.ceilingpic == skyflatnum)
       {
-          ceilingplane = MyPlanes.FindPlane (frontsector.ceilingheight,
+          ceilingplane = FindPlane (frontsector.ceilingheight,
                       frontsector.ceilingpic,
                       frontsector.lightlevel);
       }
@@ -2147,7 +2127,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       
       public void RenderSegLoop () 
       {
-          int     angle; // angle_t
+          int     angle = 0; // angle_t
           int     index;
           int         yl; // low
           int         yh; // hight
@@ -2208,7 +2188,8 @@ public class ParallelRenderer extends RendererState implements TextureManager {
               angle = Tables.toBAMIndex(rw_centerangle + xtoviewangle[rw_x]);
               texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
         	  } catch (ArrayIndexOutOfBoundsException e){
-        		  e.printStackTrace();
+        	      System.err.println("Error! Angle "+angle +" rw_centerangle "+ Long.toHexString(rw_centerangle)+"xtoviewangle[rw_x]"+Long.toHexString(xtoviewangle[rw_x]));
+        		 // e.printStackTrace();
         	  }
     
               texturecolumn >>= FRACBITS;
@@ -2733,6 +2714,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           ceilingplane = MyPlanes.CheckPlane(ceilingplane, rw_x, rw_stopx-1);
           }
           
+         
           if (markfloor){
               //System.out.println("Markfloor");
           floorplane = MyPlanes.CheckPlane (floorplane, rw_x, rw_stopx-1);
@@ -2968,70 +2950,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       }
 
 
-      /**
-       * R_FindPlane
-       * 
-       * Checks whether a visplane with the specified height, picnum and light 
-       * level exists among those already created. This looks like a half-assed 
-       * attempt at reusing already existing visplanes, rather than creating new 
-       * ones. The tricky part is understanding what happens if one DOESN'T exist.
-       * Called only from within R_Subsector (so while we're still trasversing stuff).
-       * 
-       * @param height (fixed_t)
-       * @param picnum
-       * @param lightlevel
-       * @return was visplane_t*, returns index into visplanes[]
-       */
-
-      public int
-      FindPlane
-      ( int   height,
-        int       picnum,
-        int       lightlevel )
-      {
-          //System.out.println("\tChecking for visplane merging...");
-          int check; // visplane_t* 
-          visplane_t chk=null;
-          
-          if (picnum == skyflatnum)
-          {
-          height = 0;         // all skys map together
-          lightlevel = 0;
-          }
-          
-          // Find visplane with the desired attributes
-          for (check=0; check<=lastvisplane; check++)
-          {
-              chk=visplanes[check];
-          if (height == chk.height
-              && picnum == chk.picnum
-              && lightlevel ==chk.lightlevel) {
-              //  Found a visplane with the desired specs.
-              break;
-              }
-          }
-                  
-          if (check < lastvisplane){
-          return check;
-          }          
-          
-          // Found a visplane, but we can't add anymore.
-          if (lastvisplane == MAXVISPLANES)
-          I.Error ("R_FindPlane: no more visplanes");
-          
-          
-          // Add a visplane
-          lastvisplane++;
-          chk.height = height;
-          chk.picnum = picnum;
-          chk.lightlevel = lightlevel;
-          chk.minx = SCREENWIDTH;
-          chk.maxx = -1;
-          //memset (chk.top,0xff,sizeof(chk.top));
-          chk.clearTop();
-              
-          return check;
-      }
+      
 
 
       /**
@@ -3139,20 +3058,29 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           return index;      
           }
           
-          // SPLIT: make a new visplane
+          // SPLIT: make a new visplane at "last" position, copying materials and light.
+          // TODO: visplane overflows could occur at this point.
+          
+          if (lastvisplane==MAXVISPLANES){
+              ResizeVisplanes();
+          }
+                    
           visplanes[lastvisplane].height = pl.height;
           visplanes[lastvisplane].picnum = pl.picnum;
           visplanes[lastvisplane].lightlevel = pl.lightlevel;
           
-          pl = visplanes[lastvisplane++];
+          // The old visplane is left as-is, we now assign new start-stop to
+          // the "split off".
+          
+          pl = visplanes[lastvisplane++];          
           pl.minx = start;
           pl.maxx = stop;
 
+          
           //memset (pl.top,0xff,sizeof(pl.top));
           pl.clearTop();
               
           //return pl;
-          
           //System.out.println("New plane created: "+pl);
           return lastvisplane-1;
       }
@@ -3350,7 +3278,8 @@ public class ParallelRenderer extends RendererState implements TextureManager {
                         PU_STATIC,flat_t.class)).data;
          
          
-         if (vpw_ds_source.length==0){
+         if (vpw_ds_source.length<4096){
+             System.err.println("vpw_ds_source size <4096 ");
              new Exception().printStackTrace();
          }
          
@@ -6452,6 +6381,7 @@ public void setTextureTranslation(int texnum, int amount) {
 @Override
 public void setFlatTranslation(int flatnum, int amount) {
 	flattranslation[flatnum]=amount;
+
 }
  
   

@@ -1731,6 +1731,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           case  A_BrainExplode:
         	  break;
           case  T_FireFlicker:
+              ((fireflicker_t) a).FireFlicker();
         	  break;
           case 	T_LightFlash:
               ((lightflash_t) a).LightFlash();
@@ -6486,7 +6487,7 @@ mobj_t  thing )
 
     public void XYMovement (mobj_t mo) 
     {
-    System.out.println("XYMovement");
+    //System.out.println("XYMovement");
     int     ptryx, ptryy; // pointers to fixed_t ???
     player_t   player;
     int  xmove, ymove; // fixed_t
