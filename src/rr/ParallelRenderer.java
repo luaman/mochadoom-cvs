@@ -2184,13 +2184,28 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           if (segtextured)
           {
               // calculate texture offset
-        	  try{
-              angle = Tables.toBAMIndex(rw_centerangle + xtoviewangle[rw_x]);
+        	 
+        		  
+        		// CAREFUL: a VERY anomalous point in the code. Their sum is supposed
+        		// to give an angle not exceeding 45 degrees (or 0x0FFF after shifting).
+        		// If added with pure unsigned rules, this doesn't hold anymore,
+        		// not even if accounting for overflow.
+                angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
+        		//angle&=0x1FFF;
+                
+              // FIXME: We are accessing finetangent here, the code seems pretty confident
+              // in that angle won't exceed 4K no matter what. But xtoviewangle
+              // alone can yield 8K when shifted.
+              // This usually only overflows if we idclip and look at certain directions 
+        	 // (probably angles get fucked up), however it seems rare enough to just 
+             // "swallow" the exception. You can eliminate it by anding with 0x1FFF if you're so inclined. 
+              
+              // try{ 
               texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
-        	  } catch (ArrayIndexOutOfBoundsException e){
+        	/*  } catch (ArrayIndexOutOfBoundsException e){
         	      System.err.println("Error! Angle "+angle +" rw_centerangle "+ Long.toHexString(rw_centerangle)+"xtoviewangle[rw_x]"+Long.toHexString(xtoviewangle[rw_x]));
         		 // e.printStackTrace();
-        	  }
+        	  }*/
     
               texturecolumn >>= FRACBITS;
               // calculate lighting
@@ -4568,7 +4583,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       // Calc focallength
       //  so FIELDOFVIEW angles covers SCREENWIDTH.
       focallength = FixedDiv (centerxfrac,
-                  finetangent[QUARTERMARK+FIELDOFVIEW/2] );
+                  finetangent[FINEANGLES/4+FIELDOFVIEW/2] );
       
       for (i=0 ; i<FINEANGLES/2 ; i++)
       {
@@ -4580,18 +4595,32 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       {
           t = FixedMul (finetangent[i], focallength);
           t = (centerxfrac - t+FRACUNIT-1)>>FRACBITS;
-
+      //	System.out.println("For "+i+ " "+finetangent[i]+" x " + focallength+" = "+t);
           if (t < -1)
           t = -1;
           else if (t>viewwidth+1)
           t = viewwidth+1;
       }
+      
       viewangletox[i] = t;
       }
       
-      // Scan viewangletox[] to generate xtoviewangle[]:
-      //  xtoviewangle will give the smallest view angle
-      //  that maps to x. 
+      /* Scan viewangletox[] to generate xtoviewangle[]:
+       *  xtoviewangle will give the smallest view angle
+       *  that maps to x.
+       *  
+       *  FIXME: can some angles cause overflows?
+       *  what is the highest angle possibly stored?
+       *  Viewwidth can be as high as the resolution allows
+       *  
+       *  xtoviewangle starts from 90 degrees (apparently),
+       *  decreases, then increases sharply to "negative" values.
+       *  This means it can span the whole 0-8K range when shifted,
+       *  or the very least the high bits can be set. Therefore,
+       *  JUST shifting it 19 bits can yield an 8K range, which will
+       *  overflow fineangles if used directly.
+       *    
+       */  
       for (x=0;x<=viewwidth;x++)
       {
       i = 0;

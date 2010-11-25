@@ -6097,10 +6097,10 @@ mobj_t  thing )
         // because mobj_ts are grouped into mapblocks
         // based on their origin point, and can overlap
         // into adjacent blocks by up to MAXRADIUS units.
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>>MAPBLOCKSHIFT;
+        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
+        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
+        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
+        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
@@ -6108,10 +6108,10 @@ mobj_t  thing )
             return false;
         
         // check lines
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx)>>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx)>>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy)>>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy)>>>MAPBLOCKSHIFT;
+        xl = (tmbbox[BOXLEFT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
+        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
+        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy)>>MAPBLOCKSHIFT;
+        yh = (tmbbox[BOXTOP] - LL.bmaporgy)>>MAPBLOCKSHIFT;
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)

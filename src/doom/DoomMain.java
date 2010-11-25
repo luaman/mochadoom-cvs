@@ -58,7 +58,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.23 2010/11/25 15:59:21 velktron Exp $
+// $Id: DoomMain.java,v 1.24 2010/11/25 20:12:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -73,6 +73,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.24  2010/11/25 20:12:44  velktron
+// Fixed blockmap bug and viewangletox overflow bug.
+//
 // Revision 1.23  2010/11/25 15:59:21  velktron
 // Fixed visplane overflows and findplane blinking.
 //
@@ -176,7 +179,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.23 2010/11/25 15:59:21 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.24 2010/11/25 20:12:44 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -210,9 +213,10 @@ public void ProcessEvents ()
     event_t	ev;
 	
     // IF STORE DEMO, DO NOT ACCEPT INPUT
-    if ( ( gamemode == GameMode_t.commercial )
+
+     if ( ( gamemode == GameMode_t.commercial )
 	 && (W.CheckNumForName("MAP01")<0) )
-      return;
+      return; 
 	
     for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )
     {
@@ -496,7 +500,6 @@ private final void PageTicker ()
 
 private void PageDrawer ()
 {
-	System.out.println("Pagename "+pagename);
     V.DrawPatch (0,0, 0, W.CachePatchName(pagename, PU_CACHE));
 }
 

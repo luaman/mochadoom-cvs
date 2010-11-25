@@ -6,7 +6,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.17 2010/11/22 01:17:16 velktron Exp $
+// $Id: Tables.java,v 1.18 2010/11/25 20:12:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.18  2010/11/25 20:12:44  velktron
+// Fixed blockmap bug and viewangletox overflow bug.
+//
 // Revision 1.17  2010/11/22 01:17:16  velktron
 // Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
 //
@@ -342,6 +345,17 @@ public static final int toBAMIndex(long angle){
     return (int) ((angle&BITS32)>>>ANGLETOFINESHIFT);
 }
 
+/** Converts a long angle to a BAM LUT-ready angle (13 bits, between 0-8192). 
+ *  Cuts away rollover. 
+ *  
+ * @param angle
+ * @return
+ */
+
+public static final int toFineTanIndex(long angle){
+    return (int) ((angle&BITS32)>>>ANGLETOFINESHIFT);
+}
+
 /** Converts an 32-bit int angle to a BAM LUT-ready angle (13 bits, between 0-8192). 
  * 
  * @param angle
@@ -354,7 +368,7 @@ public static final int toBAMIndex(int angle){
 
 /** Add two long angles and correct for overflow */
 
-public static long addAngles(long a, long b) {
+public static final long addAngles(long a, long b) {
     return ((a+b)&BITS32);
 }
 
