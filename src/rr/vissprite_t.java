@@ -6,7 +6,7 @@ package rr;
  * I.e. a sprite object that is partly visible.
  */
 
-public class vissprite_t {
+public class vissprite_t implements Comparable<vissprite_t>{
 
 // Doubly linked list.
 public vissprite_t prev;
@@ -45,5 +45,15 @@ public byte[]   colormap;
 public int pcolormap; */
 
 public int         mobjflags;
+
+/** visspites are sorted by scale */
+
+@Override
+public final int compareTo(vissprite_t o) {
+    // We only really care if it's drawn before. 
+    if (this.scale> o.scale) return 1;
+    if (this.scale< o.scale) return -1;
+    return 0;
+}
 
 }

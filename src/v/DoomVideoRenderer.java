@@ -26,6 +26,16 @@ public interface DoomVideoRenderer {
 
     public void DrawPatchDirect(int x, int y, int scrn, patch_t patch);
 
+    /** V_DrawPatch
+     * Draws a SOLID (non-masked) patch to the screen with integer scaling
+     * m and n.
+     * Useful for stuff such as help screens, titlepic and status bar. Not 
+     * very useful for menus, though.
+     * desttop, dest and source were byte
+     */ 
+
+    public void DrawPatchSolidScaled ( int x, int y,int m, int n, int scrn, patch_t patch );
+    
     // Draw a linear block of pixels into the view buffer.
     public void DrawBlock(int x, int y, int scrn, int width, int height,
             byte[] src);

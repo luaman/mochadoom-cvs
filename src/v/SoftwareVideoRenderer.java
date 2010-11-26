@@ -272,8 +272,200 @@ public abstract class SoftwareVideoRenderer
       
   }
 
+  /** V_DrawPatchSolidScaled
+   * Draws a SOLID (non-masked) patch to the screen with integer scaling
+   * m and n.
+   * Useful for stuff such as help screens, titlepic and status bar. Not 
+   * very useful for menus, though.
+   * desttop, dest and source were byte
+   */ 
+
+  public final void DrawPatchSolidScaled
+  ( int       x,
+  int     y,int m, int n,
+  int     scrn,
+  patch_t patch ) 
+  { 
+
+   column_t   column; 
+   int    desttop;
+   byte[] dest=screens[scrn];
+   int        w; 
+       
+   y =y*n- patch.topoffset; 
+   x =x*m- patch.leftoffset; 
+  if (RANGECHECK) 
+   if (doRangeCheck(x,y,patch,scrn))
+   {
+     System.err.print("Patch at "+x+","+y+" exceeds LFB\n");
+     // No I_Error abort - what is up with TNT.WAD?
+     System.err.print("V_DrawPatch: bad patch (ignored)\n");
+     return;
+   }
+
+   if (scrn==0)
+      this.MarkRect (x, y, patch.width, patch.height); 
+
+       
+   w = patch.width; 
+   desttop = m*x+this.width*y; 
+   // For each column..
+   int destPos;
+   int ptr=0;
+   // x increases by m.
+   
+   // Some unrolling...
+   
+   if (m==2) {
+       //desttop=2*desttop;
+       for (int col=0 ; col<w ; desttop+=2, col++)
+
+       { 
+
+           // This points at a "column" object.     
+           //column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
+           column=patch.columns[col];
+           // For each post...
+           for (int i=0;i<column.posts;i++){
+               // Get pointer to post offset.
+               ptr=column.postofs[i];
+               // Get post delta
+               short delta=column.postdeltas[i];
+               // We skip delta, len and padding.
+               ptr+=3; 
+
+               // Skip transparent rows...
+               if (delta==0xFF) break;
+
+               destPos = desttop+ n*delta*this.width;  
+
+               // These lengths are already correct.
+               for (int j=0;j<column.postlen[i];j++){
+                   dest[destPos] = column.data[ptr++];
+                   dest[destPos+1] = dest[destPos];
+                   destPos += n*this.width;
+               }
+           }
+       }
+   } else  if (m==3) {
+      // desttop=3*desttop;
+       for (int col=0 ; col<w ; desttop+=3, col++)
+
+       { 
+
+           // This points at a "column" object.     
+           //column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
+           column=patch.columns[col];
+           // For each post...
+           for (int i=0;i<column.posts;i++){
+               // Get pointer to post offset.
+               ptr=column.postofs[i];
+               // Get post delta
+               short delta=column.postdeltas[i];
+               // We skip delta, len and padding.
+               ptr+=3; 
+
+               // Skip transparent rows...
+               if (delta==0xFF) break;
+
+               destPos = desttop + n*delta*this.width;  
+
+               // These lengths are already correct.
+               for (int j=0;j<column.postlen[i];j++){
+                   dest[destPos] = column.data[ptr++];
+                   dest[destPos+1] = dest[destPos];
+                   dest[destPos+2] = dest[destPos];
+                   destPos += n*this.width;    
+               }
+               
+           }
+       }
+   }else  if (m==4) {
+           //desttop=4*desttop;
+           for (int col=0 ; col<w ; desttop+=4, col++)
+
+           { 
+
+               // This points at a "column" object.     
+               //column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
+               column=patch.columns[col];
+               // For each post...
+               for (int i=0;i<column.posts;i++){
+                   // Get pointer to post offset.
+                   ptr=column.postofs[i];
+                   // Get post delta
+                   short delta=column.postdeltas[i];
+                   // We skip delta, len and padding.
+                   ptr+=3; 
+
+                   // Skip transparent rows...
+                   if (delta==0xFF) break;
+
+                   destPos = desttop + n*delta*this.width;  
+
+                   // These lengths are already correct.
+                   for (int j=0;j<column.postlen[i];j++){
+                       dest[destPos] = column.data[ptr++];
+                       dest[destPos+1] = dest[destPos];
+                       dest[destPos+2] = dest[destPos];
+                       dest[destPos+3] = dest[destPos];
+                       destPos += n*this.width;
+                   }
+               }
+           }
+       }
+           else  {
+              // desttop=m*desttop;
+               for (int col=0 ; col<w ; desttop+=m, col++)
+
+               { 
+
+                   // This points at a "column" object.     
+                   //column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
+                   column=patch.columns[col];
+                   // For each post...
+                   for (int i=0;i<column.posts;i++){
+                       // Get pointer to post offset.
+                       ptr=column.postofs[i];
+                       // Get post delta
+                       short delta=column.postdeltas[i];
+                       // We skip delta, len and padding.
+                       ptr+=3; 
+
+                       // Skip transparent rows...
+                       if (delta==0xFF) break;
+
+                       destPos = desttop + n*delta*this.width;  
+
+                       // These lengths are already correct.
+                       for (int j=0;j<column.postlen[i];j++){
+                           for (int k=0;k<m;k++)
+                           dest[destPos] = column.data[ptr++];
+                           destPos += n*this.width;
+                       }
+                   }
+               }
+       
+       
+   }
+   
+   
+    scaleSolid(m,n, scrn);  
+  }
   
 
+  protected final void scaleSolid(int m, int n, int screen){
+      int screenwidth=this.getWidth();
+      for (int i=0;i<this.getHeight();i+=n){
+          System.out.println("Line "+i); 
+          for (int j=0;j<n-1;j++){
+              System.out.println( ((i+j)*screenwidth)+"  to "+ ((i+j+1)*screenwidth));
+              System.arraycopy(screens[screen], (i+j)*screenwidth, screens[screen],(i+j+1)*screenwidth,screenwidth);
+          }
+      }
+      
+  }
+  
   protected final boolean doRangeCheck(int x, int y,patch_t patch, int scrn){
     return      (x<0
                   ||x+patch.width >this.width

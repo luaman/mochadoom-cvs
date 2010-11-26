@@ -4350,27 +4350,14 @@ public void DrawMaskedColumn (column_t column)
         // Set pointer inside column to current post's data
         // Remember, it goes {postlen}{postdelta}{pad}[data]{pad} 
         
-        /*System.out.println("Post offset "+i+" = "+column.postofs[i]+ " Post length "+i+" = "+column.postlen[i]);
         dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
-        System.out.println("\tData to draw: "+(dc_yh-dc_yl));
-        System.out.println("\tData left in this post: "+column.postlen[i]);
-        System.out.println("\tBasetexturemid "+Integer.toHexString(basetexturemid));
-        System.out.println("\tcolumn.postdeltas["+i+"] "+column.postdeltas[i]);
-        System.out.println("\tdc_texturemid "+(dc_texturemid>>FRACBITS));*/
         
         // Drawn by either R_DrawColumn
         //  or (SHADOW) R_DrawFuzzColumn.
         dc_source_ofs+=3;
         dc_texheight=0; // killough
-        if (MyThings.shadow){
-            colfunc=DrawFuzzColumn;
-        } else {
-            colfunc=DrawColumn;
-        }
-        try{
+        
          colfunc.invoke();
-        } catch (ArrayIndexOutOfBoundsException e){
-        }
     }
     //column = (column_t *)(  (byte *)column + column.length + 4);
     dc_source_ofs +=column.postlen[i];

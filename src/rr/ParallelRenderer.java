@@ -2225,9 +2225,16 @@ public class ParallelRenderer extends RendererState implements TextureManager {
               // single sided line
               dc_yl = yl;
               dc_yh = yh;
-              dc_texheight = 128;// textureheight[midtexture]>>FRACBITS; // killough
+              
+              dc_texheight = textureheight[midtexture]>>FRACBITS; // killough
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
+
+              
+              // Tutti-frutti effect on short or masked textures.              
+//              dc_texheight = Math.min(textureheight[midtexture],128)>>FRACBITS; // killough
+//              dc_texturemid = rw_midtexturemid;              
+//              dc_source = GetColumn(midtexture,texturecolumn);
 
               StoreRenderingInstruction();
               /*centery, dc_iscale, dc_source_ofs, dc_texturemid, dc_x, dc_yh, dc_yl, 
@@ -3251,7 +3258,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
         
 			 for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
              pln=visplanes[pl];
-            if (DEBUG2) System.out.println(pln);
+            // System.out.println(id +" : "+ pl);
              
          if (pln.minx > pln.maxx)
              continue;
@@ -3850,9 +3857,9 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       //
       // R_NewVisSprite
       //
-      vissprite_t overflowsprite;
+      protected vissprite_t overflowsprite=new vissprite_t();
 
-      public vissprite_t NewVisSprite ()
+      protected vissprite_t NewVisSprite ()
       {
           if (vissprite_p == (MAXVISSPRITES-1))
           return overflowsprite;
@@ -3861,7 +3868,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
           return vissprites[vissprite_p-1];
       }
 
-    private boolean shadow;
+    protected boolean shadow;
 
       /**
        * R_DrawVisSprite
@@ -4284,7 +4291,7 @@ public class ParallelRenderer extends RendererState implements TextureManager {
        * R_SortVisSprites
        */
 
-      public void SortVisSprites ()
+      protected void SortVisSprites ()
       {
           int         count;
           vissprite_t    best;
@@ -4492,17 +4499,22 @@ public class ParallelRenderer extends RendererState implements TextureManager {
       //
       // R_DrawMasked
       //
-      public void DrawMasked ()
+      protected void DrawMasked ()
       {
           vissprite_t    spr;
          int ds;
          drawseg_t dss;
           
          // Well, it sorts visspite objects.
-          SortVisSprites ();
+         // It actually IS faster to sort with comparators, but you need to go into NUTS.WAD-like wads. 
+         // numbers.
+         Arrays.sort(vissprites,0,vissprite_p);
+         
+         //pQuickSprite.sort(vissprites);
+         //SortVisSprites ();
 
           // Sprite "0" not visible?
-          if (vissprite_p > 0)
+       /*  if (vissprite_p > 0)
           {
           // draw all vissprites back to front
           for (spr = MyThings.vsprsortedhead.next ;
@@ -4512,8 +4524,14 @@ public class ParallelRenderer extends RendererState implements TextureManager {
               
               DrawSprite (spr);
           }
-          }
+          }*/
           
+         
+         for (int i=0;i<vissprite_p;i++){
+             DrawSprite (vissprites[i]);
+         }
+             
+         
           // render any remaining masked mid textures
           for (ds=ds_p-1 ; ds >= 0 ; ds--) {
               dss=drawsegs[ds];

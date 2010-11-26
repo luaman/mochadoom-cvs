@@ -50,7 +50,7 @@ public class AWTRenderViewTester {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad","weird.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"/*,"sprites.wad"*/});
     
     System.out.println("Total lumps read: "+W.numlumps);
 
@@ -126,7 +126,7 @@ public class AWTRenderViewTester {
     AM.updateStatus(DM);
     DM.R.Init();
     DM.P.Init();
-    LL.SetupLevel(1, 3, 0, skill_t.sk_hard);
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     ST.Init();
     M.Init();
     
@@ -144,7 +144,7 @@ public class AWTRenderViewTester {
     DM.R.DrawViewBorder();
     
     // Center on "bloody mess" in E1M1
-    DM.players[0].mo.y+=420<<16;
+    //DM.players[0].mo.y+=420<<16;
     //DM.players[0].mo.x+=1650<<16;
         int pl=0;
         for (int i=0;i<20000;i++){
@@ -172,7 +172,7 @@ public class AWTRenderViewTester {
         AM.Ticker();
         //AM.Drawer();
         ST.Ticker();        
-        DM.players[0].viewz=(80)<<16;
+        DM.players[0].viewz=(40)<<16;
         //DM.players[0].mo.x=ox+(int) ((12864<<16)*Math.cos(2*Math.PI*i/500.0));
         //DM.players[0].mo.y=oy+(int) ((64<<16)*Math.sin(2*Math.PI*i/500.0));
         //DM.players[0].mo.angle= ((long)(0xFFFFFFFFL*(Math.atan2(DM.players[0].mo.y-oy,DM.players[0].mo.x-ox)+Math.PI)/(2*Math.PI)))&0xFFFFFFFFL;
