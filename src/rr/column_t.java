@@ -61,7 +61,7 @@ public class column_t implements CacheableDoomObject, ReadableDoomObject{
 
 	        // Read one more byte...this should be the post length.
 	        postlen=(short)C2JUtils.toUnsignedByte(buf.get());
-	        guesspostlens[postno++]=(short) (1+postlen);
+	        guesspostlens[postno++]=(short) (postlen);
 	        
 	        // So, we already read 2 bytes (topdelta + length)
 	        // Two further bytes are padding so we can safely skip 2+2+postlen bytes until the next post

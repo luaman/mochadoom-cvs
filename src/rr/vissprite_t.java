@@ -44,7 +44,7 @@ public byte[]   colormap;
 /* pointer into colormap
 public int pcolormap; */
 
-public int         mobjflags;
+public int mobjflags;
 
 /** visspites are sorted by scale */
 
@@ -54,6 +54,10 @@ public final int compareTo(vissprite_t o) {
     if (this.scale> o.scale) return 1;
     if (this.scale< o.scale) return -1;
     return 0;
+}
+
+public String toString(){    
+    return ("Effective drawing position x1: "+x1 + " x2: "+ x2 +" scale "+(scale/65535.0) +" iscale "+(xiscale/65535.0));
 }
 
 }

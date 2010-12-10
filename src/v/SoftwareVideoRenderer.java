@@ -287,6 +287,11 @@ public abstract class SoftwareVideoRenderer
   patch_t patch ) 
   { 
 
+   if ((m==1)&&(n==1)){
+       DrawPatch(x,y,scrn,patch);
+       return;
+   }
+      
    column_t   column; 
    int    desttop;
    byte[] dest=screens[scrn];

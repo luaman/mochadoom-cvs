@@ -30,7 +30,8 @@ public class state_t {
          *  We can't have proper "function pointers" in java without either losing a LOT
          *  of speed (through reflection) or cluttering syntax and heap significantly
          *  (callback objects, which also need to be aware of context).
-         *  Therefore, I decided to implement an "action dispatcher". There, I said it.
+         *  Therefore, I decided to implement an "action dispatcher".
+         *  This a
          *  
          */
         public think_t         action;
@@ -38,4 +39,18 @@ public class state_t {
         public long          misc1, misc2;
         /** relative index in state array. Needed sometimes. */
         public int id;
+        
+        public String toString(){
+            sb.setLength(0);
+            sb.append(this.getClass().getName());
+            sb.append(" sprite ");
+            sb.append(this.sprite.name());
+            sb.append(" frame ");
+            sb.append(this.frame);
+
+            return sb.toString();
+            
+        }
+        
+        protected static StringBuilder sb=new StringBuilder();
 }

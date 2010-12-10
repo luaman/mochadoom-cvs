@@ -1914,17 +1914,23 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
   {
       statenum_t  newstate;
       
+      System.out.println("Trying to raise weapon");
+      
+      System.out.println(player.readyweapon + " height: "+psp.sy);
       psp.sy -= RAISESPEED;
 
-      if (psp.sy > WEAPONTOP )
+      if (psp.sy > WEAPONTOP ) {
+      System.out.println("Not on top yet, exit and repeat.");
       return;
+      }
       
       psp.sy = WEAPONTOP;
       
       // The weapon has been raised all the way,
       //  so change to the ready state.
       newstate = weaponinfo[player.readyweapon.ordinal()].readystate;
-
+      System.out.println("Weapon raised, setting new state.");
+      
       player.SetPsprite (ps_weapon, newstate);
   }
 
@@ -2101,17 +2107,20 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       long an;
       
       // see which target is to be aimed at
+      // FIXME: angle can already be negative here.
+      // Not a problem if it's just moving about (accumulation will work)
+      // but it needs to be sanitized before being used in any function.
       an = mo.angle;
-      bulletslope = AimLineAttack (mo, an, 16*64*FRACUNIT);
+      bulletslope = AimLineAttack (mo, an&BITS32, 16*64*FRACUNIT);
 
       if (!eval(linetarget))
       {
       an += 1<<26;
-      bulletslope = AimLineAttack (mo, an, 16*64*FRACUNIT);
+      bulletslope = AimLineAttack (mo, an&BITS32, 16*64*FRACUNIT);
       if (!eval(linetarget))
       {
           an -= 2<<26;
-          bulletslope = AimLineAttack (mo, an, 16*64*FRACUNIT);
+          bulletslope = AimLineAttack (mo, an&BITS32, 16*64*FRACUNIT);
       }
       }
   }
@@ -6649,7 +6658,7 @@ mobj_t  thing )
     {
         int x2,y2;
         
-        angle >>= ANGLETOFINESHIFT;
+        angle >>>= ANGLETOFINESHIFT;
         shootthing = t1;
         
         x2 = t1.x + (distance>>FRACBITS)*finecosine[(int) angle];
@@ -6697,11 +6706,11 @@ mobj_t  thing )
     {
         int x2,y2;
         
-        angle >>>= ANGLETOFINESHIFT;
+       // angle >>>= ANGLETOFINESHIFT;
         shootthing = t1;
         la_damage = damage;
-        x2 = t1.x + (distance>>FRACBITS)*finecosine[(int) angle];
-        y2 = t1.y + (distance>>FRACBITS)*finesine[(int) angle];
+        x2 = t1.x + (distance>>FRACBITS)*finecosine(angle);
+        y2 = t1.y + (distance>>FRACBITS)*finesine(angle);
         shootz = t1.z + (t1.height>>1) + 8*FRACUNIT;
         attackrange = distance;
         aimslope = slope;
@@ -8029,6 +8038,7 @@ public void updateStatus(DoomContext DC) {
         this.PEV=new Plats();
         this.ST= (StatusBar) DC.ST;
         this.AM=DC.AM;
+        this.EN=new Enemies();
         this.A=this;
         this.HU=DC.HU;
         this.TM=DC.TM;

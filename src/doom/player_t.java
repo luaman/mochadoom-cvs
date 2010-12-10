@@ -788,11 +788,15 @@ SetPsprite
     
     // Call action routine.
     // Modified handling.
+    try {
     if (state.action.getType()==acp2)
     {
         P.A.dispatch(state.action,this, psp);
         if (psp.state==null)
         break;
+    }
+    } catch (java.lang.NullPointerException e){
+        System.out.println("ERROR: action for state "+state+ " is null!");
     }
     
     newstate = psp.state.nextstate;
@@ -812,17 +816,18 @@ SetPsprite
     
     public int identify(){
         
+        
         if (id>=0) return id;
-            
+        int i;    
         // Let's say that we don't know jack.
-        id=-1;
-            for (int i=0;i<DM.players.length;i++){
-                if (this==DM.players[i]) id=i;
-            }
-        return id;
+            for (i=0;i<DM.players.length;i++)
+                if (this==DM.players[i]) break;
+            
+            return id=i;
+        
     }
     
-    private int id;
+    private int id=-1;
     
     private boolean onground;
 
@@ -1117,8 +1122,12 @@ SetPsprite
      // The actual changing of the weapon is done
      //  when the weapon psprite can do it
      //  (read: not in the middle of an attack).
+     System.out.println("Weapon change detected, attempting to perform");
+         
      newweapon = weapontype_t.values()[(cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT];
-     
+
+     // If chainsaw is available, it won't change back to the fist 
+     // unless player also has berserk.
      if (newweapon == weapontype_t.wp_fist
          && player.weaponowned[weapontype_t.wp_chainsaw.ordinal()]
          && !(player.readyweapon == weapontype_t.wp_chainsaw
@@ -1126,6 +1135,8 @@ SetPsprite
      {
          newweapon = weapontype_t.wp_chainsaw;
      }
+     
+     // Will switch between SG and SSG in Doom 2.
      
      if ( (DM.gamemode == GameMode_t.commercial)
          && newweapon == weapontype_t.wp_shotgun 

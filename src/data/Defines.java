@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.27 2010/11/26 17:16:48 velktron Exp $
+// $Id: Defines.java,v 1.28 2010/12/10 17:38:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -102,25 +102,21 @@ public static final boolean RANGECHECK=false;
 //#define SNDSERV  1
 //#define SNDINTR  1
 
+//It is educational but futile to change this
+//scaling e.g. to 2. Drawing of status bar,
+//menues etc. is tied to the scale implied
+//by the graphics.
 
-// This one switches between MIT SHM (no proper mouse)
-// and XFree86 DGA (mickey sampling). The original
-// linuxdoom used SHM, which is default.
-//#define X11_DGA       1
-
+public static float SCREEN_MUL =(float) 2.5;
+public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 //
 // For resize of screen, at start of game.
 // It will not work dynamically, see visplanes.
 //
 public static int BASE_WIDTH =     320;
+public static int BASE_HEIGHT=     (int) (INV_ASPECT_RATIO*320); // 200
 
-// It is educational but futile to change this
-//  scaling e.g. to 2. Drawing of status bar,
-//  menues etc. is tied to the scale implied
-//  by the graphics.
-public static float SCREEN_MUL =(float) 3.0;
-public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 // Defines suck. C sucks.
 // C++ might sucks for OOP, but it sure is a better C.
@@ -128,7 +124,15 @@ public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 public static final int SCREENWIDTH = (int) (BASE_WIDTH*SCREEN_MUL);
 //SCREEN_MUL*BASE_WIDTH //320
-public static final int SCREENHEIGHT= (int) (SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO); //200
+public static final int SCREENHEIGHT= (int) (SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO);
+
+public static final int BEST_X_SCALE = (int) (SCREENWIDTH/BASE_WIDTH);
+
+public static final int BEST_Y_SCALE = (int) (SCREENHEIGHT/BASE_HEIGHT);
+
+/** Safest global scaling for fixed stuff like menus, titlepic etc */
+
+public static final int SAFE_SCALE = Math.min(BEST_X_SCALE, BEST_Y_SCALE);
 
 // State updates, number of tics / second.
 public static final int TICRATE = 35;
@@ -1692,6 +1696,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.27 2010/11/26 17:16:48 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.28 2010/12/10 17:38:56 velktron Exp $";
 }
 

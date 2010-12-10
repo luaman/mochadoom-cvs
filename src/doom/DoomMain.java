@@ -37,6 +37,7 @@ import static data.Defines.NORMALUNIX;
 import static data.Defines.VERSION;
 import rr.ParallelRenderer;
 import rr.TextureManager;
+import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.DummySoundDriver;
 import st.StatusBar;
@@ -58,7 +59,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.25 2010/11/26 17:16:48 velktron Exp $
+// $Id: DoomMain.java,v 1.26 2010/12/10 17:38:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -73,6 +74,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.26  2010/12/10 17:38:57  velktron
+// pspritescale fixed, weapon actions won't crash (but not work either).
+//
 // Revision 1.25  2010/11/26 17:16:48  velktron
 // Sprite sorting, solid block drawing.
 //
@@ -182,7 +186,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.25 2010/11/26 17:16:48 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.26 2010/12/10 17:38:57 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -503,7 +507,7 @@ private final void PageTicker ()
 
 private void PageDrawer ()
 {
-    V.DrawPatchSolidScaled (0,0, 3, 2,0,W.CachePatchName(pagename, PU_CACHE));
+    V.DrawPatchSolidScaled (0,0, SAFE_SCALE, SAFE_SCALE,0,W.CachePatchName(pagename, PU_CACHE));
 }
 
 
@@ -576,7 +580,7 @@ public void DoAdvanceDemo ()
 	    if ( gamemode == GameMode_t.retail )
 	      pagename = "CREDIT";
 	    else
-	      pagename = "HELP2";
+	      pagename = "HELP1";
 	}
 	break;
       case 5:
@@ -1190,6 +1194,7 @@ public void Start ()
 	};
 	int i;
 	
+	// Oh yes I can.
 	if ( gamemode == GameMode_t.shareware)
 	    System.out.println("\nYou cannot -file with the shareware version. Register!");
 
@@ -1341,12 +1346,16 @@ public void Start ()
     DoomLoop ();  // never returns
 }
 
+// Used in BuildTiccmd.
+protected ticcmd_t   base=new ticcmd_t();
+
 /**
  * G_BuildTiccmd
  * Builds a ticcmd from all of the available inputs
  * or reads it from the demo buffer. 
  * If recording a demo, write it out 
  */ 
+
  private void BuildTiccmd (ticcmd_t cmd) 
  { 
      int     i; 
@@ -1356,7 +1365,7 @@ public void Start ()
      int     tspeed; 
      int     forward;
      int     side;
-     ticcmd_t   base=new ticcmd_t();
+     
 
      //base = I_BaseTiccmd ();     // empty, or external driver
            // memcpy (cmd,base,sizeof(*cmd));
@@ -1420,12 +1429,12 @@ public void Start ()
   
      if (gamekeydown[key_up]) 
      {
-     System.err.print("up\n");
+     //System.err.print("up\n");
      forward += forwardmove[speed]; 
      }
      if (gamekeydown[key_down]) 
      {
-     System.err.print("down\n");
+     //System.err.print("down\n");
      forward -= forwardmove[speed]; 
      }
      if (joyymove < 0) 
@@ -1455,6 +1464,7 @@ public void Start ()
      for (i=0 ; i<NUMWEAPONS-1 ; i++)        
      if (gamekeydown['1'+i]) 
      { 
+         System.out.println("Attempting weapon change (building ticcmd)");
          cmd.buttons |= BT_CHANGE; 
          cmd.buttons |= i<<BT_WEAPONSHIFT; 
          break; 

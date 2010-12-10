@@ -6,7 +6,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.18 2010/11/25 20:12:44 velktron Exp $
+// $Id: Tables.java,v 1.19 2010/12/10 17:38:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.19  2010/12/10 17:38:56  velktron
+// pspritescale fixed, weapon actions won't crash (but not work either).
+//
 // Revision 1.18  2010/11/25 20:12:44  velktron
 // Fixed blockmap bug and viewangletox overflow bug.
 //
@@ -269,10 +272,10 @@ public static final int finesine(int angle){
  * @return
  */
 public static final int finesine(long angle){
-    return finesine[(int) ((angle>>>ANGLETOFINESHIFT)&BITS32)];
+    return finesine[(int) ((angle&BITS32)>>>ANGLETOFINESHIFT)];
 }
 
-/** Use this to get a value from the finecosine table. It will be automatically shifte, 
+/** Use this to get a value from the finecosine table. It will be automatically shifted, 
  * Equivalent to finecosine[angle>>>ANGLETOFINESHIFT]
  * @param angle in BAM units
  * @return
@@ -284,12 +287,12 @@ public static final int finecosine(int angle){
 /** Use this to get a value from the finecosine table. 
  * It will automatically shift, apply rollover module and cast.
  *  
- * Equivalent to finecosine[(int) ((angle>>ANGLETOFINESHIFT)%ANGLEMODULE)]
+ * Equivalent to finecosine[(int) ((angle&BITS32)>>>ANGLETOFINESHIFT)]
  * @param angle in BAM units
  * @return
  */
 public static final int finecosine(long angle){
-    return finecosine[(int) ((angle>>>ANGLETOFINESHIFT)%ANGLEMODULE)];
+    return finecosine[(int) ((angle&BITS32)>>>ANGLETOFINESHIFT)];
 }
 
 /** Compare BAM angles in 32-bit format 
@@ -380,7 +383,7 @@ public static final long addAngles(long a, long b) {
  *    
  *  The code has been thoroughly checked in both Sun's JDK and GCC and was
  *  found to, indeed, produce the same values found in the finesine/finecosine
- *  and finetangent tables.
+ *  and finetangent tables, at least on Intel.
  *  
  *  The "tantoangle" table is also generated procedurally, but since there 
  *  was no "dead code" to build upon, it was recreated through reverse

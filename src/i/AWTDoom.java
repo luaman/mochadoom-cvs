@@ -94,9 +94,8 @@ import doom.evtype_t;
  */
 public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener, DoomVideoInterface,DoomEventInterface{
 
-     /**
-	 * 
-	 */
+
+    private static final long serialVersionUID = 3118508722502652276L;
 	
 	// Must be aware of "Doom" so we can pass it event messages inside a crude queue.
 	public DoomMain DM;
@@ -527,8 +526,8 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		multiply = 4;
 
       Dimension size = new Dimension();
-      size.width = width * multiply;
-      size.height = 48+height * multiply;
+      size.width = 8+width * multiply;
+      size.height = 54+(height * multiply);
 
       // Create AWT Robot for forcing mouse
       try {
@@ -586,7 +585,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	  try{
       drawhere=new Canvas();
       drawhere.setSize(size);
-      drawhere.setBounds(0, 0, drawhere.getWidth(),drawhere.getHeight());
+      drawhere.setBounds(0, 0, drawhere.getWidth()-1,drawhere.getHeight()-1);
       drawhere.setBackground(Color.black);
       
       // AWT: Add canvas to component.

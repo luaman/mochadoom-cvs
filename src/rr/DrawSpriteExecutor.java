@@ -15,7 +15,7 @@ import java.util.concurrent.CyclicBarrier;
  *
  */
 
-public class RenderWallExecutor implements Runnable {
+public class DrawSpriteExecutor implements Runnable {
     
     private CyclicBarrier barrier;
     private RenderWallInstruction[] RWI;
@@ -23,9 +23,19 @@ public class RenderWallExecutor implements Runnable {
     private byte[] screen;
     private int start, end;
     
+    int centery;
+    int dc_iscale;
+    int dc_source_ofs;
+    int dc_texturemid;
+    int dc_x;
+    int dc_yh;
+    int dc_yl;
+    int dc_texheight;
+    int[] columnofs;
+    byte[] dc_colormap;
+    byte[] dc_source;
     
-    
-    public RenderWallExecutor(int[] ylookup, byte[] screen, RenderWallInstruction[] RWI, CyclicBarrier barrier){
+    public DrawSpriteExecutor(int[] ylookup, byte[] screen, RenderWallInstruction[] RWI, CyclicBarrier barrier){
         this.ylookup=ylookup;
         this.screen=screen;
         this.RWI=RWI;
@@ -39,17 +49,6 @@ public class RenderWallExecutor implements Runnable {
     
     public void run(){
 
-        int centery;
-        int dc_iscale;
-        int dc_source_ofs;
-        int dc_texturemid;
-        int dc_x;
-        int dc_yh;
-        int dc_yl;
-        int dc_texheight;
-        int[] columnofs;
-        byte[] dc_colormap;
-        byte[] dc_source;
 
         //System.out.println("Wall executor from "+start +" to "+ end);
         

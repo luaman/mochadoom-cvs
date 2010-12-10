@@ -8,7 +8,7 @@ import m.random;
 
 public class Wiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.3 2010/09/23 15:11:57 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.4 2010/12/10 17:38:57 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -262,18 +262,18 @@ public class Wiper {
             ps = i*height+y[i];// &((short *)wipe_scr_end)[i*height+y[i]];
             pd = y[i]*width+i;//&((short *)wipe_scr)[y[i]*width+i];
             idx = 0;
-            for (int j=dy;j>4;j-=4)
+            for (int j=dy;j>2;j-=2)
             {
                 //if (pd+idx>width*height) break;
                 /*d[pd+idx] = s[ps++];
                 idx += width;*/
                 d[pd+idx] = s[ps];
                 d[pd+idx+width] = s[ps+1];
-                d[pd+idx+w2] = s[ps+2];
-                d[pd+idx+w3] = s[ps+3];                
-                idx += w4;
+                //d[pd+idx+w2] = s[ps+2];
+                //d[pd+idx+w3] = s[ps+3];                
+                idx += w2;
                 //idx+=width;
-                ps+=4;
+                ps+=2;
 
             }
             y[i] += dy;
@@ -282,15 +282,15 @@ public class Wiper {
             pd = y[i]*width+i; //&((short *)wipe_scr)[y[i]*width+i];
             idx = 0;
 
-            for (int j=height-y[i];j>4;j-=4)
+            for (int j=height-y[i];j>2;j-=2)
             {
                 d[pd+idx] = s[ps];
                 d[pd+idx+width] = s[ps+1];
-                d[pd+idx+w2] = s[ps+2];
-                d[pd+idx+w3] = s[ps+3];                
-                idx += w4;
+                //d[pd+idx+w2] = s[ps+2];
+                //d[pd+idx+w3] = s[ps+3];                
+                idx += w2;
                 //idx+=width;
-                ps+=4;
+                ps+=2;
             }
             done = false;
             }

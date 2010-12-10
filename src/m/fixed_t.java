@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.10 2010/11/11 23:39:53 velktron Exp $
+// $Id: fixed_t.java,v 1.11 2010/12/10 17:38:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.11  2010/12/10 17:38:57  velktron
+// pspritescale fixed, weapon actions won't crash (but not work either).
+//
 // Revision 1.10  2010/11/11 23:39:53  velktron
 // Fixed texture alignment bug
 //
@@ -71,7 +74,7 @@ package m;
 //#include "i_system.h"
 
 
-public class fixed_t implements Comparable{
+public class fixed_t implements Comparable<fixed_t>{
 
     public static final int FRACBITS =       16;
     public static final int FRACUNIT =       (1<<FRACBITS);
@@ -110,7 +113,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.10 2010/11/11 23:39:53 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.11 2010/12/10 17:38:57 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -162,7 +165,7 @@ public static int FixedMulInt
  * @param c
  */
 
-public static void FixedMul
+public final static void FixedMul
 ( fixed_t   a,
         fixed_t   b,
         fixed_t c)
@@ -178,14 +181,14 @@ public static void FixedMul
  * @param c
  */
 
-public void FixedMul
+public final void FixedMul
 ( fixed_t   a)
 {
     this.set((int)(((long) a.val * (long ) this.val) >> FRACBITS));
 }
 
 
-public static int
+public final static int
 FixedDiv
 ( int   a,
   int   b )
@@ -196,18 +199,18 @@ FixedDiv
 }
 
 
-public static int
+public final static int
 FixedDiv2
 ( int   a,
   int   b )
 {
 
     
-    /*int c;
+    int c;
     c = (int)(((long)a<<16) / (long)b);
-    return c;*/
+    return c;
     
-    
+    /*
     double c;
 
     c = ((double)a) / ((double)b) * FRACUNIT;
@@ -215,11 +218,11 @@ FixedDiv2
   if (c >= 2147483648.0 || c < -2147483648.0)
       throw new ArithmeticException("FixedDiv: divide by zero");
  
- return (int)c;
+ return (int)c;*/
 }
 
 @Override
-public int compareTo(Object o) {
+public int compareTo(fixed_t o) {
     if (o.getClass()!=fixed_t.class) return -1;
     if (this.val==((fixed_t)(o)).val) return 0;
     if (this.val>((fixed_t)(o)).val) return 1;

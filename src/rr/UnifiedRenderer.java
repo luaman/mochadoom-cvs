@@ -3,9 +3,6 @@ package rr;
 import static utils.C2JUtils.toUnsignedByte;
 import static data.Defines.*;
 import static data.Limits.*;
-import static doom.player_t.*;
-
-import static p.mobj_t.*;
 import static data.Tables.*;
 import static m.fixed_t.*;
 import static m.BBox.*;
@@ -14,18 +11,10 @@ import static m.BBox.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
-
-import m.fixed_t;
-
 import p.mobj_t;
-import p.pspdef_t;
 import utils.C2JUtils;
 import w.DoomBuffer;
-import w.name8;
-import data.Defines.GameMode_t;
 import data.Tables;
-import doom.DoomContext;
 import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
@@ -33,10 +22,11 @@ import doom.thinker_t;
 
 public class UnifiedRenderer extends RendererState implements TextureManager {
     
-    private static final boolean DEBUG=false;
-    private static final boolean DEBUG2=false;
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
     private static int[]           BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
+    
+    protected BSP MyBSP;
+    protected Planes MyPlanes;
     
     
     public UnifiedRenderer(DoomMain DM) {
@@ -46,7 +36,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
       this.MySegs=new Segs();
       this.MyBSP=new BSP();
       this.MyPlanes=new Planes();
-      this.MyThings=new Things();
+      this.MyThings=(Things) new Things();
       // We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
       this.V=DM.V;
       this.I=DM.I;
@@ -63,260 +53,13 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
     
     
     public Things getThings(){
-        return this.MyThings;
+        return (Things) this.MyThings;
     }
     
-    ///////////////// COLORMAPS ///////////////////////////////
-    
-    /** use paired with dcto */
-    byte[] dc_translation;
-    /** DC Translation offset */
-    int dcto;
 
-    /** used paired with tto */
-    byte[] translationtables;
-    /** translation tables offset */
-    int tto;
     
     
-    ///////////////// COMMON RENDERING GLOBALS ////////////////
-    
-    /* ON COLORMAPS: they are supposed to be "from this color to some other color" mappings.
-     * "Color" means an index in the palette, like those used in screen. Their contents
-     * should be bytes, although their indexing has to be "unsigned bytes" the very least.
-     * 
-     * Lengths: for some reas
-     * 
-     */
-    
-    
-    /** "peg" this to the one from RendererData */
-    byte[][] colormaps;
-    
-    //// FROM SEGS ////
-    /** angle_t, used after adding ANG90 in StoreWallRange */
-    long     rw_normalangle;
-    
- // OPTIMIZE: closed two sided lines as single sided
-
-    /** True if any of the segs textures might be visible. */
-    boolean     segtextured;    
-
-    /** False if the back side is the same plane. */
-    boolean     markfloor, markceiling;
-
-    boolean     maskedtexture;
-    int     toptexture;
-    int     bottomtexture;
-    int     midtexture;
-
-    /** angle to line origin */
-    long     rw_angle1;  
-
-    //
-    // regular wall
-    //
-    int     rw_x;
-    int     rw_stopx;
-    long     rw_centerangle; // angle_t
-    /** fixed_t */
-    int     rw_offset,rw_distance,rw_scale,
-    rw_scalestep,rw_midtexturemid,rw_toptexturemid,rw_bottomtexturemid;
-
-    int     worldtop;
-    int     worldbottom;
-    int     worldhigh;
-    int     worldlow;
-
-    /** fixed_t */
-    int     pixhigh,pixlow,pixhighstep,pixlowstep,
-    topfrac,    topstep,bottomfrac, bottomstep;
-
-    /** lighttable_t** */
-    byte[][]   walllights;
-
-    short[]     maskedtexturecol;
-    int pmaskedtexturecol=0;
-        
-    ///// FROM BSP /////////
-    
-    /** pointer to drawsegs */
-    public int   ds_p;
-    
-    public drawseg_t[]    drawsegs;
-
-    /** The sectors of the line currently being considered */
-    public sector_t    frontsector,backsector;
-
-    public seg_t       curline;
-    public side_t      sidedef;
-    public line_t      linedef;
-    
-    
-    ///// FROM R_DATA, R_MAIN ////
-    
-    ///// FROM R_DRAW //////////
-    
-    /** OK< this is supposed to "peg" into screen buffer 0. It will work AS LONG AS SOMEONE FUCKING ACTUALLY SETS IT !!!! */
-    byte[] screen;
-
-    // status bar height at bottom of screen
-    public static final int SBARHEIGHT = 32;
-
-    private static final boolean RANGECHECK = false;
-
-
-    byte[] viewimage;
-
-     /** These are actually offsets inside screen 0 (or any screen). Therefore anything using
-     * them should "draw" inside screen 0 */
-    int[] ylookup = new int[MAXHEIGHT];
-
-    /** Columns offset to set where?! */
-    int[] columnofs = new int[MAXWIDTH];
-
-    /** Color tables for different players,
-       translate a limited part to another
-       (color ramps used for suit colors).
-       */
-    
-    byte[][] translations = new byte[3][256];
-    
-    /** MAES: this was a typedef for unsigned bytes, called "lighttable_t". It makes more sense
-     * to make it primitive, since it's performance-critical in the renderer. Now, whether this should be made
-     * bytes or shorts or chars is debatable.
-     */
-    byte[] dc_colormap;
-    
-    /** Adapted from R. Killough's Boom code. Used to accelerate drawing of power-of-two textures.
-     *  
-     */
-    int dc_texheight;
-    
-    /** Offset. use as dc_colormap[dco+<shit>]. Also, when you set dc_colormap = crap[index],
-     *  set dc_colormap=crap and  dco=index */
-    int dco;
-
-    int dc_x;
-
-    int dc_yl;
-
-    int dc_yh;
-
-    /** fixed_t */
-    int dc_iscale;
-
-    /** fixed_t */
-    int dc_texturemid;
-
-    /** first pixel in a column (possibly virtual). Set dc_source_ofs to simulate pointer aliasing */
-    byte[] dc_source;
-    /** when passing dc_source around, also set this */ 
-    int dc_source_ofs;
-    
-    // byte[] dc_data;
-
-    // just for profiling
-    int dccount;
-    
-    //
-    // Lighting LUT.
-    // Used for z-depth cuing per column/row,
-    //  and other lighting effects (sector ambient, flash).
-    //
-
-    // Lighting constants.
-    // Now why not 32 levels here?
-    public static final int LIGHTLEVELS=16;
-    public static final int LIGHTSEGSHIFT=4;
-
-    public static final int MAXLIGHTSCALE=       48;
-    public static final int LIGHTSCALESHIFT =    12;
-    public static final int MAXLIGHTZ      =    128;
-    public static final int LIGHTZSHIFT    = 20;
-
-   /** Fineangles in the SCREENWIDTH wide window. */
-   public static final int FIELDOFVIEW   =   FINEANGLES/4;   
-   
-   /** Use in conjunction with pfixedcolormap */
-   byte[]      fixedcolormap;
-   /** Use in conjunction with fixedcolormap[] */
-   int pfixedcolormap;
-   //lighttable_t[][]  walllights;
-
-   public int          centerx;
-   public int          centery;
-
-   /** Used to determind the view center and projection in view units fixed_t */
-   public int centerxfrac,centeryfrac, projection;
-
-   /** just for profiling purposes */
-   public  int         framecount; 
-
-   public  int         sscount;
-   public  int         linecount;
-   public  int         loopcount;
-
-   /** fixed_t */
-   public  int         viewx, viewy,viewz;
-
-   //MAES: an exception to strict type safety. These are used only in here, anyway (?) and have no special functions.
-   //Plus I must use them as indexes. angle_t
-   public long  viewangle;
-
-   /** fixed */
-   public int          viewcos,viewsin;
-
-   public player_t     viewplayer;
-
-   // 0 = high, 1 = low. Normally only the menu and the interface can change that.
-   public int          detailshift;    
-
-   //
-   // precalculated math tables
-   //
-   private  long           clipangle;
-   
-   // Set to 2*clipangle later.
-   private  long CLIPANGLE2;
-
-   // The viewangletox[viewangle + FINEANGLES/4] lookup
-   // maps the visible view angles to screen X coordinates,
-   // flattening the arc to a flat projection plane.
-   // There will be many angles mapped to the same X. 
-
-   public final int[]         viewangletox=new int[FINEANGLES/2];
-
-   /** The xtoviewangleangle[] table maps a screen pixel
-    * to the lowest viewangle that maps back to x ranges
-    * from clipangle to -clipangle. */
-   public final long[]         xtoviewangle=new long[SCREENWIDTH+1];
-
-
-   // UNUSED.
-   // The finetangentgent[angle+FINEANGLES/4] table
-   // holds the fixed_t tangent values for view angles,
-   // ranging from MININT to 0 to MAXINT.
-   // fixed_t      finetangent[FINEANGLES/2];
-
-   // fixed_t      finesine[5*FINEANGLES/4];
-   // MAES: uh oh. So now all these ints must become finesines? fuck that.
-   // Also wtf @ this hack....this points to approx 1/4th of the finesine table, but what happens if I read past it?
-   // int[]        finecosine = finesine[FINEANGLES/4];
-
-   /* MAES: what's going on with light tables here. OK...so these should be
-    * "unsigned bytes", since, after all, they'll be used as pointers inside an
-    * array to finally pick a color, so they should be expanded to shorts.
-    * 
-    */
-   
-   
-   public byte[][][]     scalelight=new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
-   public byte[][]       scalelightfixed=new byte[MAXLIGHTSCALE][];
-   public byte[][][]     zlight=new byte[LIGHTLEVELS][MAXLIGHTZ][];
-
-   // bumped light from gun blasts
-   public static int           extralight;         
+ 
 
    /* MAES: Uhm...
 
@@ -327,21 +70,6 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
    void (*spanfunc) (void);
    */
 
-   // Fuck that shit. Amma gonna do it the fastest way possible.
-   
-   
-   protected colfunc_t colfunc;
-   protected colfunc_t basecolfunc;
-   protected colfunc_t fuzzcolfunc;
-   protected colfunc_t transcolfunc;
-   protected colfunc_t spanfunc;
-
-   protected colfunc_t DrawTranslatedColumn;
-   protected colfunc_t DrawFuzzColumn;
-   protected colfunc_t DrawColumnLow;
-   protected colfunc_t DrawColumn;
-   /** to be set in UnifiedRenderer */
-   protected colfunc_t DrawSpan,DrawSpanLow;
    
    class R_DrawTranslatedColumn implements colfunc_t{
 
@@ -798,78 +526,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
 
    //OPTIMIZE: closed two sided lines as single sided
 
-   // MAES: Shit taken from things
 
-
-   public static final int MINZ=(FRACUNIT*4);
-   public static final int BASEYCENTER     =   100;
-
-   //
-   // Sprite rotation 0 is facing the viewer,
-   //  rotation 1 is one angle turn CLOCKWISE around the axis.
-   // This is not the same as the angle,
-   //  which increases counter clockwise (protractor).
-   // There was a lot of stuff grabbed wrong, so I changed it...
-   //
-
-   /** fixed_t */
-   int     pspritescale,pspriteiscale;
-
-   lighttable_t[][]    spritelights;
-    
-   /** constant arrays
-    *  used for psprite clipping and initializing clipping 
-    */
-   short[]     negonearray=new short[SCREENWIDTH];
-   short[]     screenheightarray=new short[SCREENWIDTH];
-
-   int     spryscale;
-   int     sprtopscreen;
-   short[]      mfloorclip;
-   int p_mfloorclip;
-   short[]      mceilingclip;
-   int p_mceilingclip;
-   
-   //
-   // INITIALIZATION FUNCTIONS
-   //
-
-   /** variables used to look up
-     *    and range check thing_t sprites patches
-     */
-   public spritedef_t[]   sprites;
-   int     numsprites;
-
-   /* variables used to look up
-   * and range check thing_t sprites patches
-   */
-
-   /** Temporarily contains the frames of a given sprite before they are registered
-    *  with the rendering system. Apparently, a maximum of 29 frames per
-    *  sprites is allowed.
-    */
-   spriteframe_t[] sprtemp=new spriteframe_t[29];
-   int     maxframe;
-   String      spritename;
-   
-   //
-   // Spectre/Invisibility.
-   //
-   public static final int FUZZTABLE = 50;
-
-   public static final int FUZZOFF = SCREENWIDTH;
-
-   int[] fuzzoffset =
-       { FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF,
-               FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF,
-               -FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, -FUZZOFF,
-               -FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF,
-               FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF,
-               FUZZOFF, FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF,
-               -FUZZOFF, -FUZZOFF, -FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF,
-               FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF };
-
-   int fuzzpos = 0;
     
 
 ///// DRAWSPAN ///////////
@@ -907,352 +564,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
 
 
    
-   ////////////// SOME UTILITY METHODS /////////////
-
-   public long
-   PointToAngle2
-   ( fixed_t    x1,
-     fixed_t    y1,
-     fixed_t    x2,
-     fixed_t    y2 )
-   {    
-       // Careful with assignments...
-       viewx=x1.val;
-       viewy=y1.val;
-       
-       return PointToAngle (x2.val, y2.val);
-   }
-
-   /** Assigns a point of view before calling PointToAngle */
-   
-   public long
-   PointToAngle2
-   ( int   x1,
-     int   y1,
-     int   x2,
-     int   y2 )
-   {   
-       // Careful with assignments...
-       viewx=x1;
-       viewy=y1;
-       
-       return PointToAngle (x2, y2);
-   }
-
-
-
-   public int
-   PointToDist
-   ( fixed_t    x,
-     fixed_t    y )
-   {
-       int      angle;
-       int  dx;
-       int  dy;
-       int  temp;
-       int  dist;
-    
-       dx = Math.abs(x.val - viewx);
-       dy = Math.abs(y.val - viewy);
-    
-       if (dy>dx)
-       {
-    temp = dx;
-    dx = dy;
-    dy = temp;
-       }
-    
-       angle = (int) ((tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT);
-
-       // use as cosine
-       dist = FixedDiv (dx, finesine[angle] );  
-    
-       return dist;
-   }
-
-
-
-
-   //
-   // R_InitPointToAngle
-   //
-   public void InitPointToAngle ()
-   {
-       // UNUSED - now getting from tables.c
-   if (false){
-       int  i;
-       long t;
-       float    f;
-   //
-   // slope (tangent) to angle lookup
-   //
-       for (i=0 ; i<=SLOPERANGE ; i++)
-       {
-    f = (float) Math.atan( (double)(i/SLOPERANGE )/(3.141592657*2));
-    t = (long) (0xffffffffL*f);
-    tantoangle[i] = (int) t;
-       }
-   }
-   }
-   
-   /**
-    * R_PointToAngle
-    *  To get a global angle from cartesian coordinates,
-    *  the coordinates are flipped until they are in
-    *  the first octant of the coordinate system, then
-    *  the y (<=x) is scaled and divided by x to get a
-    *  tangent (slope) value which is looked up in the
-    *   tantoangle[] table.
-    *   
-    *   @param xx (fixed_t)
-    *   @param yy (fixed_t)
-    */
-
-   public long
-   PointToAngle
-   ( int   x,
-     int   y )
-   {   
-       // MAES: note how we don't use &BITS32 here. That is because we know that the maximum possible
-       // value of tantoangle is angle
-       // This way, we are actually working with vectors emanating from our current position.
-       x-= viewx;
-       y-= viewy;
-       
-       if ( (x==0) && (y==0) )
-       return 0;
-
-       if (x>= 0)
-       {
-       // x >=0
-       if (y>= 0)
-       {
-           // y>= 0
-
-           if (x>y)
-           {
-           // octant 0
-           return tantoangle[ SlopeDiv(y,x)];
-           }
-           else
-           {
-           // octant 1
-           return (ANG90-1-tantoangle[ SlopeDiv(x,y)]);
-           }
-       }
-       else
-       {
-           // y<0
-           y = -y;
-
-           if (x>y)
-           {
-           // octant 8
-           return (-tantoangle[SlopeDiv(y,x)])&BITS32;
-           }
-           else
-           {
-           // octant 7
-           return ANG270+tantoangle[ SlopeDiv(x,y)];
-           }
-       }
-       }
-       else
-       {
-       // x<0
-       x = -x;
-
-       if (y>= 0)
-       {
-           // y>= 0
-           if (x>y)
-           {
-           // octant 3
-           return (ANG180-1-tantoangle[ SlopeDiv(y,x)]);
-           }
-           else
-           {
-           // octant 2
-           return (ANG90+ tantoangle[ SlopeDiv(x,y)]);
-           }
-       }
-       else
-       {
-           // y<0
-           y = -y;
-
-           if (x>y)
-           {
-           // octant 4
-           return (ANG180+tantoangle[ SlopeDiv(y,x)]);
-           }
-           else
-           {
-            // octant 5
-           return (ANG270-1-tantoangle[ SlopeDiv(x,y)]);
-           }
-       }
-       }
-       // This is actually unreachable.
-      // return 0;
-   }
-   
-   /**
-    * R_ScaleFromGlobalAngle
-    * Returns the texture mapping scale
-    *  for the current line (horizontal span)
-    *  at the given angle.
-    * rw_distance must be calculated first.
-    */
-   
-   public int ScaleFromGlobalAngle (long visangle)
-   {
-       int         scale; // fixed_t
-       long         anglea;
-       long         angleb;
-       int         sinea;
-       int         sineb;
-       int         num; // fixed_t
-       int         den;
-
-       // UNUSED
-   /*
-   {
-       fixed_t     dist;
-       fixed_t     z;
-       fixed_t     sinv;
-       fixed_t     cosv;
-       
-       sinv = finesine[(visangle-rw_normalangle)>>ANGLETOFINESHIFT];   
-       dist = FixedDiv (rw_distance, sinv);
-       cosv = finecosine[(viewangle-visangle)>>ANGLETOFINESHIFT];
-       z = abs(FixedMul (dist, cosv));
-       scale = FixedDiv(projection, z);
-       return scale;
-   }
-   */
-
-       anglea = (ANG90 +visangle-viewangle)&BITS32;
-       angleb = (ANG90 +visangle-rw_normalangle)&BITS32;
-
-       // both sines are allways positive
-       sinea = finesine(anglea); 
-       sineb = finesine(angleb);
-       num = FixedMul(projection,sineb)<<detailshift;
-       den = FixedMul(rw_distance,sinea);
-
-       if (den > num>>16)
-       {
-       scale = FixedDiv (num, den);
-
-       if (scale > 64*FRACUNIT)
-           scale = 64*FRACUNIT;
-       else if (scale < 256)
-           scale = 256;
-       }
-       else
-       scale = 64*FRACUNIT;
-       
-       return scale;
-   }
-
-
-
-   //
-   // R_InitTables
-   //
-   public void InitTables ()
-   {
-       // UNUSED: now getting from tables.c
-   /*
-       int     i;
-       float   a;
-       float   fv;
-       int     t;
-       
-       // viewangle tangent table
-       for (i=0 ; i<FINEANGLES/2 ; i++)
-       {
-       a = (i-FINEANGLES/4+0.5)*PI*2/FINEANGLES;
-       fv = FRACUNIT*tan (a);
-       t = fv;
-       finetangent[i] = t;
-       }
-       
-       // finesine table
-       for (i=0 ; i<5*FINEANGLES/4 ; i++)
-       {
-       // OPTIMIZE: mirro..
-       a = (i+0.5)*PI*2/FINEANGLES;
-       t = FRACUNIT*sin (a);
-       finesine[i] = t;
-       }
-   */
-
-   }
-
-   /** R_PointToDist
-    * 
-    * @param x fixed_t
-    * @param y fixed_t
-    * @return
-    */
-   
-   public int
-   PointToDist
-   ( int   x,
-     int   y )
-   {
-       int     angle;
-       int dx;
-       int dy;
-       int temp;
-       int dist;
-       
-       dx = Math.abs(x - viewx);
-       dy = Math.abs(y - viewy);
-       
-       // Sanity check, else it's going to bomb.
-       /* if (dx==0){
-           //
-           if (dy>0) angle= Tables.toBAMIndex(ANG90);
-           else           
-           if (dy<0) angle= Tables.toBAMIndex(ANG270);
-           else
-                     angle= 0;     
-       }
-       
-       else { */
-       
-       // If something is farther north/south than west/east, it gets swapped. 
-       // Probably as a crude way to avoid divisions by zero. This divides
-       // the field into octants, rather than quadrants, where the biggest angle to consider is 45...right?
-       
-       if (dy>dx)
-       {
-       temp = dx;
-       dx = dy;
-       dy = temp;
-       }
-       
-       
-       /* If both dx and dy are zero, this is going to bomb.
-          Fixeddiv will return MAXINT aka 7FFFFFFF, >> DBITS will make it 3FFFFFF,
-          which is enough to break tantoangle[]. 
-          
-          In the original C code, this probably didn't matter: there would probably be garbage orientations
-          thrown all around. However this is unacceptable in Java however.
-       */
-       
-       angle=Math.max( FixedDiv(dy,dx), 2048)>>DBITS;
-           
-       angle = (int) (((tantoangle[angle ]+ANG90)&BITS32) >> ANGLETOFINESHIFT);
-       
-       // use as cosine
-       dist = FixedDiv (dx, finesine[angle] ); 
-       
-       return dist;
-   }
+  
 
     
   class BSP{
@@ -1928,7 +1240,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
   
   }
   
-  class Segs{
+  class Segs implements SegDrawer{
 
       protected static final int HEIGHTBITS   =   12;
       protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
@@ -1965,7 +1277,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
           backsector = curline.backsector;
           texnum = texturetranslation[curline.sidedef.midtexture];
           //System.out.print(" for texture "+textures[texnum].name+"\n:");
-          lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
+          lightnum = (frontsector.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
 
           if (curline.v1y == curline.v2y)
           lightnum--;
@@ -2251,7 +1563,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
        * @throws IOException 
        */
       
-      private void
+      public void
       StoreWallRange
       ( int   start,
         int   stop ) 
@@ -2553,7 +1865,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
           // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
           if (fixedcolormap==null)
           {
-              lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
+              lightnum = (frontsector.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
 
               if (curline.v1y == curline.v2y)
               lightnum--;
@@ -3112,7 +2424,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
           }
           
           planeheight = Math.abs(pln.height-viewz);
-          light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
+          light = (pln.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
 
           if (light >= LIGHTLEVELS)
               light = LIGHTLEVELS-1;
@@ -3142,997 +2454,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
 
   } // End Plane class
       
-/** Refresh of things, i.e. objects represented by sprites. */
-  
-  class Things{
 
-      protected static final int MINZ    =            (FRACUNIT*4);
-      protected static final int BASEYCENTER         =100;
-
-      public Things(){
-          negonearray=new short[SCREENWIDTH];
-          screenheightarray=new short[SCREENWIDTH];
-          sprtemp=new spriteframe_t[MAX_SPRITEFRAMES];
-          C2JUtils.initArrayOfObjects(sprtemp);
-          vissprites=new vissprite_t[MAXVISSPRITES];
-          C2JUtils.initArrayOfObjects(vissprites);
-          vsprsortedhead=new vissprite_t();
-          unsorted=new vissprite_t();
-      }
-      
-      //void R_DrawColumn (void);
-      //void R_DrawFuzzColumn (void);
-
-      class maskdraw_t
-      {
-          int     x1;
-          int     x2;
-          
-          int     column;
-          int     topclip;
-          int     bottomclip;
-
-      };
-
-
-
-      /**
-       * Sprite rotation 0 is facing the viewer,
-       *  rotation 1 is one angle turn CLOCKWISE around the axis.
-       * This is not the same as the angle,
-       * which increases counter clockwise (protractor).
-       * There was a lot of stuff grabbed wrong, so I changed it...
-       * 
-       * (fixed_t)
-       */
-      
-      int     pspritescale;
-      int     pspriteiscale;
-
-      byte[][]  spritelights;
-
-      /** constant arrays
-         used for psprite clipping and initializing clipping */
-      short[]       negonearray;
-      short[]       screenheightarray;
-
-
-      //
-      // INITIALIZATION FUNCTIONS
-      //
-
-      /**
-       * R_InstallSpriteLump
-       * Local function for R_InitSprites.
-       */
-      
-      private void
-      InstallSpriteLump
-      ( int       lump,
-        int  frame,
-        int  rotation,
-        boolean   flipped )
-      {
-          
-         // System.out.println("Trying to install "+spritename+" Frame "+ (char)('A'+frame)+" rot "+(rotation) +" . Should have rotations: "+sprtemp[frame].rotate); 
-          int     r;
-          
-          if (frame >= 29 || rotation > 8)
-          I.Error("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
-          
-          if ((int)frame > maxframe)
-          maxframe = frame;
-          
-          /* A rotation value of 0 means that we are either checking the first frame of a sprite
-           * that HAS rotations, or something that nas no rotations at all. The value
-           * of rotate doesn't really help us discern here, unless set to "false"
-           * a-priori...which can't happen ?!
-           */
-          
-          if (rotation == 0)
-          {
-              /* MAES: notice how comparisons are done with strict literals
-               * (true and alse) which are actually defined to be 0 and 1,
-               * rather than assuming that true is "any nonzero value".
-               * This happens because rotate's value could be -1 at this point (!),
-               * if a series of circumstances occur. Therefore it's actually 
-               * a "tri-state", and the comparion 0=false and "anything else"=true
-               * was not good enough in this case. A value of -1 doesn't yield either
-               * true or false here. 
-               * 
-               */
-              
-              // the lump should be used for all rotations
-          if (sprtemp[frame].rotate == 0){
-              /* MAES: Explanation: we stumbled upon this lump before, and decided that this frame should have no more
-               * rotations, hence we bomb.
-               */
-              I.Error ("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump", spritename, 'A'+frame);
-          }
-
-          // This should NEVER happen!
-          if (sprtemp[frame].rotate == 1) {
-              /* MAES: This can only happen if we decided that a sprite's frame was already decided to have
-               * rotations, but now we stumble upon another occurence of "rotation 0". Or if you use naive
-               * true/false evaluation for .rotate ( -1 is also an admissible value).
-               */
-              I.Error ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);          
-          }
-          
-          // Rotation is acknowledged to be totally false at this point.
-          sprtemp[frame].rotate = 0;
-          for (r=0 ; r<8 ; r++)
-          {
-              sprtemp[frame].lump[r] = (short) (lump - firstspritelump);
-              sprtemp[frame].flip[r] = (byte) (flipped?1:0);
-          }
-          return;
-          }
-          
-          // the lump is only used for one rotation
-          if (sprtemp[frame].rotate == 0)
-              I.Error  ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);
-              
-          sprtemp[frame].rotate = 1;
-
-          // make 0 based
-          rotation--;     
-          if (sprtemp[frame].lump[rotation] != -1)
-              I.Error  ("R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it",
-               spritename, 'A'+frame, '1'+rotation);
-              
-          // Everything is OK, we can bless the temporary sprite's frame's rotation.
-          sprtemp[frame].lump[rotation] = (short) (lump - firstspritelump);
-          sprtemp[frame].flip[rotation] = (byte) (flipped?1:0);
-      }
-
-
-
-
-     /**
-      * R_InitSpriteDefs
-      * Pass a null terminated list of sprite names
-      *  (4 chars exactly) to be used.
-      * Builds the sprite rotation matrixes to account
-      *  for horizontally flipped sprites.
-      * Will report an error if the lumps are inconsistant. 
-      * Only called at startup.
-      *
-      * Sprite lump names are 4 characters for the actor,
-      *  a letter for the frame, and a number for the rotation.
-      * A sprite that is flippable will have an additional
-      *  letter/number appended.
-      * The rotation character can be 0 to signify no rotations.
-      */
-      public void InitSpriteDefs (String[] namelist) 
-      { 
-
-          int     intname;
-          int     frame;
-          int     rotation;
-          int     start;
-          int     end;
-          int     patched;
-              
-          if (namelist==null) return;
-          numsprites = namelist.length;
-          
-          if (numsprites==0)
-          return;
-              
-          sprites = new spritedef_t[numsprites];
-          C2JUtils.initArrayOfObjects(sprites);
-          
-          start = firstspritelump-1;
-          end = lastspritelump+1;
-          
-          // scan all the lump names for each of the names,
-          //  noting the highest frame letter.
-          // Just compare 4 characters as ints
-          for (int i=0 ; i<numsprites ; i++)
-          {
-          System.out.println("Preparing sprite "+i);
-          spritename = namelist[i];
-          
-          // FIXME: the original code actually set everything to "-1" here, including the "boolean" 
-          // value. The idea was to create a "tristate" of sorts. Goto InstallSpriteLumps for more.
-          for (int j=0;j<sprtemp.length;j++){
-              Arrays.fill(sprtemp[j].flip,(byte)-1);
-              Arrays.fill(sprtemp[j].lump,(short)-1);
-              // This should be INDETERMINATE at this point.
-              sprtemp[j].rotate=-1;
-              }
-              
-          maxframe = -1;
-          intname = name8.getIntName(namelist[i].toUpperCase());
-          
-          // scan the lumps,
-          //  filling in the frames for whatever is found
-          for (int l=start+1 ; l<end ; l++)
-          {
-              // We HOPE it has 8 characters.
-              char[] cname=W.lumpinfo[l].name.toCharArray();
-              if (cname.length==6 || cname.length==8) // Sprite names must be this way
-              
-              /* If the check is successful, we keep looking for more frames
-               * for a particular sprite e.g. TROOAx, TROOHxHy etc.    
-               */
-              if (W.lumpinfo[l].intname == intname)
-              {
-              frame = cname[4] - 'A';
-              rotation = cname[5] - '0';
-
-              if (DM.modifiedgame)
-                  patched = W.GetNumForName (W.lumpinfo[l].name);
-              else
-                  patched = l;
-
-              InstallSpriteLump (patched, frame, rotation, false);
-              
-              // Second set of rotations?
-              if (cname.length>6 && cname[6]!=0)
-              {
-                  frame = cname[6] - 'A';
-                  rotation = cname[7] - '0';
-                  InstallSpriteLump (l, frame, rotation, true);
-              }
-              }
-          }
-          
-          /* check the frames that were found for completeness
-           * This can only be -1 at this point if we didn't install
-           * a single frame successfuly.
-           */
-          if (maxframe == -1)
-          {
-              System.out.println("Sprite "+spritename+" has no frames!");
-              sprites[i].numframes = 0;
-              // We move on to the next sprite with this one.
-              continue;
-          }
-              
-          maxframe++;
-          
-          for (frame = 0 ; frame < maxframe ; frame++)
-          {
-              switch ((int)sprtemp[frame].rotate)
-              {
-                case -1:
-              // no rotations were found for that frame at all
-              I.Error ("R_InitSprites: No patches found for %s frame %c", namelist[i], frame+'A');
-              break;
-              
-                case 0:
-              // only the first rotation is needed
-              break;
-                  
-                case 1:
-              // must have all 8 frames
-              for (rotation=0 ; rotation<8 ; rotation++)
-                  if (sprtemp[frame].lump[rotation] == -1)
-                  I.Error ("R_InitSprites: Sprite %s frame %c is missing rotations",
-                       namelist[i], frame+'A');
-              break;
-              }
-          }
-          
-          // allocate space for the frames present and copy sprtemp to it
-          //  MAES: we can do that elegantly in one line.
-          
-          sprites[i].copy(sprtemp,maxframe);
-          
-          
-          //sprites[i].numframes = maxframe;
-          //sprites[i].spriteframes = new spriteframe_t[maxframe];
-          //C2JUtils.initArrayOfObjects(sprites[i].spriteframes,spriteframe_t.class);
-              
-          //for (int j=0;j<)
-          //System.arraycopy(src, srcPos, dest, destPos, length)
-          //memcpy (sprites[i].spriteframes, sprtemp, maxframe*sizeof(spriteframe_t));
-          }
-
-      }
-
-      //
-      // GAME FUNCTIONS
-      //
-      vissprite_t[] vissprites;
-      int    vissprite_p;
-      int     newvissprite;
-
-
-      /**
-       * R_ClearSprites
-       * Called at frame start.
-       */
-      public void ClearSprites ()
-      {
-         // vissprite_p = vissprites;
-          vissprite_p=0;
-      }
-
-
-      //
-      // R_NewVisSprite
-      //
-      vissprite_t overflowsprite;
-
-      public vissprite_t NewVisSprite ()
-      {
-          if (vissprite_p == (MAXVISSPRITES-1))
-          return overflowsprite;
-          
-          vissprite_p++;
-          return vissprites[vissprite_p-1];
-      }
-
-    private boolean shadow;
-
-      /**
-       * R_DrawVisSprite
-       *  mfloorclip and mceilingclip should also be set.
-       *  
-       * Sprites are actually drawn here.
-       *
-       */ 
-      public void
-      DrawVisSprite
-      ( vissprite_t      vis,
-        int           x1,
-        int           x2 )
-      {
-          //System.out.println("Drawing vissprite "+vis);
-          column_t       column;
-          int         texturecolumn;
-          int     frac; // fixed_t
-          patch_t        patch;
-          
-          // At this point, the view angle (and patch) has already been chosen. Go back.
-          patch = W.CachePatchNum (vis.patch+firstspritelump,PU_CACHE);
-          
-          
-          dc_colormap = vis.colormap;
-          
-          if (dc_colormap==null)
-          {
-          // NULL colormap = shadow draw
-          shadow=true;
-          colfunc = fuzzcolfunc;
-          }
-          else if ((vis.mobjflags & MF_TRANSLATION)!=0)
-          {
-          shadow=false;
-          colfunc = DrawTranslatedColumn;
-          dc_translation = translationtables;
-          dcto=          - 256 +
-              ( (vis.mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
-          }
-          
-          dc_iscale = Math.abs(vis.xiscale)>>detailshift;
-          dc_texturemid = vis.texturemid;
-          frac = vis.startfrac;
-          spryscale = vis.scale;
-          sprtopscreen = centeryfrac - FixedMul(dc_texturemid,spryscale);
-          
-          for (dc_x=vis.x1 ; dc_x<=vis.x2 ; dc_x++, frac += vis.xiscale)
-          {
-          texturecolumn = frac>>FRACBITS;
-      if(RANGECHECK){
-          if (texturecolumn < 0 || texturecolumn >= patch.width)
-              I.Error ("R_DrawSpriteRange: bad texturecolumn");
-      }
-          column = patch.columns[texturecolumn];
-          //System.out.println(">>>>>>>>>>>>>>>>>>   Drawing column "+texturecolumn+" of  "+W.lumpinfo[vis.patch+firstspritelump].name +" at scale "+Integer.toHexString(vis.xiscale));
-              
-          DrawMaskedColumn(column);
-          }
-
-          colfunc = basecolfunc;
-      }
-
-
-
-      /**
-       * R_ProjectSprite
-       * Generates a vissprite for a thing
-       * if it might be visible.
-       * 
-       * @param thing
-       */
-      public void ProjectSprite (mobj_t thing)
-      {
-          int     tr_x,tr_y;          
-          int     gxt,gyt;          
-          int     tx,tz;
-
-          int     xscale,x1,x2;
-
-          spritedef_t    sprdef;
-          spriteframe_t  sprframe;
-          int         lump;
-          
-          int        rot;
-          boolean     flip;
-          
-          int         index;
-
-          vissprite_t    vis;
-          
-          long     ang;
-          int     iscale;
-          
-          // transform the origin point
-          tr_x = thing.x - viewx;
-          tr_y = thing.y - viewy;
-          
-          gxt = FixedMul(tr_x,viewcos); 
-          gyt = -FixedMul(tr_y,viewsin);
-          
-          tz = gxt-gyt; 
-
-          // thing is behind view plane?
-          if (tz < MINZ)
-          return;
-          /* MAES: so projection/tz gives horizontal scale */
-          xscale = FixedDiv(projection, tz);
-          
-          gxt = -FixedMul(tr_x,viewsin); 
-          gyt = FixedMul(tr_y,viewcos); 
-          tx = -(gyt+gxt); 
-
-          // too far off the side?
-          if (Math.abs(tx)>(tz<<2))
-          return;
-          
-          // decide which patch to use for sprite relative to player
-      if(RANGECHECK){
-          if (thing.sprite.ordinal() >= numsprites)
-          I.Error ("R_ProjectSprite: invalid sprite number %i ",
-               thing.sprite);
-      }
-          sprdef = sprites[thing.sprite.ordinal()];
-      if(RANGECHECK){
-          if ( (thing.frame&FF_FRAMEMASK) >= sprdef.numframes )
-          I.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
-               thing.sprite, thing.frame);
-      }
-          sprframe = sprdef.spriteframes[ thing.frame & FF_FRAMEMASK];
-
-          if (sprframe.rotate!=0)
-          {
-          // choose a different rotation based on player view
-          // FIXME: this is obviously wrong.
-          ang = PointToAngle (thing.x, thing.y);
-          rot = (int) ((ang-thing.angle+(ANG45*9)/2)&BITS32)>>>29;
-          lump = sprframe.lump[rot];
-          flip = (boolean)(sprframe.flip[rot]!=0);
-          }
-          else
-          {
-          // use single rotation for all views
-          lump = sprframe.lump[0];
-          flip = (boolean)(sprframe.flip[0]!=0);
-          }
-          
-          // calculate edges of the shape
-          tx -= spriteoffset[lump];   
-          x1 = (centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS;
-
-          // off the right side?
-          if (x1 > viewwidth)
-          return;
-          
-          tx +=  spritewidth[lump];
-          x2 = ((centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS) - 1;
-
-          // off the left side
-          if (x2 < 0)
-          return;
-          
-          // store information in a vissprite
-          vis = NewVisSprite ();
-          vis.mobjflags = thing.flags;
-          vis.scale = xscale<<detailshift;
-          vis.gx = thing.x;
-          vis.gy = thing.y;
-          vis.gz = thing.z;
-          vis.gzt = thing.z + spritetopoffset[lump];
-          vis.texturemid = vis.gzt - viewz;
-          vis.x1 = x1 < 0 ? 0 : x1;
-          vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;
-          /* This actually determines the general sprite scale) 
-           * iscale = 1/xscale, if this was floating point. */
-          iscale = FixedDiv (FRACUNIT, xscale);
-
-          if (flip)
-          {
-          vis.startfrac = spritewidth[lump]-1;
-          vis.xiscale = -iscale;
-          }
-          else
-          {
-          vis.startfrac = 0;
-          vis.xiscale = iscale;
-          }
-
-          if (vis.x1 > x1)
-          vis.startfrac += vis.xiscale*(vis.x1-x1);
-          vis.patch = lump;
-          
-          // get light level
-          if ((thing.flags & MF_SHADOW)!=0)
-          {
-          // shadow draw
-          vis.colormap = null;
-          }
-          else if (fixedcolormap!=null)
-          {
-          // fixed map
-          vis.colormap = fixedcolormap;
-          //vis.pcolormap=0;
-          }
-          else if ((thing.frame & FF_FULLBRIGHT)!=0)
-          {
-          // full bright
-          vis.colormap = colormaps[0];
-          //vis.pcolormap=0;
-          }
-          
-          else
-          {
-          // diminished light
-          index = xscale>>(LIGHTSCALESHIFT-detailshift);
-
-          if (index >= MAXLIGHTSCALE) 
-              index = MAXLIGHTSCALE-1;
-
-          vis.colormap = spritelights[index];
-          //vis.pcolormap=index;
-          }   
-      }
-
-
-
-
-      /**
-       * R_AddSprites
-       * 
-       * During BSP traversal, this adds sprites by sector.
-       * 
-       * 
-       */
-      public void AddSprites (sector_t sec)
-      {
-          if (DEBUG) System.out.println("AddSprites");
-          mobj_t     thing;
-          int         lightnum;
-
-          // BSP is traversed by subsector.
-          // A sector might have been split into several
-          //  subsectors during BSP building.
-          // Thus we check whether its already added.
-          if (sec.validcount == validcount)
-          return;     
-
-          // Well, now it will be done.
-          sec.validcount = validcount;
-          
-          lightnum = (sec.lightlevel >> LIGHTSEGSHIFT)+extralight;
-
-          if (lightnum < 0)       
-          spritelights = scalelight[0];
-          else if (lightnum >= LIGHTLEVELS)
-          spritelights = scalelight[LIGHTLEVELS-1];
-          else
-          spritelights = scalelight[lightnum];
-
-          // Handle all things in sector.
-          for (thing = sec.thinglist ; thing!=null ; thing = (mobj_t) thing.snext)
-          ProjectSprite (thing);
-      }
-
-
-      /**
-       * R_DrawPSprite
-       */
-      
-      public void DrawPSprite (pspdef_t psp)
-      {
-          int     tx;
-          int         x1;
-          int         x2;
-          spritedef_t    sprdef;
-          spriteframe_t  sprframe;
-          vissprite_t vis;
-          int         lump;
-          boolean     flip;
-          
-          // 
-          
-          // decide which patch to use (in terms of angle?)
-      if(RANGECHECK){
-          if ( psp.state.sprite.ordinal() >= numsprites)
-          I.Error ("R_ProjectSprite: invalid sprite number %i ",
-               psp.state.sprite);
-          }
-          sprdef = sprites[psp.state.sprite.ordinal()];
-      if(RANGECHECK){
-          if ( (psp.state.frame & FF_FRAMEMASK)  >= sprdef.numframes)
-          I.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
-               psp.state.sprite, psp.state.frame);
-      }
-          sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK ];
-
-          // Base frame for "angle 0" aka viewed from dead-front.
-          lump = sprframe.lump[0];
-          // TODO: where can this be set?
-          flip = (boolean)(sprframe.flip[0]!=0);
-          
-          // calculate edges of the shape
-          tx = psp.sx-160*FRACUNIT;
-          
-          tx -= spriteoffset[lump];   
-          x1 = (centerxfrac + FixedMul (tx,pspritescale) ) >>FRACBITS;
-
-          // off the right side
-          if (x1 > viewwidth)
-          return;     
-
-          tx +=  spritewidth[lump];
-          x2 = ((centerxfrac + FixedMul (tx, pspritescale) ) >>FRACBITS) - 1;
-
-          // off the left side
-          if (x2 < 0)
-          return;
-          
-          // store information in a vissprite
-          vis = avis;
-          vis.mobjflags = 0;
-          vis.texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp.sy-spritetopoffset[lump]);
-          vis.x1 = x1 < 0 ? 0 : x1;
-          vis.x2 = x2 >= viewwidth ? viewwidth-1 : x2;   
-          vis.scale = pspritescale<<detailshift;
-          
-          if (flip)
-          {
-          vis.xiscale = -pspriteiscale;
-          vis.startfrac = spritewidth[lump]-1;
-          }
-          else
-          {
-          vis.xiscale = pspriteiscale;
-          vis.startfrac = 0;
-          }
-          
-          if (vis.x1 > x1)
-          vis.startfrac += vis.xiscale*(vis.x1-x1);
-
-          vis.patch = lump;
-
-          if ((viewplayer.powers[pw_invisibility] > 4*32)
-          || (viewplayer.powers[pw_invisibility] & 8)!=0)
-          {
-          // shadow draw
-          vis.colormap = null;
-          
-          }
-          else if (fixedcolormap!=null)
-          {
-          // fixed color
-          vis.colormap = fixedcolormap;
-          //vis.pcolormap=0;
-          }
-          else if ((psp.state.frame & FF_FULLBRIGHT)!=0)
-          {
-          // full bright
-          vis.colormap = colormaps[0];
-          //vis.pcolormap=0;
-          }
-          else
-          {
-          // local light
-          vis.colormap = spritelights[MAXLIGHTSCALE-1];
-          }
-          
-          DrawVisSprite (vis, vis.x1, vis.x2);
-      }
-
-      /** used inside DrawPSprite, better make this static */
-          //vis=new vissprite_t();
-          protected vissprite_t avis=new vissprite_t();
-
-      /** R_DrawPlayerSprites */
-      
-      public void DrawPlayerSprites ()
-      {
-          int     i;
-          int     lightnum;
-          pspdef_t   psp;
-          
-          // get light level
-          lightnum =
-          (viewplayer.mo.subsector.sector.lightlevel >> LIGHTSEGSHIFT) 
-          +extralight;
-
-          if (lightnum < 0)       
-          spritelights = scalelight[0];
-          else if (lightnum >= LIGHTLEVELS)
-          spritelights = scalelight[LIGHTLEVELS-1];
-          else
-          spritelights = scalelight[lightnum];
-          
-          // clip to screen bounds
-          mfloorclip = screenheightarray;
-          p_mfloorclip=0;
-          mceilingclip = negonearray;
-          p_mceilingclip=0;
-          
-          // add all active psprites
-          for (i=0, psp=viewplayer.psprites[i];
-           i<NUMPSPRITES;
-           i++)
-          {
-          if (psp.state!=null)
-              DrawPSprite (psp);
-          }
-      }
-
-
-
-
-
-      vissprite_t vsprsortedhead;
-      // A dummy used as temp during sorting.
-      vissprite_t     unsorted;
-      
-      /**
-       * R_SortVisSprites
-       */
-
-      public void SortVisSprites ()
-      {
-          int         count;
-          vissprite_t    best;
-          int     bestscale; // fixed_t
-
-          count = vissprite_p; //- vissprites;
-          
-          // "breaks" unsorted from any previous linking.          
-          unsorted.next = unsorted.prev = unsorted;
-
-          if (count==0)
-          return;
-
-          // Tranverses the master visspite list, and "links"
-          // each sprite to one another in order of appearance. This is O(n)
-          // FIXME: it can't start at 0.
-          
-          vissprites[0].next=vissprites[Math.min(1,vissprite_p)];
-          for (int ds=1 ; ds<vissprite_p ; ds++)
-          {
-              vissprites[ds].next = vissprites[ds+1];
-              // This is bullshit. Dunno how they got away with it in C, it would cause
-              // a garbage pointer, which was not a problem because unsorted was "poked in"
-              // anyway. Fuck that shit, John Romero. 
-              
-              vissprites[ds].prev = vissprites[ds-1];
-          }
-          
-          // "unsorted" vissprite is inserted at the head.
-          vissprites[0].prev = unsorted;
-          unsorted.next = vissprites[0];
-          // ...and at the end.
-          vissprites[vissprite_p-1].next = unsorted;
-          unsorted.prev = vissprites[vissprite_p-1];
-          
-          // pull the vissprites out by scale
-          best = null;     // shut up the compiler warning
-          // "breaks" vsprsortedhead from any previous linking. 
-          vsprsortedhead.next = vsprsortedhead.prev = vsprsortedhead;
-          
-          // For each vissprite...
-          for (int i=0 ; i<count ; i++)
-          {
-          bestscale = Integer.MAX_VALUE;
-          
-          // Transverses the linked list.
-          for (vissprite_t ds=unsorted.next ; ds!= unsorted ; ds=ds.next)
-          {
-              if (ds.scale < bestscale)
-              {
-              bestscale = ds.scale;
-              best = ds;
-              }
-          }
-          
-          // Once the element with the SMALLER scale is found..
-          
-          // best is unlinked
-          best.next.prev = best.prev;
-          best.prev.next = best.next;
-          
-          // best is placed at the head of the list, sandwiched between whatever was before the head
-          best.next = vsprsortedhead;
-          best.prev = vsprsortedhead.prev;
-          vsprsortedhead.prev.next = best;
-          vsprsortedhead.prev = best;
-          }
-      }
-
-
-
-
-
-      protected short[]       clipbot=new short[SCREENWIDTH];
-      protected short[]       cliptop=new short[SCREENWIDTH];
-      
-      /**
-       * R_DrawSprite
-       */
-      
-      public void DrawSprite (vissprite_t spr)
-      {
-          int      ds;
-          drawseg_t dss;
-
-          int         x;
-          int         r1;
-          int         r2;
-          int     scale; // fixed
-          int     lowscale; // fixed
-          int         silhouette;
-              
-          for (x = spr.x1 ; x<=spr.x2 ; x++)
-          clipbot[x] = cliptop[x] = -2;
-          
-          // Scan drawsegs from end to start for obscuring segs.
-          // The first drawseg that has a greater scale
-          //  is the clip seg.
-          for (ds=ds_p-1 ; ds >= 0 ; ds--)
-          {
-              // determine if the drawseg obscures the sprite
-              //System.out.println("Drawseg "+ds+"of "+(ds_p-1));
-              dss=drawsegs[ds];
-          if (dss.x1 > spr.x2
-              || dss.x2 < spr.x1
-              || ((dss.silhouette==0)
-              && (dss.nullMaskedTextureCol())))
-          {
-              // does not cover sprite
-              continue;
-          }
-                  
-          r1 = dss.x1 < spr.x1 ? spr.x1 : dss.x1;
-          r2 = dss.x2 > spr.x2 ? spr.x2 : dss.x2;
-
-          if (dss.scale1 > dss.scale2)
-          {
-              lowscale = dss.scale2;
-              scale = dss.scale1;
-          }
-          else
-          {
-              lowscale = dss.scale1;
-              scale = dss.scale2;
-          }
-              
-          if (scale < spr.scale
-              || ( lowscale < spr.scale
-               && (dss.curline.PointOnSegSide (spr.gx, spr.gy)==0) ) )
-          {
-              // masked mid texture?
-              if (!dss.nullMaskedTextureCol())   
-              MySegs.RenderMaskedSegRange (dss, r1, r2);
-              // seg is behind sprite
-              continue;           
-          }
-
-          
-          // clip this piece of the sprite
-          silhouette = dss.silhouette;
-          
-          if (spr.gz >= dss.bsilheight)
-              silhouette &= ~SIL_BOTTOM;
-
-          if (spr.gzt <= dss.tsilheight)
-              silhouette &= ~SIL_TOP;
-                  
-          // BOTTOM clipping
-          if (silhouette == 1)
-          {
-              // bottom sil
-              for (x=r1 ; x<=r2 ; x++)
-              if (clipbot[x] == -2)
-                  // clipbot[x] = ds->sprbottomclip[x];
-                  if (dss.nullSprBottomClip()){
-                      if (DEBUG) System.out.println("Bottom clipping requested but clip list not present for "+dss);
-                      
-                  } else clipbot[x] = dss.getSprBottomClip(x);
-                  
-              
-          }
-          else if (silhouette == 2)
-          {
-              // top sil
-              for (x=r1 ; x<=r2 ; x++)
-              if (cliptop[x] == -2)
-                  cliptop[x] = dss.getSprTopClip(x);
-          }
-          else if (silhouette == 3)
-          {
-              // both
-              for (x=r1 ; x<=r2 ; x++)
-              {
-              if (clipbot[x] == -2)
-                  clipbot[x] = dss.getSprBottomClip(x);
-              if (cliptop[x] == -2)
-                  cliptop[x] = dss.getSprTopClip(x);
-              }
-          }
-              
-          }
-          
-          // all clipping has been performed, so draw the sprite
-
-          // check for unclipped columns
-          for (x = spr.x1 ; x<=spr.x2 ; x++)
-          {
-          if (clipbot[x] == -2)       
-              clipbot[x] = (short) viewheight;
-          // ?? What's this bullshit?
-          if (cliptop[x] == -2)
-              cliptop[x] = -1;
-          }
-              
-          mfloorclip = clipbot;
-          p_mfloorclip=0;
-          mceilingclip = cliptop;
-          p_mceilingclip=0;
-          DrawVisSprite (spr, spr.x1, spr.x2);
-      }
-
-
-
-
-      //
-      // R_DrawMasked
-      //
-      public void DrawMasked ()
-      {
-          vissprite_t    spr;
-         int ds;
-         drawseg_t dss;
-          
-         // Well, it sorts visspite objects.
-          SortVisSprites ();
-
-          // Sprite "0" not visible?
-          if (vissprite_p > 0)
-          {
-          // draw all vissprites back to front
-          for (spr = MyThings.vsprsortedhead.next ;
-               spr != vsprsortedhead ;
-               spr=spr.next)
-          {
-              
-              DrawSprite (spr);
-          }
-          }
-          
-          // render any remaining masked mid textures
-          for (ds=ds_p-1 ; ds >= 0 ; ds--) {
-              dss=drawsegs[ds];
-                        if (!dss.nullMaskedTextureCol())
-              MySegs.RenderMaskedSegRange (dss, dss.x1, dss.x2);
-          
-          // draw the psprites on top of everything
-          //  but does not draw on side views
-          if (viewangleoffset==0)       
-          DrawPlayerSprites ();
-      }
-  }
-      
-  }
   
   /////////////////// Generic rendering methods /////////////////////
   
@@ -4171,113 +2493,11 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
       return LL.subsectors[nodenum & ~NF_SUBSECTOR];
   }
   
-  //
-  // R_InitTextureMapping
-  //
-  public void InitTextureMapping ()
-  {
-      int         i;
-      int         x;
-      int         t;
-      int     focallength;
-      
-      // Use tangent table to generate viewangletox:
-      //  viewangletox will give the next greatest x
-      //  after the view angle.
-      //
-      // Calc focallength
-      //  so FIELDOFVIEW angles covers SCREENWIDTH.
-      focallength = FixedDiv (centerxfrac,
-                  finetangent[QUARTERMARK+FIELDOFVIEW/2] );
-      
-      for (i=0 ; i<FINEANGLES/2 ; i++)
-      {
-      if (finetangent[i] > FRACUNIT*2)
-          t = -1;
-      else if (finetangent[i] < -FRACUNIT*2)
-          t = viewwidth+1;
-      else
-      {
-          t = FixedMul (finetangent[i], focallength);
-          t = (centerxfrac - t+FRACUNIT-1)>>FRACBITS;
-
-          if (t < -1)
-          t = -1;
-          else if (t>viewwidth+1)
-          t = viewwidth+1;
-      }
-      viewangletox[i] = t;
-      }
-      
-      // Scan viewangletox[] to generate xtoviewangle[]:
-      //  xtoviewangle will give the smallest view angle
-      //  that maps to x. 
-      for (x=0;x<=viewwidth;x++)
-      {
-      i = 0;
-      while (viewangletox[i]>x)
-          i++;
-      xtoviewangle[x] = addAngles((i<<ANGLETOFINESHIFT),-ANG90);
-      }
-      
-      // Take out the fencepost cases from viewangletox.
-      for (i=0 ; i<FINEANGLES/2 ; i++)
-      {
-      t = FixedMul (finetangent[i], focallength);
-      t = centerx - t;
-      
-      if (viewangletox[i] == -1)
-          viewangletox[i] = 0;
-      else if (viewangletox[i] == viewwidth+1)
-          viewangletox[i]  = viewwidth;
-      }
-      
-      clipangle = xtoviewangle[0];
-      // OPTIMIZE: assign constant for optimization.
-      CLIPANGLE2=(2*clipangle)&BITS32;
-  }
 
 
 
-  //
-  // R_InitLightTables
-  // Only inits the zlight table,
-  //  because the scalelight table changes with view size.
-  //
-  protected static int DISTMAP    =   2;
 
-  public void InitLightTables ()
-  {
-      int     i;
-      int     j;
-      int     level;
-      int     startmap;   
-      int     scale;
-      
-      // Calculate the light levels to use
-      //  for each level / distance combination.
-      for (i=0 ; i< LIGHTLEVELS ; i++)
-      {
-      startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-      for (j=0 ; j<MAXLIGHTZ ; j++)
-      {
-          scale = FixedDiv ((SCREENWIDTH/2*FRACUNIT), (j+1)<<LIGHTZSHIFT);
-          scale >>= LIGHTSCALESHIFT;
-          level = startmap - scale/DISTMAP;
-          
-          if (level < 0)
-          level = 0;
 
-          if (level >= NUMCOLORMAPS)
-          level = NUMCOLORMAPS-1;
-
-  	    //zlight[i][j] = colormaps + level*256;
-          zlight[i][j] = colormaps[level];
-      }
-      }
-  }
-  
-    
   
 
 //
@@ -4310,301 +2530,9 @@ public void InitTranslationTables() {
     }
 }
 
-/**
- * R_DrawMaskedColumn
- * Used for sprites and masked mid textures.
- * Masked means: partly transparent, i.e. stored
- *  in posts/runs of opaque pixels.
- */
 
-public void DrawMaskedColumn (column_t column)
-{
-    int     topscreen;
-    int     bottomscreen;
-    int basetexturemid; // fixed_t
-    
-    basetexturemid = dc_texturemid;
-    // That's true for the whole column.
-    dc_source = column.data;
-    dc_source_ofs=0;
-    
-    // for each post...
-    for (int i=0;i<column.posts;i++ ) 
-    {
-    // calculate unclipped screen coordinates
-    //  for post
-    topscreen = sprtopscreen + spryscale*column.postdeltas[i];
-    bottomscreen = topscreen + spryscale*column.postlen[i];
 
-    dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-    dc_yh = (bottomscreen-1)>>FRACBITS;
-        
-    if (dc_yh >= mfloorclip[p_mfloorclip+dc_x])
-        dc_yh = mfloorclip[p_mfloorclip+dc_x]-1;
-    if (dc_yl <= mceilingclip[p_mceilingclip+dc_x])
-        dc_yl = mceilingclip[p_mceilingclip+dc_x]+1;
 
-    // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
-    if (dc_yl <= dc_yh && dc_yh < viewheight)
-    {
-        // Set pointer inside column to current post's data
-        // Remember, it goes {postlen}{postdelta}{pad}[data]{pad} 
-        
-        dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
-        
-        // Drawn by either R_DrawColumn
-        //  or (SHADOW) R_DrawFuzzColumn.
-        dc_source_ofs+=3;
-        dc_texheight=0; // killough
-        
-         colfunc.invoke();
-    }
-    //column = (column_t *)(  (byte *)column + column.length + 4);
-    dc_source_ofs +=column.postlen[i];
-    }
-    
-    dc_texturemid = basetexturemid;
-}
-
-/**
- * R_DrawMaskedColumn
- * Used for sprites and masked mid textures.
- * Masked means: partly transparent, i.e. stored
- *  in posts/runs of opaque pixels.
- *  
- *  NOTE: this version accepts raw bytes, in case you  know what you're doing.
- */
-
-public void DrawMaskedColumn (byte[] column)
-{
-    int     topscreen;
-    int     bottomscreen;
-    int length;
-    int basetexturemid; // fixed_t
-    int topdelta;
-    
-    basetexturemid = dc_texturemid;
-    // That's true for the whole column.
-    dc_source = column;
-    int pointer=0;
-    
-    // for each post...
-    while((topdelta=toUnsignedByte(column[pointer]))!=0xFF)
-    {
-    // calculate unclipped screen coordinates
-    //  for post
-    topscreen = sprtopscreen + spryscale*topdelta;
-    length=toUnsignedByte(column[pointer+1]);
-    bottomscreen = topscreen + spryscale*length;
-
-    dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
-    dc_yh = (bottomscreen-1)>>FRACBITS;
-        
-    if (dc_yh >= mfloorclip[p_mfloorclip+dc_x])
-        dc_yh = mfloorclip[p_mfloorclip+dc_x]-1;
-    if (dc_yl <= mceilingclip[p_mceilingclip+dc_x])
-        dc_yl = mceilingclip[p_mceilingclip+dc_x]+1;
-
-    // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
-    if (dc_yl <= dc_yh && dc_yh < viewheight)
-    {
-        // Set pointer inside column to current post's data
-        // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
-        dc_source_ofs = pointer+3;
-        dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
-
-        // Drawn by either R_DrawColumn
-        //  or (SHADOW) R_DrawFuzzColumn.
-        dc_texheight=0;
-        try {
-            
-        colfunc.invoke();
-        } catch (ArrayIndexOutOfBoundsException e){
-            // FIXME: happens way too often.
-        }
-    }
-    pointer+=length + 4;
-    }
-    
-    dc_texturemid = basetexturemid;
-}
-
-/////////////////////////////// r_draw methods //////////////////////////////////////
-
-/**
- * Copy a screen buffer.
- * Actually, it's hardcoded to copy stuff from screen 1 to screen 0.
- * Used to overlay stuff like beveled edges that don't need to be updated that often. * 
- * 
- *   LFB copy.
- *   This might not be a good idea if memcpy
- *   is not optiomal, e.g. byte by byte on
- *   a 32bit CPU, as GNU GCC/Linux libc did
- *    at one point.
- */
-public void VideoErase(int ofs, int count) {
-
-    // memcpy (screens[0]+ofs, screens[1]+ofs, count);
-    System.arraycopy(V.getScreen(1), ofs, V.getScreen(0), ofs, count);
-
-}
-
-/*
- * R_DrawViewBorder
- * Draws the border around the view
- * for different size windows?
- */
-
- public void DrawViewBorder() {
-     int top;
-     int side;
-     int ofs;
-     int i;
-
-     if (scaledviewwidth == SCREENWIDTH)
-         return;
-
-     top = ((SCREENHEIGHT - SBARHEIGHT) - viewheight) / 2;
-     side = (SCREENWIDTH - scaledviewwidth) / 2;
-
-     // copy top and one line of left side
-     this.VideoErase(0, top * SCREENWIDTH + side);
-
-     // copy one line of right side and bottom
-     ofs = (viewheight + top) * SCREENWIDTH - side;
-     this.VideoErase(ofs, top * SCREENWIDTH + side);
-
-     // copy sides using wraparound
-     ofs = top * SCREENWIDTH + SCREENWIDTH - side;
-     side <<= 1;
-
-     for (i = 1; i < viewheight; i++) {
-         this.VideoErase(ofs, side);
-         ofs += SCREENWIDTH;
-     }
-
-     // ?
-     V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT - SBARHEIGHT);
- }
-
- /**
-  * R_FillBackScreen
-  * Fills the back screen with a pattern for variable screen sizes
-  * Also draws a beveled edge. This is actually stored in screen 1, 
-  * and is only OCCASIONALLY written to screen 1 (the visible one)
-  * by calling R_VideoErase.
-  */
- 
- public void FillBackScreen() {
-     flat_t src;
-     byte[] dest;
-     int x;
-     int y;
-     patch_t patch;
-
-     // DOOM border patch.
-     String name1 = "FLOOR7_2";
-
-     // DOOM II border patch.
-     String name2 = "GRNROCK";
-
-     String name;
-
-     if (scaledviewwidth == SCREENWIDTH)
-         return;
-
-     if (DM.gamemode == GameMode_t.commercial)
-         name = name2;
-     else
-         name = name1;
-
-     /* This is a flat we're reading here */
-     src = (flat_t) (W.CacheLumpName(name, PU_CACHE,flat_t.class));
-     dest = V.getScreen(1);
-     int destPos = 0;
-
-     /* This part actually draws the border itself, without bevels */
-     
-     for (y = 0; y < SCREENHEIGHT - SBARHEIGHT; y++) {
-         for (x = 0; x < SCREENWIDTH / 64; x++) {
-             // memcpy (dest, src+((y&63)<<6), 64);
-             System.arraycopy(src.data, ((y & 63) << 6), dest, destPos, 64);
-             destPos += 64;
-         }
-
-         if ((SCREENWIDTH & 63) != 0) {
-             // memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
-             System.arraycopy(src.data, ((y & 63) << 6), dest, destPos,
-                 SCREENWIDTH & 63);
-
-             destPos += (SCREENWIDTH & 63);
-         }
-     }
-
-     patch = (patch_t) W.CachePatchName("BRDR_T", PU_CACHE);
-
-     for (x = 0; x < scaledviewwidth; x += 8)
-         V.DrawPatch(viewwindowx + x, viewwindowy - 8, 1, patch);
-     patch = (patch_t) W.CachePatchName("BRDR_B", PU_CACHE);
-
-     for (x = 0; x < scaledviewwidth; x += 8)
-         V.DrawPatch(viewwindowx + x, viewwindowy + viewheight, 1, patch);
-     patch = (patch_t) W.CachePatchName("BRDR_L", PU_CACHE);
-
-     for (y = 0; y < viewheight; y += 8)
-         V.DrawPatch(viewwindowx - 8, viewwindowy + y, 1, patch);
-     patch = (patch_t) W.CachePatchName("BRDR_R", PU_CACHE);
-
-     for (y = 0; y < viewheight; y += 8)
-         V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + y, 1,
-             patch);
-
-     // Draw beveled edge. Top-left
-     V.DrawPatch(viewwindowx - 8, viewwindowy - 8, 1, (patch_t) W
-             .CachePatchName("BRDR_TL", PU_CACHE));
-
-     // Top-right.
-     V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy - 8, 1,
-         (patch_t) W.CachePatchName("BRDR_TR", PU_CACHE));
-
-     // Bottom-left
-     V.DrawPatch(viewwindowx - 8, viewwindowy + viewheight, 1,
-         (patch_t) W.CachePatchName("BRDR_BL", PU_CACHE));
-     // Bottom-right.
-     V.DrawPatch(viewwindowx + scaledviewwidth, viewwindowy + viewheight, 1,
-         (patch_t) W.CachePatchName("BRDR_BR", PU_CACHE));
- }
-
- /**
-  * R_InitBuffer Creates lookup tables that avoid multiplies and other
-  * hazzles for getting the framebuffer address of a pixel to draw. MAES:
-  * this is "pinned" to screen[0] of a Video Renderer. We will handle this
-  * differently elsewhere...
-  */
-
- public void InitBuffer(int width, int height) {
-     int i;
-
-     // Handle resize,
-     // e.g. smaller view windows
-     // with border and/or status bar.
-     viewwindowx = (SCREENWIDTH - width) >> 1;
-
-     // Column offset. For windows.
-     for (i = 0; i < width; i++)
-         columnofs[i] = viewwindowx + i;
-
-     // SamE with base row offset.
-     if (width == SCREENWIDTH)
-    	 viewwindowy = 0;
-     else
-    	 viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
-
-     // Preclaculate all row offsets.
-     for (i = 0; i < height; i++)
-         ylookup[i] = /* screens[0] + */(i + viewwindowy) * SCREENWIDTH;
- }
- 
  
  /**
   * Draws the actual span.
@@ -4858,196 +2786,13 @@ public void SetupFrame (player_t player)
  validcount++;
 }
 
-/**
- * R_ExecuteSetViewSize
- */
 
-public void ExecuteSetViewSize ()
-{
-    int cosadj;
-    int dy;
-    int     i;
-    int     j;
-    int     level;
-    int     startmap;   
-    
-    setsizeneeded = false;
-
-    // 11 Blocks means "full screen"
-    
-    if (setblocks == 11)
-    {
-    scaledviewwidth = SCREENWIDTH;
-    viewheight = SCREENHEIGHT;
-    }
-    else
-    {
-        scaledviewwidth = setblocks*32;
-        viewheight = (short) ((setblocks*168/10)&~7);
-    }
-    
-    detailshift = setdetail;
-    viewwidth = scaledviewwidth>>detailshift;
-    
-    centery = viewheight/2;
-    centerx = viewwidth/2;
-    centerxfrac=(centerx<<FRACBITS);
-    centeryfrac=(centery<<FRACBITS);
-    projection=centerxfrac;
-
-    // High detail
-    if (detailshift==0)
-    {
-        
-    colfunc = basecolfunc =DrawColumn;
-    fuzzcolfunc = DrawFuzzColumn;
-    transcolfunc = DrawTranslatedColumn;
-    spanfunc = DrawSpan;
-    }
-    else {
-    // Low detail
-    colfunc = basecolfunc = DrawColumnLow;
-    fuzzcolfunc =DrawFuzzColumn;
-    transcolfunc = DrawTranslatedColumn;
-    spanfunc = DrawSpanLow;
-    
-    }
-
-    InitBuffer (scaledviewwidth, viewheight);
-    
-    InitTextureMapping ();
-    
-    // psprite scales
-    pspritescale=(FRACUNIT*viewwidth/SCREENWIDTH);
-    pspriteiscale=(FRACUNIT*SCREENWIDTH/viewwidth);
-    
-    // thing clipping
-    for (i=0 ; i<viewwidth ; i++)
-    screenheightarray[i] = (short) viewheight;
-    
-    // planes
-    for (i=0 ; i<viewheight ; i++)
-    {
-    dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
-    dy = Math.abs(dy);
-    MyPlanes.yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
-    MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
-    }
-    
-    double cosadjf;
-    for (i=0 ; i<viewwidth ; i++)
-    {
-    // MAES: In this spot we must interpet it as SIGNED, else it's pointless, right?
-    // MAES: this spot caused the "warped floor bug", now fixed. Don't forget xtoviewangle[i]!    
-    cosadj = Math.abs(finecosine(xtoviewangle[i]));
-    cosadjf = Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
-    MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
-    MyPlanes.distscalef[i] = (float) (1.0/cosadjf);
-    }
-    
-    // Calculate the light levels to use
-    //  for each level / scale combination.
-    for (i=0 ; i< LIGHTLEVELS ; i++)
-    {
-    startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-    for (j=0 ; j<MAXLIGHTSCALE ; j++)
-    {
-        level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
-        
-        if (level < 0)
-        level = 0;
-
-        if (level >= NUMCOLORMAPS)
-        level = NUMCOLORMAPS-1;
-
-        scalelight[i][j] = colormaps[level];
-    }
-    }
-}
  
  
  
-//////////////////////////////////From r_sky.c /////////////////////////////////////
-
-/**
- * R_InitSkyMap
- * Called whenever the view size changes.
- */
-
-public int InitSkyMap ()
-{
-    skyflatnum = FlatNumForName ( SKYFLATNAME );
-    skytexturemid = 100*FRACUNIT;
-    return skyflatnum;
-}
-
-
-  interface colfunc_t {
-      public void invoke();
-  }
-  
-  ///////////////////// Renderer Data ////////////////////////
-  
-  //
-  // Graphics.
-  // DOOM graphics for walls and sprites
-  // is stored in vertical runs of opaque pixels (posts).
-  // A column is composed of zero or more posts,
-  // a patch or sprite is composed of zero or more columns.
-  // 
-
-  public int     firstflat;
-  public int     lastflat;
-  public int     numflats;
-  /** HACK */
-  public flat_t[] flats;
 
   
-  public int     firstpatch;
-  public int     lastpatch;
-  public int     numpatches;
 
-  public int     firstspritelump;
-  public int     lastspritelump;
-  public int     numspritelumps;
-
-  public int     numtextures;
-  
-  /* The unchached textures themselves, stored just as patch lists and various properties */
-  public texture_t[] textures;
-
-  /** Width per texture? */
-  int[]            texturewidthmask;
-  /** fixed_t[] needed for texture pegging */
-  
-  /** How tall each composite texture is supposed to be */
-  public int[]        textureheight;    
-  
-  /** How large each composite texture is supposed to be */
-  int[]            texturecompositesize;
-  /** Tells us which patch lump covers which column of which texture */
-  short[][]         texturecolumnlump;
-  /** This is supposed to store indexes into a patch_t lump which point to the columns themselves 
-   *  Instead, we're going to return indexes to columns inside a particular patch.
-   *  In the case of patches inside a non-cached multi-patch texture (e.g. those made of non-overlapping
-   *  patches), we're storing indexes INSIDE A PARTICULAR PATCH. E.g. for STARTAN1, which is made of two
-   *  32-px wide patches, it should go something like 0, 1,2 ,3...31, 0,1,2,....31.
-   *  
-   * */
-  char[][]    texturecolumnofs;
-  
-  /** couple with texturecomposite */
-  char texturecoloffset;
-  //short[][]    texturecolumnindexes;
-  /** Stores [textures][columns][data]. */
-  byte[][][]          texturecomposite;
-
-  // for global animation
-  public int[]        flattranslation;
-  public int[]        texturetranslation;
-
-  /** needed for pre rendering (fixed_t[]) */
-  int[]    spritewidth,spriteoffset,spritetopoffset;
   
   /* MAPTEXTURE_T CACHING
    * When a texture is first needed, it counts the number of 
@@ -5671,24 +3416,7 @@ public int InitSkyMap ()
 
 
 
-    /**
-     * R_FlatNumForName
-     * Retrieval, get a flat number for a flat name.
-     */
-     
-    public int FlatNumForName(String name) {
-        int i;
-        
-        System.out.println("Checking for "+name);
 
-        i = W.CheckNumForName(name);
-
-        if (i == -1) {
-            I.Error("R_FlatNumForName: %s not found", name);
-        }
-        
-        return i - firstflat;
-    }
 
 
 
@@ -5896,6 +3624,118 @@ public void Init ()
    System.out.print("\nR_InitTranslationsTables");
    
    framecount = 0;
+}
+
+/**
+ * R_ExecuteSetViewSize
+ */
+
+public void ExecuteSetViewSize ()
+{
+    int cosadj;
+    int dy;
+    int     i;
+    int     j;
+    int     level;
+    int     startmap;   
+    
+    setsizeneeded = false;
+
+    // 11 Blocks means "full screen"
+    
+    if (setblocks == 11)
+    {
+    scaledviewwidth = SCREENWIDTH;
+    viewheight = SCREENHEIGHT;
+    }
+    else
+    {
+        scaledviewwidth = setblocks*32;
+        viewheight = (short) ((setblocks*168/10)&~7);
+    }
+    
+    detailshift = setdetail;
+    viewwidth = scaledviewwidth>>detailshift;
+    
+    centery = viewheight/2;
+    centerx = viewwidth/2;
+    centerxfrac=(centerx<<FRACBITS);
+    centeryfrac=(centery<<FRACBITS);
+    projection=centerxfrac;
+
+    // High detail
+    if (detailshift==0)
+    {
+        
+    colfunc = basecolfunc =DrawColumn;
+    fuzzcolfunc = DrawFuzzColumn;
+    transcolfunc = DrawTranslatedColumn;
+    spanfunc = DrawSpan;
+    }
+    else {
+    // Low detail
+    colfunc = basecolfunc = DrawColumnLow;
+    fuzzcolfunc =DrawFuzzColumn;
+    transcolfunc = DrawTranslatedColumn;
+    spanfunc = DrawSpanLow;
+    
+    }
+
+    InitBuffer (scaledviewwidth, viewheight);
+    
+    InitTextureMapping ();
+    
+    // FIXME: this is enough to scale them up, but there's still centering to do.
+    // psprite scales
+    pspritescale=(int) (FRACUNIT*((float)SAFE_SCALE*viewwidth)/SCREENWIDTH);
+    
+    //pspriteiscale = FRACUNIT*(SCREENWIDTH/(viewwidth*1));
+    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SAFE_SCALE)));
+    
+//    pspriteiscale=FixedDiv(FRACUNIT,pspritescale);
+    
+    // thing clipping
+    for (i=0 ; i<viewwidth ; i++)
+    screenheightarray[i] = (short) viewheight;
+    
+    // planes
+    for (i=0 ; i<viewheight ; i++)
+    {
+    dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
+    dy = Math.abs(dy);
+    MyPlanes.yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+    MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
+    }
+    
+    double cosadjf;
+    for (i=0 ; i<viewwidth ; i++)
+    {
+    // MAES: In this spot we must interpet it as SIGNED, else it's pointless, right?
+    // MAES: this spot caused the "warped floor bug", now fixed. Don't forget xtoviewangle[i]!    
+    cosadj = Math.abs(finecosine(xtoviewangle[i]));
+    cosadjf = Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
+    MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
+    MyPlanes.distscalef[i] = (float) (1.0/cosadjf);
+    }
+    
+    // Calculate the light levels to use
+    //  for each level / scale combination.
+    for (i=0 ; i< LIGHTLEVELS ; i++)
+    {
+    startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+    for (j=0 ; j<MAXLIGHTSCALE ; j++)
+    {
+        level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
+        
+        if (level < 0)
+        level = 0;
+
+        if (level >= NUMCOLORMAPS)
+        level = NUMCOLORMAPS-1;
+
+        scalelight[i][j] = colormaps[level];
+    }
+    }
 }
 
 

@@ -109,7 +109,7 @@ public class AWTRenderViewTester {
     DM.wminfo.maxkills=100;
     DM.wminfo.maxsecret=100;
     DM.wminfo.partime=28595;
-    DM.PlayerReborn(0);
+    
    
     DoomMenu M=DM.M=new Menu(DM);
     Map AM=(Map) (DM.AM=new Map(DM));
@@ -126,10 +126,12 @@ public class AWTRenderViewTester {
     AM.updateStatus(DM);
     DM.R.Init();
     DM.P.Init();
+    DM.players[0].updateStatus(DM);
+    DM.PlayerReborn(0);
+
     LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     ST.Init();
     M.Init();
-    
     ST.Start();
     AM.LevelInit();
     AM.Start();
@@ -142,6 +144,7 @@ public class AWTRenderViewTester {
     DM.automapactive=true;
     DM.R.FillBackScreen();
     DM.R.DrawViewBorder();
+    
     
     // Center on "bloody mess" in E1M1
     //DM.players[0].mo.y+=420<<16;

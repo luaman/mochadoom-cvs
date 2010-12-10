@@ -19,5 +19,10 @@ public enum weapontype_t
     NUMWEAPONS,
     
     // No pending weapon change.
-    wp_nochange
-};
+    wp_nochange;
+    
+    public String toString(){
+        return this.name();
+    }
+    
+}
