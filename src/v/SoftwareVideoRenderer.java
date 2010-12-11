@@ -462,9 +462,9 @@ public abstract class SoftwareVideoRenderer
   protected final void scaleSolid(int m, int n, int screen){
       int screenwidth=this.getWidth();
       for (int i=0;i<this.getHeight();i+=n){
-          System.out.println("Line "+i); 
+           
           for (int j=0;j<n-1;j++){
-              System.out.println( ((i+j)*screenwidth)+"  to "+ ((i+j+1)*screenwidth));
+
               System.arraycopy(screens[screen], (i+j)*screenwidth, screens[screen],(i+j+1)*screenwidth,screenwidth);
           }
       }

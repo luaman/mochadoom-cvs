@@ -59,7 +59,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.26 2010/12/10 17:38:57 velktron Exp $
+// $Id: DoomMain.java,v 1.27 2010/12/11 15:08:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -74,6 +74,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.27  2010/12/11 15:08:59  velktron
+// Techdemo release.
+//
 // Revision 1.26  2010/12/10 17:38:57  velktron
 // pspritescale fixed, weapon actions won't crash (but not work either).
 //
@@ -186,7 +189,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.26 2010/12/10 17:38:57 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.27 2010/12/11 15:08:59 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1148,8 +1151,23 @@ public void Start ()
 	    startmap = Integer.parseInt(myargv[p+1]);
 	else
 	{
-	    startepisode = myargv[p+1].charAt(0)-'0';
-	    startmap = myargv[p+1].charAt(0)-'0';
+		int eval=11;
+		try {
+		    eval=Integer.parseInt(myargv[p+1]);
+		} catch (Exception e){
+			// swallow exception. No warp.
+		}
+		
+		if (eval>99) eval%=100;
+		
+		if (eval<10) {
+	    startepisode = 1;
+	    startmap = 1;
+		}
+		else {
+		    startepisode = eval/10;
+		    startmap = eval%10;
+		}
 	}
 	autostart = true;
     }

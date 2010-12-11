@@ -291,9 +291,11 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
     //
 
     /** fixed_t */
-    protected int     pspritescale,pspriteiscale;
+    protected int     pspritescale,pspriteiscale,skyscale;
 
     protected byte[][]  spritelights;
+    
+    protected int WEAPONADJUST;
      
     /** constant arrays
      *  used for psprite clipping and initializing clipping 
@@ -909,7 +911,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             ProjectSprite (thing);
         }
 
-
+       
+        
         /**
          * R_DrawPSprite
          * 
@@ -918,7 +921,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
          * 
          */
         
-        public void DrawPSprite (pspdef_t psp)
+        public final void DrawPSprite (pspdef_t psp)
         {
             int     tx;
             int         x1;
@@ -952,7 +955,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
            
             // calculate edges of the shape. tx is expressed in "view units".
 
-            tx = (int) (psp.sx-(SCREENWIDTH/(2*Defines.SCREEN_MUL))*FRACUNIT);
+            // OPTIMIZE: if weaponadjust is computed in-place, noticeable slowdown occurs.
+            tx = (int) (psp.sx-WEAPONADJUST);
             
             tx -= spriteoffset[lump];
             
@@ -1043,7 +1047,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             
             // get light level
             lightnum =
-            (viewplayer.mo.subsector.sector.lightlevel /*>> LIGHTSEGSHIFT*/) 
+            (viewplayer.mo.subsector.sector.lightlevel >> LIGHTSEGSHIFT) 
             +extralight;
 
             if (lightnum < 0)       
@@ -1503,7 +1507,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
      *  you get smoother light and get rid of 
      *  lightsegshift globally, too.
      */
-    protected  static final int LIGHTLEVELS=256;//, LIGHTSEGSHIFT=4;
+    protected  static final int LIGHTLEVELS=16, LIGHTSEGSHIFT=4;
 
     // These are a bit more tricky to figure out though.
     

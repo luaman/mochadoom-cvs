@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.11 2010/12/10 17:38:57 velktron Exp $
+// $Id: fixed_t.java,v 1.12 2010/12/11 15:08:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: fixed_t.java,v $
+// Revision 1.12  2010/12/11 15:08:59  velktron
+// Techdemo release.
+//
 // Revision 1.11  2010/12/10 17:38:57  velktron
 // pspritescale fixed, weapon actions won't crash (but not work either).
 //
@@ -113,7 +116,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.11 2010/12/10 17:38:57 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.12 2010/12/11 15:08:59 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 
@@ -193,9 +196,18 @@ FixedDiv
 ( int   a,
   int   b )
 {
-    if ( (Math.abs(a)>>14) >= Math.abs(b))
-    return (a^b)<0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-    return FixedDiv2 (a,b);
+	  if ((Math.abs(a) >> 14) >= Math.abs(b))
+	    {
+		return (a^b) < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+	    }
+	    else
+	    {
+		long result;
+
+		result = ((long) a << 16) / b;
+
+		return (int) result;
+	    }
 }
 
 

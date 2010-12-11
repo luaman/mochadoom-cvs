@@ -14,6 +14,7 @@ import java.nio.ByteOrder;
 import p.mobj_t;
 import utils.C2JUtils;
 import w.DoomBuffer;
+import data.Defines;
 import data.Tables;
 import doom.DoomMain;
 import doom.player_t;
@@ -1277,7 +1278,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
           backsector = curline.backsector;
           texnum = texturetranslation[curline.sidedef.midtexture];
           //System.out.print(" for texture "+textures[texnum].name+"\n:");
-          lightnum = (frontsector.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
+          lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
           if (curline.v1y == curline.v2y)
           lightnum--;
@@ -1865,7 +1866,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
           // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
           if (fixedcolormap==null)
           {
-              lightnum = (frontsector.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
+              lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
               if (curline.v1y == curline.v2y)
               lightnum--;
@@ -2424,7 +2425,7 @@ public class UnifiedRenderer extends RendererState implements TextureManager {
           }
           
           planeheight = Math.abs(pln.height-viewz);
-          light = (pln.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
+          light = (pln.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
           if (light >= LIGHTLEVELS)
               light = LIGHTLEVELS-1;
@@ -3685,14 +3686,16 @@ public void ExecuteSetViewSize ()
     
     InitTextureMapping ();
     
-    // FIXME: this is enough to scale them up, but there's still centering to do.
     // psprite scales
-    pspritescale=(int) (FRACUNIT*((float)SAFE_SCALE*viewwidth)/SCREENWIDTH);
+    //pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
+    //pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
     
-    //pspriteiscale = FRACUNIT*(SCREENWIDTH/(viewwidth*1));
-    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SAFE_SCALE)));
     
-//    pspriteiscale=FixedDiv(FRACUNIT,pspritescale);
+    pspritescale=(int) (FRACUNIT*((float)SCREEN_MUL*viewwidth)/SCREENWIDTH);
+    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
+    skyscale=(int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
+
+    WEAPONADJUST=(int) ((SCREENWIDTH/(2*Defines.SCREEN_MUL))*FRACUNIT);
     
     // thing clipping
     for (i=0 ; i<viewwidth ; i++)

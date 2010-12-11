@@ -240,7 +240,12 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
             case KeyEvent.ALT_DOWN_MASK:
             rc = KEY_RALT;
             break;
-            }
+
+            case KeyEvent.VK_SPACE:
+                rc = ' ';
+                break;
+
+                }
                 
             default:
             /*if (rc >= KeyEvent.VK_SPACE && rc <= KeyEvent.VK_DEAD_TILDE)
@@ -250,7 +255,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
             break;
           }
           
-         System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
+         //System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
 
           return rc;
 

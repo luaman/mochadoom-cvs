@@ -36,8 +36,8 @@ import doom.thinker_t;
 
 public class ParallelRenderer extends RendererState  {
 	///// PARALLEL OBJECTS /////
-	private final static int NUMWALLTHREADS=2;
-	private final static int NUMFLOORTHREADS=2;
+	private final static int NUMWALLTHREADS=1;
+	private final static int NUMFLOORTHREADS=1;
 	private Executor tp;
 	private VisplaneWorker[] vpw;
 	
@@ -61,9 +61,6 @@ public class ParallelRenderer extends RendererState  {
 	 */
 		
 	private RenderWallInstruction[] RWI=new RenderWallInstruction[3*SCREENWIDTH];
-	
-	// TODO just an idea.
-	//private RenderSpriteInstruction[] RSI=new RenderWallInstruction[3*SCREENWIDTH];
 	
 	/** Increment this as you submit RWI to the "queue". Remember to reset to 0 when you have drawn everything!
 	 * 
@@ -1328,7 +1325,7 @@ public class ParallelRenderer extends RendererState  {
           backsector = curline.backsector;
           texnum = texturetranslation[curline.sidedef.midtexture];
           //System.out.print(" for texture "+textures[texnum].name+"\n:");
-          lightnum = (frontsector.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
+          lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
           if (curline.v1y == curline.v2y)
           lightnum--;
@@ -1960,7 +1957,7 @@ public class ParallelRenderer extends RendererState  {
           // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
           if (fixedcolormap==null)
           {
-              lightnum = (frontsector.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
+              lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
               if (curline.v1y == curline.v2y)
               lightnum--;
@@ -2560,7 +2557,7 @@ public class ParallelRenderer extends RendererState  {
          // sky flat
          if (pln.picnum == skyflatnum)
          {
-             dc_iscale = pspriteiscale>>detailshift;
+             dc_iscale = skyscale>>detailshift;
              
              /* Sky is allways drawn full bright,
               * i.e. colormaps[0] is used.
@@ -2599,7 +2596,7 @@ public class ParallelRenderer extends RendererState  {
          }
          
          vpw_planeheight = Math.abs(pln.height-viewz);
-         light = (pln.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
+         light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
 
          if (light >= LIGHTLEVELS)
              light = LIGHTLEVELS-1;
@@ -2921,7 +2918,7 @@ private void InitRWISubsystem() {
     }
 }
 
-/** Resizes RSI buffer, updates executors. Sorry for the hackish implementation
+/** Resizes RWI buffer, updates executors. Sorry for the hackish implementation
  *  but ArrayList and pretty much everything in Collections is way too slow
  *  for what we're trying to accomplish.
  * 
@@ -3878,11 +3875,9 @@ public void SetupFrame (player_t player)
 
   /**
    * R_InitSpriteLumps
-   * 
    * Finds the width and hoffset of all sprites in the wad,
    *  so the sprite does not need to be cached completely
    *  just for having the header info ready during rendering.
-   *  
    */
   
   protected void InitSpriteLumps () throws IOException
@@ -4232,12 +4227,17 @@ public void ExecuteSetViewSize ()
     
     InitTextureMapping ();
     
-    // FIXME: this is enough to scale them up, but there's still centering to do.
     // psprite scales
-    pspritescale=(int) (FRACUNIT*(SCREEN_MUL*viewwidth)/SCREENWIDTH);
+    //pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
+    //pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
     
-    //pspriteiscale = FRACUNIT*(SCREENWIDTH/(viewwidth*1));
-    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*SCREEN_MUL)));
+    
+    pspritescale=(int) (FRACUNIT*((float)SCREEN_MUL*viewwidth)/SCREENWIDTH);
+    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
+    skyscale=(int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
+
+    
+    WEAPONADJUST=(int) ((SCREENWIDTH/(2*Defines.SCREEN_MUL))*FRACUNIT);
     
     // thing clipping
     for (i=0 ; i<viewwidth ; i++)
@@ -4316,58 +4316,7 @@ public void setFlatTranslation(int flatnum, int amount) {
 
 }
 
-////////////////// PARALLEL SPRITE RENDERING -TODO ////////
-
-/** Parallel version. Since there's so much crap to take into account when rendering, the number of
- * walls to render is unknown a-priori and the BSP trasversal itself is not worth parallelizing,
- * it makes more sense to store "rendering instructions" as quickly as the BSP can be transversed,
- * and then execute those in parallel. Also saves on having to duplicate way too much status.
- *  
- *  
- */
-
-private final void StoreSpriteRenderingInstruction(){
-    /*(int centery, int dc_iscale, int dc_source_ofs, int dc_texturemid,
-    int dc_x, int dc_yh, int dc_yl, int[] columnofs, byte[] dc_colormap, byte[] dc_source){*/
-    if (RWIcount>=RWI.length){
-        ResizeRWIBuffer();
-    }
-        
-    RWI[RWIcount].centery=centery;
-    RWI[RWIcount].dc_iscale=dc_iscale;
-    RWI[RWIcount].dc_x=dc_x;
-    RWI[RWIcount].dc_yh=dc_yh;
-    RWI[RWIcount].dc_yl=dc_yl;
-    RWI[RWIcount].columnofs=columnofs;
-    RWI[RWIcount].dc_colormap=dc_colormap;
-    RWI[RWIcount].dc_source=dc_source;
-    RWI[RWIcount].dc_source_ofs=dc_source_ofs;
-    RWI[RWIcount].dc_texturemid=dc_texturemid;
-    RWI[RWIcount].dc_texheight=dc_texheight;
-    RWIcount++;    
-}
+ 
   
-/** Resizes RSI buffer, updates executors. Sorry for the hackish implementation
- *  but ArrayList and pretty much everything in Collections is way too slow
- *  for what we're trying to accomplish.
- * 
- */
-
-private void ResizeRSIBuffer() {
-/*    RenderWallInstruction[] tmp=new RenderWallInstruction[RWI.length*2];
-    System.arraycopy(RWI, 0, tmp, 0, RWI.length);
-    
-    C2JUtils.initArrayOfObjects(tmp,RWI.length,tmp.length);
-    
-    // Bye bye, old RWI.
-    RWI=tmp;   
-    
-    for (int i=0;i<NUMWALLTHREADS;i++){
-        RWIExec[i].updateRWI(RWI);
-    }
-    
-    System.out.println("RWI Buffer resized. Actual capacity "+RWI.length);*/
-}
-
   
 }

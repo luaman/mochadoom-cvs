@@ -51,7 +51,7 @@ public class AWTParallelRenderTester1 {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"C:\\iwads\\doom.wad","sprites.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"});
     
     System.out.println("Total lumps read: "+W.numlumps);
 
@@ -148,7 +148,7 @@ public class AWTParallelRenderTester1 {
     DM.R.DrawViewBorder();
     
     // Center on "bloody mess" in E1M1
-    DM.players[0].mo.y+=1024<<16;
+    //DM.players[0].mo.y+=1024<<16;
     //DM.players[0].mo.x+=128<<16;
         int pl=0;
         for (int i=0;i<20000;i++){
