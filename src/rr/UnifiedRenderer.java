@@ -3167,7 +3167,7 @@ public void SetupFrame (player_t player)
       for (int i=0 ; i<nummappatches ; i++)
       {
       // Get a size limited string;
-      name=DoomBuffer.getString(names, 8).toUpperCase();
+      name=DoomBuffer.getNullTerminatedString(names, 8).toUpperCase();
       patchlookup[i] = W.CheckNumForName (name);
       }
       

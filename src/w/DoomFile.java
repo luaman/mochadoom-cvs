@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.9 2010/11/12 13:37:25 velktron Exp $
+//$Id: DoomFile.java,v 1.10 2010/12/12 21:27:17 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -103,7 +103,7 @@ public class DoomFile extends RandomAccessFile {
     * @return
     * @throws IOException
     */
-      
+   
       public String readNullTerminatedString(int len) throws IOException {
 
           if (len == -1)

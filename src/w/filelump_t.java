@@ -21,7 +21,7 @@ public class filelump_t  implements ReadableDoomObject {
 
             filepos=Swap.LONG(f.readInt());
             size=Swap.LONG(f.readInt());
-            name=f.readString(8);
+            name=f.readNullTerminatedString(8);
         }
 
         public void write(DoomFile f) throws IOException{

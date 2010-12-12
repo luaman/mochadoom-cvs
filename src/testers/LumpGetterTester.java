@@ -55,7 +55,7 @@ public class LumpGetterTester {
         random =(int) (Math.random()*W.numlumps);
         String what=W.lumpinfo[random].name;
         hash=W.lumpinfo[random].hash;
-        tests[i] = W.CheckNumForName(what);
+        tests[i] = W.CheckNumForName2(what);
         if (!W.lumpinfo[tests[i]].name.equalsIgnoreCase(what)) System.err.println("Mismatch");
     }
     

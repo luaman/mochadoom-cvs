@@ -26,6 +26,7 @@ public class name8 {
         }
         
         byte[] tmp=name.getBytes();
+        // We must effectively limit hashes to 31 bits to be able to use them.
         System.arraycopy(tmp, 0, ss, 0, Math.min(8,tmp.length));
         return byteArrayToLong(ss,0);
     }
