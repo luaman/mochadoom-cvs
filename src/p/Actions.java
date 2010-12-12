@@ -7155,7 +7155,7 @@ mobj_t  thing )
     {
         int     angle;
         int x1,y1,x2,y2;
-        
+        System.out.println("Uselines");
         usething = player.mo;
         
         // Normally this shouldn't cause problems?
@@ -7163,8 +7163,8 @@ mobj_t  thing )
 
         x1 = player.mo.x;
         y1 = player.mo.y;
-        x2 = x1 + (USERANGE>>>FRACBITS)*finecosine[angle];
-        y2 = y1 + (USERANGE>>>FRACBITS)*finesine[angle];
+        x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angle];
+        y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
         
         PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR.UseTraverse );
     }
@@ -7376,6 +7376,7 @@ mobj_t  thing )
     int           flags,
     PTR trav)
     {
+   // 	System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , " +y2);
      int xt1,yt1;
      int xt2, yt2;
      
@@ -7411,18 +7412,18 @@ mobj_t  thing )
 
      x1 -= LL.bmaporgx;
      y1 -= LL.bmaporgy;
-     xt1 = x1>>MAPBLOCKSHIFT;
-     yt1 = y1>>MAPBLOCKSHIFT;
+     xt1 = x1>>>MAPBLOCKSHIFT;
+     yt1 = y1>>>MAPBLOCKSHIFT;
 
      x2 -= LL.bmaporgx;
      y2 -= LL.bmaporgy;
-     xt2 = x2>>MAPBLOCKSHIFT;
-     yt2 = y2>>MAPBLOCKSHIFT;
+     xt2 = x2>>>MAPBLOCKSHIFT;
+     yt2 = y2>>>MAPBLOCKSHIFT;
 
      if (xt2 > xt1)
      {
      mapxstep = 1;
-     partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
+     partial = FRACUNIT - ((x1>>>MAPBTOFRAC)&(FRACUNIT-1));
      ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
      }
      else if (xt2 < xt1)
@@ -7438,19 +7439,19 @@ mobj_t  thing )
      ystep = 256*FRACUNIT;
      }   
 
-     yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
+     yintercept = (y1>>>MAPBTOFRAC) + FixedMul (partial, ystep);
 
      
      if (yt2 > yt1)
      {
      mapystep = 1;
-     partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
+     partial = FRACUNIT - ((y1>>>MAPBTOFRAC)&(FRACUNIT-1));
      xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else if (yt2 < yt1)
      {
      mapystep = -1;
-     partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
+     partial = (y1>>>MAPBTOFRAC)&(FRACUNIT-1);
      xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else
@@ -7459,7 +7460,7 @@ mobj_t  thing )
      partial = FRACUNIT;
      xstep = 256*FRACUNIT;
      }   
-     xintercept = (x1>>MAPBTOFRAC) + FixedMul (partial, xstep);
+     xintercept = (x1>>>MAPBTOFRAC) + FixedMul (partial, xstep);
      
      // Step through map blocks.
      // Count is present to prevent a round off error
@@ -7487,12 +7488,12 @@ mobj_t  thing )
          break;
      }
      
-     if ( (yintercept >> FRACBITS) == mapy)
+     if ( (yintercept >>> FRACBITS) == mapy)
      {
          yintercept += ystep;
          mapx += mapxstep;
      }
-     else if ( (xintercept >> FRACBITS) == mapx)
+     else if ( (xintercept >>> FRACBITS) == mapx)
      {
          xintercept += xstep;
          mapy += mapystep;
@@ -7500,6 +7501,7 @@ mobj_t  thing )
          
      }
      // go through the sorted list
+     System.out.println("Some intercepts found");
      return TraverseIntercepts ( trav, FRACUNIT );
     } // end method
     

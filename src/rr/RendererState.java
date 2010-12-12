@@ -42,6 +42,7 @@ import static utils.C2JUtils.toUnsignedByte;
 
 import java.util.Arrays;
 
+import m.DoomMenu;
 import m.fixed_t;
 
 import p.LevelLoader;
@@ -83,6 +84,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
     protected LevelLoader LL;
     protected WadLoader W;
     protected SegDrawer MySegs;
+    protected DoomMenu Menu;
 
     public Things MyThings;
     protected DoomVideoRenderer V;
@@ -104,7 +106,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
      *  node, by d_net.c, to set up a L/M/R session. */
     
     public static final long viewangleoffset=0;
-
+    
     ///// FROM PLANES //////
     
     // initially.
@@ -656,7 +658,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
          * Sprites are actually drawn here.
          *
          */ 
-        public void
+        public final void
         DrawVisSprite
         ( vissprite_t      vis,
           int           x1,
@@ -710,7 +712,64 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             colfunc = basecolfunc;
         }
 
+        /**
+         * R_DrawVisSprite
+         *  mfloorclip and mceilingclip should also be set.
+         *  
+         * Sprites are actually drawn here.
+         *
+         */ 
+        public void
+        DrawVisSprite2
+        ( vissprite_t      vis,
+          int           x1,
+          int           x2 )
+        {
+            //System.out.println("Drawing vissprite "+vis);
+            column_t       column;
+            int         texturecolumn;
+            int     frac; // fixed_t
+            patch_t        patch;
+            
+            // At this point, the view angle (and patch) has already been chosen. Go back.
+            patch = W.CachePatchNum (vis.patch+firstspritelump,PU_CACHE);
+            
+            
+            dc_colormap = vis.colormap;
+            
+            if (dc_colormap==null)
+            {
+            // NULL colormap = shadow draw
+            colfunc = fuzzcolfunc;
+            }
+            else if ((vis.mobjflags & MF_TRANSLATION)!=0)
+            {
+            colfunc = DrawTranslatedColumn;
+            dc_translation = translationtables;
+            dcto=          - 256 +
+                ( (vis.mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+            }
+            
+            dc_iscale = Math.abs(vis.xiscale)>>detailshift;
+            dc_texturemid = vis.texturemid;
+            frac = vis.startfrac;
+            spryscale = vis.scale;
+            sprtopscreen = centeryfrac - FixedMul(dc_texturemid,spryscale);
+            
+            for (dc_x=vis.x1 ; dc_x<=vis.x2 ; dc_x++, frac += vis.xiscale)
+            {
+            texturecolumn = frac>>FRACBITS;
+        if(RANGECHECK){
+            if (texturecolumn < 0 || texturecolumn >= patch.width)
+                I.Error ("R_DrawSpriteRange: bad texturecolumn");
+        }
+            column = patch.columns[texturecolumn];
 
+            DrawMaskedColumn(column);
+            }
+
+            colfunc = basecolfunc;
+        }
 
         /**
          * R_ProjectSprite
@@ -917,12 +976,13 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
          * R_DrawPSprite
          * 
          * Draws a "player sprite" with slighly different rules than normal sprites.
-         * This is actually a PITA, at best :-/+
+         * This is actually a PITA, at best :-/
          * 
          */
         
         public final void DrawPSprite (pspdef_t psp)
         {
+        	
             int     tx;
             int         x1;
             int         x2;
@@ -935,17 +995,19 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             // 
             
             // decide which patch to use (in terms of angle?)
-        if(RANGECHECK){
+            if(RANGECHECK){
             if ( psp.state.sprite.ordinal() >= numsprites)
             I.Error ("R_ProjectSprite: invalid sprite number %i ",
                  psp.state.sprite);
             }
+        
             sprdef = sprites[psp.state.sprite.ordinal()];
-        if(RANGECHECK){
+        
+            if(RANGECHECK){
             if ( (psp.state.frame & FF_FRAMEMASK)  >= sprdef.numframes)
             I.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
                  psp.state.sprite, psp.state.frame);
-        }
+        	}
             sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK ];
 
             // Base frame for "angle 0" aka viewed from dead-front.
@@ -1025,7 +1087,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             }
             
 //            System.out.println("Weapon draw "+vis);
-            DrawVisSprite (vis, vis.x1, vis.x2);
+             DrawVisSprite (vis, vis.x1, vis.x2);
         }
 
         /** used inside DrawPSprite, better make this static */
@@ -1039,7 +1101,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
          * 
          * */
         
-        public void DrawPlayerSprites ()
+        protected final void DrawPlayerSprites ()
         {
             int     i;
             int     lightnum;
@@ -1404,12 +1466,11 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
                 dss=drawsegs[ds];
                           if (!dss.nullMaskedTextureCol())
                 MySegs.RenderMaskedSegRange (dss, dss.x1, dss.x2);
-            
+                }
             // draw the psprites on top of everything
             //  but does not draw on side views
             if (viewangleoffset==0)       
             DrawPlayerSprites ();
-        }
     }
         
     }

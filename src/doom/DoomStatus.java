@@ -362,7 +362,7 @@ public class DoomStatus extends DoomContext {
 
     public int key_strafe=KEY_RALT;
 
-    public int key_speed;
+    public int key_speed=KEY_RSHIFT;
 
     public int mousebfire;
 

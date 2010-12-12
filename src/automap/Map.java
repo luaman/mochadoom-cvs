@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.19 2010/11/17 23:55:06 velktron Exp $
+// $Id: Map.java,v 1.20 2010/12/12 19:06:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.20  2010/12/12 19:06:18  velktron
+// Tech Demo v1.1 release.
+//
 // Revision 1.19  2010/11/17 23:55:06  velktron
 // Kind of playable/controllable.
 //
@@ -127,7 +130,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.19 2010/11/17 23:55:06 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.20 2010/12/12 19:06:18 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -200,8 +203,8 @@ public static final char AM_PANRIGHTKEY =0xae;
 public static final char AM_PANLEFTKEY  =0xac;
 public static final char AM_ZOOMINKEY=  '=';
 public static final char AM_ZOOMOUTKEY= '-';
-public static final char AM_STARTKEY=   9;	// KEY_TAB
-public static final char AM_ENDKEY  =9;	// KEY_TAB
+public static final char AM_STARTKEY=   KEY_TAB;	// KEY_TAB
+public static final char AM_ENDKEY  =KEY_TAB;	// KEY_TAB
 public static final char AM_GOBIGKEY=   '0';
 public static final char AM_FOLLOWKEY=  'f';
 public static final char AM_GRIDKEY=    'g';
@@ -668,14 +671,14 @@ public final  void LevelInit()
 //
 //
 
-public final  event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
+protected final  event_t st_notify = new event_t(evtype_t.ev_keyup, AM_MSGENTERED );
+//MAES: Was a "method static variable"...but what's the point? It's never modified.
+protected final event_t st_notify_ex = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
 
 
 public final  void Stop ()
 {
-    // MAES: Was a "method static variable"...but what's the point? It's never modified.
-    event_t st_notify_ex = new event_t( evtype_t.ev_keyup, AM_MSGEXITED );
-
+    
     this.unloadPics();
     DM.automapactive = false;
     // This is the only way to notify the status bar responder that we're exiting the automap.
@@ -752,7 +755,7 @@ public final  boolean Responder ( event_t  ev )
     //System.out.println(ev.data1==AM_STARTKEY);
     if (!DM.automapactive)
     {
-    if (ev.data1 == AM_STARTKEY)
+    if ((ev.data1 == AM_STARTKEY)&&(ev.type == evtype_t.ev_keyup))
     {
         this.Start ();
         System.out.println("Automap started");
@@ -791,11 +794,7 @@ public final  boolean Responder ( event_t  ev )
         mtof_zoommul = M_ZOOMIN;
         ftom_zoommul = M_ZOOMOUT;
         break;
-      case AM_ENDKEY:
-        bigstate = false;
-        DM.viewactive = true;
-        this.Stop ();
-        break;
+
       case AM_GOBIGKEY:
         bigstate = !bigstate;
         if (bigstate)
@@ -860,6 +859,11 @@ public final  boolean Responder ( event_t  ev )
         mtof_zoommul = FRACUNIT;
         ftom_zoommul = FRACUNIT;
         break;
+      case AM_ENDKEY:
+          bigstate = false;
+          DM.viewactive = true;
+          this.Stop ();
+          break;
     }
     }
 
@@ -1569,7 +1573,7 @@ public final  void Drawer ()
     drawGrid(GRIDCOLORS);
     drawWalls();
     drawPlayers();
-    //if (cheating==2)
+    if (cheating==2)
     drawThings(THINGCOLORS, THINGRANGE);
     drawCrosshair(XHAIRCOLORS);
 

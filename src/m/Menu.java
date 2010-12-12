@@ -119,7 +119,7 @@ public class Menu extends MenuMisc implements DoomMenu{
     /** Blocky mode, has default, 0 = high, 1 = normal */
     int detailLevel;
 
-    int screenblocks=9; // has default
+    int screenblocks=10; // has default
 
     /** temp for screenblocks (0-9) */
     int screenSize;
@@ -1209,6 +1209,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 DM.players[DM.consoleplayer].message = gammamsg[usegamma];
                 // FIXME: it's pointless to reload the same palette.
                 //I.SetPalette (W.CacheLumpName ("PLAYPAL",PU_CACHE));
+                //VI.SetPalette(0);
                 V.setUsegamma(usegamma);
                 return true;
 
@@ -1884,6 +1885,16 @@ public class Menu extends MenuMisc implements DoomMenu{
     /** sound_e enum */
     static final int sfx_vol = 0, sfx_empty1 = 1, music_vol = 2, sfx_empty2 = 3,
             sound_end = 4;
+
+	@Override
+	public int getScreenBlocks() {
+		return this.screenblocks;
+	}
+
+	@Override
+	public int getDetailLevel() {
+		return this.detailLevel;
+	}
 
 
 

@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.20 2010/11/22 21:41:22 velktron Exp $
+// $Id: StatusBar.java,v 1.21 2010/12/12 19:06:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.21  2010/12/12 19:06:18  velktron
+// Tech Demo v1.1 release.
+//
 // Revision 1.20  2010/11/22 21:41:22  velktron
 // Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
 //
@@ -136,7 +139,7 @@ import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.20 2010/11/22 21:41:22 velktron Exp $";
+        "$Id: StatusBar.java,v 1.21 2010/12/12 19:06:18 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -830,8 +833,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                 for (i = 0; i < 6; i++) {
                     if (cheat_powerup[i].CheckCheat((char) ev.data1)) {
                         if (plyr.powers[i] == 0)
-                            ;
-                        // P_GivePower( plyr, i);
+                           plyr.GivePower(i);
                         else if (i != pw_strength)
                             plyr.powers[i] = 1;
                         else
@@ -1164,7 +1166,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public void doPaletteStuff() {
 
         int palette;
-        byte[] pal;
+        //byte[] pal;
         int cnt;
         int bzc;
 
@@ -1206,7 +1208,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
             st_palette = palette;
             // TODO: pal = (byte *) W_CacheLumpNum (lu_palette,
             // PU_CACHE)+palette*768;
-            // TODO: I_SetPalette (pal);
+            VI.SetPalette (palette);
         }
 
     }

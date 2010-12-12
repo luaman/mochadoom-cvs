@@ -23,6 +23,7 @@ import m.fixed_t;
 
 import p.mobj_t;
 import p.pspdef_t;
+import st.StatusBar;
 import utils.C2JUtils;
 import w.DoomBuffer;
 import w.name8;
@@ -4132,8 +4133,8 @@ public void SetupFrame (player_t player)
  * R_Init
  */
   
-public int  detailLevel;
-public int  screenblocks=9; // has default
+//public int  detailLevel;
+//public int  screenblocks=9; // has default
 
 public void Init ()
 
@@ -4152,7 +4153,7 @@ public void Init ()
    // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
    System.out.print ("\nR_InitTables");
 
-   SetViewSize (screenblocks, detailLevel);
+   SetViewSize (DM.M.getScreenBlocks(), DM.M.getDetailLevel());
    MyPlanes.InitPlanes ();
    System.out.print ("\nR_InitPlanes");
    InitLightTables ();
@@ -4192,8 +4193,9 @@ public void ExecuteSetViewSize ()
     }
     else
     {
-        scaledviewwidth = setblocks*32;
-        viewheight = (short) ((setblocks*168/10)&~7);
+        scaledviewwidth = setblocks*(SCREENWIDTH/10);
+        // Height can only be a multiple of 8.
+        viewheight = (short) ((setblocks*(SCREENHEIGHT- StatusBar.ST_HEIGHT)/10)&~7);
     }
     
     detailshift = setdetail;

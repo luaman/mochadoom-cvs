@@ -182,6 +182,14 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
             }
             return tmp.toString();
         }
+        
+        
+        /** FIXME: input must be made scancode dependent rather than VK_Dependent,
+         *  else a lot of things just don't work. 
+         * 
+         * @param e
+         * @return
+         */
 
         public int xlatekey(KeyEvent e)
         {
@@ -193,13 +201,15 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
               //Event.XKeycodeToKeysym(X_display, X_event.xkey.keycode, 0))
 
           {
-            case KeyEvent.VK_LEFT:    rc = KEY_LEFTARROW; break;
-            case KeyEvent.VK_RIGHT:   rc = KEY_RIGHTARROW;    break;
-            case KeyEvent.VK_DOWN:    rc = KEY_DOWNARROW; break;
-            case KeyEvent.VK_UP:  rc = KEY_UPARROW;   break;
+          case KeyEvent.VK_LEFT:    rc = KEY_LEFTARROW; break;
+          case KeyEvent.VK_RIGHT:   rc = KEY_RIGHTARROW;    break;
+          case KeyEvent.VK_DOWN:    rc = KEY_DOWNARROW; break;
+          case KeyEvent.VK_UP:  rc = KEY_UPARROW;   break;
             case KeyEvent.VK_ESCAPE:  rc = KEY_ESCAPE;    break;
             case KeyEvent.VK_ENTER:   rc = KEY_ENTER;     break;
-            case KeyEvent.VK_TAB: rc = KEY_TAB;       break;
+            case KeyEvent.VK_CONTROL: rc=KEY_RCTRL; break;
+            case KeyEvent.VK_ALT: rc=KEY_RALT; break;
+            case KeyEvent.VK_SHIFT: rc=KEY_RSHIFT; break;
             case KeyEvent.VK_F1:  rc = KEY_F1;        break;
             case KeyEvent.VK_F2:  rc = KEY_F2;        break;
             case KeyEvent.VK_F3:  rc = KEY_F3;        break;
@@ -218,9 +228,15 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 
             case KeyEvent.VK_PAUSE:   rc = KEY_PAUSE;     break;
 
+            case KeyEvent.KEY_RELEASED:
+            case KeyEvent.VK_TAB: rc = KEY_TAB;       break;
+            
             case KeyEvent.KEY_PRESSED:
-                switch(e.getKeyCode()){
-            case (KeyEvent.VK_EQUALS): 
+            	switch(e.getKeyCode()){
+            	
+               case KeyEvent.KEY_LOCATION_NUMPAD:
+            case KeyEvent.VK_PLUS:
+            case KeyEvent.VK_EQUALS: 
                 rc = KEY_EQUALS;    
                 break;
                 
@@ -229,15 +245,15 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
                 rc = KEY_MINUS;     
                 break;
 
-            case KeyEvent.SHIFT_DOWN_MASK:
+            case KeyEvent.VK_SHIFT:
             rc = KEY_RSHIFT;
             break;
             
-            case KeyEvent.CTRL_DOWN_MASK:
+            case KeyEvent.VK_CONTROL:
             rc = KEY_RCTRL;
             break;                           
            
-            case KeyEvent.ALT_DOWN_MASK:
+            case KeyEvent.VK_ALT:
             rc = KEY_RALT;
             break;
 
@@ -248,6 +264,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
                 }
                 
             default:
+                
             /*if (rc >= KeyEvent.VK_SPACE && rc <= KeyEvent.VK_DEAD_TILDE)
                 rc = (int) (rc - KeyEvent.FOCUS_EVENT_MASK + ' ');*/
             if (rc >= KeyEvent.VK_A && rc <= KeyEvent.VK_Z)
@@ -257,7 +274,8 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
           
          //System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
 
-          return rc;
+          // Sanitize for unicode.
+          return (Math.min(rc,255));
 
         }
 
@@ -327,11 +345,11 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		    MEV=(MouseEvent)X_event;
 			event.data1 =
 			    (MEV.getButton() & MouseEvent.BUTTON1)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 2 : 0)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 4 : 0)
+			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 2 : 0)
+			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 4 : 0)
 			    | (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0)
-			    | (MEV.getButton() == MouseEvent.BUTTON2 ? 2 : 0)
-			    | (MEV.getButton() == MouseEvent.BUTTON3 ? 4 : 0);
+			    | (MEV.getButton() == MouseEvent.BUTTON3 ? 2 : 0)
+			    | (MEV.getButton() == MouseEvent.BUTTON2 ? 4 : 0);
 			event.data2 = event.data3 = 0;
 			event.type=evtype_t.ev_mouse;
 			DM.PostEvent(event);
@@ -392,6 +410,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		    case Event.MOUSE_EXIT:
 		    	System.err.println("IGNORING keyboard input");
 		    	this.setCursor(normal);
+		    	
 		    	ignorebutton=true;
 		    	break;
 		    case Event.WINDOW_EXPOSE:
@@ -607,7 +626,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
       KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {  
           public boolean dispatchKeyEvent(KeyEvent e) {    
             if (e.getKeyCode() == KeyEvent.VK_TAB) {      
-                addEvent(new KeyEvent(me, KeyEvent.KEY_PRESSED, System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
+                addEvent(new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
 
             }  
             return false;
