@@ -385,11 +385,11 @@ public class DoomStatus extends DoomContext {
     protected static final int TURBOTHRESHOLD = 0x32;
 
     /** fixed_t */
-    protected int[] forwardmove = { 0x19, 0x32 }; // + slow turn
+    protected final int[] forwardmove = { 0x19, 0x32 }; // + slow turn
 
-    protected int[] sidemove = { 0x18, 0x28 };
+    protected final int[] sidemove = { 0x18, 0x28 };
 
-    protected int[] angleturn = { 640, 1280, 320 };
+    protected final int[] angleturn = { 640, 1280, 320 };
 
     protected static final int SLOWTURNTICS = 6;
 

@@ -12,7 +12,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.29 2010/12/11 15:08:59 velktron Exp $
+// $Id: Defines.java,v 1.30 2010/12/13 16:03:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -122,9 +122,9 @@ public static int BASE_HEIGHT=     (int) (INV_ASPECT_RATIO*320); // 200
 // C++ might sucks for OOP, but it sure is a better C.
 // So there.
 
-public static final int SCREENWIDTH = (int) (BASE_WIDTH*SCREEN_MUL);
+public static int SCREENWIDTH = (int) (BASE_WIDTH*SCREEN_MUL);
 //SCREEN_MUL*BASE_WIDTH //320
-public static final int SCREENHEIGHT= (int) (SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO);
+public static int SCREENHEIGHT= (int) (SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO);
 
 public static final int BEST_X_SCALE = (int) (SCREENWIDTH/BASE_WIDTH);
 
@@ -1696,6 +1696,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.29 2010/12/11 15:08:59 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.30 2010/12/13 16:03:20 velktron Exp $";
 }
 

@@ -41,6 +41,7 @@ import static p.mobj_t.MF_TRANSSHIFT;
 import static utils.C2JUtils.toUnsignedByte;
 
 import java.util.Arrays;
+import java.util.Hashtable;
 
 import m.DoomMenu;
 import m.fixed_t;
@@ -200,7 +201,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
      {
      height = 0;         // all skys map together
      lightlevel = 0;
-     }
+     }     
+          
      chk=visplanes[0];
      
      // Find visplane with the desired attributes
@@ -249,6 +251,105 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
      chk.clearTop();
          
      return check;
+ }
+ 
+ /** A hashtable used to retrieve planes with particular attributes
+  *  faster -hopefully-. The planes are still stored in the visplane array
+  *  for convenience, but we can search them in the hashtable too -as a bonus,
+  *  we can reuse previously created planes that match newer ones-. 
+  */
+ Hashtable<visplane_t,Integer> planehash=new Hashtable<visplane_t,Integer>(128);
+ visplane_t check=new visplane_t();
+ 
+ protected final int
+ FindPlane2
+ ( int   height,
+   int       picnum,
+   int       lightlevel )
+ {
+     //System.out.println("\tChecking for visplane merging...");
+    // int check=0; // visplane_t* 
+     visplane_t chk=null;
+     Integer checknum; 
+     
+     if (picnum == skyflatnum)
+     {
+     height = 0;         // all skys map together
+     lightlevel = 0;
+     }
+     
+     // Try and find this.
+     check.lightlevel=lightlevel;
+     check.picnum=picnum;
+     check.height=height;
+     check.updateHashCode();
+         
+     /*     
+     chk=visplanes[0];
+     
+     // Find visplane with the desired attributes
+     for (check=0; check<lastvisplane; check++)
+     {
+     
+         chk=visplanes[check];
+     if (height == chk.height
+         && picnum == chk.picnum
+         && lightlevel ==chk.lightlevel) {
+         //  Found a visplane with the desired specs.
+         break;
+         }
+     }
+     */
+     
+     checknum=planehash.get(check);
+    
+     // Something found, get it.
+     
+     if (!(checknum==null)){
+             
+     // Visplane exists and is within those allocated in the current tic.    
+     if (checknum < lastvisplane){
+         return checknum;
+         }
+     
+     // Found a visplane, but we can't add anymore.
+     // Resize right away. This shouldn't take too long.
+     if (lastvisplane == MAXVISPLANES){
+     //I.Error ("R_FindPlane: no more visplanes");
+         ResizeVisplanes();     
+         }
+     }
+     
+     /* FIXED: we need to add this post-fix here because of the way
+      * the original was structured (pointer hacks, too lengthy to
+      * explain). We need to make sure that when no visplane is found
+      * a "failed check" will actually result in a pointer to the
+      * next "free" visplane, and that we always have a valid pointer
+      * to visplane 0, even if the loop never ran.
+      *  This fixes the "blinking visplane bug", which manifested 
+      *  itself when sector lighting effects changed the light level
+      */
+     
+     // We found a visplane (possibly one allocated on a previous tic)
+     // but we can't link directly to it, we need to copy its data
+     // around. 
+     
+     checknum=new Integer(Math.max(0,lastvisplane));
+     
+     chk=visplanes[checknum];
+     // Add a visplane
+     lastvisplane++;
+     chk.height = height;
+     chk.picnum = picnum;
+     chk.lightlevel = lightlevel;
+     chk.minx = SCREENWIDTH;
+     chk.maxx = -1;
+     chk.updateHashCode();
+     planehash.put(chk, checknum);
+     //memset (chk.top,0xff,sizeof(chk.top));
+     chk.clearTop();
+         
+     return checknum;
  }
  
  protected final void ResizeVisplanes() {
@@ -956,7 +1057,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             // Well, now it will be done.
             sec.validcount = validcount;
             
-            lightnum = (sec.lightlevel /*>> LIGHTSEGSHIFT*/)+extralight;
+            lightnum = (sec.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
             if (lightnum < 0)       
             spritelights = scalelight[0];
@@ -1568,7 +1669,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
      *  you get smoother light and get rid of 
      *  lightsegshift globally, too.
      */
-    protected  static final int LIGHTLEVELS=16, LIGHTSEGSHIFT=4;
+    protected  static final int LIGHTLEVELS=32, LIGHTSEGSHIFT=3;
 
     // These are a bit more tricky to figure out though.
     

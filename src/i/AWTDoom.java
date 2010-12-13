@@ -96,6 +96,8 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 
 
     private static final long serialVersionUID = 3118508722502652276L;
+
+    private static final int POINTER_WARP_COUNTDOWN = 1;
 	
 	// Must be aware of "Doom" so we can pass it event messages inside a crude queue.
 	public DoomMain DM;
@@ -127,12 +129,14 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 
 		protected int multiply=1;
 
-		protected boolean grabMouse;
+		protected boolean grabMouse=true;
 		protected AWTEvent AWTevent;
 		protected byte[] cmap;
 		private int maxpalettes;
 		private int SCREENHEIGHT;
 		private int SCREENWIDTH;
+
+        private int doPointerWarp;
 
 		/** Gimme some raw palette RGB data.
 		 *  I will do the rest
@@ -568,7 +572,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 
 	  // check if the user wants to grab the mouse (quite unnice)
 	  // HMM...double !!...so if the user WANTS, it will be !!true=!false=true :-S
-	  grabMouse = DM.CheckParm("-grabmouse")!=0;
+	  grabMouse = true; // DM.CheckParm("-grabmouse")!=0;
 
 	  // check for command-line geometry
 	  if ( (pnum=DM.CheckParm("-geom"))!=0 ) // suggest parentheses around assignment
@@ -735,14 +739,19 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 		  //  loose input focus within X11.
 		  if (grabMouse)
 		  {
-			  robby.mouseMove(this.getX()+this.getWidth(), this.getY()+this.getHeight());
+		      if (doPointerWarp--<=0)
+		  {
+			  robby.mouseMove(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2);
 		  } 
+		      doPointerWarp = POINTER_WARP_COUNTDOWN;
+	    }
 
 		 mousemoved = false;
 		
 	}
 
 	private int lasttic;
+	private int frames;
 
 	@Override
 	public void FinishUpdate() {
@@ -750,21 +759,42 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	    int		i;
 	    
 	    // draws little dots on the bottom of the screen
-	    if (true)
+	    /*if (true)
 	    {
 
 		i = I.GetTime();
 		tics = i - lasttic;
 		lasttic = i;
 		if (tics > 20) tics = 20;
+		if (tics < 1) tics = 1;
 
 		for (i=0 ; i<tics*2 ; i+=2)
 		    RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
 		for ( ; i<20*2 ; i+=2)
 			RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
 	    
-	    }
-		this.update(null);
+	    } */
+
+	    if (true)
+        {
+
+        i = I.GetTime();
+        tics = i - lasttic;
+        lasttic = i;
+        if (tics<1) 
+            frames++;
+        else
+        {
+        frames*=35;
+        for (i=0 ; i<frames*2 ; i+=2)
+            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
+        for ( ; i<20*2 ; i+=2)
+            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
+        frames=0;
+        }
+        }
+
+	    this.update(null);
 		
 	}
 

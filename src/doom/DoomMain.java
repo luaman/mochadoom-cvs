@@ -59,7 +59,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.27 2010/12/11 15:08:59 velktron Exp $
+// $Id: DoomMain.java,v 1.28 2010/12/13 16:03:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -74,6 +74,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.28  2010/12/13 16:03:20  velktron
+// More fixes  in the wad loading code
+//
 // Revision 1.27  2010/12/11 15:08:59  velktron
 // Techdemo release.
 //
@@ -189,7 +192,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.27 2010/12/11 15:08:59 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.28 2010/12/13 16:03:20 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -274,7 +277,7 @@ public void Display ()
     }
 
     // save the current screen if about to wipe
-    if (gamestate != wipegamestate)
+    if (wipe=(gamestate != wipegamestate))
     {
 	wipe = true;
 	WIPE.StartScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
@@ -319,8 +322,9 @@ public void Display ()
     
     // draw the view directly
     if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic))
-	R.RenderPlayerView (players[displayplayer]);
-
+	R.RenderPlayerView (players[displayplayer]);    
+    
+    // Automap was active, update only HU.    
     if (gamestate == gamestate_t.GS_LEVEL && eval(gametic))
 	HU.Drawer ();
     
@@ -401,14 +405,14 @@ public void Display ()
     wipestart = I.GetTime ();
     
     // Fixme: lame way to limit speed :-/
-    while (wipestart-I.GetTime()>-1){
+    /*while (wipestart-I.GetTime()>-1){
     	try {
 			Thread.sleep(10);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    }
+    }*/
 }
 
 
@@ -1284,7 +1288,7 @@ public void Start ()
     CheckNetGame ();
 
     System.out.print ("S_Init: Setting up sound.\n");
-    S.Init (snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
+    S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
 
     System.out.print ("HU_Init: Setting up heads up display.\n");
     HU.Init();
@@ -3755,11 +3759,12 @@ public void TryRunTics ()
         I.Error ("TryRunTics: lowtic < gametic");
                 
     // don't stay in here forever -- give the menu a chance to work
-    if (I.GetTime ()/ticdup - entertic >= 20)
+    int time=I.GetTime();
+    if (time/ticdup - entertic >= 20)
     {
         M.Ticker ();
         return;
-    } 
+    }
     }
     
     // run the count * ticdup dics

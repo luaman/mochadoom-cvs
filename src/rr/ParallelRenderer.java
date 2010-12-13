@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
@@ -2075,7 +2076,8 @@ public class ParallelRenderer extends RendererState  {
       }
   
   class Planes{
-
+   
+      
       public Planes (){
           C2JUtils.initArrayOfObjects(visplanes);
       }

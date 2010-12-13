@@ -42,20 +42,20 @@ public class LumpGetterTester {
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad","sprites.wad.backup1"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
     int random;
-    int TESTS=1000000;
+    int TESTS=10000;
     int[] tests=new int[TESTS];
-    long hash;
+    int hash;
     
     long a=System.nanoTime();
     for (int i=0;i<TESTS;i++){
         random =(int) (Math.random()*W.numlumps);
         String what=W.lumpinfo[random].name;
         hash=W.lumpinfo[random].hash;
-        tests[i] = W.CheckNumForName2(what);
+        tests[i] = W.CheckNumForName3(what);
         if (!W.lumpinfo[tests[i]].name.equalsIgnoreCase(what)) System.err.println("Mismatch");
     }
     

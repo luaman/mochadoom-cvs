@@ -19,6 +19,15 @@ public class name8 {
         this.hash=byteArrayToLong(s,0);
     }
     
+    /** Returns a 64-bit number that maps directly to the ASCII
+     *  8-bit representation of a fixed-length 8 char string.
+     *  It's for all effects and purposes a unique 64-bit hash, and can be used to
+     *  speed up comparisons.
+     *  
+     * @param name
+     * @return
+     */
+    
     public static long getLongHash(String name){
         // in case the name was a full 8 chars
         for (int i=0;i<ss.length;i++){

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.22 2010/12/12 21:27:17 velktron Exp $
+// $Id: WadLoader.java,v 1.23 2010/12/13 16:03:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.23  2010/12/13 16:03:20  velktron
+// More fixes  in the wad loading code
+//
 // Revision 1.22  2010/12/12 21:27:17  velktron
 // Fixed hashtable bug. Now using Java's one, faster AND easier to follow.
 //
@@ -206,8 +209,8 @@ public class WadLoader {
 	 * item.
 	 */
 
-	public String ExtractFileBase(String path) {
-		byte[] dest = new byte[8];
+	protected String ExtractFileBase(String path) {
+		StringBuffer dest = new StringBuffer(8);
 
 		int length = 0;
 		int src = path.length() - 1;
@@ -228,16 +231,16 @@ public class WadLoader {
 		if (src < 0)
 			src = 0;
 
-		// copy up to eight characters
+		// copy UP to eight characters.
 		int pos = 0;
 		while ((pos < path.length()) && (path.charAt(pos) != '.')) {
 			if (++length == 9)
 				I.Error("Filename base of %s >8 chars", path);
 
-			dest[pos] = (byte) path.charAt(pos);
+			dest.append(path.charAt(pos));
 			pos++;
 		}
-		return new String(dest);
+		return new String(dest.substring(0,pos));
 	}
 
 	//
@@ -298,11 +301,12 @@ public class WadLoader {
 
 		// System.out.println(" adding " + filename + "\n");
 
-		// We start at the number of lumps? :-S
+		// We start at the number of lumps. This allows appending stuff.
 		startlump = this.numlumps;
 
 		if (filename.substring(filename.length() - 3)
 				.compareToIgnoreCase("wad") != 0) {
+		    System.out.println("Single lump");
 			// single lump file
 			fileinfo[0] = singleinfo;
 			singleinfo.filepos = 0;
@@ -349,7 +353,8 @@ public class WadLoader {
 			 * for (int j=0;j<length;j++){ fileinfo[j].load (handle); }
 			 */
 			numlumps += header.numlumps;
-
+		    } // end loading wad
+		
 			// Fill in lumpinfo
 			// MAES: this was a realloc(lumpinfo, numlumps*sizeof(lumpinfo_t)),
 			// so we have to increase size and copy over. Maybe this should be
@@ -378,15 +383,15 @@ public class WadLoader {
 			// handle?
 			storehandle = (reloadname != null) ? null : handle;
 
+			// This iterates through single files.
 			int fileinfo_p = 0;
 
 			for (int i = startlump; i < numlumps; i++, lump_p++, fileinfo_p++) {
 				lumpinfo[lump_p].handle = storehandle;
 				lumpinfo[lump_p].position = fileinfo[fileinfo_p].filepos;
 				lumpinfo[lump_p].size = fileinfo[fileinfo_p].size;
-				// strncpy (lumpinfo[lump_p].name, fileinfo[fileinfo_p].name,
-				// 8);
-				lumpinfo[lump_p].name = fileinfo[fileinfo_p].name;
+				// Make all lump names uppercase. Searches should also be uppercase only.
+				lumpinfo[lump_p].name = fileinfo[fileinfo_p].name.toUpperCase();
 				lumpinfo[lump_p].hash =lumpinfo[lump_p].name.hashCode();
 				lumpinfo[lump_p].stringhash = name8
 						.getLongHash(strupr(lumpinfo[lump_p].name));
@@ -395,10 +400,9 @@ public class WadLoader {
 						.getIntName(strupr(lumpinfo[lump_p].name));
 				System.out.println(lumpinfo[lump_p]);
 			}
-
 			if (reloadname != null)
 				handle.close();
-		}
+		
 	}
 
 	/**
@@ -462,19 +466,29 @@ public class WadLoader {
 
 	}
 
-	//
-	// W_InitMultipleFiles
-	// Pass a null terminated list of files to use.
-	// All files are optional, but at least one file
-	// must be found.
-	// Files with a .wad extension are idlink files
-	// with multiple lumps.
-	// Other files are single lumps with the base filename
-	// for the lump name.
-	// Lump names can appear multiple times.
-	// The name searcher looks backwards, so a later file
-	// does override all earlier ones.
-	//
+	/**
+	 * W_InitMultipleFiles
+	 *
+	 * Pass a null terminated list of files to use (actually
+	 * a String[] array in Java).
+	 * 
+	 * All files are optional, but at least one file
+	 * must be found. 
+	 * 
+	 * Files with a .wad extension are idlink files
+	 * with multiple lumps.
+	 * 
+	 * Other files are single lumps with the base filename
+	 * for the lump name.
+	 * 
+	 * Lump names can appear multiple times.
+	 * The name searcher looks backwards, so a later file
+	 * does override all earlier ones.
+	 * 
+	 * @param filenames
+	 * 
+	 */
+	
 	public void InitMultipleFiles(String[] filenames) throws Exception {
 		int size;
 
@@ -503,10 +517,14 @@ public class WadLoader {
 		this.InitLumpHash();
 	}
 
-	//
-	// W_InitFile
-	// Just initialize from a single file.
-	//
+	/**
+	 * W_InitFile
+	 * 
+	 * Just initialize from a single file.
+	 * 
+	 * @param filename 
+	 * 
+	 */
 	public void InitFile(String filename) throws Exception {
 		String[] names = new String[1];
 
@@ -515,15 +533,27 @@ public class WadLoader {
 		InitMultipleFiles(names);
 	}
 
-	//
-	// W_NumLumps
-	//
+	/**
+	 * W_NumLumps
+	 * 
+	 * Returns the total number of lumps loaded in this Wad manager. Awesome. 
+	 * 
+	 */
 	public int NumLumps() {
 		return numlumps;
 	}
 
 	/**
-	 * W_CheckNumForName Returns -1 if name not found.
+	 * W_CheckNumForName2 Returns -1 if name not found.
+	 * 
+	 * A slightly better implementation, uses string hashes
+	 * as direct comparators (though 64-bit long descriptors
+	 * could be used). It's faster than the old method, but
+	 * still short from the Hashtable's performance by 
+	 * an order of magnitude. 
+	 * 
+     * @param name
+     * @return
 	 */
 
 	public int CheckNumForName2(String name) {
@@ -534,11 +564,11 @@ public class WadLoader {
 		// make the name into two integers for easy compares
 		// case insensitive
 
-		int hash = name.toUpperCase().hashCode();
+		long hash = name8.getLongHash(name);
 		// System.out.print("Looking for "+name + " with hash "
 		// +Long.toHexString(hash));
 		while (lump_p-- != 0)
-			if (lumpinfo[lump_p].hash == hash) {
+			if (lumpinfo[lump_p].stringhash == hash) {
 				// System.out.print(" found "+lumpinfo[lump_p]+"\n" );
 				return lump_p;
 			}
@@ -548,7 +578,12 @@ public class WadLoader {
 	}
 
 	/**
-	 * Old, shitty method for CheckNumForName.
+	 * Old, shitty method for CheckNumForName. It's an overly literal
+	 * translation of how the C original worked, which was none too good 
+	 * even without the overhead of converting a string to
+	 * its integer representation. It's so bad, that it's two orders
+	 * of magnitude slower than a Hashtable implemetation, and one from
+	 * a direct hash/longname comparison with linear search.
 	 * 
 	 * @param name
 	 * @return
@@ -999,7 +1034,7 @@ public class WadLoader {
 
 		for (int i = 0; i < numlumps; i++) { // hash function:
 			doomhash.put(lumpinfo[i].name.toUpperCase(), new Integer(i));
-		}
+		    }
 	}
 
 	public int CheckNumForName(String name/* , int namespace */)

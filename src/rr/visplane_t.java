@@ -19,7 +19,17 @@ public class visplane_t{
     
     public visplane_t(){
         this.data=new char[4+2*SCREENWIDTH];
+        this.updateHashCode();
     }
+    
+    
+    public visplane_t(int height, int picnum, int lightlevel){
+        this.height=height;
+        this.picnum=picnum;
+        this.lightlevel=lightlevel;
+        this.updateHashCode();
+        this.data=new char[4+2*SCREENWIDTH];
+        }
     
     
 /** (fixed_t) */
@@ -107,8 +117,24 @@ public String toString(){
     
 }
 
+protected int hash;
 
-static StringBuilder sb=new StringBuilder();
+/** Call this upon any changed in height, picnum or lightlevel */
+
+public void updateHashCode(){
+    this.hash=height^picnum^lightlevel;
+}
+
+public int hashCode(){
+    return this.hash;
+}
+
+public static int visplaneHash(int height, int picnum, int lightlevel){
+    return height^picnum^lightlevel;
+    
+}
+
+protected static StringBuilder sb=new StringBuilder();
 
 
 };

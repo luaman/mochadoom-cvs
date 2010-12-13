@@ -8,7 +8,7 @@ import m.random;
 
 public class Wiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.4 2010/12/10 17:38:57 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.5 2010/12/13 16:03:20 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -78,7 +78,7 @@ public class Wiper {
 
     }
     
-    /** They sure have an obsession with shit...this is supposed to do some
+    /** Those guys sure have an obsession with shit...this is supposed to do some
      * lame-ass transpose.
      * 
      * @param array
@@ -199,8 +199,8 @@ public class Wiper {
         
         // makes this wipe faster (in theory)
         // to have stuff in column-major format
-        //shittyColMajorXform(wipe_scr_start, width, height);
-        //shittyColMajorXform(wipe_scr_end, width, height);
+        shittyColMajorXform(wipe_scr_start, width, height);
+        shittyColMajorXform(wipe_scr_end, width, height);
         
         // setup initial column positions
         // (y<0 => not ready to scroll yet)
@@ -262,18 +262,18 @@ public class Wiper {
             ps = i*height+y[i];// &((short *)wipe_scr_end)[i*height+y[i]];
             pd = y[i]*width+i;//&((short *)wipe_scr)[y[i]*width+i];
             idx = 0;
-            for (int j=dy;j>2;j-=2)
+            for (int j=dy;j>4;j-=4)
             {
                 //if (pd+idx>width*height) break;
                 /*d[pd+idx] = s[ps++];
                 idx += width;*/
                 d[pd+idx] = s[ps];
                 d[pd+idx+width] = s[ps+1];
-                //d[pd+idx+w2] = s[ps+2];
-                //d[pd+idx+w3] = s[ps+3];                
-                idx += w2;
+                d[pd+idx+w2] = s[ps+2];
+                d[pd+idx+w3] = s[ps+3];                
+                idx += w4;
                 //idx+=width;
-                ps+=2;
+                ps+=4;
 
             }
             y[i] += dy;
@@ -282,15 +282,15 @@ public class Wiper {
             pd = y[i]*width+i; //&((short *)wipe_scr)[y[i]*width+i];
             idx = 0;
 
-            for (int j=height-y[i];j>2;j-=2)
+            for (int j=height-y[i];j>4;j-=4)
             {
                 d[pd+idx] = s[ps];
                 d[pd+idx+width] = s[ps+1];
-                //d[pd+idx+w2] = s[ps+2];
-                //d[pd+idx+w3] = s[ps+3];                
-                idx += w2;
+                d[pd+idx+w2] = s[ps+2];
+                d[pd+idx+w3] = s[ps+3];                
+                idx += w4;
                 //idx+=width;
-                ps+=2;
+                ps+=4;
             }
             done = false;
             }
@@ -324,7 +324,7 @@ public class Wiper {
       int   width,
       int   height )
     {
-        wipe_scr_start = V.getScreen(2);
+        wipe_scr_start = V.getScreen(3);
         //
         
         
@@ -343,7 +343,7 @@ public class Wiper {
       int   width,
       int   height )
     {
-        wipe_scr_end = V.getScreen(3);
+        wipe_scr_end = V.getScreen(2);
         //I_ReadScreen(wipe_scr_end);
         
         System.arraycopy(V.getScreen(0),0,wipe_scr_end, 0, SCREENWIDTH*SCREENHEIGHT);
