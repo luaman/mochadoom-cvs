@@ -51,6 +51,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
@@ -92,7 +93,7 @@ import doom.evtype_t;
  * @author Velktron
  *
  */
-public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener, DoomVideoInterface,DoomEventInterface{
+public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener, DoomVideoInterface,DoomEventInterface{
 
 
     private static final long serialVersionUID = 3118508722502652276L;
@@ -238,12 +239,12 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
             case KeyEvent.KEY_PRESSED:
             	switch(e.getKeyCode()){
             	
-               case KeyEvent.KEY_LOCATION_NUMPAD:
             case KeyEvent.VK_PLUS:
             case KeyEvent.VK_EQUALS: 
                 rc = KEY_EQUALS;    
                 break;
-                
+            
+            case (13):
             case KeyEvent.VK_SUBTRACT: 
             case KeyEvent.VK_MINUS:   
                 rc = KEY_MINUS;     
@@ -269,17 +270,26 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
                 
             default:
                 
-            /*if (rc >= KeyEvent.VK_SPACE && rc <= KeyEvent.VK_DEAD_TILDE)
-                rc = (int) (rc - KeyEvent.FOCUS_EVENT_MASK + ' ');*/
-            if (rc >= KeyEvent.VK_A && rc <= KeyEvent.VK_Z)
+           /*if (rc >= KeyEvent.VK_SPACE && rc <= KeyEvent.VK_DEAD_TILDE)
+                {
+            	rc = (int) (rc - KeyEvent.FOCUS_EVENT_MASK + ' ');
+                break;
+                } */
+            if (rc >= KeyEvent.VK_A && rc <= KeyEvent.VK_Z){
                 rc = rc-KeyEvent.VK_A +'a';
+            	break;
+            	}
+            // Unknown. Probably fucking up with the keyboard locale. Switch to be sure.
+            // Sorry for this horrible hack, but Java can't read locale-free keycodes -_-
+            // this.getInputContext().selectInputMethod(java.util.Locale.US);
             break;
           }
           
          //System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
 
-          // Sanitize for unicode.
-          return (Math.min(rc,255));
+          // Sanitize. Nothing beyond F12 must pass through, else you will
+          // get the "all cheats" bug.
+          return rc;//(Math.min(rc,KEY_F12));
 
         }
         
@@ -294,19 +304,24 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
  
         	
         	
-            if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
-                addEvent(e);
+            //if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
+        	if (e.getKeyCode()<255) {  
+        	addEvent(e);
             }
         }
 
         public void keyReleased(KeyEvent e) {
-        	if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
-  				addEvent(e);
+        	//if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
+        		if (e.getKeyCode()<255) {
+        		addEvent(e);
             }
         }
 
         public void keyTyped(KeyEvent e) {
-  				addEvent(e);
+        //	if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0){
+        	if (e.getKeyCode()<255) {
+        	addEvent(e);
+        	}
         }
         
         static void addEvent(AWTEvent ev) {
@@ -552,6 +567,14 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	  boolean			oktodraw;
 	  long	attribmask;
 
+	  // Try setting the locale the US, otherwise there will be problems
+	  // with non-US keyboards.
+	  if (!this.getInputContext().selectInputMethod(java.util.Locale.US)){
+		  System.err.println("Could not set the input context to US! Kayboard input will be glitchy!");
+	  } else {
+		  System.err.println("Input context successfully set to US.");
+	  }
+	  
 	  //signal(SIGINT, (void (*)(int)) I_Quit);
 
 	  if (DM.CheckParm("-2")!=0)
@@ -805,10 +828,13 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
         }
 
 	    this.update(null);
+	    //this.getInputContext().selectInputMethod(java.util.Locale.US);
 		
 	}
 
 
+	
+	
     @Override
     public void UpdateNoBlit() {
         //this.update(null);
@@ -818,6 +844,48 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 	@Override
     public boolean dispatchKeyEvent(KeyEvent e) {
 	return false;
+	}
+
+	@Override
+	public void windowActivated(WindowEvent windowevent) {
+		this.getInputContext().selectInputMethod(java.util.Locale.US);
+		
+	}
+
+	@Override
+	public void windowClosed(WindowEvent windowevent) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowClosing(WindowEvent windowevent) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeactivated(WindowEvent windowevent) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowDeiconified(WindowEvent windowevent) {
+		this.getInputContext().selectInputMethod(java.util.Locale.US);
+		
+	}
+
+	@Override
+	public void windowIconified(WindowEvent windowevent) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void windowOpened(WindowEvent windowevent) {
+		this.getInputContext().selectInputMethod(java.util.Locale.US);
+		
 	}
 
 }
