@@ -282,6 +282,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
             // Unknown. Probably fucking up with the keyboard locale. Switch to be sure.
             // Sorry for this horrible hack, but Java can't read locale-free keycodes -_-
             // this.getInputContext().selectInputMethod(java.util.Locale.US);
+            //if (rc>KEY_F12) rc=KEY_RSHIFT;
             break;
           }
           
@@ -289,7 +290,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 
           // Sanitize. Nothing beyond F12 must pass through, else you will
           // get the "all cheats" bug.
-          return rc;//(Math.min(rc,KEY_F12));
+          return rc;//Math.min(rc,KEY_F12);
 
         }
         
@@ -305,21 +306,21 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
         	
         	
             //if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
-        	if (e.getKeyCode()<255) {  
+        	if (e.getKeyCode()<=KeyEvent.VK_F12) {  
         	addEvent(e);
             }
         }
 
         public void keyReleased(KeyEvent e) {
         	//if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
-        		if (e.getKeyCode()<255) {
+        		if (e.getKeyCode()<=KeyEvent.VK_F12) {
         		addEvent(e);
             }
         }
 
         public void keyTyped(KeyEvent e) {
         //	if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0){
-        	if (e.getKeyCode()<255) {
+        	if (e.getKeyCode()<=KeyEvent.VK_F12) {
         	addEvent(e);
         	}
         }
