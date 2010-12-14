@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: cheatseq_t.java,v 1.5 2010/08/25 00:50:59 velktron Exp $
+// $Id: cheatseq_t.java,v 1.6 2010/12/14 00:53:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: cheatseq_t.java,v $
+// Revision 1.6  2010/12/14 00:53:32  velktron
+// Some input sanitizing. Far from perfect but heh...
+//
 // Revision 1.5  2010/08/25 00:50:59  velktron
 // Some more work...
 //
@@ -191,8 +194,8 @@ public class cheatseq_t {
      */
     public static char SCRAMBLE(char a) {
         return (char) ((((a) & 1) << 7) + (((a) & 2) << 5) + ((a) & 4)
-                + (((a) & 8) << 1) + (((a) & 16) >> 1) + ((a) & 32)
-                + (((a) & 64) >> 5) + (((a) & 128) >> 7));
+                + (((a) & 8) << 1) + (((a) & 16) >>> 1) + ((a) & 32)
+                + (((a) & 64) >>> 5) + (((a) & 128) >>> 7));
     }
 
     /**

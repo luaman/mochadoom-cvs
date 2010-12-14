@@ -282,21 +282,31 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
           return (Math.min(rc,255));
 
         }
+        
+        // This stuff should NOT get through in keyboard events.
+        protected final int UNACCEPTABLE_MODIFIERS=(int) (InputEvent.ALT_GRAPH_DOWN_MASK+
+        										 InputEvent.META_DOWN_MASK+
+        										 InputEvent.META_MASK+
+        										 InputEvent.WINDOW_EVENT_MASK+
+        										 InputEvent.WINDOW_FOCUS_EVENT_MASK);
 
         public void keyPressed(KeyEvent e) {
-            if (!((e.getModifiersEx() & InputEvent.ALT_GRAPH_DOWN_MASK) != 0)) {
+ 
+        	
+        	
+            if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
                 addEvent(e);
             }
         }
 
         public void keyReleased(KeyEvent e) {
-        	  addEvent(e);
+        	if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
+  				addEvent(e);
+            }
         }
 
         public void keyTyped(KeyEvent e) {
-            if ((e.getModifiersEx() & InputEvent.ALT_GRAPH_DOWN_MASK) != 0) {
   				addEvent(e);
-            }        
         }
         
         static void addEvent(AWTEvent ev) {
@@ -365,14 +375,14 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 			event.type = evtype_t.ev_mouse;
 			event.data1 =
 			    (MEV.getButton() & MouseEvent.BUTTON1)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 2 : 0)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 4 : 0);
+			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 2 : 0)
+			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 4 : 0);
 			// suggest parentheses around arithmetic in operand of |
 			event.data1 =
 			    event.data1
 			    ^ (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0)
-			    ^ (MEV.getButton() == MouseEvent.BUTTON2 ? 2 : 0)
-			    ^ (MEV.getButton() == MouseEvent.BUTTON3 ? 4 : 0);
+			    ^ (MEV.getButton() == MouseEvent.BUTTON3 ? 2 : 0)
+			    ^ (MEV.getButton() == MouseEvent.BUTTON2 ? 4 : 0);
 			event.data2 = event.data3 = 0;
 			DM.PostEvent(event);
 			//System.err.println("bu");
@@ -385,8 +395,8 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
 			// Get buttons, as usual.
 			event.data1 =
 			    (MEV.getButton() & MouseEvent.BUTTON1)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 2 : 0)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 4 : 0);
+			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 2 : 0)
+			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 4 : 0);
 			event.data2 = (MEV.getX() - lastmousex) << 2;
 			event.data3 = (lastmousey - MEV.getY()) << 2;
 
@@ -785,7 +795,7 @@ public class AWTDoom extends JFrame implements KeyEventDispatcher,KeyListener,Mo
             frames++;
         else
         {
-        frames*=35;
+        //frames*=35;
         for (i=0 ; i<frames*2 ; i+=2)
             RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
         for ( ; i<20*2 ; i+=2)
