@@ -40,6 +40,7 @@ import static p.mobj_t.MF_TRANSLATION;
 import static p.mobj_t.MF_TRANSSHIFT;
 import static utils.C2JUtils.toUnsignedByte;
 
+import java.awt.Color;
 import java.util.Arrays;
 import java.util.Hashtable;
 
@@ -54,6 +55,7 @@ import i.DoomStatusAware;
 import i.DoomSystemInterface;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import w.DoomFile;
 import w.WadLoader;
 import w.name8;
 import data.Defines;
@@ -399,6 +401,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
     protected byte[][]  spritelights;
     
     protected int WEAPONADJUST;
+    protected int BOBADJUST;
      
     /** constant arrays
      *  used for psprite clipping and initializing clipping 
@@ -776,7 +779,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             
             
             dc_colormap = vis.colormap;
-            
+            //colfunc=glasscolfunc;
             if (dc_colormap==null)
             {
             // NULL colormap = shadow draw
@@ -811,66 +814,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             }
 
             colfunc = basecolfunc;
-        }
-
-        /**
-         * R_DrawVisSprite
-         *  mfloorclip and mceilingclip should also be set.
-         *  
-         * Sprites are actually drawn here.
-         *
-         */ 
-        public void
-        DrawVisSprite2
-        ( vissprite_t      vis,
-          int           x1,
-          int           x2 )
-        {
-            //System.out.println("Drawing vissprite "+vis);
-            column_t       column;
-            int         texturecolumn;
-            int     frac; // fixed_t
-            patch_t        patch;
-            
-            // At this point, the view angle (and patch) has already been chosen. Go back.
-            patch = W.CachePatchNum (vis.patch+firstspritelump,PU_CACHE);
-            
-            
-            dc_colormap = vis.colormap;
-            
-            if (dc_colormap==null)
-            {
-            // NULL colormap = shadow draw
-            colfunc = fuzzcolfunc;
-            }
-            else if ((vis.mobjflags & MF_TRANSLATION)!=0)
-            {
-            colfunc = DrawTranslatedColumn;
-            dc_translation = translationtables;
-            dcto=          - 256 +
-                ( (vis.mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
-            }
-            
-            dc_iscale = Math.abs(vis.xiscale)>>detailshift;
-            dc_texturemid = vis.texturemid;
-            frac = vis.startfrac;
-            spryscale = vis.scale;
-            sprtopscreen = centeryfrac - FixedMul(dc_texturemid,spryscale);
-            
-            for (dc_x=vis.x1 ; dc_x<=vis.x2 ; dc_x++, frac += vis.xiscale)
-            {
-            texturecolumn = frac>>FRACBITS;
-        if(RANGECHECK){
-            if (texturecolumn < 0 || texturecolumn >= patch.width)
-                I.Error ("R_DrawSpriteRange: bad texturecolumn");
-        }
-            column = patch.columns[texturecolumn];
-
-            DrawMaskedColumn(column);
-            }
-
-            colfunc = basecolfunc;
-        }
+         }
+       
 
         /**
          * R_ProjectSprite
@@ -1119,7 +1064,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
             // calculate edges of the shape. tx is expressed in "view units".
 
             // OPTIMIZE: if weaponadjust is computed in-place, noticeable slowdown occurs.
-            tx = (int) (psp.sx-WEAPONADJUST);
+            tx = (int) (FixedMul(psp.sx,BOBADJUST)-WEAPONADJUST);
             
             tx -= spriteoffset[lump];
             
@@ -1570,8 +1515,11 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
                 }
             // draw the psprites on top of everything
             //  but does not draw on side views
-            if (viewangleoffset==0)       
+            //if (viewangleoffset==0)
+            
+            colfunc=playercolfunc;            
             DrawPlayerSprites ();
+            colfunc=basecolfunc;
     }
         
     }
@@ -2282,12 +2230,17 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
      protected colfunc_t basecolfunc;
      protected colfunc_t fuzzcolfunc;
      protected colfunc_t transcolfunc;
+     protected colfunc_t glasscolfunc;
+     protected colfunc_t playercolfunc;
      protected colfunc_t spanfunc;
 
      protected colfunc_t DrawTranslatedColumn;
+     protected colfunc_t DrawColumnPlayer;
      protected colfunc_t DrawFuzzColumn;
      protected colfunc_t DrawColumnLow;
      protected colfunc_t DrawColumn;
+     protected colfunc_t DrawTLColumn;
+     
      /** to be set in UnifiedRenderer */
      protected colfunc_t DrawSpan,DrawSpanLow;
      
@@ -2598,8 +2551,109 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
           }
       }
       
+      protected static final int TSC= 12;        /* number of fixed point digits in filter percent */
+      byte[] main_tranmap;
       
-      /**
+      // Maes: a "cleaner" way to construct a transparency map.
+      // Essentially we average each color's RGB values vs each other
+      // and then  remap the blend to the closest existing color.
+      // E.g. for finding mix of colors 0 and 100, we avg them, and
+      // find that e.g. their mix is closest to color 139.            
+      // Then we create the colormap table by putting 139 at position 0,100.
+      
+      protected void R_InitTranMap(int progress)
+      {
+        int lump = W.CheckNumForName("TRANMAP");
+
+        // If a tranlucency filter map lump is present, use it
+/*
+        if (lump != -1)  // Set a pointer to the translucency filter maps.
+          main_tranmap = W.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC);   // killough 4/11/98
+        else
+          {   // Compose a default transparent filter map based on PLAYPAL.
+            byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
+            String fname;
+            String DoomExeDir=System.getProperty("user.dir");
+*/
+            
+            byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
+            main_tranmap = new byte[256*256];  // killough 4/11/98
+            Color[] basepal=new Color[256];
+            Color[] mixedpal=new Color[256*256];
+            float[] distmap=new float[256*256];
+            main_tranmap=new byte[256*256];
+            
+            // Init array of base colors.
+            for (int i=0;i<256;i++){
+                basepal[i]=new Color(0x00FF&playpal[i*3],0x00FF&playpal[i*3+1],0x00FF&playpal[i*3+2]);                   
+                }
+
+            // Init array of mixed colors. These are true RGB.
+            // The diagonal of this array will be the original colors.
+            for (int i=0;i<256;i++){
+                for (int j=0;j<256;j++){
+                    mixedpal[i*256+j]=mixColors(basepal[i],basepal[j]);                   
+                }
+            }
+            
+            // Init distance map. Every original palette colour has a
+            // certain distance from all the others. The diagonal is zero.
+            // The interpretation that e.g. the mixture of color 2 and 8 will
+            // have a RGB value, which is closest to euclidean distance to
+            // e.g. original color 9. Therefore we should put "9" in there.
+            // a distance of 0, so it shoul
+            
+            final float[] tmpdist=new float[256];
+            
+            for (int a=0;a<256;a++){
+                for (int b=0;b<256;b++){
+                    // We evaluate the mixture of a and b
+                    // Construct distance table vs all of the ORIGINAL colors.
+                    for (int k=0;k<256;k++){
+                        tmpdist[k]=colorDistance(mixedpal[a*256+b],basepal[k]);
+                        }
+                    
+                    main_tranmap[(a<<8)|b]=(byte) findMin(tmpdist);
+                }
+            }            
+            
+      }
+
+    /** Mixes two RGB colors. Nuff said */
+
+    protected final Color mixColors(Color a, Color b){
+        int red,green,blue;
+        red=(a.getRed()+b.getRed())/2;
+        green=(a.getGreen()+b.getGreen())/2;
+        blue=(a.getBlue()+b.getBlue())/2;
+        
+        return new Color(red,green,blue);        
+        }
+    
+    /** Returns the euclidean distance of two RGB colors. Nuff said */
+    
+    protected final float colorDistance(Color a, Color b){
+        return (float) Math.sqrt(Math.pow((a.getRed()-b.getRed()),2)+
+            Math.pow((a.getGreen()-b.getGreen()),2)+
+            Math.pow((a.getBlue()-b.getBlue()),2));
+        }
+
+    protected final int findMin(float[] a){
+        int minindex=0;
+        float min=Float.POSITIVE_INFINITY;
+        
+        for (int i=0;i<a.length;i++)
+            if (a[i]<min){
+                min=a[i];
+                minindex=i;
+            }
+        
+        return minindex;
+        
+    }
+    
+      
+       /**
        * R_DrawMaskedColumn
        * Used for sprites and masked mid textures.
        * Masked means: partly transparent, i.e. stored
@@ -2721,6 +2775,546 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Textur
           
           dc_texturemid = basetexturemid;
       }
+      
+      protected final class R_DrawTLColumn implements colfunc_t{
+          
+          public void invoke() 
+          { 
+            int              count; 
+            int dest;            // killough
+            int  frac;            // killough
+            int fracstep;     
+            
+            count = dc_yh - dc_yl + 1; 
+
+            if (count <= 0)    // Zero length, column does not exceed a pixel.
+              return; 
+                                           
+          if (RANGECHECK) {
+            if (dc_x >= SCREENWIDTH
+                || dc_yl < 0
+                || dc_yh >= SCREENHEIGHT) 
+              I.Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
+          } 
+
+            // Framebuffer destination address.
+            // Use ylookup LUT to avoid multiply with ScreenWidth.
+            // Use columnofs LUT for subwindows? 
+
+            dest = ylookup[dc_yl] + columnofs[dc_x];  
+
+            // Determine scaling, which is the only mapping to be done.
+
+            fracstep = dc_iscale; 
+            frac = dc_texturemid + (dc_yl-centery)*fracstep; 
+
+            // Inner loop that does the actual texture mapping,
+            //  e.g. a DDA-lile scaling.
+            // This is as fast as it gets.       (Yeah, right!!! -- killough)
+            //
+            // killough 2/1/98: more performance tuning
+
+            {
+              final byte[] source = dc_source;  
+               final byte[] colormap = dc_colormap; 
+              int heightmask = dc_texheight-1;
+              if ((dc_texheight & heightmask)!=0)   // not a power of 2 -- killough
+                {
+                  heightmask++;
+                  heightmask <<= FRACBITS;
+                    
+                  if (frac < 0)
+                    while ((frac += heightmask) <  0);
+                  else
+                    while (frac >= heightmask)
+                      frac -= heightmask;
+                    
+                  do
+                    {
+                      // Re-map color indices from wall texture column
+                      //  using a lighting/special effects LUT.
+                      
+                      // heightmask is the Tutti-Frutti fix -- killough
+                      
+                      screen[dest] = main_tranmap[0xFF00&(screen[dest]<<8)|(0x00FF&colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]])];
+                      dest += SCREENWIDTH; 
+                      if ((frac += fracstep) >= heightmask)
+                        frac -= heightmask;
+                    } 
+                  while (--count>0);
+                }
+             else
+                {
+                  while ((count-=4)>=0)   // texture height is a power of 2 -- killough
+                    {
+                      //screen[dest] = main_tranmap[0xFF00&(screen[dest]<<8)|(0x00FF&colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]])];
+                      screen[dest] = main_tranmap[0xFF00&(screen[dest]<<8)|(0x00FF&colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]])];
+                      dest += SCREENWIDTH; 
+                      frac += fracstep;
+                      screen[dest] = main_tranmap[0xFF00&(screen[dest]<<8)|(0x00FF&colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]])];
+                      dest += SCREENWIDTH; 
+                      frac += fracstep;
+                      screen[dest] = main_tranmap[0xFF00&(screen[dest]<<8)|(0x00FF&colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]])];
+                      dest += SCREENWIDTH; 
+                      frac += fracstep;
+                      screen[dest] = main_tranmap[0xFF00&(screen[dest]<<8)|(0x00FF&colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]])];
+                      dest += SCREENWIDTH; 
+                      frac += fracstep;     
+                    }
+                  if ((count & 1)!=0)
+                      screen[dest] = main_tranmap[0xFF00&(screen[dest]<<8)|(0x00FF&colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]])];
+                } 
+            }
+          }
+          }
    
+      protected final class R_DrawTranslatedColumn implements colfunc_t{
+
+          public void invoke() {
+              int count;
+              // MAES: you know the deal by now...
+              int dest;
+              int frac;
+              int fracstep;
+
+              count = dc_yh - dc_yl;
+              if (count < 0)
+                  return;
+
+              if (RANGECHECK) {
+                  if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
+                      I.Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+                  }
+              }
+
+              // WATCOM VGA specific.
+              /*
+               * Keep for fixing. if (detailshift) { if (dc_x & 1) outp
+               * (SC_INDEX+1,12); else outp (SC_INDEX+1,3); dest = destview + dc_yl*80
+               * + (dc_x>>1); } else { outp (SC_INDEX+1,1<<(dc_x&3)); dest = destview
+               * + dc_yl*80 + (dc_x>>2); }
+               */
+
+              // FIXME. As above.
+              dest = ylookup[dc_yl] + columnofs[dc_x];
+
+              // Looks familiar.
+              fracstep = dc_iscale;
+              frac = dc_texturemid + (dc_yl - centery) * fracstep;
+
+              // Here we do an additional index re-mapping.
+              do {
+                  // Translation tables are used
+                  // to map certain colorramps to other ones,
+                  // used with PLAY sprites.
+                  // Thus the "green" ramp of the player 0 sprite
+                  // is mapped to gray, red, black/indigo.
+                  screen[dest] =
+                      dc_colormap[0x00FF&dc_translation[dc_source[dc_source_ofs+(frac >> FRACBITS)]]];
+                  dest += SCREENWIDTH;
+
+                  frac += fracstep;
+              } while (count-- != 0);
+          }
+
+          }
+      
+      
+      /**
+       * A column is a vertical slice/span from a wall texture that, given the
+       * DOOM style restrictions on the view orientation, will always have
+       * constant z depth. Thus a special case loop for very fast rendering can be
+       * used. It has also been used with Wolfenstein 3D. MAES: this is called
+       * mostly from inside Draw and from an external "Renderer"
+       */
+
+      protected final class R_DrawColumn implements colfunc_t{
+          public void invoke(){ 
+          int count;
+          // byte* dest;
+          int dest; // As pointer
+          // fixed_t
+          int frac, fracstep;
+          // Something gross happens.
+          boolean gross=false;
+          byte colmask=127;
+          count = dc_yh - dc_yl;
+          // How much we should draw
+          //count = Math.min(dc_yh - dc_yl,dc_source.length-dc_source_ofs-1);
+          //colmask = (byte) Math.min(dc_source.length-dc_source_ofs-1,127);
+
+          // Zero length, column does not exceed a pixel.
+          if (count < 0)
+              return;
+
+          if (RANGECHECK) {
+              if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+                  I.Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
+                              dc_x);
+          }
+
+          // Trying to draw a masked column? Then something gross will happen.
+          /*if (count>=dc_source.length-dc_source_ofs) {
+              int diff=count-(dc_source.length-dc_source_ofs);
+              count=dc_source.length-dc_source_ofs-1;
+              dc_source_ofs=0;
+              //dc_yl=dc_yh-count;
+              gross=true;
+          }*/
+          
+          // Framebuffer destination address.
+          // Use ylookup LUT to avoid multiply with ScreenWidth.
+          // Use columnofs LUT for subwindows?
+          dest = ylookup[dc_yl] + columnofs[dc_x];
+
+          // Determine scaling,
+          // which is the only mapping to be done.
+          fracstep = dc_iscale;
+          frac = dc_texturemid + (dc_yl - centery) * fracstep;
+          
+          // Inner loop that does the actual texture mapping,
+          // e.g. a DDA-lile scaling.
+          // This is as fast as it gets.
+          do {
+              /* Re-map color indices from wall texture column
+               * using a lighting/special effects LUT.
+               * TODO: determine WHERE the fuck "*dest" is supposed to be
+               * pointing.
+               * DONE: it's pointing inside screen[0] (implicitly).
+               * dc_source was probably just a pointer to a decompressed
+               *  column...right? Right.
+               */  
+             // if (gross) System.out.println(frac >> FRACBITS);
+              screen[dest] = dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & colmask)]];
+
+              
+              /* MAES: ok, so we have (from inside out):
+               * 
+               * frac is a fixed-point number representing a pointer inside a column. It gets shifted to an integer,
+               * and AND-ed with 128 (this causes vertical column tiling).
+               * 
+               * 
+               */
+              dest += SCREENWIDTH;
+              frac += fracstep;
+
+          } while (count-- > 0);
+      }
+      }
+      
+      /** EI VITTU, this gives a clean 25% boost. Da fack...
+       * 
+       * 
+       * @author admin
+       *
+       */
+      
+      protected final class R_DrawColumnUnrolled implements colfunc_t{
+          
+          /* That's shit, doesn't help.
+          private final int SCREENWIDTH2=SCREENWIDTH*2;
+          private final int SCREENWIDTH3=SCREENWIDTH*3;
+          private final int SCREENWIDTH4=SCREENWIDTH*4;
+          private final int SCREENWIDTH5=SCREENWIDTH*5;
+          private final int SCREENWIDTH6=SCREENWIDTH*6;
+          private final int SCREENWIDTH7=SCREENWIDTH*7;
+          private final int SCREENWIDTH8=SCREENWIDTH*8;
+          */
+          
+          public void invoke(){ 
+          int         count; 
+          byte[]       source;
+          int       dest;
+          byte[]       colormap;
+          
+          // These are all "unsigned". Watch out for bit shifts!
+          int        frac, fracstep, fracstep2,fracstep3, fracstep4;   
+       
+          count = dc_yh - dc_yl + 1; 
+
+          source = dc_source;
+          dc_source_ofs+=15;
+          colormap = dc_colormap;      
+          dest = ylookup[dc_yl] + columnofs[dc_x];  
+           
+          fracstep = dc_iscale<<9; 
+          frac = (dc_texturemid + (dc_yl-centery)*dc_iscale)<<9; 
+       
+          fracstep2 = fracstep+fracstep;
+          fracstep3 = fracstep2+fracstep;
+          fracstep4 = fracstep3+fracstep;
+          
+          while (count >= 8) 
+          { 
+              screen[dest] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
+          screen[dest +SCREENWIDTH] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep)>>>25]]; 
+          screen[dest + SCREENWIDTH*2] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep2)>>>25]]; 
+          screen[dest + SCREENWIDTH*3] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep3)>>>25]];
+          
+          frac += fracstep4; 
+
+          screen[dest + SCREENWIDTH*4] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
+          screen[dest + SCREENWIDTH*5] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep)>>>25]]; 
+          screen[dest + SCREENWIDTH*6] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep2)>>>25]]; 
+          screen[dest + SCREENWIDTH*7] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep3)>>>25]]; 
+
+          frac += fracstep4; 
+          dest += SCREENWIDTH*8; 
+          count -= 8;
+          } 
+          
+          while (count > 0)
+          { 
+              screen[dest] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
+          dest += SCREENWIDTH; 
+          frac += fracstep; 
+          count--;
+          } 
+      }
+      }
+      
+      /** Adapted from Killough's Boom code.
+       * 
+       * 
+       * @author admin
+       *
+       */
+      
+      protected final class R_DrawColumnBoom implements colfunc_t{
+          
+      public void invoke() 
+      { 
+        int              count; 
+        int dest;            // killough
+        int  frac;            // killough
+        int fracstep;     
+        
+        count = dc_yh - dc_yl + 1; 
+
+        if (count <= 0)    // Zero length, column does not exceed a pixel.
+          return; 
+                                       
+      if (RANGECHECK) {
+        if (dc_x >= SCREENWIDTH
+            || dc_yl < 0
+            || dc_yh >= SCREENHEIGHT) 
+          I.Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
+      } 
+
+        // Framebuffer destination address.
+        // Use ylookup LUT to avoid multiply with ScreenWidth.
+        // Use columnofs LUT for subwindows? 
+
+        dest = ylookup[dc_yl] + columnofs[dc_x];  
+
+        // Determine scaling, which is the only mapping to be done.
+
+        fracstep = dc_iscale; 
+        frac = dc_texturemid + (dc_yl-centery)*fracstep; 
+
+        // Inner loop that does the actual texture mapping,
+        //  e.g. a DDA-lile scaling.
+        // This is as fast as it gets.       (Yeah, right!!! -- killough)
+        //
+        // killough 2/1/98: more performance tuning
+
+        {
+          final byte[] source = dc_source;       
+           final byte[] colormap = dc_colormap; 
+          int heightmask = dc_texheight-1;
+          if ((dc_texheight & heightmask)!=0)   // not a power of 2 -- killough
+            {
+              heightmask++;
+              heightmask <<= FRACBITS;
+                
+              if (frac < 0)
+                while ((frac += heightmask) <  0);
+              else
+                while (frac >= heightmask)
+                  frac -= heightmask;
+                
+              do
+                {
+                  // Re-map color indices from wall texture column
+                  //  using a lighting/special effects LUT.
+                  
+                  // heightmask is the Tutti-Frutti fix -- killough
+                  
+                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS))]];
+                  dest += SCREENWIDTH; 
+                  if ((frac += fracstep) >= heightmask)
+                    frac -= heightmask;
+                } 
+              while (--count>0);
+            }
+         else
+            {
+              while ((count-=4)>=0)   // texture height is a power of 2 -- killough
+                {
+                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;     
+                }
+              if ((count & 1)!=0)
+                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+            } 
+        }
+      }
+      }
+      
+      protected final class R_DrawColumnLow implements colfunc_t{
+          public void invoke(){
+          int count;
+          // MAES: were pointers. Of course...
+          int dest;
+          int dest2;
+          // Maes: fixed_t never used as such.
+          int frac;
+          int fracstep;
+
+          count = dc_yh - dc_yl;
+
+          // Zero length.
+          if (count < 0)
+              return;
+
+          if (RANGECHECK) {
+              if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
+
+                  I.Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh,
+                              dc_x);
+              }
+              // dccount++;
+          }
+          // Blocky mode, need to multiply by 2.
+          dc_x <<= 1;
+
+          dest = ylookup[dc_yl] + columnofs[dc_x];
+          dest2 = ylookup[dc_yl] + columnofs[dc_x + 1];
+
+          fracstep = dc_iscale;
+          frac = dc_texturemid + (dc_yl - centery) * fracstep;
+          //int spot=(frac >>> FRACBITS) & 127;
+          do {
+              
+              // Hack. Does not work correctly.
+              // MAES: that's good to know.
+              screen[dest2] =
+                  screen[dest] =
+                      dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & 127)]];
+              
+             // System.out.println("Drawing "+(dest2%SCREENWIDTH)+" , "+(dest2/SCREENWIDTH));
+              dest += SCREENWIDTH;
+              dest2 += SCREENWIDTH;
+              frac += fracstep;
+          } while (count-- != 0);
+      }
+      }
+
+    /**
+     * Framebuffer postprocessing.
+     * Creates a fuzzy image by copying pixels
+     * from adjacent ones to left and right.
+     * Used with an all black colormap, this
+     * could create the SHADOW effect,
+     * i.e. spectres and invisible players.
+     */
+      
+      protected final class R_DrawFuzzColumn implements colfunc_t{
+        public void invoke()
+    { 
+       int         count; 
+       int       dest; 
+       int     frac;
+       int     fracstep;    
+
+       // Adjust borders. Low... 
+       if (dc_yl==0) 
+       dc_yl = 1;
+
+       // .. and high.
+       if (dc_yh == viewheight-1) 
+       dc_yh = viewheight - 2; 
+            
+       count = dc_yh - dc_yl; 
+
+       // Zero length.
+       if (count < 0) 
+       return; 
+
+       
+    if(RANGECHECK){ 
+       if (dc_x >= SCREENWIDTH
+       || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+       {
+       I.Error ("R_DrawFuzzColumn: %i to %i at %i",
+            dc_yl, dc_yh, dc_x);
+       }
+    }
+
+
+       // Keep till detailshift bug in blocky mode fixed,
+       //  or blocky mode removed.
+       /* WATCOM code 
+       if (detailshift)
+       {
+       if (dc_x & 1)
+       {
+           outpw (GC_INDEX,GC_READMAP+(2<<8) ); 
+           outp (SC_INDEX+1,12); 
+       }
+       else
+       {
+           outpw (GC_INDEX,GC_READMAP); 
+           outp (SC_INDEX+1,3); 
+       }
+       dest = destview + dc_yl*80 + (dc_x>>1); 
+       }
+       else
+       {
+       outpw (GC_INDEX,GC_READMAP+((dc_x&3)<<8) ); 
+       outp (SC_INDEX+1,1<<(dc_x&3)); 
+       dest = destview + dc_yl*80 + (dc_x>>2); 
+       }*/
+
+       
+       // Does not work with blocky mode.
+       dest = ylookup[dc_yl] + columnofs[dc_x];
+
+       // Looks familiar.
+       fracstep = dc_iscale; 
+       frac = dc_texturemid + (dc_yl-centery)*fracstep; 
+
+       // Looks like an attempt at dithering,
+       //  using the colormap #6 (of 0-31, a bit
+       //  brighter than average).
+       do 
+       {
+       // Lookup framebuffer, and retrieve
+       //  a pixel that is either one column
+       //  left or right of the current one.
+       // Add index from colormap to index.
+       screen[dest] = colormaps[6][0x00FF&screen[dest+fuzzoffset[fuzzpos]]]; 
+
+       // Clamp table lookup index.
+       if (++fuzzpos == FUZZTABLE) 
+           fuzzpos = 0;
+       
+       dest += SCREENWIDTH;
+
+       frac += fracstep; 
+       } while (count-->0); 
+    } 
+    }
+    
    
 }

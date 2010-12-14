@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.20 2010/12/12 19:06:18 velktron Exp $
+// $Id: Map.java,v 1.21 2010/12/14 17:55:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.21  2010/12/14 17:55:59  velktron
+// Fixed weapon bobbing, added translucent column drawing, separated rendering commons.
+//
 // Revision 1.20  2010/12/12 19:06:18  velktron
 // Tech Demo v1.1 release.
 //
@@ -130,7 +133,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.20 2010/12/12 19:06:18 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.21 2010/12/14 17:55:59 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -256,16 +259,16 @@ public static final short LINE_NEVERSEE =ML_DONTDRAW;
 // The vector graphics for the automap.
 /** A line drawing of the player pointing right,
  *  starting from the middle. */
-private static mline_t[] player_arrow;
-public static int NUMPLYRLINES;
-private static mline_t[] cheat_player_arrow;
-public static int NUMCHEATPLYRLINES;
-private static mline_t[] triangle_guy;
-public static int NUMTRIANGLEGUYLINES;
-private static mline_t[] thintriangle_guy;
-private static int NUMTHINTRIANGLEGUYLINES;
+protected mline_t[] player_arrow;
+protected int NUMPLYRLINES;
+protected mline_t[] cheat_player_arrow;
+protected int NUMCHEATPLYRLINES;
+protected mline_t[] triangle_guy;
+protected int NUMTRIANGLEGUYLINES;
+protected mline_t[] thintriangle_guy;
+protected int NUMTHINTRIANGLEGUYLINES;
 
-public void initVectorGraphics(){
+protected void initVectorGraphics(){
 
 int R =((8*PLAYERRADIUS)/7);
 player_arrow = new mline_t[]{
@@ -319,76 +322,79 @@ thintriangle_guy = new mline_t[]{
 NUMTHINTRIANGLEGUYLINES= thintriangle_guy.length;
 }
 
+/** Planned overlay mode */
+protected int overlay =0;
+
 protected int  cheating = 0;
 protected boolean  grid = false;
 
-private int  leveljuststarted = 1;   // kluge until AM_LevelInit() is called
+protected int  leveljuststarted = 1;   // kluge until AM_LevelInit() is called
 
-private int  finit_width = SCREENWIDTH;
-private int  finit_height = SCREENHEIGHT - 32;
+protected int  finit_width = SCREENWIDTH;
+protected int  finit_height = SCREENHEIGHT - 32;
 
 // location of window on screen
-private int  f_x;
-private int  f_y;
+protected int  f_x;
+protected int  f_y;
 
 // size of window on screen
-private int  f_w;
-private int  f_h;
+protected int  f_w;
+protected int  f_h;
 
 /** used for funky strobing effect */
-private int  lightlev;       
+protected int  lightlev;       
 /** pseudo-frame buffer */
-private byte[]    fb;             
-private int  amclock;
+protected byte[]    fb;             
+protected int  amclock;
 
 /** (fixed_t) how far the window pans each tic (map coords) */
-private mpoint_t m_paninc; 
+protected mpoint_t m_paninc; 
 
 /** (fixed_t) how far the window zooms in each tic (map coords) */
-private int  mtof_zoommul;
+protected int  mtof_zoommul;
 
 /** (fixed_t) how far the window zooms in each tic (fb coords)*/
-private int  ftom_zoommul; 
+protected int  ftom_zoommul; 
 
 /** (fixed_t) LL x,y where the window is on the map (map coords) */
-private int  m_x, m_y;   
+protected int  m_x, m_y;   
 
 /** (fixed_t) UR x,y where the window is on the map (map coords) */
-private int  m_x2, m_y2; 
+protected int  m_x2, m_y2; 
 
 /** (fixed_t) width/height of window on map (map coords) */ 
-private int  m_w, m_h;
+protected int  m_w, m_h;
 
 /** (fixed_t) based on level size */
-private int  min_x, min_y, max_x,max_y;
+protected int  min_x, min_y, max_x,max_y;
 
 /** (fixed_t) max_x-min_x */
-private int  max_w; // 
+protected int  max_w; // 
 /** (fixed_t) max_y-min_y */
-private int  max_h;
+protected int  max_h;
 
 /** (fixed_t) based on player size */
-private int  min_w, min_h;
+protected int  min_w, min_h;
 
 /** (fixed_t) used to tell when to stop zooming out */
-private int  min_scale_mtof; 
+protected int  min_scale_mtof; 
 
 /** (fixed_t) used to tell when to stop zooming in */
-private int  max_scale_mtof; 
+protected int  max_scale_mtof; 
 
 /** (fixed_t) old stuff for recovery later */
-private int old_m_w, old_m_h, old_m_x, old_m_y;
+protected int old_m_w, old_m_h, old_m_x, old_m_y;
 
 /** old location used by the Follower routine */
-private mpoint_t f_oldloc;
+protected mpoint_t f_oldloc;
 
 /** (fixed_t) used by MTOF to scale from map-to-frame-buffer coords */
-private int scale_mtof = INITSCALEMTOF;
+protected int scale_mtof = INITSCALEMTOF;
 /** used by FTOM to scale from frame-buffer-to-map coords (=1/scale_mtof) */
-private int scale_ftom;
+protected int scale_ftom;
 
 /** the player represented by an arrow */
-private player_t plr;
+protected player_t plr;
 
 /** numbers used for marking by the automap */
 private patch_t[] marknums=new patch_t[10]; 
@@ -399,10 +405,10 @@ private mpoint_t[] markpoints;
 private int markpointnum = 0;  
 
 /** specifies whether to follow the player around */
-private boolean followplayer = true; 
+protected boolean followplayer = true; 
 
-private char[] cheat_amap_seq = { 0xb2, 0x26, 0x26, 0x2e, 0xff }; // iddt
-private cheatseq_t cheat_amap = new cheatseq_t( cheat_amap_seq, 0 );
+protected char[] cheat_amap_seq = { 0xb2, 0x26, 0x26, 0x2e, 0xff }; // iddt
+protected cheatseq_t cheat_amap = new cheatseq_t( cheat_amap_seq, 0 );
 
 // MAES: STROBE cheat. It's not even cheating, strictly speaking.
 
@@ -1241,6 +1247,8 @@ private final  void drawFline
     }
 }
 
+/** Hopefully inlined */
+
 private final void PUTDOT(int xx,int yy, byte cc) {
     fb[(yy)*f_w+(xx)]=(cc);
 }
@@ -1568,7 +1576,7 @@ public final  void Drawer ()
 {
     if (!DM.automapactive) return;
     //System.out.println("Drawing map");
-    clearFB((byte)BACKGROUND); // BACKGROUND
+    if (overlay<1) clearFB((byte)BACKGROUND); // BACKGROUND
     if (grid)
     drawGrid(GRIDCOLORS);
     drawWalls();

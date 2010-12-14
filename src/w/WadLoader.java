@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.23 2010/12/13 16:03:20 velktron Exp $
+// $Id: WadLoader.java,v 1.24 2010/12/14 17:55:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.24  2010/12/14 17:55:59  velktron
+// Fixed weapon bobbing, added translucent column drawing, separated rendering commons.
+//
 // Revision 1.23  2010/12/13 16:03:20  velktron
 // More fixes  in the wad loading code
 //
@@ -889,6 +892,23 @@ public class WadLoader {
 				null)).getBuffer().array();
 
 	}
+	
+	 /**
+     * Return a cached lump based on its num, as raw bytes, no matter what.
+     * It's rare, but has its uses.
+     * 
+     * @param name
+     * @param tag
+     * @param what
+     * @return
+     */
+
+    public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
+        return ((DoomBuffer) this.CacheLumpNum(num, tag,
+                null)).getBuffer().array();
+
+    }
+	
 
 	/**
 	 * Return a cached lump based on its name, and for a specificc class. This

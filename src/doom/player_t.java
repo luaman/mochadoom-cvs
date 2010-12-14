@@ -607,11 +607,14 @@ public void CalcHeight ()
   FixedMul (mo.momx, mo.momx)
   + FixedMul (mo.momy,mo.momy);
   
-  bob >>>= 2;
+  bob >>= 2;
 
+        
   if (bob>MAXBOB)
   bob = MAXBOB;
 
+  
+  
   if (flags(cheats ,CF_NOMOMENTUM) || !onground)
   {
   viewz = mo.z + VIEWHEIGHT;
@@ -620,6 +623,7 @@ public void CalcHeight ()
       viewz = mo.ceilingz-4*FRACUNIT;
 
   viewz = mo.z + viewheight;
+  this.bob=bob;
   return;
   }
       
@@ -653,7 +657,7 @@ public void CalcHeight ()
   }
   }
   viewz = mo.z + viewheight + bob;
-
+  this.bob=bob;
   if (viewz > mo.ceilingz-4*FRACUNIT)
   viewz = mo.ceilingz-4*FRACUNIT;
 } 
