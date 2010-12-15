@@ -59,7 +59,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.28 2010/12/13 16:03:20 velktron Exp $
+// $Id: DoomMain.java,v 1.29 2010/12/15 16:12:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -74,6 +74,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.29  2010/12/15 16:12:19  velktron
+// Changes in Wiper code and alternate timing method, hoping to fix the Athlon X2
+//
 // Revision 1.28  2010/12/13 16:03:20  velktron
 // More fixes  in the wad loading code
 //
@@ -192,7 +195,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.28 2010/12/13 16:03:20 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.29 2010/12/15 16:12:19 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -392,9 +395,9 @@ public void Display ()
     {
 	do
 	{
-	    nowtime = I.GetTime ();
+		nowtime = I.GetTime ();
 	    tics = nowtime - wipestart;
-	} while (!eval(tics));
+	} while (tics==0); // Wait until a single tic has passed.
 	wipestart = nowtime;
 	done = WIPE.ScreenWipe(Wiper.wipe.Melt.ordinal()
 			       , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
@@ -402,7 +405,7 @@ public void Display ()
 	M.Drawer ();                            // menu is drawn even on top of wipes
 	VI.FinishUpdate ();                      // page flip or blit buffer
     } while (!done);
-    wipestart = I.GetTime ();
+    //wipestart = I.GetTime ();
     
     // Fixme: lame way to limit speed :-/
     /*while (wipestart-I.GetTime()>-1){

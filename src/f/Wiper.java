@@ -8,7 +8,7 @@ import m.random;
 
 public class Wiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.5 2010/12/13 16:03:20 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.6 2010/12/15 16:12:19 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -40,8 +40,8 @@ public class Wiper {
 //                           SCREEN WIPE PACKAGE
     //
 
-    /** when zero, stop the wipe */
-    protected boolean  go = false;
+    /** when false, stop the wipe */
+    protected volatile boolean  go = false;
 
     protected byte[]    wipe_scr_start;
     protected byte[]    wipe_scr_end;
@@ -244,7 +244,7 @@ public class Wiper {
 
         //width=2;
 
-        while (ticks--!=0)
+        while (ticks-->0)
         {
         for (int i=0;i<width;i++)
         {
@@ -364,9 +364,7 @@ public class Wiper {
     {
         boolean rc;
   
-        
-
-        //void V_MarkRect(int, int, int, int);
+        //System.out.println("Ticks do "+ticks);
 
         // initial stuff
         if (!go)
