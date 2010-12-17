@@ -12,26 +12,26 @@ import java.io.IOException;
 
 public interface TextureManager {
 
-	public int TextureNumForName(String texname);
+	int TextureNumForName(String texname);
 	
-	public int FlatNumForName(String flatname);
+	int FlatNumForName(String flatname);
 	
-	public void PrecacheLevel() throws IOException;
+	void PrecacheLevel() throws IOException;
 	
-	public int getTextureheight(int texnum);	
+	int getTextureheight(int texnum);	
 	
-	public void InitSprites(String[] sprnames);
+	void InitSprites(String[] sprnames);
 	
-	public int getTextureTranslation(int texnum);
+	int getTextureTranslation(int texnum);
 	
-	public int getFlatTranslation(int flatnum);
+	int getFlatTranslation(int flatnum);
 	
-	public void setTextureTranslation(int texnum, int amount);
+	void setTextureTranslation(int texnum, int amount);
 	
-	public void setFlatTranslation(int flatnum,int amount);
+	void setFlatTranslation(int flatnum,int amount);
 
-	public int CheckTextureNumForName(String texnamem);
+	int CheckTextureNumForName(String texnamem);
 
-    public void InitTextureMapping();
+    void InitTextureMapping();
 		
 }
