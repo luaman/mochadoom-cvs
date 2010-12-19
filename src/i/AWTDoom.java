@@ -163,21 +163,27 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
             this.palette=pal;            
         }
         
+        /** Modified update method: no context needs to passed.
+         *  Will render only internal screens.
+         * 
+         */
         public void update(Graphics g) {
-           
-           //Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
+           // Techdemo v1.3: Mac OSX fix, compatible with Windows.
+           // Should probably run just once. Overhead is minimal
+           // compared to actually DRAWING the stuff.
+           if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();
            //voli.getGraphics().drawImage(bi,0,0,null);
            g2d.drawImage(screens[palette],0,20,this);
            
         }
         
-        public void update() {
+   /*     public void update() {
             
             Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
             //voli.getGraphics().drawImage(bi,0,0,null);
             g2d.drawImage(screens[palette],0,0,this);
             
-         }
+         } */
         
         public String processEvents(){
             StringBuffer tmp=new StringBuffer();
@@ -679,7 +685,10 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
       //AWT: Make visible and "peg" the g2d Object to the Canvas,
       // else it will be nullified.
       this.setVisible(true);
-      g2d = (Graphics2D)drawhere.getGraphics();
+      
+      // MAC OS X fix: let this be null, HERE, but set it to context
+      // inside paint(). Should be Windows and Linux friendly, as well.
+       // g2d = (Graphics2D)drawhere.getGraphics();
 	  } catch (Exception e){
 		  I.Error("Error creating AWTDoom frame. Exiting.");
 	  }
@@ -712,7 +721,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	  this.setBounds(x, y, width, height);
       this.setSize(size);
 	  this.setResizable(false);
-	    this.setTitle("MochaDoom");
+	    this.setTitle(Strings.MOCHA_DOOM_TITLE);
 	    this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	  //this.setDefaultLookAndFeelDecorated(false);
 	  
