@@ -1,5 +1,5 @@
 package doom;
-import data.Defines.*;
+import defines.*;
 
 //
 // PSPRITE ACTIONS for waepons.

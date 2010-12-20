@@ -3,6 +3,7 @@ package n;
 import static data.Defines.*;
 import static data.Limits.*;
 import static doom.NetConsts.*;
+import defines.*;
 
 import i.DoomStatusAware;
 import i.DoomSystemInterface;
@@ -24,7 +25,7 @@ import doom.doomdata_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BasicNetworkInterface.java,v 1.1 2010/11/17 23:55:06 velktron Exp $
+// $Id: BasicNetworkInterface.java,v 1.2 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -39,6 +40,9 @@ import doom.doomdata_t;
 // GNU General Public License for more details.
 //
 // $Log: BasicNetworkInterface.java,v $
+// Revision 1.2  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.1  2010/11/17 23:55:06  velktron
 // Kind of playable/controllable.
 //
@@ -57,7 +61,7 @@ public class BasicNetworkInterface
         implements DoomNetworkInterface, DoomStatusAware {
 
 
-  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.1 2010/11/17 23:55:06 velktron Exp $";
+  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.2 2010/12/20 17:15:08 velktron Exp $";
 
   ////////////// STATUS ///////////
   

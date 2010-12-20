@@ -8,6 +8,14 @@ import static m.BBox.*;
 
 
 import java.io.IOException;
+
+import rr.ParallelRenderer.R_DrawTranslatedColumn;
+import rr.RendererState.R_DrawColumn;
+import rr.RendererState.R_DrawColumnBoom;
+import rr.RendererState.R_DrawFuzzColumn;
+import rr.RendererState.R_DrawSpanLow;
+import rr.RendererState.R_DrawSpanUnrolled;
+import rr.RendererState.R_DrawTLColumn;
 import st.StatusBar;
 import utils.C2JUtils;
 import data.Defines;
@@ -41,10 +49,10 @@ public class UnifiedRenderer extends RendererState{
       DrawTranslatedColumn=new R_DrawTranslatedColumn();
       DrawTLColumn=new R_DrawTLColumn();
       DrawFuzzColumn=new R_DrawFuzzColumn();
+      DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
       DrawColumnPlayer=new R_DrawColumn();
-      DrawColumnLow=new R_DrawColumnBoom();
-      DrawColumn=new R_DrawColumnBoom();
-     
+      DrawColumnLow=DrawColumn;
+    
   }
 
     
@@ -648,7 +656,7 @@ public class UnifiedRenderer extends RendererState{
      // System.out.println("Trying to find an existing CEILING visplane...");
       
       if (frontsector.ceilingheight > viewz 
-      || frontsector.ceilingpic == skyflatnum)
+      || frontsector.ceilingpic == TexMan.getSkyFlatNum())
       {
           ceilingplane = FindPlane (frontsector.ceilingheight,
                       frontsector.ceilingpic,
@@ -753,7 +761,7 @@ public class UnifiedRenderer extends RendererState{
           curline = ds.curline;
           frontsector = curline.frontsector;
           backsector = curline.backsector;
-          texnum = texturetranslation[curline.sidedef.midtexture];
+          texnum = TexMan.getTextureTranslation(curline.sidedef.midtexture);
           //System.out.print(" for texture "+textures[texnum].name+"\n:");
           lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
@@ -784,7 +792,7 @@ public class UnifiedRenderer extends RendererState{
           {
           dc_texturemid = frontsector.floorheight > backsector.floorheight
               ? frontsector.floorheight : backsector.floorheight;
-          dc_texturemid = dc_texturemid + textureheight[texnum] - viewz;
+          dc_texturemid = dc_texturemid + TexMan.getTextureheight(texnum) - viewz;
           }
           else
           {
@@ -926,7 +934,7 @@ public class UnifiedRenderer extends RendererState{
               // single sided line
               dc_yl = yl;
               dc_yh = yh;
-              dc_texheight = textureheight[midtexture]>>FRACBITS; // killough
+              dc_texheight = TexMan.getTextureheight(midtexture)>>FRACBITS; // killough
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
               //System.out.println("DC_ISCALE: "+dc_iscale+" " +rw_scale);
@@ -957,7 +965,7 @@ public class UnifiedRenderer extends RendererState{
                   dc_yl = yl;
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
-                  dc_texheight=textureheight[toptexture]>>FRACBITS;
+                  dc_texheight=TexMan.getTextureheight(toptexture)>>FRACBITS;
                   if (DEBUG); 
                       //System.out.println("Drawing column"+(texturecolumn&127)+" of top texture "+textures[toptexture].name+ " at "+dc_yl+" "+dc_yh+" middle of texture at "+(dc_texturemid>>FRACBITS));
                   dc_source = GetColumn(toptexture,texturecolumn);
@@ -990,7 +998,7 @@ public class UnifiedRenderer extends RendererState{
                   dc_yl = mid;
                   dc_yh = yh;
                   dc_texturemid = rw_bottomtexturemid;
-                  dc_texheight=textureheight[bottomtexture]>>FRACBITS;
+                  dc_texheight=TexMan.getTextureheight(bottomtexture)>>FRACBITS;
                   dc_source = GetColumn(bottomtexture,
                               texturecolumn);
                   //System.out.println("Max data length:"+dc_source.length);
@@ -1149,13 +1157,13 @@ public class UnifiedRenderer extends RendererState{
           if (backsector==null)
           {
           // single sided line
-          midtexture = texturetranslation[sidedef.midtexture];
+          midtexture = TexMan.getTextureTranslation(sidedef.midtexture);
           // a single sided line is terminal, so it must mark ends
           markfloor = markceiling = true;
           if ((linedef.flags & ML_DONTPEGBOTTOM)!=0)
           {
               vtop = frontsector.floorheight +
-              textureheight[sidedef.midtexture];
+              TexMan.getTextureheight(sidedef.midtexture);
               // bottom of texture at bottom
               rw_midtexturemid = vtop - viewz;    
           }
@@ -1221,8 +1229,8 @@ public class UnifiedRenderer extends RendererState{
           worldlow = backsector.floorheight - viewz;
               
           // hack to allow height changes in outdoor areas
-          if (frontsector.ceilingpic == skyflatnum 
-              && backsector.ceilingpic == skyflatnum)
+          if (frontsector.ceilingpic == TexMan.getSkyFlatNum() 
+              && backsector.ceilingpic == TexMan.getSkyFlatNum())
           {
               worldtop = worldhigh;
           }
@@ -1264,7 +1272,7 @@ public class UnifiedRenderer extends RendererState{
           if (worldhigh < worldtop)
           {
               // top texture
-              toptexture = texturetranslation[sidedef.toptexture];
+              toptexture = TexMan.getTextureTranslation(sidedef.toptexture);
               if ((linedef.flags & ML_DONTPEGTOP)!=0)
               {
               // top of texture at top
@@ -1274,7 +1282,7 @@ public class UnifiedRenderer extends RendererState{
               {
               vtop =
                   backsector.ceilingheight
-                  + textureheight[sidedef.toptexture];
+                  + TexMan.getTextureheight(sidedef.toptexture);
               
               // bottom of texture
               rw_toptexturemid = vtop - viewz;    
@@ -1283,7 +1291,7 @@ public class UnifiedRenderer extends RendererState{
           if (worldlow > worldbottom)
           {
               // bottom texture
-              bottomtexture = texturetranslation[sidedef.bottomtexture];
+              bottomtexture = TexMan.getTextureTranslation(sidedef.bottomtexture);
 
               if ((linedef.flags & ML_DONTPEGBOTTOM )!=0)
               {
@@ -1371,7 +1379,7 @@ public class UnifiedRenderer extends RendererState{
           }
           
           if (frontsector.ceilingheight <= viewz 
-          && frontsector.ceilingpic != skyflatnum)
+          && frontsector.ceilingpic != TexMan.getSkyFlatNum())
           {
           // below view plane
           markceiling = false;
@@ -1458,7 +1466,7 @@ public class UnifiedRenderer extends RendererState{
       }
       }
   
-  class Planes{
+  protected final class Planes implements PlaneDrawer{
 
       public Planes (){
           C2JUtils.initArrayOfObjects(visplanes);
@@ -1508,7 +1516,8 @@ public class UnifiedRenderer extends RendererState{
       // R_InitPlanes
       // Only at game startup.
       //
-      void InitPlanes ()
+      @Override
+    public  void InitPlanes ()
       {
         // Doh!
       }
@@ -1532,7 +1541,8 @@ public class UnifiedRenderer extends RendererState{
        * BASIC PRIMITIVE
        */
       
-      private void
+      @Override
+      public final void
       MapPlane
       ( int       y,
         int       x1,
@@ -1540,11 +1550,9 @@ public class UnifiedRenderer extends RendererState{
       {
           // MAES: angle_t
           int angle;
-          float dangle;
           // fixed_t
           int distance;
           int length;
-          float dlength;
           int index;
           
       if (RANGECHECK){
@@ -1610,8 +1618,8 @@ public class UnifiedRenderer extends RendererState{
        * 
        */
       
-      
-      private void ClearPlanes ()
+      @Override
+      public final void ClearPlanes ()
       {              
           int angle;
           
@@ -1829,7 +1837,9 @@ public class UnifiedRenderer extends RendererState{
        * 
        * @throws IOException 
        */
-      public void DrawPlanes () 
+        
+      @Override
+      public final void DrawPlanes () 
       {
     	  if(DEBUG) System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "+ lastvisplane);
           visplane_t      pln=null; //visplane_t
@@ -1859,11 +1869,14 @@ public class UnifiedRenderer extends RendererState{
               
           if (pln.minx > pln.maxx)
               continue;
-
-          
           // sky flat
-          if (pln.picnum == skyflatnum)
+          if (pln.picnum == TexMan.getSkyFlatNum())
           {
+              // Cache skytexture stuff here. They aren't going to change while
+              // being drawn, after all, are they?
+              int skytexture=TexMan.getSkyTexture();
+              dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;
+              
               dc_iscale = pspriteiscale>>detailshift;
               
               /* Sky is allways drawn full bright,
@@ -1872,7 +1885,7 @@ public class UnifiedRenderer extends RendererState{
                * by INVUL inverse mapping.
                */    
               dc_colormap = colormaps[0];
-              dc_texturemid = skytexturemid;
+              dc_texturemid = TexMan.getSkyTextureMid();
               for (x=pln.minx ; x <= pln.maxx ; x++)
               {
             
@@ -1883,8 +1896,8 @@ public class UnifiedRenderer extends RendererState{
               {
                   angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                   dc_x = x;
-                  dc_texheight=textureheight[skytexture]>>FRACBITS;
-                  dc_source = GetColumn(skytexture, angle);
+                  // Optimized: texheight is going to be the same during normal skies drawing...right? 
+                  dc_source = GetColumn(skytexture,angle);
                   colfunc.invoke();
               }
               }
@@ -1892,8 +1905,8 @@ public class UnifiedRenderer extends RendererState{
           }
           
           // regular flat
-          ds_source = ((flat_t)W.CacheLumpNum(firstflat +
-                         flattranslation[pln.picnum],
+          ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFirstFlat() +
+                         TexMan.getFlatTranslation(pln.picnum),
                          PU_STATIC,flat_t.class)).data;
           
           
@@ -1930,6 +1943,53 @@ public class UnifiedRenderer extends RendererState{
           }
       }
 
+      @Override
+      public int[] getCachedHeight() {
+           return this.cachedheight;
+      }
+
+
+      @Override
+      public int[] getCachedDistance() {
+          return this.cacheddistance;
+      }
+
+
+      @Override
+      public int[] getCachedXStep() {
+          return cachedxstep;
+      }
+
+
+      @Override
+      public int[] getCachedYStep() {
+          return cachedystep;
+      }
+
+
+      @Override
+      public int[] getDistScale() {
+          return distscale;
+      }
+
+
+      @Override
+      public int[] getYslope() {
+          return yslope;
+      }
+
+
+      @Override
+      public int getBaseXScale() {
+          return basexscale;
+      }
+
+
+      @Override
+      public int getBaseYScale() {
+          return baseyscale;
+      }
+      
   } // End Plane class
       
 
@@ -2037,7 +2097,7 @@ public void Init ()
 	
 	InitData ();
    System.out.print("\nR_InitData");
-   InitPointToAngle ();
+   //InitPointToAngle ();
    System.out.print("\nR_InitPointToAngle");
    InitTables ();
    // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
@@ -2049,7 +2109,7 @@ public void Init ()
    InitLightTables ();
    System.out.print("\nR_InitLightTables");
    
-   System.out.print("\nR_InitSkyMap: "+InitSkyMap ());
+   System.out.print("\nR_InitSkyMap: "+TexMan.InitSkyMap ());
    InitTranslationTables ();
    System.out.print("\nR_InitTranslationsTables");
    
@@ -2101,6 +2161,8 @@ public void ExecuteSetViewSize ()
     colfunc = basecolfunc =DrawColumn;
     fuzzcolfunc = DrawFuzzColumn;
     transcolfunc = DrawTranslatedColumn;
+    glasscolfunc=DrawTLColumn;
+    playercolfunc=DrawColumnPlayer;
     spanfunc = DrawSpan;
     }
     else {
@@ -2108,6 +2170,8 @@ public void ExecuteSetViewSize ()
     colfunc = basecolfunc = DrawColumnLow;
     fuzzcolfunc =DrawFuzzColumn;
     transcolfunc = DrawTranslatedColumn;
+    glasscolfunc=DrawTLColumn;
+    playercolfunc=DrawColumnPlayer;
     spanfunc = DrawSpanLow;
     
     }

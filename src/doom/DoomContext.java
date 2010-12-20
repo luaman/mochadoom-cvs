@@ -12,6 +12,7 @@ import p.Actions;
 import p.LevelLoader;
 import rr.Renderer;
 import rr.RendererState;
+import rr.SpriteManager;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.DoomSoundInterface;
@@ -58,4 +59,5 @@ public class DoomContext {
     public EndLevel WI;
     public Wiper WIPE;
     public TextureManager TM;
+    public SpriteManager SM;
 }

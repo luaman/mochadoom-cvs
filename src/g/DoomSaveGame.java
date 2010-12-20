@@ -7,7 +7,7 @@ import static data.Limits.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import data.Defines.skill_t;
+import defines.*;
 import doom.DoomStatus;
 import doom.gameaction_t;
 

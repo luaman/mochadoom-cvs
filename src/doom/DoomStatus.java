@@ -2,31 +2,11 @@ package doom;
 
 import static data.Defines.*;
 import static data.Limits.*;
-import f.Finale;
-import f.Wiper;
-import hu.HU;
-import m.Menu;
-import m.random;
-import p.Actions;
-import p.LevelLoader;
-import p.UnifiedGameMap;
 import p.mobj_t;
-import automap.DoomAutoMap;
-import rr.UnifiedRenderer;
-import st.StatusBar;
 import utils.C2JUtils;
-import v.DoomVideoRenderer;
 import w.DoomFile;
-import w.EndLevel;
-import w.WadLoader;
-import data.Defines;
 import data.mapthing_t;
-import data.Defines.GameMission_t;
-import data.Defines.GameMode_t;
-import data.Defines.Language_t;
-import data.Defines.gamestate_t;
-import data.Defines.skill_t;
-
+import defines.*;
 /**
  * We need globally shared data structures, for defining the global state
  * variables. MAES: in pure OO style, this should be a global "Doom state"
@@ -254,10 +234,10 @@ public class DoomStatus extends DoomContext {
 
     // wipegamestate can be set to -1
     // to force a wipe on the next draw
- // wipegamestate can be set to -1 to force a wipe on the next draw
+    // wipegamestate can be set to -1 to force a wipe on the next draw
     public gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
     
-    public int             mouseSensitivity=5;
+    public int mouseSensitivity=5;
     
     // debug flag to cancel adaptiveness
     // Set to true during timedemos.

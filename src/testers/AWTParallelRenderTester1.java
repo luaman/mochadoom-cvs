@@ -14,6 +14,7 @@ import p.LevelLoader;
 import automap.Map;
 
 import rr.ParallelRenderer;
+import rr.SimpleTextureManager;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.DummySoundDriver;
@@ -26,11 +27,7 @@ import v.BufferedRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
 import data.Defines;
-import data.Defines.GameMission_t;
-import data.Defines.GameMode_t;
-import data.Defines.Language_t;
-import data.Defines.gamestate_t;
-import data.Defines.skill_t;
+import defines.*;
 import data.Tables;
 import doom.DoomMain;
 import doom.event_t;
@@ -111,14 +108,14 @@ public class AWTParallelRenderTester1 {
     DM.wminfo.maxsecret=100;
     DM.wminfo.partime=28595;
     DM.PlayerReborn(0);
-   
     DoomMenu M=DM.M=new Menu(DM);
     Map AM=(Map) (DM.AM=new Map(DM));
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
     DM.R=new ParallelRenderer(DM); 
-    DM.TM=(TextureManager)(DM.R);
+    DM.SM=DM.R;
+    DM.TM=new SimpleTextureManager(DM);
     
     DM.P.updateStatus(DM);
     LL.updateStatus(DM);
@@ -139,7 +136,7 @@ public class AWTParallelRenderTester1 {
     AM.Start();
     DM.R.SetViewSize(11, 0);
     DM.R.ExecuteSetViewSize();
-    ((ParallelRenderer)DM.R).skytexture=52;
+    DM.TM.setSkyTexture(DM.TM.CheckTextureNumForName("SKY1"));
     long a=System.nanoTime();
     
     DM.menuactive=false;

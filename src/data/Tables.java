@@ -1,12 +1,14 @@
 package data;
 
 import static data.Tables.FINEANGLES;
+import static data.Tables.SLOPERANGE;
+import static data.Tables.tantoangle;
 import static m.fixed_t.*;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.19 2010/12/10 17:38:56 velktron Exp $
+// $Id: Tables.java,v 1.20 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +23,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.20  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.19  2010/12/10 17:38:56  velktron
 // pspritescale fixed, weapon actions won't crash (but not work either).
 //
@@ -436,7 +441,14 @@ public static void InitTables(){
     a=(float)((i<<DBITS)/65536.0);
     t=(int)((float)(2*Math.atan(a)/PI)*0x40000000); 
     tantoangle[i] = t;
-    }
+    } 
+    
+/*    for (i=0 ; i<=SLOPERANGE ; i++)
+    {
+ a = (float) Math.atan( (double)(i/SLOPERANGE )/(3.141592657*2));
+ t = (int) (0xffffffffL*a);
+ tantoangle[i] = (int) t;
+    } */
     
     }
 

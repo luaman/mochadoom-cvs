@@ -1,5 +1,6 @@
 package p;
 
+import defines.*;
 import static p.ChaseDirections.*;
 import static p.DoorDefines.*;
 import static data.Defines.BASETHRESHOLD;
@@ -91,11 +92,6 @@ import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.state_t;
-import data.Defines.GameMode_t;
-import data.Defines.card_t;
-import data.Defines.skill_t;
-import data.Defines.slopetype_t;
-import data.Defines.statenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.DoomMain;
@@ -5895,14 +5891,14 @@ mobj_t  thing )
         y = trace.y + FixedMul (trace.dy, frac);
         z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
 
-        if (li.frontsector.ceilingpic == R.skyflatnum)
+        if (li.frontsector.ceilingpic == TM.getSkyFlatNum())
         {
             // don't shoot the sky!
             if (z > li.frontsector.ceilingheight)
             return false;
             
             // it's a sky hack wall
-            if  (li.backsector!=null && li.backsector.ceilingpic == R.skyflatnum)
+            if  (li.backsector!=null && li.backsector.ceilingpic == TM.getSkyFlatNum())
             return false;       
         }
 
@@ -6557,7 +6553,7 @@ mobj_t  thing )
       // explode a missile
       if (ceilingline!=null &&
           ceilingline.backsector!=null &&
-          ceilingline.backsector.ceilingpic == R.skyflatnum)
+          ceilingline.backsector.ceilingpic == TM.getSkyFlatNum())
       {
           // Hack to prevent missiles exploding
           // against the sky.
@@ -8044,6 +8040,7 @@ public void updateStatus(DoomContext DC) {
         this.A=this;
         this.HU=DC.HU;
         this.TM=DC.TM;
+        this.SM=DC.SM;
 		}
   
 }

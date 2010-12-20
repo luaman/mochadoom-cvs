@@ -1,5 +1,6 @@
 package m;
 
+import defines.*;
 import static data.Defines.HU_FONTSIZE;
 import static data.Defines.HU_FONTSTART;
 import static data.Defines.KEY_BACKSPACE;
@@ -54,10 +55,6 @@ import rr.patch_t;
 import utils.C2JUtils;
 import w.DoomFile;
 import data.Defines;
-import data.Defines.GameMode_t;
-import data.Defines.Language_t;
-import data.Defines.gamestate_t;
-import data.Defines.skill_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.DoomMain;
@@ -694,7 +691,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             if (ch != 'y')
                 return;
 
-            DM.DeferedInitNew(Defines.skill_t.sk_nightmare, epi + 1, 1);
+            DM.DeferedInitNew(skill_t.sk_nightmare, epi + 1, 1);
             ClearMenus();
         }
     }

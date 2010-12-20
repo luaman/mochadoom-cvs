@@ -7,7 +7,7 @@ import p.mobj_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSoundInterface.java,v 1.3 2010/11/12 13:37:25 velktron Exp $
+// $Id: DoomSoundInterface.java,v 1.4 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -58,16 +58,24 @@ public interface DoomSoundInterface {
 	public void StopSound(mobj_t origin);
 
 	/** Start music using <music_id> from sounds.h */
-	public void StartMusic(musicenum_t musicenum_t);
+	public void StartMusic(musicenum_t musicid);
 
 	/**
 	 * Start music using <music_id> from sounds.h, and set whether looping
 	 * 
-	 * @param music_id
+	 * @param musicid
 	 * @param looping
 	 */
-	public void ChangeMusic(int music_id, boolean looping);
+	public void ChangeMusic(musicenum_t musicid, boolean looping);
 
+	   /**
+     * Start music using <music_id> from sounds.h, and set whether looping
+     * 
+     * @param musicid
+     * @param looping
+     */
+    public void ChangeMusic(int musicid, boolean looping);
+	
 	/** Stops the music fer sure. */
 	public void StopMusic();
 

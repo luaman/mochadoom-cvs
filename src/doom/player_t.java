@@ -8,11 +8,7 @@ import java.util.Arrays;
 import m.random;
 
 import data.state_t;
-import data.Defines.GameMode_t;
-import data.Defines.ammotype_t;
-import data.Defines.card_t;
-import data.Defines.skill_t;
-import data.Defines.statenum_t;
+import defines.*;
 import data.sounds.sfxenum_t;
 import static data.Defines.*;
 import static data.Tables.*;

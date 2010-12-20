@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.21 2010/12/12 19:06:18 velktron Exp $
+// $Id: StatusBar.java,v 1.22 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.22  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.21  2010/12/12 19:06:18  velktron
 // Tech Demo v1.1 release.
 //
@@ -108,6 +111,7 @@ package st;
 //
 // -----------------------------------------------------------------------------
 
+import defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Defines.*;
 import static data.Limits.*;
@@ -134,12 +138,13 @@ import doom.weapontype_t;
 import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.patch_t;
+import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.21 2010/12/12 19:06:18 velktron Exp $";
+        "$Id: StatusBar.java,v 1.22 2010/12/20 17:15:08 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -157,6 +162,8 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     
     protected DoomVideoInterface VI;
 
+    protected DoomSoundInterface S;
+    
     // Size of statusbar.
     // Now sensitive for scaling.
     public static int ST_HEIGHT = (int) (32 * SCREEN_MUL);
@@ -804,8 +811,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                         if (((buf[0] - '0') * 10 + buf[1] - '0') > 35)
                             plyr.message = STSTR_NOMUS;
                         else
-                            ;
-                        // TODO: S_ChangeMusic(musnum, 1);
+                        S.ChangeMusic(musnum, true);
                     } else {
                         musnum =
                             musicenum_t.mus_e1m1.ordinal() + (buf[0] - '1') * 9
@@ -814,8 +820,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                         if (((buf[0] - '1') * 9 + buf[1] - '1') > 31)
                             plyr.message = STSTR_NOMUS;
                         else
-                            ;
-                        // TODO: S_ChangeMusic(musnum, 1);
+                       S.ChangeMusic(musnum, true);
                     }
                 }
                 // Simplified, accepting both "noclip" and "idspispopd".
@@ -912,7 +917,8 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
                 // So be it.
                 plyr.message = STSTR_CLEV;
-                // TODO: G.DeferedInitNew(gameskill, epsd, map);
+                // TODO: split this into DG interface
+                DM.DeferedInitNew(DM.gameskill, epsd, map);
             }
         }
         return false;

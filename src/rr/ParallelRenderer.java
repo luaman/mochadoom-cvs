@@ -73,7 +73,7 @@ public class ParallelRenderer extends RendererState  {
       this.W=DM.W;
       this.MySegs=new Segs();
       this.MyBSP=new BSP();
-      this.MyPlanes=new Planes();
+      this.MyPlanes=new ParallelPlanes();
       this.MyThings=new Things();
       // We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
       this.V=DM.V;
@@ -760,7 +760,7 @@ public class ParallelRenderer extends RendererState  {
      // System.out.println("Trying to find an existing CEILING visplane...");
       
       if (frontsector.ceilingheight > viewz 
-      || frontsector.ceilingpic == skyflatnum)
+      || frontsector.ceilingpic == TexMan.getSkyFlatNum())
       {
           ceilingplane = FindPlane (frontsector.ceilingheight,
                       frontsector.ceilingpic,
@@ -865,7 +865,7 @@ public class ParallelRenderer extends RendererState  {
           curline = ds.curline;
           frontsector = curline.frontsector;
           backsector = curline.backsector;
-          texnum = texturetranslation[curline.sidedef.midtexture];
+          texnum = TexMan.getTextureTranslation(curline.sidedef.midtexture);
           //System.out.print(" for texture "+textures[texnum].name+"\n:");
           lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT)+extralight;
 
@@ -896,7 +896,7 @@ public class ParallelRenderer extends RendererState  {
           {
           dc_texturemid = frontsector.floorheight > backsector.floorheight
               ? frontsector.floorheight : backsector.floorheight;
-          dc_texturemid = dc_texturemid + textureheight[texnum] - viewz;
+          dc_texturemid = dc_texturemid + TexMan.getTextureheight(texnum) - viewz;
           }
           else
           {
@@ -1059,7 +1059,7 @@ public class ParallelRenderer extends RendererState  {
               dc_yh = yh;
               
               //dc_texheight = textureheight[midtexture]>>FRACBITS; // killough
-              dc_texheight = Math.min(textureheight[midtexture]>>FRACBITS,128); // killough
+              dc_texheight = Math.min(TexMan.getTextureheight(midtexture)>>FRACBITS,128); // killough
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
 
@@ -1093,7 +1093,7 @@ public class ParallelRenderer extends RendererState  {
                   dc_yl = yl;
                   dc_yh = mid;
                   dc_texturemid = rw_toptexturemid;
-                  dc_texheight=textureheight[toptexture]>>FRACBITS;
+                  dc_texheight=TexMan.getTextureheight(toptexture)>>FRACBITS;
                   dc_source = GetColumn(toptexture,texturecolumn);
 
                   StoreRenderingInstruction();
@@ -1126,7 +1126,7 @@ public class ParallelRenderer extends RendererState  {
                   dc_yl = mid;
                   dc_yh = yh;
                   dc_texturemid = rw_bottomtexturemid;
-                  dc_texheight=textureheight[bottomtexture]>>FRACBITS;
+                  dc_texheight=TexMan.getTextureheight(bottomtexture)>>FRACBITS;
                   dc_source = GetColumn(bottomtexture,
                               texturecolumn);
 
@@ -1306,13 +1306,13 @@ public class ParallelRenderer extends RendererState  {
           if (backsector==null)
           {
           // single sided line
-          midtexture = texturetranslation[sidedef.midtexture];
+          midtexture = TexMan.getTextureTranslation(sidedef.midtexture);
           // a single sided line is terminal, so it must mark ends
           markfloor = markceiling = true;
           if ((linedef.flags & ML_DONTPEGBOTTOM)!=0)
           {
               vtop = frontsector.floorheight +
-              textureheight[sidedef.midtexture];
+              TexMan.getTextureheight(sidedef.midtexture);
               // bottom of texture at bottom
               rw_midtexturemid = vtop - viewz;    
           }
@@ -1378,8 +1378,8 @@ public class ParallelRenderer extends RendererState  {
           worldlow = backsector.floorheight - viewz;
               
           // hack to allow height changes in outdoor areas
-          if (frontsector.ceilingpic == skyflatnum 
-              && backsector.ceilingpic == skyflatnum)
+          if (frontsector.ceilingpic == TexMan.getSkyFlatNum() 
+              && backsector.ceilingpic == TexMan.getSkyFlatNum() )
           {
               worldtop = worldhigh;
           }
@@ -1421,7 +1421,7 @@ public class ParallelRenderer extends RendererState  {
           if (worldhigh < worldtop)
           {
               // top texture
-              toptexture = texturetranslation[sidedef.toptexture];
+              toptexture = TexMan.getTextureTranslation(sidedef.toptexture);
               if ((linedef.flags & ML_DONTPEGTOP)!=0)
               {
               // top of texture at top
@@ -1431,7 +1431,7 @@ public class ParallelRenderer extends RendererState  {
               {
               vtop =
                   backsector.ceilingheight
-                  + textureheight[sidedef.toptexture];
+                  + TexMan.getTextureheight(sidedef.toptexture);
               
               // bottom of texture
               rw_toptexturemid = vtop - viewz;    
@@ -1440,7 +1440,7 @@ public class ParallelRenderer extends RendererState  {
           if (worldlow > worldbottom)
           {
               // bottom texture
-              bottomtexture = texturetranslation[sidedef.bottomtexture];
+              bottomtexture = TexMan.getTextureTranslation(sidedef.bottomtexture);
 
               if ((linedef.flags & ML_DONTPEGBOTTOM )!=0)
               {
@@ -1528,7 +1528,7 @@ public class ParallelRenderer extends RendererState  {
           }
           
           if (frontsector.ceilingheight <= viewz 
-          && frontsector.ceilingpic != skyflatnum)
+          && frontsector.ceilingpic != TexMan.getSkyFlatNum() )
           {
           // below view plane
           markceiling = false;
@@ -1616,10 +1616,10 @@ public class ParallelRenderer extends RendererState  {
       }
       }
   
-  class Planes{
+  protected final class ParallelPlanes implements PlaneDrawer{
    
       
-      public Planes (){
+      public ParallelPlanes (){
           C2JUtils.initArrayOfObjects(visplanes);
       }
 
@@ -1667,7 +1667,8 @@ public class ParallelRenderer extends RendererState  {
       // R_InitPlanes
       // Only at game startup.
       //
-      void InitPlanes ()
+      @Override
+      public void InitPlanes ()
       {
         // Doh!
       }
@@ -1690,8 +1691,8 @@ public class ParallelRenderer extends RendererState  {
        *
        * BASIC PRIMITIVE
        */
-      
-      private void
+      @Override
+      public final void
       MapPlane
       ( int       y,
         int       x1,
@@ -1769,8 +1770,8 @@ public class ParallelRenderer extends RendererState  {
        * 
        */
       
-      
-      private void ClearPlanes ()
+      @Override
+      public void ClearPlanes ()
       {              
           int angle;
           
@@ -2028,6 +2029,54 @@ public class ParallelRenderer extends RendererState  {
       		tp.execute(vpw[i]);
       }
 
+
+    @Override
+    public int[] getCachedHeight() {
+         return this.cachedheight;
+    }
+
+
+    @Override
+    public int[] getCachedDistance() {
+        return this.cacheddistance;
+    }
+
+
+    @Override
+    public int[] getCachedXStep() {
+        return cachedxstep;
+    }
+
+
+    @Override
+    public int[] getCachedYStep() {
+        return cachedystep;
+    }
+
+
+    @Override
+    public int[] getDistScale() {
+        return distscale;
+    }
+
+
+    @Override
+    public int[] getYslope() {
+        return yslope;
+    }
+
+
+    @Override
+    public int getBaseXScale() {
+        return basexscale;
+    }
+
+
+    @Override
+    public int getBaseYScale() {
+        return baseyscale;
+    }
+
   } // End Plane class
       
   class VisplaneWorker implements Runnable{
@@ -2066,12 +2115,12 @@ public class ParallelRenderer extends RendererState  {
 	public VisplaneWorker(CyclicBarrier barrier){
 		  this.barrier=barrier;
 	      // Alias to those of Planes.
-	      cachedheight=MyPlanes.cachedheight;
-	      cacheddistance=MyPlanes.cacheddistance;
-	      cachedxstep=MyPlanes.cachedxstep;
-	      cachedystep=MyPlanes.cachedystep;
-	      distscale=MyPlanes.distscale;
-	      yslope=MyPlanes.yslope;
+	      cachedheight=MyPlanes.getCachedHeight();
+	      cacheddistance=MyPlanes.getCachedDistance();
+	      cachedxstep=MyPlanes.getCachedXStep();
+	      cachedystep=MyPlanes.getCachedYStep();
+	      distscale=MyPlanes.getDistScale();
+	      yslope=MyPlanes.getYslope();
 
 	}
 	
@@ -2087,8 +2136,8 @@ public class ParallelRenderer extends RendererState  {
         int         angle;
 
         // Now it's a good moment to set them.
-        vpw_basexscale=MyPlanes.basexscale;
-        vpw_baseyscale=MyPlanes.baseyscale;
+        vpw_basexscale=MyPlanes.getBaseXScale();
+        vpw_baseyscale=MyPlanes.getBaseYScale();
         
 			 for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
              pln=visplanes[pl];
@@ -2099,7 +2148,7 @@ public class ParallelRenderer extends RendererState  {
 
          
          // sky flat
-         if (pln.picnum == skyflatnum)
+         if (pln.picnum == TexMan.getSkyFlatNum() )
          {
              dc_iscale = skyscale>>detailshift;
              
@@ -2109,7 +2158,7 @@ public class ParallelRenderer extends RendererState  {
               * by INVUL inverse mapping.
               */    
              dc_colormap = colormaps[0];
-             dc_texturemid = skytexturemid;
+             dc_texturemid = TexMan.getSkyTextureMid();
              for (x=pln.minx ; x <= pln.maxx ; x++)
              {
            
@@ -2120,8 +2169,8 @@ public class ParallelRenderer extends RendererState  {
              {
                  angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                  dc_x = x;
-                 dc_texheight=textureheight[skytexture]>>FRACBITS;
-                 dc_source = GetColumn(skytexture, angle);
+                 dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
+                 dc_source = GetColumn(TexMan.getSkyTexture(), angle);
                  colfunc.invoke();
              }
              }
@@ -2129,8 +2178,8 @@ public class ParallelRenderer extends RendererState  {
          }
          
          // regular flat
-         vpw_ds_source = ((flat_t)W.CacheLumpNum(firstflat +
-                        flattranslation[pln.picnum],
+         vpw_ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFirstFlat() +
+                        TexMan.getFlatTranslation(pln.picnum),
                         PU_STATIC,flat_t.class)).data;
          
          
@@ -2579,7 +2628,7 @@ public void Init ()
 	
 	InitData ();
    System.out.print("\nR_InitData");
-   InitPointToAngle ();
+   //InitPointToAngle ();
    System.out.print("\nR_InitPointToAngle");
    InitTables ();
    // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
@@ -2591,7 +2640,7 @@ public void Init ()
    InitLightTables ();
    System.out.print("\nR_InitLightTables");
    
-   System.out.print("\nR_InitSkyMap: "+InitSkyMap ());
+   System.out.print("\nR_InitSkyMap: "+TexMan.InitSkyMap ());
    InitTranslationTables ();
    System.out.print("\nR_InitTranslationsTables");
    
@@ -2689,19 +2738,19 @@ public void ExecuteSetViewSize ()
     {
     dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
     dy = Math.abs(dy);
-    MyPlanes.yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
-    MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
+    MyPlanes.getYslope()[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+    //MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
     }
     
-    double cosadjf;
+    //double cosadjf;
     for (i=0 ; i<viewwidth ; i++)
     {
     // MAES: In this spot we must interpet it as SIGNED, else it's pointless, right?
     // MAES: this spot caused the "warped floor bug", now fixed. Don't forget xtoviewangle[i]!    
     cosadj = Math.abs(finecosine(xtoviewangle[i]));
-    cosadjf = Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
-    MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
-    MyPlanes.distscalef[i] = (float) (1.0/cosadjf);
+    //cosadjf = Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
+    MyPlanes.getDistScale()[i] = FixedDiv (FRACUNIT,cosadj);
+    //MyPlanes.distscalef[i] = (float) (1.0/cosadjf);
     }
     
     // Calculate the light levels to use

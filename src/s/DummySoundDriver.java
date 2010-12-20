@@ -104,4 +104,10 @@ public class DummySoundDriver implements DoomSoundInterface{
 		
 	}
 
+    @Override
+    public void ChangeMusic(musicenum_t musicid, boolean looping) {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

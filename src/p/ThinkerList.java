@@ -4,8 +4,10 @@ import doom.thinker_t;
 
 public interface ThinkerList {
 
-    public void AddThinker(thinker_t thinker);
-    public void RemoveThinker(thinker_t thinker);
+    void AddThinker(thinker_t thinker);
+    void RemoveThinker(thinker_t thinker);
+    void InitThinkers();
+    thinker_t getThinkerCap();
     
     
 }

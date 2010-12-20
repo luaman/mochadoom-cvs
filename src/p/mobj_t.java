@@ -14,7 +14,7 @@ import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.spritenum_t;
 import data.state_t;
-import data.Defines.statenum_t;
+import defines.*;
 import doom.player_t;
 import doom.thinker_t;
 

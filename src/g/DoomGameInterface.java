@@ -1,14 +1,14 @@
 
 package g;
 
-import static data.Defines.skill_t;
+import defines.*;
 import doom.event_t;
 import doom.gameaction_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomGameInterface.java,v 1.3 2010/09/07 16:23:00 velktron Exp $
+// $Id: DoomGameInterface.java,v 1.4 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //

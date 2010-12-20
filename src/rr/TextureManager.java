@@ -18,10 +18,10 @@ public interface TextureManager {
 	
 	void PrecacheLevel() throws IOException;
 	
+	void GenerateComposite(int tex);
+	
 	int getTextureheight(int texnum);	
-	
-	void InitSprites(String[] sprnames);
-	
+		
 	int getTextureTranslation(int texnum);
 	
 	int getFlatTranslation(int flatnum);
@@ -32,6 +32,34 @@ public interface TextureManager {
 
 	int CheckTextureNumForName(String texnamem);
 
-    void InitTextureMapping();
-		
-}
+    int getTexturewidthmask(int tex);
+   
+    int getTextureColumnLump(int tex, int col);
+   
+    char getTextureColumnOfs(int tex, int col);
+
+    byte[][] getTextureComposite(int tex);
+
+    byte[] getTextureComposite(int tex, int col);
+
+    void InitFlats();
+
+    void InitTextures() throws IOException;
+
+    int getFirstFlat();
+
+    int getSkyTextureMid();
+
+    int getSkyFlatNum();
+
+    int getSkyTexture();
+
+    void setSkyTexture(int skytexture);
+
+    int InitSkyMap();
+
+    void setSkyFlatNum(int skyflatnum);
+
+    void GenerateLookup(int texnum)
+            throws IOException;
+    }

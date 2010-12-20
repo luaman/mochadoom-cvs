@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.6 2010/11/12 13:37:25 velktron Exp $
+// $Id: EndLevel.java,v 1.7 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.7  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.6  2010/11/12 13:37:25  velktron
 // Rationalized the LUT system - now it's 100% procedurally generated.
 //
@@ -60,7 +63,7 @@ package w;
 import static data.Defines.*;
 import static data.Limits.*;
 import i.DoomStatusAware;
-import data.Defines.GameMode_t;
+import defines.*;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;

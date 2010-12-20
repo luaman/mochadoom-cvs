@@ -19,7 +19,6 @@ import static data.Defines.pw_strength;
 import static data.Limits.BUTTONTIME;
 import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
-import static data.Limits.MAXINT;
 import static data.Limits.MAXINTERCEPTS;
 import static data.Limits.MAXLINEANIMS;
 import static data.Limits.MAXPLATS;
@@ -49,12 +48,11 @@ import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import automap.DoomAutoMap;
 import hu.HU;
-import i.DoomStatusAware;
 import i.DoomSystemInterface;
 import m.random;
 import rr.RendererState;
+import rr.SpriteManager;
 import rr.TextureManager;
-import rr.UnifiedRenderer;
 import rr.line_t;
 import rr.node_t;
 import rr.sector_t;
@@ -65,16 +63,11 @@ import s.DoomSoundInterface;
 import st.StatusBar;
 import utils.C2JUtils;
 import w.WadLoader;
-import data.Defines;
 import data.mapthing_t;
 import data.mobjtype_t;
 import data.state_t;
-import data.Defines.GameMode_t;
-import data.Defines.ammotype_t;
-import data.Defines.card_t;
-import data.Defines.statenum_t;
+import defines.*;
 import data.sounds.sfxenum_t;
-import doom.DoomContext;
 import doom.DoomGame;
 import doom.DoomMain;
 import doom.player_t;
@@ -111,6 +104,8 @@ public abstract class UnifiedGameMap implements ThinkerList{
     DoomSystemInterface I;
     
     DoomSoundInterface S;
+    
+    SpriteManager SM;
 
     // //////////// Internal singletons //////////////
     public Actions A;
@@ -1726,6 +1721,7 @@ public abstract class UnifiedGameMap implements ThinkerList{
     //
     // P_InitThinkers
     //
+    @Override
     public void InitThinkers() {
         thinkercap.next = thinkercap;
         thinkercap.prev = thinkercap;
@@ -1768,7 +1764,7 @@ public abstract class UnifiedGameMap implements ThinkerList{
         // TODO:
         SW.InitSwitchList();
         SPECS.InitPicAnims();
-        TM.InitSprites(sprnames);
+        SM.InitSprites(sprnames);
     }
 
     /**
@@ -2089,5 +2085,12 @@ public abstract class UnifiedGameMap implements ThinkerList{
         S.StartSound (null, sound);
     }
 
+    
+    @Override
+    public thinker_t getThinkerCap() {
+        return thinkercap;
+    }
 
+  
+    
 } // End unified map

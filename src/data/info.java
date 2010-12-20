@@ -3,13 +3,13 @@ package data;
 import static data.sounds.*;
 import static m.fixed_t.*;
 import static p.mobj_t.*;
-import data.Defines.statenum_t;
+import defines.statenum_t;
 import doom.think_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.6 2010/11/22 01:17:16 velktron Exp $
+// $Id: info.java,v 1.7 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.7  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.6  2010/11/22 01:17:16  velktron
 // Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
 //
@@ -62,7 +65,7 @@ import doom.think_t;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.6 2010/11/22 01:17:16 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.7 2010/12/20 17:15:08 velktron Exp $";
 
 // Data.
 //#include "sounds.h"

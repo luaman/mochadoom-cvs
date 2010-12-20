@@ -24,11 +24,7 @@ import data.Tables;
 import data.dstrings;
 import data.mapthing_t;
 import data.mobjtype_t;
-import data.Defines.GameMission_t;
-import data.Defines.GameMode_t;
-import data.Defines.ammotype_t;
-import data.Defines.gamestate_t;
-import data.Defines.skill_t;
+import defines.*;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import static data.Defines.BACKUPTICS;
@@ -36,6 +32,7 @@ import static data.Defines.KEY_ESCAPE;
 import static data.Defines.NORMALUNIX;
 import static data.Defines.VERSION;
 import rr.ParallelRenderer;
+import rr.SimpleTextureManager;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
@@ -59,7 +56,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.29 2010/12/15 16:12:19 velktron Exp $
+// $Id: DoomMain.java,v 1.30 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -74,6 +71,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.30  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.29  2010/12/15 16:12:19  velktron
 // Changes in Wiper code and alternate timing method, hoping to fix the Athlon X2
 //
@@ -195,7 +195,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.29 2010/12/15 16:12:19 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.30 2010/12/20 17:15:08 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1597,7 +1597,7 @@ protected ticcmd_t   base=new ticcmd_t();
      //  a flat. The data is in the WAD only because
      //  we look for an actual index, instead of simply
      //  setting one.
-     R.skyflatnum = TM.FlatNumForName ( SKYFLATNAME );
+     TM.setSkyFlatNum(TM.FlatNumForName ( SKYFLATNAME ));
 
      // DOOM determines the sky texture to be used
      // depending on the current episode, and the game version.
@@ -1605,12 +1605,12 @@ protected ticcmd_t   base=new ticcmd_t();
       || ( gamemission == GameMission_t.pack_tnt )
       || ( gamemission == GameMission_t.pack_plut ) )
      {
-     R.skytexture = TM.TextureNumForName ("SKY3");
+     TM.setSkyTexture(TM.TextureNumForName ("SKY3"));
      if (gamemap < 12)
-         R.skytexture = TM.TextureNumForName ("SKY1");
+         TM.setSkyTexture(TM.TextureNumForName ("SKY1"));
      else
          if (gamemap < 21)
-         R.skytexture = TM.TextureNumForName ("SKY2");
+             TM.setSkyTexture(TM.TextureNumForName ("SKY2"));
      }
 
      levelstarttic = gametic;        // for time calculation
@@ -2641,27 +2641,27 @@ protected ticcmd_t   base=new ticcmd_t();
      // set the sky map for the episode
      if ( gamemode == GameMode_t.commercial)
      {
-     R.skytexture = TM.TextureNumForName ("SKY3");
+     TM.setSkyTexture(TM.TextureNumForName ("SKY3"));
      if (gamemap < 12)
-         R.skytexture = TM.TextureNumForName ("SKY1");
+         TM.setSkyTexture(TM.TextureNumForName ("SKY1"));
      else
          if (gamemap < 21)
-             R.skytexture = TM.TextureNumForName ("SKY2");
+             TM.setSkyTexture(TM.TextureNumForName ("SKY2"));
      }
      else
      switch (episode) 
      { 
        case 1: 
-           R.skytexture = TM.TextureNumForName ("SKY1"); 
+           TM.setSkyTexture(TM.TextureNumForName ("SKY1")); 
          break; 
        case 2: 
-           R.skytexture = TM.TextureNumForName ("SKY2"); 
+           TM.setSkyTexture(TM.TextureNumForName ("SKY2"));
          break; 
        case 3: 
-           R.skytexture = TM.TextureNumForName ("SKY3"); 
+           TM.setSkyTexture(TM.TextureNumForName ("SKY3")); 
          break; 
        case 4:   // Special Edition sky
-           R.skytexture = TM.TextureNumForName ("SKY4");
+           TM.setSkyTexture(TM.TextureNumForName ("SKY4"));
          break;
      } 
   
@@ -2929,12 +2929,13 @@ public void Init(){
     this.HU=new HU(this);
     this.M=new Menu(this);
     this.LL=new LevelLoader(this);
-    this.R=new ParallelRenderer(this);
+    this.R=new UnifiedRenderer(this);
     this.P=new Actions(this);
 
     this.ST=new StatusBar(this);
     this.AM=new Map(this);
-    this.TM=(TextureManager)this.R;
+    this.TM=new SimpleTextureManager(this);
+    this.SM=this.R;
 
     this.LL.updateStatus(this);
     this.P.updateStatus(this);

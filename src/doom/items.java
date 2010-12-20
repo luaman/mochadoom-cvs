@@ -2,7 +2,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: items.java,v 1.2 2010/08/19 23:14:49 velktron Exp $
+// $Id: items.java,v 1.3 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package doom;
 // GNU General Public License for more details.
 //
 // $Log: items.java,v $
+// Revision 1.3  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.2  2010/08/19 23:14:49  velktron
 // Automap
 //
@@ -38,7 +41,7 @@ package doom;
 //
 //-----------------------------------------------------------------------------
 
-import static data.Defines.*;
+import defines.*;
 
 public class items{
 

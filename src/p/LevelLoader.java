@@ -41,16 +41,14 @@ import data.mapsidedef_t;
 import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
-import data.Defines.GameMode_t;
-import data.Defines.skill_t;
-import data.Defines.slopetype_t;
+import defines.*;
 import doom.DoomContext;
 import doom.DoomMain;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.14 2010/11/22 21:41:22 velktron Exp $
+// $Id: LevelLoader.java,v 1.15 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -65,6 +63,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.15  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
 // Revision 1.14  2010/11/22 21:41:22  velktron
 // Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
 //
@@ -146,7 +147,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.14 2010/11/22 21:41:22 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.15 2010/12/20 17:15:08 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -871,6 +872,9 @@ public int bmaporgy;
       // preload graphics
       if (DM.precache){
       TM.PrecacheLevel ();
+      // MAES: thinkers are separate than texture management. Maybe split sprite management as well?
+      R.PreCacheThinkers();
+      
       }
 
       } catch (Exception e){

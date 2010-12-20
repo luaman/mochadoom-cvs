@@ -1,7 +1,7 @@
 package data;
 
 import doom.think_t;
-import data.Defines.statenum_t;
+import defines.statenum_t;
 
 public class state_t {
 

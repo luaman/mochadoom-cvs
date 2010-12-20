@@ -9,7 +9,7 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.*;
 import static utils.C2JUtils.flags;
-import data.Defines.slopetype_t;
+import defines.slopetype_t;
 import doom.thinker_t;
 
 /** This is the actual linedef */

@@ -14,22 +14,26 @@ import static doom.englsh.*;
 import static utils.C2JUtils.*;
 import g.DoomGameInterface;
 import hu.HU;
+import i.DoomStatusAware;
 
 import java.io.IOException;
 
+import rr.Renderer;
+import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.column_t;
 import rr.patch_t;
 import rr.spritedef_t;
 import rr.spriteframe_t;
+import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 import data.mobjtype_t;
+import data.sounds.musicenum_t;
 import data.state_t;
-import data.Defines.GameMode_t;
-import data.Defines.gamestate_t;
-import data.Defines.statenum_t;
+import defines.*;
 import data.sounds.sfxenum_t;
+import doom.DoomContext;
 import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
@@ -38,7 +42,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.6 2010/09/27 02:27:29 velktron Exp $
+// $Id: Finale.java,v 1.7 2010/12/20 17:15:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -57,16 +61,17 @@ import doom.gameaction_t;
 //
 //-----------------------------------------------------------------------------
 
-public class Finale {
+public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.6 2010/09/27 02:27:29 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.7 2010/12/20 17:15:08 velktron Exp $";
 
   DoomGameInterface G;
   DoomStatus DS;
   DoomVideoRenderer V;
+  DoomSoundInterface S;
   HU HU;
   WadLoader W;
-  UnifiedRenderer R;
+  SpriteManager R;
   
   int     finalestage;
 
@@ -125,7 +130,7 @@ public void StartFinale ()
         case registered:
         case retail:
         {
-      // TODO: S_ChangeMusic(mus_victor, true);
+            S.ChangeMusic(musicenum_t.mus_victor, true);
       
       switch (DS.gameepisode)
       {
@@ -155,7 +160,7 @@ public void StartFinale ()
         // DOOM II and missions packs with E1, M34
         case commercial:
         {
-        //TODO: S_ChangeMusic(mus_read_m, true);
+        S.ChangeMusic(musicenum_t.mus_read_m, true);
 
         switch (DS.gamemap)
         {
@@ -193,7 +198,7 @@ public void StartFinale ()
      
         // Indeterminate.
         default:
-      // TODO: S_ChangeMusic(mus_read_m, true);
+            S.ChangeMusic(musicenum_t.mus_read_m, true);
       finaleflat = "F_SKY1"; // Not used anywhere else.
       finaletext = c1text;  // FIXME - other text, music?
       break;
@@ -259,8 +264,8 @@ public void StartFinale ()
       finalestage = 1;
       DS.wipegamestate = gamestate_t.GS_MINUS_ONE;     // force a wipe
       if (DS.gameepisode == 3)
-          ;
-      //TODO: S_StartMusic (mus_bunny);
+      
+      S.StartMusic (musicenum_t.mus_bunny);
       }
   }
 
@@ -409,7 +414,7 @@ public void StartFinale ()
       castframes = 0;
       castonmelee = 0;
       castattacking = false;
-      // TODO: S_ChangeMusic(mus_evil, true);
+      S.ChangeMusic(musicenum_t.mus_evil, true);
   }
 
 
@@ -432,7 +437,7 @@ public void StartFinale ()
       if (castorder[castnum].name == null)
           castnum = 0;
       if (mobjinfo[castorder[castnum].type.ordinal()].seesound.ordinal()!=0) ;
-          // TODO: S_StartSound (NULL, mobjinfo[castorder[castnum].type].seesound);
+          S.StartSound (null, mobjinfo[castorder[castnum].type.ordinal()].seesound);
       caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate.ordinal()];
       castframes = 0;
       }
@@ -487,7 +492,7 @@ public void StartFinale ()
       }
           
       if (sfx !=null) ;
-          // TODO:S_StartSound (NULL, sfx);
+          S.StartSound (null, sfx);
       }
       
       if (castframes == 12)
@@ -547,9 +552,8 @@ protected void stopattack(){
       casttics = (int) caststate.tics;
       castframes = 0;
       castattacking = false;
-      if (mobjinfo[castorder[castnum].type.ordinal()].deathsound!=null) 
-          ;
-      // TODO:S_StartSound (null, mobjinfo[castorder[castnum].type].deathsound);
+      if (mobjinfo[castorder[castnum].type.ordinal()].deathsound!=null)
+       S.StartSound (null, mobjinfo[castorder[castnum].type.ordinal()].deathsound);
       
       return true;
   }
@@ -628,14 +632,14 @@ protected void stopattack(){
       
       // draw the current frame in the middle of the screen
       // TODO: Sprites are in Renderer;
-      sprdef = R.sprites[caststate.sprite.ordinal()];
+      sprdef = R.getSprites()[caststate.sprite.ordinal()];
       sprframe = sprdef.spriteframes[ caststate.frame & FF_FRAMEMASK];
       lump = sprframe.lump[0];
       flip = eval(sprframe.flip[0]);
                flip=false;
               lump=0;
               
-        patch = W.CachePatchNum(lump+R.firstspritelump, PU_CACHE);
+        patch = W.CachePatchNum(lump+R.getFirstSpriteLump(), PU_CACHE);
 
       if (flip)
       V.DrawPatchFlipped (160,170,0,patch);
@@ -738,7 +742,7 @@ protected void stopattack(){
       stage = 6;
       if (stage > laststage)
       {
-      //TODO:          S_StartSound (NULL, sfx_pistol);
+      S.StartSound (null, sfxenum_t.sfx_pistol);
       laststage = stage;
       }
       
@@ -787,6 +791,24 @@ protected void stopattack(){
       }
               
   }
+
+  
+public Finale(DoomContext DC){
+    this.updateStatus(DC);
+}
+
+
+@Override
+public void updateStatus(DoomContext DC) {
+    this.G=(DoomGameInterface) DC.DG;
+    this.DS=DC.DM;
+    V=DC.V;
+    S=DC.S;
+    HU=DC.HU;
+    W=DC.W;
+    R=DC.R;
+    
+}
 }
 
 
