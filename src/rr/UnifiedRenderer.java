@@ -9,13 +9,6 @@ import static m.BBox.*;
 
 import java.io.IOException;
 
-import rr.ParallelRenderer.R_DrawTranslatedColumn;
-import rr.RendererState.R_DrawColumn;
-import rr.RendererState.R_DrawColumnBoom;
-import rr.RendererState.R_DrawFuzzColumn;
-import rr.RendererState.R_DrawSpanLow;
-import rr.RendererState.R_DrawSpanUnrolled;
-import rr.RendererState.R_DrawTLColumn;
 import st.StatusBar;
 import utils.C2JUtils;
 import data.Defines;
@@ -826,10 +819,17 @@ public class UnifiedRenderer extends RendererState{
               dc_iscale = (int) (0xffffffffL / spryscale);
               
               // draw the texture
-              col.data = GetColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
+              col = GetActualColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
               //col.setFromData();
+              
+              // FIXME: problems with using "normal" texture drawing.
+              // ANSWER: where is the column data?
+              // Unlike sprites, we are using the GetColumn function which returns byte[],
+              // rather than columns. So if we want to pass around columns, we need
+              // a modified GetColumn that returns columns. But since we might get
+              // a composite too, we need to
                   
-              DrawMaskedColumn (col.data);
+              DrawMaskedColumn (col);
               maskedtexturecol[pmaskedtexturecol+dc_x] = Short.MAX_VALUE;
           }
           spryscale += rw_scalestep;
@@ -937,14 +937,7 @@ public class UnifiedRenderer extends RendererState{
               dc_texheight = TexMan.getTextureheight(midtexture)>>FRACBITS; // killough
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
-              //System.out.println("DC_ISCALE: "+dc_iscale+" " +rw_scale);
-              //if (DEBUG) 
-                  // System.out.println("Drawing column"+(texturecolumn&127)+" of mid texture "+textures[midtexture].name+ " at "+rw_x+" and between "+dc_yl+" and "+dc_yh+" maximum allowed "+dc_source.length);
-                  try {
               colfunc.invoke();
-              } catch (ArrayIndexOutOfBoundsException e){                    
-                    System.out.println(e.getMessage()+" maximum acceptable "+dc_source.length);
-                  }
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
           }
@@ -1002,13 +995,8 @@ public class UnifiedRenderer extends RendererState{
                   dc_source = GetColumn(bottomtexture,
                               texturecolumn);
                   //System.out.println("Max data length:"+dc_source.length);
-                  try{
                   //dc_source_ofs=0;
                   colfunc.invoke();
-                  }catch (ArrayIndexOutOfBoundsException e){
-                      //TODO: fix errors. Is this supposed to occur?
-                  }
-                  
                   
                   floorclip[rw_x] = (short) mid;
               }

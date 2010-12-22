@@ -21,7 +21,8 @@ public class filelump_t  implements ReadableDoomObject {
 
             filepos=Swap.LONG(f.readInt());
             size=Swap.LONG(f.readInt());
-            name=f.readNullTerminatedString(8);
+            // Names used in the reading subsystem should be upper case.
+            name=f.readNullTerminatedString(8).toUpperCase();
         }
 
         public void write(DoomFile f) throws IOException{

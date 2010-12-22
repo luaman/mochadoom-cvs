@@ -1,42 +1,18 @@
 package testers;
 
 import static data.Defines.PU_STATIC;
-import static data.Defines.pw_allmap;
-import static m.fixed_t.FRACBITS;
-
-import i.DoomSystem;
-import i.DoomSystemInterface;
-
-import java.awt.Frame;
-import java.awt.GraphicsDevice;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
 import m.random;
-import p.LevelLoader;
-import p.mobj_t;
 import rr.patch_t;
-import st.StatusBar;
-import utils.C2JUtils;
 import v.BufferedRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
-import automap.DoomAutoMap;
-import automap.Map;
 import data.Defines;
-import data.Defines.GameMission_t;
-import data.Defines.GameMode_t;
-import data.Defines.skill_t;
-import doom.DoomContext;
 import doom.DoomMain;
-import doom.DoomStatus;
-import doom.event_t;
-import doom.player_t;
-import doom.ticcmd_t;
-import doom.wbstartstruct_t;
-import doom.weapontype_t;
 import f.Wiper;
 
 /** This is a very simple tester for the Automap. Combined with status bar + Level loader. */

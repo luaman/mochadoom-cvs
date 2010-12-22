@@ -42,9 +42,9 @@ public class mapsidedef_t implements CacheableDoomObject{
         buf.order(ByteOrder.LITTLE_ENDIAN);
         this.textureoffset = buf.getShort();
         this.rowoffset = buf.getShort();
-        this.toptexture=DoomBuffer.getNullTerminatedString(buf,8);
-        this.bottomtexture=DoomBuffer.getNullTerminatedString(buf,8);
-        this.midtexture=DoomBuffer.getNullTerminatedString(buf,8);
+        this.toptexture=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
+        this.bottomtexture=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
+        this.midtexture=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
         this.sector = buf.getShort();
         
     }

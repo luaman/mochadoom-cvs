@@ -5,12 +5,10 @@ import static data.Defines.FF_FULLBRIGHT;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMCOLORMAPS;
 import static data.Defines.PU_CACHE;
-import static data.Defines.PU_STATIC;
 import static data.Defines.SCREENHEIGHT;
 import static data.Defines.SCREENWIDTH;
 import static data.Defines.SIL_BOTTOM;
 import static data.Defines.SIL_TOP;
-import static data.Defines.SKYFLATNAME;
 import static data.Defines.pw_invisibility;
 import static data.Limits.MAXHEIGHT;
 import static data.Limits.MAXOPENINGS;
@@ -26,7 +24,6 @@ import static data.Tables.BITS32;
 import static data.Tables.DBITS;
 import static data.Tables.FINEANGLES;
 import static data.Tables.QUARTERMARK;
-import static data.Tables.SLOPERANGE;
 import static data.Tables.SlopeDiv;
 import static data.Tables.addAngles;
 import static data.Tables.finesine;
@@ -40,12 +37,9 @@ import static m.fixed_t.FixedMul;
 import static p.mobj_t.MF_SHADOW;
 import static p.mobj_t.MF_TRANSLATION;
 import static p.mobj_t.MF_TRANSSHIFT;
-import static utils.C2JUtils.toUnsignedByte;
-
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Hashtable;
 
@@ -815,7 +809,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
             //System.out.println(">>>>>>>>>>>>>>>>>>   Drawing column "+texturecolumn+" of  "+W.lumpinfo[vis.patch+firstspritelump].name +" at scale "+Integer.toHexString(vis.xiscale));
               
             //colfunc.invoke();
-            DrawMaskedColumn(column.data);
+            DrawMaskedColumn(column);
             }
 
             colfunc = basecolfunc;
@@ -2610,7 +2604,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
        *  NOTE: this version accepts raw bytes, in case you  know what you're doing.
        */
 
-      protected final  void DrawMaskedColumn (byte[] column)
+/*      protected final  void DrawMaskedColumn (byte[] column)
       {
           int     topscreen;
           int     bottomscreen;
@@ -2659,7 +2653,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
           }
           
           dc_texturemid = basetexturemid;
-      }
+      }*/
         
       /**
        * R_DrawMaskedColumn
@@ -2683,12 +2677,12 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
           basetexturemid = dc_texturemid;
           // That's true for the whole column.
           dc_source = column.data;
-          dc_source_ofs=0;
+          //dc_source_ofs=0;
           
           // for each post...
           for (int i=0;i<column.posts;i++ ) 
           {
-              dc_source_ofs=column.postofs[0];
+              dc_source_ofs=column.postofs[i];
               // calculate unclipped screen coordinates
           //  for post
           topscreen = sprtopscreen + spryscale*column.postdeltas[i];
@@ -2712,8 +2706,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
               
               // Drawn by either R_DrawColumn
               //  or (SHADOW) R_DrawFuzzColumn.
-              dc_source_ofs+=2; // This makes us point into the first valid pixel of a post. I hope.
-              dc_texheight=0; // killough
+              dc_source_ofs+=3; // This makes us point into the first valid pixel of a post. I hope.
+              dc_texheight=0; // killough. Sprites and masked textures get no tiling safeguard, obviously.
               
                colfunc.invoke();
           }
@@ -2892,7 +2886,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
           //colmask = (byte) Math.min(dc_source.length-dc_source_ofs-1,127);
 
           // Zero length, column does not exceed a pixel.
-          if (count < 0)
+          if (count <=0)
               return;
 
           if (RANGECHECK) {
@@ -2933,7 +2927,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
                *  column...right? Right.
                */  
              // if (gross) System.out.println(frac >> FRACBITS);
-              screen[dest] = dc_colormap[0x00FF&dc_source[dc_source_ofs+((frac >> FRACBITS) & colmask)]];
+              screen[dest] = dc_colormap[0x00FF&dc_source[(dc_source_ofs+(frac >> FRACBITS)) & colmask]];
 
               
               /* MAES: ok, so we have (from inside out):
@@ -3300,7 +3294,49 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
           return TexMan.getTextureComposite(tex,col);
       }
 
+      /**
+       * R_GetColumn variation: returns a pointer to a column_t
+       * rather than raw data.
+       * 
+       * 
+       * @throws IOException 
+       * 
+       * 
+       */
+      public column_t GetActualColumn
+      ( int       tex,
+        int       col ) 
+      {
+          int     lump,ofs;
+          
+          col &= TexMan.getTexturewidthmask(tex);
+          lump = TexMan.getTextureColumnLump(tex, col);
+          ofs=TexMan.getTextureColumnOfs(tex, col);
+          
+          // If pointing inside a non-zero, positive lump, then it's not a composite texture.
+          // Read from disk.
+          if (lump > 0){
+              // This will actually return a pointer to a patch's columns.
+              // That is, to the ONE column exactly.{
+              // If the caller needs access to a raw column, we must point 3 bytes "ahead".
+              dc_source_ofs=3;
+              patch_t r=W.CachePatchNum(lump,PU_CACHE);
+          return r.columns[ofs];
+      }
+          // Texture should be composite, but it doesn't yet exist. Create it. 
+          if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
+
+          // This implies that texturecomposite actually stores raw, compressed columns,
+          // or else those "ofs" would go in-between.
+          // The source offset int this case is 0, else we'll skip over stuff.
+          this.dc_source_ofs=0;
+          shitty.data=TexMan.getTextureComposite(tex,col);
+          
+          // Return a default column with the data thrown in. Literally.
+          return shitty;
+      }
       
+      protected column_t shitty;
       
       /**
        * R_InitSpriteLumps

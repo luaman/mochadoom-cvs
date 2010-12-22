@@ -14,15 +14,18 @@ import java.nio.ByteOrder;
 import java.util.Hashtable;
 
 import p.LevelLoader;
-import p.mobj_t;
-import doom.DoomContext;
-import doom.DoomMain;
 import doom.DoomStatus;
-import doom.think_t;
-import doom.thinker_t;
-
 import w.DoomBuffer;
 import w.WadLoader;
+
+/** An attempt to separate texture mapping functionality from
+ *  the rest of the rendering. Seems to work like a charm, and
+ *  it makes it clearer what needs and what doesn't need to be 
+ *  exposed.
+ * 
+ * @author Maes
+ *
+ */
 
 public class SimpleTextureManager
         implements TextureManager {
@@ -54,7 +57,7 @@ public class SimpleTextureManager
 
     protected int     numtextures;
     
-    /* The unchached textures themselves, stored just as patch lists and various properties */
+    /** The unchached textures themselves, stored just as patch lists and various properties */
     protected texture_t[] textures;
 
     /** Width per texture? */
@@ -83,9 +86,8 @@ public class SimpleTextureManager
     /** Stores [textures][columns][data]. */
     protected byte[][][]          texturecomposite;
 
-    // for global animation
-    protected int[]        flattranslation;
-    protected int[]        texturetranslation;
+    /** for global animation */
+    protected int[]        flattranslation, texturetranslation;
     
     public SimpleTextureManager(DoomStatus DC) {
         this.DM=DC;

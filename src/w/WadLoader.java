@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.24 2010/12/14 17:55:59 velktron Exp $
+// $Id: WadLoader.java,v 1.25 2010/12/22 01:23:15 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,11 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.25  2010/12/22 01:23:15  velktron
+// Definitively fixed plain DrawColumn.
+// Fixed PATCH/TEXTURE and filelump/wadloader capitalization.
+// Brought back some testers.
+//
 // Revision 1.24  2010/12/14 17:55:59  velktron
 // Fixed weapon bobbing, added translucent column drawing, separated rendering commons.
 //
@@ -243,7 +248,8 @@ public class WadLoader {
 			dest.append(path.charAt(pos));
 			pos++;
 		}
-		return new String(dest.substring(0,pos));
+		// Uppercase ALL strings used in the retrieval system.
+		return new String(dest.substring(0,pos).toUpperCase());
 	}
 
 	//
@@ -867,7 +873,15 @@ public class WadLoader {
 		return;
 	}
 
-	private boolean implementsInterface(Class what, Class which) {
+	/** Tells us if a class implements a certain interface.
+	 *  If you know of a better way, be my guest.
+	 * 
+	 * @param what
+	 * @param which
+	 * @return
+	 */
+	
+	protected boolean implementsInterface(Class what, Class which) {
 		Class[] shit = what.getInterfaces();
 		for (int i = 0; i < shit.length; i++) {
 			if (shit[i].equals(which))

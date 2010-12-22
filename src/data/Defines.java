@@ -14,7 +14,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.31 2010/12/20 17:15:08 velktron Exp $
+// $Id: Defines.java,v 1.32 2010/12/22 01:23:15 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,7 +72,7 @@ public static final boolean RANGECHECK=false;
 //menues etc. is tied to the scale implied
 //by the graphics.
 
-public static float SCREEN_MUL =(float) 4.0;
+public static float SCREEN_MUL =(float) 3.0;
 public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 //
@@ -91,9 +91,9 @@ public static int SCREENWIDTH = (int) (BASE_WIDTH*SCREEN_MUL);
 //SCREEN_MUL*BASE_WIDTH //320
 public static int SCREENHEIGHT= (int) (SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO);
 
-public static final int BEST_X_SCALE = (int) (SCREENWIDTH/BASE_WIDTH);
+public static final int BEST_X_SCALE = (int) Math.floor((float)SCREENWIDTH/(float)BASE_WIDTH);
 
-public static final int BEST_Y_SCALE = (int) (SCREENHEIGHT/BASE_HEIGHT);
+public static final int BEST_Y_SCALE = (int) Math.floor((float)SCREENHEIGHT/(float)BASE_HEIGHT);
 
 /** Safest global scaling for fixed stuff like menus, titlepic etc */
 
@@ -627,6 +627,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.31 2010/12/20 17:15:08 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.32 2010/12/22 01:23:15 velktron Exp $";
 }
 

@@ -13,6 +13,12 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import p.mobj_t;
+import rr.RendererState.R_DrawColumnBoom;
+import rr.RendererState.R_DrawFuzzColumn;
+import rr.RendererState.R_DrawSpanLow;
+import rr.RendererState.R_DrawSpanUnrolled;
+import rr.RendererState.R_DrawTLColumn;
+import rr.RendererState.R_DrawTranslatedColumn;
 import st.StatusBar;
 import utils.C2JUtils;
 import w.DoomBuffer;
@@ -933,7 +939,7 @@ public class ParallelRenderer extends RendererState  {
               col.data = GetColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
               //col.setFromData();
                   
-              DrawMaskedColumn (col.data);
+              DrawMaskedColumn (col);
               maskedtexturecol[pmaskedtexturecol+dc_x] = Short.MAX_VALUE;
           }
           spryscale += rw_scalestep;
@@ -2699,7 +2705,7 @@ public void ExecuteSetViewSize ()
     fuzzcolfunc = DrawFuzzColumn;
     transcolfunc = DrawTranslatedColumn;
     glasscolfunc=DrawTLColumn;
-    playercolfunc=glasscolfunc;//DrawColumnPlayer;
+    playercolfunc=DrawColumnPlayer;
     spanfunc = DrawSpan;
     }
     else {

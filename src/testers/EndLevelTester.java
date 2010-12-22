@@ -2,37 +2,37 @@ package testers;
 
 import static data.Defines.PU_STATIC;
 
+import i.AWTDoom;
 import i.DoomSystemInterface;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 
-import javax.swing.JFrame;
-
 import m.random;
+import s.DoomSoundInterface;
+import s.DummySoundDriver;
 import utils.C2JUtils;
 import v.BufferedRenderer;
-import v.SimpleRenderer;
 import w.DoomBuffer;
 import w.EndLevel;
 import w.WadLoader;
 import data.Defines;
-import data.Defines.GameMission_t;
-import data.Defines.GameMode_t;
-import doom.DoomContext;
-import doom.DoomStatus;
+import defines.*;
+import doom.DoomMain;
 import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
 
 /** This is a very simple tester for the End Level screen drawer.
- * 
+ *  MAES: this is mostly historical. Too many changes have occured
+ *  and it's no longer easy to operate stand-alone.
+ *  
+ *  Edit: well, maybe it is...
  * 
  */
 
 public class EndLevelTester {
 
-    public static final int WIDTH=320;
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
@@ -43,9 +43,7 @@ public class EndLevelTester {
     byte[] pal=palette.getBuffer().array();
 
     IndexColorModel icm=new IndexColorModel(8, 256,pal, 0, false);
-    Defines.SCREENWIDTH=WIDTH;
-    Defines.SCREENHEIGHT=200;
-    BufferedRenderer V=new BufferedRenderer(WIDTH,200,icm);
+    BufferedRenderer V=new BufferedRenderer(Defines.SCREENWIDTH,Defines.SCREENHEIGHT,icm);
     V.Init();
     
     IndexColorModel[] icms=new IndexColorModel[pal.length/768];
@@ -56,53 +54,61 @@ public class EndLevelTester {
             pals[i]=new BufferedImage(icms[i],V.screenbuffer[0].getRaster(), false, null);
            }
     
-    DoomStatus ds = new DoomStatus();
-    ds.gameepisode=1;
-    ds.gamemap=1;
-    ds.gamemission=GameMission_t.doom;
-    ds.gamemode=GameMode_t.shareware;
-    ds.wminfo=new wbstartstruct_t();
-    C2JUtils.initArrayOfObjects(ds.players,player_t.class);
+    DoomMain DC=new DoomMain();
+    DC.DM=DC;
+    DoomSystemInterface I=new i.DoomSystem();
+    DoomSoundInterface S=new DummySoundDriver();
+    
+    DC.S=S;
+    DC.I=I;
+    DC.gameepisode=1;
+    DC.gamemap=1;
+    DC.gamemission=GameMission_t.doom;
+    DC.gamemode=GameMode_t.shareware;
+    DC.wminfo=new wbstartstruct_t();
+    C2JUtils.initArrayOfObjects(DC.players,player_t.class);
 
-    DoomContext DC=new DoomContext();
-    DC.DS=ds;
+    
+    DC.DM=DC;
     DC.W=W;
     DC.V=V;
     DC.RND=new random();
-    ds.players[0].cmd=new ticcmd_t();
-    ds.players[0].itemcount=1337;
-    ds.players[0].killcount=1337;
-    ds.players[0].secretcount=1337;
+    DC.players[0].cmd=new ticcmd_t();
+    DC.players[0].itemcount=1337;
+    DC.players[0].killcount=1337;
+    DC.players[0].secretcount=1337;
     
-    ds.wminfo.plyr[0].in=true;
-    ds.wminfo.plyr[0].sitems=1337;
-    ds.wminfo.plyr[0].skills=1337;
-    ds.wminfo.plyr[0].stime=28595;
-    ds.wminfo.plyr[0].ssecret=1337;
-    ds.playeringame[0]=true;
-    ds.wminfo.last=6;
-    ds.wminfo.epsd=0;
-    ds.wminfo.maxitems=100;
-    ds.wminfo.maxkills=100;
-    ds.wminfo.maxsecret=100;
-    ds.wminfo.partime=28595;
-    JFrame frame = new JFrame("MochaDoom");
-    CrappyDisplay shit = new CrappyDisplay(pals);
-    frame.add(shit);
-    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    frame.pack();
-    frame.setLocationRelativeTo(null);
+    DC.wminfo.plyr[0].in=true;
+    DC.wminfo.plyr[0].sitems=1337;
+    DC.wminfo.plyr[0].skills=1337;
+    DC.wminfo.plyr[0].stime=28595;
+    DC.wminfo.plyr[0].ssecret=1337;
+    DC.playeringame[0]=true;
+    DC.wminfo.last=6;
+    DC.wminfo.epsd=0;
+    DC.wminfo.maxitems=100;
+    DC.wminfo.maxkills=100;
+    DC.wminfo.maxsecret=100;
+    DC.wminfo.partime=28595;
+    //JFrame frame = new JFrame("MochaDoom");
+    AWTDoom shit = new AWTDoom(DC, V, pal);
+    shit.InitGraphics();
+    
+    //frame.add(shit);
+    //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    //frame.pack();
+    //frame.setLocationRelativeTo(null);
     //frame.setUndecorated(true);
-    frame.setVisible(true);
+    //frame.setVisible(true);
 
 
-    frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
+    //frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
     EndLevel EL=new EndLevel(DC);
     
 
    // EL.Start(wbstartstruct);
     int a,b;
-    a=DoomSystemInterface.GetTime();
+    a=I.GetTime();
     b=a;
     for (int i=0;i<2000;i++){
     	
@@ -110,18 +116,18 @@ public class EndLevelTester {
     EL.Drawer();
     shit.update(shit.getGraphics());
     if (i==100){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
+            DC.players[0].cmd.buttons=1; // simulate attack
+            DC.players[0].attackdown=false; // simulate attack
         }
         
         if (i==120){
-            ds.players[0].cmd.buttons=1; // simulate attack
-            ds.players[0].attackdown=false; // simulate attack
+            DC.players[0].cmd.buttons=1; // simulate attack
+            DC.players[0].attackdown=false; // simulate attack
         }
    // Do we still have time>
         
         while((b-a)==0) {
-        	b=DoomSystemInterface.GetTime();
+        	b=I.GetTime();
         	}
        a=b;
     }

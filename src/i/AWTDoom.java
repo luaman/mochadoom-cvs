@@ -556,6 +556,14 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 		   this.palette=palette;      
 	}
 	
+	
+	/** Call this before attempting to draw anything.
+	 * This will create the window, the canvas and everything.
+	 * Unlike a simple JFrame, this is not automatic because of the order
+	 * Doom does things.
+	 * 
+	 */
+	
 	@Override
 	public void InitGraphics()
 	{

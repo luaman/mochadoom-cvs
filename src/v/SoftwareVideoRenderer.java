@@ -13,6 +13,8 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
+import data.Defines;
+
 import m.BBox;
 
 import rr.column_t;
