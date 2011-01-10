@@ -94,14 +94,6 @@ public class EndLevelTester {
     AWTDoom shit = new AWTDoom(DC, V, pal);
     shit.InitGraphics();
     
-    //frame.add(shit);
-    //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-    //frame.pack();
-    //frame.setLocationRelativeTo(null);
-    //frame.setUndecorated(true);
-    //frame.setVisible(true);
-
-
     //frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
     EndLevel EL=new EndLevel(DC);
     

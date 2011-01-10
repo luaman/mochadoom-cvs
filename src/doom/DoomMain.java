@@ -56,7 +56,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.30 2010/12/20 17:15:08 velktron Exp $
+// $Id: DoomMain.java,v 1.31 2011/01/10 16:40:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -71,6 +71,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.31  2011/01/10 16:40:54  velktron
+// Some v1.3 commits: OSX fix, limit-removing flat management (to fix),
+//
 // Revision 1.30  2010/12/20 17:15:08  velktron
 // Made the renderer more OO -> TextureManager and other changes as well.
 //
@@ -195,7 +198,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.30 2010/12/20 17:15:08 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.31 2011/01/10 16:40:54 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1227,8 +1230,8 @@ public void Start ()
 	// but w/o all the lumps of the registered version. 
 	if (gamemode == GameMode_t.registered)
 	    for (i = 0;i < 23; i++)
-		if (W.CheckNumForName(name[i])<0)
-		    I.Error("\nThis is not the registered version.");
+		if (W.CheckNumForName(name[i].toUpperCase())<0)
+		    I.Error("\nThis is not the registered version: "+name[i]);
     }
     
     // Iff additonal PWAD files are used, print modified banner

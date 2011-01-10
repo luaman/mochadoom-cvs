@@ -7887,7 +7887,7 @@ mobj_t  thing )
       {
         case 48:
           // EFFECT FIRSTCOL SCROLL+
-          linespeciallist[SPECS.numlinespecials] = LL.lines[i];
+          SPECS.linespeciallist[SPECS.numlinespecials] = LL.lines[i];
           SPECS.numlinespecials++;
           break;
       }

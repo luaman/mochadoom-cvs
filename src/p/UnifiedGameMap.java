@@ -1193,11 +1193,12 @@ public abstract class UnifiedGameMap implements ThinkerList{
 
     //
 
-    line_t[] linespeciallist = new line_t[MAXLINEANIMS];
+
 
     class Specials {
         public static final int ok = 0, crushed = 1, pastdest = 2;
 
+        protected line_t[] linespeciallist = new line_t[2048/*MAXLINEANIMS*10*/];
         public short numlinespecials;
         
         /**

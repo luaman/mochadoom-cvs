@@ -11,6 +11,7 @@ import i.DoomSystemInterface;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
 import p.LevelLoader;
@@ -71,6 +72,7 @@ public class SimpleTextureManager
     protected int[]            texturecompositesize;
     /** Tells us which patch lump covers which column of which texture */
     protected short[][]         texturecolumnlump;
+    
     /** This is supposed to store indexes into a patch_t lump which point to the columns themselves 
      *  Instead, we're going to return indexes to columns inside a particular patch.
      *  In the case of patches inside a non-cached multi-patch texture (e.g. those made of non-overlapping
@@ -89,6 +91,9 @@ public class SimpleTextureManager
     /** for global animation */
     protected int[]        flattranslation, texturetranslation;
     
+    // This is also in DM, but one is enough, really.
+    protected int skytexture,skytexturemid,skyflatnum;
+    
     public SimpleTextureManager(DoomStatus DC) {
         this.DM=DC;
         this.W=DM.W;
@@ -96,9 +101,9 @@ public class SimpleTextureManager
         this.LL=DM.LL;
     }
   
-    /** Hash table used for fast flat lookup */
+    /** Hash table used for matching flat <i>lump</i> to flat <i>num</i> */
 
-    Hashtable<String, Integer> FlatCache;
+    Hashtable<Integer, Integer> FlatCache;
     
 
       /**
@@ -496,8 +501,6 @@ public class SimpleTextureManager
         
         // Composite the columns together.
         patch = texture.patches;
-       
-        
         
         // For each patch in the texture...
         for (int i=0 ;i<texture.patchcount; i++)
@@ -607,35 +610,68 @@ public class SimpleTextureManager
         }
     }
 
-    //
-    // R_InitFlats
-    //
+    /**
+     * R_InitFlats
+     *
+     * Scans WADs for F_START/F_END lumps, and also any additional
+     * F1_ and F2_ pairs.
+     *
+     */
+    
     @Override
     public final void InitFlats ()
     {
         
-        /* Actually, flats start with F_START AND F1_START.
-         * Due to the way C loads stuff, even if you pointed at a zero sized
-         * marker "flat", loading would succeed anyway...I think.
-         */
+        ArrayList<Integer> firstflatlist=new ArrayList<Integer>(); // Remember ALL markers, including PWADs.
+        ArrayList<Integer> lastflatlist=new ArrayList<Integer>();
+        numflats=0;
         
-        firstflat=2+W.GetNumForName ("F_START");
-        
-        lastflat = W.GetNumForName ("F_END") - 1;
-        numflats = lastflat - firstflat;
-        
-        // Create translation table for global animation.
-        flattranslation = new int[numflats];
-        
-        //System.out.println("*********** FLAT VERIFICATION ************");
-        for (int i=0 ; i<numflats ; i++) {
-            flattranslation[i] = i;
-            //System.out.println("Flat "+i+" actual "+(firstflat+i)+" actual name "+W.lumpinfo[firstflat+i].name + " verification "+this.FlatNumForName(W.lumpinfo[firstflat+i].name));
-            
+        // Find all flat markers in all WADs. 
+        // They should be paired, and the two lists should be equal in length.
+        for (int i=0;i<W.NumLumps();i++){
+            if (W.GetNameForNum(i).equalsIgnoreCase(LUMPSTART)) {
+                if (W.GetNameForNum(i+1).matches("F._START"))
+                       firstflatlist.add(i+1); 
+                else
+                    firstflatlist.add(i);
             } 
-    }
-    
+            if (W.GetNameForNum(i).equalsIgnoreCase(LUMPEND))  {
+                if (W.GetNameForNum(i-1).matches("F._END"))
+                    lastflatlist.add(i-1); 
+             else
+                 lastflatlist.add(i);
+            } 
+        }
+        
+        System.out.printf("Total flat areas: %d %d\n",firstflatlist.size(),lastflatlist.size());
 
+        // There are  Fx_START and Fx_END lumps sandwiched in between. We don't need them.
+        
+        for (int i=0;i<firstflatlist.size();i++){
+            numflats+= (lastflatlist.get(i) - firstflatlist.get(i))-2;
+            }
+            
+            // Create translation table for global animation.
+            flattranslation = new int[numflats];
+            FlatCache=new Hashtable<Integer,Integer>(numflats);
+            
+            // MAJOR CHANGE: flattranslation stores absolute lump numbers. Adding
+            // firstlump is not necessary anymore.
+            int k=0;
+            for (int i=0;i<firstflatlist.size();i++){
+                for (int j=firstflatlist.get(i)+2;j<lastflatlist.get(i)-1;j++){
+                flattranslation[k++]= j;
+                // Lump is used as the key, while the relative lump number is the value.
+                FlatCache.put(j, k-1);
+                System.out.printf("Verification: flat[%d] is %s in lump %d, translation is %d\n",(k-1),W.GetNameForNum(j),j,flattranslation[k-1]);
+                }
+            }
+
+        }
+    
+    private final static String LUMPSTART="F_START";
+    private final static String LUMPEND="F_END";
+    
     /**
      * R_PrecacheLevel
      * Preloads all relevant graphics for the level.
@@ -772,11 +808,12 @@ public class SimpleTextureManager
 
         i = W.CheckNumForName(name);
 
+        System.out.printf("R_FlatNumForName retrieved lump %d for name %s picnum %d\n",i,name,FlatCache.get(i));
         if (i == -1) {
             I.Error("R_FlatNumForName: %s not found", name);
         }
         
-        return i - firstflat;
+        return FlatCache.get(i);
     }
 
     @Override
@@ -847,11 +884,6 @@ public class SimpleTextureManager
         return skyflatnum;
     }
 
-    
-    protected int skytexturemid;
-    
-    protected int skyflatnum;
-    
     @Override
     public int getSkyFlatNum() {
         return skyflatnum;
@@ -862,9 +894,7 @@ public class SimpleTextureManager
         this.skyflatnum = skyflatnum;
     }
 
-    // This is also in DM, but one is enough, really.
-    protected int skytexture;
-   // int skytexturemid;
+
 
     @Override
     public int getSkyTexture() {
@@ -876,14 +906,25 @@ public class SimpleTextureManager
         this.skytexture = skytexture;
     }
 
-    @Override
+    /*@Override
     public int getFirstFlat() {
         return firstflat;
-    }
+    } */
 
     @Override
     public int getSkyTextureMid() {
         return skytexturemid;
+    }
+
+    @Override
+    public String CheckTextureNameForNum(int texnum) {       
+        return textures[texnum].name;
+    }
+
+    @Override
+    public int getFlatLumpNum(int flatnum) {
+        // TODO Auto-generated method stub
+        return 0;
     }
     
 }

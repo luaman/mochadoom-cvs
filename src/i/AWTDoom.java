@@ -168,7 +168,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
          * 
          */
         public void update(Graphics g) {
-           // Techdemo v1.3: Mac OSX fix, compatible with Windows.
+           // Techdemo v1.3: Mac OSX fix, compatible with Windows and Linux.
            // Should probably run just once. Overhead is minimal
            // compared to actually DRAWING the stuff.
            if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.25 2010/12/22 01:23:15 velktron Exp $
+// $Id: WadLoader.java,v 1.26 2011/01/10 16:40:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.26  2011/01/10 16:40:54  velktron
+// Some v1.3 commits: OSX fix, limit-removing flat management (to fix),
+//
 // Revision 1.25  2010/12/22 01:23:15  velktron
 // Definitively fixed plain DrawColumn.
 // Fixed PATCH/TEXTURE and filelump/wadloader capitalization.
@@ -140,7 +143,7 @@ import i.*;
 
 public class WadLoader {
 
-	DoomSystemInterface I;
+	protected DoomSystemInterface I;
 
 	//
 	// GLOBALS
@@ -548,7 +551,7 @@ public class WadLoader {
 	 * Returns the total number of lumps loaded in this Wad manager. Awesome. 
 	 * 
 	 */
-	public int NumLumps() {
+	public final int NumLumps() {
 		return numlumps;
 	}
 
@@ -664,10 +667,11 @@ public class WadLoader {
 		return null;
 	}
 
-	//
-	// W_GetNumForName
-	// Calls W_CheckNumForName, but bombs out if not found.
-	//
+	/**
+	 * W_GetNumForName
+	 * Calls W_CheckNumForName, but bombs out if not found.
+	 */
+	
 	public int GetNumForName(String name) {
 		int i;
 
@@ -685,6 +689,19 @@ public class WadLoader {
 		return i;
 	}
 
+	/**
+	 *          
+	 * @param lumpnum
+	 * @return
+	 */
+    public String GetNameForNum(int lumpnum) {
+        if (lumpnum>=0 && lumpnum<this.numlumps){
+            return this.lumpinfo[lumpnum].name;
+        }
+        return null;
+    }
+
+	
 	//
 	// W_LumpLength
 	// Returns the buffer size needed to load the given lump.
@@ -887,7 +904,7 @@ public class WadLoader {
 			if (shit[i].equals(which))
 				return true;
 		}
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
@@ -1041,7 +1058,7 @@ public class WadLoader {
 	//
 
 	/**
-	 * Maes 12/12/2010: Some recognition must go to Killough for first
+	 * Maes 12/12/2010: Some credit must go to Killough for first
 	 * Introducing the hashtable system into Boom. On early releases I had
 	 * copied his implementation, but it proved troublesome later on and slower
 	 * than just using the language's built-in hash table. Lesson learned, kids:
@@ -1050,6 +1067,8 @@ public class WadLoader {
 	 * TO get an idea of how superior using a hashtable is, on 1000000 random
 	 * lump searches the original takes 48 seconds, searching for precomputed
 	 * hashes takes 2.84, and using a Hashtable takes 0.2 sec.
+	 * 
+	 * And the best part is that Java provides a perfectly reasonable implementation.
 	 * 
 	 */
 

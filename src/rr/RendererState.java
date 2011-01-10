@@ -395,7 +395,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
     //
 
     /** fixed_t */
-    protected int     pspritescale,pspriteiscale,skyscale;
+    protected int     pspritescale,pspriteiscale,pspritexscale,pspriteyscale,skyscale;
 
     protected byte[][]  spritelights;
     
@@ -1516,9 +1516,9 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
             //  but does not draw on side views
             //if (viewangleoffset==0)
             
-            colfunc=playercolfunc;            
+            //colfunc=playercolfunc;            
             DrawPlayerSprites ();
-            colfunc=basecolfunc;
+            //colfunc=basecolfunc;
     }
         
     }
@@ -1660,8 +1660,25 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
 
    protected int          centerx;
    protected int          centery;
-
-   /** Used to determind the view center and projection in view units fixed_t */
+   
+   /** e6y: wide-res
+    * Borrowed from PrBoom+; 
+    */
+   
+   protected int wide_centerx,wide_ratio, wide_offsetx, wide_offset2x, wide_offsety, wide_offset2y;
+   
+   
+   
+   protected final base_ratio_t[] BaseRatioSizes =
+   {
+       new base_ratio_t( 960, 600, 0, 48 , 1.333333f ), // 4:3
+       new base_ratio_t( 1280, 450, 0, 48*3/4, 1.777777f),  // 16:9
+       new base_ratio_t( 1152, 500, 0, 48*5/6, 1.6f      ), // 16:10
+       new base_ratio_t(  960, 600, 0, 48, 1.333333f ),
+       new base_ratio_t(  960, 640, (int) (6.5*FRACUNIT), 48*15/16, 1.25f )// 5:4
+   };
+   
+   /** Used to determine the view center and projection in view units fixed_t */
    protected int centerxfrac,centeryfrac, projection;
 
    /** just for profiling purposes */
@@ -2394,10 +2411,20 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
        */
       public final void InitTextureMapping ()
       {
-          int         i;
-          int         x;
-          int         t;
-          int     focallength;
+          int         i,x,t;
+          int     focallength; // fixed_t
+          int fov=FIELDOFVIEW;
+          
+          // For widescreen displays, increase the FOV so that the middle part of the
+          // screen that would be visible on a 4:3 display has the requested FOV.
+          if (wide_centerx != centerx)
+          { // wide_centerx is what centerx would be if the display was not widescreen
+            fov = (int)(Math.atan((double)centerx * Math.tan((double)fov * Math.PI / FINEANGLES) / (double)wide_centerx) * FINEANGLES / Math.PI);
+            if (fov > 130 * FINEANGLES / 360)
+              fov = 130 * FINEANGLES / 360;
+          }
+          
+          
           
           // Use tangent table to generate viewangletox:
           //  viewangletox will give the next greatest x
@@ -3607,6 +3634,14 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
 
         protected int ds_x2;
 
+        
+        /** e6y: this is a precalculated value for more precise flats drawing (see R_MapPlane) 
+         *  "Borrowed" from PrBoom+
+         *  
+         * */
+        protected float viewfocratio;
+        protected int projectiony;
+        
         /** DrawSpan colormap. */
         protected  byte[] ds_colormap;
         /* pointer into colormap

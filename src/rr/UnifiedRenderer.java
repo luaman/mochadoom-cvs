@@ -43,7 +43,7 @@ public class UnifiedRenderer extends RendererState{
       DrawTLColumn=new R_DrawTLColumn();
       DrawFuzzColumn=new R_DrawFuzzColumn();
       DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
-      DrawColumnPlayer=new R_DrawColumn();
+      DrawColumnPlayer=DrawColumn;//new R_DrawColumn();
       DrawColumnLow=DrawColumn;
     
   }
@@ -992,11 +992,17 @@ public class UnifiedRenderer extends RendererState{
                   dc_yh = yh;
                   dc_texturemid = rw_bottomtexturemid;
                   dc_texheight=TexMan.getTextureheight(bottomtexture)>>FRACBITS;
+              if (TexMan.CheckTextureNameForNum(bottomtexture).equalsIgnoreCase("REDWALL")){
+                  System.out.println("REDWALL!");
+              }
                   dc_source = GetColumn(bottomtexture,
                               texturecolumn);
                   //System.out.println("Max data length:"+dc_source.length);
-                  //dc_source_ofs=0;
+                  try {
                   colfunc.invoke();
+                  } catch (ArrayIndexOutOfBoundsException e){
+                      System.err.printf("Error: %s on max len of %d for texture %s\n",e.getMessage(),dc_source.length, TexMan.CheckTextureNameForNum(bottomtexture));
+                  }
                   
                   floorclip[rw_x] = (short) mid;
               }
@@ -1498,8 +1504,7 @@ public class UnifiedRenderer extends RendererState{
       /** To treat as fixed_t */
       int[]           cachedystep=new int[SCREENHEIGHT];
 
-
-
+     
       //
       // R_InitPlanes
       // Only at game startup.
@@ -1553,6 +1558,9 @@ public class UnifiedRenderer extends RendererState{
           }
       }
 
+      boolean render_precise=true;
+      
+      if (!render_precise){
           if (planeheight != cachedheight[y])
           {
           cachedheight[y] = planeheight;
@@ -1571,7 +1579,21 @@ public class UnifiedRenderer extends RendererState{
           angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
           ds_xfrac = viewx + FixedMul(finecosine[angle], length);
           ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+      } else {
+          // Accuratized version, from Boom/PrBoom+
+          float slope, realy;
+          
+          distance = FixedMul (planeheight, yslope[y]);
+          slope = (float)(planeheight / 65535.0f / Math.abs(centery - y));
+          realy = (float)distance / 65536.0f;
 
+          ds_xstep = (int) (viewsin * slope * viewfocratio);
+          ds_ystep = (int) (viewcos * slope * viewfocratio);
+
+          ds_xfrac =  viewx + (int)(viewcos * realy) + (x1 - centerx) * ds_xstep;
+          ds_yfrac = -viewy - (int)(viewsin * realy) + (x1 - centerx) * ds_ystep;
+          
+      }
           // FIXME: alternate, more FPU-friendly implementation.
           //dlength = (distance);//*distscalef[x1];
           //dangle = (float) (2*Math.PI*(double)((viewangle +xtoviewangle[x1])&BITS32)/((double)0xFFFFFFFFL));
@@ -1893,8 +1915,7 @@ public class UnifiedRenderer extends RendererState{
           }
           
           // regular flat
-          ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFirstFlat() +
-                         TexMan.getFlatTranslation(pln.picnum),
+          ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
                          PU_STATIC,flat_t.class)).data;
           
           
@@ -1914,8 +1935,8 @@ public class UnifiedRenderer extends RendererState{
           planezlight = zlight[light];
 
           // We set those values at the border of a plane's top to a "sentinel" value...ok.
-          pln.setTop(pln.maxx+1,(char) 0xffff);
-          pln.setTop(pln.minx-1, (char) 0xffff);
+          pln.setTop(pln.maxx+1,visplane_t.SENTINEL);
+          pln.setTop(pln.minx-1, visplane_t.SENTINEL);
           
           stop = pln.maxx + 1;
 
@@ -2041,7 +2062,8 @@ public void SetupFrame (player_t player)
  viewplayer = player;
  viewx = player.mo.x;
  viewy = player.mo.y;
- viewangle = addAngles(player.mo.angle , viewangleoffset);
+ //viewangle = addAngles(player.mo.angle , viewangleoffset);
+ viewangle = player.mo.angle&BITS32;
  extralight = player.extralight;
 
  viewz = player.viewz;
@@ -2112,10 +2134,8 @@ public void ExecuteSetViewSize ()
 {
     int cosadj;
     int dy;
-    int     i;
-    int     j;
-    int     level;
-    int     startmap;   
+    int     i,j,cheight;
+    int     level, startmap;   
     
     setsizeneeded = false;
 
@@ -2141,6 +2161,26 @@ public void ExecuteSetViewSize ()
     centerxfrac=(centerx<<FRACBITS);
     centeryfrac=(centery<<FRACBITS);
     projection=centerxfrac;
+    
+    if (C2JUtils.flags(wide_ratio,4))
+    {
+      wide_centerx = centerx;
+      cheight = SCREENHEIGHT * BaseRatioSizes[wide_ratio].multiplier / 48;
+    }
+    else
+    {
+      wide_centerx = centerx * BaseRatioSizes[wide_ratio].multiplier / 48;
+      cheight = SCREENHEIGHT;
+    }
+    
+    // e6y: wide-res
+    projection = wide_centerx<<FRACBITS;
+
+  // proff 11/06/98: Added for high-res
+    projectiony = ((cheight * centerx * 320) / 200) / SCREENWIDTH * FRACUNIT;
+    // e6y: this is a precalculated value for more precise flats drawing (see R_MapPlane)
+    viewfocratio = (1.6f * centerx / wide_centerx) / ((float)SCREENWIDTH / (float)cheight);
+    
 
     // High detail
     if (detailshift==0)
@@ -2173,8 +2213,18 @@ public void ExecuteSetViewSize ()
     //pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
     
     
-    pspritescale=(int) (FRACUNIT*((float)SCREEN_MUL*viewwidth)/SCREENWIDTH);
-    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
+    /*pspritescale=(int) (FRACUNIT*((float)SCREEN_MUL*viewwidth)/SCREENWIDTH);
+    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));*/
+    
+    // psprite scales
+    // proff 08/17/98: Changed for high-res
+    // proff 11/06/98: Added for high-res
+    // e6y: wide-res
+    pspritexscale = (wide_centerx << FRACBITS) / 160;
+    pspriteyscale = (((cheight*viewwidth)/SCREENWIDTH) << FRACBITS) / 200;
+    pspriteiscale = FixedDiv (FRACUNIT, pspritexscale);
+    
+    
     skyscale=(int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
 
     BOBADJUST=(int)(Defines.SCREEN_MUL*65536.0)>>FRACBITS;
@@ -2186,11 +2236,11 @@ public void ExecuteSetViewSize ()
     
     // planes
     for (i=0 ; i<viewheight ; i++)
-    {
-    dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
-    dy = Math.abs(dy);
-    MyPlanes.yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
-    MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
+    {  // killough 5/2/98: reformatted
+    dy = Math.abs((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;    
+    MyPlanes.yslope[i] = FixedDiv(projectiony, dy);
+ // proff 08/17/98: Changed for high-res
+    MyPlanes.yslopef[i] = (projectiony/*(viewwidth<<detailshift)/2*/)/ dy;
     }
     
     double cosadjf;
@@ -2211,7 +2261,7 @@ public void ExecuteSetViewSize ()
     startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
     for (j=0 ; j<MAXLIGHTSCALE ; j++)
     {
-        level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
+        level = startmap - j/**SCREENWIDTH/(viewwidth<<detailshift)*//DISTMAP;
         
         if (level < 0)
         level = 0;

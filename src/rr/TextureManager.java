@@ -14,6 +14,13 @@ public interface TextureManager {
 
 	int TextureNumForName(String texname);
 	
+	
+	/**The "num" expected here is the internal flat number,
+	 * not the absolute lump number. So impement accordingly.
+	 * 
+	 * @param flatname
+	 * @return
+	 */
 	int FlatNumForName(String flatname);
 	
 	void PrecacheLevel() throws IOException;
@@ -32,6 +39,8 @@ public interface TextureManager {
 
 	int CheckTextureNumForName(String texnamem);
 
+	String CheckTextureNameForNum(int texnum);
+	
     int getTexturewidthmask(int tex);
    
     int getTextureColumnLump(int tex, int col);
@@ -46,7 +55,7 @@ public interface TextureManager {
 
     void InitTextures() throws IOException;
 
-    int getFirstFlat();
+    //int getFirstFlat();
 
     int getSkyTextureMid();
 
@@ -62,4 +71,7 @@ public interface TextureManager {
 
     void GenerateLookup(int texnum)
             throws IOException;
+    
+    int getFlatLumpNum(int flatnum);
+    
     }

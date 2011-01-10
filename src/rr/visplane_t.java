@@ -16,6 +16,7 @@ public class visplane_t{
     public static final int TOPOFFSET=1;
     public static final int MIDDLEPADDING=2;
     public static final int BOTTOMOFFSET=SCREENWIDTH+TOPOFFSET+MIDDLEPADDING;
+    public static final char SENTINEL=Character.MAX_VALUE;
     
     public visplane_t(){
         this.data=new char[4+2*SCREENWIDTH];

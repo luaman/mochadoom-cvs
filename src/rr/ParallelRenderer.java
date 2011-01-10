@@ -2184,8 +2184,7 @@ public class ParallelRenderer extends RendererState  {
          }
          
          // regular flat
-         vpw_ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFirstFlat() +
-                        TexMan.getFlatTranslation(pln.picnum),
+         vpw_ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
                         PU_STATIC,flat_t.class)).data;
          
          
