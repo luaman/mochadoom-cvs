@@ -1236,7 +1236,7 @@ public abstract class UnifiedGameMap implements ThinkerList{
 
             for (int j = 0; j < lastanim; j++) {
                 anim = anims[j];
-
+                
                 for (int i = anim.basepic; i < anim.basepic + anim.numpics; i++) {
                     pic =
                         anim.basepic

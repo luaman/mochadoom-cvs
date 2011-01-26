@@ -122,6 +122,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
     
     // initially.
     protected int MAXVISPLANES = Limits.MAXVISPLANES;
+    protected int MAXDRAWSEGS = Limits.MAXDRAWSEGS;
     
     /**
      * Clip values are the solid pixel bounding the range.
@@ -364,6 +365,19 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
      MAXVISPLANES*=2;
     
      System.out.println("Visplane buffer resized. Actual capacity "+visplanes.length);
+ }
+ 
+ protected final void ResizeDrawsegs() {
+     drawseg_t[] tmp=new drawseg_t[this.MAXDRAWSEGS*2];
+     System.arraycopy(drawsegs, 0, tmp, 0, MAXDRAWSEGS);
+     
+     C2JUtils.initArrayOfObjects(tmp,MAXDRAWSEGS,tmp.length);
+     
+     // Bye bye, old visplanes.
+     drawsegs=tmp;   
+     MAXDRAWSEGS*=2;
+    
+     System.out.println("Drawseg buffer resized. Actual capacity "+drawsegs.length);
  }
  
     public void updateStatus(DoomContext DC){

@@ -37,7 +37,7 @@ public class UnifiedRenderer extends RendererState{
       this.V=DM.V;
       this.I=DM.I;
       // Span functions
-      DrawSpan=new R_DrawSpanUnrolled();
+      DrawSpan=new R_DrawSpanUnrolled2();
       DrawSpanLow=new R_DrawSpanLow();
       DrawTranslatedColumn=new R_DrawTranslatedColumn();
       DrawTLColumn=new R_DrawTLColumn();
@@ -1061,8 +1061,11 @@ public class UnifiedRenderer extends RendererState{
           drawseg_t seg;
 
           // don't overflow and crash
-          if (ds_p == MAXDRAWSEGS)
-          return;     
+          if (ds_p == MAXDRAWSEGS){
+              ResizeDrawsegs();
+              //return;     
+          }
+          
               
       if( RANGECHECK){
           if (start >=viewwidth || start > stop)
@@ -1769,7 +1772,13 @@ public class UnifiedRenderer extends RendererState{
           return index;      
           }
           
-          // SPLIT: make a new visplane
+          // SPLIT: make a new visplane at "last" position, copying materials and light.
+          // TODO: visplane overflows could occur at this point.
+          
+          if (lastvisplane==MAXVISPLANES){
+              ResizeVisplanes();
+          }
+                    
           visplanes[lastvisplane].height = pl.height;
           visplanes[lastvisplane].picnum = pl.picnum;
           visplanes[lastvisplane].lightlevel = pl.lightlevel;
@@ -1920,7 +1929,7 @@ public class UnifiedRenderer extends RendererState{
           
           
           if (ds_source.length==0){
-              new Exception().printStackTrace();
+              System.err.printf("YOU READ SHIT %s %d %d %d\n ", W.GetNameForNum(TexMan.getFlatTranslation(pln.picnum)),TexMan.getFlatTranslation(pln.picnum),pln.picnum, ds_source.length);
           }
           
           planeheight = Math.abs(pln.height-viewz);
@@ -2219,15 +2228,16 @@ public void ExecuteSetViewSize ()
     // psprite scales
     // proff 08/17/98: Changed for high-res
     // proff 11/06/98: Added for high-res
-    // e6y: wide-res
-    pspritexscale = (wide_centerx << FRACBITS) / 160;
-    pspriteyscale = (((cheight*viewwidth)/SCREENWIDTH) << FRACBITS) / 200;
-    pspriteiscale = FixedDiv (FRACUNIT, pspritexscale);
-    
+    // e6y: wide-res TODO: they won't work correctly for now. Fuck this.
+    //pspritexscale = (wide_centerx << FRACBITS) / 160;
+    //pspriteyscale = (((cheight*viewwidth)/SCREENWIDTH) << FRACBITS) / 200;
+    //pspriteiscale = FixedDiv (FRACUNIT, pspritexscale);
+    pspritescale=(int) (FRACUNIT*((float)SCREEN_MUL*viewwidth)/SCREENWIDTH);
+    pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
     
     skyscale=(int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
 
-    BOBADJUST=(int)(Defines.SCREEN_MUL*65536.0)>>FRACBITS;
+    BOBADJUST=(int)(Defines.SCREEN_MUL*65536.0);
     WEAPONADJUST=(int) ((SCREENWIDTH/(2*Defines.SCREEN_MUL))*FRACUNIT);
     
     // thing clipping
@@ -2243,15 +2253,12 @@ public void ExecuteSetViewSize ()
     MyPlanes.yslopef[i] = (projectiony/*(viewwidth<<detailshift)/2*/)/ dy;
     }
     
-    double cosadjf;
     for (i=0 ; i<viewwidth ; i++)
     {
     // MAES: In this spot we must interpet it as SIGNED, else it's pointless, right?
     // MAES: this spot caused the "warped floor bug", now fixed. Don't forget xtoviewangle[i]!    
     cosadj = Math.abs(finecosine(xtoviewangle[i]));
-    cosadjf = Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
     MyPlanes.distscale[i] = FixedDiv (FRACUNIT,cosadj);
-    MyPlanes.distscalef[i] = (float) (1.0/cosadjf);
     }
     
     // Calculate the light levels to use

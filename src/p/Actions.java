@@ -5494,6 +5494,9 @@ mobj_t  thing )
             
     /** PIT_CheckLine
      * Adjusts tmfloorz and tmceilingz as lines are contacted
+     * 
+     * TODO: fix spechit overflow
+     * 
      */
 
             public boolean CheckLine(line_t ld){
