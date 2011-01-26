@@ -3140,6 +3140,97 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
       }
       }
       
+      protected final class R_DrawSpanUnrolled2 implements colfunc_t {
+          public void invoke(){
+
+              
+          int f_xfrac; // fixed_t
+          int f_yfrac; // fixed_t
+          int dest;
+          int count;
+          int spot;
+          
+          //System.out.println("R_DrawSpan: "+ds_x1+" to "+ds_x2+" at "+ ds_y);
+              
+          if (RANGECHECK) {
+              if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
+                      || ds_y > SCREENHEIGHT) {
+                  I.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
+              }
+              // dscount++;
+          }
+
+          f_xfrac = ds_xfrac;
+          f_yfrac = ds_yfrac;
+
+          dest = ylookup[ds_y] + columnofs[ds_x1];
+
+          count = ds_x2 - ds_x1;
+          while (count >= 4) {
+              // Current texture index in u,v.
+              spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+
+              // Lookup pixel from flat texture tile,
+              // re-index using light/colormap.
+              screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
+
+              // Next step in u,v.
+              f_xfrac += ds_xstep;
+              f_yfrac += ds_ystep;
+              
+              // Current texture index in u,v.
+              spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+
+              // Lookup pixel from flat texture tile,
+              // re-index using light/colormap.
+              screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
+
+              // Next step in u,v.
+              f_xfrac += ds_xstep;
+              f_yfrac += ds_ystep;
+              
+              // Current texture index in u,v.
+              spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+
+              // Lookup pixel from flat texture tile,
+              // re-index using light/colormap.
+              screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
+
+              // Next step in u,v.
+              f_xfrac += ds_xstep;
+              f_yfrac += ds_ystep;
+              
+              // Current texture index in u,v.
+              spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+
+              // Lookup pixel from flat texture tile,
+              // re-index using light/colormap.
+              screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
+
+              // Next step in u,v.
+              f_xfrac += ds_xstep;
+              f_yfrac += ds_ystep;
+              count-=4;
+          }
+          
+          while (count > 0) {
+              // Current texture index in u,v.
+              spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+
+              // Lookup pixel from flat texture tile,
+              // re-index using light/colormap.
+              screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
+
+              // Next step in u,v.
+              f_xfrac += ds_xstep;
+              f_yfrac += ds_ystep;
+              count--;
+          }
+              
+            
+          }
+      }
+      
       protected final class R_DrawColumnLow implements colfunc_t{
           public void invoke(){
           int count;
@@ -3792,6 +3883,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
            colormap = ds_colormap;
            dest = ylookup[ds_y] + columnofs[ds_x1];
            count = ds_x2 - ds_x1 + 1;
+           int rolls=0;
            while (count >= 4) {
                ytemp = position >> 4;
                ytemp = ytemp & 4032;
@@ -3819,6 +3911,14 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
                screen[dest+3] = colormap[0x00FF&source[spot]];
                count -= 4;
                dest += 4;
+               
+               // Half-assed attempt to fix precision by forced periodic realignment.
+               
+               if ((rolls++)%32==0){
+            	   position = ((((rolls*4)*ds_xstep+ds_xfrac) << 10) & 0xffff0000) |
+            	              ((((rolls*4)*ds_ystep+ds_yfrac) >> 6) & 0xffff);
+            	   }
+               
            }
            
            while (count > 0) {

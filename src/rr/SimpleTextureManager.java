@@ -12,7 +12,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.List;
 
 import p.LevelLoader;
 import doom.DoomStatus;
@@ -86,10 +89,10 @@ public class SimpleTextureManager
     protected char texturecoloffset;
     //short[][]    texturecolumnindexes;
     /** Stores [textures][columns][data]. */
-    protected byte[][][]          texturecomposite;
+    protected byte[][][] texturecomposite;
 
-    /** for global animation */
-    protected int[]        flattranslation, texturetranslation;
+    /** for global animation. Storage stores actual lumps, translation is a relative -> relative map */
+    protected int[]        flattranslation, flatstorage,texturetranslation;
     
     // This is also in DM, but one is enough, really.
     protected int skytexture,skytexturemid,skyflatnum;
@@ -615,62 +618,106 @@ public class SimpleTextureManager
      *
      * Scans WADs for F_START/F_END lumps, and also any additional
      * F1_ and F2_ pairs.
+     * 
+     * Correct behavior would be to detect F_START/F_END lumps, and skip any marker lumps
+     * sandwiched in between. If F_START and F_END are external, use external override.
+     * Also, in the presence of external FF_START lumps, merge their contents with those previously read.
+     * 
      *
      */
     
     @Override
     public final void InitFlats ()
     {
-        
-        ArrayList<Integer> firstflatlist=new ArrayList<Integer>(); // Remember ALL markers, including PWADs.
-        ArrayList<Integer> lastflatlist=new ArrayList<Integer>();
         numflats=0;
+        int extendedflatstart=-1;
+        int firstflatlump=W.GetNumForName(LUMPSTART); // This is the start of normal lumps.
+        if (FlatCache==null) FlatCache=new Hashtable<Integer,Integer>(); else FlatCache.clear();
+        Hashtable<String,Integer> FlatNames=new Hashtable<String,Integer> (); // Store names here.
         
-        // Find all flat markers in all WADs. 
-        // They should be paired, and the two lists should be equal in length.
-        for (int i=0;i<W.NumLumps();i++){
-            if (W.GetNameForNum(i).equalsIgnoreCase(LUMPSTART)) {
-                if (W.GetNameForNum(i+1).matches("F._START"))
-                       firstflatlist.add(i+1); 
-                else
-                    firstflatlist.add(i);
-            } 
-            if (W.GetNameForNum(i).equalsIgnoreCase(LUMPEND))  {
-                if (W.GetNameForNum(i-1).matches("F._END"))
-                    lastflatlist.add(i-1); 
-             else
-                 lastflatlist.add(i);
-            } 
+        // Normally, if we don't use Boom features, we could look for F_END and that's it.
+        // However we want to avoid using flat translation and instead store absolute lump numbers.
+        // So we need to do a clean parse.
+        
+        // The rule is: we scan from the very first F_START to the very first F_END.
+        // We discard markers, and only assign sequential numbers to valid lumps.
+        // These are the vanilla flats, and will work with fully merged PWADs too.
+        
+        int lastflatlump=W.GetNumForName(LUMPEND); // This is the start of normal lumps.
+        // Advance slowly.
+        int lump=firstflatlump;
+        int seq=0;
+        String name;
+        while (!(name=W.GetNameForNum(lump)).equalsIgnoreCase(LUMPEND)){
+            if (!W.isLumpMarker(lump)){
+                // Not a marker. Put in cache.
+                FlatCache.put(lump, seq);
+                // Save its name too.
+                FlatNames.put(name, lump);
+                seq++; // Advance sequence
+                numflats++; // Total flats do increase
+            }     
+            lump++; // Advance lump.
         }
-        
-        System.out.printf("Total flat areas: %d %d\n",firstflatlist.size(),lastflatlist.size());
 
-        // There are  Fx_START and Fx_END lumps sandwiched in between. We don't need them.
         
-        for (int i=0;i<firstflatlist.size();i++){
-            numflats+= (lastflatlist.get(i) - firstflatlist.get(i))-2;
-            }
-            
+        extendedflatstart=W.CheckNumForName(DEUTEX); // This is the start of DEUTEX flats.
+        if (extendedflatstart>-1){
+        // Advance slowly.
+        lump=extendedflatstart;
+
+        // Those flats are also marked by F_END, so the same rule applies.
+        while (!(name=W.GetNameForNum(lump)).equalsIgnoreCase(LUMPEND)){
+            if (!W.isLumpMarker(lump)){
+                // Not a marker. Check if it's supposed to replace something.
+                if (FlatNames.containsKey(name)){
+                    // Well, it is. Off with its name, save the lump number though.
+                    int removed=FlatNames.remove(name);
+                    // Put new name in list
+                    FlatNames.put(name, lump);
+                    // Remove old lump, but keep sequence.
+                    int oldseq=FlatCache.remove(removed);
+                    // Put new lump number with old sequence. 
+                    FlatCache.put(lump, oldseq);
+                    } else {  // Add normally
+                        FlatCache.put(lump, seq);
+                        // Save its name too.
+                        FlatNames.put(name, lump);
+                        seq++; // Advance sequence
+                        numflats++; // Total flats do increase
+                    }
+            }     
+            lump++; // Advance lump.
+        }
+        }
+        // So now we have a lump -> sequence number mapping.
+
             // Create translation table for global animation.
             flattranslation = new int[numflats];
-            FlatCache=new Hashtable<Integer,Integer>(numflats);
+            flatstorage = new int[numflats];
             
             // MAJOR CHANGE: flattranslation stores absolute lump numbers. Adding
-            // firstlump is not necessary anymore.
-            int k=0;
-            for (int i=0;i<firstflatlist.size();i++){
-                for (int j=firstflatlist.get(i)+2;j<lastflatlist.get(i)-1;j++){
-                flattranslation[k++]= j;
+            // firstlump is not necessary anymore.      
+            // Now, we're pretty sure that we have a progressive value mapping.
+   
+            Enumeration<Integer> stuff= FlatCache.keys();
+            while (stuff.hasMoreElements()){
+                int nextlump=stuff.nextElement();
+                flatstorage[FlatCache.get(nextlump)]=nextlump;
                 // Lump is used as the key, while the relative lump number is the value.
-                FlatCache.put(j, k-1);
-                System.out.printf("Verification: flat[%d] is %s in lump %d, translation is %d\n",(k-1),W.GetNameForNum(j),j,flattranslation[k-1]);
+                //FlatCache.put(j, k-1);
+                
                 }
+            
+              for (int i=0;i<numflats;i++){
+                  flattranslation[i]=i;
+                  System.out.printf("Verification: flat[%d] is %s in lump %d\n",i,W.GetNameForNum(flattranslation[i]),flatstorage[i]);  
+              }
             }
-
-        }
     
     private final static String LUMPSTART="F_START";
     private final static String LUMPEND="F_END";
+    private final static String DEUTEX="FF_START";
     
     /**
      * R_PrecacheLevel
@@ -851,21 +898,27 @@ public class SimpleTextureManager
     public final int getTextureTranslation(int texnum) {
         return texturetranslation[texnum];
     }
-
+    
+    /** Returns a flat after it has been modified by the translation table e.g. by animations */
     @Override
     public int getFlatTranslation(int flatnum) {
-        return flattranslation[flatnum];
+        return flatstorage[flattranslation[flatnum]];
     }
 
     @Override
-    public void setTextureTranslation(int texnum, int amount) {
+    public final void setTextureTranslation(int texnum, int amount) {
         texturetranslation[texnum]=amount;
     }
     
+    /** This affects ONLY THE TRANSLATION TABLE, not the lump storage.
+     * 
+     */
+    
     @Override
-    public void setFlatTranslation(int flatnum, int amount) {
+    public final void setFlatTranslation(int flatnum, int amount) {
         flattranslation[flatnum]=amount;
     }
+    
 
     
     //////////////////////////////////From r_sky.c /////////////////////////////////////
