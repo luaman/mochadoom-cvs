@@ -1,35 +1,5 @@
 package testers;
 
-import static data.Defines.PU_STATIC;
-import static m.fixed_t.FRACBITS;
-import hu.HU;
-
-import java.awt.Color;
-import java.awt.image.ColorModel;
-import java.awt.image.IndexColorModel;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import p.LevelLoader;
-
-import m.FixedFloat;
-import m.random;
-
-import rr.vertex_t;
-
-import data.mapvertex_t;
-import data.Defines.GameMission_t;
-import data.Defines.GameMode_t;
-import data.Defines.skill_t;
-import doom.DoomContext;
-import doom.DoomStatus;
-import doom.event_t;
-import doom.player_t;
-import doom.ticcmd_t;
-import doom.wbstartstruct_t;
-
-import utils.C2JUtils;
-import v.SimpleRenderer;
 import w.*;
 
 /** This is a very simple tester for the End Level screen drawer.

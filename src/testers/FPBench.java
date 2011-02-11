@@ -98,7 +98,7 @@ public static final int PRECISION=16;
     
     tan_0=System.nanoTime();
     for (int i=0;i<tests;i++){
-        fc[i]=fixed_t.FixedDiv(fa[i],fb[i]);    
+       // fc[i]=fixed_t.FixedDiv(fa[i],fb[i]);    
     }
     tan_1=System.nanoTime();
     
@@ -106,7 +106,7 @@ public static final int PRECISION=16;
    
     tan_0=System.nanoTime();
     for (int i=0;i<tests;i++){
-        fixed_t.FixedDiv(fa[i],fb[i],fc[i]);    
+        //fixed_t.FixedDiv(fa[i],fb[i],fc[i]);    
     }
     tan_1=System.nanoTime();
     

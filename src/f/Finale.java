@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import rr.Renderer;
 import rr.RendererState;
+import rr.SpriteManager;
 import rr.UnifiedRenderer;
 import rr.column_t;
 import rr.patch_t;
@@ -42,7 +43,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.7 2010/12/20 17:15:08 velktron Exp $
+// $Id: Finale.java,v 1.8 2011/02/11 00:11:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,7 +64,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.7 2010/12/20 17:15:08 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.8 2011/02/11 00:11:13 velktron Exp $";
 
   DoomGameInterface G;
   DoomStatus DS;

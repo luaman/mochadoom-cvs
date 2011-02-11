@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.17 2010/12/20 17:15:08 velktron Exp $
+// $Id: HU.java,v 1.18 2011/02/11 00:11:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.18  2011/02/11 00:11:13  velktron
+// A MUCH needed update to v1.3.
+//
 // Revision 1.17  2010/12/20 17:15:08  velktron
 // Made the renderer more OO -> TextureManager and other changes as well.
 //
@@ -100,12 +103,14 @@ package hu;
 // -----------------------------------------------------------------------------
 
 import static data.Defines.*;
+
+import java.text.Format;
+
 import defines.*;
 import static data.Limits.*;
 import static doom.englsh.*;
 import i.DoomStatusAware;
 import utils.C2JUtils;
-import utils.PrintfFormat;
 import v.DoomVideoRenderer;
 
 import m.DoomMenu;
@@ -125,7 +130,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.17 2010/12/20 17:15:08 velktron Exp $";
+        "$Id: HU.java,v 1.18 2011/02/11 00:11:13 velktron Exp $";
 
     // MAES: Status and wad data.
     WadLoader W;
@@ -475,7 +480,7 @@ public class HU implements DoomStatusAware {
 
     public void Init()
              {
-        PrintfFormat xxx = new PrintfFormat("STCFN%.3d");
+        String xxx = new String("STCFN%03d");
         int i;
         int j;
         String buffer;
@@ -492,7 +497,7 @@ public class HU implements DoomStatusAware {
         C2JUtils.initArrayOfObjects(hu_font, patch_t.class);
 
         for (i = 0; i < HU_FONTSIZE; i++) {
-            buffer = xxx.sprintf(j++);
+            buffer = String.format(xxx,j++);
             // hu_font[i] = ((patch_t[]) wd.CacheLumpName(buffer, PU_STATIC);
             hu_font[i] = (W.CachePatchName(buffer, PU_STATIC));
         }

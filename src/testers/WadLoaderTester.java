@@ -1,10 +1,8 @@
 package testers;
 
 import static data.Defines.PU_STATIC;
-import static m.fixed_t.FRACBITS;
 import hu.HU;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import m.FixedFloat;
@@ -12,7 +10,7 @@ import m.FixedFloat;
 import rr.vertex_t;
 
 import data.mapvertex_t;
-import data.Defines.GameMission_t;
+import defines.*;
 import doom.DoomContext;
 import doom.DoomStatus;
 

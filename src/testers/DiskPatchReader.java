@@ -1,14 +1,6 @@
 package testers;
 
-import hu.HU;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
 import rr.patch_t;
-
-import data.Defines.GameMission_t;
-import doom.DoomStatus;
 
 import w.*;
 

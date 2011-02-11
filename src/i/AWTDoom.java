@@ -53,18 +53,13 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
-import java.awt.image.WritableRaster;
 import java.util.LinkedList;
 import java.util.StringTokenizer;
 
 import javax.swing.JFrame;
 
 import v.BufferedRenderer;
-import v.DoomVideoRenderer;
-
-import data.Defines;
 import doom.DoomMain;
 import doom.event_t;
 import doom.evtype_t;

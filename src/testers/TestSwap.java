@@ -1,6 +1,5 @@
 package testers;
 
-import utils.PrintfFormat;
 import m.Swap;
 
 public class TestSwap {
@@ -14,21 +13,22 @@ public class TestSwap {
         char c=(char)0xBABE;
         int b=0XDEADBABE;
         
-        System.out.print(new PrintfFormat("%X\n").sprintf(a));
-        System.out.print(new PrintfFormat("%X\n").sprintf(a));
-        System.out.print(new PrintfFormat("%X\n").sprintf(b));
-        System.out.print(new PrintfFormat("%X\n").sprintf(c));
+        System.out.printf("%X\n",a);
+        System.out.printf("%X\n",b);
+        System.out.printf("%X\n",(int)c);
         a=Swap.SHORT(a);
         b=Swap.LONG(b);
         c=(char)Swap.SHORT(c);
-        System.out.print(new PrintfFormat("%X\n").sprintf(a));
-        System.out.print(new PrintfFormat("%X\n").sprintf(b));
-        System.out.print(new PrintfFormat("%X\n").sprintf(c));
+        System.out.printf("%X\n",a);
+        System.out.printf("%X\n",b);
+        System.out.printf("%X\n",(int)c);
         c=(char)Swap.SHORT(a);
-        System.out.print(new PrintfFormat("%X\n").sprintf(c));
+        System.out.printf("%X\n",(int)c);
+
         char aa=Swap.USHORT((char)a);
-        System.out.print(new PrintfFormat("%X\n").sprintf((char)a));
-        System.out.print(new PrintfFormat("%X\n").sprintf(aa));
+        System.out.printf("%X\n",(int)a);
+        System.out.printf("%X\n",(int)aa);
+
 
     }
 

@@ -48,7 +48,7 @@ public class AWTParallelRenderTester1 {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"});
     
     System.out.println("Total lumps read: "+W.numlumps);
 

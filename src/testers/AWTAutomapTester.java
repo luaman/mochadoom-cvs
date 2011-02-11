@@ -34,11 +34,7 @@ import v.SimpleRenderer;
 import w.DoomBuffer;
 import w.WadLoader;
 import data.Defines;
-import data.Defines.GameMission_t;
-import data.Defines.GameMode_t;
-import data.Defines.Language_t;
-import data.Defines.gamestate_t;
-import data.Defines.skill_t;
+import defines.*;
 import doom.DoomContext;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -145,8 +141,8 @@ public class AWTAutomapTester {
 
     long a=System.nanoTime();
     
-    DM.R.menuactive=false;
-    DM.R.automapactive=false;
+    DM.menuactive=false;
+    DM.automapactive=false;
         for (int i=0;i<100000;i++){
             int ba=DM.I.GetTime();
             while (ba-DM.I.GetTime()==0){

@@ -8,7 +8,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.20 2010/12/20 17:15:08 velktron Exp $
+// $Id: Tables.java,v 1.21 2011/02/11 00:11:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.21  2011/02/11 00:11:13  velktron
+// A MUCH needed update to v1.3.
+//
 // Revision 1.20  2010/12/20 17:15:08  velktron
 // Made the renderer more OO -> TextureManager and other changes as well.
 //
@@ -155,7 +158,7 @@ public final class Tables {
 
   /** 0x100000000 to 0x2000 */
   public static final int ANGLETOFINESHIFT =   31-BITSPRECISION;
-  
+    
 /* Binary Angle Measurement.
  * Some maths: their definition means that a range of 2pi is actually
  * mapped to 2^32 values!!! But the lookup tables are only 8K (2^13)
@@ -342,7 +345,7 @@ public static final int BAMDiv(int bam0, int bam1){
     return (int) ((long)(0x0FFFFFFFFL&bam0)/(0x0FFFFFFFFL&bam1));
 }
 
-/** Converts a long angle to a BAM LUT-ready angle (13 bits, between 0-8192). 
+/** Converts a long angle to a BAM LUT-ready angle (13 bits, between 0-8191). 
  *  Cuts away rollover. 
  *  
  * @param angle
@@ -353,7 +356,7 @@ public static final int toBAMIndex(long angle){
     return (int) ((angle&BITS32)>>>ANGLETOFINESHIFT);
 }
 
-/** Converts a long angle to a BAM LUT-ready angle (13 bits, between 0-8192). 
+/** Converts a long angle to a TAN BAM  LUT-ready angle (12 bits, between 0-4195). 
  *  Cuts away rollover. 
  *  
  * @param angle
@@ -361,7 +364,7 @@ public static final int toBAMIndex(long angle){
  */
 
 public static final int toFineTanIndex(long angle){
-    return (int) ((angle&BITS32)>>>ANGLETOFINESHIFT);
+    return (int) ((angle&BITS31)>>>ANGLETOFINESHIFT);
 }
 
 /** Converts an 32-bit int angle to a BAM LUT-ready angle (13 bits, between 0-8192). 

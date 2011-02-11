@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.7 2010/12/20 17:15:08 velktron Exp $
+// $Id: EndLevel.java,v 1.8 2011/02/11 00:11:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.8  2011/02/11 00:11:13  velktron
+// A MUCH needed update to v1.3.
+//
 // Revision 1.7  2010/12/20 17:15:08  velktron
 // Made the renderer more OO -> TextureManager and other changes as well.
 //
@@ -75,7 +78,6 @@ import doom.wbstartstruct_t;
 import m.random;
 import rr.*;
 import s.DoomSoundInterface;
-import utils.PrintfFormat;
 import v.DoomVideoRenderer;
 
 /** This class (stuff.c) seems to implement the endlevel screens.
@@ -1446,22 +1448,22 @@ protected void loadData()
 //				       PU_, 0);
 	
 	lnames=new patch_t[NUMCMAPS];
-    PrintfFormat xxx=new PrintfFormat("CWILV%2.2d");
+    String xxx=new String("CWILV%02d");
     //String buffer;
 	for (i=0 ; i<NUMCMAPS ; i++)
 	{								
-	    name=xxx.sprintf(i);
+	    name=String.format(xxx,i);
 	    lnames[i] = (patch_t) W.CacheLumpName(name, PU_STATIC,patch_t.class);
 	}					
     }
     else
     {
 	lnames = new patch_t[NUMMAPS];
-    PrintfFormat xxx=new PrintfFormat("WILV%d%d");
+	String xxx=new String("WILV%d%d");
 
 	for (i=0 ; i<NUMMAPS ; i++)
 	{
-	    name=xxx.sprintf(new Object[]{wbs.epsd, i});
+	    name=String.format(xxx,wbs.epsd, i);
 	    lnames[i] = (patch_t) W.CacheLumpName(name, PU_STATIC,patch_t.class);
 	}
 
@@ -1476,7 +1478,8 @@ protected void loadData()
 	
 	if (wbs.epsd < 3)
 	{
-	    xxx=new PrintfFormat("WIA%d%.2d%.2d");
+	    xxx=new String("WIA%d%02d%02d");
+	    //xxx=new PrintfFormat("WIA%d%.2d%.2d");
 	    for (j=0;j<NUMANIMS[wbs.epsd];j++)
 	    {
 		a = anims[wbs.epsd][j];
@@ -1486,7 +1489,7 @@ protected void loadData()
 		    if (wbs.epsd != 1 || j != 8) 
 		    {
 			// animations
-			name=xxx.sprintf(new Object[] {wbs.epsd, j, i});  
+			name=String.format(xxx,wbs.epsd, j, i);  
 			a.p[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);
 		    }
 		    else
@@ -1502,11 +1505,11 @@ protected void loadData()
     // More hacks on minus sign.
     wiminus = (patch_t)W.CacheLumpName("WIMINUS", PU_STATIC,patch_t.class); 
 
-    PrintfFormat xxx=new PrintfFormat("WINUM%d");
+    String xxx=new String("WINUM%d");
     for (i=0;i<10;i++)
     {
 	 // numbers 0-9
-	name=xxx.sprintf(i);     
+	name=String.format(xxx,i);     
 	num[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);
     }
 
@@ -1569,17 +1572,16 @@ protected void loadData()
     // dead face
     bstar = (patch_t)W.CacheLumpName("STFDEAD0", PU_STATIC,patch_t.class);    
 
-    PrintfFormat xx1=new PrintfFormat("STPB%d");
-    PrintfFormat xx2=new PrintfFormat("WIBP%d");
+    String xx1=new String("STPB%d");
+    String xx2=new String("WIBP%d");
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
 	// "1,2,3,4"
-	name= xx1.sprintf(i);      
+    name= String.format(xx1,i);
 	p[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);;
 
 	// "1,2,3,4"
-
-	name=xx2.sprintf(i+1);     
+	name= String.format(xx2,i+1);
 	bp[i] = (patch_t)W.CacheLumpName(name, PU_STATIC,patch_t.class);;
     }
 

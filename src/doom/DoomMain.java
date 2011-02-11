@@ -39,7 +39,6 @@ import rr.subsector_t;
 import s.DummySoundDriver;
 import st.StatusBar;
 import utils.C2JUtils;
-import utils.PrintfFormat;
 import v.BufferedRenderer;
 import w.DoomFile;
 import w.WadLoader;
@@ -56,7 +55,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.31 2011/01/10 16:40:54 velktron Exp $
+// $Id: DoomMain.java,v 1.32 2011/02/11 00:11:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -71,6 +70,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.32  2011/02/11 00:11:13  velktron
+// A MUCH needed update to v1.3.
+//
 // Revision 1.31  2011/01/10 16:40:54  velktron
 // Some v1.3 commits: OSX fix, limit-removing flat management (to fix),
 //
@@ -198,7 +200,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.31 2011/01/10 16:40:54 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.32 2011/02/11 00:11:13 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1071,8 +1073,8 @@ public void Start ()
 	  case registered:
 	    file.append("~");
 	    file.append(DEVMAPS);
-	    file.append(PrintfFormat.sprintf("E%cM%c.wad", myargv[p+1], myargv[p+2]));
-	    file.append(PrintfFormat.sprintf("Warping to Episode %s, Map %s.\n",
+	    file.append(String.format("E%cM%c.wad", myargv[p+1], myargv[p+2]));
+	    file.append(String.format("Warping to Episode %s, Map %s.\n",
 		   myargv[p+1],myargv[p+2]));
 	    break;
 	    
@@ -1082,13 +1084,13 @@ public void Start ()
 	    if (p<10){
 	        file.append("~");
 	        file.append(DEVMAPS);
-	        file.append(PrintfFormat.sprintf("cdata/map0%i.wad", p));
+	        file.append(String.format("cdata/map0%i.wad", p));
 	    }
 	    else
 	      {
 	           file.append("~");
 	            file.append(DEVMAPS);
-	            file.append(PrintfFormat.sprintf("cdata/map%i.wad", p));
+	            file.append(String.format("cdata/map%i.wad", p));
 	      }
 	    break;
 	}

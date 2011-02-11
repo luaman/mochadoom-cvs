@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.4 2010/12/15 16:12:19 velktron Exp $
+// $Id: DoomSystem.java,v 1.5 2011/02/11 00:11:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.5  2011/02/11 00:11:13  velktron
+// A MUCH needed update to v1.3.
+//
 // Revision 1.4  2010/12/15 16:12:19  velktron
 // Changes in Wiper code and alternate timing method, hoping to fix the Athlon X2
 //
@@ -55,11 +58,8 @@
 
 package i;
 
-import doom.DoomInterface;
 import doom.DoomMain;
-import doom.event_t;
 import doom.ticcmd_t;
-import utils.PrintfFormat;
 import static data.Defines.TICRATE;
 
 public class DoomSystem implements DoomSystemInterface{
@@ -217,7 +217,7 @@ public void Error (String error, Object ... args)
     // Message first.
     //va_start (argptr,error);
     System.err.print("Error: ");
-    System.err.print(new PrintfFormat(error).sprintf(args));
+    System.err.printf(error,args);
     System.err.print("\n");
     //va_end (argptr);
 
@@ -241,7 +241,7 @@ public void Error (String error)
     // Message first.
     //va_start (argptr,error);
     System.err.print("Error: ");
-    System.err.print(new PrintfFormat(error).sprintf());
+    System.err.printf(error);
     System.err.print("\n");
     //va_end (argptr);
 
