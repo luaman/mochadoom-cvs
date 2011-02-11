@@ -363,14 +363,8 @@ public class ParallelRenderer extends RendererState  {
         	 // (probably angles get fucked up), however it seems rare enough to just 
              // "swallow" the exception. You can eliminate it by anding with 0x1FFF if you're so inclined. 
               
-              // try{ 
               texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
-        	/*  } catch (ArrayIndexOutOfBoundsException e){
-        	      System.err.println("Error! Angle "+angle +" rw_centerangle "+ Long.toHexString(rw_centerangle)+"xtoviewangle[rw_x]"+Long.toHexString(xtoviewangle[rw_x]));
-        		 // e.printStackTrace();
-        	  }*/
-    
-              texturecolumn >>= FRACBITS;
+               texturecolumn >>= FRACBITS;
               // calculate lighting
               index = rw_scale>>LIGHTSCALESHIFT;
 
@@ -393,12 +387,6 @@ public class ParallelRenderer extends RendererState  {
               dc_texheight = Math.min(TexMan.getTextureheight(midtexture)>>FRACBITS,128); // killough
               dc_texturemid = rw_midtexturemid;              
               dc_source = GetColumn(midtexture,texturecolumn);
-
-              
-              // Tutti-frutti effect on short or masked textures.              
-//              dc_texheight = Math.min(textureheight[midtexture],128)>>FRACBITS; // killough
-//              dc_texturemid = rw_midtexturemid;              
-//              dc_source = GetColumn(midtexture,texturecolumn);
 
               StoreRenderingInstruction();
               /*centery, dc_iscale, dc_source_ofs, dc_texturemid, dc_x, dc_yh, dc_yl, 

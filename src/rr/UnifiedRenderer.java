@@ -131,28 +131,29 @@ public class UnifiedRenderer extends RendererState{
           // texturecolumn and lighting are independent of wall tiers
           if (segtextured)
           {
-              // calculate texture offset
-        	  //try{
-        	  // MAES: the sum of angles here must not exceed the tangent threshold, aka
-        	  // roughly 90 degrees. No idea how they guaranteed that, however it may lead 
-        	  // to the occasional overflow at certain view angles. Safe range for
-        	  // tangents is just 12 bits, not 13. Therefore we either use
-        	  // a special shifting by 20 positions instead of 19, or we catch
-        	  // these errors. It's extremely hard to replicate, as well.
-              // Another anomalous spot, the computation are ok-ish if performed as signed numbers.
-              // xtoviewangle is normall -/+ 45 degrees 
-        	      
-              angle = Tables.toBAMIndex((int)rw_centerangle + (int)xtoviewangle[rw_x]);
-              //angle = (int) (((rw_centerangle + (int)xtoviewangle[rw_x])&BITS32)>>>ANGLETOFINESHIFT);
-              texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
+        	  // calculate texture offset
+         	 
+    		  
+      		// CAREFUL: a VERY anomalous point in the code. Their sum is supposed
+      		// to give an angle not exceeding 45 degrees (or 0x0FFF after shifting).
+      		// If added with pure unsigned rules, this doesn't hold anymore,
+      		// not even if accounting for overflow.
+              angle = Tables.toBAMIndex(rw_centerangle + (int)xtoviewangle[rw_x]);
+              //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
+      		//angle&=0x1FFF;
               
-        	  //} catch (ArrayIndexOutOfBoundsException e){
-        		//  System.err.println(">>>>>>>>>>>> Texture offset off bounds! <<<<<<<<<<<<");
-        	  //}
+            // FIXME: We are accessing finetangent here, the code seems pretty confident
+            // in that angle won't exceed 4K no matter what. But xtoviewangle
+            // alone can yield 8K when shifted.
+            // This usually only overflows if we idclip and look at certain directions 
+      	 // (probably angles get fucked up), however it seems rare enough to just 
+           // "swallow" the exception. You can eliminate it by anding with 0x1FFF if you're so inclined. 
+            
+            texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
+             texturecolumn >>= FRACBITS;
+            // calculate lighting
+            index = rw_scale>>LIGHTSCALESHIFT;
     
-              texturecolumn >>= FRACBITS;
-              // calculate lighting
-              index = rw_scale>>LIGHTSCALESHIFT;
 
               if (index >=  MAXLIGHTSCALE )
               index = MAXLIGHTSCALE-1;
