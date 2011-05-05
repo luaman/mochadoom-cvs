@@ -1,6 +1,11 @@
 package doom;
 
-public class ticcmd_t implements DatagramSerializable{
+import java.io.IOException;
+
+import w.DoomFile;
+import w.ReadableDoomObject;
+
+public class ticcmd_t implements DatagramSerializable, ReadableDoomObject{
     
     // The length datagrams are supposed to have, for full compatibility.
     
@@ -131,5 +136,20 @@ public class ticcmd_t implements DatagramSerializable{
     public byte[] cached() {
         return this.buffer;
     }
+
+    @Override
+    public void read(DoomFile f)
+            throws IOException {
+        forwardmove=f.readByte();
+        sidemove=   f.readByte();        
+        angleturn=f.readShort();
+        consistancy=f.readShort();
+        // We blow these up to full chars.
+        chatchar=f.readChar();
+        buttons=f.readChar();
+        
+    }
+    
+    
    
 };
