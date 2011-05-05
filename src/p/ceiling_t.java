@@ -1,8 +1,11 @@
 package p;
 
+import java.io.IOException;
 import rr.SectorAction;
+import w.DoomFile;
+import w.ReadableDoomObject;
 
-public class ceiling_t extends SectorAction{
+public class ceiling_t extends SectorAction implements ReadableDoomObject{
 
         public ceiling_e   type;
         /** fixed_t */
@@ -20,5 +23,21 @@ public class ceiling_t extends SectorAction{
         public int     tag;                   
         public int     olddirection;
         
-    }
+        // HACK for speed.
+        public static final ceiling_e[] values=ceiling_e.values();
+        
+        @Override
+        public void read(DoomFile f) throws IOException{
+            // TODO: probably some sort of sanity check built into the type
+            // itself would be nice.
+            type=values[f.readInt()];
+            bottomheight=f.readInt();
+            topheight=f.readInt();
+            speed=f.readInt();
+            crush=f.readBoolean();
+            direction=f.readInt();
+            tag=f.readInt();
+            olddirection=f.readInt();            
+            }
 
+        }
