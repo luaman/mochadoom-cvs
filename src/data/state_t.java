@@ -1,9 +1,13 @@
 package data;
 
+import java.io.IOException;
+
+import w.DoomFile;
+import w.ReadableDoomObject;
 import doom.think_t;
 import defines.statenum_t;
 
-public class state_t {
+public class state_t implements ReadableDoomObject{
 
 	public state_t(){
 		
@@ -53,4 +57,17 @@ public class state_t {
         }
         
         protected static StringBuilder sb=new StringBuilder();
+
+        @Override
+        public void read(DoomFile f)
+                throws IOException {
+            this.sprite = spritenum_t.values()[f.readInt()];
+            this.frame = f.readInt();
+            this.tics = f.readLong();
+            this.action = think_t.values()[f.readInt()];
+            this.nextstate = statenum_t.values()[f.readInt()];
+            this.misc1 = f.readInt();
+            this.misc2 = f.readInt();
+            
+        }
 }
