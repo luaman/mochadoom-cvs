@@ -1,7 +1,6 @@
 package p;
 
 import rr.line_t;
-import m.fixed_t;
 
 /** An object that carries...interception information, I guess...with either a line
  *  or an object?
