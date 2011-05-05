@@ -126,5 +126,9 @@ public enum think_t {
     }
 
     private int type;
+    
+    public String ToString(){
+        return this.name()+" Type: "+type;
+    }
 	
 }

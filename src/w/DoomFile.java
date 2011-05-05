@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.10 2010/12/12 21:27:17 velktron Exp $
+//$Id: DoomFile.java,v 1.11 2011/05/05 17:24:22 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -230,7 +230,7 @@ public class DoomFile extends RandomAccessFile {
        }
    }
    
-   public void readIntArray(int[] s,int len, ByteOrder bo) throws IOException {
+   public final void readIntArray(int[] s,int len, ByteOrder bo) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
@@ -241,6 +241,23 @@ public class DoomFile extends RandomAccessFile {
            }
        }
    }
+   
+   public final void readIntArray(int[] s,ByteOrder bo) throws IOException {
+       readIntArray(s,s.length,bo);
+   }
+   
+   public void readBooleanArray(boolean[] s,int len) throws IOException {
+
+       if ((s==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,s.length);i++){
+           s[i]=this.readBoolean();
+           }
+   }
+   
+   public final void readBooleanArray(boolean[] s) throws IOException {
+       readBooleanArray(s,s.length);
+       }
    
    public void writeCharArray(char[] charr,int len) throws IOException {
 

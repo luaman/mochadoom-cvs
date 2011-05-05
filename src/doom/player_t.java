@@ -793,6 +793,7 @@ SetPsprite
     // Call action routine.
     // Modified handling.
     try {
+       // System.out.println("Attempting to perform "+state);
     if (state.action.getType()==acp2)
     {
         P.A.dispatch(state.action,this, psp);

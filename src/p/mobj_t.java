@@ -7,8 +7,13 @@ import static data.Defines.VIEWHEIGHT;
 import static data.info.mobjinfo;
 import static data.info.states;
 import static p.MapUtils.AproxDistance;
+
+import java.io.IOException;
+
 import m.random;
 import rr.subsector_t;
+import w.DoomFile;
+import w.ReadableDoomObject;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -86,7 +91,7 @@ import doom.thinker_t;
  *
  */
 
-public class mobj_t extends thinker_t implements Interceptable   {
+public class mobj_t extends thinker_t implements Interceptable, ReadableDoomObject   {
    
     Actions A;    
     
@@ -446,12 +451,39 @@ public class mobj_t extends thinker_t implements Interceptable   {
         }
     } 
     
-
-   
-
     
-    
+  //_D_: to permit this object to save/load
+    public void read(DoomFile f) throws IOException {
+        this.x=f.readInt();
+        this.y=f.readInt();
+        this.z=f.readInt();
+        this.angle=f.readInt();
+        this.sprite=spritenum_t.values()[f.readInt()];
+        this.frame=f.readInt();
+        this.floorz=f.readInt();
+        this.ceilingz=f.readInt();
+        this.radius=f.readInt();
+        this.height=f.readInt();
+        this.momx=f.readInt();
+        this.momy=f.readInt();
+        this.momz=f.readInt();
+        this.validcount=f.readInt();
+        this.type=mobjtype_t.values()[f.readInt()];
+        this.tics=f.readLong();
+        this.state.read(f);
+        this.flags=f.readInt();
+        this.health=f.readInt();
+        this.movedir=f.readInt();
+        this.movecount=f.readInt();
+        this.reactiontime=f.readInt();
+        this.threshold=f.readInt();
+        this.player.read(f);
+        this.lastlook=f.readInt();
+     }
     
     private random RND;
-    
+    public int         eflags; //DOOM LEGACY
+
+    // TODO: a linked list of sectors where this object appears
+    // public msecnode_t touching_sectorlist;
     }

@@ -111,7 +111,7 @@ import doom.weapontype_t;
     *
     */
 
-public class Actions extends UnifiedGameMap implements DoomStatusAware{
+public class Actions extends UnifiedGameMap {
   // plasma cells for a bfg attack
   private static int BFGCELLS      =  40;      
 
@@ -1508,7 +1508,9 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
    */
   
   public void dispatch(think_t action, Object a, Object b){
+      //System.out.println("Dispatching: "+action);
       switch (action){
+      
           case P_MobjThinker:
         	  P_MobjThinker((mobj_t)a);
         	  break;
@@ -1744,9 +1746,10 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
           case	T_MoveFloor:
         	  this.MoveFloor((floormove_t) a);
         	  break;
-          case	T_VerticalDoor:
-        	  this.VerticalDoor((line_t)a,(mobj_t) b);
-        	  break;
+          case    T_VerticalDoor:
+              //_D_: changed this to make it work
+              this.VerticalDoor((vldoor_t)a/* (line_t)a,(mobj_t) b*/);
+              break;
           case	T_PlatRaise:
         	  this.PlatRaise((plat_t)a);
           	break;
@@ -1969,7 +1972,10 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
       damage *= 10;
 
       angle = player.mo.angle;
-      angle = (angle+(RND.P_Random()-RND.P_Random())<<18)&BITS32;
+      //angle = (angle+(RND.P_Random()-RND.P_Random())<<18)/*&BITS32*/;
+      // _D_: for some reason, punch didnt work until I change this
+      // I think it's because of "+" VS "<<" prioritys...
+      angle += (RND.P_Random()-RND.P_Random())<<18;
       slope = AimLineAttack (player.mo, angle, MELEERANGE);
       LineAttack (player.mo, angle, MELEERANGE, slope, damage);
 
@@ -2101,23 +2107,24 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
   void P_BulletSlope (mobj_t mo)
   {
       long an;
-      
+
       // see which target is to be aimed at
       // FIXME: angle can already be negative here.
       // Not a problem if it's just moving about (accumulation will work)
       // but it needs to be sanitized before being used in any function.
       an = mo.angle;
-      bulletslope = AimLineAttack (mo, an&BITS32, 16*64*FRACUNIT);
+      //_D_: &BITS32 will be used later in this function, by fine(co)sine()
+      bulletslope = AimLineAttack (mo, an/*&BITS32*/, 16*64*FRACUNIT);
 
       if (!eval(linetarget))
       {
-      an += 1<<26;
-      bulletslope = AimLineAttack (mo, an&BITS32, 16*64*FRACUNIT);
-      if (!eval(linetarget))
-      {
-          an -= 2<<26;
-          bulletslope = AimLineAttack (mo, an&BITS32, 16*64*FRACUNIT);
-      }
+          an += 1<<26;
+          bulletslope = AimLineAttack (mo, an/*&BITS32*/, 16*64*FRACUNIT);
+          if (!eval(linetarget))
+          {
+              an -= 2<<26;
+              bulletslope = AimLineAttack (mo, an/*&BITS32*/, 16*64*FRACUNIT);
+          }
       }
   }
 
@@ -2498,7 +2505,7 @@ public class Actions extends UnifiedGameMap implements DoomStatusAware{
         }
         
         // check for missile attack
-        if (actor.info.missilestate != null)
+        if (actor.info.missilestate!=statenum_t.S_NULL /*!= null*/) //_D_: this caused a bug where Demon for example were disappearing
         {
         if (DM.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
             && !DM.fastparm && actor.movecount!=0)
@@ -4732,7 +4739,7 @@ CheckMissileSpawn (th);
         if ((target.flags & MF_COUNTKILL)!=0)
             source.player.killcount++;    
 
-        if (target.player!=null) ;
+        if (target.player!=null) //; <-- _D_: that semicolon caused a bug!
            source.player.frags[target.player.identify()]++;
            // It's probably intended to increment the frags of source player vs target player. Lookup? 
         }
@@ -7234,10 +7241,6 @@ mobj_t  thing )
     boolean     nofit;
 
 
-    
-
-
-
     //
     // P_ChangeSector
     //
@@ -7259,6 +7262,16 @@ mobj_t  thing )
         
         
         return nofit;
+    }
+
+    /** _D_ */
+    public static interface PITLineFunction {
+        public boolean dispatch(line_t ld);
+    }
+    
+    /** _D_ */
+    public static interface PITThingFunction {
+        public boolean dispatch(mobj_t thing);
     }
     
     /**
@@ -7411,18 +7424,18 @@ mobj_t  thing )
 
      x1 -= LL.bmaporgx;
      y1 -= LL.bmaporgy;
-     xt1 = x1>>>MAPBLOCKSHIFT;
-     yt1 = y1>>>MAPBLOCKSHIFT;
+     xt1 = x1>>MAPBLOCKSHIFT;
+     yt1 = y1>>MAPBLOCKSHIFT;
 
      x2 -= LL.bmaporgx;
      y2 -= LL.bmaporgy;
-     xt2 = x2>>>MAPBLOCKSHIFT;
-     yt2 = y2>>>MAPBLOCKSHIFT;
+     xt2 = x2>>MAPBLOCKSHIFT;
+     yt2 = y2>>MAPBLOCKSHIFT;
 
      if (xt2 > xt1)
      {
      mapxstep = 1;
-     partial = FRACUNIT - ((x1>>>MAPBTOFRAC)&(FRACUNIT-1));
+     partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
      ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
      }
      else if (xt2 < xt1)
@@ -7438,19 +7451,19 @@ mobj_t  thing )
      ystep = 256*FRACUNIT;
      }   
 
-     yintercept = (y1>>>MAPBTOFRAC) + FixedMul (partial, ystep);
+     yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
 
      
      if (yt2 > yt1)
      {
      mapystep = 1;
-     partial = FRACUNIT - ((y1>>>MAPBTOFRAC)&(FRACUNIT-1));
+     partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
      xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else if (yt2 < yt1)
      {
      mapystep = -1;
-     partial = (y1>>>MAPBTOFRAC)&(FRACUNIT-1);
+     partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
      xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else
@@ -7459,7 +7472,7 @@ mobj_t  thing )
      partial = FRACUNIT;
      xstep = 256*FRACUNIT;
      }   
-     xintercept = (x1>>>MAPBTOFRAC) + FixedMul (partial, xstep);
+     xintercept = (x1>>MAPBTOFRAC) + FixedMul (partial, xstep);
      
      // Step through map blocks.
      // Count is present to prevent a round off error
@@ -7487,12 +7500,14 @@ mobj_t  thing )
          break;
      }
      
-     if ( (yintercept >>> FRACBITS) == mapy)
+     boolean changeX = (yintercept >> FRACBITS) == mapy;
+     boolean changeY = (xintercept >> FRACBITS) == mapx;
+     if (changeX) // _D_ there is a rare case when changeX and changeY are both true, that is why I modified this section
      {
          yintercept += ystep;
          mapx += mapxstep;
      }
-     else if ( (xintercept >>> FRACBITS) == mapx)
+     if (changeY)
      {
          xintercept += xstep;
          mapy += mapystep;
@@ -7995,8 +8010,9 @@ mobj_t  thing )
   }
   
   public Actions(DoomContext DC){
-	  this.updateStatus(DC);
-	  this.thinkercap=new thinker_t();
+      super(DC);
+      this.A=this;
+	  
   }
 
   //
@@ -8022,29 +8038,6 @@ mobj_t  thing )
 
 
 
-@Override
-public void updateStatus(DoomContext DC) {
-		this.I=DC.I;
-		this.DG=DC.DG;
-		this.S=DC.S;
-  		this.LL=DC.LL;
-  		this.RND=DC.RND;
-        this.DM=DC.DM;
-        this.R=DC.R;
-        this.W=DC.W;
-        this.AM=DC.AM;
-        this.SW=new Switches();
-        this.LEV=new Lights();
-        this.SPECS=new Specials();
-        this.PEV=new Plats();
-        this.ST= (StatusBar) DC.ST;
-        this.AM=DC.AM;
-        this.EN=new Enemies();
-        this.A=this;
-        this.HU=DC.HU;
-        this.TM=DC.TM;
-        this.SM=DC.SM;
-		}
-  
+
 }
 

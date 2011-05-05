@@ -48,7 +48,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.15 2010/12/20 17:15:08 velktron Exp $
+// $Id: LevelLoader.java,v 1.16 2011/05/05 17:24:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +63,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.16  2011/05/05 17:24:22  velktron
+// Started merging more of _D_'s changes.
+//
 // Revision 1.15  2010/12/20 17:15:08  velktron
 // Made the renderer more OO -> TextureManager and other changes as well.
 //
@@ -147,7 +150,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.15 2010/12/20 17:15:08 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.16 2011/05/05 17:24:22 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -840,7 +843,9 @@ public int bmaporgy;
       this.LoadNodes (lumpnum+ML_NODES);
       this.LoadSegs (lumpnum+ML_SEGS);
       
-      //rejectmatrix = W.CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL);
+    //_D_: uncommented the rejectmatrix variable, this permitted changing level to work
+      DoomBuffer db = (DoomBuffer)W.CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL, null);
+      rejectmatrix = db.getBuffer().array();//W.CacheLumpNum (lumpnum+ML_REJECT,PU_L
       this.GroupLines ();
 
       DM.bodyqueslot = 0;

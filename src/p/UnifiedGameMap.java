@@ -48,6 +48,7 @@ import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
 import automap.DoomAutoMap;
 import hu.HU;
+import i.DoomStatusAware;
 import i.DoomSystemInterface;
 import m.random;
 import rr.RendererState;
@@ -68,6 +69,7 @@ import data.mobjtype_t;
 import data.state_t;
 import defines.*;
 import data.sounds.sfxenum_t;
+import doom.DoomContext;
 import doom.DoomGame;
 import doom.DoomMain;
 import doom.player_t;
@@ -77,8 +79,22 @@ import doom.weapontype_t;
 
 // // FROM SIGHT
 
-public abstract class UnifiedGameMap implements ThinkerList{
+public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
+    
+    
+    public UnifiedGameMap(DoomContext DC){
+        this.SW=new Switches();
+        this.LEV=new Lights();
+        this.SPECS=new Specials();
+        this.PEV=new Plats();
+        this.See=new Sight(); // Didn't initialize that.
+        this.EN=new Enemies();
+        this.thinkercap=new thinker_t();
+        this.updateStatus(DC);
 
+    }
+    
+    
     // ///////////////// STATUS ///////////////////
 
     WadLoader W;
@@ -107,21 +123,40 @@ public abstract class UnifiedGameMap implements ThinkerList{
     
     SpriteManager SM;
 
+    @Override
+    public void updateStatus(DoomContext DC) {
+            this.I=DC.I;
+            this.DG=DC.DG;
+            this.S=DC.S;
+            this.LL=DC.LL;
+            this.RND=DC.RND;
+            this.DM=DC.DM;
+            this.R=DC.R;
+            this.W=DC.W;
+            this.AM=DC.AM;
+            this.ST= (StatusBar) DC.ST;
+            this.AM=DC.AM;
+            this.HU=DC.HU;
+            this.TM=DC.TM;
+            this.SM=DC.SM;
+            }
+      
+    
     // //////////// Internal singletons //////////////
     public Actions A;
 
-    Specials SPECS;
+    protected Specials SPECS;
 
     // DoorsFloors EV;
-    Plats PEV;
+    protected Plats PEV;
 
-    Lights LEV;
+    protected Lights LEV;
 
-    Switches SW;
+    protected Switches SW;
 
-    Sight See;
+    protected Sight See;
 
-    Enemies EN;
+    protected Enemies EN;
 
     // ////////////////////////////////////////////
 
@@ -943,9 +978,12 @@ public abstract class UnifiedGameMap implements ThinkerList{
     }
 
     class Sight {
-        //
-        // P_CheckSight
-        //
+        
+        public Sight(){
+            strace=new divline_t();
+            sightcounts= new int[2];
+        }
+        
         int sightzstart; // eye z of looker
 
         divline_t strace; // from t1 to t2
@@ -954,7 +992,7 @@ public abstract class UnifiedGameMap implements ThinkerList{
 
         int t2y;
 
-        int[] sightcounts = new int[2];
+        int[] sightcounts ;
 
         /**
          * P_InterceptVector2 Returns the fractional intercept point along the
