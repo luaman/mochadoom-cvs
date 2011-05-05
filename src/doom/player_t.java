@@ -3,6 +3,8 @@ package doom;
 import i.DoomStatusAware;
 import i.DoomSystemInterface;
 
+import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import m.random;
@@ -23,6 +25,8 @@ import rr.UnifiedRenderer;
 import rr.sector_t;
 import s.DoomSoundInterface;
 import utils.C2JUtils;
+import w.DoomFile;
+import w.ReadableDoomObject;
 import static utils.C2JUtils.*;
 import static data.Limits.*;
 import static doom.items.weaponinfo;
@@ -49,7 +53,7 @@ import static p.mobj_t.MF_SHADOW;
  */
 
 public class player_t /*extends mobj_t */
-        implements Cloneable ,DoomStatusAware
+        implements Cloneable ,DoomStatusAware, ReadableDoomObject
         {
 	
     /** Probably doomguy needs to know what the fuck is going on */
@@ -1259,7 +1263,49 @@ SetPsprite
 
 	private static StringBuilder sb=new StringBuilder();
 
+    public void read(DoomFile f) throws IOException{
 
-   
-    
-}
+            // Careful when loading/saving:
+            // A player DOES carry an actual mobj to save,
+            // but a mobj only has a pointer to a player.
+            // Therefore, we must unarchive things in a way
+            // that makes sense. 
+            //this.mo.read(f);
+            this.playerstate=f.readInt();
+            this.cmd.read(f);
+            this.viewz=f.readInt();
+            this.deltaviewheight= f.readInt();
+            this.bob=f.readInt();
+            this.health[0]=f.readInt();
+            this.armorpoints[0]=f.readInt(); 
+            this.armortype=f.readInt(); 
+            f.readIntArray(this.powers, ByteOrder.nativeOrder()); 
+            f.readBooleanArray(this.cards);
+            this.backpack=f.readBoolean();
+            f.readIntArray(frags, ByteOrder.nativeOrder());
+            this.readyweapon=weapontype_t.values()[f.readInt()];
+            this.pendingweapon=weapontype_t.values()[f.readInt()];
+            f.readBooleanArray(this.weaponowned);
+            f.readIntArray(ammo,ByteOrder.nativeOrder());
+            f.readIntArray(maxammo,ByteOrder.nativeOrder());
+            this.attackdown=f.readBoolean();
+            this.usedown=f.readBoolean();
+            this.cheats=f.readInt();
+            this.refire=f.readInt();
+            this.killcount=f.readInt();
+            this.itemcount=f.readInt();
+            this.secretcount=f.readInt();
+            //DoomIO.linkBA(this, 0, stream, 4); // char*      message;
+            this.damagecount=f.readInt();
+            this.bonuscount=f.readInt();
+            // TODO: must be properly denormalized before saving/loading
+            // DoomIO.linkBA(this, 0, stream, 4);  // mobj_t*       attacker;
+            this.extralight=f.readInt();
+            this.fixedcolormap=f.readInt();
+            this.colormap=f.readInt();
+            for (pspdef_t p: this.psprites)
+                p.read(f);
+            this.didsecret=f.readBoolean();
+        }
+        
+    }
