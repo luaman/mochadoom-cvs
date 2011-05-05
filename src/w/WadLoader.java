@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.27 2011/01/26 00:04:45 velktron Exp $
+// $Id: WadLoader.java,v 1.27.2.1 2011/05/05 14:27:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,112 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
-// Revision 1.27  2011/01/26 00:04:45  velktron
-// DEUTEX flat support, Unrolled drawspan precision fix.
+// Revision 1.27.2.1  2011/05/05 14:27:32  velktron
+// Merged _D_'s changes
 //
-// Revision 1.26  2011/01/10 16:40:54  velktron
-// Some v1.3 commits: OSX fix, limit-removing flat management (to fix),
-//
-// Revision 1.25  2010/12/22 01:23:15  velktron
-// Definitively fixed plain DrawColumn.
-// Fixed PATCH/TEXTURE and filelump/wadloader capitalization.
-// Brought back some testers.
-//
-// Revision 1.24  2010/12/14 17:55:59  velktron
-// Fixed weapon bobbing, added translucent column drawing, separated rendering commons.
-//
-// Revision 1.23  2010/12/13 16:03:20  velktron
-// More fixes  in the wad loading code
-//
-// Revision 1.22  2010/12/12 21:27:17  velktron
-// Fixed hashtable bug. Now using Java's one, faster AND easier to follow.
-//
-// Revision 1.21  2010/10/08 16:55:50  velktron
-// Duh
-//
-// Revision 1.20  2010/09/27 02:27:29  velktron
-// BEASTLY update
-//
-// Revision 1.19  2010/09/24 17:58:39  velktron
-// Menus and HU  functional -mostly.
-//
-// Revision 1.18  2010/09/23 20:36:45  velktron
-// *** empty log message ***
-//
-// Revision 1.17  2010/09/23 15:11:57  velktron
-// A bit closer...
-//
-// Revision 1.16  2010/09/22 16:40:02  velktron
-// MASSIVE changes in the status passing model.
-// DoomMain and DoomGame unified.
-// Doomstat merged into DoomMain (now status and game functions are one).
-//
-// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
-//
-// Revision 1.15  2010/09/13 15:39:17  velktron
-// Moving towards an unified gameplay approach...
-//
-// Revision 1.14  2010/09/09 01:13:19  velktron
-// MUCH better rendering and testers.
-//
-// Revision 1.13  2010/09/07 16:23:00  velktron
-// *** empty log message ***
-//
-// Revision 1.12  2010/09/03 15:30:34  velktron
-// More work on unified renderer
-//
-// Revision 1.11  2010/09/02 15:56:54  velktron
-// Bulk of unified renderer copyediting done.
-//
-// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
-//
-// Revision 1.10  2010/08/30 15:53:19  velktron
-// Screen wipes work...Finale coded but untested.
-// GRID.WAD included for testing.
-//
-// Revision 1.9  2010/08/23 14:36:08  velktron
-// Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
-//
-// Revision 1.8  2010/08/13 14:06:36  velktron
-// Endlevel screen fully functional!
-//
-// Revision 1.7  2010/08/11 16:31:34  velktron
-// Map loading works! Check out LevelLoaderTester for more.
-//
-// Revision 1.6  2010/08/10 16:41:57  velktron
-// Threw some work into map loading.
-//
-// Revision 1.5  2010/07/22 15:37:53  velktron
-// MAJOR changes in Menu system.
-//
-// Revision 1.4  2010/07/15 14:01:49  velktron
-// Added reflector Method stuff for function pointers.
-//
-// Revision 1.3  2010/07/06 15:20:23  velktron
-// Several changes in the WAD loading routine. Now lumps are directly unpacked as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer reads.
-//
-// Makes caching more effective.
-//
-// Revision 1.2 2010/06/30 11:44:40 velktron
-// Added a tester for patches (one of the most loosely-coupled structs in Doom!)
-// and fixed some minor stuff all around.
-//
-// Revision 1.1 2010/06/30 08:58:50 velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still being worked on. For a good place to start and get an
-// idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1 2010/06/29 11:07:34 velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete,
-// and there's still mixed C code in there. I suggest you load everything up in
-// Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you can get an idea of
-// how a few of the implemented stuff works.
 //
 //
 // DESCRIPTION:
@@ -812,6 +709,7 @@ public class WadLoader {
 					} else {
 						lumpcache[lump] = (CacheableDoomObject) thebuffer;
 					}
+					
 				} catch (Exception e) {
 					System.err.println("Could not auto-instantiate lump "
 							+ lump + " of class " + what);

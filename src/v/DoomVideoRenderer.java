@@ -1,6 +1,5 @@
 package v;
 
-import java.awt.Color;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
 
@@ -14,7 +13,17 @@ import rr.patch_t;
  */
 
 public interface DoomVideoRenderer {
-    // Allocates buffer screens, call before R_Init.
+    // DW:
+	//flags hacked in scrn (not supported by all functions (see src))
+	public static int V_NOSCALESTART =      0x010000;   // dont scale x,y, start coords
+	public static int V_SCALESTART        = 0x020000;   // scale x,y, start coords
+	public static int V_SCALEPATCH        = 0x040000;   // scale patch
+	public static int V_NOSCALEPATCH      = 0x080000;   // don't scale patch
+	public static int V_WHITEMAP          = 0x100000;   // draw white (for v_drawstring)
+	public static int V_FLIPPEDPATCH      = 0x200000;   // flipped in y
+	public static int V_TRANSLUCENTPATCH  = 0x400000;   // draw patch translucent
+	
+	// Allocates buffer screens, call before R_Init.
     public void Init();
 
     public void CopyRect(int srcx, int srcy, int srcscrn, int width,
@@ -60,4 +69,7 @@ public interface DoomVideoRenderer {
     
     public int getHeight();
     
+    // Doom Legacy (for menus, etc)
+    public void DrawScaledPatch(int x, int y, int scrn,  // hacked flags in it...
+    		patch_t patch);
 }
