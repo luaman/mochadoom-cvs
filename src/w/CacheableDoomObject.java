@@ -29,7 +29,13 @@ import java.nio.ByteBuffer;
  *  
  *  The opposite would be a "PackableDoomObject", aka objects that can pack themselves into
  *  a byte buffer for transmission purposes, although Doom doesn't really need to write as
- *  much as it needs reading. 
+ *  much as it needs reading.
+ *  
+ *  For the purpose of saving/loading games, which need to read/write to variable disk 
+ *  structures ALL the time, use the ReadableDoomObject/WritableDoomObject interfaces.
+ *  Their difference is that they are highly mutable and supposed to be read from files 
+ *  or input/output streams, and that a continuous reference to them as deserialized 
+ *  objects (e.g. in the caching mechanism) is not needed.
  *    
  * 
  * @author Velktron

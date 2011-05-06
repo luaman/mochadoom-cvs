@@ -10,7 +10,7 @@ import m.Swap;
  *
  */
 
-public class filelump_t  implements ReadableDoomObject {
+public class filelump_t  implements IReadableDoomObject {
         int         filepos;
         long         size; // Is INT 32-bit in file!
         String        name;

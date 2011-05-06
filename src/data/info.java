@@ -9,7 +9,7 @@ import doom.think_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.7 2010/12/20 17:15:08 velktron Exp $
+// $Id: info.java,v 1.8 2011/05/06 14:00:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.8  2011/05/06 14:00:54  velktron
+// More of _D_'s changes committed.
+//
 // Revision 1.7  2010/12/20 17:15:08  velktron
 // Made the renderer more OO -> TextureManager and other changes as well.
 //
@@ -65,7 +68,7 @@ import doom.think_t;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.7 2010/12/20 17:15:08 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.8 2011/05/06 14:00:54 velktron Exp $";
 
 // Data.
 //#include "sounds.h"
@@ -175,8 +178,12 @@ void A_BrainExplode();
 //public static String[] sprnames=new String[NUMSPRITES];
 
 public static final state_t[]	states = {
-    new state_t(spritenum_t.SPR_TROO,0,-1,null,statenum_t.S_NULL,0,0),	// S_NULL    
-    new state_t(spritenum_t.SPR_SHTG,4,0,null,statenum_t.S_NULL,0,0),	// S_LIGHTDONE
+    new state_t(spritenum_t.SPR_TROO,0,-1,null,statenum_t.S_NULL,0,0),	// S_NULL
+    // _D_: replaced "null" by "think_t.A_Light0" (see linuxdoom source)
+    // I was trying to make the red fire around the gun apprear when we shoot
+    // but I didn't succeed. This modification below is minor as I didn't see
+    // any change in the game
+    new state_t(spritenum_t.SPR_SHTG,4,0,think_t.A_Light0,statenum_t.S_NULL,0,0),	// S_LIGHTDONE
     new state_t(spritenum_t.SPR_PUNG,0,1,think_t.A_WeaponReady,statenum_t.S_PUNCH,0,0),	// S_PUNCH
     new state_t(spritenum_t.SPR_PUNG,0,1,think_t.A_Lower,statenum_t.S_PUNCHDOWN,0,0),	// S_PUNCHDOWN
     new state_t(spritenum_t.SPR_PUNG,0,1,think_t.A_Raise,statenum_t.S_PUNCHUP,0,0),	// S_PUNCHUP

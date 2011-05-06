@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: cheatseq_t.java,v 1.6 2010/12/14 00:53:32 velktron Exp $
+// $Id: cheatseq_t.java,v 1.7 2011/05/06 14:00:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: cheatseq_t.java,v $
+// Revision 1.7  2011/05/06 14:00:54  velktron
+// More of _D_'s changes committed.
+//
 // Revision 1.6  2010/12/14 00:53:32  velktron
 // Some input sanitizing. Far from perfect but heh...
 //
@@ -165,10 +168,11 @@ public class cheatseq_t {
         if (this.p < 0)
             this.p = 0; // initialize if first time
 
-        if (p == 0)
+        if (sequence[p] == 0)
             // This actually points inside "sequence"
             // *(cht->p++) = key;
             sequence[p++] = key;
+            //p++;  //_D_: this fixed cheat with parm problem (IDCLIP)
         else if (cheat_xlate_table[(char) key] == sequence[p])
             p++;
         else

@@ -4,7 +4,7 @@ package doom;
  * in case you want to provide a different implementation 
  */
 
-public interface DoomGame {
+public interface IDoomGame {
 
 	 public void ExitLevel ();
 }

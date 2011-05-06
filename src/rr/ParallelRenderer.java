@@ -108,58 +108,7 @@ public class ParallelRenderer extends RendererState  {
       
       
   }
-   
-   class R_DrawTranslatedColumn implements colfunc_t{
-
-       public void invoke() {
-           int count;
-           // MAES: you know the deal by now...
-           int dest;
-           int frac;
-           int fracstep;
-
-           count = dc_yh - dc_yl;
-           if (count < 0)
-               return;
-
-           if (RANGECHECK) {
-               if (dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT) {
-                   I.Error("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
-               }
-           }
-
-           // WATCOM VGA specific.
-           /*
-            * Keep for fixing. if (detailshift) { if (dc_x & 1) outp
-            * (SC_INDEX+1,12); else outp (SC_INDEX+1,3); dest = destview + dc_yl*80
-            * + (dc_x>>1); } else { outp (SC_INDEX+1,1<<(dc_x&3)); dest = destview
-            * + dc_yl*80 + (dc_x>>2); }
-            */
-
-           // FIXME. As above.
-           dest = ylookup[dc_yl] + columnofs[dc_x];
-
-           // Looks familiar.
-           fracstep = dc_iscale;
-           frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
-           // Here we do an additional index re-mapping.
-           do {
-               // Translation tables are used
-               // to map certain colorramps to other ones,
-               // used with PLAY sprites.
-               // Thus the "green" ramp of the player 0 sprite
-               // is mapped to gray, red, black/indigo.
-               screen[dest] =
-                   dc_colormap[0x00FF&dc_translation[dc_source[dc_source_ofs+(frac >> FRACBITS)]]];
-               dest += SCREENWIDTH;
-
-               frac += fracstep;
-           } while (count-- != 0);
-       }
-
-       }
-  
+ 
   private final class ParallelSegs extends SegDrawer{
 
       public ParallelSegs(){

@@ -3,10 +3,10 @@ package p;
 import java.io.IOException;
 
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 import data.state_t;
 
-public class pspdef_t implements ReadableDoomObject{
+public class pspdef_t implements IReadableDoomObject{
 
     public pspdef_t(){
         state=new state_t();

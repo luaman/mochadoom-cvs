@@ -70,7 +70,7 @@ import data.state_t;
 import defines.*;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
-import doom.DoomGame;
+import doom.IDoomGame;
 import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
@@ -111,7 +111,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     DoomMain DM;
 
-    DoomGame DG;
+    IDoomGame DG;
     
     StatusBar ST;
 

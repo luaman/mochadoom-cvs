@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.11 2011/05/05 17:24:22 velktron Exp $
+//$Id: DoomFile.java,v 1.12 2011/05/06 14:00:54 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -30,9 +30,20 @@ import java.nio.ByteOrder;
 import m.Swap;
 
 /**
-* RandomAccessFile, but handles readString/WriteString specially 
-* and offers several Doom related (and cross-OS) helper functions,
-* such as reading multiple objects or fixed-length strings off disk.
+* An extenstion of RandomAccessFile, which handles readString/WriteString specially 
+* and offers several Doom related (and cross-OS) helper functions for reading/writing
+* arrays of multiple objects or fixed-length strings from/to disk.
+* 
+* TO DEVELOPERS: this is the preferrered method of I/O for anything implemented.
+* In addition, Doomfiles can be passed to objects implementing the IReadableDoomObject 
+* and IWritableDoomObject interfaces, which will "autoread" or "autowrite" themselves
+* to the implied stream.
+* 
+* TODO: in the light of greater future portabililty and compatibility in certain
+* environments, PERHAPS this should have been implemented using Streams. Perhaps
+* it's possible to change the underlying implementation without (?) changing too
+* much of the exposed interface, but it's not a priority for me right now. 
+* 
 */
 public class DoomFile extends RandomAccessFile {
 
@@ -198,7 +209,7 @@ public class DoomFile extends RandomAccessFile {
        }
    }
 
-   public void readObjectArray(ReadableDoomObject[] s,int len) throws IOException {
+   public void readObjectArray(IReadableDoomObject[] s,int len) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
@@ -207,24 +218,24 @@ public class DoomFile extends RandomAccessFile {
        }
    }
 
-   public void readObjectArrayWithReflection(ReadableDoomObject[] s,int len) throws Exception {
+   public void readObjectArrayWithReflection(IReadableDoomObject[] s,int len) throws Exception {
 
        if (len==0) return;
        Class c=s.getClass().getComponentType();
        
        for (int i=0;i<Math.min(len,s.length);i++){
-           if (s[i]==null) s[i]=(ReadableDoomObject) c.newInstance();
+           if (s[i]==null) s[i]=(IReadableDoomObject) c.newInstance();
            s[i].read(this);
        }
    }
    
-   public void readObjectArray(ReadableDoomObject[] s,int len, Class c) throws Exception {
+   public void readObjectArray(IReadableDoomObject[] s,int len, Class c) throws Exception {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){
            if (s[i]==null) {
-               s[i]=(ReadableDoomObject) c.newInstance();
+               s[i]=(IReadableDoomObject) c.newInstance();
            }
            s[i].read(this);
        }

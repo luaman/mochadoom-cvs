@@ -3,9 +3,9 @@ package doom;
 import java.io.IOException;
 
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 
-public class ticcmd_t implements DatagramSerializable, ReadableDoomObject{
+public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject{
     
     // The length datagrams are supposed to have, for full compatibility.
     

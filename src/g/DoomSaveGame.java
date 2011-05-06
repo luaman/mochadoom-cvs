@@ -15,7 +15,7 @@ import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 import w.WritableDoomObject;
 
 
@@ -28,7 +28,7 @@ import w.WritableDoomObject;
 
 
 public class DoomSaveGame
-        implements CacheableDoomObject, ReadableDoomObject, WritableDoomObject{
+        implements CacheableDoomObject, IReadableDoomObject, WritableDoomObject{
     
     public DoomSaveGame(){
         playeringame=new boolean[MAXPLAYERS];

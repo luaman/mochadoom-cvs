@@ -14,6 +14,7 @@ import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
+import f.Finale;
 import f.Wiper;
 import hu.HU;
 import m.Menu;
@@ -41,6 +42,7 @@ import st.StatusBar;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import w.DoomFile;
+import w.EndLevel;
 import w.WadLoader;
 import static data.Defines.*;
 import static data.Limits.*;
@@ -55,7 +57,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.32 2011/02/11 00:11:13 velktron Exp $
+// $Id: DoomMain.java,v 1.33 2011/05/06 14:00:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -70,6 +72,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.33  2011/05/06 14:00:54  velktron
+// More of _D_'s changes committed.
+//
 // Revision 1.32  2011/02/11 00:11:13  velktron
 // A MUCH needed update to v1.3.
 //
@@ -198,9 +203,9 @@ import static utils.C2JUtils.*;
 //
 //-----------------------------------------------------------------------------
 
-public class DoomMain extends DoomStatus implements DoomGameNetworking, DoomGame {
+public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.32 2011/02/11 00:11:13 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.33 2011/05/06 14:00:54 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1322,14 +1327,6 @@ public void Start ()
 	autostart = true;
     }
 	
-    p = CheckParm ("-playdemo");
-    if (eval(p) && p < myargc-1)
-    {
-	singledemo = true;              // quit after one demo
-	DeferedPlayDemo (myargv[p+1]);
-	DoomLoop ();  // never returns
-    }
-	
     p = CheckParm ("-timedemo");
     if (eval(p) && p < myargc-1)
     {
@@ -1369,9 +1366,18 @@ public void Start ()
     
     // MAES: at this point everything should be set and initialized, so it's
     // time to make the players aware of the general status of Doom.
-	for (int i=0;i<MAXPLAYERS;i++){
-		players[i].updateStatus(this);
-	}
+    //_D_ gonna try to initialize here, because it is needed to play a demo
+    for (int i=0;i<MAXPLAYERS;i++){
+        players[i].updateStatus(this);
+    }
+
+    p = CheckParm ("-playdemo");
+    if (eval(p) && p < myargc-1)
+    {
+        singledemo = true;              // quit after one demo
+        DeferedPlayDemo (myargv[p+1]);
+        DoomLoop ();  // never returns
+    }
 
     DoomLoop ();  // never returns
 }
@@ -2896,7 +2902,9 @@ public DoomMain(){
 	// Init game status...
 	super();
     this.I=new DoomSystem();
-    I.Init();
+    //_D_: this needed to be removed, and isnt here in the linuxdoom source
+    // this is because some variables are null at this point so we cant init the doomsystem yet
+    //I.Init();
     gamestate=gamestate_t.GS_DEMOSCREEN;
 }
 
@@ -2948,6 +2956,11 @@ public void Init(){
     this.HU.updateStatus(this);
     this.R.updateStatus(this);
     
+    //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
+    // it seems to fit perfectly here
+    this.WI = new EndLevel(this);
+    this.DG = this;
+    this.F = new Finale(this);
     
 }
 
@@ -3345,6 +3358,11 @@ public void GetPackets ()
         src.copyTo(dest);
         // Advance src
         start++;
+        
+        //_D_: had to add this (see linuxdoom source). That fixed that damn consistency failure!!!
+        if (start < netbuffer.cmds.length)
+            src = netbuffer.cmds[start];
+        
         }
     }
     }

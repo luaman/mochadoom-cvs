@@ -8,7 +8,7 @@ import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 
 //Patches.
 //A patch holds one or more columns.
@@ -16,7 +16,7 @@ import w.ReadableDoomObject;
 //and we compose textures from the TEXTURE1/2 lists
 //of patches.
 
-public class patch_t implements ReadableDoomObject,CacheableDoomObject{
+public class patch_t implements /*IReadableDoomObject,*/CacheableDoomObject{
 
     /** bounding box size */ 
     public short       width,   height;  
@@ -34,7 +34,7 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
     /** Added for debug aid purposes */
     public String name;
     
-    @Override
+  /*  @Override
     public void read(DoomFile f) throws IOException{
 
         long pos=f.getFilePointer();
@@ -55,7 +55,7 @@ public class patch_t implements ReadableDoomObject,CacheableDoomObject{
             this.columns[i].read(f);
         }
         
-    }
+    }*/
     
     /** In the C code, reading is "aided", aka they know how long the header + all
      *  posts/columns actually are on disk, and only "deserialize" them when using them.

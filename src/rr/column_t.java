@@ -6,7 +6,7 @@ import java.nio.ByteBuffer;
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 
 /** column_t is a list of 0 or more post_t, (byte)-1 terminated
  * typedef post_t  column_t;
@@ -15,7 +15,7 @@ import w.ReadableDoomObject;
  * 
  */
 
-public class column_t implements CacheableDoomObject, ReadableDoomObject{
+public class column_t implements CacheableDoomObject, IReadableDoomObject{
     
     /** Static buffers used during I/O. 
      *  There's ABSO-FUCKING-LUTELY no reason to manipulate them externally!!!

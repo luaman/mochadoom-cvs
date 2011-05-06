@@ -3,7 +3,7 @@ package n;
 import java.net.DatagramPacket;
 
 import doom.DoomContext;
-import doom.DoomGameNetworking;
+import doom.IDoomGameNetworking;
 import doom.DoomMain;
 import doom.NetConsts;
 import doom.doomcom_t;
@@ -25,7 +25,7 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 
 	DoomSystemInterface I;
 	DoomMain DM;
-	DoomGameNetworking DGN;
+	IDoomGameNetworking DGN;
 
 	// Mirror those in Doomstat.
 	String[] myargv;

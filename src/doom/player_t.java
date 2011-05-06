@@ -26,7 +26,7 @@ import rr.sector_t;
 import s.DoomSoundInterface;
 import utils.C2JUtils;
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 import static utils.C2JUtils.*;
 import static data.Limits.*;
 import static doom.items.weaponinfo;
@@ -53,7 +53,7 @@ import static p.mobj_t.MF_SHADOW;
  */
 
 public class player_t /*extends mobj_t */
-        implements Cloneable ,DoomStatusAware, ReadableDoomObject
+        implements Cloneable ,DoomStatusAware, IReadableDoomObject
         {
 	
     /** Probably doomguy needs to know what the fuck is going on */

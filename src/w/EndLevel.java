@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.8 2011/02/11 00:11:13 velktron Exp $
+// $Id: EndLevel.java,v 1.9 2011/05/06 14:00:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.9  2011/05/06 14:00:54  velktron
+// More of _D_'s changes committed.
+//
 // Revision 1.8  2011/02/11 00:11:13  velktron
 // A MUCH needed update to v1.3.
 //
@@ -256,7 +259,8 @@ patch_t[]		num=new patch_t[10];
 public EndLevel(DoomContext DC) {
     this.updateStatus(DC);
    
-    this.Start(DS.wminfo);
+    // _D_: commented this, otherwise something didn't work
+    //this.Start(DS.wminfo);
 }
 
 protected void slamBackground()

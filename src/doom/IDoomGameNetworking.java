@@ -12,7 +12,7 @@ package doom;
  *
  */
 
-public interface DoomGameNetworking {
+public interface IDoomGameNetworking {
 	
 	public void TryRunTics();
 	

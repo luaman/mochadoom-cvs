@@ -11,7 +11,7 @@ import java.io.IOException;
  *
  */
 
-public interface ReadableDoomObject {
+public interface IReadableDoomObject {
     
     public void read(DoomFile f) throws IOException ;
 }

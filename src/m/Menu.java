@@ -1240,14 +1240,14 @@ public class Menu extends MenuMisc implements DoomMenu{
                     itemOn = (short) (currentMenu.numitems - 1);
                 else
                     itemOn--;
-              //TODO:  ; // TODO: S.StartSound(null, sfxenum_t.sfx_pstop);
+              S.StartSound(null, sfxenum_t.sfx_pstop);
             } while (currentMenu.menuitems[itemOn].status == -1);
             return true;
 
         case KEY_LEFTARROW:
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && (currentMenu.menuitems[itemOn].status == 2)) {
-             //TODO:   ; // TODO: S.StartSound(null, sfxenum_t.sfx_stnmov);
+                S.StartSound(null, sfxenum_t.sfx_stnmov);
                 currentMenu.menuitems[itemOn].routine.invoke(0);
             }
             return true;
@@ -1270,7 +1270,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 if (currentMenu.menuitems[itemOn].status == 2) {
                     currentMenu.menuitems[itemOn].routine.invoke(1); // right
                     // arrow
-              //TODO:      ; // TODO: S.StartSound(null, sfxenum_t.sfx_stnmov);
+                    S.StartSound(null, sfxenum_t.sfx_stnmov);
                 } else {
                     currentMenu.menuitems[itemOn].routine.invoke(itemOn);
                     S.StartSound(null, sfxenum_t.sfx_pistol);

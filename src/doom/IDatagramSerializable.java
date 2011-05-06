@@ -11,7 +11,7 @@ package doom;
  *
  */
 
-public interface DatagramSerializable {
+public interface IDatagramSerializable {
     
         /** Packs object into a byte array suitable to send over 
          * datagram networks. Typically, objects cache this array

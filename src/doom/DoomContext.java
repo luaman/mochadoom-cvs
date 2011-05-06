@@ -38,7 +38,7 @@ import automap.DoomAutoMap;
 public class DoomContext {
 	
     public DoomMain DM;
-    public DoomGame DG;
+    public IDoomGame DG;
     public WadLoader W;
     public random RND;
     public DoomSystemInterface I;
@@ -47,7 +47,7 @@ public class DoomContext {
     public DoomStatusBarInterface ST;
     public DoomVideoRenderer V;
     public DoomSystemNetworking DNI;
-    public DoomGameNetworking DGN;
+    public IDoomGameNetworking DGN;
     public LevelLoader LL;
     public DoomMenu M;
     public Actions P;

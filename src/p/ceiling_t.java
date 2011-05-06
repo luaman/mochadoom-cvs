@@ -3,9 +3,9 @@ package p;
 import java.io.IOException;
 import rr.SectorAction;
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 
-public class ceiling_t extends SectorAction implements ReadableDoomObject{
+public class ceiling_t extends SectorAction implements IReadableDoomObject{
 
         public ceiling_e   type;
         /** fixed_t */

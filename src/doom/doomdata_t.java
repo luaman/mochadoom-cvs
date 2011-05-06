@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import utils.C2JUtils;
 import w.DoomBuffer;
 
-public class doomdata_t implements DatagramSerializable {
+public class doomdata_t implements IDatagramSerializable {
 
     public static final int DOOMDATALEN=8+data.Defines.BACKUPTICS*ticcmd_t.TICCMDLEN;
     

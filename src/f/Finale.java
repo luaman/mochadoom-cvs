@@ -43,7 +43,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.8 2011/02/11 00:11:13 velktron Exp $
+// $Id: Finale.java,v 1.9 2011/05/06 14:00:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,7 +64,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.8 2011/02/11 00:11:13 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.9 2011/05/06 14:00:54 velktron Exp $";
 
   DoomGameInterface G;
   DoomStatus DS;
@@ -277,7 +277,7 @@ public void StartFinale ()
   //
 
   //#include "hu_stuff.h"
-  patch_t[] hu_font=HU.getHUFonts();
+  patch_t[] hu_font;
 
 
   public void TextWrite ()
@@ -322,7 +322,10 @@ public void StartFinale ()
       count = (finalecount - 10)/TEXTSPEED;
       if (count < 0)
       count = 0;
-      for (int i=0;i<ch.length ;i++)
+
+      //_D_: added min between count and ch.length, so that the text is not written all at once 
+      for (int i=0;i<Math.min(ch.length, count) ;i++)
+
       {
       c = ch[i];
       if (c==0)
@@ -796,12 +799,13 @@ protected void stopattack(){
   
 public Finale(DoomContext DC){
     this.updateStatus(DC);
+    hu_font =HU.getHUFonts();
 }
 
 
 @Override
 public void updateStatus(DoomContext DC) {
-    this.G=(DoomGameInterface) DC.DG;
+    //this.G=DC.DG;
     this.DS=DC.DM;
     V=DC.V;
     S=DC.S;

@@ -13,7 +13,7 @@ import java.io.IOException;
 import m.random;
 import rr.subsector_t;
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -91,7 +91,7 @@ import doom.thinker_t;
  *
  */
 
-public class mobj_t extends thinker_t implements Interceptable, ReadableDoomObject   {
+public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObject   {
    
     Actions A;    
     

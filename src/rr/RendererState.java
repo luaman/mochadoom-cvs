@@ -587,11 +587,11 @@ validcount++;
             if (rotation == 0)
             {
                 /* MAES: notice how comparisons are done with strict literals
-                 * (true and alse) which are actually defined to be 0 and 1,
+                 * (true and false) which are actually defined to be 0 and 1,
                  * rather than assuming that true is "any nonzero value".
                  * This happens because rotate's value could be -1 at this point (!),
                  * if a series of circumstances occur. Therefore it's actually 
-                 * a "tri-state", and the comparion 0=false and "anything else"=true
+                 * a "tri-state", and the comparison 0==false and "anything else"==true
                  * was not good enough in this case. A value of -1 doesn't yield either
                  * true or false here. 
                  * 
@@ -599,7 +599,8 @@ validcount++;
                 
                 // the lump should be used for all rotations
             if (sprtemp[frame].rotate == 0){
-                /* MAES: Explanation: we stumbled upon this lump before, and decided that this frame should have no more
+                /* MAES: Explanation: we stumbled upon this lump before, 
+                 * and decided that this frame should have no more
                  * rotations, hence we bomb.
                  */
                 I.Error ("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump", spritename, 'A'+frame);
@@ -1583,9 +1584,9 @@ validcount++;
             //  but does not draw on side views
             //if (viewangleoffset==0)
             
-            //colfunc=playercolfunc;            
+            colfunc=playercolfunc;            
             DrawPlayerSprites ();
-            //colfunc=basecolfunc;
+            colfunc=basecolfunc;
     }
         
     }
@@ -2268,7 +2269,7 @@ validcount++;
             int     lightnum;
             int     texnum;
             
-            //System.out.print("RenderMaskedSegRange from "+x1 +" to "+ x2);
+            System.out.printf("RenderMaskedSegRange from %d to %d\n",x1,x2);
             
             // Calculate light table.
             // Use different light tables

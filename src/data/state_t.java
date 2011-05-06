@@ -3,11 +3,11 @@ package data;
 import java.io.IOException;
 
 import w.DoomFile;
-import w.ReadableDoomObject;
+import w.IReadableDoomObject;
 import doom.think_t;
 import defines.statenum_t;
 
-public class state_t implements ReadableDoomObject{
+public class state_t implements IReadableDoomObject{
 
 	public state_t(){
 		
