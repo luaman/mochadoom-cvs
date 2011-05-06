@@ -166,6 +166,7 @@ public class column_t implements CacheableDoomObject, IReadableDoomObject{
     public void setFromData(){
         this.topdelta=(short) this.getTopDelta();
         this.length=(short) this.getLength();
+        //this.posts=this.posts;
     }
     
 }

@@ -2343,10 +2343,10 @@ validcount++;
                 dc_iscale = (int) (0xffffffffL / spryscale);
                 
                 // draw the texture
-                col.data = GetColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
+                byte[] data = GetColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
                 //col.setFromData();
                     
-                DrawMaskedColumn (col);
+                DrawMaskedColumn (data);
                 maskedtexturecol[pmaskedtexturecol+dc_x] = Short.MAX_VALUE;
             }
             spryscale += rw_scalestep;
@@ -4629,7 +4629,7 @@ validcount++;
        *  NOTE: this version accepts raw bytes, in case you  know what you're doing.
        */
 
-/*      protected final  void DrawMaskedColumn (byte[] column)
+      protected final  void DrawMaskedColumn (byte[] column)
       {
           int     topscreen;
           int     bottomscreen;
@@ -4643,12 +4643,12 @@ validcount++;
           int pointer=0;
           
           // for each post...
-          while((topdelta=toUnsignedByte(column[pointer]))!=0xFF)
+          while((topdelta=C2JUtils.toUnsignedByte(column[pointer]))!=0xFF)
           {
           // calculate unclipped screen coordinates
           //  for post
           topscreen = sprtopscreen + spryscale*topdelta;
-          length=toUnsignedByte(column[pointer+1]);
+          length=C2JUtils.toUnsignedByte(column[pointer+1]);
           bottomscreen = topscreen + spryscale*length;
 
           dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
@@ -4678,7 +4678,7 @@ validcount++;
           }
           
           dc_texturemid = basetexturemid;
-      }*/
+      }
         
       /**
        * R_DrawMaskedColumn
