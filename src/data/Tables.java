@@ -8,7 +8,7 @@ import static m.fixed_t.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Tables.java,v 1.21 2011/02/11 00:11:13 velktron Exp $
+// $Id: Tables.java,v 1.22 2011/05/06 09:21:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import static m.fixed_t.*;
 // GNU General Public License for more details.
 //
 // $Log: Tables.java,v $
+// Revision 1.22  2011/05/06 09:21:59  velktron
+// Cleaned up and reorganized common renderer code.
+//
 // Revision 1.21  2011/02/11 00:11:13  velktron
 // A MUCH needed update to v1.3.
 //
@@ -239,11 +242,20 @@ public static final int SlopeDiv ( long	num, long den)
     return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
 
-/** Practical limits are -/+ 2607 for "infinity".
+/** Finetangent table. It only has 4096 values corresponding roughly
+ * to -90/+90 angles, with values between are -/+ 2607 for "infinity".
+ * 
+ * Since in vanilla accesses to the table can overflow way beyond 4096
+ * indexes, the access index must be clipped to 4K tops via an accessor,
+ * or, in order to simulate some aspects of vanilla overflowing, replicate
+ * 4K of finesine's values AFTER the 4K index. This removes the need
+ * for access checking, at the cost of some extra memory. It also allows
+ * a small degree of "vanilla like" compatibility.
+ * 
  * 
  */
 
-public final static int[] finetangent=new int[FINETANS];
+public final static int[] finetangent=new int[2*FINETANS];
 
 
 // MAES: original range 2049
@@ -427,6 +439,15 @@ public static void InitTables(){
         }
     }
     
+    // HACK: replicate part of finesine after finetangent, to
+    // simulate overflow behavior and remove need for capping
+    // indexes
+    // viewangle tangent table
+    for (i=FINEANGLES/2 ; i<FINEANGLES ; i++)
+    {
+    finetangent[i] = finesine[i-FINEANGLES/2];
+    } 
+    
     /* tantoangle table
      * There was actually no dead code for that one, so this is a close recreation.
      * Since there are 2049 values, and the maximum angle considered is 536870912 (0x20000000)
@@ -436,8 +457,12 @@ public static void InitTables(){
      *  accessed in special cases (overflow) so we only need to consider 0..2047 aka 11 bits.
      *  So: we take "minislopes" 0-2048, we blow them up to a full fixed_t unit with <<5.
      *  We make this into a float (?), then use trigonometric ATAN, and then go to BAM.
+     *  
+     *  Any questions?
+     *  
      */    
     
+    /* This is the recreated code 
     for (i=0 ; i<SLOPERANGE+1 ; i++)
     {
     
@@ -445,13 +470,15 @@ public static void InitTables(){
     t=(int)((float)(2*Math.atan(a)/PI)*0x40000000); 
     tantoangle[i] = t;
     } 
+    */
     
-/*    for (i=0 ; i<=SLOPERANGE ; i++)
+    // This is the original R_InitPointToAngle code that created this table.
+    for (i=0 ; i<=SLOPERANGE ; i++)
     {
- a = (float) Math.atan( (double)(i/SLOPERANGE )/(3.141592657*2));
+ a = (float) (Math.atan( (double)i/SLOPERANGE )/(3.141592657*2));
  t = (int) (0xffffffffL*a);
  tantoangle[i] = (int) t;
-    } */
+    }
     
     }
 

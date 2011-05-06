@@ -10,6 +10,7 @@ import static data.Defines.NUMCOLORMAPS;
 import static data.Defines.PU_CACHE;
 import static data.Defines.SCREENHEIGHT;
 import static data.Defines.SCREENWIDTH;
+import static data.Defines.SCREEN_MUL;
 import static data.Defines.SIL_BOTH;
 import static data.Defines.SIL_BOTTOM;
 import static data.Defines.SIL_TOP;
@@ -31,6 +32,7 @@ import static data.Tables.FINEANGLES;
 import static data.Tables.QUARTERMARK;
 import static data.Tables.SlopeDiv;
 import static data.Tables.addAngles;
+import static data.Tables.finecosine;
 import static data.Tables.finesine;
 import static data.Tables.finetangent;
 import static data.Tables.tantoangle;
@@ -61,12 +63,14 @@ import p.mobj_t;
 import p.pspdef_t;
 import i.DoomStatusAware;
 import i.DoomSystemInterface;
+import st.StatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.WadLoader;
 import w.name8;
 import data.Defines;
 import data.Limits;
+import data.Tables;
 import defines.GameMode_t;
 import doom.DoomContext;
 import doom.DoomMain;
@@ -75,7 +79,7 @@ import doom.think_t;
 import doom.thinker_t;
 
 /** Most shared -essential- status information, methods and classes related
- *  to the rendering subsystem are found here, shared between the various 
+ *  to the softwaer rendering subsystem are found here, shared between the various 
  *  implementations of the Doom's renderer.
  *  
  *  Not the cleanest or more OO way possible, but still a good way to avoid
@@ -83,7 +87,7 @@ import doom.thinker_t;
  *  
  *  Some stuff like Texture, Flat and Sprite management are also found -or at 
  *  least implemented temporarily- here, until a cleaner split can be made.
- *  This is a kind of "Jack of all trades" class.
+ *  This is a kind of "Jack of all trades" class, but hopefully not for long.
  *  
  * @author velktron
  *
@@ -93,7 +97,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
 
     protected static final boolean DEBUG=false;
     protected static final boolean DEBUG2=false;
-
+    // HACK: An all zeroes array used for fast clearing of certain visplanes.
+    protected static final int[] BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
     
     //////////////////////////////// STATUS ////////////////
 
@@ -181,7 +186,47 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
   setblocks = blocks;
   setdetail = detail;
  }
+ 
+/**
+ * R_SetupFrame
+ */
+public void SetupFrame (player_t player)
+{       
+int     i;
+
+viewplayer = player;
+viewx = player.mo.x;
+viewy = player.mo.y;
+//viewangle = addAngles(player.mo.angle , viewangleoffset);
+viewangle = player.mo.angle&BITS32;
+extralight = player.extralight;
+
+viewz = player.viewz;
+
+viewsin = finesine[(int) (viewangle>>>ANGLETOFINESHIFT)];
+viewcos = finecosine[(int) (viewangle>>>ANGLETOFINESHIFT)];
+
+sscount = 0;
+
+if (player.fixedcolormap!=0)
+{
+fixedcolormap =colormaps[player.fixedcolormap];
+// Offset by fixedcolomap
+//pfixedcolormap =player.fixedcolormap*256;
+
+walllights = scalelightfixed;
+
+for (i=0 ; i<MAXLIGHTSCALE ; i++)
+    scalelightfixed[i] = fixedcolormap;
+}
+else
+fixedcolormap = null;
     
+framecount++;
+validcount++;
+}
+
+ 
  /**
   * R_FindPlane
   * 
@@ -534,7 +579,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
             maxframe = frame;
             
             /* A rotation value of 0 means that we are either checking the first frame of a sprite
-             * that HAS rotations, or something that nas no rotations at all. The value
+             * that HAS rotations, or something that has no rotations at all. The value
              * of rotate doesn't really help us discern here, unless set to "false"
              * a-priori...which can't happen ?!
              */
@@ -2204,6 +2249,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
         protected static final int HEIGHTBITS   =   12;
         protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
         
+        
+        
         /** R_RenderMaskedSegRange
          * 
          * @param ds
@@ -2733,7 +2780,214 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
             ds_p++;
         }
 
-        abstract void RenderSegLoop();
+        /**
+         * R_RenderSegLoop
+         * Draws zero, one, or two textures (and possibly a masked texture) 
+         * for walls. Can draw or mark the starting pixel of floor and ceiling 
+         * textures. Also sets the actual sprite clipping info (where sprites should be cut)
+         * 
+         * Since rw_x ranges are non-overlapping, rendering all walls means completing
+         * the clipping list as well.
+         * 
+         * FIXME: the only difference between the parallel and the non-parallel version is
+         * that the parallel doesn't draw immediately but rather, generates RWIs.
+         * This can surely be unified to avoid replicating code.
+         * 
+         * CALLED: CORE LOOPING ROUTINE.
+         *
+         */
+        
+        public void RenderSegLoop () 
+        {
+            int     angle; // angle_t
+            int     index;
+            int         yl; // low
+            int         yh; // hight
+            int         mid;
+            int     texturecolumn=0; // fixed_t
+            int         top;
+            int         bottom;
+           
+            for ( ; rw_x < rw_stopx ; rw_x++)
+            {
+            // mark floor / ceiling areas
+            yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
+
+            // no space above wall?
+            if (yl < ceilingclip[rw_x]+1)
+                yl = ceilingclip[rw_x]+1;
+            
+            if (markceiling)
+            {
+                top = ceilingclip[rw_x]+1;
+                bottom = yl-1;
+
+                if (bottom >= floorclip[rw_x])
+                bottom = floorclip[rw_x]-1;
+
+                if (top <= bottom)
+                {
+                    visplanes[ceilingplane].setTop(rw_x,(char) top);
+                    visplanes[ceilingplane].setBottom(rw_x, (char) bottom);
+                }
+            }
+                
+            yh = bottomfrac>>HEIGHTBITS;
+
+            if (yh >= floorclip[rw_x])
+                yh = floorclip[rw_x]-1;
+
+            // A particular seg has been identified as a floor marker.
+            
+            if (markfloor)
+            {
+                top = yh+1;
+                bottom = floorclip[rw_x]-1;
+                if (top <= ceilingclip[rw_x])
+                top = ceilingclip[rw_x]+1;
+                if (top <= bottom)
+                {
+                visplanes[floorplane].setTop(rw_x, (char) top);
+                visplanes[floorplane].setBottom(rw_x,  (char) bottom);
+                }
+            }
+            
+            // texturecolumn and lighting are independent of wall tiers
+            if (segtextured)
+            {
+                // calculate texture offset
+               
+                
+              // CAREFUL: a VERY anomalous point in the code. Their sum is supposed
+              // to give an angle not exceeding 45 degrees (or 0x0FFF after shifting).
+              // If added with pure unsigned rules, this doesn't hold anymore,
+              // not even if accounting for overflow.
+                angle = Tables.toBAMIndex(rw_centerangle + (int)xtoviewangle[rw_x]);
+                //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
+              //angle&=0x1FFF;
+                
+              // FIXME: We are accessing finetangent here, the code seems pretty confident
+              // in that angle won't exceed 4K no matter what. But xtoviewangle
+              // alone can yield 8K when shifted.
+              // This usually only overflows if we idclip and look at certain directions 
+             // (probably angles get fucked up), however it seems rare enough to just 
+             // "swallow" the exception. You can eliminate it by anding with 0x1FFF if you're so inclined. 
+              
+              texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
+               texturecolumn >>= FRACBITS;
+              // calculate lighting
+              index = rw_scale>>LIGHTSCALESHIFT;
+      
+
+                if (index >=  MAXLIGHTSCALE )
+                index = MAXLIGHTSCALE-1;
+
+                dc_colormap = walllights[index];
+                dc_x = rw_x;
+                dc_iscale = (int) (0xffffffffL / rw_scale);
+            }
+            
+            // draw the wall tiers
+            if (midtexture!=0)
+            {
+                // single sided line
+                dc_yl = yl;
+                dc_yh = yh;
+                dc_texheight = TexMan.getTextureheight(midtexture)>>FRACBITS; // killough
+                dc_texturemid = rw_midtexturemid;              
+                dc_source = GetColumn(midtexture,texturecolumn);
+                CompleteColumn();
+                ceilingclip[rw_x] = (short) viewheight;
+                floorclip[rw_x] = -1;
+            }
+            else
+            {
+                // two sided line
+                if (toptexture!=0)
+                {
+                // top wall
+                mid = pixhigh>>HEIGHTBITS;
+                pixhigh += pixhighstep;
+
+                if (mid >= floorclip[rw_x])
+                    mid = floorclip[rw_x]-1;
+
+                if (mid >= yl)
+                {
+                    dc_yl = yl;
+                    dc_yh = mid;
+                    dc_texturemid = rw_toptexturemid;
+                    dc_texheight=TexMan.getTextureheight(toptexture)>>FRACBITS;
+                    dc_source = GetColumn(toptexture,texturecolumn);
+                    //dc_source_ofs=0;
+                    CompleteColumn();
+                    ceilingclip[rw_x] = (short) mid;
+                }
+                else
+                    ceilingclip[rw_x] = (short) (yl-1);
+                }
+                else
+                {
+                // no top wall
+                if (markceiling)
+                    ceilingclip[rw_x] = (short) (yl-1);
+                }
+                    
+                if (bottomtexture!=0)
+                {
+                // bottom wall
+                mid = (pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
+                pixlow += pixlowstep;
+
+                // no space above wall?
+                if (mid <= ceilingclip[rw_x])
+                    mid = ceilingclip[rw_x]+1;
+                
+                if (mid <= yh)
+                {
+                    dc_yl = mid;
+                    dc_yh = yh;
+                    dc_texturemid = rw_bottomtexturemid;
+                    dc_texheight=TexMan.getTextureheight(bottomtexture)>>FRACBITS;
+                    dc_source = GetColumn(bottomtexture,
+                                texturecolumn);
+                    CompleteColumn();
+        
+                    
+                    floorclip[rw_x] = (short) mid;
+                }
+                else
+                    floorclip[rw_x] = (short) (yh+1);
+                }
+                else
+                {
+                // no bottom wall
+                if (markfloor)
+                    floorclip[rw_x] = (short) (yh+1);
+                }
+                    
+                if (maskedtexture)
+                {
+                // save texturecol
+                //  for backdrawing of masked mid texture
+                maskedtexturecol[pmaskedtexturecol+rw_x] = (short) texturecolumn;
+                }
+            }
+                
+            rw_scale += rw_scalestep;
+            topfrac += topstep;
+            bottomfrac += bottomstep;
+            }
+        }
+        
+        /** Called from RenderSegLoop.
+         * This  should either invoke the column function, or 
+         * store a wall rendering instruction in the parallel version.
+         * It's the only difference between the parallel and serial
+         * renderer, BTW. So override and implement accordingly.
+         * 
+         */
+        protected abstract void CompleteColumn();
         
         protected column_t    col;
         
@@ -2743,7 +2997,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
         
     }
     
-    protected interface PlaneDrawer{
+    protected interface IPlaneDrawer{
 
         void InitPlanes();
 
@@ -2766,6 +3020,420 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
         void DrawPlanes();
     }
     
+    public abstract class PlaneDrawer implements IPlaneDrawer{
+        
+        
+
+        //protected planefunction_t     floorfunc;
+        //protected planefunction_t     ceilingfunc;
+        
+        protected final boolean RANGECHECK = false;
+
+        
+        //
+        // spanstart holds the start of a plane span
+        // initialized to 0 at start
+        //
+        protected int[]           spanstart=new int[SCREENHEIGHT];
+        protected int[]           spanstop=new int [SCREENHEIGHT];
+
+        //
+        // texture mapping
+        //
+        protected byte[][]       planezlight;
+        /** To treat as fixed_t */
+        protected int         planeheight;
+        /** To treat at fixed_t */
+        protected int[]           yslope=new int[SCREENHEIGHT];      
+        protected float[]           yslopef=new float[SCREENHEIGHT];
+        /** To treat as fixed_t */
+        protected int[]           distscale=new int[SCREENWIDTH];
+        protected float[]           distscalef=new float[SCREENWIDTH];
+        /** To treat as fixed_t */
+        protected int basexscale, baseyscale;
+
+        /** To treat as fixed_t */
+        protected int[] cachedheight=new int[SCREENHEIGHT];
+        
+        
+        /** To treat as fixed_t */
+        protected int[]           cacheddistance=new int[SCREENHEIGHT];
+        /** To treat as fixed_t */
+        protected int[]           cachedxstep=new int[SCREENHEIGHT];
+        /** To treat as fixed_t */
+        protected int[]           cachedystep=new int[SCREENHEIGHT];
+        
+
+        /**
+         * R_CheckPlane
+         * 
+         * Called from within StoreWallRange
+         * 
+         * Presumably decides if a visplane should be split or not?
+         * 
+         */
+        
+        public int
+        CheckPlane
+        ( int index,
+          int       start,
+          int       stop )
+        {
+            
+            if (DEBUG2) System.out.println("Checkplane "+index+" between "+start+" and "+stop);
+            
+            // Interval ?
+            int     intrl;
+            int     intrh;
+            
+            // Union?
+            int     unionl;          
+            int     unionh;
+            // OK, so we check out ONE particular visplane.
+            visplane_t pl=visplanes[index];
+            
+            if (DEBUG2) System.out.println("Checking out plane "+pl);
+            
+            int x;
+            
+            /* If start is smaller than the plane's min... 
+             * 
+             * start     minx         maxx       stop
+             *   |       |            |          |
+             *   --------PPPPPPPPPPPPPP-----------
+             * 
+             */
+            if (start < pl.minx)
+            {
+            intrl = pl.minx;
+            unionl = start;
+            /* Then we will have this: 
+             * 
+             * unionl    intrl        maxx       stop
+             *   |       |            |          |
+             *   --------PPPPPPPPPPPPPP-----------
+             */
+            
+            }
+            else
+            {              
+            unionl = pl.minx;
+            intrl = start;
+            
+            /* else we will have this: 
+             * 
+             *      union1 intrl      maxx       stop
+             *           |      |     |          |
+             *   --------PPPPPPPPPPPPPP-----------
+             *   
+             * unionl comes before intrl in any case.  
+             *   
+             */          
+            }
+            
+            /* Same as before, for for stop and maxx.
+             * This time, intrh comes before unionh.
+             */
+            
+            if (stop > pl.maxx)
+            {
+            intrh = pl.maxx;
+            unionh = stop;
+            }
+            else
+            {
+            unionh = pl.maxx;
+            intrh = stop;
+            }
+
+            /* An interval is now defined, which is entirely contained in the
+             * visplane. 
+             */
+
+            // If the value FF is NOT stored ANYWWHERE inside it, we bail out early
+            for (x=intrl ; x<= intrh ; x++)
+                if (pl.getTop(x) != Character.MAX_VALUE)
+                break;
+
+            // This can only occur if the loop above completes,
+            // else the visplane we were checking has non-visible/clipped
+            // portions within that range: we must split.
+            
+            if (x > intrh)
+            {
+            // Merge the visplane
+            pl.minx = unionl;
+            pl.maxx = unionh;
+            //System.out.println("Plane modified as follows "+pl);
+            // use the same one
+            return index;      
+            }
+            
+            // SPLIT: make a new visplane at "last" position, copying materials and light.
+            // TODO: visplane overflows could occur at this point.
+            
+            if (lastvisplane==MAXVISPLANES){
+                ResizeVisplanes();
+            }
+                      
+            visplanes[lastvisplane].height = pl.height;
+            visplanes[lastvisplane].picnum = pl.picnum;
+            visplanes[lastvisplane].lightlevel = pl.lightlevel;
+            
+            pl = visplanes[lastvisplane++];
+            pl.minx = start;
+            pl.maxx = stop;
+
+            //memset (pl.top,0xff,sizeof(pl.top));
+            pl.clearTop();
+                
+            //return pl;
+            
+            //System.out.println("New plane created: "+pl);
+            return lastvisplane-1;
+        }
+        
+        /**
+         * R_ClearPlanes
+         * At begining of frame.
+         * 
+         */
+        
+        @Override
+        public void ClearPlanes ()
+        {              
+            int angle;
+            
+            /* View planes are cleared at the beginning of 
+             * every plane, by setting them "just outside"
+             * the borders of the screen (-1 and viewheight).
+             * 
+             */
+            
+            for (int i=0 ; i<viewwidth ; i++)
+            {
+            floorclip[i] =(short) viewheight;
+            ceilingclip[i] = -1;
+            }
+
+            // Point to #1 in visplane list? OK... ?!
+            lastvisplane = 0;          
+            
+            // We point back to the first opening of the list openings[0], again.
+            lastopening = 0;
+            
+            // texture calculation
+            System.arraycopy(BLANKCACHEDHEIGHT,0,cachedheight, 0, BLANKCACHEDHEIGHT.length);
+
+            // left to right mapping
+            // FIXME: If viewangle is ever < ANG90, you're fucked. How can this be prevented?
+            // Answer: 32-bit unsigned are supposed to roll over. You can & with 0xFFFFFFFFL.
+            angle = (int) Tables.toBAMIndex(viewangle-ANG90);
+            
+            // scale will be unit scale at SCREENWIDTH/2 distance
+            basexscale = FixedDiv (finecosine[angle],centerxfrac);
+            baseyscale = -FixedDiv (finesine[angle],centerxfrac);
+        }
+        
+        /**
+         * R_MapPlane
+         *
+         * Called only by R_MakeSpans.
+         * 
+         * This is where the actual span drawing function is called.
+         * 
+         * Uses global vars:
+         * planeheight
+         *  ds_source -> flat data has already been set.
+         *  basexscale -> actual drawing angle and position is computed from these
+         *  baseyscale
+         *  viewx
+         *  viewy
+         *
+         * BASIC PRIMITIVE
+         */
+        
+        public void
+        MapPlane
+        ( int       y,
+          int       x1,
+          int       x2 )
+        {
+            // MAES: angle_t
+            int angle;
+            float dangle;
+            // fixed_t
+            int distance;
+            int length;
+            float dlength;
+            int index;
+            
+        if (RANGECHECK){
+            if (x2 < x1
+            || x1<0
+            || x2>=viewwidth
+            || y>viewheight)
+            {
+            I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+            }
+        }
+
+            if (planeheight != cachedheight[y])
+            {
+            cachedheight[y] = planeheight;
+            distance = cacheddistance[y] = FixedMul (planeheight , yslope[y]);
+            ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
+            ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
+            }
+            else
+            {
+            distance = cacheddistance[y];
+            ds_xstep = cachedxstep[y];
+            ds_ystep = cachedystep[y];
+            }
+            
+            length = FixedMul (distance,distscale[x1]);
+            angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
+            ds_xfrac = viewx + FixedMul(finecosine[angle], length);
+            ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+
+            // FIXME: alternate, more FPU-friendly implementation.
+            //dlength = (distance);//*distscalef[x1];
+            //dangle = (float) (2*Math.PI*(double)((viewangle +xtoviewangle[x1])&BITS32)/((double)0xFFFFFFFFL));
+            //ds_xfrac = viewx + (int)(Math.cos(dangle)* dlength);
+            //ds_yfrac = -viewy -(int)(Math.sin(dangle)* dlength);
+
+            
+            if (fixedcolormap!=null)
+            ds_colormap = fixedcolormap;
+            else
+            {
+            index = distance >>> LIGHTZSHIFT;
+            
+            if (index >= MAXLIGHTZ )
+                index = MAXLIGHTZ-1;
+
+            ds_colormap = planezlight[index];
+            }
+            
+            ds_y = y;
+            ds_x1 = x1;
+            ds_x2 = x2;
+
+            // high or low detail
+            spanfunc.invoke();    
+        }
+        
+        /**
+         * R_MakeSpans
+         * 
+         * Called only by DrawPlanes.
+         * If you wondered where the actual boundaries for the visplane
+         * flood-fill are laid out, this is it.
+         * 
+         * The system of coords seems to be defining a sort of cone.          
+         *          
+         * 
+         * @param x Horizontal position
+         * @param t1 Top-left y coord?
+         * @param b1 Bottom-left y coord?
+         * @param t2 Top-right y coord ?
+         * @param b2 Bottom-right y coord ?
+         * 
+         */
+
+          protected void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+              
+              // If t1 = [sentinel value] then this part won't be executed.
+              while (t1 < t2 && t1 <= b1) {
+                  this.MapPlane(t1, spanstart[t1], x - 1);
+                  t1++;
+              }
+              while (b1 > b2 && b1 >= t1) {
+                  this.MapPlane(b1, spanstart[b1], x - 1);
+                  b1--;
+              }
+
+              // So...if t1 for some reason is < t2, we increase t2 AND store the current x
+              // at spanstart [t2] :-S
+              while (t2 < t1 && t2 <= b2) {
+                  //System.out.println("Increasing t2");
+                  spanstart[t2] = x;
+                  t2++;
+              }
+
+              // So...if t1 for some reason b2 > b1, we decrease b2 AND store the current x
+              // at spanstart [t2] :-S
+
+              while (b2 > b1 && b2 >= t2) {
+                  //System.out.println("Decreasing b2");
+                  spanstart[b2] = x;
+                  b2--;
+              }
+          }
+
+        
+        /**
+         * R_InitPlanes
+         * Only at game startup.
+         */
+        
+      public  void InitPlanes ()
+        {
+          // Doh!
+        }
+        
+      /////////////// VARIOUS BORING GETTERS ////////////////////
+      
+      @Override
+      public int[] getCachedHeight() {
+           return this.cachedheight;
+      }
+
+
+      @Override
+      public int[] getCachedDistance() {
+          return this.cacheddistance;
+      }
+
+
+      @Override
+      public int[] getCachedXStep() {
+          return cachedxstep;
+      }
+
+
+      @Override
+      public int[] getCachedYStep() {
+          return cachedystep;
+      }
+
+
+      @Override
+      public int[] getDistScale() {
+          return distscale;
+      }
+
+
+      @Override
+      public int[] getYslope() {
+          return yslope;
+      }
+
+
+      @Override
+      public int getBaseXScale() {
+          return basexscale;
+      }
+
+
+      @Override
+      public int getBaseYScale() {
+          return baseyscale;
+      }
+      
+      
+    }
     
     ///////////////////////// LIGHTS, POINTERS, COLORMAPS ETC. ////////////////
     
@@ -3497,6 +4165,123 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
        * and is only OCCASIONALLY written to screen 1 (the visible one)
        * by calling R_VideoErase.
        */
+      
+      
+      public void ExecuteSetViewSize ()
+      {
+          int cosadj;
+          int dy;
+          int     i;
+          int     j;
+          int     level;
+          int     startmap;   
+          
+          setsizeneeded = false;
+
+          // 11 Blocks means "full screen"
+          
+          if (setblocks == 11)
+          {
+          scaledviewwidth = SCREENWIDTH;
+          viewheight = SCREENHEIGHT;
+          }
+          else
+          {
+              scaledviewwidth = setblocks*(SCREENWIDTH/10);
+              // Height can only be a multiple of 8.
+              viewheight = (short) ((setblocks*(SCREENHEIGHT- StatusBar.ST_HEIGHT)/10)&~7);
+          }
+          
+          detailshift = setdetail;
+          viewwidth = scaledviewwidth>>detailshift;
+          
+          centery = viewheight/2;
+          centerx = viewwidth/2;
+          centerxfrac=(centerx<<FRACBITS);
+          centeryfrac=(centery<<FRACBITS);
+          projection=centerxfrac;
+
+          // High detail
+          if (detailshift==0)
+          {
+              
+          colfunc = basecolfunc =DrawColumn;
+          fuzzcolfunc = DrawFuzzColumn;
+          transcolfunc = DrawTranslatedColumn;
+          glasscolfunc=DrawTLColumn;
+          playercolfunc=DrawColumnPlayer;
+          spanfunc = DrawSpan;
+          }
+          else {
+          // Low detail
+          colfunc = basecolfunc = DrawColumnLow;
+          fuzzcolfunc =DrawFuzzColumn;
+          transcolfunc = DrawTranslatedColumn;
+          glasscolfunc=DrawTLColumn;
+          playercolfunc=DrawColumnPlayer;
+          spanfunc = DrawSpanLow;
+          
+          }
+
+          InitBuffer (scaledviewwidth, viewheight);
+          
+          InitTextureMapping ();
+          
+          // psprite scales
+          //pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
+          //pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
+          
+          
+          pspritescale=(int) (FRACUNIT*((float)SCREEN_MUL*viewwidth)/SCREENWIDTH);
+          pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
+          skyscale=(int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
+
+          BOBADJUST=(int)(Defines.SCREEN_MUL*65536.0);
+          WEAPONADJUST=(int) ((SCREENWIDTH/(2*Defines.SCREEN_MUL))*FRACUNIT);
+          
+          // thing clipping
+          for (i=0 ; i<viewwidth ; i++)
+          screenheightarray[i] = (short) viewheight;
+          
+          // planes
+          for (i=0 ; i<viewheight ; i++)
+          {
+          dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
+          dy = Math.abs(dy);
+          MyPlanes.getYslope()[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+          //MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
+          }
+          
+          //double cosadjf;
+          for (i=0 ; i<viewwidth ; i++)
+          {
+          // MAES: In this spot we must interpet it as SIGNED, else it's pointless, right?
+          // MAES: this spot caused the "warped floor bug", now fixed. Don't forget xtoviewangle[i]!    
+          cosadj = Math.abs(finecosine(xtoviewangle[i]));
+          //cosadjf = Math.abs(Math.cos((double)xtoviewangle[i]/(double)0xFFFFFFFFL));
+          MyPlanes.getDistScale()[i] = FixedDiv (FRACUNIT,cosadj);
+          //MyPlanes.distscalef[i] = (float) (1.0/cosadjf);
+          }
+          
+          // Calculate the light levels to use
+          //  for each level / scale combination.
+          for (i=0 ; i< LIGHTLEVELS ; i++)
+          {
+          startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+          for (j=0 ; j<MAXLIGHTSCALE ; j++)
+          {
+              level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
+              
+              if (level < 0)
+              level = 0;
+
+              if (level >= NUMCOLORMAPS)
+              level = NUMCOLORMAPS-1;
+
+              scalelight[i][j] = colormaps[level];
+          }
+          }
+      }
       
       public void FillBackScreen() {
           flat_t src;
@@ -4931,6 +5716,11 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
         return sprites;
     }
 
+    
+    public Things getThings(){
+        return (Things) this.MyThings;
+    }
+    
         protected int ds_y;
 
         protected int ds_x1;
