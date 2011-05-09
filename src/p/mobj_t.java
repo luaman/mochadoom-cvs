@@ -298,7 +298,8 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         if (state == statenum_t.S_NULL)
         {
             state = null;
-            //TODO: P.RemoveMobj (mobj);
+            // MAES/_D_: uncommented this as it should work by now (?).
+            A.RemoveMobj (this);
             return false;
         }
 
@@ -310,6 +311,9 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
 
         // Modified handling.
         // Call action functions when the state is set
+        //_D_: changed this, causing a LOT of action to work
+        // MAES: workaround not needed since types
+        // are now set correctly.
         if (st.action!=null && st.action.getType()==acp1)       
             {A.dispatch(st.action, this, null);} 
         
@@ -318,29 +322,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
                     
         return true;
     }
-     
-
-    /**
-     * P_ExplodeMissile  
-     */
-    
-    public void P_ExplodeMissile ()
-    {
-        momx = momy = momz = 0;
-
-        this.SetMobjState (mobjinfo[type.ordinal()].deathstate);
-
-        tics -= RND.P_Random()&3;
-
-        if (tics < 1)
-        tics = 1;
-
-        flags &= ~MF_MISSILE;
-
-        if (info.deathsound!=null) ;
-        // TODO: S_StartSound (mo, mo.info.deathsound);
-    }
-
+  
     /**
      * P_ZMovement
      */
@@ -416,7 +398,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         if ( (flags & MF_MISSILE)!=0
              && (flags & MF_NOCLIP)==0 )
         {
-            this.P_ExplodeMissile ();
+            A.ExplodeMissile(this);
             return;
         }
         }
@@ -445,7 +427,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         if ( (flags & MF_MISSILE)!=0
              && (flags & MF_NOCLIP)==0 )
         {
-            this.P_ExplodeMissile ();
+            A.ExplodeMissile(this);
             return;
         }
         }
@@ -481,7 +463,6 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         this.lastlook=f.readInt();
      }
     
-    private random RND;
     public int         eflags; //DOOM LEGACY
 
     // TODO: a linked list of sectors where this object appears

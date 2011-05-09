@@ -79,14 +79,10 @@ import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.*;
 
 import static p.mobj_t.*;
-import p.UnifiedGameMap.Lights;
-import i.DoomStatusAware;
-import i.DoomSystemInterface;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
 import rr.subsector_t;
-import st.StatusBar;
 import data.Tables;
 import data.mapthing_t;
 import data.mobjinfo_t;
@@ -94,7 +90,6 @@ import data.mobjtype_t;
 import data.state_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
-import doom.DoomMain;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
@@ -128,7 +123,7 @@ public class Actions extends UnifiedGameMap {
        * T_MoveCeiling
        */
 
-      void MoveCeiling (ceiling_t ceiling)
+      protected void MoveCeiling (ceiling_t ceiling)
       {
           result_e    res;
           
@@ -246,7 +241,7 @@ public class Actions extends UnifiedGameMap {
       //
       // Add an active ceiling
       //
-      private void AddActiveCeiling(ceiling_t c)
+      protected void AddActiveCeiling(ceiling_t c)
       {
           int     i;
           
@@ -265,7 +260,7 @@ public class Actions extends UnifiedGameMap {
       //
       // Remove a ceiling's thinker
       //
-      void RemoveActiveCeiling(ceiling_t c)
+      protected void RemoveActiveCeiling(ceiling_t c)
       {
           int     i;
           
@@ -286,7 +281,7 @@ public class Actions extends UnifiedGameMap {
       //
       // Restart a ceiling that's in-stasis
       //
-      void ActivateInStasisCeiling(line_t line)
+      protected void ActivateInStasisCeiling(line_t line)
       {
           int     i;
           
@@ -309,7 +304,7 @@ public class Actions extends UnifiedGameMap {
        * MOVE A FLOOR TO IT'S DESTINATION (UP OR DOWN)
        *
        */
-      void MoveFloor(floormove_t floor)
+      protected void MoveFloor(floormove_t floor)
       {
           result_e    res;
           
@@ -359,10 +354,7 @@ public class Actions extends UnifiedGameMap {
       // EV.DoCeiling
       // Move a ceiling up/down and all around!
       //
-      boolean
-      DoCeiling
-      ( line_t   line,
-        ceiling_e type )
+      protected boolean DoCeiling( line_t   line, ceiling_e type )
       {
           int     secnum=-1;
           boolean     rtn=false;
@@ -442,7 +434,7 @@ public class Actions extends UnifiedGameMap {
        *@param line
        * 
        */
-      boolean DoDonut(line_t  line)
+      protected boolean DoDonut(line_t  line)
       {
           sector_t       s1;
           sector_t       s2;
@@ -505,10 +497,7 @@ public class Actions extends UnifiedGameMap {
       //
       // HANDLE FLOOR TYPES
       //
-      boolean
-      DoFloor
-      ( line_t   line,
-        floor_e   floortype )
+      protected boolean DoFloor( line_t   line,floor_e   floortype )
       {
           int         secnum=-1;
           boolean         rtn=false;
@@ -718,13 +707,11 @@ public class Actions extends UnifiedGameMap {
       }
 
 
-      //
-      // BUILD A STAIRCASE!
-      //
-      boolean
-      BuildStairs
-      ( line_t   line,
-        stair_e   type )
+      /**
+       * BUILD A STAIRCASE!
+       */
+      
+      protected boolean BuildStairs(line_t line, stair_e type )
       {
           int         secnum;
           int         height;
@@ -844,10 +831,10 @@ public class Actions extends UnifiedGameMap {
       // VERTICAL DOORS
       //
 
-      //
-      // T_VerticalDoor
-      //
-      public void VerticalDoor (vldoor_t door)
+      /**
+       * T_VerticalDoor
+       */
+      protected void VerticalDoor (vldoor_t door)
       {
           result_e   res;
          
@@ -979,13 +966,12 @@ public class Actions extends UnifiedGameMap {
       }
 
 
-      //
-      // EV_DoLockedDoor
-      // Move a locked door up/down
-      //
+      /**
+       * EV_DoLockedDoor
+       * Move a locked door up/down
+       */
 
-      boolean
-      DoLockedDoor
+      protected boolean DoLockedDoor
       ( line_t   line,
         vldoor_e type,
         mobj_t   thing )
@@ -1041,10 +1027,7 @@ public class Actions extends UnifiedGameMap {
       }
 
 
-      public boolean
-      DoDoor
-      ( line_t   line,
-        vldoor_e type )
+      protected boolean DoDoor(line_t line,vldoor_e type)
       {
           int        secnum;
           boolean rtn=false;
@@ -1123,13 +1106,11 @@ public class Actions extends UnifiedGameMap {
       }
 
 
-      //
-      // EV_VerticalDoor : open a door manually, no tag value
-      //
-      void
-      VerticalDoor
-      ( line_t   line,
-        mobj_t   thing )
+      /**
+       * EV_VerticalDoor : open a door manually, no tag value
+       */
+      
+      protected void VerticalDoor(line_t line, mobj_t thing )
       {
           player_t   player;
           //int      secnum;
@@ -1273,12 +1254,6 @@ public class Actions extends UnifiedGameMap {
           door.topheight = sec.FindLowestCeilingSurrounding();
           door.topheight -= 4*FRACUNIT;
       }
-
-
-    
-
-      
-
 
 
       // UNUSED
@@ -2377,7 +2352,7 @@ public class Actions extends UnifiedGameMap {
     void A_Look (mobj_t actor)
     {
         mobj_t targ;
-        boolean seeyou=true; // to avoid the fugly goto
+        boolean seeyou=false; // to avoid the fugly goto
         
         actor.threshold = 0;   // any shot will wake up
         targ = actor.subsector.sector.soundtarget;
@@ -2390,13 +2365,14 @@ public class Actions extends UnifiedGameMap {
         if ( flags(actor.flags,MF_AMBUSH ))
         {
             seeyou= (EN.CheckSight (actor, actor.target));              
+        } else
+            seeyou=true;
         }
-        
         if (!seeyou){
         if (!EN.LookForPlayers (actor, false) )
         return;
         }
-        }
+        
         // go into chase state
       seeyou:
         if (actor.info.seesound!=null)
@@ -2435,114 +2411,116 @@ public class Actions extends UnifiedGameMap {
     }
 
 
-    //
-    // A_Chase
-    // Actor has a melee attack,
-    // so it tries to close as fast as possible
-    //
+    /**
+     * A_Chase
+     * Actor has a melee attack,
+     * so it tries to close as fast as possible
+     */
+    
     void A_Chase (mobj_t   actor)
     {
         int     delta;
         boolean nomissile=false; // for the fugly goto
 
         if (actor.reactiontime!=0)
-        actor.reactiontime--;
-                    
+            actor.reactiontime--;
+
 
         // modify target threshold
         if  (actor.threshold!=0)
         {
-        if (actor.target==null
-            || actor.target.health <= 0)
-        {
-            actor.threshold = 0;
+            if (actor.target==null
+                    || actor.target.health <= 0)
+            {
+                actor.threshold = 0;
+            }
+            else
+                actor.threshold--;
         }
-        else
-            actor.threshold--;
-        }
-        
+
         // turn towards movement direction if not there yet
         if (actor.movedir < 8)
         {
-        actor.angle &= (7<<29);
-        delta = (int) (actor.angle - (actor.movedir << 29));
-        
-        if (delta > 0)
-            actor.angle -= ANG90/2;
-        else if (delta < 0)
-            actor.angle += ANG90/2;
+            actor.angle &= (7<<29);
+            delta = (int) (actor.angle - (actor.movedir << 29));
+
+            if (delta > 0)
+                actor.angle -= ANG90/2;
+            else if (delta < 0)
+                actor.angle += ANG90/2;
         }
 
         if (actor.target==null
-        || !flags(actor.target.flags,MF_SHOOTABLE))
+                || !flags(actor.target.flags,MF_SHOOTABLE))
         {
-        // look for a new target
-        if (EN.LookForPlayers(actor,true))
-            return;     // got a new target
-        
-        actor.SetMobjState (actor.info.spawnstate);
-        return;
+            // look for a new target
+            if (EN.LookForPlayers(actor,true))
+                return;     // got a new target
+
+            actor.SetMobjState (actor.info.spawnstate);
+            return;
         }
-        
+
         // do not attack twice in a row
         if (flags(actor.flags , MF_JUSTATTACKED))
         {
-        actor.flags &= ~MF_JUSTATTACKED;
-        if (DM.gameskill != skill_t.sk_nightmare && !DM.fastparm)
-            NewChaseDir (actor);
-        return;
+            actor.flags &= ~MF_JUSTATTACKED;
+            if (DM.gameskill != skill_t.sk_nightmare && !DM.fastparm)
+                NewChaseDir (actor);
+            return;
         }
-        
-        // check for melee attack
-        if (actor.info.meleestate!=null
-        && EN.CheckMeleeRange (actor))
-        {
-        if (actor.info.attacksound!=null)
-           S.StartSound (actor, actor.info.attacksound);
 
-        actor.SetMobjState(actor.info.meleestate);
-        return;
+        // check for melee attack
+        if (actor.info.meleestate!=statenum_t.S_NULL /*null*/
+                && EN.CheckMeleeRange (actor))
+        {
+            if (actor.info.attacksound!=null)
+                S.StartSound (actor, actor.info.attacksound);
+
+            actor.SetMobjState(actor.info.meleestate);
+            return;
         }
-        
+
         // check for missile attack
         if (actor.info.missilestate!=statenum_t.S_NULL /*!= null*/) //_D_: this caused a bug where Demon for example were disappearing
         {
-        if (DM.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
-            && !DM.fastparm && actor.movecount!=0)
-        {
-            nomissile=true;
-        }
-        
-        nomissile=!EN.CheckMissileRange (actor);
-        
-        if (nomissile){
-        actor.SetMobjState ( actor.info.missilestate);
-        actor.flags |= MF_JUSTATTACKED;
-        return;
-        }
+            if (DM.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
+                    && !DM.fastparm && actor.movecount!=0)
+            {
+                nomissile=true;
+            }
+            else
+                if (!EN.CheckMissileRange (actor))
+                    nomissile=true;
+
+            if (!nomissile){
+                actor.SetMobjState ( actor.info.missilestate);
+                actor.flags |= MF_JUSTATTACKED;
+                return;
+            }
         }
 
         // ?
-      nomissile:
-        // possibly choose another target
-        if (DM.netgame
-        && actor.threshold==0
-        && !EN.CheckSight (actor, actor.target) )
-        {
-        if (EN.LookForPlayers(actor,true))
-            return; // got a new target
-        }
-        
+        nomissile:
+            // possibly choose another target
+            if (DM.netgame
+                    && actor.threshold==0
+                    && !EN.CheckSight (actor, actor.target) )
+            {
+                if (EN.LookForPlayers(actor,true))
+                    return; // got a new target
+            }
+
         // chase towards player
         if (--actor.movecount<0
-        || !Move (actor))
+                || !Move (actor))
         {
-        NewChaseDir (actor);
+            NewChaseDir (actor);
         }
-        
+
         // make active sound
         if (actor.info.activesound!=null
-        && RND.P_Random() < 3)
+                && RND.P_Random() < 3)
         {
             S.StartSound (actor, actor.info.activesound);
         }
@@ -4548,11 +4526,8 @@ if (th.info.seesound!=null)
 
 th.target = source;
 th.angle = an;
-an>>>=ANGLETOFINESHIFT;
-th.momx = FixedMul( th.info.speed,
-       finecosine[(int) an]);
-th.momy = FixedMul( th.info.speed,
-       finesine[(int) an]);
+th.momx = FixedMul( th.info.speed, finecosine(an));
+th.momy = FixedMul( th.info.speed, finesine( an));
 th.momz = FixedMul( th.info.speed, slope);
 
 CheckMissileSpawn (th);
@@ -5425,13 +5400,21 @@ mobj_t  thing )
     public boolean dispatch(PIT what, Object arg){
         switch(what){
         case VileCheck:
-            return A.VileCheck((mobj_t)arg);
+            return VileCheck((mobj_t)arg);
         case CheckThing:
             return CheckThing((mobj_t)arg);                
         case StompThing:
             return StompThing((mobj_t)arg);                
         case CheckLine:
             return CheckLine((line_t)arg);
+        case AddLineIntercepts:
+            return AddLineIntercepts((line_t)arg);
+        case AddThingIntercepts:
+            return AddThingIntercepts((mobj_t)arg);
+        case ChangeSector:
+            return ChangeSector((mobj_t)arg);
+        case RadiusAttack:
+            return RadiusAttack((mobj_t)arg);            
         }
      // Shouldn't happen
         return false;
@@ -5693,11 +5676,12 @@ mobj_t  thing )
      return true;
     }
     
-    //
-    // PIT_RadiusAttack
-    // "bombsource" is the creature
-    // that caused the explosion at "bombspot".
-    //
+    /**
+     * PIT_RadiusAttack
+     * "bombsource" is the creature
+     * that caused the explosion at "bombspot".
+     */
+    
     public boolean RadiusAttack (mobj_t thing)
     {
         int dx,dy,dist; // fixed_t
@@ -5845,123 +5829,124 @@ mobj_t  thing )
      return true;
     }
 
-    //
-    // PTR_ShootTraverse
-    //
-    boolean ShootTraverse (intercept_t in)
+    /**
+     * PTR_ShootTraverse
+     *
+     * 9/5/2011: Accepted _D_'s fix
+     */
+    boolean ShootTraverse (intercept_t in){
+    int     x,y,z,frac; // fixed_t
+    line_t    li;
+    mobj_t     th;
+
+    int     slope,dist,thingtopslope,thingbottomslope; // fixed_t
+
+    if (in.isaline)
     {
-        int     x,y,z,frac; // fixed_t
-        line_t    li;
-        mobj_t     th;
-        boolean hitline=false;
-        
-        int     slope,dist,thingtopslope,thingbottomslope; // fixed_t
-            
-        if (in.isaline)
-        {
         li = (line_t) in.d();
-        
+
         if (li.special!=0)
             ShootSpecialLine (shootthing, li);
 
-        if ( !flags(li.flags, ML_TWOSIDED) ) {
-            hitline=true;
-            }
-        
+        if ( !flags(li.flags, ML_TWOSIDED) ) 
+            return gotoHitLine(in, li);
+
         // crosses a two sided line
         LineOpening (li);
-            
+
         dist = FixedMul (attackrange, in.frac);
 
         if (li.frontsector.floorheight != li.backsector.floorheight)
         {
             slope = FixedDiv (openbottom - shootz , dist);
-            if (slope > aimslope){      
-                hitline=true;
-            }
+            if (slope > aimslope)
+                return gotoHitLine(in, li);
         }
-            
+
         if (li.frontsector.ceilingheight != li.backsector.ceilingheight)
         {
             slope = FixedDiv (opentop - shootz , dist);
-            if (slope < aimslope){      
-                hitline=true;
-            }
+            if (slope < aimslope)
+                return gotoHitLine(in, li);
         }
 
         // shot continues
-        if (!hitline)
         return true;            
-        
-        // hit line
 
-        // position a bit closer
-        frac = in.frac - FixedDiv (4*FRACUNIT,attackrange);
-        x = trace.x + FixedMul (trace.dx, frac);
-        y = trace.y + FixedMul (trace.dy, frac);
-        z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+    }
 
-        if (li.frontsector.ceilingpic == TM.getSkyFlatNum())
-        {
-            // don't shoot the sky!
-            if (z > li.frontsector.ceilingheight)
-            return false;
-            
-            // it's a sky hack wall
-            if  (li.backsector!=null && li.backsector.ceilingpic == TM.getSkyFlatNum())
-            return false;       
-        }
-
-        // Spawn bullet puffs.
-        SpawnPuff (x,y,z);
-        
-        // don't go any farther
-        return false;   
-        }
-        
-        // shoot a thing
-        th = (mobj_t) in.d();
-        if (th == shootthing)
+    // shoot a thing
+    th = (mobj_t) in.d();
+    if (th == shootthing)
         return true;        // can't shoot self
-        
-        if (!flags(th.flags,MF_SHOOTABLE))
-        return true;        // corpse or something
-            
-        // check angles to see if the thing can be aimed at
-        dist = FixedMul (attackrange, in.frac);
-        thingtopslope = FixedDiv (th.z+th.height - shootz , dist);
 
-        if (thingtopslope < aimslope)
+    if (!flags(th.flags,MF_SHOOTABLE))
+        return true;        // corpse or something
+
+    // check angles to see if the thing can be aimed at
+    dist = FixedMul (attackrange, in.frac);
+    thingtopslope = FixedDiv (th.z+th.height - shootz , dist);
+
+    if (thingtopslope < aimslope)
         return true;        // shot over the thing
 
-        thingbottomslope = FixedDiv (th.z - shootz, dist);
+    thingbottomslope = FixedDiv (th.z - shootz, dist);
 
-        if (thingbottomslope > aimslope)
+    if (thingbottomslope > aimslope)
         return true;        // shot under the thing
 
-        
-        // hit thing
-        // position a bit closer
-        frac = in.frac - FixedDiv (10*FRACUNIT,attackrange);
 
-        x = trace.x + FixedMul (trace.dx, frac);
-        y = trace.y + FixedMul (trace.dy, frac);
-        z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+    // hit thing
+    // position a bit closer
+    frac = in.frac - FixedDiv (10*FRACUNIT,attackrange);
 
-        // Spawn bullet puffs or blod spots,
-        // depending on target type.
-        if (flags(((mobj_t)in.d()).flags , MF_NOBLOOD))
+    x = trace.x + FixedMul (trace.dx, frac);
+    y = trace.y + FixedMul (trace.dy, frac);
+    z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+
+    // Spawn bullet puffs or blod spots,
+    // depending on target type.
+    if (flags(((mobj_t)in.d()).flags , MF_NOBLOOD))
         SpawnPuff (x,y,z);
-        else
+    else
         SpawnBlood (x,y,z, la_damage);
 
-        if (la_damage!=0)
+    if (la_damage!=0)
         DamageMobj (th, shootthing, shootthing, la_damage);
 
-        // don't go any farther
-        return false;
-        
+    // don't go any farther
+    return false;
+    
+    
+}
+
+//_D_: NOTE: this function was added, because replacing a goto by a boolean flag caused a bug if shooting a single sided line
+protected boolean gotoHitLine(intercept_t in, line_t li) {
+    int x, y, z, frac;
+
+    // position a bit closer
+    frac = in.frac - FixedDiv (4*FRACUNIT,attackrange);
+    x = trace.x + FixedMul (trace.dx, frac);
+    y = trace.y + FixedMul (trace.dy, frac);
+    z = shootz + FixedMul (aimslope, FixedMul(frac, attackrange));
+
+    if (li.frontsector.ceilingpic == TM.getSkyFlatNum())
+    {
+        // don't shoot the sky!
+        if (z > li.frontsector.ceilingheight)
+            return false;
+
+        // it's a sky hack wall
+        if  (li.backsector!=null && li.backsector.ceilingpic == TM.getSkyFlatNum())
+            return false;       
     }
+
+    // Spawn bullet puffs.
+    SpawnPuff (x,y,z);
+
+    // don't go any farther
+    return false;   
+}
 
     //
     // TELEPORT MOVE
@@ -6663,12 +6648,10 @@ mobj_t  thing )
       int   distance )
     {
         int x2,y2;
-        
-        angle >>>= ANGLETOFINESHIFT;
         shootthing = t1;
         
-        x2 = t1.x + (distance>>FRACBITS)*finecosine[(int) angle];
-        y2 = t1.y + (distance>>FRACBITS)*finesine[(int) angle];
+        x2 = t1.x + (distance>>FRACBITS)*finecosine(angle);
+        y2 = t1.y + (distance>>FRACBITS)*finesine(angle);
         shootz = t1.z + (t1.height>>1) + 8*FRACUNIT;
 
         // can't shoot outside view angles
@@ -6712,7 +6695,6 @@ mobj_t  thing )
     {
         int x2,y2;
         
-       // angle >>>= ANGLETOFINESHIFT;
         shootthing = t1;
         la_damage = damage;
         x2 = t1.x + (distance>>FRACBITS)*finecosine(angle);

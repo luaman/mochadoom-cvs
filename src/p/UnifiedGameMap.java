@@ -90,12 +90,14 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         this.See=new Sight(); // Didn't initialize that.
         this.EN=new Enemies();
         this.thinkercap=new thinker_t();
+        intercepts = new intercept_t[MAXINTERCEPTS];
+        C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
+
         this.updateStatus(DC);
 
     }
     
-    
-    // ///////////////// STATUS ///////////////////
+    /////////////////// STATUS ///////////////////
 
     WadLoader W;
 
@@ -314,9 +316,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     //
     // INTERCEPT ROUTINES
     //
-    intercept_t[] intercepts = new intercept_t[MAXINTERCEPTS];
+    protected intercept_t[] intercepts;
 
-    // C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
     int intercept_p;
 
     public divline_t trace=new divline_t();
@@ -1626,13 +1627,15 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         return true;
     }
 
-    //
-    // P_ExplodeMissile
-    //
-    public void ExplodeMissile(mobj_t mo) {
+    /**
+     * P_ExplodeMissile
+     */
+    
+    protected void ExplodeMissile(mobj_t mo) {
         mo.momx = mo.momy = mo.momz = 0;
 
-        SetMobjState(mo, mobjinfo[mo.type.ordinal()].deathstate);
+        // MAES 9/5/2011: using mobj code for that.
+        mo.SetMobjState(mobjinfo[mo.type.ordinal()].deathstate);
 
         mo.tics -= RND.P_Random() & 3;
 
