@@ -210,8 +210,10 @@ public class DoomStatus extends DoomContext {
     public wbstartstruct_t wminfo;
 
     /** LUT of ammunition limits for each kind.
-        This doubles with BackPack powerup item. */
-    public int[] maxammo = new int[NUMAMMO];
+        This doubles with BackPack powerup item.
+        NOTE: this "maxammo" is treated like a global.
+         */
+    public int[] maxammo =  {200, 50, 300, 50};
 
     // -----------------------------------------
     // Internal parameters, used for engine.
