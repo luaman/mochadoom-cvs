@@ -75,7 +75,8 @@ public class player_t /*extends mobj_t */
         powers = new int[NUMPOWERS];
         frags = new int[MAXPLAYERS];
         ammo = new int[NUMAMMO];
-        maxammo = new int[NUMAMMO];
+        //maxammo = new int[NUMAMMO];
+        maxammo= new int[NUMAMMO];
         cards = new boolean[card_t.NUMCARDS.ordinal()];
         weaponowned = new boolean[NUMWEAPONS];
         psprites = new pspdef_t[NUMPSPRITES];
@@ -111,7 +112,7 @@ public class player_t /*extends mobj_t */
      * Focal origin above r.z
      */
     public int viewz;
-
+    
     /** (fixed_t) Base height above floor for viewz. */
     public int viewheight;
 
@@ -285,7 +286,7 @@ public class player_t /*extends mobj_t */
     
     // a weapon is found with two clip loads,
     // a big item has five clip loads
-    // public static final int[] maxammo = {200, 50, 300, 50};
+    
     public static final int[] clipammo = { 10, 4, 20, 1 };
 
     /**
