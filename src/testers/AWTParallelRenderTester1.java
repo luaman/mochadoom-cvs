@@ -15,8 +15,6 @@ import automap.Map;
 
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
-import rr.TextureManager;
-import rr.UnifiedRenderer;
 import s.DummySoundDriver;
 import st.StatusBar;
 
