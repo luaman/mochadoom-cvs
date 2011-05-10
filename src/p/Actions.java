@@ -1917,7 +1917,7 @@ public class Actions extends UnifiedGameMap {
   ( player_t player,
     pspdef_t psp ) 
   {
-      SetMobjState (player.mo, statenum_t.S_PLAY_ATK2);
+      player.mo.SetMobjState (statenum_t.S_PLAY_ATK2);
       player.SetPsprite (ps_flash,weaponinfo[player.readyweapon.ordinal()].flashstate);
   }
 
@@ -3034,9 +3034,10 @@ public class Actions extends UnifiedGameMap {
         }
         }
         
-        exact = actor.angle>>ANGLETOFINESHIFT;
-        actor.momx = FixedMul (actor.info.speed, finecosine[(int) exact]);
-        actor.momy = FixedMul (actor.info.speed, finesine[(int) exact]);
+        // MAES: fixed and sped up.
+        int exact2 = Tables.toBAMIndex(actor.angle);
+        actor.momx = FixedMul (actor.info.speed, finecosine[exact2]);
+        actor.momy = FixedMul (actor.info.speed, finesine[exact2]);
         
         // change slope
         dist = AproxDistance (dest.x - actor.x,
@@ -3331,7 +3332,7 @@ public class Actions extends UnifiedGameMap {
 
         mo = SpawnMissile (actor, actor.target, mobjtype_t.MT_FATSHOT);
         mo.angle += FATSPREAD;
-        an = (int) (mo.angle >> ANGLETOFINESHIFT);
+        an = Tables.toBAMIndex(mo.angle);
         mo.momx = FixedMul (mo.info.speed, finecosine[an]);
         mo.momy = FixedMul (mo.info.speed, finesine[an]);
     }
@@ -3348,7 +3349,7 @@ public class Actions extends UnifiedGameMap {
 
         mo = SpawnMissile (actor, actor.target, mobjtype_t.MT_FATSHOT);
         mo.angle -= FATSPREAD*2;
-        an = (int) (mo.angle >> ANGLETOFINESHIFT);
+        an = Tables.toBAMIndex(mo.angle);
         mo.momx = FixedMul (mo.info.speed, finecosine[an]);
         mo.momy = FixedMul (mo.info.speed, finesine[an]);
     }
@@ -3362,13 +3363,13 @@ public class Actions extends UnifiedGameMap {
         
         mo = SpawnMissile (actor, actor.target, mobjtype_t.MT_FATSHOT);
         mo.angle -= FATSPREAD/2;
-        an = (int) (mo.angle >> ANGLETOFINESHIFT);
+        an = Tables.toBAMIndex(mo.angle);
         mo.momx = FixedMul (mo.info.speed, finecosine[an]);
         mo.momy = FixedMul (mo.info.speed, finesine[an]);
 
         mo = SpawnMissile (actor, actor.target, mobjtype_t.MT_FATSHOT);
         mo.angle += FATSPREAD/2;
-        an = (int) (mo.angle >> ANGLETOFINESHIFT);
+        an = Tables.toBAMIndex(mo.angle);
         mo.momx = FixedMul (mo.info.speed, finecosine[an]);
         mo.momy = FixedMul (mo.info.speed, finesine[an]);
     }
@@ -3394,7 +3395,7 @@ public class Actions extends UnifiedGameMap {
 
         S.StartSound(actor, actor.info.attacksound);
         A_FaceTarget (actor);
-        an = (int) (actor.angle >> ANGLETOFINESHIFT);
+        an = Tables.toBAMIndex(actor.angle);
         actor.momx = FixedMul (SKULLSPEED, finecosine[an]);
         actor.momy = FixedMul (SKULLSPEED, finesine[an]);
         dist = AproxDistance (dest.x - actor.x, dest.y - actor.y);
@@ -3443,7 +3444,7 @@ public class Actions extends UnifiedGameMap {
 
 
         // okay, there's playe for another one
-        an = (int) (angle >> ANGLETOFINESHIFT);
+        an = Tables.toBAMIndex(angle);
         
         prestep =
         4*FRACUNIT
@@ -3932,7 +3933,7 @@ public class Actions extends UnifiedGameMap {
 
         newmobj = SpawnMobj (targ.x, targ.y, targ.z, type);
         if (EN.LookForPlayers (newmobj, true) )
-        SetMobjState (newmobj, newmobj.info.seestate);
+        newmobj.SetMobjState (newmobj.info.seestate);
         
         // telefrag anything in this spot
         TeleportMove (newmobj, newmobj.x, newmobj.y);
@@ -4457,7 +4458,7 @@ an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y);
 if (flags(dest.flags , MF_SHADOW))
 an += (RND.P_Random()-RND.P_Random())<<20; 
 
-th.angle = an&BITS32;;
+th.angle = an&BITS32;
 //an >>= ANGLETOFINESHIFT;
 th.momx = FixedMul (th.info.speed, finecosine(an));
 th.momy = FixedMul (th.info.speed, finesine(an));
@@ -4855,7 +4856,7 @@ CheckMissileSpawn (th);
          // spawn teleport fog at source and destination
          fog = SpawnMobj (oldx, oldy, oldz, mobjtype_t.MT_TFOG);
          S.StartSound( fog, sfxenum_t.sfx_telept);
-         an = (int) (m.angle >> ANGLETOFINESHIFT);
+         an = Tables.toBAMIndex(m.angle);
          fog = SpawnMobj (m.x+20*finecosine[an], m.y+20*finesine[an]
                     , thing.z, mobjtype_t.MT_TFOG);
 
@@ -5580,7 +5581,7 @@ mobj_t  thing )
         tmthing.flags &= ~MF_SKULLFLY;
         tmthing.momx = tmthing.momy = tmthing.momz = 0;
         
-        SetMobjState (tmthing, tmthing.info.spawnstate);
+        tmthing.SetMobjState (tmthing.info.spawnstate);
         
         return false;       // stop moving
         }
@@ -6499,7 +6500,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       mo.flags &= ~MF_SKULLFLY;
       mo.momx = mo.momy = mo.momz = 0;
 
-      SetMobjState (mo, mo.info.spawnstate);
+      mo.SetMobjState (mo.info.spawnstate);
     }
     return;
     }

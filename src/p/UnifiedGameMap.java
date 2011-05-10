@@ -1618,7 +1618,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             // Modified handling.
             // Call action functions when the state is set
-            if (st.action.getType() == acp1)
+            if (st.action!=null && st.action.getType() == acp1)
                 A.dispatch(st.action, mobj, null);
 
             state = st.nextstate;
