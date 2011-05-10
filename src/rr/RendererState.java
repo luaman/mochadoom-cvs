@@ -807,10 +807,26 @@ validcount++;
 
 
         //
-        // R_NewVisSprite
+        // 
         //
-        vissprite_t overflowsprite;
+        vissprite_t overflowsprite=new vissprite_t();
 
+        
+        /**
+         * R_NewVisSprite
+         * 
+         * Returns either a "new" sprite (actually, reuses a pool),
+         * or a special "overflow sprite" which just gets overwritten with
+         * bogus data. 
+         * 
+         * FIXME: It's a bit of dumb thing to do, since the overflow sprite is never renderered
+         * but we have to copy data over it anyway. Would make more sense to check for it
+         * specifically and avoiding copying data.
+         * 
+         * TODO: definitive fix for this would be to make it fully limit-removing.
+         * 
+         * @return
+         */
         public vissprite_t NewVisSprite ()
         {
             if (vissprite_p == (MAXVISSPRITES-1))

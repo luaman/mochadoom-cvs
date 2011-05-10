@@ -33,7 +33,7 @@ import doom.player_t;
 public class ParallelRenderer extends RendererState  {
 
 	////////// PARALLEL OBJECTS /////////////
-	private final static int NUMWALLTHREADS=2;
+	private final static int NUMWALLTHREADS=4;
 	private final static int NUMFLOORTHREADS=1;
 	private Executor tp;
 	private VisplaneWorker[] vpw;
@@ -586,6 +586,7 @@ private void RenderRWIPipeline() {
 
     for (int i=0;i<NUMWALLTHREADS;i++){
         RWIExec[i].setRange((i*RWIcount)/NUMWALLTHREADS, ((i+1)*RWIcount)/NUMWALLTHREADS);
+        //RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
         tp.execute(RWIExec[i]);
     }
     

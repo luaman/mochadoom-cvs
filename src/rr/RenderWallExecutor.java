@@ -21,9 +21,7 @@ public class RenderWallExecutor implements Runnable {
     private RenderWallInstruction[] RWI;
     private int[] ylookup;
     private byte[] screen;
-    private int start, end;
-    
-    
+    private int start, end,numthreads=1;
     
     public RenderWallExecutor(int[] ylookup, byte[] screen, RenderWallInstruction[] RWI, CyclicBarrier barrier){
         this.ylookup=ylookup;
@@ -35,6 +33,12 @@ public class RenderWallExecutor implements Runnable {
     public void setRange(int start, int end){
         this.end=end;
         this.start=start;
+    }
+    
+    public void setRange(int start, int end,int numthreads){
+        this.end=end;
+        this.start=start;
+        this.numthreads=numthreads;
     }
     
     public void run(){
