@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.9 2011/05/06 14:00:54 velktron Exp $
+// $Id: EndLevel.java,v 1.10 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.10  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
 // Revision 1.9  2011/05/06 14:00:54  velktron
 // More of _D_'s changes committed.
 //
@@ -96,7 +99,7 @@ public class EndLevel implements DoomStatusAware{
     private DoomMain DS;
     private DoomVideoRenderer V;
     private DoomSoundInterface S;
-    private WadLoader W;
+    private IWadLoader W;
     private random RND;
     
     private static int COUNT_KILLS=2;

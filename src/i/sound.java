@@ -3,7 +3,7 @@ package i;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sound.java,v 1.3 2010/09/23 07:31:11 velktron Exp $
+// $Id: sound.java,v 1.4 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package i;
 // GNU General Public License for more details.
 //
 // $Log: sound.java,v $
+// Revision 1.4  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
 // Revision 1.3  2010/09/23 07:31:11  velktron
 // fuck
 //
@@ -38,7 +41,7 @@ import static data.Defines.*;
 
 import java.nio.ByteBuffer;
 
-import w.WadLoader;
+import w.IWadLoader;
 
 import data.sfxinfo_t;
 import static data.sounds.*;
@@ -47,10 +50,10 @@ import doom.doomstat;
 
 public class sound implements SystemSoundInterface{
 
-	public WadLoader W;
+	public IWadLoader W;
 	public doomstat ds;
 	
-public static final String rcsid = "$Id: sound.java,v 1.3 2010/09/23 07:31:11 velktron Exp $";
+public static final String rcsid = "$Id: sound.java,v 1.4 2011/05/10 10:39:18 velktron Exp $";
 
 
 // UNIX hack, to be removed.

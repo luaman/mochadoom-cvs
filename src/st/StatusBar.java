@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.22 2010/12/20 17:15:08 velktron Exp $
+// $Id: StatusBar.java,v 1.23 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.23  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
 // Revision 1.22  2010/12/20 17:15:08  velktron
 // Made the renderer more OO -> TextureManager and other changes as well.
 //
@@ -140,17 +143,17 @@ import rr.UnifiedRenderer;
 import rr.patch_t;
 import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
-import w.WadLoader;
+import w.IWadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.22 2010/12/20 17:15:08 velktron Exp $";
+        "$Id: StatusBar.java,v 1.23 2011/05/10 10:39:18 velktron Exp $";
 
     // /// STATUS //////////
 
     protected DoomVideoRenderer V;
 
-    protected WadLoader W;
+    protected IWadLoader W;
 
     protected RendererState R;
 

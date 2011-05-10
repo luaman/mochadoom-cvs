@@ -32,7 +32,7 @@ import st.DoomStatusBarInterface;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.DoomBuffer;
-import w.WadLoader;
+import w.IWadLoader;
 import data.maplinedef_t;
 import data.mapnode_t;
 import data.mapsector_t;
@@ -48,7 +48,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.16 2011/05/05 17:24:22 velktron Exp $
+// $Id: LevelLoader.java,v 1.17 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +63,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.17  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
 // Revision 1.16  2011/05/05 17:24:22  velktron
 // Started merging more of _D_'s changes.
 //
@@ -142,7 +145,7 @@ public class LevelLoader implements DoomStatusAware{
     
     DoomStatusBarInterface ST;
     DoomSystemInterface I;
-    WadLoader W;
+    IWadLoader W;
     DoomMain DM;
     DoomVideoRenderer V;
     RendererState R;
@@ -150,7 +153,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.16 2011/05/05 17:24:22 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.17 2011/05/10 10:39:18 velktron Exp $";
 
   //  
   // MAP related Lookup tables.

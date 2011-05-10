@@ -66,6 +66,7 @@ import i.DoomSystemInterface;
 import st.StatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import w.IWadLoader;
 import w.WadLoader;
 import w.name8;
 import data.Defines;
@@ -104,7 +105,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
 
     protected DoomMain DM;
     protected LevelLoader LL;
-    protected WadLoader W;
+    protected IWadLoader W;
     protected SegDrawer MySegs;
     protected DoomMenu Menu;
     protected BSP MyBSP;
@@ -647,19 +648,16 @@ validcount++;
 
        /**
         * R_InitSpriteDefs
-        * Pass a null terminated list of sprite names
-        *  (4 chars exactly) to be used.
-        * Builds the sprite rotation matrixes to account
-        *  for horizontally flipped sprites.
-        * Will report an error if the lumps are inconsistant. 
+        * Pass a null terminated list of sprite names (4 chars exactly) to be used.
+        * Builds the sprite rotation matrixes to accoun tfor horizontally flipped sprites.
+        * Will report an error if the lumps are inconsistent.
         * Only called at startup.
         *
-        * Sprite lump names are 4 characters for the actor,
-        *  a letter for the frame, and a number for the rotation.
-        * A sprite that is flippable will have an additional
-        *  letter/number appended.
-        * The rotation character can be 0 to signify no rotations.
+        * Sprite lump names are 4 characters for the actor, a letter for the frame,
+        * and a number for the rotation. A sprite that is flippable will have an additional
+        *  letter/number appended. The rotation character can be 0 to signify no rotations.
         */
+        
         public void InitSpriteDefs (String[] namelist) 
         { 
 
@@ -707,19 +705,19 @@ validcount++;
             for (int l=start+1 ; l<end ; l++)
             {
                 // We HOPE it has 8 characters.
-                char[] cname=W.lumpinfo[l].name.toCharArray();
+                char[] cname=W.GetLumpInfo(l).name.toCharArray();
                 if (cname.length==6 || cname.length==8) // Sprite names must be this way
                 
                 /* If the check is successful, we keep looking for more frames
                  * for a particular sprite e.g. TROOAx, TROOHxHy etc.    
                  */
-                if (W.lumpinfo[l].intname == intname)
+                if (W.GetLumpInfo(l).intname == intname)
                 {
                 frame = cname[4] - 'A';
                 rotation = cname[5] - '0';
 
                 if (DM.modifiedgame)
-                    patched = W.GetNumForName (W.lumpinfo[l].name);
+                    patched = W.GetNumForName (W.GetLumpInfo(l).name);
                 else
                     patched = l;
 
@@ -2269,7 +2267,7 @@ validcount++;
             int     lightnum;
             int     texnum;
             
-            System.out.printf("RenderMaskedSegRange from %d to %d\n",x1,x2);
+            //System.out.printf("RenderMaskedSegRange from %d to %d\n",x1,x2);
             
             // Calculate light table.
             // Use different light tables
@@ -5589,7 +5587,7 @@ validcount++;
           MyThings.InitSpriteDefs (namelist);
       }
 
-      /** To be called right after PrecacheLevel.
+      /** To be called right after PrecacheLevel from SetupLevel in LevelLoader.
        *  It's an ugly hack, in that it must communicate
        *  with the "Game map" class and determine what kinds
        *  of monsters are actually in the level and whether it should load
@@ -5630,7 +5628,7 @@ validcount++;
            for (k=0 ; k<8 ; k++)
            {
            lump = firstspritelump + sf.lump[k];
-           spritememory += W.lumpinfo[lump].size;
+           spritememory += W.GetLumpInfo(lump).size;
            W.CacheLumpNum(lump , PU_CACHE,patch_t.class);
            }
        }

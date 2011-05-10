@@ -63,7 +63,7 @@ import rr.vertex_t;
 import s.DoomSoundInterface;
 import st.StatusBar;
 import utils.C2JUtils;
-import w.WadLoader;
+import w.IWadLoader;
 import data.mapthing_t;
 import data.mobjtype_t;
 import data.state_t;
@@ -99,7 +99,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     
     /////////////////// STATUS ///////////////////
 
-    WadLoader W;
+    IWadLoader W;
 
     DoomAutoMap AM;
 

@@ -377,10 +377,11 @@ public class player_t /*extends mobj_t */
 
     public static final int BONUSADD = 6;
 
-    //
-    // P_GiveWeapon
-    // The weapon name may have a MF_DROPPED flag ored in.
-    //
+    /**
+     * P_GiveWeapon
+     * The weapon name may have a MF_DROPPED flag ored in.
+     */
+    
     public boolean GiveWeapon(weapontype_t weapn, boolean dropped) {
         boolean gaveammo;
         boolean gaveweapon;
@@ -460,9 +461,10 @@ public class player_t /*extends mobj_t */
         return true;
     }
 
-    //
-    // P_GiveCard
-    //
+    /**
+     * P_GiveCard
+     */
+    
     public void GiveCard(card_t crd) {
         int card = crd.ordinal();
         if (cards[card])
@@ -517,12 +519,13 @@ public class player_t /*extends mobj_t */
  
 
 
-    //
-    // P_PlayerInSpecialSector
-    // Called every tic frame
-    //  that the player origin is in a special sector
-    //
-    public void PlayerInSpecialSector ()
+    /**
+     * P_PlayerInSpecialSector
+     * Called every tic frame
+     *  that the player origin is in a special sector
+     */
+    
+    protected void PlayerInSpecialSector ()
     {
         sector_t   sector;
         
@@ -793,16 +796,11 @@ SetPsprite
     
     // Call action routine.
     // Modified handling.
-    try {
-       // System.out.println("Attempting to perform "+state);
-    if (state.action.getType()==acp2)
+    if (state.action!=null && state.action.getType()==acp2)
     {
         P.A.dispatch(state.action,this, psp);
         if (psp.state==null)
         break;
-    }
-    } catch (java.lang.NullPointerException e){
-        System.out.println("ERROR: action for state "+state+ " is null!");
     }
     
     newstate = psp.state.nextstate;
@@ -825,7 +823,7 @@ SetPsprite
         
         if (id>=0) return id;
         int i;    
-        // Let's say that we don't know jack.
+        // Let's assume that we know jack.
             for (i=0;i<DM.players.length;i++)
                 if (this==DM.players[i]) break;
             
@@ -957,11 +955,12 @@ SetPsprite
         this.SetPsprite ( ps_weapon, newstate);
     }
 
-    //
-    // P_CheckAmmo
-    // Returns true if there is enough ammo to shoot.
-    // If not, selects the next weapon to use.
-    //
+    /**
+     * P_CheckAmmo
+     * Returns true if there is enough ammo to shoot.
+     * If not, selects the next weapon to use.
+     */
+    
     public boolean CheckAmmo ()
     {
         ammotype_t      ammo;
@@ -1044,10 +1043,11 @@ SetPsprite
     }
 
 
-    //
-    // P_DropWeapon
-    // Player died, so put the weapon away.
-    //
+    /**
+     * P_DropWeapon
+     * Player died, so put the weapon away.
+     */
+    
     public void DropWeapon ()
     {
         this.SetPsprite (
@@ -1128,7 +1128,7 @@ SetPsprite
      // The actual changing of the weapon is done
      //  when the weapon psprite can do it
      //  (read: not in the middle of an attack).
-     System.out.println("Weapon change detected, attempting to perform");
+    // System.out.println("Weapon change detected, attempting to perform");
          
      newweapon = weapontype_t.values()[(cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT];
 
@@ -1182,7 +1182,7 @@ SetPsprite
      // cycle psprites
      player.MovePsprites ();
      
-     // Counters, time dependend power ups.
+     // Counters, time dependent power ups.
 
      // Strength counts up to diminish fade.
      if (eval(player.powers[pw_strength]))
@@ -1232,9 +1232,9 @@ SetPsprite
      player.fixedcolormap = 0;
     }
 
+    /** Called by Actions ticker */
     public void PlayerThink() {
-        PlayerThink(this);
-        
+        PlayerThink(this);       
     }
 
 	@Override
@@ -1245,8 +1245,6 @@ SetPsprite
 	    this.RND=DC.RND;
 	    this.I=DC.I;
 	    this.S=DC.S;
-	    
-		
 	}
 
 	public String toString(){

@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.21 2010/12/14 17:55:59 velktron Exp $
+// $Id: Map.java,v 1.22 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.22  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
 // Revision 1.21  2010/12/14 17:55:59  velktron
 // Fixed weapon bobbing, added translucent column drawing, separated rendering commons.
 //
@@ -119,7 +122,7 @@ import rr.patch_t;
 import st.DoomStatusBarInterface;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
-import w.WadLoader;
+import w.IWadLoader;
 import m.cheatseq_t;
 
 public class Map implements DoomAutoMap{
@@ -127,13 +130,13 @@ public class Map implements DoomAutoMap{
 /////////////////// Status objects ///////////////////
     
 DoomStatusBarInterface ST;
-WadLoader W;
+IWadLoader W;
 DoomMain DM;
 DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.21 2010/12/14 17:55:59 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.22 2011/05/10 10:39:18 velktron Exp $";
 
 /*
 #include <stdio.h>

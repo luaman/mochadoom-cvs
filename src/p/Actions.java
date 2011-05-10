@@ -1888,13 +1888,12 @@ public class Actions extends UnifiedGameMap {
   {
       statenum_t  newstate;
       
-      System.out.println("Trying to raise weapon");
-      
-      System.out.println(player.readyweapon + " height: "+psp.sy);
+      //System.out.println("Trying to raise weapon");      
+      //System.out.println(player.readyweapon + " height: "+psp.sy);
       psp.sy -= RAISESPEED;
 
       if (psp.sy > WEAPONTOP ) {
-      System.out.println("Not on top yet, exit and repeat.");
+      //System.out.println("Not on top yet, exit and repeat.");
       return;
       }
       
@@ -1903,7 +1902,7 @@ public class Actions extends UnifiedGameMap {
       // The weapon has been raised all the way,
       //  so change to the ready state.
       newstate = weaponinfo[player.readyweapon.ordinal()].readystate;
-      System.out.println("Weapon raised, setting new state.");
+      //System.out.println("Weapon raised, setting new state.");
       
       player.SetPsprite (ps_weapon, newstate);
   }
@@ -7497,7 +7496,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
          
      }
      // go through the sorted list
-     System.out.println("Some intercepts found");
+     //System.out.println("Some intercepts found");
      return TraverseIntercepts ( trav, FRACUNIT );
     } // end method
     

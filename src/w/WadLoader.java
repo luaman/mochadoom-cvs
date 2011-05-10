@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.27 2011/01/26 00:04:45 velktron Exp $
+// $Id: WadLoader.java,v 1.28 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.28  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
 // Revision 1.27  2011/01/26 00:04:45  velktron
 // DEUTEX flat support, Unrolled drawspan precision fix.
 //
@@ -144,7 +147,7 @@ import z.memblock_t;
 import static data.Defines.*;
 import i.*;
 
-public class WadLoader {
+public class WadLoader implements IWadLoader {
 
 	protected DoomSystemInterface I;
 
@@ -280,11 +283,8 @@ public class WadLoader {
 	// MAES: was char*
 	String reloadname;
 
-	/**
-	 * This is where lumps are actually read + loaded from a file.
-	 * 
-	 * @param filename
-	 * @throws Exception
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#AddFile(java.lang.String)
 	 */
 
 	public void AddFile(String filename) throws Exception {
@@ -420,11 +420,8 @@ public class WadLoader {
 		
 	}
 
-	/**
-	 * W_Reload Flushes any of the reloadable lumps in memory and reloads the
-	 * directory.
-	 * 
-	 * @throws Exception
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#Reload()
 	 */
 	@SuppressWarnings("null")
 	public void Reload() throws Exception {
@@ -481,27 +478,8 @@ public class WadLoader {
 
 	}
 
-	/**
-	 * W_InitMultipleFiles
-	 *
-	 * Pass a null terminated list of files to use (actually
-	 * a String[] array in Java).
-	 * 
-	 * All files are optional, but at least one file
-	 * must be found. 
-	 * 
-	 * Files with a .wad extension are idlink files
-	 * with multiple lumps.
-	 * 
-	 * Other files are single lumps with the base filename
-	 * for the lump name.
-	 * 
-	 * Lump names can appear multiple times.
-	 * The name searcher looks backwards, so a later file
-	 * does override all earlier ones.
-	 * 
-	 * @param filenames
-	 * 
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#InitMultipleFiles(java.lang.String[])
 	 */
 	
 	public void InitMultipleFiles(String[] filenames) throws Exception {
@@ -532,13 +510,8 @@ public class WadLoader {
 		this.InitLumpHash();
 	}
 
-	/**
-	 * W_InitFile
-	 * 
-	 * Just initialize from a single file.
-	 * 
-	 * @param filename 
-	 * 
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#InitFile(java.lang.String)
 	 */
 	public void InitFile(String filename) throws Exception {
 		String[] names = new String[1];
@@ -548,11 +521,8 @@ public class WadLoader {
 		InitMultipleFiles(names);
 	}
 
-	/**
-	 * W_NumLumps
-	 * 
-	 * Returns the total number of lumps loaded in this Wad manager. Awesome. 
-	 * 
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#NumLumps()
 	 */
 	public final int NumLumps() {
 		return numlumps;
@@ -633,12 +603,8 @@ public class WadLoader {
 		return -1;
 	}
 
-	/**
-	 * Returns actual lumpinfo_t object for a given name. Useful if you want to
-	 * access something on a file, I guess?
-	 * 
-	 * @param name
-	 * @return
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#GetLumpinfoForName(java.lang.String)
 	 */
 
 	public lumpinfo_t GetLumpinfoForName(String name) {
@@ -670,9 +636,8 @@ public class WadLoader {
 		return null;
 	}
 
-	/**
-	 * W_GetNumForName
-	 * Calls W_CheckNumForName, but bombs out if not found.
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#GetNumForName(java.lang.String)
 	 */
 	
 	public int GetNumForName(String name) {
@@ -692,10 +657,8 @@ public class WadLoader {
 		return i;
 	}
 
-	/**
-	 *          
-	 * @param lumpnum
-	 * @return
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#GetNameForNum(int)
 	 */
     public String GetNameForNum(int lumpnum) {
         if (lumpnum>=0 && lumpnum<this.numlumps){
@@ -709,6 +672,9 @@ public class WadLoader {
 	// W_LumpLength
 	// Returns the buffer size needed to load the given lump.
 	//
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#LumpLength(int)
+	 */
 	public int LumpLength(int lump) {
 		if (lump >= numlumps)
 			I.Error("W_LumpLength: %i >= numlumps", lump);
@@ -716,11 +682,8 @@ public class WadLoader {
 		return (int) lumpinfo[lump].size;
 	}
 
-	/**
-	 * W_ReadLump Loads the lump into the given buffer, which must be >=
-	 * W_LumpLength().
-	 * 
-	 * @throws IOException
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#ReadLump(int, java.nio.ByteBuffer)
 	 */
 
 	public void ReadLump(int lump, ByteBuffer dest) {
@@ -769,10 +732,8 @@ public class WadLoader {
 
 	}
 
-	/**
-	 * W_CacheLumpNum Modified to read a lump as a specific type of
-	 * CacheableDoomObject. If the class is not identified or is null, then a
-	 * generic DoomBuffer object is left in the lump cache and returned.
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CacheLumpNum(int, int, java.lang.Class)
 	 */
 	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what) {
 		// byte* ptr;
@@ -831,17 +792,8 @@ public class WadLoader {
 		return lumpcache[lump];
 	}
 
-	/**
-	 * Read a lump into an object array, if possible. The binary blob lump will
-	 * still be cached as usual, but as a ByteBuffer this time, and
-	 * deserialization will be performed into the given Object[] array.
-	 * 
-	 * Upon a cache hit however, the objects will be deserialized a second time,
-	 * thus there will be some time penalty (this, unless I devise a container
-	 * class for arrays of CacheableDoomObjects).
-	 * 
-	 * Helps keep syntax compact.
-	 * 
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CacheLumpNumIntoArray(int, int, java.lang.Object[], java.lang.Class)
 	 */
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
 			Class what) throws IOException {
@@ -911,14 +863,8 @@ public class WadLoader {
 		return false;
 	}
 
-	/**
-	 * Return a cached lump based on its name, as raw bytes, no matter what.
-	 * It's rare, but has its uses.
-	 * 
-	 * @param name
-	 * @param tag
-	 * @param what
-	 * @return
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CacheLumpNameAsRawBytes(java.lang.String, int)
 	 */
 
 	public byte[] CacheLumpNameAsRawBytes(String name, int tag) {
@@ -927,15 +873,9 @@ public class WadLoader {
 
 	}
 	
-	 /**
-     * Return a cached lump based on its num, as raw bytes, no matter what.
-     * It's rare, but has its uses.
-     * 
-     * @param name
-     * @param tag
-     * @param what
-     * @return
-     */
+	 /* (non-Javadoc)
+	 * @see w.IWadLoader#CacheLumpNumAsRawBytes(int, int)
+	 */
 
     public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
         return ((DoomBuffer) this.CacheLumpNum(num, tag,
@@ -944,15 +884,8 @@ public class WadLoader {
     }
 	
 
-	/**
-	 * Return a cached lump based on its name, and for a specificc class. This
-	 * will autoload it too, and should be the preferred method of loading
-	 * stuff.
-	 * 
-	 * @param name
-	 * @param tag
-	 * @param what
-	 * @return
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int)
 	 */
 
 	public DoomBuffer CacheLumpName(String name, int tag) {
@@ -961,12 +894,8 @@ public class WadLoader {
 
 	}
 
-	/**
-	 * Specific method for loading cached patches by name, since it's by FAR the
-	 * most common operation.
-	 * 
-	 * @param name
-	 * @return
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CachePatchName(java.lang.String)
 	 */
 
 	public patch_t CachePatchName(String name) {
@@ -976,13 +905,8 @@ public class WadLoader {
 
 	}
 
-	/**
-	 * Specific method for loading cached patches, since it's by FAR the most
-	 * common operation.
-	 * 
-	 * @param name
-	 * @param tag
-	 * @return
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CachePatchName(java.lang.String, int)
 	 */
 
 	public patch_t CachePatchName(String name, int tag) {
@@ -990,17 +914,17 @@ public class WadLoader {
 				patch_t.class);
 	}
 
-	/**
-	 * Specific method for loading cached patches by number.
-	 * 
-	 * @param name
-	 * @return
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CachePatchNum(int, int)
 	 */
 
 	public patch_t CachePatchNum(int num, int tag) {
 		return (patch_t) this.CacheLumpNum(num, tag, patch_t.class);
 	}
 
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
+	 */
 	public Object CacheLumpName(String name, int tag, Class what) {
 		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
 				what);
@@ -1054,11 +978,17 @@ public class WadLoader {
 		f.close();
 	}
 	
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#isLumpMarker(int)
+	 */
 	public boolean isLumpMarker(int lump){
 	    return (lumpinfo[lump].size==0);
 	}
 	
-	   public String GetNameForLump(int lump){
+	   /* (non-Javadoc)
+	 * @see w.IWadLoader#GetNameForLump(int)
+	 */
+	public String GetNameForLump(int lump){
 	        return lumpinfo[lump].name;
 	    }
 
@@ -1101,6 +1031,9 @@ public class WadLoader {
 		    }
 	}
 
+	/* (non-Javadoc)
+	 * @see w.IWadLoader#CheckNumForName(java.lang.String)
+	 */
 	public int CheckNumForName(String name/* , int namespace */)
 
 	{
@@ -1112,6 +1045,11 @@ public class WadLoader {
 
 		// System.out.print(" found "+lumpinfo[i]+"\n" );
 		return -1;
+	}
+
+	@Override
+	public lumpinfo_t GetLumpInfo(int i) {
+		return this.lumpinfo[i];
 	}
 
 }

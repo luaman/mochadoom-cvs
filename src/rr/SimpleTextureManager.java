@@ -20,6 +20,7 @@ import java.util.List;
 import p.LevelLoader;
 import doom.DoomStatus;
 import w.DoomBuffer;
+import w.IWadLoader;
 import w.WadLoader;
 
 /** An attempt to separate texture mapping functionality from
@@ -34,7 +35,7 @@ import w.WadLoader;
 public class SimpleTextureManager
         implements TextureManager {
     
-    WadLoader W;
+    IWadLoader W;
     DoomSystemInterface I;
     LevelLoader LL;
     DoomStatus DM;
@@ -643,8 +644,14 @@ public class SimpleTextureManager
         // We discard markers, and only assign sequential numbers to valid lumps.
         // These are the vanilla flats, and will work with fully merged PWADs too.
         
-        int lastflatlump=W.GetNumForName(LUMPEND); // This is the start of normal lumps.
-        // Advance slowly.
+        // Normally, this marks the end of regular lumps. However, if DEUTEX extension
+        // are present, it will actually mark the end of the extensions due to lump
+        // priority, so its usefulness as an absolute end-index for regular flats
+        // is dodgy at best. Gotta love the inconsistent mundo hacks!
+        
+        int lastflatlump=W.GetNumForName(LUMPEND);
+        
+		// 
         int lump=firstflatlump;
         int seq=0;
         String name;
@@ -663,10 +670,10 @@ public class SimpleTextureManager
         
         extendedflatstart=W.CheckNumForName(DEUTEX); // This is the start of DEUTEX flats.
         if (extendedflatstart>-1){
-        // Advance slowly.
+       	// If extended ones are present, then Advance slowly.
         lump=extendedflatstart;
 
-        // Those flats are also marked by F_END, so the same rule applies.
+        // The end of those extended flats is also marked by F_END, as noted above.
         while (!(name=W.GetNameForNum(lump)).equalsIgnoreCase(LUMPEND)){
             if (!W.isLumpMarker(lump)){
                 // Not a marker. Check if it's supposed to replace something.
@@ -686,7 +693,7 @@ public class SimpleTextureManager
                         seq++; // Advance sequence
                         numflats++; // Total flats do increase
                     }
-            }     
+            }
             lump++; // Advance lump.
         }
         }
@@ -711,8 +718,8 @@ public class SimpleTextureManager
             
               for (int i=0;i<numflats;i++){
                   flattranslation[i]=i;
-                  System.out.printf("Verification: flat[%d] is %s in lump %d\n",i,W.GetNameForNum(flattranslation[i]),flatstorage[i]);  
-              }
+                //  System.out.printf("Verification: flat[%d] is %s in lump %d\n",i,W.GetNameForNum(flattranslation[i]),flatstorage[i]);  
+              } 
             }
     
     private final static String LUMPSTART="F_START";
@@ -723,10 +730,10 @@ public class SimpleTextureManager
      * R_PrecacheLevel
      * Preloads all relevant graphics for the level.
      * 
-     * MAES: Everything except sprites. 
-     * Texturemanager != sprite manager.
+     * MAES: Everything except sprites.
+     * A Texturemanager != sprite manager.
      * So the relevant functionality has been split into
-     * PrecacheMobjs.
+     * PrecacheThinkers (found in common rendering code).
      * 
      * 
      */
@@ -737,80 +744,13 @@ public class SimpleTextureManager
 
     public void PrecacheLevel () throws IOException
     {
-        boolean[]       flatpresent;
-        boolean []      texturepresent;
         
-
-        int         i;
-        int         j;
-        
-        int         lump;
-        
-        texture_t      texture;
-        
-        if (DM.demoplayback)
-        return;
-        
-        // Precache flats.
-        flatpresent = new boolean[numflats];
-        flats=new flat_t[numflats];
-        
-        for (i=0 ; i<LL.numsectors ; i++)
-        {
-        flatpresent[LL.sectors[i].floorpic] = true;
-        flatpresent[LL.sectors[i].ceilingpic] = true;
-        }
-        
-        flatmemory = 0;
-
-        for (i=0 ; i<numflats ; i++)
-        {
-        if (flatpresent[i])
-        {
-            lump = firstflat + i;
-            flatmemory += W.lumpinfo[lump].size;
-            flats[i]=(flat_t) W.CacheLumpNum(lump, PU_CACHE,flat_t.class);
-        }
-        }
-        
-        // Precache textures.
-        texturepresent = new boolean[numtextures];
-        
-        for (i=0 ; i<LL.numsides ; i++)
-        {
-        texturepresent[LL.sides[i].toptexture] = true;
-        texturepresent[LL.sides[i].midtexture] = true;
-        texturepresent[LL.sides[i].bottomtexture] = true;
-        }
-
-        // Sky texture is always present.
-        // Note that F_SKY1 is the name used to
-        //  indicate a sky floor/ceiling as a flat,
-        //  while the sky texture is stored like
-        //  a wall texture, with an episode dependend
-        //  name.
-        texturepresent[skytexture] = true;
-        
-        texturememory = 0;
-        for (i=0 ; i<numtextures ; i++)
-        {
-        if (!texturepresent[i])
-            continue;
-
-        texture = textures[i];
-        
-        for (j=0 ; j<texture.patchcount ; j++)
-        {
-            lump = texture.patches[j].patch;
-            texturememory += W.lumpinfo[lump].size;
-            W.CacheLumpNum(lump , PU_CACHE,patch_t.class);
-        }
-        }
-        
+        this.preCacheFlats();
+        this.preCacheTextures();
         
         // recache sprites.
         
-        /* MAES: this code into PrecacheMobjs
+        /* MAES: this code into PrecacheThinkers
         spritepresent = new boolean[numsprites];
         
         
@@ -840,6 +780,78 @@ public class SimpleTextureManager
         */
     }
     
+    protected final void preCacheFlats(){
+    	boolean[]       flatpresent;
+        int         lump;
+        
+        
+        if (DM.demoplayback)
+        return;
+        
+        // Precache flats.
+        flatpresent = new boolean[numflats];
+        flats=new flat_t[numflats];
+        
+        for (int i=0 ; i<LL.numsectors ; i++)
+        {
+        flatpresent[LL.sectors[i].floorpic] = true;
+        flatpresent[LL.sectors[i].ceilingpic] = true;
+        }
+        
+        flatmemory = 0;
+
+        for (int i=0 ; i<numflats ; i++)
+        {
+        if (flatpresent[i])
+        {
+            lump = firstflat + i;
+            flatmemory += W.GetLumpInfo(lump).size;
+            flats[i]=(flat_t) W.CacheLumpNum(lump, PU_CACHE,flat_t.class);
+        }
+        }
+    }
+    
+    protected final void preCacheTextures(){
+    	boolean []      texturepresent;
+        texture_t      texture;
+        int lump;
+
+    	
+    	// Precache textures.
+        texturepresent = new boolean[numtextures];
+        
+        for (int i=0 ; i<LL.numsides ; i++)
+        {
+        texturepresent[LL.sides[i].toptexture] = true;
+        texturepresent[LL.sides[i].midtexture] = true;
+        texturepresent[LL.sides[i].bottomtexture] = true;
+        }
+
+        // Sky texture is always present.
+        // Note that F_SKY1 is the name used to
+        //  indicate a sky floor/ceiling as a flat,
+        //  while the sky texture is stored like
+        //  a wall texture, with an episode dependend
+        //  name.
+        texturepresent[skytexture] = true;
+        
+        texturememory = 0;
+        for (int i=0 ; i<numtextures ; i++)
+        {
+        if (!texturepresent[i])
+            continue;
+
+        texture = textures[i];
+        
+        for (int j=0 ; j<texture.patchcount ; j++)
+        {
+            lump = texture.patches[j].patch;
+            texturememory += W.GetLumpInfo(lump).size;
+            W.CacheLumpNum(lump , PU_CACHE,patch_t.class);
+        }
+        }
+    }
+    
     /**
      * R_FlatNumForName
      * Retrieval, get a flat number for a flat name.
@@ -851,11 +863,11 @@ public class SimpleTextureManager
     public final int FlatNumForName(String name) {
         int i;
         
-        System.out.println("Checking for "+name);
+        //System.out.println("Checking for "+name);
 
         i = W.CheckNumForName(name);
 
-        System.out.printf("R_FlatNumForName retrieved lump %d for name %s picnum %d\n",i,name,FlatCache.get(i));
+        //System.out.printf("R_FlatNumForName retrieved lump %d for name %s picnum %d\n",i,name,FlatCache.get(i));
         if (i == -1) {
             I.Error("R_FlatNumForName: %s not found", name);
         }

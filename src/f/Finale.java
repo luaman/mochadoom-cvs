@@ -28,7 +28,7 @@ import rr.spritedef_t;
 import rr.spriteframe_t;
 import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
-import w.WadLoader;
+import w.IWadLoader;
 import data.mobjtype_t;
 import data.sounds.musicenum_t;
 import data.state_t;
@@ -43,7 +43,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.9 2011/05/06 14:00:54 velktron Exp $
+// $Id: Finale.java,v 1.10 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,14 +64,14 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.9 2011/05/06 14:00:54 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.10 2011/05/10 10:39:18 velktron Exp $";
 
   DoomGameInterface G;
   DoomStatus DS;
   DoomVideoRenderer V;
   DoomSoundInterface S;
   HU HU;
-  WadLoader W;
+  IWadLoader W;
   SpriteManager R;
   
   int     finalestage;

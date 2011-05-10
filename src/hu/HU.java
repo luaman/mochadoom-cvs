@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.18 2011/02/11 00:11:13 velktron Exp $
+// $Id: HU.java,v 1.19 2011/05/10 10:39:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.19  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
 // Revision 1.18  2011/02/11 00:11:13  velktron
 // A MUCH needed update to v1.3.
 //
@@ -119,7 +122,7 @@ import m.Swap;
 import rr.RendererState;
 import rr.patch_t;
 import s.DoomSoundInterface;
-import w.WadLoader;
+import w.IWadLoader;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.DoomMain;
@@ -130,10 +133,10 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.18 2011/02/11 00:11:13 velktron Exp $";
+        "$Id: HU.java,v 1.19 2011/05/10 10:39:18 velktron Exp $";
 
     // MAES: Status and wad data.
-    WadLoader W;
+    IWadLoader W;
 
     DoomMain DM;
 

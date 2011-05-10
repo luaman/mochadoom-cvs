@@ -31,6 +31,7 @@ import doom.player_t;
  */
 
 public class ParallelRenderer extends RendererState  {
+
 	////////// PARALLEL OBJECTS /////////////
 	private final static int NUMWALLTHREADS=2;
 	private final static int NUMFLOORTHREADS=1;
@@ -88,7 +89,7 @@ public class ParallelRenderer extends RendererState  {
       DrawTLColumn=new R_DrawTLColumn();
       DrawFuzzColumn=new R_DrawFuzzColumn();
       DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
-      DrawColumnPlayer=new R_DrawColumn();
+      DrawColumnPlayer=DrawColumn;
       DrawColumnLow=DrawColumn;
       
       
@@ -252,7 +253,7 @@ public class ParallelRenderer extends RendererState  {
         vpw_basexscale=MyPlanes.getBaseXScale();
         vpw_baseyscale=MyPlanes.getBaseYScale();
         
-			 for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
+			for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
              pln=visplanes[pl];
             // System.out.println(id +" : "+ pl);
              
@@ -365,7 +366,7 @@ public class ParallelRenderer extends RendererState  {
      * 
      */
 
-      private void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+      private final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
           
           // If t1 = [sentinel value] then this part won't be executed.
           while (t1 < t2 && t1 <= b1) {

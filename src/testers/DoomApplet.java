@@ -71,7 +71,7 @@ public class DoomApplet
      */
     private static final long serialVersionUID = 1L;
     
-    WadLoader W;
+    IWadLoader W;
     BufferedRenderer V;
     DoomStatus ds;
     DoomContext DC;

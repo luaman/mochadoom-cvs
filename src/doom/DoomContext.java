@@ -10,7 +10,6 @@ import m.DoomMenu;
 import m.random;
 import p.Actions;
 import p.LevelLoader;
-import rr.Renderer;
 import rr.RendererState;
 import rr.SpriteManager;
 import rr.TextureManager;
@@ -19,7 +18,7 @@ import s.DoomSoundInterface;
 import st.DoomStatusBarInterface;
 import v.DoomVideoRenderer;
 import w.EndLevel;
-import w.WadLoader;
+import w.IWadLoader;
 import automap.DoomAutoMap;
 
 
@@ -39,7 +38,7 @@ public class DoomContext {
 	
     public DoomMain DM;
     public IDoomGame DG;
-    public WadLoader W;
+    public IWadLoader W;
     public random RND;
     public DoomSystemInterface I;
     public DoomSoundInterface S;
