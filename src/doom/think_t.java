@@ -86,7 +86,7 @@ public enum think_t {
     A_Metal(1),
     A_SpidRefire(1),
     A_BabyMetal(1),
-    A_BspiAttack,
+    A_BspiAttack(1),
     A_Hoof(1),
     A_CyberAttack(1),
     A_PainAttack(1),
