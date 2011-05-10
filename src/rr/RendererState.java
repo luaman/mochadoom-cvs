@@ -61,6 +61,7 @@ import p.LevelLoader;
 import p.UnifiedGameMap;
 import p.mobj_t;
 import p.pspdef_t;
+import psort.ThreadSort;
 import i.DoomStatusAware;
 import i.DoomSystemInterface;
 import st.StatusBar;
@@ -531,6 +532,7 @@ validcount++;
 
         protected static final int MINZ    =            (FRACUNIT*4);
         protected static final int BASEYCENTER         =100;
+        ThreadSort<vissprite_t> ts;
 
         public Things(){
             negonearray=new short[SCREENWIDTH];
@@ -541,12 +543,11 @@ validcount++;
             C2JUtils.initArrayOfObjects(vissprites);
             vsprsortedhead=new vissprite_t();
             unsorted=new vissprite_t();
+            ts=new ThreadSort<vissprite_t>(vissprites);
         }
         
-        //void R_DrawColumn (void);
-        //void R_DrawFuzzColumn (void);
-
-        class maskdraw_t
+       /* UNUSED?
+         class maskdraw_t
         {
             int     x1;
             int     x2;
@@ -555,7 +556,7 @@ validcount++;
             int     topclip;
             int     bottomclip;
 
-        };
+        }; */
 
         /**
          * R_InstallSpriteLump
@@ -1274,9 +1275,14 @@ validcount++;
          * 
          */
 
-        public void SortVisSprites ()
+        protected final void SortVisSprites ()
         {
-            int         count;
+            
+           // Arrays.sort(vissprites,0,vissprite_p);
+           ts.sortLimit(vissprite_p);
+           ts.sort(1);
+            
+            /*int         count;
             vissprite_t    best;
             int     bestscale; // fixed_t
 
@@ -1342,6 +1348,7 @@ validcount++;
             vsprsortedhead.prev.next = best;
             vsprsortedhead.prev = best;
             }
+            */
         }
 
 
@@ -1548,7 +1555,7 @@ validcount++;
            // to draw sprites without sorting them when using the built-in modified mergesort, while
            // the original algorithm is so dreadful it actually does slow things down.
            
-           Arrays.sort(vissprites,0,vissprite_p);
+           SortVisSprites();
           
            // If you are feeling adventurous, try these ones. They *might* perform
            // better in very extreme situations where all sprites are always on one side

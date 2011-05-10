@@ -57,7 +57,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.33 2011/05/06 14:00:54 velktron Exp $
+// $Id: DoomMain.java,v 1.34 2011/05/10 19:10:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +72,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.34  2011/05/10 19:10:37  velktron
+// Some crazy and wild stuff.
+//
 // Revision 1.33  2011/05/06 14:00:54  velktron
 // More of _D_'s changes committed.
 //
@@ -205,7 +208,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.33 2011/05/06 14:00:54 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.34 2011/05/10 19:10:37 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -2326,10 +2329,11 @@ protected ticcmd_t   base=new ticcmd_t();
  } 
 
 
- //
- // G_WorldDone 
- //
- private void WorldDone () 
+ /**
+  * G_WorldDone 
+  */
+ 
+ public void WorldDone () 
  { 
      gameaction = gameaction_t.ga_worlddone; 
 
@@ -2942,7 +2946,7 @@ public void Init(){
     this.HU=new HU(this);
     this.M=new Menu(this);
     this.LL=new LevelLoader(this);
-    this.R=new UnifiedRenderer(this);
+    this.R=new ParallelRenderer(this);
     this.P=new Actions(this);
 
     this.ST=new StatusBar(this);

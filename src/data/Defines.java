@@ -14,7 +14,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.34 2011/02/11 00:11:13 velktron Exp $
+// $Id: Defines.java,v 1.35 2011/05/10 19:10:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,7 +72,7 @@ public static final boolean RANGECHECK=false;
 //menues etc. is tied to the scale implied
 //by the graphics.
 
-public static float SCREEN_MUL =(float) 3.0;
+public static float SCREEN_MUL =(float) 4.0;
 public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
 
 //
@@ -627,6 +627,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.34 2011/02/11 00:11:13 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.35 2011/05/10 19:10:37 velktron Exp $";
 }
 
