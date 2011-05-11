@@ -7,5 +7,6 @@ package doom;
 public interface IDoomGame {
 
 	 public void ExitLevel ();
-	 public void WorldDone (); 
+	 public void WorldDone ();
+     public void setGameAction(gameaction_t action); 
 }
