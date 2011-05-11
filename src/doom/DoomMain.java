@@ -57,7 +57,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.34 2011/05/10 19:10:37 velktron Exp $
+// $Id: DoomMain.java,v 1.35 2011/05/11 14:09:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +72,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.35  2011/05/11 14:09:40  velktron
+// Implements IDoomGame
+//
 // Revision 1.34  2011/05/10 19:10:37  velktron
 // Some crazy and wild stuff.
 //
@@ -208,7 +211,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.34 2011/05/10 19:10:37 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.35 2011/05/11 14:09:40 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1503,7 +1506,7 @@ protected ticcmd_t   base=new ticcmd_t();
      for (i=0 ; i<NUMWEAPONS-1 ; i++)        
      if (gamekeydown['1'+i]) 
      { 
-         System.out.println("Attempting weapon change (building ticcmd)");
+         //System.out.println("Attempting weapon change (building ticcmd)");
          cmd.buttons |= BT_CHANGE; 
          cmd.buttons |= i<<BT_WEAPONSHIFT; 
          break; 
@@ -2930,6 +2933,7 @@ public void Init(){
     // Random number generator.
     
 	this.DM=this;
+	this.DG = this;
 	this.DNI=new DummyNetworkDriver(this);
 	this.RND=new random();    
     // In primis, the video renderer.
@@ -2962,8 +2966,7 @@ public void Init(){
     
     //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
     // it seems to fit perfectly here
-    this.WI = new EndLevel(this);
-    this.DG = this;
+    this.WI = new EndLevel(this);    
     this.F = new Finale(this);
     
 }
@@ -3842,5 +3845,12 @@ public doomcom_t getDoomCom() {
 @Override
 public void setDoomCom(doomcom_t doomcom) {
 	this.doomcom=doomcom;
+}
+
+
+@Override
+public void setGameAction(gameaction_t action) {
+    this.gameaction=action;
+    
 }
 }
