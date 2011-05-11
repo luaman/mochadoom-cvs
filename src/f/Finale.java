@@ -36,6 +36,7 @@ import defines.*;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.DoomStatus;
+import doom.IDoomGame;
 import doom.event_t;
 import doom.evtype_t;
 import doom.gameaction_t;
@@ -43,7 +44,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.10 2011/05/10 10:39:18 velktron Exp $
+// $Id: Finale.java,v 1.11 2011/05/11 14:10:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -56,7 +57,7 @@ import doom.gameaction_t;
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-//
+// 
 // DESCRIPTION:
 //  Game completion, final screen animation.
 //
@@ -64,9 +65,9 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.10 2011/05/10 10:39:18 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.11 2011/05/11 14:10:18 velktron Exp $";
 
-  DoomGameInterface G;
+  IDoomGame DG;
   DoomStatus DS;
   DoomVideoRenderer V;
   DoomSoundInterface S;
@@ -115,7 +116,7 @@ public class Finale implements DoomStatusAware{
   */
 public void StartFinale ()
   {
-      G.setGameAction(gameaction_t.ga_nothing);
+      DG.setGameAction(gameaction_t.ga_nothing);
       DS.gamestate = gamestate_t.GS_FINALE;
       DS.viewactive = false;
       DS.automapactive = false;
@@ -243,7 +244,7 @@ public void StartFinale ()
       if (DS.gamemap == 30)
         StartCast ();
       else
-        G.setGameAction(gameaction_t.ga_worlddone);
+        DG.setGameAction(gameaction_t.ga_worlddone);
         }
       }
       
@@ -805,7 +806,7 @@ public Finale(DoomContext DC){
 
 @Override
 public void updateStatus(DoomContext DC) {
-    //this.G=DC.DG;
+    this.DG=DC.DG;
     this.DS=DC.DM;
     V=DC.V;
     S=DC.S;
