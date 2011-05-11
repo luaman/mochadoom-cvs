@@ -15,6 +15,9 @@ public class floormove_t extends SectorAction{
     private DoomStatus DM;
     
     public floormove_t(){
+        // MAES HACK: floors are implied to be at least of "lowerFloor" type
+        // unless set otherwise, due to implicit zero-enum value.
+        this.type=floor_e.lowerFloor;
     }
     
     public floormove_t(ThinkerList TL, DoomSoundInterface S){

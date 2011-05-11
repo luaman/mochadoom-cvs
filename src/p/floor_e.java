@@ -1,7 +1,6 @@
 package p;
 
 public enum floor_e {
-
     // lower floor to highest surrounding floor
     lowerFloor,
     
