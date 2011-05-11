@@ -175,6 +175,9 @@ public class line_t implements Interceptable{
           return frontsector;
       }
       
+      public String toString(){
+          return (String.format("Flags: %d Tag: %d Special %d",this.flags, this.tag, this.special));   
+      }
       
       
     }
