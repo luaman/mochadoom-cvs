@@ -334,7 +334,10 @@ public class Actions extends UnifiedGameMap {
           }
           else if (floor.direction == -1)
           {
-              switch(floor.type)
+              switch(floor.type) //TODO: check if a null floor.type is valid or a bug 
+              // MAES: actually, type should always be set to something.
+              // In C, this means "zero" or "null". In Java, we must make sure
+              // it's actually set to something all the time.
               {
                 case lowerAndChange:
               floor.sector.special = (short) floor.newspecial;
@@ -6785,7 +6788,8 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
         
         // Switches that other things can activate.
-        if (thing.player!=null)
+        //_D_: little bug fixed here, see linuxdoom source
+        if (thing.player==/*!=*/null)
         {
        // never open secret doors
        if (flags(line.flags, ML_SECRET))
@@ -7148,7 +7152,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     {
         int     angle;
         int x1,y1,x2,y2;
-        System.out.println("Uselines");
+        //System.out.println("Uselines");
         usething = player.mo;
         
         // Normally this shouldn't cause problems?
@@ -7270,7 +7274,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      * to it.
      */
 
-    public boolean BlockLinesIterator ( int           x,int           y,PIT func )
+    public boolean BlockLinesIterator (int x,int y,PIT func)
     {
      int         offset;
      int 		lineinblock;
@@ -7294,16 +7298,16 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
      // for ( int list = blockmaplump[offset] ; *list != -1 ; list++)
      
-         for (int list=offset;(lineinblock=LL.blockmaplump[list])!=-1;list++){
-             ld = LL.lines[lineinblock];
-     if (ld.validcount == R.validcount)
-         continue;   // line has already been checked
+     for (int list=offset;(lineinblock=LL.blockmaplump[list])!=-1;list++){
+         ld = LL.lines[lineinblock];
+         //System.out.println(ld);
+         if (ld.validcount == R.validcount)
+             continue;   // line has already been checked
 
-     ld.validcount = R.validcount;
-         
-     if ( !dispatch(func,ld) )
-         return false;
-     }
+         ld.validcount = R.validcount;
+         if ( !dispatch(func,ld) )
+             return false;
+         }
      return true;    // everything was checked
     }
 
@@ -7366,14 +7370,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      * Returns true if the traverser function returns true
      * for all lines.
      */
-    boolean
-    PathTraverse
-    ( int       x1,
-            int       y1,
-            int       x2,
-            int       y2,
-    int           flags,
-    PTR trav)
+    boolean PathTraverse ( int x1,int y1,int x2,int y2,int flags,PTR trav)
     {
    // 	System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , " +y2);
      int xt1,yt1;
