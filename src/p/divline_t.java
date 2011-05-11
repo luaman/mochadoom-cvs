@@ -74,16 +74,16 @@ public class divline_t {
      MakeDivline
      ( line_t   li)
      {
-      this.x = li.v1.x;
-      this.y = li.v1.y;
+      this.x = li.v1x;
+      this.y = li.v1y;
       this.dx = li.dx;
       this.dy = li.dy;
      }
 
      public divline_t(line_t   li)
      {
-      this.x = li.v1.x;
-      this.y = li.v1.y;
+      this.x = li.v1x;
+      this.y = li.v1y;
       this.dx = li.dx;
       this.dy = li.dy;
      }
