@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.10 2011/05/10 10:39:18 velktron Exp $
+// $Id: EndLevel.java,v 1.11 2011/05/11 14:12:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.11  2011/05/11 14:12:08  velktron
+// Interfaced with DoomGame
+//
 // Revision 1.10  2011/05/10 10:39:18  velktron
 // Semi-playable Techdemo v1.3 milestone
 //
@@ -77,6 +80,7 @@ import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
 import doom.DoomMain;
+import doom.IDoomGame;
 import doom.event_t;
 import doom.player_t;
 import doom.wbplayerstruct_t;
@@ -97,6 +101,7 @@ public class EndLevel implements DoomStatusAware{
 
     ////////////////// STATUS ///////////////////
     private DoomMain DS;
+    private IDoomGame DG;
     private DoomVideoRenderer V;
     private DoomSoundInterface S;
     private IWadLoader W;
@@ -108,37 +113,7 @@ public class EndLevel implements DoomStatusAware{
     private static int COUNT_TIME=8;
     private static int COUNT_DONE=10;
     
-    /*
-#include <stdio.h>
-
-#include "z_zone.h"
-
-#include "m_random.h"
-#include "m_swap.h"
-
-#include "i_system.h"
-
-#include "w_wad.h"
-
-#include "g_game.h"
-
-#include "r_local.h"
-#include "s_sound.h"
-
-#include "doomstat.h"
-
-// Data.
-#include "sounds.h"
-
-// Needs access to LFB.
-#include "v_video.h"
-
-#include "wi_stuff.h"
-
-
-*/
-
-
+    
 //
 // GENERAL DATA
 //
@@ -618,7 +593,7 @@ protected void updateNoState() {
     if (--cnt==00)
     {
 	End();
-	//WorldDone();
+	DG.WorldDone();
     }
 
 }
@@ -1753,6 +1728,7 @@ protected static boolean RNGCHECK(int what, int min, int max){
 
 @Override
 public void updateStatus(DoomContext DC) {
+    this.DG=DC.DG;
     this.DS=DC.DM;
     this.V=DC.V;
     this.W=DC.W;
