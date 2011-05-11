@@ -228,6 +228,31 @@ framecount++;
 validcount++;
 }
 
+/**
+ * R_SetupFrame for a particular actor.
+ * 
+ */
+public void SetupFrame (mobj_t actor)
+{       
+int     i;
+
+//viewplayer = player;
+viewx = actor.x;
+viewy = actor.y;
+//viewangle = addAngles(player.mo.angle , viewangleoffset);
+viewangle = actor.angle&BITS32;
+//extralight = actor.extralight;
+
+viewz = actor.z+actor.height;
+
+viewsin = finesine[(int) (viewangle>>>ANGLETOFINESHIFT)];
+viewcos = finecosine[(int) (viewangle>>>ANGLETOFINESHIFT)];
+
+sscount = 0;
+   
+framecount++;
+validcount++;
+}
  
  /**
   * R_FindPlane
@@ -1277,11 +1302,13 @@ validcount++;
 
         protected final void SortVisSprites ()
         {
-            
-           // Arrays.sort(vissprites,0,vissprite_p);
-           ts.sortLimit(vissprite_p);
-           ts.sort(1);
-            
+           // long a=System.nanoTime();
+           Arrays.sort(vissprites,0,vissprite_p);
+           //ts.sortLimit(vissprite_p);
+           //ts.sort(1);
+           //long b=System.nanoTime();
+           
+           //System.out.printf("Sorting for tic %d: %f ms\n",DM.gametic,(double)(b-a)/1000000);
             /*int         count;
             vissprite_t    best;
             int     bestscale; // fixed_t
