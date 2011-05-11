@@ -9,9 +9,12 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+import p.mobj_t;
 import utils.C2JUtils;
 import doom.DoomMain;
 import doom.player_t;
+import doom.thinker_t;
 
 /** This is Mocha Doom's famous parallel software renderer. It builds
  *  on the basic software renderer, but adds specialized handling for 
@@ -612,7 +615,20 @@ public void RenderPlayerView (player_t player)
   // Viewing variables are set according to the player's mobj. Interesting hacks like
   // free cameras or monster views can be done.
   SetupFrame (player);
-
+  
+  
+  
+  /* Uncommenting this will result in a very existential experience
+  if (Math.random()>0.999){
+	  thinker_t shit=P.getRandomThinker();
+	  try {
+	  mobj_t crap=(mobj_t)shit;
+	  player.mo=crap;
+	  } catch (ClassCastException e){
+	   
+	  }
+  	}*/
+  
   // Clear buffers. 
   MyBSP.ClearClipSegs ();
   MyBSP.ClearDrawSegs ();
