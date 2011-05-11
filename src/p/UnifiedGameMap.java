@@ -336,20 +336,25 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // are on opposite sides of the trace.
     // Returns true if earlyout and a solid line hit.
     //
+    
+    divline_t dl = new divline_t();
+    
     boolean AddLineIntercepts(line_t ld) {
         boolean s1;
         boolean s2;
         int frac;
-        divline_t dl = new divline_t();
-
         // avoid precision problems with two routines
         if (trace.dx > FRACUNIT * 16 || trace.dy > FRACUNIT * 16
                 || trace.dx < -FRACUNIT * 16 || trace.dy < -FRACUNIT * 16) {
             s1 = trace.PointOnDivlineSide(ld.v1x, ld.v1.y);
             s2 = trace.PointOnDivlineSide(ld.v2x, ld.v2y);
+            //s1 = trace.DivlineSide(ld.v1x, ld.v1.y);
+            //s2 = trace.DivlineSide(ld.v2x, ld.v2y);
         } else {
             s1 = ld.PointOnLineSide(trace.x, trace.y);
             s2 = ld.PointOnLineSide(trace.x + trace.dx, trace.y + trace.dy);
+            //s1 = new divline_t(ld).DivlineSide(trace.x, trace.y);
+            //s2 = new divline_t(ld).DivlineSide(trace.x + trace.dx, trace.y + trace.dy);
         }
 
         if (s1 == s2)
