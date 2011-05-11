@@ -1797,7 +1797,23 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     public void AllocateThinker(thinker_t thinker) {
     }
 
-  
+
+    //
+    // P_AllocateThinker
+    // Allocates memory and adds a new thinker at the end of the list.
+    //
+    public thinker_t getRandomThinker() {    	
+    	
+    	int pick=(int) (Math.random()*128);
+    	thinker_t th=this.getThinkerCap();
+    	
+    	for (int i=0;i<pick;i++){
+    		th=th.next;
+    	}
+    	
+    	return th;
+    }
+    
 
     //
     // P_Init
