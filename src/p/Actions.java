@@ -3017,19 +3017,24 @@ public class Actions extends UnifiedGameMap {
                      actor.y,
                      dest.x,
                      dest.y);
+        
+        // MAES: let's analyze the logic here...
+        // So exact is the angle between the missile and its target. 
 
-        if (exact != actor.angle)
+        if (exact != actor.angle) // missile is already headed there dead-on.
         {
-        if (exact - actor.angle > 0x80000000)
+        if (exact - actor.angle > ANG180)
         {
             actor.angle -= TRACEANGLE;
-            if (exact - actor.angle < 0x80000000)
+            actor.angle&=BITS32;
+            if (((exact - actor.angle)&BITS32) < ANG180)
             actor.angle = exact;
         }
         else
         {
             actor.angle += TRACEANGLE;
-            if (exact - actor.angle > 0x80000000)
+            actor.angle&=BITS32;
+            if (((exact - actor.angle)&BITS32) > ANG180)
             actor.angle = exact;
         }
         }
@@ -5693,7 +5698,7 @@ mobj_t  thing )
         // take no damage from concussion.
         if (thing.type == mobjtype_t.MT_CYBORG
         || thing.type == mobjtype_t.MT_SPIDER)
-        return true;    
+        return true;
             
         dx = Math.abs(thing.x - bombspot.x);
         dy = Math.abs(thing.y - bombspot.y);
@@ -5803,7 +5808,7 @@ mobj_t  thing )
     //
     //P_BlockThingsIterator
     //
-    boolean
+    private final boolean
     BlockThingsIterator
     ( int           x,
     int           y,
@@ -5834,7 +5839,7 @@ mobj_t  thing )
      *
      * 9/5/2011: Accepted _D_'s fix
      */
-    boolean ShootTraverse (intercept_t in){
+    private final boolean ShootTraverse (intercept_t in){
     int     x,y,z,frac; // fixed_t
     line_t    li;
     mobj_t     th;
