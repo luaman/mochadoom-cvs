@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.28 2011/05/10 10:39:18 velktron Exp $
+// $Id: WadLoader.java,v 1.29 2011/05/13 11:17:48 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.29  2011/05/13 11:17:48  velktron
+// Changed default read buffer behavior. Now it's ALWAYS reset when reading from disk, and not up to the CacheableDoomObject. This does not affect bulk/stream reads.
+//
 // Revision 1.28  2011/05/10 10:39:18  velktron
 // Semi-playable Techdemo v1.3 milestone
 //
@@ -732,9 +735,15 @@ public class WadLoader implements IWadLoader {
 
 	}
 
-	/* (non-Javadoc)
-	 * @see w.IWadLoader#CacheLumpNum(int, int, java.lang.Class)
+
+	/** The most basic of the Wadloader functions. Will attempt to read a lump
+	 *  off disk, based on the specific class type (it will call the unpack()
+	 *  method). If not possible to call the unpack method, it will leave a 
+	 *  DoomBuffer object in its place, with the raw byte contents. It's
+	 *   
+	 * 
 	 */
+	
 	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what) {
 		// byte* ptr;
 
@@ -760,11 +769,13 @@ public class WadLoader implements IWadLoader {
 					// Can it be uncached? If so, deserialize it.
 
 					if (implementsInterface(what, w.CacheableDoomObject.class)) {
-						lumpcache[lump] = (CacheableDoomObject) what
-								.newInstance();
-
-						((CacheableDoomObject) lumpcache[lump])
-								.unpack((ByteBuffer) thebuffer);
+						// MAES: this should be done whenever single lumps
+						// are read. DO NOT DELEGATE TO THE READ OBJECTS THEMSELVES.
+						// In case of sequential reads of similar objects, use 
+						// CacheLumpNumIntoArray instead.
+						thebuffer.rewind();
+						lumpcache[lump] = (CacheableDoomObject) what.newInstance();
+						((CacheableDoomObject) lumpcache[lump]).unpack((ByteBuffer) thebuffer);
 
 						if (what == patch_t.class) {
 							((patch_t) lumpcache[lump]).name = this.lumpinfo[lump].name;
@@ -792,9 +803,20 @@ public class WadLoader implements IWadLoader {
 		return lumpcache[lump];
 	}
 
-	/* (non-Javadoc)
-	 * @see w.IWadLoader#CacheLumpNumIntoArray(int, int, java.lang.Object[], java.lang.Class)
+	/** A very useful method when you need to load a lump which can consist
+	 *  of an arbitrary number of smaller fixed-size objects (assuming that you
+	 *  know their number/size and the size of the lump). Practically used 
+	 *  by the level loader, to handle loading of sectors, segs, things, etc.
+	 *  since their size/lump/number relationship is well-defined.
+	 *  
+	 *  It possible to do this in other ways, but it's extremely convenient this way.
+	 *  
+	 *  @param lump The lump number to load.
+	 *  @param tag  Caching tag
+	 *  @param array The array with objects to load. Its size implies how many to read.
+	 *  @return
 	 */
+	
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
 			Class what) throws IOException {
 
@@ -925,7 +947,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
 	 */
-	public Object CacheLumpName(String name, int tag, Class what) {
+	public CacheableDoomObject CacheLumpName(String name, int tag, Class what) {
 		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
 				what);
 	}
