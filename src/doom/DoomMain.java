@@ -57,7 +57,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.35 2011/05/11 14:09:40 velktron Exp $
+// $Id: DoomMain.java,v 1.36 2011/05/13 11:15:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +72,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.36  2011/05/13 11:15:09  velktron
+// Demo preliminaries
+//
 // Revision 1.35  2011/05/11 14:09:40  velktron
 // Implements IDoomGame
 //
@@ -211,7 +214,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.35 2011/05/11 14:09:40 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.36 2011/05/13 11:15:09 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -463,7 +466,7 @@ public void DoomLoop ()
     }
     }
 	
-	AM.Start();
+	//AM.Start(); //_D_: not suposed to be here, see linuxdoom source
     while (true)
     {
 	// frame syncronous IO operations
@@ -952,7 +955,7 @@ public void FindResponseFile ()
 public void Start ()
 {
     int             p;
-    StringBuffer                    file=new StringBuffer();
+    StringBuffer file=new StringBuffer();
 
     FindResponseFile ();
 	
@@ -1836,6 +1839,9 @@ protected ticcmd_t   base=new ticcmd_t();
          //memcpy (cmd, &netcmds[i][buf], sizeof(ticcmd_t));
          netcmds[i][buf].copyTo(cmd);
   
+         // MAES: this is where actual demo commands are being issed or created!
+         // Essentially, a demo is a sequence of stored ticcmd_t with a header.
+         // Knowing that, it's possible to objectify it.
          if (demoplayback) 
          ReadDemoTiccmd (cmd); 
          if (demorecording) 
@@ -2794,7 +2800,7 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
   
  public void DoPlayDemo () 
   { 
-	 /*
+	 
 	 skill_t skill; 
      int             i, episode, map; 
       
@@ -2833,7 +2839,7 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
 
      usergame = false; 
      demoplayback = true; 
-     */
+     
  } 
 
  //
