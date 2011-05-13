@@ -18,6 +18,7 @@ import f.Finale;
 import f.Wiper;
 import hu.HU;
 import m.Menu;
+import m.MenuMisc;
 import m.random;
 import static doom.NetConsts.*;
 import static doom.englsh.*;
@@ -26,6 +27,10 @@ import data.dstrings;
 import data.mapthing_t;
 import data.mobjtype_t;
 import defines.*;
+import demo.IDemoTicCmd;
+import demo.IDoomDemo;
+import demo.VanillaDoomDemo;
+import demo.VanillaTiccmd;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import static data.Defines.BACKUPTICS;
@@ -57,7 +62,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.36 2011/05/13 11:15:09 velktron Exp $
+// $Id: DoomMain.java,v 1.37 2011/05/13 17:43:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,6 +77,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.37  2011/05/13 17:43:02  velktron
+// Improved demo handling, aka they actually do work (sort of).
+//
 // Revision 1.36  2011/05/13 11:15:09  velktron
 // Demo preliminaries
 //
@@ -214,7 +222,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.36 2011/05/13 11:15:09 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.37 2011/05/13 17:43:02 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -1128,9 +1136,8 @@ public void Start ()
 
     if (eval(p) && p < myargc-1)
     {
-	//filesprintf (file,"%s.lmp", myargv[p+1]);
 	AddFile (myargv[p+1]+".lmp");
-	System.out.println("Playing demo "+myargv[p+1]+".lmp.");
+	System.out.printf("Playing demo %s.lmp.\n",myargv[p+1]);
     }
     
     // get skill / episode / map from parms
@@ -1336,6 +1343,13 @@ public void Start ()
 	autostart = true;
     }
 	
+    // MAES: at this point everything should be set and initialized, so it's
+    // time to make the players aware of the general status of Doom.
+    //_D_ gonna try to initialize here, because it is needed to play a demo
+    for (int i=0;i<MAXPLAYERS;i++){
+        players[i].updateStatus(this);
+    }
+    
     p = CheckParm ("-timedemo");
     if (eval(p) && p < myargc-1)
     {
@@ -1362,7 +1376,8 @@ public void Start ()
 	}
 	LoadGame(file.toString());
     }
-	
+    
+   
 
     if ( gameaction != gameaction_t.ga_loadgame )
     {
@@ -1372,13 +1387,7 @@ public void Start ()
 	    StartTitle ();                // start up intro loop
 
     }
-    
-    // MAES: at this point everything should be set and initialized, so it's
-    // time to make the players aware of the general status of Doom.
-    //_D_ gonna try to initialize here, because it is needed to play a demo
-    for (int i=0;i<MAXPLAYERS;i++){
-        players[i].updateStatus(this);
-    }
+
 
     p = CheckParm ("-playdemo");
     if (eval(p) && p < myargc-1)
@@ -1416,9 +1425,7 @@ protected ticcmd_t   base=new ticcmd_t();
            // memcpy (cmd,base,sizeof(*cmd));
      base.copyTo(cmd);
      
-     cmd.consistancy = 
-     consistancy[consoleplayer][maketic%BACKUPTICS]; 
-
+     cmd.consistancy =  consistancy[consoleplayer][maketic%BACKUPTICS]; 
   
      strafe = gamekeydown[key_strafe] || mousebuttons(mousebstrafe) 
      || joybuttons(joybstrafe); 
@@ -2696,29 +2703,30 @@ protected ticcmd_t   base=new ticcmd_t();
  //
  // DEMO RECORDING 
  // 
- protected static final int DEMOMARKER =0x80;
-
-
 public  void ReadDemoTiccmd (ticcmd_t cmd) 
  { 
-     if (demobuffer[demo_p] == DEMOMARKER) 
+    IDemoTicCmd democmd=demobuffer.getNextTic();
+     if (democmd == null) 
      {
      // end of demo data stream 
      CheckDemoStatus (); 
      return; 
-     } 
-     cmd.forwardmove = (demobuffer[demo_p++]); 
-     cmd.sidemove = (demobuffer[demo_p++]); 
-     cmd.angleturn = (short) (C2JUtils.toUnsignedByte(demobuffer[demo_p++])<<8); 
-     cmd.buttons = (char) (C2JUtils.toUnsignedByte(demobuffer[demo_p++])); 
+     }
+     
+     democmd.decode(cmd); 
  } 
-
 
  public void WriteDemoTiccmd (ticcmd_t cmd) 
  { 
      if (gamekeydown['q'])           // press q to end demo recording 
-     CheckDemoStatus (); 
-     demobuffer[demo_p++] = cmd.forwardmove; 
+     CheckDemoStatus ();
+     IDemoTicCmd reccmd=new VanillaTiccmd();
+     reccmd.encode(cmd);     
+     demobuffer.putTic(reccmd);
+
+     // MAES: Useless, we can't run out of space anymore (at least not in theory).
+     
+/*   demobuffer[demo_p++] = cmd.forwardmove; 
      demobuffer[demo_p++] = cmd.sidemove; 
      demobuffer[demo_p++] = (byte) ((cmd.angleturn+128)>>8); 
      demobuffer[demo_p++] = (byte) cmd.buttons; 
@@ -2728,9 +2736,13 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
      // no more space 
      CheckDemoStatus (); 
      return; 
-     } 
+     } */ 
      
-     ReadDemoTiccmd (cmd);         // make SURE it is exactly the same 
+     //ReadDemoTiccmd (cmd);         // make SURE it is exactly the same
+     // MAES: this is NOT the way to do in Mocha, because we are not manipulating
+     // the demo index directly anymore. Instead, decode what we have just saved.     
+     reccmd.decode(cmd);
+     
  } 
   
   
@@ -2741,42 +2753,36 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
  public void RecordDemo (String name) 
  { 
      int             i; 
-     int             maxsize;
+    // int             maxsize;
      
      StringBuffer buf=new StringBuffer();
      usergame = false; 
      buf.append(name); 
      buf.append(".lmp");
      demoname=buf.toString();
-     maxsize = 0x20000;
+     // maxsize = 0x20000;
      i = CheckParm ("-maxdemo");
-     if (i!=0 && i<myargc-1)
-     maxsize = Integer.parseInt(myargv[i+1])*1024;
-     demobuffer = new byte[maxsize]; 
-     demoend = maxsize;
+    // if (i!=0 && i<myargc-1)
+    // maxsize = Integer.parseInt(myargv[i+1])*1024;
+     demobuffer = new VanillaDoomDemo(); 
+     //demoend = maxsize;
       
      demorecording = true; 
  } 
   
   
  public void BeginRecording () 
- { 
-     int             i; 
-         
-     demo_p = 0;
-     
-     demobuffer[demo_p++] = (byte) VERSION;
-     demobuffer[demo_p++] = (byte) gameskill.ordinal(); 
-     demobuffer[demo_p++] = (byte) gameepisode; 
-     demobuffer[demo_p++] = (byte) gamemap; 
-     demobuffer[demo_p++] = (byte) ((deathmatch)?1:0); 
-     demobuffer[demo_p++] = (byte) (respawnparm?1:0);
-     demobuffer[demo_p++] = (byte) (fastparm?1:0);
-     demobuffer[demo_p++] = (byte) (nomonsters?1:0);
-     demobuffer[demo_p++] = (byte) consoleplayer;
-      
-     for (i=0 ; i<MAXPLAYERS ; i++) 
-     demobuffer[demo_p++] = (byte) (playeringame[i]?1:0);         
+ {         
+     demobuffer.setVersion(VERSION);
+     demobuffer.setSkill(gameskill); 
+     demobuffer.setEpisode(gameepisode);
+     demobuffer.setMap(gamemap);
+     demobuffer.setDeathmatch(deathmatch);
+     demobuffer.setRespawnparm(respawnparm);
+     demobuffer.setFastparm(fastparm);
+     demobuffer.setNomonsters(nomonsters);
+     demobuffer.setConsoleplayer(consoleplayer);
+     demobuffer.setPlayeringame(playeringame);
  } 
   
 
@@ -2795,7 +2801,7 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
  { 
      defdemoname = name; 
      // TODO: set to nothing for now.
-     gameaction = gameaction_t.ga_nothing; 
+     gameaction = gameaction_t.ga_playdemo; 
  } 
   
  public void DoPlayDemo () 
@@ -2804,30 +2810,32 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
 	 skill_t skill; 
      int             i, episode, map; 
       
-     gameaction = gameaction_t.ga_nothing; 
-     demobuffer = W.CacheLumpNameAsRawBytes(defdemoname.toUpperCase(), PU_STATIC);
-     demo_p = 0;
-     if ( demobuffer[demo_p] != VERSION)
+     gameaction = gameaction_t.ga_nothing;
+     // MAES: Yeah, it's OO all the way now, baby ;-)
+     demobuffer = (IDoomDemo) W.CacheLumpName(defdemoname.toUpperCase(), PU_STATIC,VanillaDoomDemo.class);
+     
+     if (demobuffer.getVersion()!= VERSION)
      {
        System.err.println("Demo is from a different game version!\n");
-       System.err.println("Read "+demobuffer[demo_p]);
+       System.err.println("Read "+demobuffer.getVersion());
        gameaction = gameaction_t.ga_nothing;
        return;
      }
-     demo_p++;
-     skill = skill_t.values()[demobuffer[demo_p++]]; 
-     episode = demobuffer[demo_p++]; 
-     map = demobuffer[demo_p++]; 
-     deathmatch = demobuffer[demo_p++]==0;
-     respawnparm = demobuffer[demo_p++]==0;
-     fastparm = demobuffer[demo_p++]==0;
-     nomonsters = demobuffer[demo_p++]==0;
-     consoleplayer = demobuffer[demo_p++];
      
+     skill = demobuffer.getSkill(); 
+     episode = demobuffer.getEpisode(); 
+     map = demobuffer.getMap(); 
+     deathmatch = demobuffer.isDeathmatch();
+     respawnparm = demobuffer.isRespawnparm();
+     fastparm = demobuffer.isFastparm();
+     nomonsters = demobuffer.isNomonsters();
+     consoleplayer = demobuffer.getConsoleplayer();
+     
+     boolean[] pigs=demobuffer.getPlayeringame();
      for (i=0 ; i<MAXPLAYERS ; i++) 
-     playeringame[i] = demobuffer[demo_p++]==0; 
+     playeringame[i] = pigs[i]; 
      if (playeringame[1]) 
-     { 
+     {
      netgame = true; 
      netdemo = true; 
      }
@@ -2835,12 +2843,12 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
      // don't spend a lot of time in loadlevel 
      precache = false;
      InitNew (skill, episode, map); 
-     precache = true; 
+     precache = true;
 
      usergame = false; 
      demoplayback = true; 
      
- } 
+ }
 
  //
  // G_TimeDemo 
@@ -2850,10 +2858,8 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
      nodrawers = CheckParm ("-nodraw")!=0; 
      noblit = CheckParm ("-noblit")!=0; 
      timingdemo = true; 
-     singletics = true; 
-
-     defdemoname = name; 
-     
+     singletics = true;
+     defdemoname = name;
      gameaction = gameaction_t.ga_playdemo; 
  } 
   
@@ -2868,19 +2874,19 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
  =================== 
  */ 
   
- boolean CheckDemoStatus () 
+ public boolean CheckDemoStatus () 
  { 
-     int             endtime; 
+     int endtime; 
       
      if (timingdemo) 
-     { 
+     {
      endtime = I.GetTime (); 
-     I.Error ("timed %i gametics in %i realtics",gametic 
-          , endtime-starttime); 
+     I.Error ("timed %d gametics in %d realtics",gametic 
+          , (endtime-starttime)); 
      } 
       
      if (demoplayback) 
-     { 
+     {
      if (singledemo) 
          I.Quit (); 
               
@@ -2900,8 +2906,9 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
   
      if (demorecording) 
      { 
-     demobuffer[demo_p++] = (byte) DEMOMARKER; 
-     // TODO: M.WriteFile (demoname, demobuffer, demo_p); 
+     //demobuffer[demo_p++] = (byte) DEMOMARKER; 
+
+     MenuMisc.WriteFile(demoname, demobuffer); 
      //Z_Free (demobuffer); 
      demorecording = false; 
      I.Error ("Demo %s recorded",demoname); 
@@ -2974,6 +2981,7 @@ public void Init(){
     // it seems to fit perfectly here
     this.WI = new EndLevel(this);    
     this.F = new Finale(this);
+    ((DoomSystem)(this.I)).updateStatus(this);
     
 }
 
