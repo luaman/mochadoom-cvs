@@ -1,13 +1,12 @@
 package m;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import w.DoomFile;
-import w.WritableDoomObject;
+import w.IWritableDoomObject;
 
-public class pcx_t implements WritableDoomObject{
+public class pcx_t implements IWritableDoomObject{
 
 	//
 	// SCREEN SHOTS

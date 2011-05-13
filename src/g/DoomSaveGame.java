@@ -16,7 +16,7 @@ import w.CacheableDoomObject;
 import w.DoomBuffer;
 import w.DoomFile;
 import w.IReadableDoomObject;
-import w.WritableDoomObject;
+import w.IWritableDoomObject;
 
 
 /** represents the header of Doom savegame, so that basic info can be checked quickly.
@@ -28,7 +28,7 @@ import w.WritableDoomObject;
 
 
 public class DoomSaveGame
-        implements CacheableDoomObject, IReadableDoomObject, WritableDoomObject{
+        implements CacheableDoomObject, IReadableDoomObject, IWritableDoomObject{
     
     public DoomSaveGame(){
         playeringame=new boolean[MAXPLAYERS];
