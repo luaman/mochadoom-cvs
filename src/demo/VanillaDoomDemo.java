@@ -12,6 +12,8 @@ import java.util.List;
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
+import w.DoomFile;
+import w.IWritableDoomObject;
 import defines.skill_t;
 import doom.gameaction_t;
 import doom.ticcmd_t;
@@ -21,15 +23,17 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
 	 // This stuff is in the demo header, in the order it appears
 	 // However everything is byte-sized when read from disk or to memory.
 	 public int version; 
-	 skill_t skill;
-	 int episode;
-	 int map;
-	 boolean deathmatch;
-	 boolean respawnparm;
-     boolean fastparm;
-     boolean nomonsters;
-     int consoleplayer;
-     boolean[] playeringame; // normally MAXPLAYERS (4) for vanilla.
+	 public skill_t skill;
+	 public int episode;
+	 public int map;
+	 public boolean deathmatch;
+	 public boolean respawnparm;
+	 public boolean fastparm;
+	 public boolean nomonsters;
+	 public int consoleplayer;
+	 public boolean[] playeringame; // normally MAXPLAYERS (4) for vanilla.
+	 
+	 protected int p_demo;
 	 
      //  After that, demos contain a sequence of ticcmd_t's to build dynamically at
      // load time or when recording. This abstraction allows arbitrary demo sizes
@@ -38,7 +42,12 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
      // Also, the format used in demo lumps is NOT the same as in datagrams/network
      // (e.g. there is no consistency) and their handling is modified.
      
-     ticcmd_t[] commands;
+     VanillaTiccmd[] commands;
+     List<IDemoTicCmd> demorecorder;
+     
+     public VanillaDoomDemo(){
+         this.demorecorder=new  ArrayList<IDemoTicCmd> ();
+     }
      
 	 public void unpack(ByteBuffer b){
 	 
@@ -59,17 +68,17 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
      for (int i=0 ; i<MAXPLAYERS ; i++) 
      playeringame[i] = b.get()!=0;
      
-     // Header info for vanilla should be 9 bytes.
+     // Total Header info for vanilla should be 13 bytes.
      // 1 byte at the end is the end-demo marker
      // So valid vanilla demos should have sizes that
-     // fit the formula 10+4n, since each vanilla 
+     // fit the formula 14+4n, since each vanilla 
      // demo ticcmd_t is 4 bytes.
      int lens=(b.limit()-b.position()-1)/4;
      
-     boolean vanilla=(b.limit()==(10+4*lens));
+     boolean vanilla=(b.limit()==(14+4*lens));
      
-     this.commands=new ticcmd_t[lens];
-     C2JUtils.initArrayOfObjects(this.commands, ticcmd_t.class);
+     this.commands=new VanillaTiccmd[lens];
+     C2JUtils.initArrayOfObjects(this.commands, VanillaTiccmd.class);
      
      try {
 		DoomBuffer.readObjectArray(b, this.commands, lens);
@@ -79,5 +88,147 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
 	}
 
      }
+
+    @Override
+    public IDemoTicCmd getNextTic() {
+        if ((commands!=null)&&(p_demo<commands.length)){
+
+        return commands[p_demo++];
+        }
+        else return null;
+    }
+
+    @Override
+    public void putTic(IDemoTicCmd tic) {
+        demorecorder.add(tic);
+
+    }
+
+    @Override
+    public int getVersion() {
+        return version;
+    }
+
+    @Override
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    @Override
+    public skill_t getSkill() {
+        return skill;
+    }
+
+    @Override
+    public void setSkill(skill_t skill) {
+        this.skill = skill;
+    }
+
+    @Override
+    public int getEpisode() {
+        return episode;
+    }
+
+    @Override
+    public void setEpisode(int episode) {
+        this.episode = episode;
+    }
+
+    @Override
+    public int getMap() {
+        return map;
+    }
+
+    @Override
+    public void setMap(int map) {
+        this.map = map;
+    }
+
+    @Override
+    public boolean isDeathmatch() {
+        return deathmatch;
+    }
+
+    @Override
+    public void setDeathmatch(boolean deathmatch) {
+        this.deathmatch = deathmatch;
+    }
+
+    @Override
+    public boolean isRespawnparm() {
+        return respawnparm;
+    }
+
+    @Override
+    public void setRespawnparm(boolean respawnparm) {
+        this.respawnparm = respawnparm;
+    }
+
+    @Override
+    public boolean isFastparm() {
+        return fastparm;
+    }
+
+    @Override
+    public void setFastparm(boolean fastparm) {
+        this.fastparm = fastparm;
+    }
+
+    @Override
+    public boolean isNomonsters() {
+        return nomonsters;
+    }
+
+    @Override
+    public void setNomonsters(boolean nomonsters) {
+        this.nomonsters = nomonsters;
+    }
+
+    @Override
+    public int getConsoleplayer() {
+        return consoleplayer;
+    }
+
+    @Override
+    public void setConsoleplayer(int consoleplayer) {
+        this.consoleplayer = consoleplayer;
+    }
+    
+    @Override
+    public boolean[] getPlayeringame() {
+        return playeringame;
+    }
+
+    @Override
+    public void setPlayeringame(boolean[] playeringame) {
+        this.playeringame = playeringame;
+    }
+
+    @Override
+    public void write(DoomFile f)
+            throws IOException {
+        
+        f.writeByte(version);        
+        f.writeByte(skill.ordinal()); 
+        f.writeByte(episode);
+        f.writeByte(map);
+        f.writeBoolean(deathmatch);
+        f.writeBoolean(respawnparm);
+        f.writeBoolean(fastparm);
+        f.writeBoolean(nomonsters);
+        f.writeByte(consoleplayer);
+        f.writeBoolean(this.playeringame,MAXPLAYERS);
+        for (IDemoTicCmd i: demorecorder) {            
+            i.write(f);
+        }
+        f.writeByte(DEMOMARKER);
+        
+        // TODO Auto-generated method stub
+        
+    }
+    
+    /////////////////////// VARIOUS BORING GETTERS /////////////////////
+    
+    
 	
 }
