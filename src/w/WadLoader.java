@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.29 2011/05/13 11:17:48 velktron Exp $
+// $Id: WadLoader.java,v 1.30 2011/05/13 11:20:07 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.30  2011/05/13 11:20:07  velktron
+// Why the hell did this not implement IReadableDoomObject?
+//
 // Revision 1.29  2011/05/13 11:17:48  velktron
 // Changed default read buffer behavior. Now it's ALWAYS reset when reading from disk, and not up to the CacheableDoomObject. This does not affect bulk/stream reads.
 //
@@ -339,7 +342,7 @@ public class WadLoader implements IWadLoader {
 			// Check out how reading is delegated to each class's "load" method.
 			// read (handle, &header, sizeof(header));
 
-			header.load(handle);
+			header.read(handle);
 
 			if (header.identification.compareTo("IWAD") != 0) {
 				// Homebrew levels?
@@ -445,7 +448,7 @@ public class WadLoader implements IWadLoader {
 			I.Error("W_Reload: couldn't open %s", reloadname);
 		}
 
-		header.load(handle);
+		header.read(handle);
 		// Actual number of lumps in file...
 		lumpcount = (int) header.numlumps;
 		header.infotableofs = header.infotableofs;
