@@ -55,6 +55,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 
 import m.DoomMenu;
+import m.MenuMisc;
 import m.fixed_t;
 
 import p.LevelLoader;
@@ -4579,18 +4580,30 @@ validcount++;
       protected void R_InitTranMap(int progress)
       {
         int lump = W.CheckNumForName("TRANMAP");
-
+        boolean ok=false;
+        
         // If a tranlucency filter map lump is present, use it
-/*
-        if (lump != -1)  // Set a pointer to the translucency filter maps.
-          main_tranmap = W.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC);   // killough 4/11/98
-        else
+        if (lump != -1) {  // Set a pointer to the translucency filter maps.
+          System.out.print("Translucency map found in lump. Attempting to use...");
+          //main_tranmap=new byte[256*256];  // killough 4/11/98
+          main_tranmap = W.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC);   // killough 4/11/98          
+          return;
+          
+        }
+        
+        // A map file already exists. Try to read it.
+        if (C2JUtils.testAccess("tranmap.dat", "r")){
+            System.out.print("Translucency map found in lump. Attempting to use...");
+            main_tranmap=new byte[256*256];  // killough 4/11/98
+            int result=MenuMisc.ReadFile("tranmap.dat", main_tranmap);
+            if (result>0) return;
+            System.out.print("fail.\n");
+        }        
+                
+
+
           {   // Compose a default transparent filter map based on PLAYPAL.
-            byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
-            String fname;
-            String DoomExeDir=System.getProperty("user.dir");
-*/
-            
+              System.out.print("Computing translucency map from scratch...");
             byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
             main_tranmap = new byte[256*256];  // killough 4/11/98
             Color[] basepal=new Color[256];
@@ -4630,7 +4643,10 @@ validcount++;
                     
                     main_tranmap[(a<<8)|b]=(byte) findMin(tmpdist);
                 }
-            }            
+            }
+            System.out.print("...done\n");
+            MenuMisc.WriteFile("tranmap.dat", main_tranmap, main_tranmap.length);
+          }
             
       }
 
