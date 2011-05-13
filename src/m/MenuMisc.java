@@ -2,9 +2,11 @@ package m;
 
 import g.DoomGameInterface;
 import hu.HU;
+import i.DoomSystem;
 import i.DoomSystemInterface;
 
 import java.util.Arrays;
+import java.util.List;
 
 import doom.DoomContext;
 import doom.DoomInterface;
@@ -17,11 +19,12 @@ import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
 import w.DoomFile;
 import w.IWadLoader;
+import w.IWritableDoomObject;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.12 2011/05/10 10:39:18 velktron Exp $
+// $Id: MenuMisc.java,v 1.13 2011/05/13 17:44:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -37,6 +40,9 @@ import w.IWadLoader;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.13  2011/05/13 17:44:57  velktron
+// Fixed ReadFile and WriteFile so that they are actually useful.
+//
 // Revision 1.12  2011/05/10 10:39:18  velktron
 // Semi-playable Techdemo v1.3 milestone
 //
@@ -103,7 +109,7 @@ import w.IWadLoader;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.12 2011/05/10 10:39:18 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.13 2011/05/13 17:44:57 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;
@@ -517,7 +523,7 @@ public void ScreenShot ()
 }
 */
 
-public boolean WriteFile(String name, byte[] source, int length) {
+public static boolean WriteFile(String name, byte[] source, int length) {
     DoomFile handle;
     try {
         handle = new DoomFile(name, "rw");
@@ -528,20 +534,39 @@ public boolean WriteFile(String name, byte[] source, int length) {
         handle.write(source, 0, length);
         handle.close();
     } catch (Exception e) {
+        DoomSystem.MiscError("Couldn't write file %s (%s)", name, e.getMessage());
         return false;
     }
 
     return true;
 }
 
+public static boolean WriteFile(String name, IWritableDoomObject source) {
+    DoomFile handle;
+    try {
+        handle = new DoomFile(name, "rw");
+
+        if (handle == null) return false;
+
+        source.write(handle);
+        handle.close();
+    } catch (Exception e) {
+        DoomSystem.MiscError("Couldn't write file %s (%s)", name, e.getMessage());
+        return false;
+    }
+
+    return true;
+}
+
+
 /** M_ReadFile */
-public int ReadFile(String name, byte[] buffer) {
+public static int ReadFile(String name, byte[] buffer) {
     DoomFile handle;
     int count, length;
     // struct stat fileinfo;
     byte[] buf;
     try {
-        handle = new DoomFile(name, "rb");
+        handle = new DoomFile(name, "r");
         length = (int) handle.length();
         buf = new byte[length];
         count = handle.read(buf);
@@ -552,10 +577,10 @@ public int ReadFile(String name, byte[] buffer) {
                     + length);
 
     } catch (Exception e) {
-        I.Error("Couldn't read file %s (%s)", name, e.getMessage());
+        DoomSystem.MiscError("Couldn't read file %s (%s)", name, e.getMessage());
         return -1;
     }
-    buffer = buf;
+    System.arraycopy(buf, 0, buffer, 0, length);
     return length;
 }
 public int getShowMessages() {
