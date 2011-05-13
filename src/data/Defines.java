@@ -14,7 +14,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.36 2011/05/11 14:09:24 velktron Exp $
+// $Id: Defines.java,v 1.37 2011/05/13 17:41:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import w.animenum_t;
 public final class Defines{
     
     /** Seems to be 109 for shareware 1.9, wtf is this*/
-public static final int VERSION =  110 ;
+public static final int VERSION =  109 ;
 
 /** Some parts of the code may actually be better used as if in a UNIX environment */
 
@@ -627,6 +627,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.36 2011/05/11 14:09:24 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.37 2011/05/13 17:41:54 velktron Exp $";
 }
 
