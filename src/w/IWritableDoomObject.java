@@ -2,7 +2,7 @@ package w;
 
 import java.io.IOException;
 
-public interface WritableDoomObject {
+public interface IWritableDoomObject {
     
     public void write(DoomFile f) throws IOException ;
 }
