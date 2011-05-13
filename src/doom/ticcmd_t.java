@@ -1,11 +1,13 @@
 package doom;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import w.CacheableDoomObject;
 import w.DoomFile;
 import w.IReadableDoomObject;
 
-public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject{
+public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,CacheableDoomObject{
     
     // The length datagrams are supposed to have, for full compatibility.
     
@@ -145,11 +147,51 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject{
         angleturn=f.readShort();
         consistancy=f.readShort();
         // We blow these up to full chars.
-        chatchar=f.readChar();
-        buttons=f.readChar();
+        chatchar=(char) f.readByte();
+        buttons=(char) f.readByte();
         
     }
     
     
-   
+    /** Special note: the only occasion where we'd ever be interested
+     *  in reading ticcmd_t's from a lump is when playing back demos.
+     *  Therefore, we use this specialized reading method which does NOT,
+     *  I repeat, DOES NOT set all fields and some are read differently.
+     *  NOT 1:1 intercangeable with the Datagram methods!  
+     * 
+     */
+    @Override
+    public void unpack(ByteBuffer f)
+            throws IOException {
+    	
+    	// MAES: the original ID code for reference.
+    	// demo_p++ is a pointer inside a raw byte buffer.
+    	
+     //cmd->forwardmove = ((signed char)*demo_p++); 
+     //cmd->sidemove = ((signed char)*demo_p++); 
+     //cmd->angleturn = ((unsigned char)*demo_p++)<<8; 
+     //cmd->buttons = (unsigned char)*demo_p++; 
+    	
+        forwardmove=f.get();
+        sidemove=   f.get();        
+        // Even if they use the "unsigned char" syntax, angleturn is signed.
+        angleturn=(short) ((f.get())<<8);
+        buttons=(char)(f.get());
+        
+    }
+    
+    /** Ditto, we only pack some of the fields.
+     * 
+     * @param f
+     * @throws IOException
+     */
+    public void pack(ByteBuffer f)
+            throws IOException {
+    	
+        f.put(forwardmove);
+        f.put(sidemove);
+        f.put((byte) (angleturn>>>8));
+        f.put((byte) buttons);        
+    }
+    
 };
