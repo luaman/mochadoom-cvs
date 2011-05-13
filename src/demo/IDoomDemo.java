@@ -65,6 +65,8 @@ public interface IDoomDemo extends IWritableDoomObject{
 
     void setPlayeringame(boolean[] playeringame);
 
+    void resetDemo();
+
     
 
 

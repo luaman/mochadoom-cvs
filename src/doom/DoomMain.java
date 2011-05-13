@@ -62,7 +62,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.37 2011/05/13 17:43:02 velktron Exp $
+// $Id: DoomMain.java,v 1.38 2011/05/13 18:26:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -77,6 +77,9 @@ import static utils.C2JUtils.*;
 // GNU General Public License for more details.
 //
 // $Log: DoomMain.java,v $
+// Revision 1.38  2011/05/13 18:26:42  velktron
+// Added demo reset feature.
+//
 // Revision 1.37  2011/05/13 17:43:02  velktron
 // Improved demo handling, aka they actually do work (sort of).
 //
@@ -222,7 +225,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame {
 	
-public static final String rcsid = "$Id: DoomMain.java,v 1.37 2011/05/13 17:43:02 velktron Exp $";
+public static final String rcsid = "$Id: DoomMain.java,v 1.38 2011/05/13 18:26:42 velktron Exp $";
 
 //
 // EVENT HANDLING
@@ -2709,7 +2712,10 @@ public  void ReadDemoTiccmd (ticcmd_t cmd)
      if (democmd == null) 
      {
      // end of demo data stream 
-     CheckDemoStatus (); 
+     CheckDemoStatus ();
+     
+     // Force status resetting
+     this.demobuffer.resetDemo();
      return; 
      }
      

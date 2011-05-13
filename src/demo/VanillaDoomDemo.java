@@ -226,6 +226,12 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
         // TODO Auto-generated method stub
         
     }
+
+    @Override
+    public void resetDemo() {
+        this.p_demo=0;
+        
+    }
     
     /////////////////////// VARIOUS BORING GETTERS /////////////////////
     
