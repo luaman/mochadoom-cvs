@@ -22,10 +22,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.12 2011/05/06 14:00:54 velktron Exp $
+//$Id: DoomFile.java,v 1.13 2011/05/13 17:46:38 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
+import java.util.List;
 
 import m.Swap;
 
@@ -264,6 +265,33 @@ public class DoomFile extends RandomAccessFile {
        for (int i=0;i<Math.min(len,s.length);i++){
            s[i]=this.readBoolean();
            }
+   }
+   
+   public void writeBoolean(boolean[] s,int len) throws IOException {
+
+       if ((s==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,s.length);i++){
+           this.writeBoolean(s[i]);
+           }
+   }
+   
+   public void writeObjectArray(IWritableDoomObject[] s,int len) throws IOException {
+
+       if ((s==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,s.length);i++){           
+           s[i].write(this);
+       }
+   }
+   
+   public void writeListOfObjects(List<IWritableDoomObject> s,int len) throws IOException {
+
+       if ((s==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,s.size());i++){           
+           s.get(i).write(this);
+       }
    }
    
    public final void readBooleanArray(boolean[] s) throws IOException {
