@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.5 2011/02/11 00:11:13 velktron Exp $
+// $Id: DoomSystem.java,v 1.6 2011/05/13 17:44:24 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.6  2011/05/13 17:44:24  velktron
+// Global error function, shutdown on demos.
+//
 // Revision 1.5  2011/02/11 00:11:13  velktron
 // A MUCH needed update to v1.3.
 //
@@ -58,11 +61,12 @@
 
 package i;
 
+import doom.DoomContext;
 import doom.DoomMain;
 import doom.ticcmd_t;
 import static data.Defines.TICRATE;
 
-public class DoomSystem implements DoomSystemInterface{
+public class DoomSystem implements DoomSystemInterface, DoomStatusAware{
  
 
 
@@ -212,10 +216,7 @@ public void	AllocLow(int length)
 @Override
 public void Error (String error, Object ... args)
 {
-    //va_list	argptr;
 
-    // Message first.
-    //va_start (argptr,error);
     System.err.print("Error: ");
     System.err.printf(error,args);
     System.err.print("\n");
@@ -224,11 +225,10 @@ public void Error (String error, Object ... args)
     //fflush( stderr );
 
     // Shutdown. Here might be other errors.
-    //if (demorecording)
-	//G_CheckDemoStatus();
-
-    //D_QuitNetGame ();
-    //I_ShutdownGraphics();
+    if (DM.demorecording)
+	DM.DG.CheckDemoStatus();
+    DM.QuitNetGame ();
+   // DM.VI.ShutdownGraphics();
     
     System.exit(-1);
 }
@@ -259,6 +259,19 @@ public void Error (String error)
 
 public DoomSystem(){
 emptycmd=new ticcmd_t();
+}
+
+public static void MiscError(String error, Object ... args) {
+    System.err.print("Error: ");
+    System.err.printf(error);
+    System.err.print("\n");    
+}
+
+
+@Override
+public void updateStatus(DoomContext DC) {
+    this.DM=DC.DM;
+    
 }
 
 }

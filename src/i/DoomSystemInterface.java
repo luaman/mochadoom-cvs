@@ -27,7 +27,8 @@ public interface DoomSystemInterface {
 	public void Error(String error, Object ... args);
 
 	void Error(String error);
-
+	
 	void Init();
+
 
 }
