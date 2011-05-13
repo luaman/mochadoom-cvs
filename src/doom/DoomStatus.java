@@ -7,6 +7,8 @@ import utils.C2JUtils;
 import w.DoomFile;
 import data.mapthing_t;
 import defines.*;
+import demo.IDemoTicCmd;
+import demo.IDoomDemo;
 /**
  * We need globally shared data structures, for defining the global state
  * variables. MAES: in pure OO style, this should be a global "Doom state"
@@ -313,12 +315,13 @@ public class DoomStatus extends DoomContext {
 
     protected boolean netdemo;
 
-    protected byte[] demobuffer;
+    //protected IDemoTicCmd[] demobuffer;
 
+    protected IDoomDemo demobuffer;
     /** pointers */
-    protected int demo_p;
+    // USELESS protected int demo_p;
 
-    protected int demoend;
+   // USELESS protected int demoend;
 
     protected short[][] consistancy = new short[MAXPLAYERS][BACKUPTICS];
 
