@@ -1275,49 +1275,53 @@ SetPsprite
            // it has the size of a 32-bit integer, so make sure you skip it.
            // TODO: OK, so vanilla's monsters lost "state" when saved, including non-Doomguy
             //  infighting. Did they "remember" Doomguy too?
-           int tmp= f.skipBytes(4); // mobj pointer, so we are wasting this read.
-            this.playerstate=f.readInt();
+            int tmp= f.readLEInt(); // mobj pointer, so we are wasting this read.
+            this.playerstate=f.readLEInt();
             this.cmd.read(f);
-            this.viewz=f.readInt();
-            this.deltaviewheight= f.readInt();
-            this.bob=f.readInt();
-            this.health[0]=f.readInt();
-            this.armorpoints[0]=f.readInt(); 
-            this.armortype=f.readInt(); 
-            f.readIntArray(this.powers, ByteOrder.nativeOrder()); 
-            f.readBooleanArray(this.cards);
-            this.backpack=f.readBoolean();
-            f.readIntArray(frags, ByteOrder.nativeOrder());
-            this.readyweapon=weapontype_t.values()[f.readInt()];
-            this.pendingweapon=weapontype_t.values()[f.readInt()];
-            f.readBooleanArray(this.weaponowned);
-            f.readIntArray(ammo,ByteOrder.nativeOrder());
-            f.readIntArray(maxammo,ByteOrder.nativeOrder());
-            this.attackdown=f.readBoolean();
-            this.usedown=f.readBoolean();
-            this.cheats=f.readInt();
-            this.refire=f.readInt();
+            this.viewz=f.readLEInt();
+            this.viewheight= f.readLEInt();
+            this.deltaviewheight= f.readLEInt();
+            this.bob=f.readLEInt();
+            this.health[0]=f.readLEInt();
+            this.armorpoints[0]=f.readLEInt(); 
+            this.armortype=f.readLEInt(); 
+            f.readIntArray(this.powers, ByteOrder.LITTLE_ENDIAN); 
+            f.readBooleanIntArray(this.cards);
+            this.backpack=f.readIntBoolean();
+            f.readIntArray(frags, ByteOrder.LITTLE_ENDIAN);
+            this.readyweapon=weapontype_t.values()[f.readLEInt()];
+            this.pendingweapon=weapontype_t.values()[f.readLEInt()];
+            f.readBooleanIntArray(this.weaponowned);
+            f.readIntArray(ammo,ByteOrder.LITTLE_ENDIAN);
+            f.readIntArray(maxammo,ByteOrder.LITTLE_ENDIAN);
+            // Read these as "int booleans"
+            this.attackdown=f.readIntBoolean();
+            this.usedown=f.readIntBoolean();
+            this.cheats=f.readLEInt();
+            this.refire=f.readLEInt();
             // For intermission stats.
-            this.killcount=f.readInt();
-            this.itemcount=f.readInt();
-            this.secretcount=f.readInt();
+            this.killcount=f.readLEInt();
+            this.itemcount=f.readLEInt();
+            this.secretcount=f.readLEInt();
             // Hint messages.
             f.skipBytes(4);
             // For screen flashing (red or bright).
-            this.damagecount=f.readInt();
-            this.bonuscount=f.readInt();
+            this.damagecount=f.readLEInt();
+            this.bonuscount=f.readLEInt();
             // Who did damage (NULL for floors/ceilings).
             // TODO: must be properly denormalized before saving/loading
             f.skipBytes(4); // TODO: waste a read for attacker mobj.
             // So gun flashes light up areas.
-            this.extralight=f.readInt();
+            this.extralight=f.readLEInt();
             // Current PLAYPAL, ???
             //  can be set to REDCOLORMAP for pain, etc.
-            this.fixedcolormap=f.readInt();
-            this.colormap=f.readInt();
+            this.fixedcolormap=f.readLEInt();
+            this.colormap=f.readLEInt();
+            // PSPDEF _is_ readable.
             for (pspdef_t p: this.psprites)
                 p.read(f);
-            this.didsecret=f.readBoolean();
+            this.didsecret=f.readIntBoolean();
+            // TODO: verify 280 bytes?
         }
 
   /*  @Override
