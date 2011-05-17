@@ -4,6 +4,7 @@ import i.DoomStatusAware;
 import i.DoomSystemInterface;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
@@ -25,6 +26,8 @@ import rr.UnifiedRenderer;
 import rr.sector_t;
 import s.DoomSoundInterface;
 import utils.C2JUtils;
+import w.CacheableDoomObject;
+import w.DoomBuffer;
 import w.DoomFile;
 import w.IReadableDoomObject;
 import static utils.C2JUtils.*;
@@ -45,9 +48,10 @@ import static p.mobj_t.MF_SHADOW;
  * NOTE: this doesn't mean it needs to extend it, although it would be
  * possible.
  * 
- * #include "p_mobj.h" Finally, for odd
- * reasons, the player input is buffered within the player data struct, as
- * commands per game tick. 
+ * #include "p_mobj.h" 
+ * 
+ * Finally, for odd reasons, the player input is buffered within 
+ * the player data struct, as  commands per game tick. 
  * 
  * #include "d_ticcmd.h"
  */
@@ -1238,7 +1242,7 @@ SetPsprite
     }
 
 	@Override
-	public void updateStatus(DoomContext DC) {
+	public void updateStatus(DoomStatus DC) {
 	    this.DM=DC.DM;
 	    this.P=DC.P;
 	    this.R=DC.R;
@@ -1266,11 +1270,12 @@ SetPsprite
     public void read(DoomFile f) throws IOException{
 
             // Careful when loading/saving:
-            // A player DOES carry an actual mobj to save,
-            // but a mobj only has a pointer to a player.
-            // Therefore, we must unarchive things in a way
-            // that makes sense. 
-            //this.mo.read(f);
+            // A player only carries a pointer to a mobj, which is "saved"
+            // but later discarded at load time, at least in vanilla. In any case,
+           // it has the size of a 32-bit integer, so make sure you skip it.
+           // TODO: OK, so vanilla's monsters lost "state" when saved, including non-Doomguy
+            //  infighting. Did they "remember" Doomguy too?
+           int tmp= f.skipBytes(4); // mobj pointer, so we are wasting this read.
             this.playerstate=f.readInt();
             this.cmd.read(f);
             this.viewz=f.readInt();
@@ -1292,20 +1297,82 @@ SetPsprite
             this.usedown=f.readBoolean();
             this.cheats=f.readInt();
             this.refire=f.readInt();
+            // For intermission stats.
             this.killcount=f.readInt();
             this.itemcount=f.readInt();
             this.secretcount=f.readInt();
-            //DoomIO.linkBA(this, 0, stream, 4); // char*      message;
+            // Hint messages.
+            f.skipBytes(4);
+            // For screen flashing (red or bright).
             this.damagecount=f.readInt();
             this.bonuscount=f.readInt();
+            // Who did damage (NULL for floors/ceilings).
             // TODO: must be properly denormalized before saving/loading
-            // DoomIO.linkBA(this, 0, stream, 4);  // mobj_t*       attacker;
+            f.skipBytes(4); // TODO: waste a read for attacker mobj.
+            // So gun flashes light up areas.
             this.extralight=f.readInt();
+            // Current PLAYPAL, ???
+            //  can be set to REDCOLORMAP for pain, etc.
             this.fixedcolormap=f.readInt();
             this.colormap=f.readInt();
             for (pspdef_t p: this.psprites)
                 p.read(f);
             this.didsecret=f.readBoolean();
         }
+
+  /*  @Override
+    public void unpack(ByteBuffer buf)
+            throws IOException {
+     // Careful when loading/saving:
+        // A player only carries a pointer to a mobj, which is "saved"
+        // but later discarded at load time, at least in vanilla. In any case,
+       // it has the size of a 32-bit integer, so make sure you skip it.
+       // TODO: OK, so vanilla's monsters lost "state" when saved, including non-Doomguy
+        //  infighting. Did they "remember" Doomguy too?
+        buf.position(buf.position()+4); // mobj pointer, so we are wasting this read.
+        this.playerstate=buf.getInt();
+        this.cmd.unpack(buf);
+        this.viewz=buf.getInt();
+        this.deltaviewheight=buf.getInt();
+        this.bob=buf.getInt();
+        this.health[0]=buf.getInt();
+        this.armorpoints[0]=buf.getInt();; 
+        this.armortype=buf.getInt();
+        DoomBuffer.readIntArray(buf, this.powers, this.powers.length); 
+        DoomBuffer.rreadBooleanArray(buf,this.cards);
+        this.backpack=f.readBoolean();
+        f.readIntArray(frags, ByteOrder.nativeOrder());
+        this.readyweapon=weapontype_t.values()[f.readInt()];
+        this.pendingweapon=weapontype_t.values()[f.readInt()];
+        f.readBooleanArray(this.weaponowned);
+        f.readIntArray(ammo,ByteOrder.nativeOrder());
+        f.readIntArray(maxammo,ByteOrder.nativeOrder());
+        this.attackdown=f.readBoolean();
+        this.usedown=f.readBoolean();
+        this.cheats=buf.getInt();
+        this.refire=buf.getInt();
+        // For intermission stats.
+        this.killcount=buf.getInt();
+        this.itemcount=buf.getInt();
+        this.secretcount=buf.getInt();;
+        // Hint messages.
+        f.skipBytes(4);
+        // For screen flashing (red or bright).
+        this.damagecount=buf.getInt();;
+        this.bonuscount=buf.getInt();
+        // Who did damage (NULL for floors/ceilings).
+        // TODO: must be properly denormalized before saving/loading
+        f.skipBytes(4); // TODO: waste a read for attacker mobj.
+        // So gun flashes light up areas.
+        this.extralight=buf.getInt();
+        // Current PLAYPAL, ???
+        //  can be set to REDCOLORMAP for pain, etc.
+        this.fixedcolormap==buf.getInt();
+        this.colormap=buf.getInt();
+        for (pspdef_t p: this.psprites)
+            p.read(f);
+        this.didsecret=f.readBoolean();
+        
+    }*/
         
     }
