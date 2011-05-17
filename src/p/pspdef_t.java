@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import w.DoomFile;
 import w.IReadableDoomObject;
+import w.statenum_t;
 import data.state_t;
 
 public class pspdef_t implements IReadableDoomObject{
@@ -20,10 +21,11 @@ public class pspdef_t implements IReadableDoomObject{
 
     @Override
     public void read(DoomFile f) throws IOException {
-        state.read(f);
-        tics=f.readInt();
-        sx=f.readInt();
-        sy=f.readInt();
+        // TODO: where/when is state set?
+        int state=f.readLEInt();
+        tics=f.readLEInt();
+        sx=f.readLEInt();
+        sy=f.readLEInt();
     }
 
 }

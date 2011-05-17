@@ -144,8 +144,8 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
             throws IOException {
         forwardmove=f.readByte();
         sidemove=   f.readByte();        
-        angleturn=f.readShort();
-        consistancy=f.readShort();
+        angleturn=f.readLEShort();
+        consistancy=f.readLEShort();
         // We blow these up to full chars.
         chatchar=(char) f.readByte();
         buttons=(char) f.readByte();

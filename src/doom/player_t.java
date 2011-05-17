@@ -4,7 +4,6 @@ import i.DoomStatusAware;
 import i.DoomSystemInterface;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
@@ -22,12 +21,9 @@ import p.Actions;
 import p.mobj_t;
 import p.pspdef_t;
 import rr.RendererState;
-import rr.UnifiedRenderer;
 import rr.sector_t;
 import s.DoomSoundInterface;
 import utils.C2JUtils;
-import w.CacheableDoomObject;
-import w.DoomBuffer;
 import w.DoomFile;
 import w.IReadableDoomObject;
 import static utils.C2JUtils.*;

@@ -108,7 +108,7 @@ public class VanillaDSG implements IDoomSaveGame, IReadableDoomObject, DoomStatu
     }
     protected final void PADSAVEP(DoomFile f) throws IOException{
         long save_p=f.getFilePointer();
-        f.seek(save_p+(4 - ((int) save_p & 3)) & 3);
+        f.seek(save_p+((4 - ((int) save_p & 3)) & 3));
     }
 
 

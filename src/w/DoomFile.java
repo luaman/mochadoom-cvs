@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.13 2011/05/13 17:46:38 velktron Exp $
+//$Id: DoomFile.java,v 1.14 2011/05/17 17:35:18 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -266,6 +266,26 @@ public class DoomFile extends RandomAccessFile {
            s[i]=this.readBoolean();
            }
    }
+   /** Reads an array of "int booleans" into an array or
+    * proper booleans. 4 bytes per boolean are used!
+    * 
+    * @param s
+    * @param len
+    * @throws IOException
+    */
+   
+   public void readBooleanIntArray(boolean[] s,int len) throws IOException {
+
+       if ((s==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,s.length);i++){
+           s[i]=this.readIntBoolean();
+           }
+   }
+   
+   public void readBooleanIntArray(boolean[] s) throws IOException {
+       readBooleanIntArray(s,s.length);
+   }
    
    public void writeBoolean(boolean[] s,int len) throws IOException {
 
@@ -298,6 +318,10 @@ public class DoomFile extends RandomAccessFile {
        readBooleanArray(s,s.length);
        }
    
+   public final void readIntBooleanArray(boolean[] s) throws IOException {
+       readBooleanIntArray(s,s.length);
+       }
+  
    public void writeCharArray(char[] charr,int len) throws IOException {
 
        if ((charr==null)||(len==0)) return;
@@ -379,6 +403,16 @@ public class DoomFile extends RandomAccessFile {
 public short readLEShort() throws IOException {
     short tmp=readShort();
     return Swap.SHORT(tmp);
+}
+
+/** Reads a "big boolean" using 4 bytes.
+ * 
+ * @return
+ * @throws IOException
+ */
+public boolean readIntBoolean() throws IOException {
+    return (this.readInt()!=0);
+
 }
    
 }
