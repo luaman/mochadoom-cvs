@@ -98,20 +98,40 @@ public class doomdata_t implements IDatagramSerializable {
     }
     
     public void copyFrom(doomdata_t source) {        
-        /*this.checksum=source.checksum;
+        this.checksum=source.checksum;
         this.numtics=source.numtics;
         this.player=source.player;
         this.retransmitfrom=source.retransmitfrom;
-        this.starttic=source.starttic;*/
+        this.starttic=source.starttic;
+        
+        // MAES: this was buggy as hell, and didn't work at all, which
+        // in turn prevented other subsystems such as speed throttling and
+        // networking to work.
+        // 
         // This should be enough to alter the ByteBuffer too.
-        System.arraycopy(source.cached(), 0, this.buffer, 0, DOOMDATALEN);
+        //System.arraycopy(source.cached(), 0, this.buffer, 0, DOOMDATALEN);
         // This should set all fields
-        selfUnpack();        
+        //selfUnpack();        
         }
     
     @Override
      public byte[] cached(){
          return this.buffer;
      }
+    
+    StringBuilder sb=new StringBuilder();
+    public String toString(){
+        sb.setLength(0);
+        sb.append("doomdata_t ");
+        sb.append(retransmitfrom);
+        sb.append(" starttic ");
+        sb.append(starttic);
+        sb.append(" player ");
+        sb.append(player);
+        sb.append(" numtics ");
+        sb.append(numtics);
+        return sb.toString();
+        
+    }
 
  }
