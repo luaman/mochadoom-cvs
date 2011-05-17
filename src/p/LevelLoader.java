@@ -9,7 +9,6 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
-import static data.info.sprnames; 
 import i.DoomStatusAware;
 import i.DoomSystemInterface;
 
@@ -19,7 +18,6 @@ import java.nio.ByteOrder;
 import m.BBox;
 import rr.RendererState;
 import rr.TextureManager;
-import rr.UnifiedRenderer;
 import rr.line_t;
 import rr.node_t;
 import rr.sector_t;
@@ -42,13 +40,13 @@ import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
 import defines.*;
-import doom.DoomContext;
 import doom.DoomMain;
+import doom.DoomStatus;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.17 2011/05/10 10:39:18 velktron Exp $
+// $Id: LevelLoader.java,v 1.18 2011/05/17 16:51:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,6 +61,9 @@ import doom.DoomMain;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.18  2011/05/17 16:51:20  velktron
+// Switched to DoomStatus
+//
 // Revision 1.17  2011/05/10 10:39:18  velktron
 // Semi-playable Techdemo v1.3 milestone
 //
@@ -153,7 +154,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     DoomSoundInterface S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.17 2011/05/10 10:39:18 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.18 2011/05/17 16:51:20 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -892,12 +893,12 @@ public int bmaporgy;
   }
 
 
-  public LevelLoader(DoomContext DC){
+  public LevelLoader(DoomStatus DC){
 	  this.updateStatus(DC);
   }
   
   @Override
-  public void updateStatus(DoomContext DC){
+  public void updateStatus(DoomStatus DC){
       this.W=DC.W;
       this.DM=DC.DM;
       this.P=DC.P;

@@ -44,7 +44,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.11 2011/05/11 14:10:18 velktron Exp $
+// $Id: Finale.java,v 1.12 2011/05/17 16:51:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -65,7 +65,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.11 2011/05/11 14:10:18 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.12 2011/05/17 16:51:20 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -798,14 +798,14 @@ protected void stopattack(){
   }
 
   
-public Finale(DoomContext DC){
+public Finale(DoomStatus DC){
     this.updateStatus(DC);
     hu_font =HU.getHUFonts();
 }
 
 
 @Override
-public void updateStatus(DoomContext DC) {
+public void updateStatus(DoomStatus DC) {
     this.DG=DC.DG;
     this.DS=DC.DM;
     V=DC.V;

@@ -3,6 +3,7 @@ package n;
 import java.net.DatagramPacket;
 
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.IDoomGameNetworking;
 import doom.DoomMain;
 import doom.NetConsts;
@@ -31,7 +32,7 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 	String[] myargv;
 	int myargc;
 
-	public DummyNetworkDriver(DoomContext DC){
+	public DummyNetworkDriver(DoomStatus DC){
 		updateStatus(DC);
 	}
 
@@ -57,7 +58,7 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 	}
 
 	@Override
-	public void updateStatus(DoomContext DC) {
+	public void updateStatus(DoomStatus DC) {
 		this.DM=DC.DM;
 		this.DGN=DC.DM;
 		this.myargv=DM.myargv;

@@ -45,19 +45,14 @@ import static doom.englsh.QSPROMPT;
 import static doom.englsh.SAVEDEAD;
 import static doom.englsh.SWSTRING;
 
-import i.DoomStatusAware;
-
 import java.io.IOException;
 
 import rr.RendererState;
-import rr.UnifiedRenderer;
 import rr.patch_t;
 import utils.C2JUtils;
 import w.DoomFile;
-import data.Defines;
 import data.sounds.sfxenum_t;
-import doom.DoomContext;
-import doom.DoomMain;
+import doom.DoomStatus;
 import doom.englsh;
 import doom.event_t;
 import doom.evtype_t;
@@ -66,13 +61,13 @@ public class Menu extends MenuMisc implements DoomMenu{
 
 	////////////////// CONSTRUCTOR ////////////////
     
-    public Menu(DoomContext DC){
-    	this.updateStatus(DC);
+    public Menu(DoomStatus DS){
+    	this.updateStatus(DS);
     }
     
 	@Override
-	public void updateStatus(DoomContext DC) {
-	       this.DM=DC.DM;
+	public void updateStatus(DoomStatus DS) {
+	       this.DM=DS.DM;
 	        this.V=DM.V;
 	        this.W=DM.W;
 	        this.HU=DM.HU;

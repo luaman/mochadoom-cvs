@@ -90,6 +90,7 @@ import data.mobjtype_t;
 import data.state_t;
 import data.sounds.sfxenum_t;
 import doom.DoomContext;
+import doom.DoomStatus;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
@@ -7993,7 +7994,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       }
   }
   
-  public Actions(DoomContext DC){
+  public Actions(DoomStatus DC){
       super(DC);
       this.A=this;
 	  

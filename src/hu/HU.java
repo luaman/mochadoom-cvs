@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.19 2011/05/10 10:39:18 velktron Exp $
+// $Id: HU.java,v 1.20 2011/05/17 16:51:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.20  2011/05/17 16:51:20  velktron
+// Switched to DoomStatus
+//
 // Revision 1.19  2011/05/10 10:39:18  velktron
 // Semi-playable Techdemo v1.3 milestone
 //
@@ -107,8 +110,6 @@ package hu;
 
 import static data.Defines.*;
 
-import java.text.Format;
-
 import defines.*;
 import static data.Limits.*;
 import static doom.englsh.*;
@@ -124,8 +125,8 @@ import rr.patch_t;
 import s.DoomSoundInterface;
 import w.IWadLoader;
 import data.sounds.sfxenum_t;
-import doom.DoomContext;
 import doom.DoomMain;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -133,7 +134,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.19 2011/05/10 10:39:18 velktron Exp $";
+        "$Id: HU.java,v 1.20 2011/05/17 16:51:20 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -461,7 +462,7 @@ public class HU implements DoomStatusAware {
         return ch < 128 ? frenchKeyMap[ch] : ch;
     }
 
-    public HU(DoomContext DM) {
+    public HU(DoomStatus DM) {
     	this.updateStatus(DM);
     	
     	this.w_message=new hu_stext_t();
@@ -1257,7 +1258,7 @@ public class HU implements DoomStatusAware {
     }
 
 	@Override
-	public void updateStatus(DoomContext DM) {
+	public void updateStatus(DoomStatus DM) {
         this.DM = DM.DM;
         this.W = DM.W;
         this.R = (RendererState) DM.R;

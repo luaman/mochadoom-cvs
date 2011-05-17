@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.6 2011/05/13 17:44:24 velktron Exp $
+// $Id: DoomSystem.java,v 1.7 2011/05/17 16:54:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.7  2011/05/17 16:54:09  velktron
+// Switched to DoomStatus
+//
 // Revision 1.6  2011/05/13 17:44:24  velktron
 // Global error function, shutdown on demos.
 //
@@ -61,8 +64,8 @@
 
 package i;
 
-import doom.DoomContext;
 import doom.DoomMain;
+import doom.DoomStatus;
 import doom.ticcmd_t;
 import static data.Defines.TICRATE;
 
@@ -164,11 +167,12 @@ public int GetTime ()
 public void Quit ()
 {
     // TODO:
- //DM.QuitNetGame ();
- //I_ShutdownSound();
- //I_ShutdownMusic();
- //M.SaveDefaults ();
- //I_ShutdownGraphics();
+ DM.CheckDemoStatus();
+ DM.QuitNetGame ();
+ // TODO: I.ShutdownSound();
+ // TODO: DM.S.ShutdownMusic();
+ // TODO: M.SaveDefaults ();
+ // DM.VI.ShutdownGraphics();
  System.exit(0);
 }
 
@@ -269,8 +273,8 @@ public static void MiscError(String error, Object ... args) {
 
 
 @Override
-public void updateStatus(DoomContext DC) {
-    this.DM=DC.DM;
+public void updateStatus(DoomStatus DS) {
+    this.DM=DS.DM;
     
 }
 

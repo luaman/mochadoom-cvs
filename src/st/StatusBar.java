@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.23 2011/05/10 10:39:18 velktron Exp $
+// $Id: StatusBar.java,v 1.24 2011/05/17 16:52:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.24  2011/05/17 16:52:02  velktron
+// Switched to DoomStatus
+//
 // Revision 1.23  2011/05/10 10:39:18  velktron
 // Semi-playable Techdemo v1.3 milestone
 //
@@ -117,7 +120,6 @@ package st;
 import defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Defines.*;
-import static data.Limits.*;
 import static doom.englsh.*;
 import static automap.DoomAutoMap.*;
 import static doom.player_t.*;
@@ -131,7 +133,6 @@ import i.DoomVideoInterface;
 import m.cheatseq_t;
 import m.random;
 import data.sounds.musicenum_t;
-import doom.DoomContext;
 import doom.DoomMain;
 import doom.DoomStatus;
 import doom.event_t;
@@ -139,7 +140,6 @@ import doom.evtype_t;
 import doom.player_t;
 import doom.weapontype_t;
 import rr.RendererState;
-import rr.UnifiedRenderer;
 import rr.patch_t;
 import s.DoomSoundInterface;
 import v.DoomVideoRenderer;
@@ -147,7 +147,7 @@ import w.IWadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.23 2011/05/10 10:39:18 velktron Exp $";
+        "$Id: StatusBar.java,v 1.24 2011/05/17 16:52:02 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -675,7 +675,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     // STATUS BAR CODE
     //
 
-    public StatusBar(DoomContext DC) {
+    public StatusBar(DoomStatus DC) {
     	this.updateStatus(DC);
     	//this.plyr=DM.players[DM.]
     }
@@ -1847,7 +1847,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     }
 
 	@Override
-	public void updateStatus(DoomContext DC) {
+	public void updateStatus(DoomStatus DC) {
         this.DM=DC.DM;
         this.V=DC.V;
         this.W=DC.W;

@@ -183,7 +183,7 @@ public class DoomStatus extends DoomContext {
     public boolean singledemo;
 
     /** Set this to GS_DEMOSCREEN upon init, else it will be null*/
-    public gamestate_t gamestate;
+    public gamestate_t gamestate=gamestate_t.GS_DEMOSCREEN;
 
     // -----------------------------
     // Internal parameters, fixed.
@@ -245,7 +245,7 @@ public class DoomStatus extends DoomContext {
     
     // debug flag to cancel adaptiveness
     // Set to true during timedemos.
-    public boolean singletics=true;
+    public boolean singletics=false;
 
     public int bodyqueslot;
 

@@ -1,7 +1,7 @@
 package i;
 
-import doom.DoomContext;
+import doom.DoomStatus;
 
 public interface DoomStatusAware {
-	  public void updateStatus(DoomContext DC);
+	  public void updateStatus(DoomStatus DC);
 }

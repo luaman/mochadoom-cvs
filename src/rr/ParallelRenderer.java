@@ -635,15 +635,15 @@ public void RenderPlayerView (player_t player)
   MyPlanes.ClearPlanes ();
   MyThings.ClearSprites ();
   
-  // TODO: check for new console commands.
-  //NetUpdate ();
+  // Check for new console commands.
+  DM.NetUpdate ();
 
   // The head node is the last node output.
   MyBSP.RenderBSPNode (LL.numnodes-1);
   
   RenderRWIPipeline();
   // Check for new console commands.
-  //NetUpdate ();
+  DM.NetUpdate ();
   
   // "Warped floor" fixed, same-height visplane merging fixed.
   MyPlanes.DrawPlanes ();
@@ -656,13 +656,13 @@ public void RenderPlayerView (player_t player)
 
   
   // Check for new console commands.
-  //NetUpdate ();
+  DM.NetUpdate ();
   
   MyThings.DrawMasked ();
 
     
   // Check for new console commands.
-  //NetUpdate ();             
+  DM.NetUpdate ();           
 }
  
 /**

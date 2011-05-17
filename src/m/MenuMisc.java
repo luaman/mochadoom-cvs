@@ -5,11 +5,12 @@ import hu.HU;
 import i.DoomSystem;
 import i.DoomSystemInterface;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
 import doom.DoomContext;
-import doom.DoomInterface;
+import doom.IDoom;
 import doom.DoomMain;
 import doom.DoomStatus;
 import rr.RendererState;
@@ -24,7 +25,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.13 2011/05/13 17:44:57 velktron Exp $
+// $Id: MenuMisc.java,v 1.14 2011/05/17 16:51:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -40,6 +41,9 @@ import w.IWritableDoomObject;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.14  2011/05/17 16:51:20  velktron
+// Switched to DoomStatus
+//
 // Revision 1.13  2011/05/13 17:44:57  velktron
 // Fixed ReadFile and WriteFile so that they are actually useful.
 //
@@ -109,7 +113,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.13 2011/05/13 17:44:57 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.14 2011/05/17 16:51:20 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;
@@ -559,6 +563,30 @@ public static boolean WriteFile(String name, IWritableDoomObject source) {
 }
 
 
+/** M_ReadFile 
+ *  This version returns a variable-size ByteBuffer, so
+ *  we don't need to know a-priori how much stuff to read.
+ * 
+ */
+public static ByteBuffer ReadFile(String name) {
+    DoomFile handle;
+    int count, length;
+    // struct stat fileinfo;
+    ByteBuffer buf;
+    try {
+        handle = new DoomFile(name, "r");
+        length = (int) handle.length();
+        buf = ByteBuffer.allocate(length);
+        count = handle.read(buf.array());
+        handle.close();
+    } catch (Exception e) {
+        DoomSystem.MiscError("Couldn't read file %s (%s)", name, e.getMessage());
+        return null;
+    }
+
+    return buf;
+}
+
 /** M_ReadFile */
 public static int ReadFile(String name, byte[] buffer) {
     DoomFile handle;
@@ -583,6 +611,7 @@ public static int ReadFile(String name, byte[] buffer) {
     System.arraycopy(buf, 0, buffer, 0, length);
     return length;
 }
+
 public int getShowMessages() {
     // TODO Auto-generated method stub
     return 0;

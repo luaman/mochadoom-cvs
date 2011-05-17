@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.11 2011/05/11 14:12:08 velktron Exp $
+// $Id: EndLevel.java,v 1.12 2011/05/17 16:52:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.12  2011/05/17 16:52:19  velktron
+// Switched to DoomStatus
+//
 // Revision 1.11  2011/05/11 14:12:08  velktron
 // Interfaced with DoomGame
 //
@@ -78,8 +81,8 @@ import i.DoomStatusAware;
 import defines.*;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
-import doom.DoomContext;
 import doom.DoomMain;
+import doom.DoomStatus;
 import doom.IDoomGame;
 import doom.event_t;
 import doom.player_t;
@@ -234,7 +237,7 @@ patch_t[]		num=new patch_t[10];
 // UNUSED  unsigned char *background=0;
 
 
-public EndLevel(DoomContext DC) {
+public EndLevel(DoomStatus DC) {
     this.updateStatus(DC);
    
     // _D_: commented this, otherwise something didn't work
@@ -1727,7 +1730,7 @@ protected static boolean RNGCHECK(int what, int min, int max){
 }
 
 @Override
-public void updateStatus(DoomContext DC) {
+public void updateStatus(DoomStatus DC) {
     this.DG=DC.DG;
     this.DS=DC.DM;
     this.V=DC.V;

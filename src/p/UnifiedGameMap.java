@@ -20,7 +20,6 @@ import static data.Limits.BUTTONTIME;
 import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
 import static data.Limits.MAXINTERCEPTS;
-import static data.Limits.MAXLINEANIMS;
 import static data.Limits.MAXPLATS;
 import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.MAXSWITCHES;
@@ -69,7 +68,7 @@ import data.mobjtype_t;
 import data.state_t;
 import defines.*;
 import data.sounds.sfxenum_t;
-import doom.DoomContext;
+import doom.DoomStatus;
 import doom.IDoomGame;
 import doom.DoomMain;
 import doom.player_t;
@@ -82,7 +81,7 @@ import doom.weapontype_t;
 public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     
     
-    public UnifiedGameMap(DoomContext DC){
+    public UnifiedGameMap(DoomStatus DS){
         this.SW=new Switches();
         this.LEV=new Lights();
         this.SPECS=new Specials();
@@ -93,7 +92,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         intercepts = new intercept_t[MAXINTERCEPTS];
         C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
 
-        this.updateStatus(DC);
+        this.updateStatus(DS);
 
     }
     
@@ -126,7 +125,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     SpriteManager SM;
 
     @Override
-    public void updateStatus(DoomContext DC) {
+    public void updateStatus(DoomStatus DC) {
             this.I=DC.I;
             this.DG=DC.DG;
             this.S=DC.S;

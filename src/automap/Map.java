@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.22 2011/05/10 10:39:18 velktron Exp $
+// $Id: Map.java,v 1.23 2011/05/17 16:50:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.23  2011/05/17 16:50:02  velktron
+// Switched to DoomStatus
+//
 // Revision 1.22  2011/05/10 10:39:18  velktron
 // Semi-playable Techdemo v1.3 milestone
 //
@@ -115,6 +118,7 @@ import p.LevelLoader;
 import p.mobj_t;
 import doom.DoomContext;
 import doom.DoomMain;
+import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
@@ -136,7 +140,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.22 2011/05/10 10:39:18 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.23 2011/05/17 16:50:02 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -231,9 +235,9 @@ public static final int M_ZOOMIN =       ((int) (1.02*FRACUNIT));
 // pulls out to 0.5x in 1 second
 public static final int M_ZOOMOUT    =   ((int) (FRACUNIT/1.02));
 
-public Map(DoomContext DC) {
+public Map(DoomStatus DS) {
 
-    this.updateStatus(DC);
+    this.updateStatus(DS);
     // Some initializing...
     this.markpoints=new mpoint_t[AM_NUMMARKPOINTS];
     C2JUtils.initArrayOfObjects(markpoints, mpoint_t.class);
@@ -1596,7 +1600,7 @@ public final  void Drawer ()
 
 
 @Override
-public void updateStatus(DoomContext DC) {
+public void updateStatus(DoomStatus DC) {
     this.V=DC.V;
     this.W=DC.W;
     this.LL=DC.LL;

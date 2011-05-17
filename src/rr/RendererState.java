@@ -77,6 +77,7 @@ import data.Tables;
 import defines.GameMode_t;
 import doom.DoomContext;
 import doom.DoomMain;
+import doom.DoomStatus;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
@@ -461,7 +462,8 @@ validcount++;
      System.out.println("Drawseg buffer resized. Actual capacity "+drawsegs.length);
  }
  
-    public void updateStatus(DoomContext DC){
+     @Override
+    public void updateStatus(DoomStatus DC){
         this.DM=DC.DM;
         this.LL=DC.LL;
         this.W=DC.W;
