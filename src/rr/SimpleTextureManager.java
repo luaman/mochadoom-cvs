@@ -632,7 +632,7 @@ public class SimpleTextureManager
     {
         numflats=0;
         int extendedflatstart=-1;
-        int firstflatlump=W.GetNumForName(LUMPSTART); // This is the start of normal lumps.
+        firstflat=W.GetNumForName(LUMPSTART); // This is the start of normal lumps.
         if (FlatCache==null) FlatCache=new Hashtable<Integer,Integer>(); else FlatCache.clear();
         Hashtable<String,Integer> FlatNames=new Hashtable<String,Integer> (); // Store names here.
         
@@ -652,7 +652,7 @@ public class SimpleTextureManager
         int lastflatlump=W.GetNumForName(LUMPEND);
         
 		// 
-        int lump=firstflatlump;
+        int lump=firstflat;
         int seq=0;
         String name;
         while (!(name=W.GetNameForNum(lump)).equalsIgnoreCase(LUMPEND)){
