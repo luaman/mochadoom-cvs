@@ -175,8 +175,11 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
         forwardmove=f.get();
         sidemove=   f.get();        
         // Even if they use the "unsigned char" syntax, angleturn is signed.
-        angleturn=(short) ((f.get())<<8);
-        buttons=(char)(f.get());
+        angleturn=f.getShort();
+        consistancy=f.getShort();
+        // We blow these up to full chars.
+        chatchar=(char) f.get();
+        buttons=(char) f.get();
         
     }
     
