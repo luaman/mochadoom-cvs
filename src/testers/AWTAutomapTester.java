@@ -7,7 +7,7 @@ import static data.Limits.MAXEVENTS;
 import hu.HU;
 import i.AWTDoom;
 import i.DoomSystem;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 import i.InputListener;
 
 import java.awt.image.BufferedImage;
@@ -68,7 +68,7 @@ public class AWTAutomapTester {
     
 
     
-    DoomSystemInterface I=new DoomSystem();
+    IDoomSystem I=new DoomSystem();
     DoomMain DM=new DoomMain();
     // Create the frame.
     AWTDoom frame = new AWTDoom(DM,V,pal);

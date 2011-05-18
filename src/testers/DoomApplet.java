@@ -5,7 +5,7 @@ import static data.Defines.pw_allmap;
 import static m.fixed_t.FRACBITS;
 
 import i.InputListener;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.applet.Applet;
 import java.awt.Canvas;
@@ -380,7 +380,7 @@ public class DoomApplet
                     V.DrawPatch(0, 0, 0, titlepic);
             wipe.EndScreen(0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT);
             
-            int wipestart = DoomSystemInterface.GetTime () - 1;
+            int wipestart = IDoomSystem.GetTime () - 1;
             int nowtime;
             int tics;
             boolean done;
@@ -389,7 +389,7 @@ public class DoomApplet
         {
         do
         {
-            nowtime = DoomSystemInterface.GetTime ();
+            nowtime = IDoomSystem.GetTime ();
             tics = nowtime - wipestart;
         } while (tics<1);
         wipestart = nowtime;
@@ -479,7 +479,7 @@ public class DoomApplet
     
     public void doEndLevel(){
         int a,b;
-        a=DoomSystemInterface.GetTime();
+        a=IDoomSystem.GetTime();
         b=a;
         for (int i=0;i<2000;i++){
             
@@ -498,7 +498,7 @@ public class DoomApplet
        // Do we still have time>
             
             while((b-a)<1) {
-                b=DoomSystemInterface.GetTime();
+                b=IDoomSystem.GetTime();
                 }
            a=b;
         }

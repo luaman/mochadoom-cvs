@@ -2,6 +2,10 @@ package testers;
 
 import hu.HU;
 import p.LevelLoader;
+import rr.SimpleTextureManager;
+import rr.TextureManager;
+import s.DummySoundDriver;
+import s.IDoomSound;
 import utils.C2JUtils;
 import w.WadLoader;
 import defines.*;
@@ -22,30 +26,32 @@ public class LevelLoaderTester {
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"C:\\DOOMS\\doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
     System.out.println("NUm for E1M1: "+W.GetNumForName("E1M1"));
-   int lump=W.GetNumForName("VERTEXES");
-   System.out.println("NUm for VERTEXES: "+W.GetNumForName("VERTEXES"));
-    DoomStatus ds = new DoomStatus();
-    ds.gameepisode=1;
-    ds.gamemap=1;
-    ds.gamemission=GameMission_t.doom;
-    ds.gamemode=GameMode_t.shareware;
-    ds.wminfo=new wbstartstruct_t();
-    C2JUtils.initArrayOfObjects(ds.players,player_t.class);
+    DoomStatus DS = new DoomStatus();
+    DS.gameepisode=1;
+    DS.gamemap=1;
+    DS.gamemission=GameMission_t.doom;
+    DS.gamemode=GameMode_t.shareware;
+    IDoomSound S=new DummySoundDriver();            
+    DS.S=S;
+    DS.W=W;
+    LevelLoader LL=new LevelLoader(DS);
+    DS.LL=LL;
+    TextureManager TM=new SimpleTextureManager(DS);
+    DS.TM=TM;
+    LL.updateStatus(DS);
+    TM.InitFlats();
+    TM.InitTextures();
     
-    DoomContext DC=new DoomContext();
-    DC.DS=ds;
-    DC.W=W;
+    //HU hu=new HU(DS);
+    //hu.Init();
     
-    LevelLoader PF=new LevelLoader(DC);
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     
-    HU hu=new HU(DC);
-    hu.Init();
     
-    PF.SetupLevel(1, 1, 0, skill_t.sk_hard);
     
         } catch (Exception e){
             e.printStackTrace();

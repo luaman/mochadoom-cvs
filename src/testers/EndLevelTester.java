@@ -3,13 +3,13 @@ package testers;
 import static data.Defines.PU_STATIC;
 
 import i.AWTDoom;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 
 import m.random;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import s.DummySoundDriver;
 import utils.C2JUtils;
 import v.BufferedRenderer;
@@ -56,8 +56,8 @@ public class EndLevelTester {
     
     DoomMain DC=new DoomMain();
     DC.DM=DC;
-    DoomSystemInterface I=new i.DoomSystem();
-    DoomSoundInterface S=new DummySoundDriver();
+    IDoomSystem I=new i.DoomSystem();
+    IDoomSound S=new DummySoundDriver();
     
     DC.S=S;
     DC.I=I;
