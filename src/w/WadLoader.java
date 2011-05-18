@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.30 2011/05/13 11:20:07 velktron Exp $
+// $Id: WadLoader.java,v 1.31 2011/05/18 16:58:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.31  2011/05/18 16:58:11  velktron
+// Changed to DoomStatus
+//
 // Revision 1.30  2011/05/13 11:20:07  velktron
 // Why the hell did this not implement IReadableDoomObject?
 //
@@ -155,7 +158,7 @@ import i.*;
 
 public class WadLoader implements IWadLoader {
 
-	protected DoomSystemInterface I;
+	protected IDoomSystem I;
 
 	//
 	// GLOBALS
@@ -164,7 +167,7 @@ public class WadLoader implements IWadLoader {
 	/** Location of each lump on disk. */
 	public lumpinfo_t[] lumpinfo;
 
-	public WadLoader(DoomSystemInterface I) {
+	public WadLoader(IDoomSystem I) {
 		this();
 		this.I = I;
 	}

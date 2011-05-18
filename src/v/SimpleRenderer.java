@@ -11,14 +11,14 @@ import javax.imageio.ImageIO;
 import rr.column_t;
 import rr.patch_t;
 import utils.C2JUtils;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 import m.BBox;
 import static data.Defines.*;
 
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: SimpleRenderer.java,v 1.12 2010/09/23 20:36:45 velktron Exp $
+// $Id: SimpleRenderer.java,v 1.13 2011/05/18 16:57:33 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,6 +32,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: SimpleRenderer.java,v $
+// Revision 1.13  2011/05/18 16:57:33  velktron
+// Changed to DoomStatus
+//
 // Revision 1.12  2010/09/23 20:36:45  velktron
 // *** empty log message ***
 //
@@ -116,7 +119,7 @@ import static data.Defines.*;
 
 public class SimpleRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: SimpleRenderer.java,v 1.12 2010/09/23 20:36:45 velktron Exp $";
+static final String rcsid = "$Id: SimpleRenderer.java,v 1.13 2011/05/18 16:57:33 velktron Exp $";
 
 
 

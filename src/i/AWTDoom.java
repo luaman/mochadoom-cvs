@@ -97,7 +97,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	
 	// Must be aware of "Doom" so we can pass it event messages inside a crude queue.
 	public DoomMain DM;
-	private DoomSystemInterface I; // Must be aware of some other shit like event handler
+	private IDoomSystem I; // Must be aware of some other shit like event handler
 	private BufferedRenderer V;   // Must be able to "peg" itself to a raw byte array representing
 									// Screen 0
 	private byte[] RAWSCREEN;	  // RAW SCREEN DATA. Get from the Video Renderer.

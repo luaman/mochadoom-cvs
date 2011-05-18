@@ -64,7 +64,7 @@ import p.mobj_t;
 import p.pspdef_t;
 import psort.ThreadSort;
 import i.DoomStatusAware;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 import st.StatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
@@ -116,7 +116,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
     protected Things MyThings;
     protected DoomVideoRenderer V;
     protected UnifiedGameMap P;
-    protected DoomSystemInterface I;
+    protected IDoomSystem I;
     protected TextureManager TexMan;
  
 

@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.24 2011/05/17 16:52:02 velktron Exp $
+// $Id: StatusBar.java,v 1.25 2011/05/18 16:57:21 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.25  2011/05/18 16:57:21  velktron
+// Changed to DoomStatus
+//
 // Revision 1.24  2011/05/17 16:52:02  velktron
 // Switched to DoomStatus
 //
@@ -128,7 +131,7 @@ import static data.Tables.*;
 import p.mobj_t;
 
 import i.DoomStatusAware;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 import i.DoomVideoInterface;
 import m.cheatseq_t;
 import m.random;
@@ -141,13 +144,13 @@ import doom.player_t;
 import doom.weapontype_t;
 import rr.RendererState;
 import rr.patch_t;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import v.DoomVideoRenderer;
 import w.IWadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.24 2011/05/17 16:52:02 velktron Exp $";
+        "$Id: StatusBar.java,v 1.25 2011/05/18 16:57:21 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -161,11 +164,11 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
     protected random RND;
     
-    protected DoomSystemInterface I;
+    protected IDoomSystem I;
     
     protected DoomVideoInterface VI;
 
-    protected DoomSoundInterface S;
+    protected IDoomSound S;
     
     // Size of statusbar.
     // Now sensitive for scaling.

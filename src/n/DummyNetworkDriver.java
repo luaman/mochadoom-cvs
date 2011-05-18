@@ -10,7 +10,7 @@ import doom.NetConsts;
 import doom.doomcom_t;
 import doom.doomdata_t;
 import i.DoomStatusAware;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 /** Does nothing.
  *  Allows running single-player games without an actual network.
@@ -24,7 +24,7 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 
 	////////////// STATUS ///////////
 
-	DoomSystemInterface I;
+	IDoomSystem I;
 	DoomMain DM;
 	IDoomGameNetworking DGN;
 

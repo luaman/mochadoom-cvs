@@ -4,7 +4,7 @@ import static data.Defines.RANGECHECK;
 import static data.Defines.SCREENHEIGHT;
 import static data.Defines.SCREENWIDTH;
 
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
@@ -24,7 +24,7 @@ import utils.C2JUtils;
 public abstract class SoftwareVideoRenderer
         implements DoomVideoRenderer {
 
-    DoomSystemInterface I;
+    IDoomSystem I;
     
  // Now where did these came from? /*[5][256]*/
     public static final short[][] gammatable =

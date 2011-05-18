@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.20 2011/05/17 16:51:20 velktron Exp $
+// $Id: HU.java,v 1.21 2011/05/18 16:52:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.21  2011/05/18 16:52:40  velktron
+// Changed to DoomStatus
+//
 // Revision 1.20  2011/05/17 16:51:20  velktron
 // Switched to DoomStatus
 //
@@ -122,7 +125,7 @@ import m.Menu;
 import m.Swap;
 import rr.RendererState;
 import rr.patch_t;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import w.IWadLoader;
 import data.sounds.sfxenum_t;
 import doom.DoomMain;
@@ -134,7 +137,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.20 2011/05/17 16:51:20 velktron Exp $";
+        "$Id: HU.java,v 1.21 2011/05/18 16:52:40 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -147,7 +150,7 @@ public class HU implements DoomStatusAware {
     
     DoomVideoRenderer V;
 
-    DoomSoundInterface S;
+    IDoomSound S;
     //
     // Locally used constants, shortcuts.
     // MAES: Some depend on STATE, so moved into constructor.

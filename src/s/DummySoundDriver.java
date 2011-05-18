@@ -12,7 +12,7 @@ import data.sounds.sfxenum_t;
  *
  */
 
-public class DummySoundDriver implements DoomSoundInterface{
+public class DummySoundDriver implements IDoomSound{
 
 	@Override
 	public void ChangeMusic(int music_id, boolean looping) {

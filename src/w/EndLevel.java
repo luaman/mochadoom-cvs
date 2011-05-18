@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.12 2011/05/17 16:52:19 velktron Exp $
+// $Id: EndLevel.java,v 1.13 2011/05/18 16:58:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.13  2011/05/18 16:58:04  velktron
+// Changed to DoomStatus
+//
 // Revision 1.12  2011/05/17 16:52:19  velktron
 // Switched to DoomStatus
 //
@@ -90,7 +93,7 @@ import doom.wbplayerstruct_t;
 import doom.wbstartstruct_t;
 import m.random;
 import rr.*;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import v.DoomVideoRenderer;
 
 /** This class (stuff.c) seems to implement the endlevel screens.
@@ -106,7 +109,7 @@ public class EndLevel implements DoomStatusAware{
     private DoomMain DS;
     private IDoomGame DG;
     private DoomVideoRenderer V;
-    private DoomSoundInterface S;
+    private IDoomSound S;
     private IWadLoader W;
     private random RND;
     

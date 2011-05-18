@@ -5,7 +5,7 @@ import static doom.NetConsts.CMD_GET;
 import static doom.NetConsts.CMD_SEND;
 import static doom.NetConsts.DOOMCOM_ID;
 import i.DoomStatusAware;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -25,7 +25,7 @@ import doom.doomdata_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BasicNetworkInterface.java,v 1.3 2011/05/17 16:53:42 velktron Exp $
+// $Id: BasicNetworkInterface.java,v 1.4 2011/05/18 16:54:31 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -40,6 +40,9 @@ import doom.doomdata_t;
 // GNU General Public License for more details.
 //
 // $Log: BasicNetworkInterface.java,v $
+// Revision 1.4  2011/05/18 16:54:31  velktron
+// Changed to DoomStatus
+//
 // Revision 1.3  2011/05/17 16:53:42  velktron
 // _D_'s version.
 //
@@ -64,11 +67,11 @@ public class BasicNetworkInterface
         implements DoomSystemNetworking, DoomStatusAware {
 
 
-  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.3 2011/05/17 16:53:42 velktron Exp $";
+  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.4 2011/05/18 16:54:31 velktron Exp $";
 
   ////////////// STATUS ///////////
   
-  DoomSystemInterface I;
+  IDoomSystem I;
   protected DoomMain DM;
   
   // Mirror those in Doomstat.

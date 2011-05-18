@@ -48,7 +48,7 @@ import static p.mobj_t.MF_MISSILE;
 import automap.DoomAutoMap;
 import hu.HU;
 import i.DoomStatusAware;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 import m.random;
 import rr.RendererState;
 import rr.SpriteManager;
@@ -59,7 +59,7 @@ import rr.sector_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import st.StatusBar;
 import utils.C2JUtils;
 import w.IWadLoader;
@@ -118,9 +118,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     HU HU;
     
-    DoomSystemInterface I;
+    IDoomSystem I;
     
-    DoomSoundInterface S;
+    IDoomSound S;
     
     SpriteManager SM;
 
@@ -956,6 +956,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 }
         }
 
+        
+        /*
         void AddActivePlat(plat_t plat) {
             int i;
 
@@ -965,7 +967,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     return;
                 }
             I.Error("P_AddActivePlat: no more plats!");
-        }
+        } */
 
         void RemoveActivePlat(plat_t plat) {
             int i;
@@ -1784,6 +1786,17 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         thinkercap.prev = thinker;
     }
 
+    public void AddActivePlat(plat_t plat) {
+        int i;
+
+        for (i = 0; i < MAXPLATS; i++)
+            if (PEV.activeplats[i] == null) {
+                PEV.activeplats[i] = plat;
+                return;
+            }
+        I.Error("P_AddActivePlat: no more plats!");
+    }
+    
     //
     // P_RemoveThinker
     // Deallocation is lazy -- it will not actually be freed

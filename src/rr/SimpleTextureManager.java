@@ -6,7 +6,7 @@ import static data.Defines.SKYFLATNAME;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,7 +36,7 @@ public class SimpleTextureManager
         implements TextureManager {
     
     IWadLoader W;
-    DoomSystemInterface I;
+    IDoomSystem I;
     LevelLoader LL;
     DoomStatus DM;
     
