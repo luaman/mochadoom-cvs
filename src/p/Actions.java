@@ -242,7 +242,7 @@ public class Actions extends UnifiedGameMap {
       //
       // Add an active ceiling
       //
-      protected void AddActiveCeiling(ceiling_t c)
+      public void AddActiveCeiling(ceiling_t c)
       {
           int     i;
           
