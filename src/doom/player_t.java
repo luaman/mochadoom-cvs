@@ -1,7 +1,7 @@
 package doom;
 
 import i.DoomStatusAware;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -22,7 +22,7 @@ import p.mobj_t;
 import p.pspdef_t;
 import rr.RendererState;
 import rr.sector_t;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import utils.C2JUtils;
 import w.DoomFile;
 import w.IReadableDoomObject;
@@ -61,8 +61,8 @@ public class player_t /*extends mobj_t */
     private Actions P;
     private RendererState R;
     private random RND;
-    private DoomSystemInterface I;
-    private DoomSoundInterface S;
+    private IDoomSystem I;
+    private IDoomSound S;
 	
     /* Fugly hack to "reset" the player. Not worth the fugliness.
     public static player_t nullplayer;
