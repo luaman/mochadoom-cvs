@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.14 2011/05/17 17:35:18 velktron Exp $
+//$Id: DoomFile.java,v 1.15 2011/05/18 16:57:51 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -254,8 +254,24 @@ public class DoomFile extends RandomAccessFile {
        }
    }
    
+   public final void readShortArray(short[] s,int len, ByteOrder bo) throws IOException {
+
+       if ((s==null)||(len==0)) return;
+       
+       for (int i=0;i<Math.min(len,s.length);i++){           
+           s[i]=this.readShort();
+           if (bo==ByteOrder.LITTLE_ENDIAN){
+               s[i]=Swap.SHORT(s[i]);
+           }
+       }
+   }
+   
    public final void readIntArray(int[] s,ByteOrder bo) throws IOException {
        readIntArray(s,s.length,bo);
+   }
+   
+   public final void readShortArray(short[] s,ByteOrder bo) throws IOException {
+       readShortArray(s,s.length,bo);
    }
    
    public void readBooleanArray(boolean[] s,int len) throws IOException {
@@ -266,6 +282,9 @@ public class DoomFile extends RandomAccessFile {
            s[i]=this.readBoolean();
            }
    }
+   
+   
+   
    /** Reads an array of "int booleans" into an array or
     * proper booleans. 4 bytes per boolean are used!
     * 
