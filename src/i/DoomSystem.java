@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.7 2011/05/17 16:54:09 velktron Exp $
+// $Id: DoomSystem.java,v 1.8 2011/05/18 16:53:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.8  2011/05/18 16:53:29  velktron
+// Implements IDoomSystem now.
+//
 // Revision 1.7  2011/05/17 16:54:09  velktron
 // Switched to DoomStatus
 //
@@ -69,7 +72,7 @@ import doom.DoomStatus;
 import doom.ticcmd_t;
 import static data.Defines.TICRATE;
 
-public class DoomSystem implements DoomSystemInterface, DoomStatusAware{
+public class DoomSystem implements IDoomSystem, DoomStatusAware{
  
 
 
