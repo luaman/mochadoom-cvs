@@ -52,7 +52,7 @@ public class side_t implements IReadableDoomObject{
         this.toptexture = f.readLEShort();
         this.bottomtexture = f.readLEShort();
         this.midtexture = f.readLEShort();
-        this.sectorid=f.readLEInt();
+        //this.sectorid=f.readLEInt();
         
     }
     

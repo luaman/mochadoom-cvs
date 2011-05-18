@@ -188,20 +188,12 @@ public class line_t implements Interceptable, IReadableDoomObject{
     @Override
     public void read(DoomFile f)
             throws IOException {
-        f.skipBytes(8); // v1 and v2 vertexes
-        dx=f.readLEInt();
-        dy=f.readLEInt();
-        
+    	
+    	// For histerical reasons, these are the only parts of line_t that
+    	// are archived in vanilla savegames. Go figure.
         this.flags = f.readLEShort();
         this.special = f.readLEShort();
         this.tag = f.readLEShort();
-        f.readShortArray(this.sidenum, ByteOrder.LITTLE_ENDIAN);
-        f.readIntArray(this.bbox, ByteOrder.LITTLE_ENDIAN);
-        this.slopetype=slopetype_t.values()[f.readLEInt()];
-        this.frontsectorid=f.readLEInt();
-        this.backsectorid=f.readLEInt();
-        this.validcount=f.readLEInt();
-        this.specialdataid=f.readLEInt();
     }
       
       

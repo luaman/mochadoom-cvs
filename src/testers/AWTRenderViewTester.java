@@ -48,7 +48,7 @@ public class AWTRenderViewTester {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad"/*,"sprites.wad"*/});
     
     System.out.println("Total lumps read: "+W.numlumps);
 

@@ -421,26 +421,20 @@ public class sector_t implements IReadableDoomObject{
     @Override
     public void read(DoomFile f)
             throws IOException {
-        this.floorheight = f.readLEInt();
-        this.ceilingheight = f.readLEInt();
+    	
+    	// ACHTUNG: the only situation where we'd
+    	// like to read memory-format sector_t's is from
+    	// savegames, and in vanilla savegames, not all info
+    	// is saved (or read) from disk.          
+    	
+        this.floorheight = f.readLEShort() << m.fixed_t.FRACBITS;
+        this.ceilingheight = f.readLEShort() << m.fixed_t.FRACBITS;
         this.floorpic = f.readLEShort();
         this.ceilingpic = f.readLEShort();
         this.lightlevel = f.readLEShort();
         this.special = f.readLEShort();      // needed?
         this.tag =f.readLEShort();      // needed?
         this.soundtraversed=f.readLEShort();
-        f.skipBytes(4); // TODO: soundtarget
-        f.readIntArray(blockbox, ByteOrder.LITTLE_ENDIAN);
-        // MAES: these should be already correcly set by
-        // the level loader. Since we don't really
-        // want to guess the C memory model, we should probably (?)
-        // not fuck around with those.
-        f.skipBytes(4); // TODO: degensoundorg
-        f.skipBytes(4); // TODO: thinglist
-        f.skipBytes(4); // TODO: specialdata
-        linecount=f.readLEInt();
-        f.skipBytes(4); // linecount size
-        
     }
      
  }

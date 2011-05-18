@@ -30,7 +30,6 @@ import rr.sector_t;
 import rr.side_t;
 import utils.C2JUtils;
 import w.DoomFile;
-import w.IEnumReader;
 import w.IReadableDoomObject;
 
 public class VanillaDSG implements IDoomSaveGame, IReadableDoomObject, DoomStatusAware {
@@ -145,6 +144,9 @@ protected final void P_UnArchiveWorld (DoomFile f) throws IOException
   for (i=0; i<LL.numsectors ; i++)
   {
       sec=LL.sectors[i];
+      // MAES: sectors were actually carefully
+      // unmarshalled, so we don't just read/write
+      // their entire memory footprint to disk.
       sec.read(f);
       sec.specialdata = null;
       sec.soundtarget = null;
@@ -154,12 +156,15 @@ protected final void P_UnArchiveWorld (DoomFile f) throws IOException
   for (i=0 ; i<LL.numlines ; i++)
   {
   li=LL.lines[i];
+  // MAES: something similar occur with lines, too.
   li.read(f);
 
   for (j=0 ; j<2 ; j++)
   {
       if (li.sidenum[j] == -1)
       continue;
+      // Similarly, sides also get a careful unmarshalling even
+      // in vanilla. No "dumb" block reads here.
       si = LL.sides[li.sidenum[j]];
       si.read(f);
 
