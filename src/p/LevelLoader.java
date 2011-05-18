@@ -10,7 +10,7 @@ import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
 import i.DoomStatusAware;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -25,7 +25,7 @@ import rr.seg_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import st.DoomStatusBarInterface;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
@@ -46,7 +46,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.18 2011/05/17 16:51:20 velktron Exp $
+// $Id: LevelLoader.java,v 1.19 2011/05/18 16:55:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,6 +61,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.19  2011/05/18 16:55:44  velktron
+// TEMPORARY TESTING VERSION, DO NOT USE
+//
 // Revision 1.18  2011/05/17 16:51:20  velktron
 // Switched to DoomStatus
 //
@@ -145,16 +148,16 @@ public class LevelLoader implements DoomStatusAware{
 /////////////////// Status objects ///////////////////
     
     DoomStatusBarInterface ST;
-    DoomSystemInterface I;
+    IDoomSystem I;
     IWadLoader W;
-    DoomMain DM;
+    DoomStatus DM;
     DoomVideoRenderer V;
     RendererState R;
     TextureManager TM;
     Actions P;
-    DoomSoundInterface S;
+    IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.18 2011/05/17 16:51:20 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.19 2011/05/18 16:55:44 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -471,7 +474,7 @@ public int bmaporgy;
       mt.type = SHORT(mt.type);
       mt.options = SHORT(mt.options);*/
       
-      P.SpawnMapThing (mt);
+      // TODO: P.SpawnMapThing (mt);
       }
       
   }
@@ -811,7 +814,7 @@ public int bmaporgy;
 
 
       // UNUSED W_Profile ();
-      P.InitThinkers ();
+     // TODO  P.InitThinkers ();
 
       // if working with a development map, reload it
       W.Reload ();            
@@ -864,16 +867,16 @@ public int bmaporgy;
           if (DM.playeringame[i])
           {
           DM.players[i].mo = null;
-          DM.DeathMatchSpawnPlayer (i);
+       //   DM.DeathMatchSpawnPlayer (i);
           }
               
       }
 
       // clear special respawning que
-      P.iquehead = P.iquetail = 0;        
+      // TODO: P.iquehead = P.iquetail = 0;        
       
       // set up world state
-      P.SpawnSpecials ();
+      // TODO: P.SpawnSpecials ();
       
       // build subsector connect matrix
       //  UNUSED P_ConnectSubsectors ();
@@ -882,7 +885,7 @@ public int bmaporgy;
       if (DM.precache){
       TM.PrecacheLevel ();
       // MAES: thinkers are separate than texture management. Maybe split sprite management as well?
-      R.PreCacheThinkers();
+      //TODO: R.PreCacheThinkers();
       
       }
 
@@ -900,7 +903,7 @@ public int bmaporgy;
   @Override
   public void updateStatus(DoomStatus DC){
       this.W=DC.W;
-      this.DM=DC.DM;
+      this.DM=DC;
       this.P=DC.P;
       this.R=DC.R;
       this.I=DC.I;
