@@ -82,7 +82,7 @@ public class sector_t implements IReadableDoomObject{
      public int id;     
      
      public String toString(){
-         sb.setLength(0);
+         /*sb.setLength(0);
          sb.append("Sector id: ");
          sb.append(id);
          sb.append('\t');
@@ -96,8 +96,17 @@ public class sector_t implements IReadableDoomObject{
          sb.append(this.floorpic);
          sb.append('\t');
          sb.append("Ceilingpic: ");
-         sb.append(this.ceilingpic);
-         return sb.toString();
+         sb.append(this.ceilingpic);*/
+    	 String str=String.format("Sector: %x %x %d %d %d %d %d\n",
+    	  	floorheight,
+    		ceilingheight,
+    		floorpic,
+    		ceilingpic,
+    		lightlevel,
+    		special,		// needed?
+    		tag);		// needed?
+
+         return str;
          
      }
 
@@ -434,7 +443,6 @@ public class sector_t implements IReadableDoomObject{
         this.lightlevel = f.readLEShort();
         this.special = f.readLEShort();      // needed?
         this.tag =f.readLEShort();      // needed?
-        this.soundtraversed=f.readLEShort();
     }
      
  }
