@@ -1,6 +1,9 @@
 package p;
 
+import java.io.IOException;
+
 import rr.SectorAction;
+import w.DoomFile;
 
 public class strobe_t extends SectorAction{
 		
@@ -26,5 +29,17 @@ public class strobe_t extends SectorAction{
             }
 
         }
+        
+        @Override
+        public void read(DoomFile f) throws IOException{
+
+            super.read(f); // Call thinker reader first            
+            super.sectorid=f.readLEInt(); // Sector index
+            count=f.readLEInt();
+            maxlight=f.readLEInt();
+            minlight=f.readLEInt();
+            darktime=f.readLEInt();
+            brighttime=f.readLEInt();       
+            }
         
     };

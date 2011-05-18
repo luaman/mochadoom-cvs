@@ -30,14 +30,16 @@ public class ceiling_t extends SectorAction implements IReadableDoomObject{
         public void read(DoomFile f) throws IOException{
             // TODO: probably some sort of sanity check built into the type
             // itself would be nice.
-            type=values[f.readInt()];
-            bottomheight=f.readInt();
-            topheight=f.readInt();
-            speed=f.readInt();
-            crush=f.readBoolean();
-            direction=f.readInt();
+            super.read(f); // Call thinker reader first            
+            type=values[f.readLEInt()];
+            super.sectorid=f.readLEInt(); // sector pointer.
+            bottomheight=f.readLEInt();
+            topheight=f.readLEInt();
+            speed=f.readLEInt();
+            crush=f.readIntBoolean();
+            direction=f.readLEInt();
             tag=f.readInt();
-            olddirection=f.readInt();            
+            olddirection=f.readLEInt();            
             }
 
         }

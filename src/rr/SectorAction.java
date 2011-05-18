@@ -1,5 +1,6 @@
 package rr;
 
+import w.IReadableDoomObject;
 import doom.thinker_t;
 
 /** Used for special sector-based function for doors, ceilings 
@@ -12,4 +13,9 @@ import doom.thinker_t;
 public abstract class SectorAction extends thinker_t {
   
     public sector_t sector;
+    
+    /** Special, only used when (un)archiving in order to re-link stuff
+     *  to their proper sector.
+     */
+    public int sectorid;
 }

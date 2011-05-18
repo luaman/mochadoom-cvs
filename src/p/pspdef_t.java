@@ -18,11 +18,14 @@ public class pspdef_t implements IReadableDoomObject{
     public int		tics;
     /** fixed_t */
     public int	sx, sy;
-
+    // When read from disk.
+    public int readstate;
+    
     @Override
     public void read(DoomFile f) throws IOException {
         // TODO: where/when is state set?
-        int state=f.readLEInt();
+        //state=data.info.states[f.readLEInt()];
+        readstate=f.readLEInt();
         tics=f.readLEInt();
         sx=f.readLEInt();
         sy=f.readLEInt();

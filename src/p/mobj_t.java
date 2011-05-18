@@ -14,6 +14,8 @@ import m.random;
 import rr.subsector_t;
 import w.DoomFile;
 import w.IReadableDoomObject;
+import data.Tables;
+import data.doomdata;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -181,8 +183,8 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         /** Player number last looked for. */
         public int         lastlook;   
 
-        /** For nightmare respawn. */
-       public mapthing_t      spawnpoint; 
+        /** For nightmare respawn.*/
+       public mapthing_t      spawnpoint; // struct 
 
         /** Thing being chased/attacked for tracers. */
 
@@ -436,31 +438,37 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
     
   //_D_: to permit this object to save/load
     public void read(DoomFile f) throws IOException {
-        this.x=f.readInt();
-        this.y=f.readInt();
-        this.z=f.readInt();
-        this.angle=f.readInt();
-        this.sprite=spritenum_t.values()[f.readInt()];
-        this.frame=f.readInt();
-        this.floorz=f.readInt();
-        this.ceilingz=f.readInt();
-        this.radius=f.readInt();
-        this.height=f.readInt();
-        this.momx=f.readInt();
-        this.momy=f.readInt();
-        this.momz=f.readInt();
+        super.read(f); // Read the head thinker.
+        this.x=f.readLEInt();
+        this.y=f.readLEInt();
+        this.z=f.readLEInt();
+        f.skipBytes(8); // TODO: snext, sprev. When are those set?
+        this.angle=Tables.BITS32&f.readLEInt();
+        this.sprite=spritenum_t.values()[f.readLEInt()];
+        this.frame=f.readLEInt();
+        f.skipBytes(8); // TODO: bnext, bprev. When are those set?
+        this.floorz=f.readLEInt();
+        this.ceilingz=f.readLEInt();
+        this.radius=f.readLEInt();
+        this.height=f.readLEInt();
+        this.momx=f.readLEInt();
+        this.momy=f.readLEInt();
+        this.momz=f.readLEInt();
         this.validcount=f.readInt();
         this.type=mobjtype_t.values()[f.readInt()];
-        this.tics=f.readLong();
-        this.state.read(f);
-        this.flags=f.readInt();
-        this.health=f.readInt();
-        this.movedir=f.readInt();
-        this.movecount=f.readInt();
-        this.reactiontime=f.readInt();
-        this.threshold=f.readInt();
-        this.player.read(f);
+        this.tics=Tables.BITS32&f.readLEInt();
+        this.state=data.info.states[f.readLEInt()]; // TODO: state OK?
+        this.flags=f.readLEInt();
+        this.health=f.readLEInt();
+        this.movedir=f.readLEInt();
+        this.movecount=f.readLEInt();
+        f.skipBytes(4); // TODO: target
+        this.reactiontime=f.readLEInt();        
+        this.threshold=f.readLEInt();
+        f.skipBytes(4); // TODO: player. Non null should mean that it IS a player.
         this.lastlook=f.readInt();
+        spawnpoint.read(f);
+        f.skipBytes(4); // TODO: tracer
      }
     
     public int         eflags; //DOOM LEGACY

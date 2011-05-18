@@ -1,7 +1,12 @@
 package rr;
 
+import java.io.IOException;
+import java.nio.ByteOrder;
+
 import p.Interceptable;
 import p.divline_t;
+import w.DoomFile;
+import w.IReadableDoomObject;
 import static data.Defines.ML_TWOSIDED;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
@@ -14,10 +19,10 @@ import doom.thinker_t;
 
 /** This is the actual linedef */
 
-public class line_t implements Interceptable{
+public class line_t implements Interceptable, IReadableDoomObject{
 
         public line_t(){
-            sidenum=new int[2];
+            sidenum=new short[2];
             bbox=new int[4];
             slopetype=slopetype_t.ST_HORIZONTAL;
         }
@@ -37,7 +42,7 @@ public class line_t implements Interceptable{
 
         /** Visual appearance: SideDefs.
            sidenum[1] will be -1 if one sided */
-        public int[]   sidenum;         
+        public short[]   sidenum;         
 
         /** Neat. Another bounding box, for the extent
          of the LineDef.
@@ -52,12 +57,14 @@ public class line_t implements Interceptable{
            Note: redundant? Can be retrieved from SideDefs.
            MAES: pointers */
         public sector_t   frontsector,  backsector;
+        public int frontsectorid, backsectorid;
 
         /** if == validcount, already checked */
         public int     validcount;
 
         /** thinker_t for reversable actions MAES: (void*) */
         public thinker_t   specialdata;
+        public int specialdataid;
         
         public void assignVertexValues(){
             this.v1x=v1.x;
@@ -178,6 +185,24 @@ public class line_t implements Interceptable{
       public String toString(){
           return (String.format("Flags: %d Tag: %d Special %d",this.flags, this.tag, this.special));   
       }
+    @Override
+    public void read(DoomFile f)
+            throws IOException {
+        f.skipBytes(8); // v1 and v2 vertexes
+        dx=f.readLEInt();
+        dy=f.readLEInt();
+        
+        this.flags = f.readLEShort();
+        this.special = f.readLEShort();
+        this.tag = f.readLEShort();
+        f.readShortArray(this.sidenum, ByteOrder.LITTLE_ENDIAN);
+        f.readIntArray(this.bbox, ByteOrder.LITTLE_ENDIAN);
+        this.slopetype=slopetype_t.values()[f.readLEInt()];
+        this.frontsectorid=f.readLEInt();
+        this.backsectorid=f.readLEInt();
+        this.validcount=f.readLEInt();
+        this.specialdataid=f.readLEInt();
+    }
       
       
     }

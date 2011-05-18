@@ -4,7 +4,14 @@ import static data.Limits.MAXINT;
 import static data.Limits.MAX_ADJOINING_SECTORS;
 import static m.fixed_t.FRACUNIT;
 import static p.DoorDefines.*;
+
+import java.io.IOException;
+import java.nio.ByteOrder;
+
+import m.fixed_t;
 import m.random;
+import data.Defines;
+import data.Tables;
 import doom.think_t;
 import doom.thinker_t;
 import p.ThinkerList;
@@ -15,14 +22,17 @@ import p.mobj_t;
 import p.strobe_t;
 import p.vldoor_e;
 import p.vldoor_t;
+import w.DoomFile;
+import w.IReadableDoomObject;
 
 /**
  * The SECTORS record, at runtime.
- * Stores things/mobjs. 
+ * Stores things/mobjs. Can be archived/unarchived during
+ * savegames.
  * @author admin
  *
  */
-public class sector_t {
+public class sector_t implements IReadableDoomObject{
 
     
     public ThinkerList TL;
@@ -407,5 +417,30 @@ public class sector_t {
      
      
      static StringBuilder sb=new StringBuilder();
+
+    @Override
+    public void read(DoomFile f)
+            throws IOException {
+        this.floorheight = f.readLEInt();
+        this.ceilingheight = f.readLEInt();
+        this.floorpic = f.readLEShort();
+        this.ceilingpic = f.readLEShort();
+        this.lightlevel = f.readLEShort();
+        this.special = f.readLEShort();      // needed?
+        this.tag =f.readLEShort();      // needed?
+        this.soundtraversed=f.readLEShort();
+        f.skipBytes(4); // TODO: soundtarget
+        f.readIntArray(blockbox, ByteOrder.LITTLE_ENDIAN);
+        // MAES: these should be already correcly set by
+        // the level loader. Since we don't really
+        // want to guess the C memory model, we should probably (?)
+        // not fuck around with those.
+        f.skipBytes(4); // TODO: degensoundorg
+        f.skipBytes(4); // TODO: thinglist
+        f.skipBytes(4); // TODO: specialdata
+        linecount=f.readLEInt();
+        f.skipBytes(4); // linecount size
+        
+    }
      
  }

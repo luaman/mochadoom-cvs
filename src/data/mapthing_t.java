@@ -4,11 +4,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import m.Swap;
+
 import w.CacheableDoomObject;
+import w.DoomFile;
+import w.IReadableDoomObject;
+import w.IWritableDoomObject;
 
 /** mapthing_t ... same on disk AND in memory, wow?! */
 
-public class mapthing_t implements CacheableDoomObject,Cloneable{
+public class mapthing_t implements CacheableDoomObject,IReadableDoomObject,IWritableDoomObject,Cloneable{
     public short x;
 
     public short y;
@@ -48,4 +53,26 @@ public class mapthing_t implements CacheableDoomObject,Cloneable{
 		}
 		return null;
     }
+
+    @Override
+    public void write(DoomFile f)
+            throws IOException {
+        // TODO: Little endian OK?
+        f.writeShort(Swap.SHORT(x));
+        f.writeShort(Swap.SHORT(y));
+        f.writeShort(Swap.SHORT(angle));
+        f.writeShort(Swap.SHORT(type));
+        f.writeShort(Swap.SHORT(options));
+        
+    }
+
+    @Override
+    public void read(DoomFile f)
+            throws IOException {
+        x=f.readLEShort();
+        y=f.readLEShort();
+        angle=f.readLEShort();
+        type=f.readLEShort();
+        options=x=f.readLEShort();
+        }
 }

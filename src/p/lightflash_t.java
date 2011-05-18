@@ -1,13 +1,16 @@
 package p;
 
+import java.io.IOException;
+
 import m.random;
 import rr.SectorAction;
+import w.DoomFile;
 
 //
 // BROKEN LIGHT EFFECT
 //
 
-public class lightflash_t extends SectorAction {
+public class lightflash_t extends SectorAction{
 	
     private random RND;
     
@@ -16,6 +19,10 @@ public class lightflash_t extends SectorAction {
     public int     minlight;
     public int     maxtime;
     public int     mintime;
+    
+    public lightflash_t(){
+    
+    }
     
     public lightflash_t(random RND){
         this.RND=RND;
@@ -39,5 +46,17 @@ public class lightflash_t extends SectorAction {
         }
 
     }
+    
+    @Override
+    public void read(DoomFile f) throws IOException{
+
+        super.read(f); // Call thinker reader first            
+        super.sectorid=f.readLEInt(); // Sector index
+        count=f.readLEInt();
+        maxlight=f.readLEInt();
+        minlight=f.readLEInt();
+        maxtime=f.readLEInt();
+        mintime=f.readLEInt();
+        }
     
 }

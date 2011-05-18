@@ -1,17 +1,22 @@
 package p;
 
 import static utils.C2JUtils.flags;
+
+import java.io.IOException;
+
 import rr.SectorAction;
 import rr.sector_t;
-import s.DoomSoundInterface;
+import s.IDoomSound;
+import w.DoomFile;
+import w.IReadableDoomObject;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 import doom.thinker_t;
 
-public class floormove_t extends SectorAction{
+public class floormove_t extends SectorAction implements IReadableDoomObject{
 
     private ThinkerList TL;
-    private DoomSoundInterface S;
+    private IDoomSound S;
     private DoomStatus DM;
     
     public floormove_t(){
@@ -20,7 +25,7 @@ public class floormove_t extends SectorAction{
         this.type=floor_e.lowerFloor;
     }
     
-    public floormove_t(ThinkerList TL, DoomSoundInterface S){
+    public floormove_t(ThinkerList TL, IDoomSound S){
         this.TL=TL;
         this.S=S;
     }
@@ -36,6 +41,19 @@ public class floormove_t extends SectorAction{
     /** fixed_t */
     public int speed;
 
+    @Override
+    public void read(DoomFile f) throws IOException{
+
+        super.read(f); // Call thinker reader first            
+        type=floor_e.values()[f.readLEInt()];
+        crush=f.readIntBoolean();
+        super.sectorid=f.readLEInt(); // Sector index (or pointer?)
+        direction=f.readLEInt();
+        newspecial=f.readLEInt();
+        texture=f.readLEShort();
+        floordestheight=f.readLEInt();
+        speed=f.readLEInt();        
+        }
    
     
 }
