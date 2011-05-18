@@ -1,6 +1,6 @@
 package z;
 
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,7 +10,7 @@ import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: zone.java,v 1.5 2010/11/12 13:37:25 velktron Exp $
+// $Id: zone.java,v 1.6 2011/05/18 17:00:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: zone.java,v $
+// Revision 1.6  2011/05/18 17:00:25  velktron
+// Removed redundant/useless files.
+//
 // Revision 1.5  2010/11/12 13:37:25  velktron
 // Rationalized the LUT system - now it's 100% procedurally generated.
 //
@@ -57,7 +60,7 @@ import static data.Defines.*;
 
 public class zone{
 
-public static String rcsid = "$Id: zone.java,v 1.5 2010/11/12 13:37:25 velktron Exp $";
+public static String rcsid = "$Id: zone.java,v 1.6 2011/05/18 17:00:25 velktron Exp $";
 
 //
 // ZONE MEMORY ALLOCATION
