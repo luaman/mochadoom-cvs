@@ -3,7 +3,7 @@ package m;
 import g.DoomGameInterface;
 import hu.HU;
 import i.DoomSystem;
-import i.DoomSystemInterface;
+import i.IDoomSystem;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -16,7 +16,7 @@ import doom.DoomStatus;
 import rr.RendererState;
 import rr.UnifiedRenderer;
 import rr.patch_t;
-import s.DoomSoundInterface;
+import s.IDoomSound;
 import v.DoomVideoRenderer;
 import w.DoomFile;
 import w.IWadLoader;
@@ -25,7 +25,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.14 2011/05/17 16:51:20 velktron Exp $
+// $Id: MenuMisc.java,v 1.15 2011/05/18 16:54:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -41,6 +41,9 @@ import w.IWritableDoomObject;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.15  2011/05/18 16:54:03  velktron
+// Duh?
+//
 // Revision 1.14  2011/05/17 16:51:20  velktron
 // Switched to DoomStatus
 //
@@ -113,7 +116,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.14 2011/05/17 16:51:20 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.15 2011/05/18 16:54:03 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomMain DM;
@@ -121,8 +124,8 @@ IWadLoader W;
 DoomVideoRenderer V;
 HU HU;
 RendererState R;
-DoomSystemInterface I;
-DoomSoundInterface S;
+IDoomSystem I;
+IDoomSound S;
 
 
 //
