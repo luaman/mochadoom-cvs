@@ -148,7 +148,7 @@ protected final void P_UnArchiveWorld (DoomFile f) throws IOException
       // unmarshalled, so we don't just read/write
       // their entire memory footprint to disk.
       sec.read(f);
-      System.out.println(sec);
+      System.out.println("Sector"+i+": "+sec);
       sec.specialdata = null;
       sec.soundtarget = null;
   }
@@ -157,19 +157,26 @@ protected final void P_UnArchiveWorld (DoomFile f) throws IOException
   for (i=0 ; i<LL.numlines ; i++)
   {
   li=LL.lines[i];
-  // MAES: something similar occur with lines, too.
+  // MAES: something similar occurs with lines, too.
   li.read(f);
-
+  System.out.println("Line "+i+": "+li);
+  //System.out.print(i+ " {");
   for (j=0 ; j<2 ; j++)
   {
-      if (li.sidenum[j] == -1)
+    //  System.out.print(li.sidenum[j]);
+    //  if (j<2) System.out.print(",");
+   //   System.out.printf("Skipped sidenum %d for line %d\n",j,i);
+      if (li.sidenum[j] == -1){
+  //        System.out.printf("Skipped sidenum %d for line %d\n",j,i);
       continue;
+      }
       // Similarly, sides also get a careful unmarshalling even
       // in vanilla. No "dumb" block reads here.
       si = LL.sides[li.sidenum[j]];
       si.read(f);
 
   }
+  System.out.printf("Position at end of WORLD: %d\n",f.getFilePointer());
   }
   
 }
@@ -215,8 +222,7 @@ protected void P_UnArchiveThinkers (DoomFile f) throws IOException
  // read in saved thinkers
  while (true)
  {
-     int tmp=f.readLEInt();
-     tmp&=0x00ff; // To "unsigned byte"
+     int tmp=f.readUnsignedByte();
      tclass=thinkerclass_t.values()[tmp];
  switch (tclass)
  {
@@ -224,7 +230,7 @@ protected void P_UnArchiveThinkers (DoomFile f) throws IOException
      return;     // end of list
          
    case tc_mobj:
-     PADSAVEP(f);
+     PADSAVEP(f);     
      mobj=new mobj_t();
      mobj.read(f);
      mobj.state = info.states[mobj.state.id];
@@ -385,6 +391,8 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
     }
     protected final void PADSAVEP(DoomFile f) throws IOException{
         long save_p=f.getFilePointer();
+        System.out.printf("Current position %d Padding by %d bytes\n",save_p,((4 - ((int) save_p & 3)) & 3));
+        
         f.seek(save_p+((4 - ((int) save_p & 3)) & 3));
     }
 

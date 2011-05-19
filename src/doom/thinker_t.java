@@ -24,8 +24,8 @@ public void read(DoomFile f)
     previd=f.readLEInt();
     nextid=f.readLEInt();
    int tmp=f.readLEInt();
-   tmp&=0x00ff;
-   this.function=think_t.values()[tmp];
+  // tmp&=0x00ff;
+  // this.function=think_t.values()[tmp];
     
 }
 

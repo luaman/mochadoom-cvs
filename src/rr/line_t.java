@@ -183,7 +183,7 @@ public class line_t implements Interceptable, IReadableDoomObject{
       }
       
       public String toString(){
-          return (String.format("Flags: %d Tag: %d Special %d",this.flags, this.tag, this.special));   
+          return (String.format("Flags: %d Special %d Tag: %d ",this.flags, this.special, this.tag));   
       }
     @Override
     public void read(DoomFile f)

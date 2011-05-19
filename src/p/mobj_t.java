@@ -98,7 +98,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
     Actions A;    
     
         public mobj_t(){
-            
+            this.spawnpoint=new mapthing_t();
         }
     
         public mobj_t(Actions A){
@@ -132,7 +132,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         /** Interaction info, by BLOCKMAP. Links in blocks (if needed). */
         public thinker_t  bnext, bprev;
         
-        /** MAES: was actually struct subsector_s */ 
+        /** MAES: was actually a pointer to a struct subsector_s */ 
         public subsector_t subsector;
 
         /** (fixed_t) The closest interval over all contacted Sectors. */
@@ -447,6 +447,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         this.sprite=spritenum_t.values()[f.readLEInt()];
         this.frame=f.readLEInt();
         f.skipBytes(8); // TODO: bnext, bprev. When are those set?
+        f.skipBytes(4); // TODO: subsector
         this.floorz=f.readLEInt();
         this.ceilingz=f.readLEInt();
         this.radius=f.readLEInt();
@@ -457,7 +458,8 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         this.validcount=f.readInt();
         this.type=mobjtype_t.values()[f.readInt()];
         this.tics=Tables.BITS32&f.readLEInt();
-        this.state=data.info.states[f.readLEInt()]; // TODO: state OK?
+        System.out.println("State"+f.readLEInt());
+        //this.state=data.info.states[f.readLEInt()]; // TODO: state OK?
         this.flags=f.readLEInt();
         this.health=f.readLEInt();
         this.movedir=f.readLEInt();
