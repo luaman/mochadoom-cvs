@@ -102,6 +102,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         }
     
         public mobj_t(Actions A){
+            this();
             this.A=A;
             // A mobj_t is ALSO a thinker, as it always contains the struct.
             // Don't fall for C's trickery ;-)
@@ -165,6 +166,7 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
          *also the originator for missiles.
          * MAES: was a pointer */
         public mobj_t  target;
+        public int  p_target; // for savegames
 
         /** Reaction time: if non 0, don't attack yet.
            Used by player to freeze a bit after teleporting. */
@@ -456,24 +458,29 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
         this.momy=f.readLEInt();
         this.momz=f.readLEInt();
         this.validcount=f.readInt();
-        this.type=mobjtype_t.values()[f.readInt()];
+        this.type=mobjtype_t.values()[f.readLEInt()];
+        f.skipBytes(4); // TODO: mobjinfo
         this.tics=Tables.BITS32&f.readLEInt();
-        System.out.println("State"+f.readLEInt());
-        //this.state=data.info.states[f.readLEInt()]; // TODO: state OK?
+        //System.out.println("State"+f.readLEInt());
+        this.stateid=f.readLEInt(); // TODO: state OK?
         this.flags=f.readLEInt();
         this.health=f.readLEInt();
         this.movedir=f.readLEInt();
         this.movecount=f.readLEInt();
-        f.skipBytes(4); // TODO: target
+        this.p_target=f.readLEInt();
         this.reactiontime=f.readLEInt();        
         this.threshold=f.readLEInt();
-        f.skipBytes(4); // TODO: player. Non null should mean that it IS a player.
+        this.playerid=f.readLEInt(); // TODO: player. Non null should mean that it IS a player.
         this.lastlook=f.readInt();
         spawnpoint.read(f);
         f.skipBytes(4); // TODO: tracer
      }
     
     public int         eflags; //DOOM LEGACY
+
+    // Fields used only during DSG unmarshalling
+    public int stateid;
+    public int playerid;
 
     // TODO: a linked list of sectors where this object appears
     // public msecnode_t touching_sectorlist;

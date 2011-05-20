@@ -5,6 +5,7 @@ import i.IDoomSystem;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import data.Defines;
@@ -32,7 +33,7 @@ import utils.C2JUtils;
 import w.DoomFile;
 import w.IReadableDoomObject;
 
-public class VanillaDSG implements IDoomSaveGame, IReadableDoomObject, DoomStatusAware {
+public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
     
     VanillaDSGHeader header;
     DoomStatus DS;
@@ -52,18 +53,6 @@ public class VanillaDSG implements IDoomSaveGame, IReadableDoomObject, DoomStatu
     }
 
     @Override
-    public void doSave() {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void doLoad() {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
     public IDoomSaveGameHeader getHeader() {
         // TODO Auto-generated method stub
         return null;
@@ -75,15 +64,27 @@ public class VanillaDSG implements IDoomSaveGame, IReadableDoomObject, DoomStatu
         
     }
 
+    private DoomFile f;
+    
     @Override
-    public void read(DoomFile f) throws IOException
+    public boolean doLoad(DoomFile f)
             {
+        try {
         this.header=new VanillaDSGHeader();
+        this.f=f;
         header.read(f);
-        P_UnArchivePlayers(f);
-        P_UnArchiveWorld(f);
-        P_UnArchiveThinkers(f);
-        P_UnArchiveSpecials(f);
+        UnArchivePlayers();
+        UnArchiveWorld();
+        UnArchiveThinkers();
+        UnArchiveSpecials();
+        byte terminator=f.readByte();
+        if (terminator != 0x1D) return false;
+        else return true;
+        } catch (Exception e){
+            e.printStackTrace();
+            I.Error("Error while loading savegame! Cause: %s",e.getMessage());
+            return false; // Needed to shut up compiler.
+        }
         
     }
     
@@ -92,7 +93,7 @@ public class VanillaDSG implements IDoomSaveGame, IReadableDoomObject, DoomStatu
   * P_UnArchivePlayers
  * @throws IOException 
   */
- protected void P_UnArchivePlayers (DoomFile f) throws IOException
+ protected void UnArchivePlayers () throws IOException
  {
      int     i;
      int     j;
@@ -126,10 +127,48 @@ public class VanillaDSG implements IDoomSaveGame, IReadableDoomObject, DoomStatu
      }
  }
     
+ /**
+  * P_UnArchivePlayers
+ * @throws IOException 
+  */
+ protected void ArchivePlayers () throws IOException
+ {
+     int     i;
+     int     j;
+     
+     for (i=0 ; i<MAXPLAYERS ; i++)
+     {
+     // Multiplayer savegames are different!
+     if (!DS.playeringame[i])
+         continue;
+     PADSAVEP(f); // this will move us on the 52th byte, instead of 50th.
+     DS.players[i].read(f);
+     
+     //memcpy (&players[i],save_p, sizeof(player_t));
+     //save_p += sizeof(player_t);
+     
+     // will be set when unarc thinker
+     DS.players[i].mo = null;   
+     DS.players[i].message = null;
+     DS.players[i].attacker = null;
+
+     
+     for (j=0 ; j<player_t.NUMPSPRITES ; j++)
+     {
+         if (C2JUtils.eval(DS.players[i].psprites[j].state))
+         {
+             // MAES HACK to accomoadate state_t type punning a-posteriori
+             DS.players[i].psprites[j].state =
+             info.states[DS.players[i].psprites[j].readstate];
+         }
+     }
+     }
+ }
+ 
  //
 //P_UnArchiveWorld
 //
-protected final void P_UnArchiveWorld (DoomFile f) throws IOException
+protected final void UnArchiveWorld () throws IOException
 {
   int         i;
   int         j;
@@ -189,63 +228,74 @@ protected enum thinkerclass_t
  tc_end,
  tc_mobj;
 }
-  
+ 
+List<mobj_t> TL=new ArrayList<mobj_t>();
+
 //
 //P_UnArchiveThinkers
 //
-protected void P_UnArchiveThinkers (DoomFile f) throws IOException
+protected void UnArchiveThinkers () throws IOException
 {
  thinkerclass_t        tclass; // was "byte", therefore unsigned
  thinker_t      currentthinker;
  thinker_t      next;
  mobj_t     mobj;
+ int id=0;
+ 
+ 
  
  // remove all the current thinkers
- /*
+ 
  currentthinker = A.getThinkerCap().next;
- while (currentthinker != A.getThinkerCap())
+ while (currentthinker!=null && currentthinker != A.getThinkerCap())
  {
  next = currentthinker.next;
  
  if (currentthinker.function ==  think_t.P_MobjThinker)
      A.RemoveMobj ((mobj_t)currentthinker);
  else{
-     currentthinker.next.prev=currentthinker.prev;
-     currentthinker.prev.next=currentthinker.next;
-     //Z_Free (currentthinker);
+     //currentthinker.next.prev=currentthinker.prev;
+     //currentthinker.prev.next=currentthinker.next;
+     currentthinker=null;
  }
      
  currentthinker = next;
- }*/
- //A.InitThinkers ();
+ }
+ 
+ A.InitThinkers ();
  
  // read in saved thinkers
- while (true)
+ boolean end=false;
+ while (!end)
  {
      int tmp=f.readUnsignedByte();
      tclass=thinkerclass_t.values()[tmp];
  switch (tclass)
  {
    case tc_end:
-     return;     // end of list
+       end=true;
+     break;     // end of list
          
    case tc_mobj:
      PADSAVEP(f);     
-     mobj=new mobj_t();
+     mobj=new mobj_t(A);
      mobj.read(f);
-     //mobj.state = info.states[mobj.state.id];
+     mobj.id=++id;
+     TL.add(mobj);
+     mobj.state = info.states[mobj.stateid];
      mobj.target = null;
-     if (mobj.player!=null)
+     if (mobj.playerid!=0)
      {
-     mobj.player = DS.players[mobj.player.identify()];
+     mobj.player = DS.players[mobj.playerid-1];
      mobj.player.mo = mobj;
+
      }
-     //A.SetThingPosition (mobj);
+     LL.SetThingPosition (mobj);
      mobj.info = info.mobjinfo[mobj.type.ordinal()];
      mobj.floorz = mobj.subsector.sector.floorheight;
      mobj.ceilingz = mobj.subsector.sector.ceilingheight;
      mobj.function = think_t.P_MobjThinker;
-     //A.AddThinker (mobj);
+     A.AddThinker (mobj);
      break;
          
    default:
@@ -253,7 +303,72 @@ protected void P_UnArchiveThinkers (DoomFile f) throws IOException
  }
  
  }
+ reconstructPointers();
+ rewirePointers();
+}
 
+Hashtable<Integer,mobj_t> pointindex=new Hashtable<Integer,mobj_t> ();
+
+/** Allows reconstructing infighting targets from stored pointers/indices.
+ *  Works even with vanilla savegames as long as whatever it is that you
+ *  store is unique. A good choice would be progressive indices or hash values.
+ * 
+ */
+
+protected void reconstructPointers(){
+    
+    int player=0;
+    
+    for(mobj_t th: TL){
+        
+        System.out.printf("Thinker with id %d has prev %x next %x\n",th.id,th.previd,th.nextid);
+        if (th.player!=null){
+        System.out.printf("Thinker with id %d is player %d with mobj pointer %x\n",th.id,th.player.identify(),th.player.p_mobj);
+        player=th.id;
+        // Player found, so that's our first key.
+        pointindex.put(th.player.p_mobj,th);
+        }
+    }
+    
+    if (player==0) {
+        System.err.println("Player not found, cannot reconstruct pointers!");
+        return;
+    }
+    
+    int curr; // next or prev index
+    
+    
+    // We start from the player's index, if found.
+    // -1 so it matches that of the TL list.
+    for (int i=(player-1);i<TL.size()-1;i++){
+        // Get "next" pointer.
+        curr=TL.get(i).nextid;
+        pointindex.put(curr, TL.get(i+1));
+    }
+    
+    // We also search backwards, in case player wasn't first object
+    // (can this even happen, in vanilla?)
+    // -1 so it matches that of the TL list.
+    for (int i=(player-1);i>0;i++){
+        // Get "prev" pointer.
+        curr=TL.get(i).previd;
+        pointindex.put(curr,TL.get(i-1));
+    }
+}
+
+/** Allows reconstructing infighting targets from stored pointers/indices from
+ * the hashtable created by reconstructPointers.
+ * 
+ */
+
+protected void rewirePointers(){
+    
+    for(mobj_t th: TL){
+        if (th.p_target!=0){
+            th.target=pointindex.get(th.p_target);
+            System.out.printf("Object %s has target %s\n",th.type.toString(),th.target.type.toString());
+        }
+    }
 }
 
 protected enum specials_e
@@ -272,7 +387,7 @@ protected enum specials_e
 //
 //P_UnArchiveSpecials
 //
-protected void P_UnArchiveSpecials (DoomFile f) throws IOException
+protected void UnArchiveSpecials () throws IOException
 {
     specials_e        tclass;
  ceiling_t      ceiling;
@@ -283,12 +398,14 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
  strobe_t       strobe;
  glow_t     glow;
  
+ //List<thinker_t> A=new ArrayList<thinker_t>();
+ 
  
  // read in saved thinkers
  while (true)
  {
-     int tmp=f.readLEInt();
-     tmp&=0x00ff; // To "unsigned byte"
+     int tmp=f.readUnsignedByte();
+     //tmp&=0x00ff; // To "unsigned byte"
      tclass=specials_e.values()[tmp];
  switch (tclass)
  {
@@ -316,6 +433,7 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
      door.sector = LL.sectors[door.sectorid];
      door.sector.specialdata = door;
      door.function = think_t.T_VerticalDoor;
+     
      A.AddThinker (door);
      break;
              
@@ -326,6 +444,7 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
      floor.sector = LL.sectors[floor.sectorid];
      floor.sector.specialdata = floor;
      floor.function = think_t.T_MoveFloor;
+     
      A.AddThinker (floor);
      break;
              
@@ -339,6 +458,7 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
      if (plat.function!=null)
      plat.function =  think_t.T_PlatRaise;
 
+     
      A.AddThinker (plat);
      A.AddActivePlat(plat);
      break;
@@ -350,6 +470,7 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
      
      flash.sector =LL.sectors[flash.sectorid];
      flash.function =  think_t.T_LightFlash;
+     
      A.AddThinker (flash);
      break;
              
@@ -360,6 +481,7 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
      strobe.read(f);
      strobe.sector = LL.sectors[strobe.sectorid];
      strobe.function =  think_t.T_StrobeFlash;
+     
      A.AddThinker (strobe);
      break;
              
@@ -369,6 +491,7 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
      glow.read(f);
      glow.sector = LL.sectors[glow.sectorid];
      glow.function = think_t.T_Glow;
+     
      A.AddThinker (glow);
      break;
              
@@ -401,6 +524,7 @@ protected void P_UnArchiveSpecials (DoomFile f) throws IOException
     public void updateStatus(DoomStatus DS) {
         this.DS=DS;
         this.LL=DS.LL;
+        this.A=DS.P;
         
     }
 

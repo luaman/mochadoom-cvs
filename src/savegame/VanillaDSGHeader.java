@@ -105,16 +105,13 @@ public boolean wrongversion;
        //G_InitNew (gameskill, gameepisode, gamemap); 
     
        // get the times 
-       byte a = (byte) (0x0000FF&(leveltime>>>16)); 
-       byte b = (byte) (0x00FF&(leveltime>>>8));
+       byte a = (byte) (0x0000FF&(leveltime>>16)); 
+       byte b = (byte) (0x00FF&(leveltime>>8));
        byte c =  (byte) (0x00FF&(leveltime));
        // Quite anomalous, leveltime is stored as a BIG ENDIAN, 24-bit unsigned integer :-S
        f.writeByte(a);
        f.writeByte(b);
        f.writeByte(c);
-       
-       // TODO: after this point, we should probably save some packed buffers representing raw state...
-       // needs further study.
 
        // The end. This is actually just the header, so we don't "end" here just yet.
        // f.writeByte(0x1d);
@@ -124,8 +121,8 @@ public boolean wrongversion;
    @Override
    public void read(DoomFile f)
            throws IOException {
-       name= f.readString(SAVESTRINGSIZE);
-       vcheck=f.readString(VERSIONSIZE);
+       name= f.readNullTerminatedString(SAVESTRINGSIZE);
+       vcheck=f.readNullTerminatedString(VERSIONSIZE);
        gameskill=skill_t.values()[C2JUtils.toUnsignedByte(f.readByte())]; 
        gameepisode=f.readByte();
        gamemap=f.readByte();

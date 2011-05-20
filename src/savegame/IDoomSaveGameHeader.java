@@ -1,5 +1,6 @@
 package savegame;
 
+import w.IReadableDoomObject;
 import defines.skill_t;
 
 
@@ -11,7 +12,7 @@ import defines.skill_t;
  *
  */
 
-interface IDoomSaveGameHeader {
+public interface IDoomSaveGameHeader extends IReadableDoomObject {
 
     String getName();
 

@@ -1,11 +1,14 @@
 package savegame;
 
-import p.ThinkerList;
+import java.io.IOException;
 
-public interface IDoomSaveGame {    
+import i.DoomStatusAware;
+import p.ThinkerList;
+import w.DoomFile;
+
+public interface IDoomSaveGame extends DoomStatusAware{    
     void setThinkerList(ThinkerList li);
-    void doSave();
-    void doLoad();
+    boolean doLoad(DoomFile f);
     IDoomSaveGameHeader getHeader();
     void setHeader(IDoomSaveGameHeader header);
 }

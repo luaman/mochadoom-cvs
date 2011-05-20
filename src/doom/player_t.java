@@ -57,7 +57,8 @@ public class player_t /*extends mobj_t */
         {
 	
     /** Probably doomguy needs to know what the fuck is going on */
-    private DoomMain DM;
+    private DoomStatus DS;
+    private IDoomGame DG;
     private Actions P;
     private RendererState R;
     private random RND;
@@ -315,8 +316,8 @@ public class player_t /*extends mobj_t */
         else
             num = clipammo[ammo] / 2;
 
-        if (DM.gameskill == skill_t.sk_baby
-                ||DM.gameskill == skill_t.sk_nightmare) {
+        if (DS.gameskill == skill_t.sk_baby
+                ||DS.gameskill == skill_t.sk_nightmare) {
             // give double ammo in trainer mode,
             // you'll need in nightmare
             num <<= 1;
@@ -387,7 +388,7 @@ public class player_t /*extends mobj_t */
         boolean gaveweapon;
         int weapon = weapn.ordinal();
 
-        if (DM.netgame && (DM.deathmatch != true) // ???? was "2"
+        if (DS.netgame && (DS.deathmatch != true) // ???? was "2"
                 && !dropped) {
             // leave placed weapons forever on net games
             if (weaponowned[weapon])
@@ -396,13 +397,13 @@ public class player_t /*extends mobj_t */
             bonuscount += BONUSADD;
             weaponowned[weapon] = true;
 
-            if (DM.deathmatch)
+            if (DS.deathmatch)
                 GiveAmmo(weaponinfo[weapon].ammo, 5);
             else
                 GiveAmmo(weaponinfo[weapon].ammo, 2);
             pendingweapon = weapn;
 
-            if (this ==DM.players[DM.consoleplayer])
+            if (this ==DS.players[DS.consoleplayer])
                 S.StartSound (null, sfxenum_t.sfx_wpnup);
                 return false;
         }
@@ -541,14 +542,14 @@ public class player_t /*extends mobj_t */
           case 5:
         // HELLSLIME DAMAGE
         if (powers[pw_ironfeet]==0)
-            if (!flags(DM.leveltime,0x1f))
+            if (!flags(DS.leveltime,0x1f))
                 P.DamageMobj (mo,null, null, 10);
         break;
         
           case 7:
         // NUKAGE DAMAGE
         if (powers[pw_ironfeet]==0)
-            if (!flags(DM.leveltime,0x1f))
+            if (!flags(DS.leveltime,0x1f))
                 P.DamageMobj (mo, null, null, 5);
         break;
         
@@ -559,7 +560,7 @@ public class player_t /*extends mobj_t */
         if (!eval(powers[pw_ironfeet])
             || (RND.P_Random()<5) )
         {
-            if (!flags(DM.leveltime,0x1f))
+            if (!flags(DS.leveltime,0x1f))
             P.DamageMobj (mo, null, null, 20);
         }
         break;
@@ -574,11 +575,11 @@ public class player_t /*extends mobj_t */
         // EXIT SUPER DAMAGE! (for E1M8 finale)
         cheats &= ~CF_GODMODE;
 
-        if (!flags(DM.leveltime,0x1f))
+        if (!flags(DS.leveltime,0x1f))
             P.DamageMobj (mo, null, null, 20);
 
         if (health[0] <= 10)
-            DM.ExitLevel();
+            DG.ExitLevel();
         break;
                 
           default:
@@ -631,7 +632,7 @@ public void CalcHeight ()
   return;
   }
       
-  angle = (FINEANGLES/20*DM.leveltime)&FINEMASK;
+  angle = (FINEANGLES/20*DS.leveltime)&FINEMASK;
   bob = FixedMul ( bob/2, finesine[angle]);
 
   
@@ -824,8 +825,8 @@ SetPsprite
         if (id>=0) return id;
         int i;    
         // Let's assume that we know jack.
-            for (i=0;i<DM.players.length;i++)
-                if (this==DM.players[i]) break;
+            for (i=0;i<DS.players.length;i++)
+                if (this==DS.players[i]) break;
             
             return id=i;
         
@@ -922,10 +923,10 @@ SetPsprite
 
         swing = bob;
 
-        angle = (FINEANGLES/70*DM.leveltime)&FINEMASK;
+        angle = (FINEANGLES/70*DS.leveltime)&FINEMASK;
         swingx = FixedMul ( swing, finesine[angle]);
 
-        angle = (FINEANGLES/70*DM.leveltime+FINEANGLES/2)&FINEMASK;
+        angle = (FINEANGLES/70*DS.leveltime+FINEANGLES/2)&FINEMASK;
         swingy = -FixedMul ( swingx, finesine[angle]);
     }
 
@@ -987,13 +988,13 @@ SetPsprite
         {
         if (weaponowned[weapontype_t.wp_plasma.ordinal()]
             && (this.ammo[ammotype_t.am_cell.ordinal()]!=0)
-            && (DM.gamemode != GameMode_t.shareware) )
+            && (DS.gamemode != GameMode_t.shareware) )
         {
             pendingweapon = weapontype_t.wp_plasma;
         }
         else if (weaponowned[weapontype_t.wp_supershotgun.ordinal()] 
              && this.ammo[ammotype_t.am_shell.ordinal()]>2
-             && (DM.gamemode == GameMode_t.commercial) )
+             && (DS.gamemode == GameMode_t.commercial) )
         {
             pendingweapon = weapontype_t.wp_supershotgun;
         }
@@ -1022,7 +1023,7 @@ SetPsprite
         }
         else if (weaponowned[weapontype_t.wp_bfg.ordinal()]
              && this.ammo[ammotype_t.am_cell.ordinal()]>40
-             && (DM.gamemode != GameMode_t.shareware) )
+             && (DS.gamemode != GameMode_t.shareware) )
         {
             pendingweapon = weapontype_t.wp_bfg;
         }
@@ -1144,7 +1145,7 @@ SetPsprite
      
      // Will switch between SG and SSG in Doom 2.
      
-     if ( (DM.gamemode == GameMode_t.commercial)
+     if ( (DS.gamemode == GameMode_t.commercial)
          && newweapon == weapontype_t.wp_shotgun 
          && player.weaponowned[weapontype_t.wp_supershotgun.ordinal()]
          && player.readyweapon != weapontype_t.wp_supershotgun)
@@ -1160,7 +1161,7 @@ SetPsprite
          //  even if cheated.
          if ((newweapon != weapontype_t.wp_plasma
           && newweapon != weapontype_t.wp_bfg)
-         || (DM.gamemode != GameMode_t.shareware) )
+         || (DS.gamemode != GameMode_t.shareware) )
          {
          player.pendingweapon = newweapon;
          }
@@ -1238,13 +1239,14 @@ SetPsprite
     }
 
 	@Override
-	public void updateStatus(DoomStatus DC) {
-	    this.DM=DC.DM;
-	    this.P=DC.P;
-	    this.R=DC.R;
-	    this.RND=DC.RND;
-	    this.I=DC.I;
-	    this.S=DC.S;
+	public void updateStatus(DoomStatus DS) {
+	    this.DS=DS;
+	    this.DG=DS.DG;
+	    this.P=DS.P;
+	    this.R=DS.R;
+	    this.RND=DS.RND;
+	    this.I=DS.I;
+	    this.S=DS.S;
 	}
 
 	public String toString(){
@@ -1271,7 +1273,14 @@ SetPsprite
            // it has the size of a 32-bit integer, so make sure you skip it.
            // TODO: OK, so vanilla's monsters lost "state" when saved, including non-Doomguy
             //  infighting. Did they "remember" Doomguy too?
-            int tmp= f.readLEInt(); // mobj pointer, so we are wasting this read.
+            // ANSWER: they didn't.
+        
+            // The player is special in that it unambigously allows identifying
+            // its own map object in an absolute way. Once we identify
+            // at least one (e.g. object #45 is pointer 0x43545345) then, since
+            // map objects are stored in a nice serialized order.
+            this.p_mobj= f.readLEInt(); // player mobj pointer
+            
             this.playerstate=f.readLEInt();
             this.cmd.read(f);
             this.viewz=f.readLEInt();
@@ -1317,62 +1326,69 @@ SetPsprite
             for (pspdef_t p: this.psprites)
                 p.read(f);
             this.didsecret=f.readIntBoolean();
-            // TODO: verify 280 bytes?
+            // Total size should be 280 bytes.
         }
+    
+    public void write(DoomFile f) throws IOException{
 
-  /*  @Override
-    public void unpack(ByteBuffer buf)
-            throws IOException {
-     // Careful when loading/saving:
-        // A player only carries a pointer to a mobj, which is "saved"
-        // but later discarded at load time, at least in vanilla. In any case,
-       // it has the size of a 32-bit integer, so make sure you skip it.
-       // TODO: OK, so vanilla's monsters lost "state" when saved, including non-Doomguy
-        //  infighting. Did they "remember" Doomguy too?
-        buf.position(buf.position()+4); // mobj pointer, so we are wasting this read.
-        this.playerstate=buf.getInt();
-        this.cmd.unpack(buf);
-        this.viewz=buf.getInt();
-        this.deltaviewheight=buf.getInt();
-        this.bob=buf.getInt();
-        this.health[0]=buf.getInt();
-        this.armorpoints[0]=buf.getInt();; 
-        this.armortype=buf.getInt();
-        DoomBuffer.readIntArray(buf, this.powers, this.powers.length); 
-        DoomBuffer.rreadBooleanArray(buf,this.cards);
-        this.backpack=f.readBoolean();
-        f.readIntArray(frags, ByteOrder.nativeOrder());
-        this.readyweapon=weapontype_t.values()[f.readInt()];
-        this.pendingweapon=weapontype_t.values()[f.readInt()];
-        f.readBooleanArray(this.weaponowned);
-        f.readIntArray(ammo,ByteOrder.nativeOrder());
-        f.readIntArray(maxammo,ByteOrder.nativeOrder());
-        this.attackdown=f.readBoolean();
-        this.usedown=f.readBoolean();
-        this.cheats=buf.getInt();
-        this.refire=buf.getInt();
+    
+        // The player is special in that it unambigously allows identifying
+        // its own map object in an absolute way. Once we identify
+        // at least one (e.g. object #45 is pointer 0x43545345) then, since
+        // map objects are stored in a nice serialized order.
+        
+        f.writeLEInt(mo.hashCode());
+        f.writeLEInt(playerstate);
+        // TODO: cmd.write
+        this.cmd.read(f);
+        this.viewz=f.readLEInt();
+        this.viewheight= f.readLEInt();
+        this.deltaviewheight= f.readLEInt();
+        this.bob=f.readLEInt();
+        this.health[0]=f.readLEInt();
+        this.armorpoints[0]=f.readLEInt(); 
+        this.armortype=f.readLEInt(); 
+        f.readIntArray(this.powers, ByteOrder.LITTLE_ENDIAN); 
+        f.readBooleanIntArray(this.cards);
+        this.backpack=f.readIntBoolean();
+        f.readIntArray(frags, ByteOrder.LITTLE_ENDIAN);
+        this.readyweapon=weapontype_t.values()[f.readLEInt()];
+        this.pendingweapon=weapontype_t.values()[f.readLEInt()];
+        f.readBooleanIntArray(this.weaponowned);
+        f.readIntArray(ammo,ByteOrder.LITTLE_ENDIAN);
+        f.readIntArray(maxammo,ByteOrder.LITTLE_ENDIAN);
+        // Read these as "int booleans"
+        this.attackdown=f.readIntBoolean();
+        this.usedown=f.readIntBoolean();
+        this.cheats=f.readLEInt();
+        this.refire=f.readLEInt();
         // For intermission stats.
-        this.killcount=buf.getInt();
-        this.itemcount=buf.getInt();
-        this.secretcount=buf.getInt();;
+        this.killcount=f.readLEInt();
+        this.itemcount=f.readLEInt();
+        this.secretcount=f.readLEInt();
         // Hint messages.
         f.skipBytes(4);
         // For screen flashing (red or bright).
-        this.damagecount=buf.getInt();;
-        this.bonuscount=buf.getInt();
+        this.damagecount=f.readLEInt();
+        this.bonuscount=f.readLEInt();
         // Who did damage (NULL for floors/ceilings).
         // TODO: must be properly denormalized before saving/loading
         f.skipBytes(4); // TODO: waste a read for attacker mobj.
         // So gun flashes light up areas.
-        this.extralight=buf.getInt();
+        this.extralight=f.readLEInt();
         // Current PLAYPAL, ???
         //  can be set to REDCOLORMAP for pain, etc.
-        this.fixedcolormap==buf.getInt();
-        this.colormap=buf.getInt();
+        this.fixedcolormap=f.readLEInt();
+        this.colormap=f.readLEInt();
+        // PSPDEF _is_ readable.
         for (pspdef_t p: this.psprites)
             p.read(f);
-        this.didsecret=f.readBoolean();
-        
-    }*/
+        this.didsecret=f.readIntBoolean();
+        // Total size should be 280 bytes.
+    }
+    
+    // Used to disambiguate between objects
+    public int p_mobj;
+
         
     }
