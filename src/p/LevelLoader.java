@@ -9,6 +9,9 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
+import static p.mobj_t.MF_NOBLOCKMAP;
+import static p.mobj_t.MF_NOSECTOR;
+import static utils.C2JUtils.flags;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 
@@ -46,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.19 2011/05/18 16:55:44 velktron Exp $
+// $Id: LevelLoader.java,v 1.20 2011/05/20 14:52:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.20  2011/05/20 14:52:23  velktron
+// Moved several function from the Renderer and Action code in here, since it made more sense.
+//
 // Revision 1.19  2011/05/18 16:55:44  velktron
 // TEMPORARY TESTING VERSION, DO NOT USE
 //
@@ -157,7 +163,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.19 2011/05/18 16:55:44 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.20 2011/05/20 14:52:23 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -474,7 +480,7 @@ public int bmaporgy;
       mt.type = SHORT(mt.type);
       mt.options = SHORT(mt.options);*/
       
-      // TODO: P.SpawnMapThing (mt);
+      P.SpawnMapThing (mt);
       }
       
   }
@@ -768,7 +774,96 @@ public int bmaporgy;
       
   }
 
+  /**
+   * R_PointInSubsector
+   * 
+   * MAES: it makes more sense to have this here.
+   * 
+   * @param x fixed
+   * @param y fixed
+   * 
+   */
+  
+  public subsector_t
+  PointInSubsector
+  ( int   x,
+    int   y )
+  {
+      node_t  node;
+      int     side;
+      int     nodenum;
 
+      // single subsector is a special case
+      if (numnodes==0)              
+      return subsectors[0];
+          
+      nodenum = numnodes-1;
+
+      while ((nodenum & NF_SUBSECTOR)==0 )
+      {
+      node = nodes[nodenum];
+      side = node.PointOnSide (x, y);
+      nodenum = node.children[side];
+      }
+      
+      return subsectors[nodenum & ~NF_SUBSECTOR];
+  }
+  
+  /**
+   * P_SetThingPosition Links a thing into both a block and a subsector based
+   * on it's x y. Sets thing.subsector properly
+   */
+
+  public void SetThingPosition(mobj_t thing) {
+      subsector_t ss;
+      sector_t sec;
+      int blockx;
+      int blocky;
+      mobj_t link;
+
+      // link into subsector
+      ss = PointInSubsector(thing.x, thing.y);
+      thing.subsector = ss;
+
+      if (!flags(thing.flags, MF_NOSECTOR)) {
+          // invisible things don't go into the sector links
+          sec = ss.sector;
+
+          thing.sprev = null;
+          thing.snext = sec.thinglist;
+
+          if (sec.thinglist != null)
+              sec.thinglist.sprev = thing;
+
+          sec.thinglist = thing;
+      }
+
+      // link into blockmap
+      if (!flags(thing.flags, MF_NOBLOCKMAP)) {
+          // inert things don't need to be in blockmap
+          blockx = (thing.x - bmaporgx) >> MAPBLOCKSHIFT;
+          blocky = (thing.y - bmaporgy) >> MAPBLOCKSHIFT;
+
+          if (blockx >= 0 && blockx < bmapwidth && blocky >= 0
+                  && blocky < bmapheight) {
+
+              link = blocklinks[blocky * bmapwidth + blockx];
+              thing.bprev = null;
+              thing.bnext = link; // FIXME: will this work?
+              if (link != null)
+                  // This will work
+                  link.bprev = thing;
+
+              // link=thing won't work, assignment should be made directly
+              blocklinks[blocky * bmapwidth + blockx] = thing;
+          } else {
+              // thing is off the map
+              thing.bnext = thing.bprev = null;
+          }
+      }
+
+  }
+  
   /**
    * P_SetupLevel
  * @throws Exception 
@@ -814,7 +909,7 @@ public int bmaporgy;
 
 
       // UNUSED W_Profile ();
-     // TODO  P.InitThinkers ();
+      P.InitThinkers ();
 
       // if working with a development map, reload it
       W.Reload ();            
@@ -873,10 +968,10 @@ public int bmaporgy;
       }
 
       // clear special respawning que
-      // TODO: P.iquehead = P.iquetail = 0;        
+      P.iquehead = P.iquetail = 0;        
       
       // set up world state
-      // TODO: P.SpawnSpecials ();
+      P.SpawnSpecials ();
       
       // build subsector connect matrix
       //  UNUSED P_ConnectSubsectors ();
@@ -885,7 +980,7 @@ public int bmaporgy;
       if (DM.precache){
       TM.PrecacheLevel ();
       // MAES: thinkers are separate than texture management. Maybe split sprite management as well?
-      //TODO: R.PreCacheThinkers();
+      R.PreCacheThinkers();
       
       }
 
