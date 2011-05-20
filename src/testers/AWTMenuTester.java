@@ -18,7 +18,7 @@ import javax.swing.JFrame;
 import rr.patch_t;
 import s.DummySoundDriver;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import utils.C2JUtils;
@@ -108,7 +108,7 @@ public class AWTMenuTester {
     DM.wminfo.maxsecret=100;
     DM.wminfo.partime=28595;
    
-    DoomMenu M=DM.M=new Menu(DM);
+    IDoomMenu M=DM.M=new Menu(DM);
 
     M.Init();
     frame.InitGraphics();

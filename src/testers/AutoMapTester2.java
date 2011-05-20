@@ -13,7 +13,7 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import p.Actions;

@@ -18,7 +18,7 @@ import rr.SimpleTextureManager;
 import s.DummySoundDriver;
 import st.StatusBar;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import v.BufferedRenderer;
@@ -106,7 +106,7 @@ public class AWTParallelRenderTester1 {
     DM.wminfo.maxsecret=100;
     DM.wminfo.partime=28595;
     DM.PlayerReborn(0);
-    DoomMenu M=DM.M=new Menu(DM);
+    IDoomMenu M=DM.M=new Menu(DM);
     Map AM=(Map) (DM.AM=new Map(DM));
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);

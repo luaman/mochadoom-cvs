@@ -6,7 +6,7 @@ import f.Wiper;
 import hu.HU;
 import i.IDoomSystem;
 import i.DoomVideoInterface;
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.random;
 import p.Actions;
 import p.LevelLoader;
@@ -48,7 +48,7 @@ public class DoomContext {
     public DoomSystemNetworking DNI;
     public IDoomGameNetworking DGN;
     public LevelLoader LL;
-    public DoomMenu M;
+    public IDoomMenu M;
     public Actions P;
     public RendererState R;
     public HU HU;

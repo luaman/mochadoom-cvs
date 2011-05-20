@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.22 2011/05/20 18:24:19 velktron Exp $
+// $Id: HU.java,v 1.23 2011/05/20 18:27:12 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.23  2011/05/20 18:27:12  velktron
+// DoomMenu -> IDoomMenu
+//
 // Revision 1.22  2011/05/20 18:24:19  velktron
 // FINALLY fixed a stupid bug that broke HU messages.
 //
@@ -123,7 +126,7 @@ import i.DoomStatusAware;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.Swap;
 import rr.RendererState;
@@ -141,14 +144,14 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.22 2011/05/20 18:24:19 velktron Exp $";
+        "$Id: HU.java,v 1.23 2011/05/20 18:27:12 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
 
     DoomMain DM;
 
-    DoomMenu M;
+    IDoomMenu M;
 
     RendererState R;
     

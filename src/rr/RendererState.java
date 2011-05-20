@@ -54,7 +54,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Hashtable;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.MenuMisc;
 import m.fixed_t;
 
@@ -110,7 +110,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
     protected LevelLoader LL;
     protected IWadLoader W;
     protected SegDrawer MySegs;
-    protected DoomMenu Menu;
+    protected IDoomMenu Menu;
     protected BSP MyBSP;
     protected PlaneDrawer MyPlanes;    
     protected Things MyThings;

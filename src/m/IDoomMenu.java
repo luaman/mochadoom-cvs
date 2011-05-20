@@ -6,7 +6,7 @@ import doom.event_t;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: DoomMenu.java,v 1.6 2011/05/20 18:26:01 velktron Exp $
+// $Id: IDoomMenu.java,v 1.1 2011/05/20 18:27:12 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,7 +29,7 @@ import doom.event_t;
  * 
  */
 
-public interface DoomMenu extends DoomStatusAware{
+public interface IDoomMenu extends DoomStatusAware{
 
     //
     // MENUS

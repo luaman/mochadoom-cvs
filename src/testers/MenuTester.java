@@ -13,7 +13,7 @@ import javax.swing.JFrame;
 
 import rr.patch_t;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import utils.C2JUtils;
@@ -97,7 +97,7 @@ public class MenuTester {
     DM.wminfo.maxsecret=100;
     DM.wminfo.partime=28595;
    
-    DoomMenu M=DM.M=new Menu(DM);
+    IDoomMenu M=DM.M=new Menu(DM);
     DM.language=Language_t.english;
     M.Init();
     CrappyDisplay frame = new CrappyDisplay(pals);

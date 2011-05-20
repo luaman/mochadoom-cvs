@@ -20,7 +20,7 @@ import rr.UnifiedRenderer;
 import s.DummySoundDriver;
 import st.StatusBar;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import v.BufferedRenderer;
@@ -109,7 +109,7 @@ public class AWTRenderViewTester {
     DM.wminfo.partime=28595;
     
    
-    DoomMenu M=DM.M=new Menu(DM);
+    IDoomMenu M=DM.M=new Menu(DM);
     Map AM=(Map) (DM.AM=new Map(DM));
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);

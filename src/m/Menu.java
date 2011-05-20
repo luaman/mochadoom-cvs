@@ -57,7 +57,7 @@ import doom.englsh;
 import doom.event_t;
 import doom.evtype_t;
 
-public class Menu extends MenuMisc implements DoomMenu{
+public class Menu extends MenuMisc implements IDoomMenu{
 
 	////////////////// CONSTRUCTOR ////////////////
     

@@ -22,7 +22,7 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import p.LevelLoader;

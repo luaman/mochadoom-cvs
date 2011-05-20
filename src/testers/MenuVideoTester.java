@@ -8,7 +8,7 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
-import m.DoomMenu;
+import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import utils.C2JUtils;
@@ -97,7 +97,7 @@ public class MenuVideoTester {
 
 
     frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);
-    DoomMenu M=new Menu(DC);
+    IDoomMenu M=new Menu(DC);
     M.Init();
    
     
