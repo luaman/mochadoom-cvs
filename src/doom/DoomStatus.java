@@ -44,7 +44,9 @@ public class DoomStatus extends DoomContext {
 
     boolean		advancedemo;
     
-    // ///////// Local to doomstat.c ////////////
+    /////////// Local to doomstat.c ////////////
+    // TODO: hide those behind getters
+    
     /** Game Mode - identify IWAD as shareware, retail etc. */
 
     public GameMode_t gamemode;
@@ -291,7 +293,7 @@ public class DoomStatus extends DoomContext {
     // duplicated/externalized
     // in d_game.c and d_game.h, so it makes sense adopting a more unified
     // approach.
-    public gameaction_t gameaction=gameaction_t.ga_nothing;
+    protected gameaction_t gameaction=gameaction_t.ga_nothing;
 
     public boolean sendpause; // send a pause event next tic
 
