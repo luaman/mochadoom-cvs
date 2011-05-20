@@ -92,7 +92,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
     /** Show messages has default, 0 = off, 1 = on */
 
-    private int showMessages=1;
+    private boolean showMessages=false;
 
     /**
      * showMessages can be read outside of Menu, but not modified. Menu has the
@@ -100,12 +100,12 @@ public class Menu extends MenuMisc implements DoomMenu{
      */
     
     @Override
-    public int getShowMessages() {
+    public boolean getShowMessages() {
         return showMessages;
     }
 
     @Override
-    public void setShowMessages(int val) {
+    public void setShowMessages(boolean val) {
         this.showMessages=val;
     }
     
@@ -1571,7 +1571,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                     * detail, 0, W.CachePatchName(detailNames[detailLevel]));
 
             V.DrawPatchDirect(OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT
-                    * messages, 0, W.CachePatchName(msgNames[showMessages]));
+                    * messages, 0, W.CachePatchName(msgNames[showMessages?1:0]));
 
             DrawThermo(OptionsDef.x, OptionsDef.y + LINEHEIGHT
                     * (mousesens + 1), 10, mouseSensitivity);
@@ -1689,9 +1689,9 @@ public class Menu extends MenuMisc implements DoomMenu{
         public void invoke(int choice) {
             // warning: unused parameter `int choice'
             //choice = 0;
-            showMessages = 1 - showMessages;
+            showMessages = !showMessages;
 
-            if (showMessages == 0)
+            if (!showMessages)
                 DM.players[DM.consoleplayer].message = MSGOFF;
             else
                 DM.players[DM.consoleplayer].message = MSGON;

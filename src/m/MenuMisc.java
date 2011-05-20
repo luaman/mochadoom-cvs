@@ -17,7 +17,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.16 2011/05/20 14:51:10 velktron Exp $
+// $Id: MenuMisc.java,v 1.17 2011/05/20 18:24:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -33,6 +33,9 @@ import w.IWritableDoomObject;
 //
 //
 // $Log: MenuMisc.java,v $
+// Revision 1.17  2011/05/20 18:24:51  velktron
+// Changes Manu to expose messages ON/OFF as booleans, as it should have.
+//
 // Revision 1.16  2011/05/20 14:51:10  velktron
 // Added more DoomGame compliance.
 //
@@ -111,7 +114,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-public static final String rcsid = "$Id: MenuMisc.java,v 1.16 2011/05/20 14:51:10 velktron Exp $";
+public static final String rcsid = "$Id: MenuMisc.java,v 1.17 2011/05/20 18:24:51 velktron Exp $";
 ////////////////////// CONTEXT ///////////////////
 
 DoomStatus DM;
@@ -611,13 +614,8 @@ public static int ReadFile(String name, byte[] buffer) {
     return length;
 }
 
-public int getShowMessages() {
-    // TODO Auto-generated method stub
-    return 0;
-}
-public void setShowMessages(int val) {
-    // TODO Auto-generated method stub
-    
-}
+public abstract boolean getShowMessages();
+
+public abstract void setShowMessages(boolean val);
 
 }
