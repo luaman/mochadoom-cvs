@@ -3697,7 +3697,12 @@ validcount++;
        return PointToAngle (x2.val, y2.val);
    }
 
-   /** Assigns a point of view before calling PointToAngle */
+   /** Assigns a point of view before calling PointToAngle 
+    * 
+    * CAREFUL: this isn't a pure function, as it alters the renderer's
+    * state!
+    * 
+    * */
    
    public final long
    PointToAngle2
@@ -3787,9 +3792,10 @@ validcount++;
    ( int   x,
      int   y )
    {   
-       // MAES: note how we don't use &BITS32 here. That is because we know that the maximum possible
-       // value of tantoangle is angle
-       // This way, we are actually working with vectors emanating from our current position.
+       // MAES: note how we don't use &BITS32 here. That is because 
+       // we know that the maximum possible value of tantoangle is angle
+       // This way, we are actually working with vectors emanating 
+       // from our current position.
        x-= viewx;
        y-= viewy;
        
@@ -5736,41 +5742,8 @@ validcount++;
       }
 
       /////////////////// Generic rendering methods /////////////////////
-      
-      
-      
 
-      /**
-         * R_PointInSubsector
-         * 
-         * @param x fixed
-         * @param y fixed
-         * 
-         */
-        public subsector_t
-        PointInSubsector
-        ( int   x,
-          int   y )
-        {
-            node_t  node;
-            int     side;
-            int     nodenum;
-
-            // single subsector is a special case
-            if (LL.numnodes==0)              
-            return LL.subsectors[0];
-                
-            nodenum = LL.numnodes-1;
-
-            while ((nodenum & NF_SUBSECTOR)==0 )
-            {
-            node = LL.nodes[nodenum];
-            side = node.PointOnSide (x, y);
-            nodenum = node.children[side];
-            }
-            
-            return LL.subsectors[nodenum & ~NF_SUBSECTOR];
-        }
+      
         
     ///// DRAWSPAN ///////////
         @Override

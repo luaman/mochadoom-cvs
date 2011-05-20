@@ -20,6 +20,6 @@ public interface Renderer {
 	
 	public long PointToAngle2(int x1, int y1, int x2, int y2);
 	
-	public subsector_t PointInSubsector(int x, int y);
+	//public subsector_t PointInSubsector(int x, int y);
 
 }

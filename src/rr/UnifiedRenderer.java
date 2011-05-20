@@ -31,7 +31,6 @@ public class UnifiedRenderer extends RendererState{
       DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
       DrawColumnPlayer=DrawColumn;//new R_DrawColumn();
       DrawColumnLow=DrawColumn;
-    
   }
   
   private final class Segs extends SegDrawer{
