@@ -18,6 +18,7 @@ import defines.GameMission_t;
 import defines.GameMode_t;
 import defines.skill_t;
 import demo.VanillaDoomDemo;
+import doom.DoomMain;
 import doom.DoomStatus;
 import w.*;
 
@@ -25,8 +26,8 @@ public class SaveGameHeaderTester {
 
     public static void main(String[] argv) throws Exception {
 
-    ByteBuffer buf=MenuMisc.ReadFile("doomsav0.dsg");
-    DoomFile f=new DoomFile("doomsav0.dsg","r");
+    ByteBuffer buf=MenuMisc.ReadFile("doomsav2.dsg");
+    DoomFile f=new DoomFile("doomsav2.dsg","r");
     DoomStatus DS=new DoomStatus();
     
     VanillaDSGHeader vdsg=new VanillaDSGHeader();
@@ -66,7 +67,8 @@ public class SaveGameHeaderTester {
     DSG.updateStatus(DS);    
     
     DS.playeringame[0]=true;
-    DSG.read(f);
+    DS.players[0].updateStatus(DS);
+    DSG.doLoad(f);
     
     
     //    W.AddFile("bitter.wad");
