@@ -438,8 +438,10 @@ public class sector_t implements IReadableDoomObject{
     	
         this.floorheight = f.readLEShort() << m.fixed_t.FRACBITS;
         this.ceilingheight = f.readLEShort() << m.fixed_t.FRACBITS;
-        this.floorpic = f.readLEShort();
-        this.ceilingpic = f.readLEShort();
+        // HACK: this is necessary so that we can read vanilla Doom savegames.
+        this.floorpic = (short) (f.readLEShort()-1);
+        this.ceilingpic = (short) (f.readLEShort()-1);
+        //f.skipBytes(4);
         this.lightlevel = f.readLEShort();
         this.special = f.readLEShort();      // needed?
         this.tag =f.readLEShort();      // needed?
