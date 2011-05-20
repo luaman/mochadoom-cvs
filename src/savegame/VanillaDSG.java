@@ -233,19 +233,19 @@ protected void P_UnArchiveThinkers (DoomFile f) throws IOException
      PADSAVEP(f);     
      mobj=new mobj_t();
      mobj.read(f);
-     mobj.state = info.states[mobj.state.id];
+     //mobj.state = info.states[mobj.state.id];
      mobj.target = null;
      if (mobj.player!=null)
      {
      mobj.player = DS.players[mobj.player.identify()];
      mobj.player.mo = mobj;
      }
-     A.SetThingPosition (mobj);
+     //A.SetThingPosition (mobj);
      mobj.info = info.mobjinfo[mobj.type.ordinal()];
      mobj.floorz = mobj.subsector.sector.floorheight;
      mobj.ceilingz = mobj.subsector.sector.ceilingheight;
      mobj.function = think_t.P_MobjThinker;
-     A.AddThinker (mobj);
+     //A.AddThinker (mobj);
      break;
          
    default:
