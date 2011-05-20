@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.21 2011/05/18 16:52:40 velktron Exp $
+// $Id: HU.java,v 1.22 2011/05/20 18:24:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.22  2011/05/20 18:24:19  velktron
+// FINALLY fixed a stupid bug that broke HU messages.
+//
 // Revision 1.21  2011/05/18 16:52:40  velktron
 // Changed to DoomStatus
 //
@@ -127,6 +130,7 @@ import rr.RendererState;
 import rr.patch_t;
 import s.IDoomSound;
 import w.IWadLoader;
+import data.Defines;
 import data.sounds.sfxenum_t;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -137,7 +141,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.21 2011/05/18 16:52:40 velktron Exp $";
+        "$Id: HU.java,v 1.22 2011/05/20 18:24:19 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -195,7 +199,7 @@ public class HU implements DoomStatusAware {
 
     char[] chat_dest = new char[MAXPLAYERS];
 
-    // MAES: these used to be defined in hu_lib. We're going 100$ OO here...
+    // MAES: these used to be defined in hu_lib. We're going 100% OO here...
 
     hu_itext_t[] w_inputbuffer;
 
@@ -209,7 +213,7 @@ public class HU implements DoomStatusAware {
     public boolean[] chat_on = new boolean[1];
 
     // MAES: Ugly hack which allows it to be passed as reference. Sieg heil!
-    boolean[] message_on = new boolean[1];
+    boolean[] message_on = new boolean[]{true};
 
     boolean message_dontfuckwithme;
 
@@ -223,7 +227,7 @@ public class HU implements DoomStatusAware {
     // need to share Menu context.
     // int showMessages;
     // MAES: I think this is supposed to be visible by the various hu_ crap...
-    boolean automapactive;
+   // boolean automapactive;
 
     boolean headsupactive = false;
 
@@ -513,7 +517,7 @@ public class HU implements DoomStatusAware {
         // I don't really see the point in that, as in the WAD patches appear
         // to be all Little Endian... mystery :-S
         // HU_TITLEY = (167 - Swap.SHORT(hu_font[0].height));
-        HU_TITLEY = (167 - hu_font[0].height);
+        HU_TITLEY = (167 - hu_font[0].height)*Defines.SAFE_SCALE;
         HU_INPUTY = (HU_MSGY + HU_MSGHEIGHT * hu_font[0].height + 1);
 
     }
@@ -533,7 +537,7 @@ public class HU implements DoomStatusAware {
         // and episode numbers <1 will cause it to bomb.
         this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 1];
         this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
-        this.HU_TITLE = mapnamesp[DM.gamemap - 1];
+        this.HU_TITLEP = mapnamesp[DM.gamemap - 1]; // fixed from HU_TITLEP
         this.HU_TITLET = mapnamest[DM.gamemap - 1];
 
         if (headsupactive)
@@ -574,9 +578,10 @@ public class HU implements DoomStatusAware {
         // cow horse and reindeer lover.
 
         // while (*s) this.w_title.addCharToTextLine(*(s++));
-
-        this.w_title.addStringToTextLine(s);
-
+        int ptr=0;
+        while(ptr<s.length()){
+        this.w_title.addCharToTextLine(s.charAt(ptr++));
+        }
         // create the chat widget
         this.w_chat.initIText(HU_INPUTX, HU_INPUTY, hu_font, HU_FONTSTART,
             chat_on);
@@ -592,9 +597,10 @@ public class HU implements DoomStatusAware {
 
     public void Drawer() {
 
+        
         this.w_message.drawSText();
         this.w_chat.drawIText();
-        if (automapactive)
+        if (DM.automapactive)
             this.w_title.drawTextLine(false);
 
     }
@@ -619,7 +625,7 @@ public class HU implements DoomStatusAware {
             message_nottobefuckedwith = false;
         }
 
-        if ((M.getShowMessages() != 0) || message_dontfuckwithme) {
+        if (M.getShowMessages() || message_dontfuckwithme) {
 
             // display message if necessary
             if (((plr.message != null) && !message_nottobefuckedwith)
@@ -652,7 +658,7 @@ public class HU implements DoomStatusAware {
                                     && (chat_dest[i] == DM.consoleplayer + 1)
                                     || (chat_dest[i] == HU_BROADCAST)) {
                                 w_message.addMessageToSText(player_names[i]
-                                        , w_inputbuffer[i].l.l.toString());
+                                        , w_inputbuffer[i].l.text.toString());
 
                                 message_nottobefuckedwith = true;
                                 message_on[0] = true;
@@ -821,7 +827,7 @@ public class HU implements DoomStatusAware {
                     chat_on[0] = false;
                     if ((w_chat.l.len != 0)) {
                         lastmessage.setLength(0);
-                        lastmessage.append( w_chat.l.l);
+                        lastmessage.append( w_chat.l.text);
                         plr.message = new String(lastmessage);
                     }
                 } else if (c == KEY_ESCAPE)
@@ -938,13 +944,11 @@ public class HU implements DoomStatusAware {
 
     class hu_stext_t {
 
-        hu_textline_t[] l = new hu_textline_t[HU_MAXLINES]; // text lines to
+        hu_textline_t[] lines = new hu_textline_t[HU_MAXLINES]; // text lines to draw
 
-        // draw
+        int height; // height in lines
 
-        int h; // height in lines
-
-        int cl; // current line number
+        int currline; // current line number
 
         // pointer to boolean stating whether to update window
         boolean[] on;
@@ -964,51 +968,53 @@ public class HU implements DoomStatusAware {
                 int startchar, boolean[] on) {
 
         	for (int i=0;i<HU_MAXLINES;i++){
-        		this.l[i]=new hu_textline_t();
+        		this.lines[i]=new hu_textline_t();
         	}
-            this.h = h;
+            this.height = h;
             this.on = on;
             this.laston = true;
-            this.cl = 0;
+            this.currline = 0;
             for (int i = 0; i < h; i++)
-                this.l[i].initTextLine(x, y - i
-                        * (Swap.SHORT(font[0].height) + 1), font, startchar);
+                this.lines[i].initTextLine(x, y - i
+                        * (font[0].height + 1), font, startchar);
 
         }
 
         public void addLineToSText() {
 
             // add a clear line
-            if (++this.cl == this.h)
-                this.cl = 0;
-            this.l[this.cl].clearTextLine();
+            if (++this.currline == this.height)
+                this.currline = 0;
+            this.lines[this.currline].clearTextLine();
 
             // everything needs updating
-            for (int i = 0; i < this.h; i++)
-                this.l[i].needsupdate = 4;
+            for (int i = 0; i < this.height; i++)
+                this.lines[i].needsupdate = 4;
 
         }
 
         public void addMessageToSText(char[] prefix, char[] msg) {
             this.addLineToSText();
+            int ptr = 0;
             if ((prefix != null) && (prefix.length > 0)) {
-                int ptr = 0;
+                
                 while ((ptr < prefix.length) && (prefix[ptr] > 0))
-                    this.l[this.cl].addCharToTextLine(prefix[ptr++]);
+                    this.lines[this.currline].addCharToTextLine(prefix[ptr++]);
+                }
+            
                 ptr = 0;
                 while ((ptr < msg.length) && (msg[ptr] > 0))
-                    this.l[this.cl].addCharToTextLine(msg[ptr++]);
+                    this.lines[this.currline].addCharToTextLine(msg[ptr++]);
             }
-        }
 
         public void addMessageToSText(String prefix, String msg) {
             this.addLineToSText();
             if ((prefix != null) && (prefix.length() > 0)) {
                 for (int i = 0; i < prefix.length(); i++)
-                    this.l[this.cl].addCharToTextLine(prefix.charAt(i));
-                for (int i = 0; i < msg.length(); i++)
-                    this.l[this.cl].addCharToTextLine(msg.charAt(i));
+                    this.lines[this.currline].addCharToTextLine(prefix.charAt(i));
             }
+                for (int i = 0; i < msg.length(); i++)
+                    this.lines[this.currline].addCharToTextLine(msg.charAt(i));
         }
 
         public void drawSText() {
@@ -1018,13 +1024,15 @@ public class HU implements DoomStatusAware {
             if (!this.on[0])
                 return; // if not on, don't draw
 
+            
+            
             // draw everything
-            for (i = 0; i < this.h; i++) {
-                idx = this.cl - i;
+            for (i = 0; i < this.height; i++) {                
+                idx = this.currline - i;
                 if (idx < 0)
-                    idx += this.h; // handle queue of lines
+                    idx += this.height; // handle queue of lines
 
-                l = this.l[idx];
+                l = this.lines[idx];
 
                 // need a decision made here on whether to skip the draw
                 l.drawTextLine(false); // no cursor, please
@@ -1033,10 +1041,10 @@ public class HU implements DoomStatusAware {
         }
 
         public void eraseSText() {
-            for (int i = 0; i < this.h; i++) {
+            for (int i = 0; i < this.height; i++) {
                 if (laston && !on[0])
-                    l[i].needsupdate = 4;
-                this.l[i].eraseTextLine();
+                    lines[i].needsupdate = 4;
+                this.lines[i].eraseTextLine();
             }
             laston = on[0];
 
@@ -1073,6 +1081,17 @@ public class HU implements DoomStatusAware {
         public void setNoterased(boolean noterased) {
             this.noterased = noterased;
         }
+        
+        StringBuilder sb=new StringBuilder();
+        
+        public String toString(){
+            sb.setLength(0);
+            sb.append(this.lines[0].text);
+            sb.append(this.lines[1].text);
+            sb.append(this.lines[2].text);
+            sb.append(this.lines[3].text);
+            return sb.toString();
+        }
 
     }
 
@@ -1091,7 +1110,7 @@ public class HU implements DoomStatusAware {
 
         int sc; // start character
 
-        StringBuilder l = new StringBuilder(2*HU_MAXLINELENGTH); // line of text
+        char[] text = new char[HU_MAXLINELENGTH+1]; // line of text
 
         int len; // current line length
 
@@ -1104,7 +1123,7 @@ public class HU implements DoomStatusAware {
         
         public void clearTextLine() {
             this.len = 0;
-            this.l.setLength(0);
+            C2JUtils.memset(this.text, (char)0,this.text.length);
             // It's actually used as a status, go figure.
             this.needsupdate = 1;
         }
@@ -1132,7 +1151,8 @@ public class HU implements DoomStatusAware {
             if (len == HU_MAXLINELENGTH)
                 return false;
             else {
-                this.l.setCharAt(len++,ch);
+                this.text[len++]=ch;
+                this.text[len]=(char)0;
                 // this.l[this.len] = 0;
                 // MAES: for some reason this is set as "4", so this is a status
                 // rather than a boolean.
@@ -1149,7 +1169,7 @@ public class HU implements DoomStatusAware {
          * @param s
          * @return
          */
-
+/*
         public boolean addStringToTextLine(String s) {
             int index = 0;
             if (this.len == HU_MAXLINELENGTH)
@@ -1157,7 +1177,7 @@ public class HU implements DoomStatusAware {
             else
                 while ((index<s.length())&&(this.len < HU_MAXLINELENGTH)) {
 
-                    this.l.append(s.charAt(index++));
+                    this.l[len]append(s.charAt(index++));
                     this.len++;
                 }
             this.l.append((char) 0);// final padding.
@@ -1167,14 +1187,14 @@ public class HU implements DoomStatusAware {
 
             this.needsupdate = 4;
             return true;
-        }
+        } */
 
         boolean delCharFromTextLine() {
 
             if (this.len == 0)
                 return false;
             else {
-                this.l.setCharAt(--this.len, (char)0);
+                this.text[--len]= (char)0;
                 this.needsupdate = 4;
                 return true;
             }
@@ -1191,15 +1211,17 @@ public class HU implements DoomStatusAware {
             // draw the new stuff
             x = this.x;
             for (i = 0; i < this.len; i++) {
-                c = Character.toUpperCase(l.charAt(i));
+                c = Character.toUpperCase(text[i]);
                 if (c != ' ' && c >= this.sc && c <= '_') {
-                    w = Swap.SHORT(this.f[c - this.sc].width);
+                    // MAES: fixed a FUCKING STUPID bug caused by SWAP.SHORT
+                    w = this.f[c - this.sc].width;
                     if (x + w > SCREENWIDTH)
                         break;
-                    // TODO: must implement renderer!
+                    
                     V.DrawPatchDirect(x, y, FG, f[c - sc]);
                     x += w;
                 } else {
+                    // Leave a space
                     x += 4;
                     if (x >= SCREENWIDTH)
                         break;
@@ -1208,8 +1230,7 @@ public class HU implements DoomStatusAware {
 
             // draw the cursor if requested
             if (drawcursor
-                    && x + Swap.SHORT(this.f['_' - this.sc].width) <= SCREENWIDTH) {
-                // TODO: Implement V_ stuff!
+                    && x + this.f['_' - this.sc].width <= SCREENWIDTH) {
                 V.DrawPatchDirect(x, this.y, FG, this.f['_' - this.sc]);
             }
         }
@@ -1226,7 +1247,7 @@ public class HU implements DoomStatusAware {
             // and the text must either need updating or refreshing
             // (because of a recent change back from the automap)
 
-            if (!automapactive && (R.viewwindowx != 0)
+            if (!DM.automapactive && (R.viewwindowx != 0)
                     && (this.needsupdate > 0)) {
                 lh = this.f[0].height + 1;
 
@@ -1247,7 +1268,7 @@ public class HU implements DoomStatusAware {
                 }
             }
 
-            lastautomapactive = automapactive;
+            lastautomapactive = DM.automapactive;
             if (this.needsupdate != 0)
                 this.needsupdate--;
 
