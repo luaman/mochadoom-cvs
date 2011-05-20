@@ -6,7 +6,7 @@ import doom.event_t;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: DoomMenu.java,v 1.5 2010/12/12 19:06:18 velktron Exp $
+// $Id: DoomMenu.java,v 1.6 2011/05/20 18:26:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,9 +63,9 @@ public interface DoomMenu extends DoomStatusAware{
      */
     public void StartControlPanel();
 
-    public int getShowMessages();
+    public boolean getShowMessages();
 
-    public void setShowMessages(int val);
+    public void setShowMessages(boolean val);
     
     public int getScreenBlocks();
     
