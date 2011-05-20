@@ -89,7 +89,6 @@ import data.mobjinfo_t;
 import data.mobjtype_t;
 import data.state_t;
 import data.sounds.sfxenum_t;
-import doom.DoomContext;
 import doom.DoomStatus;
 import doom.player_t;
 import doom.think_t;
@@ -3247,7 +3246,7 @@ public class Actions extends UnifiedGameMap {
         actor.x = dest.x + FixedMul (24*FRACUNIT, finecosine(dest.angle));
         actor.y = dest.y + FixedMul (24*FRACUNIT, finesine(dest.angle));
         actor.z = dest.z;
-        SetThingPosition (actor);
+        LL.SetThingPosition (actor);
     }
 
 
@@ -4063,7 +4062,7 @@ mo = SpawnMobj (mobj.x,
 S.StartSound(mo, sfxenum_t.sfx_telept);
 
 // spawn a teleport fog at the new spot
-ss = R.PointInSubsector (x,y); 
+ss = LL.PointInSubsector (x,y); 
 
 mo = SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_TFOG); 
 
@@ -4138,7 +4137,7 @@ mobj.sprite = st.sprite;
 mobj.frame = st.frame;
 
 // set subsector and/or block links
-SetThingPosition (mobj);
+LL.SetThingPosition (mobj);
 
 mobj.floorz = mobj.subsector.sector.floorheight;
 mobj.ceilingz = mobj.subsector.sector.ceilingheight;
@@ -4189,7 +4188,7 @@ x = mthing.x << FRACBITS;
 y = mthing.y << FRACBITS; 
 
 // spawn a teleport fog at the new spot
-ss = R.PointInSubsector (x,y); 
+ss = LL.PointInSubsector (x,y); 
 mo = SpawnMobj (x, y, ss.sector.floorheight , mobjtype_t.MT_IFOG); 
 S.StartSound(mo, sfxenum_t.sfx_itmbk);
 
@@ -5991,7 +5990,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         tmbbox[BOXRIGHT] = x + tmthing.radius;
         tmbbox[BOXLEFT] = x - tmthing.radius;
 
-        newsubsec = R.PointInSubsector (x,y);
+        newsubsec = LL.PointInSubsector (x,y);
         ceilingline = null;
         
         // The base floor/ceiling is from the subsector
@@ -6024,7 +6023,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         thing.x = x;
         thing.y = y;
 
-        SetThingPosition (thing);
+        LL.SetThingPosition (thing);
         
         return true;
     }
@@ -6085,7 +6084,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         tmbbox[BOXRIGHT] = x + tmthing.radius;
         tmbbox[BOXLEFT] = x - tmthing.radius;
 
-        newsubsec = R.PointInSubsector (x,y);
+        newsubsec = LL.PointInSubsector (x,y);
         ceilingline = null;
         
         // The base floor / ceiling is from the subsector
@@ -6184,7 +6183,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         thing.x = x;
         thing.y = y;
 
-        SetThingPosition (thing);
+        LL.SetThingPosition (thing);
         
         // if any special lines were hit, do the effect
         if (! flags(thing.flags,(MF_TELEPORT|MF_NOCLIP)) )
