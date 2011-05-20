@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.15 2011/05/18 16:57:51 velktron Exp $
+//$Id: DoomFile.java,v 1.16 2011/05/20 14:55:59 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -405,6 +405,10 @@ public class DoomFile extends RandomAccessFile {
    public int readLEInt() throws IOException{
        int tmp=readInt();
        return Swap.LONG(tmp);
+   }
+   
+   public void writeLEInt(int value) throws IOException{       
+       this.writeInt(Swap.LONG(value));
    }
    
 // 2-byte number
