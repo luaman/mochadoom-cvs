@@ -16,6 +16,7 @@ import p.mobj_t;
 import automap.Map;
 import f.Finale;
 import f.Wiper;
+import g.DoomSaveGame;
 import hu.HU;
 import m.Menu;
 import m.MenuMisc;
@@ -43,6 +44,10 @@ import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.DummySoundDriver;
+import savegame.IDoomSaveGame;
+import savegame.IDoomSaveGameHeader;
+import savegame.VanillaDSG;
+import savegame.VanillaDSGHeader;
 import st.StatusBar;
 import utils.C2JUtils;
 import v.BufferedRenderer;
@@ -62,7 +67,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.39 2011/05/17 16:54:34 velktron Exp $
+// $Id: DoomMain.java,v 1.40 2011/05/20 14:49:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -88,7 +93,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.39 2011/05/17 16:54:34 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.40 2011/05/20 14:49:01 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1947,7 +1952,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         bodyqueslot++; 
 
         // spawn a teleport fog 
-        ss = R.PointInSubsector (x,y); 
+        ss = LL.PointInSubsector (x,y); 
         // Angles stored in things are supposed to be "sanitized" against rollovers.
         an = (int) (( ANG45 * (mthing.angle/45) ) >>> ANGLETOFINESHIFT); 
 
@@ -2277,65 +2282,66 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      *  easier, and avoid writing code twice.
      */
 
-    private void DoLoadGame () 
+    protected void DoLoadGame () 
     { 
-        /*
+   try{
      int     length; 
      int     i; 
      int     a,b,c; 
      char[]    vcheck=new char[VERSIONSIZE]; 
      StringBuffer buf=new StringBuffer();
-     DoomSaveGame dsg;
-
+     IDoomSaveGameHeader header=new VanillaDSGHeader();
+     IDoomSaveGame dsg=new VanillaDSG();
+     dsg.updateStatus(this.DM);
      gameaction = gameaction_t.ga_nothing; 
 
-     length = M.ReadFile (savename, savebuffer); 
-     save_p = SAVESTRINGSIZE;
+     DoomFile f=new DoomFile(savename, "r"); 
 
+     header.read(f);
+     f.seek(0);
+     
+     
      // skip the description field 
-     //memset (vcheck,0,sizeof(vcheck));
-     //sprintf (vcheck,"version %i",VERSION);
      buf.append("version ");
      buf.append(VERSION);
-     buf.getChars(0, buf.length(), vcheck, 0);
 
-     if (C2JUtils.strcmp (save_p, vcheck)) 
+     if (buf.toString().compareTo(header.getVersion())!=0) 
      return;             // bad version 
-     save_p += VERSIONSIZE; 
+ 
 
-     gameskill = *save_p++; 
-     gameepisode = *save_p++; 
-     gamemap = *save_p++; 
+     gameskill = header.getGameskill(); 
+     gameepisode = header.getGameepisode(); 
+     gamemap = header.getGamemap(); 
      for (i=0 ; i<MAXPLAYERS ; i++) 
-     playeringame[i] = *save_p++; 
+     playeringame[i] = header.getPlayeringame()[i]; 
 
      // load a base level 
-     G_InitNew (gameskill, gameepisode, gamemap); 
+     InitNew (gameskill, gameepisode, gamemap); 
 
      // get the times 
-     a = *save_p++; 
-     b = *save_p++; 
-     c = *save_p++; 
-     leveltime = (a<<16) + (b<<8) + c; 
+     //a = *save_p++; 
+     //b = *save_p++; 
+     //c = *save_p++; 
+     leveltime = header.getLeveltime(); 
 
      // dearchive all the modifications
-     P_UnArchivePlayers (); 
-     P_UnArchiveWorld (); 
-     P_UnArchiveThinkers (); 
-     P_UnArchiveSpecials (); 
+     boolean ok=dsg.doLoad(f);
+     f.close();
 
-     if (*save_p != 0x1d) 
-     I_Error ("Bad savegame");
+     if (!ok) 
+     I.Error ("Bad savegame");
 
      // done 
-     Z_Free (savebuffer); 
+     //Z_Free (savebuffer); 
 
-     if (setsizeneeded)
-     R_ExecuteSetViewSize ();
+     if (R.setsizeneeded)
+     R.ExecuteSetViewSize ();
 
      // draw the pattern into the back screen
-     R_FillBackScreen ();
-         */   
+     R.FillBackScreen ();   
+   } catch (Exception e){
+       e.printStackTrace();
+   }
     } 
 
 
@@ -2397,15 +2403,16 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      length = save_p - savebuffer; 
      if (length > SAVEGAMESIZE) 
      I_Error ("Savegame buffer overrun"); 
-     M_WriteFile (name, savebuffer, length); 
-     gameaction = ga_nothing; 
-     savedescription[0] = 0;      
+     M_WriteFile (name, savebuffer, length);
+     */ 
+     gameaction = gameaction_t.ga_nothing; 
+     savedescription = "";      
 
      players[consoleplayer].message = GGSAVED; 
 
      // draw the pattern into the back screen
-     R_FillBackScreen ();    
-         */
+     R.FillBackScreen ();    
+         
     } 
 
 
@@ -3729,9 +3736,18 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public void setGameAction(gameaction_t action) {
         this.gameaction=action;
         }
+
+
+    @Override
+    public gameaction_t getGameAction() {       
+        return this.gameaction;
+    }
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.40  2011/05/20 14:49:01  velktron
+//Added more DoomGame compliance, implemented loading savegames.
+//
 //Revision 1.39  2011/05/17 16:54:34  velktron
 //Now adaptiveness/throttling works
 //

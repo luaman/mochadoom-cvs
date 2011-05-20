@@ -68,6 +68,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 	@Override
 	public void updateStatus(DoomStatus DS) {
 	       this.DM=DS.DM;
+	       this.DG=DS.DG;
 	        this.V=DM.V;
 	        this.W=DM.W;
 	        this.HU=DM.HU;
@@ -494,7 +495,7 @@ public class Menu extends MenuMisc implements DoomMenu{
      */
 
     public void DoSave(int slot) {
-        DM.SaveGame(slot, new String(savegamestrings[slot]));
+        DG.SaveGame(slot, new String(savegamestrings[slot]));
         ClearMenus();
 
         // PICK QUICKSAVE SLOT YET?
@@ -686,7 +687,7 @@ public class Menu extends MenuMisc implements DoomMenu{
             if (ch != 'y')
                 return;
 
-            DM.DeferedInitNew(skill_t.sk_nightmare, epi + 1, 1);
+            DG.DeferedInitNew(skill_t.sk_nightmare, epi + 1, 1);
             ClearMenus();
         }
     }
@@ -1111,7 +1112,7 @@ public class Menu extends MenuMisc implements DoomMenu{
         }
 
         if (DM.devparm && ch == KEY_F1) {
-            DM.ScreenShot();
+            DG.ScreenShot();
             return true;
         }
 
@@ -1726,7 +1727,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 return;
             }
 
-            DM.DeferedInitNew(skill_t.values()[choice], epi + 1, 1);
+            DG.DeferedInitNew(skill_t.values()[choice], epi + 1, 1);
             ClearMenus();
         }
 
@@ -1766,7 +1767,7 @@ public class Menu extends MenuMisc implements DoomMenu{
 
             currentMenu.lastOn = itemOn;
             ClearMenus();
-            DM.StartTitle();
+            DG.StartTitle();
         }
     }
 
@@ -1808,7 +1809,7 @@ public class Menu extends MenuMisc implements DoomMenu{
                 name = ("c:\\doomdata\\" + SAVEGAMENAME + (choice) + ".dsg");
             else
                 name = (SAVEGAMENAME + (choice) + ".dsg");
-            DM.LoadGame(name);
+            DG.LoadGame(name);
             ClearMenus();
         }
     }
