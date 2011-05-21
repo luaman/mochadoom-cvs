@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.23 2011/05/20 18:27:12 velktron Exp $
+// $Id: HU.java,v 1.24 2011/05/21 14:42:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package hu;
 // GNU General Public License for more details.
 //
 // $Log: HU.java,v $
+// Revision 1.24  2011/05/21 14:42:32  velktron
+// Adapted to use new gamemode system.
+//
 // Revision 1.23  2011/05/20 18:27:12  velktron
 // DoomMenu -> IDoomMenu
 //
@@ -144,7 +147,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.23 2011/05/20 18:27:12 velktron Exp $";
+        "$Id: HU.java,v 1.24 2011/05/21 14:42:32 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -559,7 +562,7 @@ public class HU implements DoomStatusAware {
         // create the map title widget
         this.w_title.initTextLine(HU_TITLEX, HU_TITLEY, hu_font, HU_FONTSTART);
 
-        switch (DM.gamemode) {
+        switch (DM.getGameMode()) {
         case shareware:
         case registered:
         case retail:
@@ -666,7 +669,7 @@ public class HU implements DoomStatusAware {
                                 message_nottobefuckedwith = true;
                                 message_on[0] = true;
                                 message_counter = HU_MSGTIMEOUT;
-                                if (DM.gamemode == GameMode_t.commercial)
+                                if (DM.isCommercial())
                                     S.StartSound(null, sfxenum_t.sfx_radio);
                                     
                                 else
