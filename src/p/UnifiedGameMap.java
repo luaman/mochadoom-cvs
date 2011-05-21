@@ -1445,9 +1445,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             episode = 1;
 
-            if (DM.gamemode == GameMode_t.registered)
+            if (DM.isRegistered())
                 episode = 2;
-            else if (DM.gamemode == GameMode_t.commercial)
+            else if (DM.isCommercial())
                 episode = 3;
 
             for (index = 0, i = 0; i < MAXSWITCHES; i++) {
@@ -1845,7 +1845,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             break;
 
         case SPR_MEGA:
-            if (DM.gamemode != GameMode_t.commercial)
+            if (!DM.isCommercial())
                 return;
             player.health[0] = 200;
             player.mo.health = player.health[0];
