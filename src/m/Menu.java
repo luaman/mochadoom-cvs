@@ -600,7 +600,7 @@ public class Menu extends MenuMisc implements IDoomMenu{
             if (ch != 'y')
                 return;
             if (!DM.netgame) {
-                if (DM.gamemode == GameMode_t.commercial)
+                if (DM.isCommercial())
                     S.StartSound(null, quitsounds2[(DM.gametic >> 2) & 7]);
                 else
                     S.StartSound(null, quitsounds[(DM.gametic >> 2) & 7]);
@@ -755,7 +755,7 @@ public class Menu extends MenuMisc implements IDoomMenu{
             if (ch != 'y')
                 return;
             if (!DM.netgame) {
-                if (DM.gamemode == GameMode_t.commercial)
+                if (DM.isCommercial())
                 S.StartSound(null,quitsounds2[(DM.gametic>>2)&7]);
                 else
                 S.StartSound(null,quitsounds[(DM.gametic>>2)&7]);
@@ -810,7 +810,7 @@ public class Menu extends MenuMisc implements IDoomMenu{
                 return;
             }
 
-            if (DM.gamemode == GameMode_t.commercial)
+            if (DM.isCommercial())
                 SetupNextMenu(NewDef);
             else
                 SetupNextMenu(EpiDef);
@@ -1138,7 +1138,7 @@ public class Menu extends MenuMisc implements IDoomMenu{
                 System.out.println("F1 Pressed");
                 StartControlPanel();
 
-                if (DM.gamemode == GameMode_t.retail || currentMenu==ReadDef1)
+                if (DM.isRetail() || currentMenu==ReadDef1)
                     currentMenu = ReadDef2;
                 else
                     currentMenu = ReadDef1;
@@ -1435,8 +1435,10 @@ public class Menu extends MenuMisc implements IDoomMenu{
         // Here we could catch other version dependencies,
         // like HELP1/2, and four episodes.
 
-        switch (DM.gamemode) {
+        switch (DM.getGameMode()) {
         case commercial:
+        case pack_plut:
+        case pack_tnt:
             // This is used because DOOM 2 had only one HELP
             // page. I use CREDIT as second page now, but
             // kept this hack for educational purposes.
@@ -1594,7 +1596,7 @@ public class Menu extends MenuMisc implements IDoomMenu{
         public void invoke() {
             System.out.println("DrawReadThis1 invoked");
             inhelpscreens = true;
-            switch (DM.gamemode) {
+            switch (DM.getGameMode()) {
             case commercial:
                 V.DrawPatchDirect(0, 0, 0, W.CachePatchName("HELP"));
                 break;
@@ -1620,7 +1622,7 @@ public class Menu extends MenuMisc implements IDoomMenu{
         public void invoke() {
             System.out.println("DrawReadThis2 invoked");
             inhelpscreens = true;
-            switch (DM.gamemode) {
+            switch (DM.getGameMode()) {
             case retail:
             case commercial:
                 // This hack keeps us from having to change menus.
@@ -1777,14 +1779,14 @@ public class Menu extends MenuMisc implements IDoomMenu{
         @Override
         public void invoke(int choice) {
 
-            if ((DM.gamemode == GameMode_t.shareware) && (choice != 0)) {
+            if (DM.isShareware() && (choice != 0)) {
                 StartMessage(SWSTRING, null, false);
                 SetupNextMenu(ReadDef2);
                 return;
             }
 
             // Yet another hack...
-            if ((DM.gamemode == GameMode_t.registered) && (choice > 2)) {
+            if (DM.isRegistered() && (choice > 2)) {
                 System.err
                         .print("M_Episode: 4th episode requires UltimateDOOM\n");
                 choice = 0;

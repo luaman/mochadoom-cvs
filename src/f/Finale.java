@@ -12,16 +12,12 @@ import static data.info.mobjinfo;
 import static data.info.states;
 import static doom.englsh.*;
 import static utils.C2JUtils.*;
-import g.DoomGameInterface;
 import hu.HU;
 import i.DoomStatusAware;
 
 import java.io.IOException;
 
-import rr.Renderer;
-import rr.RendererState;
 import rr.SpriteManager;
-import rr.UnifiedRenderer;
 import rr.column_t;
 import rr.patch_t;
 import rr.spritedef_t;
@@ -34,7 +30,6 @@ import data.sounds.musicenum_t;
 import data.state_t;
 import defines.*;
 import data.sounds.sfxenum_t;
-import doom.DoomContext;
 import doom.DoomStatus;
 import doom.IDoomGame;
 import doom.event_t;
@@ -44,7 +39,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.13 2011/05/18 16:52:22 velktron Exp $
+// $Id: Finale.java,v 1.14 2011/05/21 14:49:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -65,7 +60,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.13 2011/05/18 16:52:22 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.14 2011/05/21 14:49:29 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -124,7 +119,7 @@ public void StartFinale ()
       // Okay - IWAD dependend stuff.
       // This has been changed severly, and
       //  some stuff might have changed in the process.
-      switch ( DS.gamemode )
+      switch ( DS.getGameMode())
       {
 
         // DOOM 1 - E1, E3 or E4, but each nine missions
@@ -231,7 +226,7 @@ public void StartFinale ()
       int     i;
       
       // check for skipping
-      if ( (DS.gamemode == GameMode_t.commercial)
+      if ( (DS.isCommercial())
         && ( finalecount > 50) )
       {
         // go on to the next level
@@ -257,7 +252,7 @@ public void StartFinale ()
       return;
       }
       
-      if ( DS.gamemode == GameMode_t.commercial)
+      if ( DS.isCommercial())
       return;
           
       if ((finalestage!=0) && finalecount> finaletext.length()*TEXTSPEED + TEXTWAIT)
@@ -774,7 +769,7 @@ protected void stopattack(){
       switch (DS.gameepisode)
       {
         case 1:
-          if ( DS.gamemode == GameMode_t.retail )
+          if ( DS.isCommercial())
             V.DrawPatch (0,0,0,
                W.CachePatchName("CREDIT",PU_CACHE));
           else
