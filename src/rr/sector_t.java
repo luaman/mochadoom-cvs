@@ -6,12 +6,7 @@ import static m.fixed_t.FRACUNIT;
 import static p.DoorDefines.*;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
-
-import m.fixed_t;
 import m.random;
-import data.Defines;
-import data.Tables;
 import doom.think_t;
 import doom.thinker_t;
 import p.ThinkerList;
@@ -438,9 +433,10 @@ public class sector_t implements IReadableDoomObject{
     	
         this.floorheight = f.readLEShort() << m.fixed_t.FRACBITS;
         this.ceilingheight = f.readLEShort() << m.fixed_t.FRACBITS;
-        // HACK: this is necessary so that we can read vanilla Doom savegames.
-        this.floorpic = (short) (f.readLEShort()-1);
-        this.ceilingpic = (short) (f.readLEShort()-1);
+        // MAES: it may be necessary to apply a hack in order to
+        // read vanilla savegames.
+        this.floorpic = (short) f.readLEShort();
+        this.ceilingpic = (short) f.readLEShort();
         //f.skipBytes(4);
         this.lightlevel = f.readLEShort();
         this.special = f.readLEShort();      // needed?
