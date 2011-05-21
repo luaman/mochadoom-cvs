@@ -10,5 +10,4 @@ public enum GameMission_t
   pack_tnt, // TNT mission pack
   pack_plut,    // Plutonia pack
   none
-
 }
