@@ -988,13 +988,13 @@ SetPsprite
         {
         if (weaponowned[weapontype_t.wp_plasma.ordinal()]
             && (this.ammo[ammotype_t.am_cell.ordinal()]!=0)
-            && (DS.gamemode != GameMode_t.shareware) )
+            && !DS.isShareware() )
         {
             pendingweapon = weapontype_t.wp_plasma;
         }
         else if (weaponowned[weapontype_t.wp_supershotgun.ordinal()] 
              && this.ammo[ammotype_t.am_shell.ordinal()]>2
-             && (DS.gamemode == GameMode_t.commercial) )
+             && DS.isCommercial() )
         {
             pendingweapon = weapontype_t.wp_supershotgun;
         }
@@ -1023,7 +1023,7 @@ SetPsprite
         }
         else if (weaponowned[weapontype_t.wp_bfg.ordinal()]
              && this.ammo[ammotype_t.am_cell.ordinal()]>40
-             && (DS.gamemode != GameMode_t.shareware) )
+             && !DS.isShareware() )
         {
             pendingweapon = weapontype_t.wp_bfg;
         }
@@ -1145,7 +1145,7 @@ SetPsprite
      
      // Will switch between SG and SSG in Doom 2.
      
-     if ( (DS.gamemode == GameMode_t.commercial)
+     if ( DS.isCommercial()
          && newweapon == weapontype_t.wp_shotgun 
          && player.weaponowned[weapontype_t.wp_supershotgun.ordinal()]
          && player.readyweapon != weapontype_t.wp_supershotgun)
@@ -1161,7 +1161,7 @@ SetPsprite
          //  even if cheated.
          if ((newweapon != weapontype_t.wp_plasma
           && newweapon != weapontype_t.wp_bfg)
-         || (DS.gamemode != GameMode_t.shareware) )
+         || !DS.isShareware() )
          {
          player.pendingweapon = newweapon;
          }

@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.25 2011/05/18 16:57:21 velktron Exp $
+// $Id: StatusBar.java,v 1.26 2011/05/21 15:00:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.26  2011/05/21 15:00:14  velktron
+// Adapted to use new gamemode system.
+//
 // Revision 1.25  2011/05/18 16:57:21  velktron
 // Changed to DoomStatus
 //
@@ -150,7 +153,7 @@ import w.IWadLoader;
 
 public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.25 2011/05/18 16:57:21 velktron Exp $";
+        "$Id: StatusBar.java,v 1.26 2011/05/21 15:00:14 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -809,7 +812,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                     plyr.message = STSTR_MUS;
                     cheat_mus.GetParam(buf);
 
-                    if (DM.gamemode == GameMode_t.commercial) {
+                    if (DM.isCommercial()) {
                         musnum =
                             musicenum_t.mus_runnin.ordinal() + (buf[0] - '0')
                                     * 10 + buf[1] - '0' - 1;
@@ -889,7 +892,9 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
                 cheat_clev.GetParam(buf);
 
-                if (DM.gamemode == GameMode_t.commercial) {
+                // This applies to Doom II, Plutonia and TNT.
+                if (DM.isCommercial())
+                		{
                     epsd = 0;
                     map = (buf[0] - '0') * 10 + buf[1] - '0';
                 } else {
@@ -898,26 +903,26 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                 }
 
                 // Catch invalid maps.
-                if (epsd < 1)
+                if (epsd < 1 && (!DM.isCommercial()))
                     return false;
 
                 if (map < 1)
                     return false;
 
                 // Ohmygod - this is not going to work.
-                if ((DM.gamemode == GameMode_t.retail)
+                if (DM.isRetail()
                         && ((epsd > 4) || (map > 9)))
                     return false;
 
-                if ((DM.gamemode == GameMode_t.registered)
+                if (DM.isRegistered()
                         && ((epsd > 3) || (map > 9)))
                     return false;
 
-                if ((DM.gamemode == GameMode_t.shareware)
+                if (DM.isShareware()
                         && ((epsd > 1) || (map > 9)))
                     return false;
 
-                if ((DM.gamemode == GameMode_t.commercial)
+                if (DM.isCommercial()
                         && ((epsd > 1) || (map > 34)))
                     return false;
 

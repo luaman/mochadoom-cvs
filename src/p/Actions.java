@@ -3573,11 +3573,15 @@ public class Actions extends UnifiedGameMap {
     }
 
 
-    //
-    // A_BossDeath
-    // Possibly trigger special effects
-    // if on first boss level
-    //
+    /**
+     * A_BossDeath
+     * Possibly trigger special effects
+     * if on first boss level
+     *
+     * TODO: find out how Plutonia/TNT does cope with this.
+     * Special clauses?
+     *
+     */
     void A_BossDeath (mobj_t  mo)
     {
         thinker_t  th;
@@ -3585,7 +3589,7 @@ public class Actions extends UnifiedGameMap {
         line_t  junk = new line_t();
         int     i;
             
-        if ( DM.gamemode == GameMode_t.commercial)
+        if ( DM.isCommercial())
         {
         if (DM.gamemap != 7)
             return;
@@ -3676,7 +3680,7 @@ public class Actions extends UnifiedGameMap {
         }
         
         // victory!
-        if ( DM.gamemode == GameMode_t.commercial)
+        if ( DM.isCommercial())
         {
         if (DM.gamemap == 7)
         {
@@ -3959,7 +3963,7 @@ public class Actions extends UnifiedGameMap {
           // Default death sound.
           sfxenum_t     sound = sfxenum_t.sfx_pldeth;
           
-          if ( (DM.gamemode == GameMode_t.commercial)
+          if ( DM.isCommercial()
           &&  (mo.health < -50))
           {
           // IF THE PLAYER DIES

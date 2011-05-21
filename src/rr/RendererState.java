@@ -4359,7 +4359,7 @@ validcount++;
           if (scaledviewwidth == SCREENWIDTH)
               return;
 
-          if (DM.gamemode == GameMode_t.commercial)
+          if (DM.isCommercial())
               name = name2;
           else
               name = name1;

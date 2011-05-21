@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.20 2011/05/20 14:52:23 velktron Exp $
+// $Id: LevelLoader.java,v 1.21 2011/05/21 14:53:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.21  2011/05/21 14:53:57  velktron
+// Adapted to use new gamemode system.
+//
 // Revision 1.20  2011/05/20 14:52:23  velktron
 // Moved several function from the Renderer and Action code in here, since it made more sense.
 //
@@ -163,7 +166,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.20 2011/05/20 14:52:23 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.21 2011/05/21 14:53:57 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -451,7 +454,7 @@ public int bmaporgy;
       spawn = true;
 
       // Do not spawn cool, new monsters if !commercial
-      if ( DM.gamemode != GameMode_t.commercial)
+      if ( !DM.isCommercial())
       {
           switch(mt.type)
           {
@@ -915,7 +918,7 @@ public int bmaporgy;
       W.Reload ();            
          
       // find map name
-      if ( DM.gamemode == GameMode_t.commercial)
+      if ( DM.isCommercial())
       {
       if (map<10)
           lumpname="MAP0"+map;
