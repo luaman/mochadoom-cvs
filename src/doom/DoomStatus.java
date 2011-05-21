@@ -47,10 +47,45 @@ public class DoomStatus extends DoomContext {
     /////////// Local to doomstat.c ////////////
     // TODO: hide those behind getters
     
-    /** Game Mode - identify IWAD as shareware, retail etc. */
+    /** Game Mode - identify IWAD as shareware, retail etc. 
+     *  This is now hidden behind getters so some cases like plutonia
+     *  etc. can be handled more cleanly.
+     * */
 
-    public GameMode_t gamemode;
+    protected GameMode_t gamemode;
+    
+    public boolean isShareware(){
+    	return (gamemode== GameMode_t.shareware);
+    }
+    
+    
+    /** Commercial means Doom 2, Plutonia, TNT, and possibly others like XBLA.
+     * 
+     * @return
+     */
+    public boolean isCommercial(){
+    	return (gamemode== GameMode_t.commercial ||
+    			gamemode== GameMode_t.pack_plut ||
+    			gamemode== GameMode_t.pack_tnt);
+    }
+    
+    /** Retail means Ultimate.
+     * 
+     * @return
+     */
+    public boolean isRetail(){
+    	return (gamemode== GameMode_t.retail );
+    }
+    
+    /** Registered is a subset of Ultimate 
+     * 
+     * @return
+     */
 
+    public boolean isRegistered(){
+    	return (gamemode== GameMode_t.registered || gamemode== GameMode_t.registered );
+    }
+    
     public GameMission_t gamemission;
 
     /** Set if homebrew PWAD stuff has been added. */
