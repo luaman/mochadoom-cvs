@@ -95,7 +95,7 @@ public enum think_t {
     A_BrainPain(1),
     A_BrainScream(1),
     A_BrainDie(1),
-    A_BrainAwake,
+    A_BrainAwake(1),
     A_BrainSpit(1),
     A_SpawnSound(1),
     A_SpawnFly(1),

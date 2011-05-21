@@ -1691,20 +1691,28 @@ public class Actions extends UnifiedGameMap {
               A_KeenDie((mobj_t)a);
               break;
           case  A_BrainPain:
+        	  A_BrainPain((mobj_t)a);
         	  break;
           case  A_BrainScream:
+        	  A_BrainScream((mobj_t)a);
         	  break;
           case  A_BrainDie:
+        	  A_BrainDie((mobj_t)a);
         	  break;
           case  A_BrainAwake:
+        	  A_BrainAwake((mobj_t)a);
         	  break;        	  
           case  A_BrainSpit:
+        	  A_BrainSpit((mobj_t)a);
         	  break;
           case  A_SpawnSound:
+        	  A_SpawnSound((mobj_t)a);
         	  break;
           case  A_SpawnFly:
+        	  A_SpawnFly((mobj_t)a);
         	  break;
           case  A_BrainExplode:
+        	  A_BrainExplode((mobj_t)a);
         	  break;
           case  T_FireFlicker:
               ((fireflicker_t) a).FireFlicker();
