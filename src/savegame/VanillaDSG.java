@@ -83,7 +83,7 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
         else return true;
         } catch (Exception e){
             e.printStackTrace();
-            I.Error("Error while loading savegame! Cause: %s",e.getMessage());
+            System.err.printf("Error while loading savegame! Cause: %s",e.getMessage());
             return false; // Needed to shut up compiler.
         }
         
