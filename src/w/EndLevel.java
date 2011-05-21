@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.13 2011/05/18 16:58:04 velktron Exp $
+// $Id: EndLevel.java,v 1.14 2011/05/21 16:53:24 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.14  2011/05/21 16:53:24  velktron
+// Adapted to use new gamemode system.
+//
 // Revision 1.13  2011/05/18 16:58:04  velktron
 // Changed to DoomStatus
 //
@@ -360,7 +363,7 @@ protected void initAnimatedBack()
     int		i;
     anim_t	a;
 
-    if (DS.gamemode == GameMode_t.commercial)
+    if (DS.isCommercial())
 	return;
 
     if (wbs.epsd > 2)
@@ -389,7 +392,7 @@ protected void updateAnimatedBack()
     int		i;
     anim_t	a;
 
-    if (DS.gamemode == GameMode_t.commercial)
+    if (DS.isCommercial())
 	return;
 
     if (wbs.epsd > 2)
@@ -442,7 +445,7 @@ protected void drawAnimatedBack()
     int			i;
     anim_t		a;
 
-    if (DS.gamemode==GameMode_t.commercial)
+    if (DS.isCommercial())
 	return;
 
     if (wbs.epsd > 2)
@@ -637,7 +640,7 @@ protected void drawShowNextLoc()
     // draw animated background
     drawAnimatedBack(); 
 
-    if ( DS.gamemode != GameMode_t.commercial)
+    if ( !DS.isCommercial())
     {
   	if (wbs.epsd > 2)
 	{
@@ -661,7 +664,7 @@ protected void drawShowNextLoc()
     }
 
     // draws which level you are entering..
-    if ( (DS.gamemode != GameMode_t.commercial)
+    if ( (!DS.isCommercial())
 	 || wbs.next != 30)
 	drawEL();  
 
@@ -818,7 +821,7 @@ protected void updateDeathmatchStats()
 	{
 	    S.StartSound(null, sfxenum_t.sfx_slop);
 
-	    if ( DS.gamemode == GameMode_t.commercial)
+	    if ( DS.isCommercial())
 		initNoState();
 	    else
 		initShowNextLoc();
@@ -1096,7 +1099,7 @@ protected void updateNetgameStats()
 	if (acceleratestage!=0)
 	{
 	   S.StartSound(null,  sfxenum_t.sfx_sgcock);
-	    if ( DS.gamemode == GameMode_t.commercial )
+	    if ( DS.isCommercial() )
 		initNoState();
 	    else
 		initShowNextLoc();
@@ -1273,7 +1276,7 @@ protected void updateStats()
 	{
 	     S.StartSound(null, sfxenum_t.sfx_sgcock);
 
-	    if (DS.gamemode == GameMode_t.commercial)
+	    if (DS.isCommercial())
 		initNoState();
 	    else
 		initShowNextLoc();
@@ -1365,7 +1368,7 @@ public void Ticker()
     if (bcnt == 1)
     {
 	// intermission music
-  	if ( DS.gamemode == GameMode_t.commercial )
+  	if ( DS.isCommercial())
   	
   	    S.ChangeMusic(musicenum_t.mus_dm2int.ordinal(), true);
 	else
@@ -1401,13 +1404,14 @@ protected void loadData()
     String	name;
     anim_t	a;
 
-    if (DS.gamemode == GameMode_t.commercial)
+    if (DS.isCommercial())
 	name= "INTERPIC";
     else 
 	//sprintf(name, "WIMAP%d", wbs.epsd);
         name=("WIMAP"+Integer.toString(wbs.epsd));
     
-    if ( DS.gamemode == GameMode_t.retail )
+    // MAES: For Ultimate Doom
+    if ( DS.isRetail())
     {
       if (wbs.epsd == 3)
           name= "INTERPIC";
@@ -1429,7 +1433,7 @@ protected void loadData()
     // }
     //}
 
-    if (DS.gamemode == GameMode_t.commercial)
+    if (DS.isCommercial())
     {
 	NUMCMAPS = 32;								
 //	lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUMCMAPS,
@@ -1673,9 +1677,9 @@ protected void initVariables(wbstartstruct_t wbstartstruct)
     wbs = wbstartstruct.clone();
 
 if (RANGECHECKING){
-    if (DS.gamemode != GameMode_t.commercial)
+    if (!DS.isCommercial())
     {
-      if ( DS.gamemode == GameMode_t.retail )
+      if ( DS.isRetail())
 	RNGCHECK(wbs.epsd, 0, 3);
       else
 	RNGCHECK(wbs.epsd, 0, 2);
@@ -1704,7 +1708,8 @@ if (RANGECHECKING){
     if (wbs.maxsecret==0)
 	wbs.maxsecret = 1;
 
-    if ( DS.gamemode != GameMode_t.retail )
+    // Sanity check for Ultimate.
+    if ( !DS.isRetail())
       if (wbs.epsd > 2)
 	wbs.epsd -= 3;
 }
