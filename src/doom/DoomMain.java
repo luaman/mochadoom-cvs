@@ -67,7 +67,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.41 2011/05/21 14:40:56 velktron Exp $
+// $Id: DoomMain.java,v 1.42 2011/05/21 16:58:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -93,7 +93,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.41 2011/05/21 14:40:56 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.42 2011/05/21 16:58:38 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -686,7 +686,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         if ( testAccess (doomuwad,"r") )
         {
-        	// TODO auto-detect ultimate Doom even from doom.wad
+        	// TODO auto-detect ultimate Doom even from doom.wad        	
             setGameMode(GameMode_t.retail);
             AddFile (doomuwad);
             return;
@@ -1053,6 +1053,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         this.ST.updateStatus(this);
 
+        // MAES: Check for Ultimate Doom in "doom.wad" filename.
+        CheckForUltimateDoom();
+        
         // Check for -file in shareware
         CheckForPWADSInShareware();
 
@@ -2389,8 +2392,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      boolean ok=dsg.doLoad(f);
      f.close();
 
+     // MAES: this will cause a forced exit.
+     // The problem is that the status will have already been altered 
+     // (perhaps VERY badly) so it makes no sense to progress.
+     // If you want it bullet-proof, you could implement
+     // a "tentative loading" subsystem, which will only alter the game
+     // if everything works out without errors. But who cares :-p
      if (!ok) 
-     I.Error ("Bad savegame");
+     I.Error("Bad savegame");
 
      // done 
      //Z_Free (savebuffer); 
@@ -3806,6 +3815,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.42  2011/05/21 16:58:38  velktron
+//Added automatic detection of Ultimate Doom in doom.wad file.
+//
 //Revision 1.41  2011/05/21 14:40:56  velktron
 //Hid gamemode behind specific getters.
 //
