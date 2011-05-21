@@ -2320,7 +2320,7 @@ public class Actions extends UnifiedGameMap {
     {
         thinker_t  th;
         mobj_t mo2;
-        line_t  junk = null;
+        line_t  junk = new line_t(); // MAES: fixed null 21/5/2011
 
         A_Fall (mo);
         
