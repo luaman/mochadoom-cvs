@@ -10,6 +10,7 @@ import java.util.List;
 
 import data.Defines;
 import data.info;
+import defines.GameMode_t;
 import doom.DoomStatus;
 import doom.player_t;
 import doom.think_t;
@@ -191,7 +192,7 @@ protected final void UnArchiveWorld () throws IOException
       sec.specialdata = null;
       sec.soundtarget = null;
   }
-  
+  adaptSectors();
   // do lines
   for (i=0 ; i<LL.numlines ; i++)
   {
@@ -218,6 +219,59 @@ protected final void UnArchiveWorld () throws IOException
   System.out.printf("Position at end of WORLD: %d\n",f.getFilePointer());
   }
   
+}
+
+protected void adaptSectors(){
+	sector_t sec;
+	switch(DS.getGameMode()){
+	case registered:
+	case shareware:
+	for (int i=0;i<LL.numsectors;i++){
+		sec=LL.sectors[i];
+		// Between the F1_START and F1_END mark (in vanilla)
+		if (sec.floorpic<=54){
+			sec.floorpic-=1;
+		} else {
+		// Between the F2_START and F2_END mark (in vanilla)
+			sec.floorpic-=3;
+		}
+		if (sec.ceilingpic<=54){
+			sec.ceilingpic-=1;
+		} else {
+		// Between the F2_START and F2_END mark (in vanilla)
+			sec.ceilingpic-=3;
+		}
+		
+	}
+	break;
+	case commercial:
+	case pack_plut:
+	case pack_tnt:
+		
+		for (int i=0;i<LL.numsectors;i++){
+			sec=LL.sectors[i];
+			// Between the F1_START and F1_END mark (in vanilla)
+			if (sec.floorpic<=54){
+				sec.floorpic-=1;
+			} else 
+			if (sec.floorpic<=99){
+			// Between the F2_START and F2_END mark (in vanilla)
+				sec.floorpic-=3;
+			} else {
+				sec.floorpic-=5;
+			}
+			
+			if (sec.ceilingpic<=54){
+				sec.ceilingpic-=1;
+			} else if (sec.ceilingpic<=99){
+			// Between the F2_START and F2_END mark (in vanilla)
+				sec.ceilingpic-=3;
+			} else {
+				sec.ceilingpic-=5;
+			}
+			
+		}
+	}
 }
 
 //
