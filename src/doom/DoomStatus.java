@@ -52,10 +52,18 @@ public class DoomStatus extends DoomContext {
      *  etc. can be handled more cleanly.
      * */
 
-    protected GameMode_t gamemode;
+    private GameMode_t gamemod;
+    
+    public void setGameMode(GameMode_t mode){
+    	this.gamemod=mode;
+    }
+    
+    public GameMode_t getGameMode(){
+    	return gamemod;
+    }
     
     public boolean isShareware(){
-    	return (gamemode== GameMode_t.shareware);
+    	return (gamemod== GameMode_t.shareware);
     }
     
     
@@ -64,9 +72,9 @@ public class DoomStatus extends DoomContext {
      * @return
      */
     public boolean isCommercial(){
-    	return (gamemode== GameMode_t.commercial ||
-    			gamemode== GameMode_t.pack_plut ||
-    			gamemode== GameMode_t.pack_tnt);
+    	return (gamemod== GameMode_t.commercial ||
+    			gamemod== GameMode_t.pack_plut ||
+    			gamemod== GameMode_t.pack_tnt);
     }
     
     /** Retail means Ultimate.
@@ -74,7 +82,7 @@ public class DoomStatus extends DoomContext {
      * @return
      */
     public boolean isRetail(){
-    	return (gamemode== GameMode_t.retail );
+    	return (gamemod== GameMode_t.retail );
     }
     
     /** Registered is a subset of Ultimate 
@@ -83,7 +91,7 @@ public class DoomStatus extends DoomContext {
      */
 
     public boolean isRegistered(){
-    	return (gamemode== GameMode_t.registered || gamemode== GameMode_t.registered );
+    	return (gamemod== GameMode_t.registered || gamemod== GameMode_t.registered );
     }
     
     public GameMission_t gamemission;

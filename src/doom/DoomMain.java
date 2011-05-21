@@ -67,7 +67,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.40 2011/05/20 14:49:01 velktron Exp $
+// $Id: DoomMain.java,v 1.41 2011/05/21 14:40:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -93,7 +93,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.40 2011/05/20 14:49:01 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.41 2011/05/21 14:40:56 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -128,7 +128,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // IF STORE DEMO, DO NOT ACCEPT INPUT
 
-        if ( ( gamemode == GameMode_t.commercial )
+        if ( ( isCommercial() )
                 && (W.CheckNumForName("MAP01")<0) )
             return; 
 
@@ -447,7 +447,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         paused = false;
         gameaction = gameaction_t.ga_nothing;
 
-        if ( gamemode == GameMode_t.retail )
+        if ( isRetail() )
             demosequence = (demosequence+1)%7;
         else
             demosequence = (demosequence+1)%6;
@@ -455,13 +455,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         switch (demosequence)
         {
         case 0:
-            if ( gamemode == GameMode_t.commercial )
+            if ( isCommercial() )
                 pagetic = 35 * 11;
             else
                 pagetic = 170;
             gamestate = gamestate_t.GS_DEMOSCREEN;
             pagename = "TITLEPIC";
-            if ( gamemode == GameMode_t.commercial )
+            if ( isCommercial() )
                 S.StartMusic(musicenum_t.mus_dm2ttl);
 
             else
@@ -480,7 +480,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             break;
         case 4:
             gamestate = gamestate_t.GS_DEMOSCREEN;
-            if ( gamemode == GameMode_t.commercial)
+            if ( isCommercial())
             {
                 pagetic = 35 * 11;
                 pagename = "TITLEPIC";
@@ -490,7 +490,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             {
                 pagetic = 200;
 
-                if ( gamemode == GameMode_t.retail )
+                if ( isRetail() )
                     pagename = "CREDIT";
                 else
                     pagename = "HELP1";
@@ -548,12 +548,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         wadfiles[numwadfiles] = newfile;
     }
 
-    //
-    // IdentifyVersion
-    // Checks availability of IWAD files by name,
-    // to determine whether registered/commercial features
-    // should be executed (notably loading PWAD's).
-    //
+    /**
+     * IdentifyVersion
+     * Checks availability of IWAD files by name,
+     * to determine whether registered/commercial features
+     * should be executed (notably loading PWAD's).
+     */
+    
     public void IdentifyVersion ()
     {
 
@@ -571,7 +572,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Unix-like checking. Might come in handy sometimes.   
         // This should ALWAYS be activated, else doomwaddir etc. won't be defined.
 
-
         String home;
         String doomwaddir;
         doomwaddir = System.getenv("DOOMWADDIR");
@@ -582,6 +582,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
         basedefault=home+"/.doomrc";   
 
+        // None found, using current.
         if (!eval(doomwaddir))
             doomwaddir = ".";
 
@@ -610,7 +611,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // MAES: Interesting. I didn't know of that :-o
         if (eval(CheckParm ("-shdev")))
         {
-            gamemode = GameMode_t.shareware;
+            setGameMode(GameMode_t.shareware);
             devparm = true;
             AddFile (dstrings.DEVDATA+"doom1.wad");
             AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
@@ -621,7 +622,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         if (eval(CheckParm ("-regdev")))
         {
-            gamemode = GameMode_t.registered;
+            setGameMode(GameMode_t.registered);
             devparm = true;
             AddFile (dstrings.DEVDATA+"doom.wad");
             AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
@@ -633,7 +634,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         if (eval(CheckParm ("-comdev")))
         {
-            gamemode = GameMode_t.commercial;
+            setGameMode(GameMode_t.commercial);
             devparm = true;
             /* I don't bother
 	if(plutonia)
@@ -652,7 +653,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         if ( testAccess(doom2fwad,"r" ))
         {
-            gamemode = GameMode_t.commercial;
+            setGameMode(GameMode_t.commercial);
             // C'est ridicule!
             // Let's handle languages in config files, okay?
             language = Language_t.french;
@@ -664,42 +665,43 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         if ( testAccess(doom2wad,"r" ))
         {
-            gamemode = GameMode_t.commercial;
+            setGameMode(GameMode_t.commercial);
             AddFile (doom2wad);
             return;
         }
 
         if ( testAccess (plutoniawad, "r" ) )
         {
-            gamemode = GameMode_t.pack_plut;
+            setGameMode(GameMode_t.pack_plut);
             AddFile (plutoniawad);
             return;
         }
 
         if ( testAccess ( tntwad, "r" ) )
         {
-            gamemode = GameMode_t.pack_tnt;
+            setGameMode(GameMode_t.pack_tnt);
             AddFile (tntwad);
             return;
         }
 
         if ( testAccess (doomuwad,"r") )
         {
-            gamemode = GameMode_t.retail;
+        	// TODO auto-detect ultimate Doom even from doom.wad
+            setGameMode(GameMode_t.retail);
             AddFile (doomuwad);
             return;
         }
 
         if ( testAccess (doomwad,"r") )
         {
-            gamemode = GameMode_t.registered;
+            setGameMode(GameMode_t.registered);
             AddFile (doomwad);
             return;
         }
 
         if ( testAccess (doom1wad,"r") )
         {
-            gamemode = GameMode_t.shareware;
+            setGameMode(GameMode_t.shareware);
             AddFile (doom1wad);
             return;
         }
@@ -707,7 +709,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // MAES: Maybe we should add FreeDoom here later.
 
         System.out.println("Game mode indeterminate.\n");
-        gamemode = GameMode_t.indetermined;
+        setGameMode(GameMode_t.indetermined);
 
         // We don't abort. Let's see what the PWAD contains.
         //exit(1);
@@ -790,7 +792,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                     infile = file;
                     indexinfile = 0;
                     indexinfile++;  // SKIP PAST ARGV[0] (KEEP IT)
-                    StringBuffer build=new StringBuffer();
+                    // HMM? StringBuffer build=new StringBuffer();
 
                     /* MAES: the code here looked like some primitive tokenizer.
 	       that assigned C-strings to memory locations.
@@ -858,72 +860,15 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         else if (eval(CheckParm ("-deathmatch")))
             deathmatch = true;
 
-        switch ( gamemode )
-        {
-        case retail:
-            title.append("                         ");
-            title.append("The Ultimate DOOM Startup v");
-            title.append(VERSION/100);
-            title.append(".");
-            title.append(VERSION%100);
-            title.append("                           ");
-            break;
-        case shareware:
-            title.append("                            ");
-            title.append("DOOM Shareware Startup v");
-            title.append(VERSION/100);
-            title.append(".");
-            title.append(VERSION%100);
-            title.append("                           ");
-            break;
-        case registered:
-            title.append("                            ");
-            title.append("DOOM Registered Startup v");
-            title.append(VERSION/100);
-            title.append(".");
-            title.append(VERSION%100);
-            title.append("                           ");
-            break;
-        case commercial:
-            title.append("                            ");
-            title.append("DOOM 2: Hell on Earth v");
-            title.append(VERSION/100);
-            title.append(".");
-            title.append(VERSION%100);
-            title.append("                           ");
-            break;
-        case pack_plut:
-            title.append("                            ");
-            title.append("DOOM 2: Plutonia Experiment v");
-            title.append(VERSION/100);
-            title.append(".");
-            title.append(VERSION%100);
-            title.append("                           ");
-            break;
-        case pack_tnt:
-            title.append("                            ");
-            title.append("DOOM 2: TNT - Evilution v");
-            title.append(VERSION/100);
-            title.append(".");
-            title.append(VERSION%100);
-            title.append("                           ");
-            break;
-
-        default:
-            title.append("                            ");
-            title.append("Public DOOM - v");
-            title.append(VERSION/100);
-            title.append(".");
-            title.append(VERSION%100);
-            title.append("                           ");
-            break;
-        }
+        // MAES: better extract a method for this.
+        GenerateTitle();
 
         System.out.println(title.toString());
 
         if (devparm)
             System.out.println(D_DEVSTR);
 
+        // Running from CDROM?
         if (eval(CheckParm("-cdrom")))
         {
             System.out.println(D_CDROM);
@@ -962,7 +907,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             char[] tmp=myargv[p].toCharArray();
             tmp[4]= 'p';// big hack, change to -warp
             myargv[p]=new String(tmp);    
-
+            GameMode_t gamemode=getGameMode();
             // Map name handling.
             switch (gamemode )
             {
@@ -1056,7 +1001,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         p = CheckParm ("-warp");
         if (eval(p) && p < myargc-1)
         {
-            if (gamemode == GameMode_t.commercial)
+            if (isCommercial())
                 startmap = Integer.parseInt(myargv[p+1]);
             else
             {
@@ -1109,29 +1054,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.ST.updateStatus(this);
 
         // Check for -file in shareware
-        if (modifiedgame)
-        {
-            // These are the lumps that will be checked in IWAD,
-            // if any one is not present, execution will be aborted.
-            String[] name=
-            {
-                    "e2m1","e2m2","e2m3","e2m4","e2m5","e2m6","e2m7","e2m8","e2m9",
-                    "e3m1","e3m3","e3m3","e3m4","e3m5","e3m6","e3m7","e3m8","e3m9",
-                    "dphoof","bfgga0","heada1","cybra1","spida1d1"
-            };
-            int i;
-
-            // Oh yes I can.
-            if ( gamemode == GameMode_t.shareware)
-                System.out.println("\nYou cannot -file with the shareware version. Register!");
-
-            // Check for fake IWAD with right name,
-            // but w/o all the lumps of the registered version. 
-            if (gamemode == GameMode_t.registered)
-                for (i = 0;i < 23; i++)
-                    if (W.CheckNumForName(name[i].toUpperCase())<0)
-                        I.Error("\nThis is not the registered version: "+name[i]);
-        }
+        CheckForPWADSInShareware();
 
         // Iff additonal PWAD files are used, print modified banner
         if (modifiedgame)
@@ -1152,7 +1075,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
 
         // Check and print which version is executed.
-        switch ( gamemode )
+        switch ( getGameMode() )
         {
         case shareware:
         case indetermined:
@@ -1163,6 +1086,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         case registered:
         case retail:
         case commercial:
+        case pack_tnt:
+        case pack_plut:
             System.out.print ("===========================================================================\n");
             System.out.print ("                 Commercial product - do not distribute!\n");
             System.out.print ("         Please report software piracy to the SPA: 1-800-388-PIR8\n");
@@ -1275,6 +1200,145 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         DoomLoop ();  // never returns
     }
+
+
+	/**
+	 * 
+	 */
+	protected void CheckForPWADSInShareware() {
+		if (modifiedgame)
+        {
+            // These are the lumps that will be checked in IWAD,
+            // if any one is not present, execution will be aborted.
+            String[] name=
+            {
+                    "e2m1","e2m2","e2m3","e2m4","e2m5","e2m6","e2m7","e2m8","e2m9",
+                    "e3m1","e3m3","e3m3","e3m4","e3m5","e3m6","e3m7","e3m8","e3m9",
+                    "dphoof","bfgga0","heada1","cybra1","spida1d1"
+            };
+            int i;
+
+            // Oh yes I can.
+            if ( isShareware())
+                System.out.println("\nYou cannot -file with the shareware version. Register!");
+
+            // Check for fake IWAD with right name,
+            // but w/o all the lumps of the registered version. 
+            if (isRegistered())
+                for (i = 0;i < 23; i++)
+                    if (W.CheckNumForName(name[i].toUpperCase())<0)
+                        I.Error("\nThis is not the registered version: "+name[i]);
+        }
+	}
+
+	/** Check whether the "doom.wad" we actually loaded
+	 *  is ultimate Doom's, by checking if it contains 
+	 *  e4m1 - e4m9.
+	 * 
+	 */
+	protected void CheckForUltimateDoom() {
+		if (isRegistered())
+        {
+            // These are the lumps that will be checked in IWAD,
+            // if any one is not present, execution will be aborted.
+            String[] lumps=
+            {
+                    "e4m1","e4m2","e4m3","e4m4","e4m5","e4m6","e4m7","e4m8","e4m9"
+            };
+
+            // Check for fake IWAD with right name,
+            // but w/o all the lumps of the registered version. 
+                if (!CheckForLumps(lumps)) return;
+                // Checks passed, so we can set the mode to Ultimate
+                setGameMode(GameMode_t.retail);
+        }
+		
+	}
+
+
+	/** Check if ALL of the lumps exist.
+	 * 
+	 * @param name
+	 * @return
+	 */
+	protected boolean CheckForLumps(String[] name) {
+		for (int i = 0;i < name.length; i++)
+		    if (W.CheckNumForName(name[i].toUpperCase())<0) {
+		    	// Even one is missing? Not OK.
+		    	return false; 
+		    }
+		return true;
+	}
+
+
+	/**
+	 * 
+	 */
+	protected void GenerateTitle() {
+		switch ( getGameMode() )
+        {
+        case retail:
+            title.append("                         ");
+            title.append("The Ultimate DOOM Startup v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            break;
+        case shareware:
+            title.append("                            ");
+            title.append("DOOM Shareware Startup v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            break;
+        case registered:
+            title.append("                            ");
+            title.append("DOOM Registered Startup v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            break;
+        case commercial:
+            title.append("                            ");
+            title.append("DOOM 2: Hell on Earth v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+
+            break;
+        case pack_plut:
+            title.append("                            ");
+            title.append("DOOM 2: Plutonia Experiment v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            //gamemode=GameMode_t.commercial;
+            break;
+        case pack_tnt:
+            title.append("                            ");
+            title.append("DOOM 2: TNT - Evilution v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            //gamemode=GameMode_t.commercial;
+            break;
+
+        default:
+            title.append("                            ");
+            title.append("Public DOOM - v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
+            break;
+        }
+	}
 
     // Used in BuildTiccmd.
     protected ticcmd_t   base=new ticcmd_t();
@@ -1504,7 +1568,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // DOOM determines the sky texture to be used
         // depending on the current episode, and the game version.
-        if (( gamemode == GameMode_t.commercial)
+        if (isCommercial()
                 || ( gamemission == GameMission_t.pack_tnt )
                 || ( gamemission == GameMission_t.pack_plut ) )
         {
@@ -2089,7 +2153,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public void SecretExitLevel () 
     { 
         // IF NO WOLF3D LEVELS, NO SECRET EXIT!
-        if ( (gamemode == GameMode_t.commercial)
+        if ( isCommercial()
                 && (W.CheckNumForName("map31")<0))
             secretexit = false;
         else
@@ -2110,21 +2174,23 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (automapactive) 
             AM.Stop (); 
 
-        if ( gamemode != GameMode_t.commercial)
+        if ( !isCommercial())
             switch(gamemap)
             {
             case 8:
+            	// MAES: end of episode
                 gameaction =  gameaction_t.ga_victory;
                 return;
-            case 9: 
+            case 9:
+            	// MAES: end of secret level
                 for (i=0 ; i<MAXPLAYERS ; i++) 
                     players[i].didsecret = true; 
                 break;
             }
 
-        //#if 0  Hmmm - why?
+        /*  Hmmm - why? MAES: Clearly redundant.
         if ( (gamemap == 8)
-                && (gamemode != GameMode_t.commercial) ) 
+                && (!isCommercial()) ) 
         {
             // victory 
             gameaction =  gameaction_t.ga_victory; 
@@ -2132,13 +2198,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         } 
 
         if ( (gamemap == 9)
-                && (gamemode != GameMode_t.commercial) ) 
+                && !isCommercial() ) 
         {
             // exit secret level 
             for (i=0 ; i<MAXPLAYERS ; i++) 
                 players[i].didsecret = true; 
         } 
-        //#endif
+        */
 
 
         wminfo.didsecret = players[consoleplayer].didsecret; 
@@ -2146,7 +2212,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         wminfo.last = gamemap -1;
 
         // wminfo.next is 0 biased, unlike gamemap
-        if ( gamemode == GameMode_t.commercial)
+        if ( isCommercial())
         {
             if (secretexit)
                 switch(gamemap)
@@ -2193,7 +2259,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         wminfo.maxitems = totalitems; 
         wminfo.maxsecret = totalsecret; 
         wminfo.maxfrags = 0; 
-        if ( gamemode == GameMode_t.commercial )
+        if ( isCommercial() )
             wminfo.partime = 35*cpars[gamemap-1]; 
         else
             wminfo.partime = 35*pars[gameepisode][gamemap]; 
@@ -2232,7 +2298,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (secretexit) 
             players[consoleplayer].didsecret = true; 
 
-        if ( gamemode == GameMode_t.commercial )
+        if ( isCommercial() )
         {
             switch (gamemap)
             {
@@ -2284,12 +2350,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     protected void DoLoadGame () 
     { 
-   try{
-     int     length; 
-     int     i; 
-     int     a,b,c; 
-     char[]    vcheck=new char[VERSIONSIZE]; 
-     StringBuffer buf=new StringBuffer();
+   try{ 
+     int     i;  
+     //char[]    vcheck=new char[VERSIONSIZE]; 
+     StringBuffer vcheck=new StringBuffer();
      IDoomSaveGameHeader header=new VanillaDSGHeader();
      IDoomSaveGame dsg=new VanillaDSG();
      dsg.updateStatus(this.DM);
@@ -2302,10 +2366,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      
      
      // skip the description field 
-     buf.append("version ");
-     buf.append(VERSION);
+     vcheck.append("version ");
+     vcheck.append(VERSION);
 
-     if (buf.toString().compareTo(header.getVersion())!=0) 
+     if (vcheck.toString().compareTo(header.getVersion())!=0) 
      return;             // bad version 
  
 
@@ -2319,9 +2383,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      InitNew (gameskill, gameepisode, gamemap); 
 
      // get the times 
-     //a = *save_p++; 
-     //b = *save_p++; 
-     //c = *save_p++; 
      leveltime = header.getLeveltime(); 
 
      // dearchive all the modifications
@@ -2480,12 +2541,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (episode < 1)
             episode = 1; 
 
-        if ( gamemode == GameMode_t.retail )
+        if ( isRetail() )
         {
             if (episode > 4)
                 episode = 4;
         }
-        else if ( gamemode == GameMode_t.shareware )
+        else if ( isShareware() )
         {
             if (episode > 1) 
                 episode = 1; // only start episode 1 on shareware
@@ -2502,7 +2563,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             map = 1;
 
         if ( (map > 9)
-                && ( gamemode != GameMode_t.commercial) )
+                && ( !isCommercial()))
             map = 9; 
 
         RND.ClearRandom (); 
@@ -2548,7 +2609,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         viewactive = true;
 
         // set the sky map for the episode
-        if ( gamemode == GameMode_t.commercial)
+        if ( isCommercial())
         {
             TM.setSkyTexture(TM.TextureNumForName ("SKY3"));
             if (gamemap < 12)
@@ -3745,6 +3806,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.41  2011/05/21 14:40:56  velktron
+//Hid gamemode behind specific getters.
+//
 //Revision 1.40  2011/05/20 14:49:01  velktron
 //Added more DoomGame compliance, implemented loading savegames.
 //
