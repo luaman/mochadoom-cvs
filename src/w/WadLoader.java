@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.31 2011/05/18 16:58:11 velktron Exp $
+// $Id: WadLoader.java,v 1.32 2011/05/22 21:08:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.32  2011/05/22 21:08:28  velktron
+// Added better filename handling.
+//
 // Revision 1.31  2011/05/18 16:58:11  velktron
 // Changed to DoomStatus
 //
@@ -236,9 +239,6 @@ public class WadLoader implements IWadLoader {
 	 */
 
 	protected String ExtractFileBase(String path) {
-		StringBuffer dest = new StringBuffer(8);
-
-		int length = 0;
 		int src = path.length() - 1;
 		// Duh???
 
@@ -249,25 +249,24 @@ public class WadLoader implements IWadLoader {
 		 * '/') { src--; }
 		 */
 
-		// Maes: better use this, I think.
+		// Maes: better use this, I think. Now that TRULY is enterprise programming!
 
-		src = path.lastIndexOf('\\');
+		String separator=System.getProperty("file.separator");
+		src = path.lastIndexOf(separator);
+		// If proper separator is not found? 
+		// Filename is relative, 
 		if (src < 0)
 			src = path.lastIndexOf('/');
 		if (src < 0)
 			src = 0;
 
 		// copy UP to eight characters.
-		int pos = 0;
-		while ((pos < path.length()) && (path.charAt(pos) != '.')) {
-			if (++length == 9)
-				I.Error("Filename base of %s >8 chars", path);
-
-			dest.append(path.charAt(pos));
-			pos++;
-		}
-		// Uppercase ALL strings used in the retrieval system.
-		return new String(dest.substring(0,pos).toUpperCase());
+		// MAES: no more. Instead, try getting the pathname without
+		// extension, but allowing directories with . in their name
+		// So start from the end.
+		
+		int pos = path.lastIndexOf('.');
+		return path.substring(0,pos).toUpperCase();
 	}
 
 	//
