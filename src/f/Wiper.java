@@ -8,7 +8,7 @@ import m.random;
 
 public class Wiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.6 2010/12/15 16:12:19 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.7 2011/05/22 19:25:57 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -237,8 +237,8 @@ public class Wiper {
         int  ps;
         int  pd;
         
-        byte[] s=wipe_scr_end;
-        byte[] d=wipe_scr;
+        byte[] s;//=wipe_scr_end;
+        byte[] d;//=wipe_scr;
         
         boolean done = true;
 
@@ -262,18 +262,27 @@ public class Wiper {
             ps = i*height+y[i];// &((short *)wipe_scr_end)[i*height+y[i]];
             pd = y[i]*width+i;//&((short *)wipe_scr)[y[i]*width+i];
             idx = 0;
-            for (int j=dy;j>4;j-=4)
+
+            s=wipe_scr_end;
+            d=wipe_scr;
+
+            
+            // MAES: this part should draw the END SCREEN "behind" the melt.
+            for (int j=dy;j>0;j--)
             {
-                //if (pd+idx>width*height) break;
-                /*d[pd+idx] = s[ps++];
-                idx += width;*/
-                d[pd+idx] = s[ps];
-                d[pd+idx+width] = s[ps+1];
-                d[pd+idx+w2] = s[ps+2];
-                d[pd+idx+w3] = s[ps+3];                
-                idx += w4;
+    		    d[pd+idx] = s[ps++];
+    		    //System.out.println("Drew "+d[idx]+" at "+idx);
+    		    idx += width;
+            	//if (pd+idx>width*height) break;
+                //d[idx] = s[ps++];
+                //idx += width;
+                //d[pd+idx] = s[ps];
+                //d[pd+idx+width] = s[ps+1];
+                //d[pd+idx+w2] = s[ps+2];
+                //d[pd+idx+w3] = s[ps+3];                
+                //idx += w4;
                 //idx+=width;
-                ps+=4;
+                //ps+=4;
 
             }
             y[i] += dy;
@@ -282,15 +291,15 @@ public class Wiper {
             pd = y[i]*width+i; //&((short *)wipe_scr)[y[i]*width+i];
             idx = 0;
 
-            for (int j=height-y[i];j>4;j-=4)
+            for (int j=height-y[i];j>0;j--)
             {
-                d[pd+idx] = s[ps];
-                d[pd+idx+width] = s[ps+1];
-                d[pd+idx+w2] = s[ps+2];
-                d[pd+idx+w3] = s[ps+3];                
-                idx += w4;
-                //idx+=width;
-                ps+=4;
+                d[pd+idx] = s[ps++];
+                //d[pd+idx+width] = s[ps+1];
+                //d[pd+idx+w2] = s[ps+2];
+                //d[pd+idx+w3] = s[ps+3];                
+                //idx += w4;
+                idx+=width;
+                //ps+=4;
             }
             done = false;
             }
@@ -324,13 +333,13 @@ public class Wiper {
       int   width,
       int   height )
     {
-        wipe_scr_start = V.getScreen(3);
+        wipe_scr_start = V.getScreen(2);
         //
         
-        
+        byte[] screen_zero=V.getScreen(0);
         //I_ReadScreen(wipe_scr_start);
         
-        System.arraycopy(V.getScreen(0),0,wipe_scr_start, 0, SCREENWIDTH*SCREENHEIGHT);
+        System.arraycopy(screen_zero,0,wipe_scr_start, 0, SCREENWIDTH*SCREENHEIGHT);
         return false;
     }
 
@@ -343,11 +352,13 @@ public class Wiper {
       int   width,
       int   height )
     {
-        wipe_scr_end = V.getScreen(2);
+        wipe_scr_end = V.getScreen(3);
         //I_ReadScreen(wipe_scr_end);
+        byte[] screen_zero=V.getScreen(0);
         
-        System.arraycopy(V.getScreen(0),0,wipe_scr_end, 0, SCREENWIDTH*SCREENHEIGHT);
-        V.DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
+        System.arraycopy(screen_zero,0,wipe_scr_end, 0, SCREENWIDTH*SCREENHEIGHT);
+        System.arraycopy(wipe_scr_start,0,screen_zero, 0, SCREENWIDTH*SCREENHEIGHT);
+        //V.DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
         return false;
     }
 
@@ -370,7 +381,7 @@ public class Wiper {
         if (!go)
         {
         go = true;
-        // wipe_scr = (byte *) Z_Malloc(width*height, PU_STATIC, 0); // DEBUG
+        //wipe_scr = new byte[width*height]; // DEBUG
         wipe_scr = V.getScreen(0);
         // HOW'S THAT FOR A FUNCTION POINTER, BIATCH?!
         (wipes[wipeno*3]).invoke(width, height, ticks);
@@ -379,7 +390,7 @@ public class Wiper {
         // do a piece of wipe-in
         V.MarkRect(0, 0, width, height);
         rc = (wipes[wipeno*3+1]).invoke(width, height, ticks);
-        //  V_DrawBlock(x, y, 0, width, height, wipe_scr); // DEBUG
+        // V.DrawBlock(x, y, 0, width, height, wipe_scr); // DEBUG
 
         // final stuff
         if (rc)
