@@ -81,17 +81,19 @@ public class AssWipeTester {
     int TICKS=10;
     int frames=0;
     for (int i=0;i<TICKS;i++){
-        V.DrawPatch(0, 0, 0, credit);
-        V.DrawPatch(320, 0, 0, credit);
+        V.DrawPatch(0, 0, 0, titlepic);
         wipe.StartScreen(0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT);
-                V.DrawPatch(0, 0, 0, titlepic);
-                V.DrawPatch(320, 0, 0, titlepic);
+        V.DrawPatch(0, 0, 0, credit);
         wipe.EndScreen(0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT);
         
         int wipestart = DC.I.GetTime () - 1;
         int nowtime;
         int tics;
         boolean done;
+        
+        patch_t tmp=credit;
+        credit=titlepic;
+        titlepic=tmp;
     //wipe.ScreenWipe(Wiper.wipe.Melt.ordinal(), 0, 0,  Defines.SCREENWIDTH, Defines.SCREENHEIGHT, TICKS-i);
 
     //ST.Drawer(false,true);
@@ -105,8 +107,8 @@ public class AssWipeTester {
         tics = nowtime - wipestart;
     } while (tics<1);
     wipestart = nowtime;
-    V.DrawPatch(0, 0, 0, titlepic);
-    V.DrawPatch(320, 0, 0, titlepic);
+    //V.DrawPatch(0, 0, 0, titlepic);
+    //V.DrawPatch(320, 0, 0, titlepic);
     done = wipe.ScreenWipe(Wiper.wipe.Melt.ordinal()
                    , 0, 0, Defines.SCREENWIDTH, Defines.SCREENHEIGHT, tics);
     //I_UpdateNoBlit ();
