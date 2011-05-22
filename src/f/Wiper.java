@@ -8,7 +8,7 @@ import m.random;
 
 public class Wiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.7 2011/05/22 19:25:57 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.8 2011/05/22 21:10:20 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -18,6 +18,8 @@ public class Wiper {
     public static enum wipe
     {
         // simple gradual pixel change for 8-bit only
+    	// MAES: this transition isn't guaranteed to always terminate
+    	// see Chocolate Strife develpment. Unused in Doom anyway.
         ColorXForm,
         
         // weird screen melt
@@ -226,9 +228,9 @@ public class Wiper {
       int   ticks )
     {
             
-            int w2=2*width;
-            int w3=3*width;
-            int w4=4*width;
+        //   int w2=2*width;
+        //    int w3=3*width;
+        //    int w4=4*width;
 
         int     dy;
         int     idx;
@@ -238,7 +240,7 @@ public class Wiper {
         int  pd;
         
         byte[] s;//=wipe_scr_end;
-        byte[] d;//=wipe_scr;
+        byte[] d=wipe_scr;
         
         boolean done = true;
 
@@ -264,26 +266,14 @@ public class Wiper {
             idx = 0;
 
             s=wipe_scr_end;
-            d=wipe_scr;
+            
 
             
             // MAES: this part should draw the END SCREEN "behind" the melt.
             for (int j=dy;j>0;j--)
             {
     		    d[pd+idx] = s[ps++];
-    		    //System.out.println("Drew "+d[idx]+" at "+idx);
     		    idx += width;
-            	//if (pd+idx>width*height) break;
-                //d[idx] = s[ps++];
-                //idx += width;
-                //d[pd+idx] = s[ps];
-                //d[pd+idx+width] = s[ps+1];
-                //d[pd+idx+w2] = s[ps+2];
-                //d[pd+idx+w3] = s[ps+3];                
-                //idx += w4;
-                //idx+=width;
-                //ps+=4;
-
             }
             y[i] += dy;
             s=wipe_scr_start;
@@ -294,12 +284,7 @@ public class Wiper {
             for (int j=height-y[i];j>0;j--)
             {
                 d[pd+idx] = s[ps++];
-                //d[pd+idx+width] = s[ps+1];
-                //d[pd+idx+w2] = s[ps+2];
-                //d[pd+idx+w3] = s[ps+3];                
-                //idx += w4;
                 idx+=width;
-                //ps+=4;
             }
             done = false;
             }

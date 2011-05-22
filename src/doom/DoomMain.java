@@ -37,6 +37,7 @@ import data.sounds.sfxenum_t;
 import static data.Defines.BACKUPTICS;
 import static data.Defines.KEY_ESCAPE;
 import static data.Defines.NORMALUNIX;
+import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
@@ -67,7 +68,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.42 2011/05/21 16:58:38 velktron Exp $
+// $Id: DoomMain.java,v 1.43 2011/05/22 21:10:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -93,7 +94,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.42 2011/05/21 16:58:38 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.43 2011/05/22 21:10:38 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -218,12 +219,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             break;
         }
 
-        // draw buffered stuff to screen
-        VI.UpdateNoBlit ();
 
         // draw the view directly
-        if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic))
-            R.RenderPlayerView (players[displayplayer]);    
+        if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
+            R.RenderPlayerView (players[displayplayer]);
+            if (wipe){   
+            	System.out.println("Player view RENDERED before wipe!");
+            }
+        }
 
         // Automap was active, update only HU.    
         if (gamestate == gamestate_t.GS_LEVEL && eval(gametic))
@@ -284,7 +287,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             return;
         }
 
-        // wipe update
+        // wipe update. At this point, AT LEAST one frame of the game must have been
+        // rendered for this to work. 22/5/2011: Fixed a vexing bug with the wiper.
+        // Jesus Christ with a Super Shotgun!
         WIPE.EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
         wipestart = I.GetTime () - 1;
@@ -303,17 +308,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             M.Drawer ();                            // menu is drawn even on top of wipes
             VI.FinishUpdate ();                      // page flip or blit buffer
         } while (!done);
-        //wipestart = I.GetTime ();
 
-        // Fixme: lame way to limit speed :-/
-        /*while (wipestart-I.GetTime()>-1){
-    	try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    }*/
     }
 
 
@@ -3464,9 +3459,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     boolean[] gotinfo=new boolean[MAXNETNODES];
 
-    //
-    // D_ArbitrateNetStart
-    //
+    /**
+     * D_ArbitrateNetStart
+     *
+     * 
+     */
     public void ArbitrateNetStart ()
     {
         int     i;
@@ -3815,6 +3812,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.43  2011/05/22 21:10:38  velktron
+//Fixed an INCREDIBLY stupid bug in the wiper code, which prevented it from working correctly all this time -_-
+//
 //Revision 1.42  2011/05/21 16:58:38  velktron
 //Added automatic detection of Ultimate Doom in doom.wad file.
 //
