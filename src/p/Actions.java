@@ -79,10 +79,12 @@ import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.*;
 
 import static p.mobj_t.*;
+import rr.drawseg_t;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
 import rr.subsector_t;
+import utils.C2JUtils;
 import data.Tables;
 import data.mapthing_t;
 import data.mobjinfo_t;
@@ -5394,6 +5396,19 @@ mobj_t  thing )
     public line_t[]        spechit=new line_t[MAXSPECIALCROSS];
     public int     numspechit;
     
+    
+    protected final void ResizeSpechits() {
+    	line_t[] tmp=new line_t[spechit.length*2];
+        System.arraycopy(spechit, 0, tmp, 0, spechit.length);
+        
+        C2JUtils.initArrayOfObjects(tmp,spechit.length,tmp.length);
+        
+        // Bye bye, old spechit.
+        spechit=tmp;   
+       
+        System.out.println("Spechit capacity resized. Actual capacity "+spechit.length);
+    }    
+    
     /** Dispatch "PTR" Traverse function pointers */
 
     public boolean dispatch(PTR what, intercept_t arg){
@@ -5563,10 +5578,13 @@ mobj_t  thing )
         {
         spechit[numspechit] = ld;
         numspechit++;
+        // Let's be proactive about this.
+        if (numspechit>=spechit.length) this.ResizeSpechits();
         }
 
         return true;
         }
+
             
     /**PIT_CheckThing  */
 

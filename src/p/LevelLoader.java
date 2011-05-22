@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.21 2011/05/21 14:53:57 velktron Exp $
+// $Id: LevelLoader.java,v 1.22 2011/05/22 21:09:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.22  2011/05/22 21:09:34  velktron
+// Added spechit overflow handling, and unused linedefs (with -1 sector) handling.
+//
 // Revision 1.21  2011/05/21 14:53:57  velktron
 // Adapted to use new gamemode system.
 //
@@ -166,7 +169,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.21 2011/05/21 14:53:57 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.22 2011/05/22 21:09:34 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -603,11 +606,18 @@ public int bmaporgy;
       sd.toptexture = (short) TM.TextureNumForName(msd.toptexture);
       sd.bottomtexture = (short) TM.TextureNumForName(msd.bottomtexture);
       sd.midtexture = (short) TM.TextureNumForName(msd.midtexture);
+      if (msd.sector<0) sd.sector=dummy_sector;
+      else
       sd.sector = sectors[msd.sector];
       }
   }
 
-
+  // MAES 22/5/2011 This hack added for PHOBOS2.WAD, in order to
+  // accomodate for some linedefs having a sector number of "-1".
+  // Any negative sector will get rewired to this dummy sector.
+  // PROBABLY, this will handle unused sector/linedefes cleanly?
+  sector_t dummy_sector=new sector_t(); 
+  
   /**
    * P_LoadBlockMap
    * @throws IOException
