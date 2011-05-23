@@ -85,10 +85,8 @@ public class Menu extends MenuMisc implements IDoomMenu{
     /** WTF?! */
 
     boolean message_dontfuckwithme;
-
-    /** defaulted values */
     
-    int mouseSensitivity; // has default
+    // int mouseSensitivity; // has default
 
     /** Show messages has default, 0 = off, 1 = on */
 
@@ -1576,7 +1574,7 @@ public class Menu extends MenuMisc implements IDoomMenu{
                     * messages, 0, W.CachePatchName(msgNames[showMessages?1:0]));
 
             DrawThermo(OptionsDef.x, OptionsDef.y + LINEHEIGHT
-                    * (mousesens + 1), 10, mouseSensitivity);
+                    * (mousesens + 1), 10, DM.mouseSensitivity);
 
             DrawThermo(OptionsDef.x,
                 OptionsDef.y + LINEHEIGHT * (scrnsize + 1), 9, screenSize);
@@ -1708,12 +1706,12 @@ public class Menu extends MenuMisc implements IDoomMenu{
         public void invoke(int choice) {
             switch (choice) {
             case 0:
-                if (mouseSensitivity != 0)
-                    mouseSensitivity--;
+                if (DM.mouseSensitivity != 0)
+                	DM.mouseSensitivity--;
                 break;
             case 1:
-                if (mouseSensitivity < 9)
-                    mouseSensitivity++;
+                if (DM.mouseSensitivity < 9)
+                	DM.mouseSensitivity++;
                 break;
             }
         }
