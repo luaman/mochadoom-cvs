@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.26 2011/05/21 15:00:14 velktron Exp $
+// $Id: StatusBar.java,v 1.27 2011/05/23 16:59:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.27  2011/05/23 16:59:02  velktron
+// Migrated to VideoScaleInfo.
+//
 // Revision 1.26  2011/05/21 15:00:14  velktron
 // Adapted to use new gamemode system.
 //
@@ -149,11 +152,13 @@ import rr.RendererState;
 import rr.patch_t;
 import s.IDoomSound;
 import v.DoomVideoRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 import w.IWadLoader;
 
-public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
+public class StatusBar implements DoomStatusBarInterface, DoomStatusAware, IVideoScaleAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.26 2011/05/21 15:00:14 velktron Exp $";
+        "$Id: StatusBar.java,v 1.27 2011/05/23 16:59:02 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -175,17 +180,6 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     
     // Size of statusbar.
     // Now sensitive for scaling.
-    public static int ST_HEIGHT = (int) (32 * SCREEN_MUL);
-
-    public static int ST_WIDTH = SCREENWIDTH;
-
-    public static int ST_Y = (SCREENHEIGHT - ST_HEIGHT);
-
-    /** Points to "screen 4" which is treated as a buffer */
-    public static int BG = 4;
-    
-    /** Points to "screen 0" which is what you actually see */
-    public static int FG = 0;
 
     //
     // STATUS BAR DATA
@@ -212,13 +206,10 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     private static int ST_TOGGLECHAT = KEY_ENTER;
 
     // Location of status bar
-    private static int ST_X = 0;
-
-    private static int ST_X2 = (int) (104*SCREEN_MUL);
-
-    private static int ST_FX = (int) (143*SCREEN_MUL);
-
-    private static int ST_FY = (int) (169*SCREEN_MUL);
+    private int ST_X = 0;
+    private int ST_X2;
+    private int ST_FX;
+    private int ST_FY;
 
     // Should be set to patch width
     // for tall numbers later on
@@ -253,9 +244,9 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
 
     private static int ST_DEADFACE = (ST_GODFACE + 1);
 
-    private static int ST_FACESX = (int) (143*SCREEN_MUL);
+    private int ST_FACESX;
 
-    private static int ST_FACESY = (int) (168*SCREEN_MUL);
+    private int ST_FACESY;
 
     private static int ST_EVILGRINCOUNT = (2 * TICRATE);
 
@@ -278,161 +269,132 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     // or into the frame buffer?
 
     // AMMO number pos.
-    private static int ST_AMMOWIDTH = 3;
-
-    private static int ST_AMMOX = (int) (44*SCREEN_MUL);
-
-    private static int ST_AMMOY = (int) (171*SCREEN_MUL);
+    private int ST_AMMOWIDTH;
+    private int ST_AMMOX;
+    private int ST_AMMOY;
 
     // HEALTH number pos.
-    private static int ST_HEALTHWIDTH = 3;
-
-    private static int ST_HEALTHX = (int) (90*SCREEN_MUL);
-
-    private static int ST_HEALTHY = (int) (171*SCREEN_MUL);
+    private int ST_HEALTHWIDTH=3;
+    private int ST_HEALTHX;
+    private int ST_HEALTHY;
 
     // Weapon pos.
-    private static int ST_ARMSX = (int) (111*SCREEN_MUL);
-
-    private static int ST_ARMSY = (int) (172*SCREEN_MUL);
-
-    private static int ST_ARMSBGX = (int) (104*SCREEN_MUL);
-
-    private static int ST_ARMSBGY = (int) (168*SCREEN_MUL);
-
-    private static int ST_ARMSXSPACE = 12;
-
-    private static int ST_ARMSYSPACE = 10;
+    private int ST_ARMSX;
+    private int ST_ARMSY;
+    private int ST_ARMSBGX;
+    private int ST_ARMSBGY;
+    private int ST_ARMSXSPACE;
+    private int ST_ARMSYSPACE;
 
     // Frags pos.
-    private static int ST_FRAGSX = (int) (138*SCREEN_MUL);
-
-    private static int ST_FRAGSY = (int) (171*SCREEN_MUL);
-
-    private static int ST_FRAGSWIDTH = 2;
+    private int ST_FRAGSX;
+    private int ST_FRAGSY;
+    private int ST_FRAGSWIDTH;
 
     // ARMOR number pos.
-    private static int ST_ARMORWIDTH = 3;
+    private int ST_ARMORWIDTH = 3;
 
-    private static int ST_ARMORX = (int) (221*SCREEN_MUL);
+    private int ST_ARMORX;
 
-    private static int ST_ARMORY = (int) (171*SCREEN_MUL);
+    private int ST_ARMORY;
 
     // Key icon positions.
-    private static int ST_KEY0WIDTH = 8;
+    private int ST_KEY0WIDTH;
+    private int ST_KEY0HEIGHT;
+    private int ST_KEY0X;
+    private int ST_KEY0Y;
 
-    private static int ST_KEY0HEIGHT = 5;
+    private int ST_KEY1WIDTH;
+    private int ST_KEY1X;
+    private int ST_KEY1Y;
 
-    private static int ST_KEY0X = (int) (239*SCREEN_MUL);
-
-    private static int ST_KEY0Y = (int) (171*SCREEN_MUL);
-
-    private static int ST_KEY1WIDTH = ST_KEY0WIDTH;
-
-    private static int ST_KEY1X = (int) (239*SCREEN_MUL);
-
-    private static int ST_KEY1Y = (int) (181*SCREEN_MUL);
-
-    private static int ST_KEY2WIDTH = ST_KEY0WIDTH;
-
-    private static int ST_KEY2X = (int) (239*SCREEN_MUL);
-
-    private static int ST_KEY2Y = (int) (191*SCREEN_MUL);
+    private int ST_KEY2WIDTH;
+    private int ST_KEY2X;
+    private int ST_KEY2Y;
 
     // Ammunition counter.
-    private static int ST_AMMO0WIDTH = 3;
+    private int ST_AMMO0WIDTH;
+    private int ST_AMMO0HEIGHT;
 
-    private static int ST_AMMO0HEIGHT = 6;
+    private int ST_AMMO0X;
+    private int ST_AMMO0Y;
 
-    private static int ST_AMMO0X = (int) (288*SCREEN_MUL);
+    private int ST_AMMO1WIDTH;
 
-    private static int ST_AMMO0Y = (int) (173*SCREEN_MUL);
+    private int ST_AMMO1X;
 
-    private static int ST_AMMO1WIDTH = ST_AMMO0WIDTH;
+    private int ST_AMMO1Y;
 
-    private static int ST_AMMO1X = (int) (288*SCREEN_MUL);
+    private int ST_AMMO2WIDTH;
 
-    private static int ST_AMMO1Y = (int) (179*SCREEN_MUL);
+    private int ST_AMMO2X;
 
-    private static int ST_AMMO2WIDTH = ST_AMMO0WIDTH;
+    private int ST_AMMO2Y;
 
-    private static int ST_AMMO2X = (int) (288*SCREEN_MUL);
+    private int ST_AMMO3WIDTH;
 
-    private static int ST_AMMO2Y = (int) (191*SCREEN_MUL);
+    private int ST_AMMO3X;
 
-    private static int ST_AMMO3WIDTH = ST_AMMO0WIDTH;
-
-    private static int ST_AMMO3X = (int) (288*SCREEN_MUL);
-
-    private static int ST_AMMO3Y = (int) (185*SCREEN_MUL);
+    private int ST_AMMO3Y;
 
     // Indicate maximum ammunition.
     // Only needed because backpack exists.
-    private static int ST_MAXAMMO0WIDTH = 3;
+    private int ST_MAXAMMO0WIDTH;
 
-    private static int ST_MAXAMMO0HEIGHT = 5;
+    private int ST_MAXAMMO0HEIGHT;
 
-    private static int ST_MAXAMMO0X = (int) (314*SCREEN_MUL);
+    private int ST_MAXAMMO0X;
 
-    private static int ST_MAXAMMO0Y = (int) (173*SCREEN_MUL);
+    private int ST_MAXAMMO0Y;
 
-    private static int ST_MAXAMMO1WIDTH = ST_MAXAMMO0WIDTH;
+    private int ST_MAXAMMO1WIDTH;
 
-    private static int ST_MAXAMMO1X = 314;
+    private int ST_MAXAMMO1X;
 
-    private static int ST_MAXAMMO1Y = (int) (179*SCREEN_MUL);
+    private int ST_MAXAMMO1Y;
 
-    private static int ST_MAXAMMO2WIDTH = ST_MAXAMMO0WIDTH;
+    private int ST_MAXAMMO2WIDTH;
 
-    private static int ST_MAXAMMO2X = (int) (314*SCREEN_MUL);
+    private int ST_MAXAMMO2X;
 
-    private static int ST_MAXAMMO2Y = (int) (191*SCREEN_MUL);
+    private int ST_MAXAMMO2Y;
 
-    private static int ST_MAXAMMO3WIDTH = ST_MAXAMMO0WIDTH;
+    private int ST_MAXAMMO3WIDTH;
 
-    private static int ST_MAXAMMO3X = (int) (314*SCREEN_MUL);
-
-    private static int ST_MAXAMMO3Y = (int) (185*SCREEN_MUL);
-
+    private int ST_MAXAMMO3X;
+    private int ST_MAXAMMO3Y;
+    
     // pistol
-    private static int ST_WEAPON0X = (int) (110*SCREEN_MUL);
-
-    private static int ST_WEAPON0Y = (int) (172*SCREEN_MUL);
+    private int ST_WEAPON0X;
+    private int ST_WEAPON0Y;
 
     // shotgun
-    private static int ST_WEAPON1X = (int) (122*SCREEN_MUL);
-
-    private static int ST_WEAPON1Y = (int) (172*SCREEN_MUL);
+    private int ST_WEAPON1X;
+    private int ST_WEAPON1Y;
 
     // chain gun
-    private static int ST_WEAPON2X = (int) (134*SCREEN_MUL);
-
-    private static int ST_WEAPON2Y = (int) (172*SCREEN_MUL);
+    private int ST_WEAPON2X;
+    private int ST_WEAPON2Y;
 
     // missile launcher
-    private static int ST_WEAPON3X = (int) (110*SCREEN_MUL);
-
-    private static int ST_WEAPON3Y = (int) (181*SCREEN_MUL);
+    private int ST_WEAPON3X;
+    private int ST_WEAPON3Y;
 
     // plasma gun
-    private static int ST_WEAPON4X = (int) (122*SCREEN_MUL);
-
-    private static int ST_WEAPON4Y = (int) (181*SCREEN_MUL);
+    private int ST_WEAPON4X;
+    private int ST_WEAPON4Y;
 
     // bfg
-    private static int ST_WEAPON5X = (int) (134*SCREEN_MUL);
-
-    private static int ST_WEAPON5Y = (int) (181*SCREEN_MUL);
+    private int ST_WEAPON5X;
+    private int ST_WEAPON5Y;
 
     // WPNS title
-    private static int ST_WPNSX = (int) (109*SCREEN_MUL);
-
-    private static int ST_WPNSY = (int) (191*SCREEN_MUL);
+    private int ST_WPNSX;
+    private int ST_WPNSY;
 
     // DETH title
-    private static int ST_DETHX = (int) (109*SCREEN_MUL);
-
-    private static int ST_DETHY = (int) (191*SCREEN_MUL);
+    private int ST_DETHX;
+    private int ST_DETHY;
 
     // Incoming messages window location
     // UNUSED
@@ -689,7 +651,8 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
     public void refreshBackground() {
 
         if (st_statusbaron[0]) {
-            V.DrawPatch(ST_X, 0, BG, sbar);
+            V.DrawPatchSolidScaled(ST_X, 0, SAFE_SCALE, SAFE_SCALE, BG, sbar);
+            //V.DrawPatch(ST_X, 0, BG, sbar);
 
             if (DM.netgame)
                 V.DrawPatch(ST_FX, 0, BG, faceback);
@@ -877,10 +840,10 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
                      * players[consoleplayer].mo.y);
                      */
                     mobj_t mo = DM.players[DM.consoleplayer].mo;
-                    plyr.message =
-                        "ang=0x" + Long.toHexString(mo.angle) + "0x"
-                                + Integer.toHexString(mo.x) + "0x"
-                                + Integer.toHexString(mo.y);
+                    plyr.message = String.format("ang= 0x%x; x,y= (0x%x, 0x%x)",
+                                Integer.toHexString((int) mo.angle) + "0x",
+                                Integer.toHexString(mo.x) + "0x",
+                                Integer.toHexString(mo.y));
                 }
             }
 
@@ -1234,7 +1197,7 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         int i;
 
         // used by w_arms[] widgets
-        st_armson[0] = st_statusbaron[0] && !(DM.deathmatch);
+        st_armson[0] = st_statusbaron[0] && !(DM.altdeath||DM.deathmatch);
 
         // used by w_frags widget
         st_fragson[0] = DM.deathmatch && st_statusbaron[0];
@@ -1864,5 +1827,175 @@ public class StatusBar implements DoomStatusBarInterface, DoomStatusAware {
         this.VI=DC.VI;
         this.I=DC.I;
     }
+	
+	// Size of statusbar.
+	// Now sensitive for scaling.
+	public static int ST_HEIGHT;
+	public static int ST_WIDTH;
+	public static int ST_Y;
 
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+	protected int SCREENWIDTH;
+	protected int SCREENHEIGHT;
+	protected int SAFE_SCALE;
+	protected IVideoScale vs;
+
+
+	@Override
+	public void setVideoScale(IVideoScale vs) {
+	    this.vs=vs;
+	}
+
+	@Override
+	public void initScaling() {
+	    SCREENHEIGHT=vs.getScreenHeight();
+	    SCREENWIDTH=vs.getScreenWidth();
+	    SAFE_SCALE=vs.getSafeScaling();
+	    
+	    // Pre-scale stuff.
+	    ST_HEIGHT =32*SAFE_SCALE;
+	    ST_WIDTH  =SCREENWIDTH;
+	    ST_Y      =(SCREENHEIGHT - ST_HEIGHT);
+	    ST_X2 = (int) (104*SAFE_SCALE);
+	    ST_FX = (int) (143*SAFE_SCALE);
+	    ST_FY = (int) (169*SAFE_SCALE);
+	    ST_FACESX = (int) (143*SAFE_SCALE);
+
+	    ST_FACESY = (int) (168*SAFE_SCALE);
+	    
+	     // AMMO number pos.
+	     ST_AMMOWIDTH= 3;	    
+	     ST_AMMOX = (int) (44*SAFE_SCALE);
+	     ST_AMMOY = (int) (171*SAFE_SCALE);
+
+	     // HEALTH number pos
+	     ST_HEALTHWIDTH= 3;
+	     ST_HEALTHX = (int) (90*SAFE_SCALE);
+	     ST_HEALTHY = (int) (171*SAFE_SCALE);
+
+	    // Weapon pos.
+	     ST_ARMSX = (int) (111*SAFE_SCALE);
+	     ST_ARMSY = (int) (172*SAFE_SCALE);
+	     ST_ARMSBGX = (int) (104*SAFE_SCALE);
+	     ST_ARMSBGY = (int) (168*SAFE_SCALE);
+	     ST_ARMSXSPACE = 12*SAFE_SCALE;;
+	     ST_ARMSYSPACE = 10*SAFE_SCALE;;
+	     
+	     // Frags pos.
+	     ST_FRAGSX = (int) (138*SAFE_SCALE);
+	     ST_FRAGSY = (int) (171*SAFE_SCALE);
+	     ST_FRAGSWIDTH=2;
+	     
+	     //
+	     
+
+	     
+	     ST_ARMORX = (int) (221*SAFE_SCALE);
+
+	     ST_ARMORY = (int) (171*SAFE_SCALE);
+
+	     // Key icon positions.
+	     ST_KEY0WIDTH = 8*SAFE_SCALE;;
+	     ST_KEY0HEIGHT = 5*SAFE_SCALE;;
+	     
+	     ST_KEY0X = (int) (239*SAFE_SCALE);
+	     ST_KEY0Y = (int) (171*SAFE_SCALE);
+
+	     ST_KEY1WIDTH = ST_KEY0WIDTH;
+	     ST_KEY1X = (int) (239*SAFE_SCALE);
+	     ST_KEY1Y = (int) (181*SAFE_SCALE);
+
+	     ST_KEY2WIDTH = ST_KEY0WIDTH;
+	     ST_KEY2X = (int) (239*SAFE_SCALE);
+	     ST_KEY2Y = (int) (191*SAFE_SCALE);
+
+	    // Ammunition counter.
+	    ST_AMMO0WIDTH = 3*SAFE_SCALE;;
+	    ST_AMMO0HEIGHT = 6*SAFE_SCALE;;
+
+	     ST_AMMO0X = (int) (288*SAFE_SCALE);
+
+	     ST_AMMO0Y = (int) (173*SAFE_SCALE);
+
+	    ST_AMMO1WIDTH = ST_AMMO0WIDTH;
+
+	     ST_AMMO1X = (int) (288*SAFE_SCALE);
+
+	     ST_AMMO1Y = (int) (179*SAFE_SCALE);
+
+	    ST_AMMO2WIDTH = ST_AMMO0WIDTH;
+
+	     ST_AMMO2X = (int) (288*SAFE_SCALE);
+
+	     ST_AMMO2Y = (int) (191*SAFE_SCALE);
+
+	    ST_AMMO3WIDTH = ST_AMMO0WIDTH;
+
+	     ST_AMMO3X = (int) (288*SAFE_SCALE);
+
+	     ST_AMMO3Y = (int) (185*SAFE_SCALE);
+
+	    // Indicate maximum ammunition.
+	    // Only needed because backpack exists.
+	    ST_MAXAMMO0WIDTH = 3*SAFE_SCALE;;
+	    ST_MAXAMMO0HEIGHT = 5*SAFE_SCALE;;
+
+	     ST_MAXAMMO0X = (int) (314*SAFE_SCALE);
+	     ST_MAXAMMO0Y = (int) (173*SAFE_SCALE);
+
+	    ST_MAXAMMO1WIDTH = ST_MAXAMMO0WIDTH;
+	    ST_MAXAMMO1X = 314*SAFE_SCALE;;
+	     ST_MAXAMMO1Y = (int) (179*SAFE_SCALE);
+
+	    ST_MAXAMMO2WIDTH = ST_MAXAMMO0WIDTH;
+	     ST_MAXAMMO2X = (int) (314*SAFE_SCALE);
+	     ST_MAXAMMO2Y = (int) (191*SAFE_SCALE);
+
+	    ST_MAXAMMO3WIDTH = ST_MAXAMMO0WIDTH;
+	     ST_MAXAMMO3X = (int) (314*SAFE_SCALE);
+	     ST_MAXAMMO3Y = (int) (185*SAFE_SCALE);
+
+	    // pistol
+	     ST_WEAPON0X = (int) (110*SAFE_SCALE);
+	     ST_WEAPON0Y = (int) (172*SAFE_SCALE);
+
+	    // shotgun
+	     ST_WEAPON1X = (int) (122*SAFE_SCALE);
+	     ST_WEAPON1Y = (int) (172*SAFE_SCALE);
+
+	    // chain gun
+	     ST_WEAPON2X = (int) (134*SAFE_SCALE);
+
+	     ST_WEAPON2Y = (int) (172*SAFE_SCALE);
+
+	    // missile launcher
+	     ST_WEAPON3X = (int) (110*SAFE_SCALE);
+
+	     ST_WEAPON3Y = (int) (181*SAFE_SCALE);
+
+	    // plasma gun
+	     ST_WEAPON4X = (int) (122*SAFE_SCALE);
+
+	     ST_WEAPON4Y = (int) (181*SAFE_SCALE);
+
+	    // bfg
+	     ST_WEAPON5X = (int) (134*SAFE_SCALE);
+
+	     ST_WEAPON5Y = (int) (181*SAFE_SCALE);
+
+	    // WPNS title
+	     ST_WPNSX = (int) (109*SAFE_SCALE);
+
+	     ST_WPNSY = (int) (191*SAFE_SCALE);
+
+	    // DETH title
+	     ST_DETHX = (int) (109*SAFE_SCALE);
+
+	     ST_DETHY = (int) (191*SAFE_SCALE);
+
+	    
+	}
+
+	
 }

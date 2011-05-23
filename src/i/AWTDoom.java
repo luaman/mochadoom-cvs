@@ -42,6 +42,7 @@ import java.awt.Image;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
@@ -149,11 +150,13 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
         	this.cmap=cmap;
         	this.width=V.getWidth();
         	this.height=V.getHeight();
-        	
-
+        	this.center=new Point (width/2, height/2);
+        	this.rect=new Rectangle((int)(width/10),(int)(0.1*height/10),9*width/10,9*height/10);
         // Don't do anything yet until InitGraphics is called.
         }
         
+        Point center;
+        Rectangle rect;
         public void setPalette(int pal){
             this.palette=pal;            
         }
@@ -384,7 +387,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			event.data2 = event.data3 = 0;
 			event.type=evtype_t.ev_mouse;
 			DM.PostEvent(event);
-			//System.err.println( "b");
+			System.err.println( "b");
 			break;
 			// ButtonRelease
 		    case Event.MOUSE_UP:
@@ -398,11 +401,11 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			event.data1 =
 			    event.data1
 			    ^ (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0)
-			    ^ (MEV.getButton() == MouseEvent.BUTTON3 ? 2 : 0)
-			    ^ (MEV.getButton() == MouseEvent.BUTTON2 ? 4 : 0);
+			    ^ (MEV.getButton() == MouseEvent.BUTTON3 ? 2: 0)
+			    ^ (MEV.getButton() == MouseEvent.BUTTON2 ? 4: 0);
 			event.data2 = event.data3 = 0;
 			DM.PostEvent(event);
-			//System.err.println("bu");
+			System.err.println("bu");
 			break;
 		    // MotionNotify:
 		    case Event.MOUSE_MOVE:
@@ -425,7 +428,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			    		MEV.getY() != this.getHeight()/2)
 			    {
 				DM.PostEvent(event);
-				//System.err.println( "m");
+				System.err.println( "m");
 				mousemoved = false;
 			    } else
 			    {
@@ -787,9 +790,15 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 		  {
 		      if (doPointerWarp--<=0)
 		  {
-			  robby.mouseMove(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2);
+			  Point p=this.getMousePosition();
+			  if (p==null){
+		      robby.mouseMove(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2);
+			  lastmousex=this.getMousePosition().x;
+			  lastmousey=this.getMousePosition().y;
+			  doPointerWarp = POINTER_WARP_COUNTDOWN*15;
+			  }
 		  } 
-		      doPointerWarp = POINTER_WARP_COUNTDOWN;
+		      
 	    }
 
 		 mousemoved = false;

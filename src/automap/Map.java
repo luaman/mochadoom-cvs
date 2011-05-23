@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.23 2011/05/17 16:50:02 velktron Exp $
+// $Id: Map.java,v 1.24 2011/05/23 16:57:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.24  2011/05/23 16:57:39  velktron
+// Migrated to VideoScaleInfo.
+//
 // Revision 1.23  2011/05/17 16:50:02  velktron
 // Switched to DoomStatus
 //
@@ -114,9 +117,9 @@ import static data.Limits.*;
 import static m.fixed_t.*;
 import static doom.englsh.*;
 import static data.Tables.*;
+import i.DoomStatusAware;
 import p.LevelLoader;
 import p.mobj_t;
-import doom.DoomContext;
 import doom.DoomMain;
 import doom.DoomStatus;
 import doom.event_t;
@@ -126,10 +129,12 @@ import rr.patch_t;
 import st.DoomStatusBarInterface;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 import w.IWadLoader;
 import m.cheatseq_t;
 
-public class Map implements DoomAutoMap{
+public class Map implements DoomAutoMap, DoomStatusAware,IVideoScaleAware{
 
 /////////////////// Status objects ///////////////////
     
@@ -140,7 +145,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.23 2011/05/17 16:50:02 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.24 2011/05/23 16:57:39 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -337,8 +342,8 @@ protected boolean  grid = false;
 
 protected int  leveljuststarted = 1;   // kluge until AM_LevelInit() is called
 
-protected int  finit_width = SCREENWIDTH;
-protected int  finit_height = SCREENHEIGHT - 32;
+protected int  finit_width;
+protected int  finit_height;
 
 // location of window on screen
 protected int  f_x;
@@ -1606,6 +1611,26 @@ public void updateStatus(DoomStatus DC) {
     this.LL=DC.LL;
     this.DM=DC.DM;
     this.ST=DC.ST;    
+}
+
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+protected int SCREENWIDTH;
+protected int SCREENHEIGHT;
+protected IVideoScale vs;
+
+public void setVideoScale(IVideoScale vs) {
+    this.vs=vs;
+}
+
+public void initScaling() {
+    this.SCREENHEIGHT=vs.getScreenHeight();
+    this.SCREENWIDTH=vs.getScreenWidth();
+
+    // Pre-scale stuff.
+    finit_width = SCREENWIDTH;
+    finit_height = SCREENHEIGHT - 32*vs.getSafeScaling();
+
 }
 
 }

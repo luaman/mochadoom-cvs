@@ -14,7 +14,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.37 2011/05/13 17:41:54 velktron Exp $
+// $Id: Defines.java,v 1.38 2011/05/23 16:57:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -67,37 +67,11 @@ public static final boolean RANGECHECK=false;
 //#define SNDSERV  1
 //#define SNDINTR  1
 
-//It is educational but futile to change this
-//scaling e.g. to 2. Drawing of status bar,
-//menues etc. is tied to the scale implied
-//by the graphics.
-
-public static float SCREEN_MUL =(float) 3.0;
-public static double INV_ASPECT_RATIO =   0.625; // 0.75, ideally
-
-//
-// For resize of screen, at start of game.
-// It will not work dynamically, see visplanes.
-//
-public static int BASE_WIDTH =     320;
-public static int BASE_HEIGHT=     (int) (INV_ASPECT_RATIO*320); // 200
-
-
 // Defines suck. C sucks.
 // C++ might sucks for OOP, but it sure is a better C.
 // So there.
 
-public static int SCREENWIDTH = (int) (BASE_WIDTH*SCREEN_MUL);
-//SCREEN_MUL*BASE_WIDTH //320
-public static int SCREENHEIGHT= (int) (SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO);
-
-public static final int BEST_X_SCALE = (int) Math.floor((float)SCREENWIDTH/(float)BASE_WIDTH);
-
-public static final int BEST_Y_SCALE = (int) Math.floor((float)SCREENHEIGHT/(float)BASE_HEIGHT);
-
-/** Safest global scaling for fixed stuff like menus, titlepic etc */
-
-public static final int SAFE_SCALE = Math.min(BEST_X_SCALE, BEST_Y_SCALE);
+// MAES: moved static defines out of here and into VideoScaleInfo.
 
 // State updates, number of tics / second.
 public static final int TICRATE = 35;
@@ -254,12 +228,7 @@ public static final int NUMMAPS     =9;
 public static final int WI_TITLEY       =2;
 public static final int WI_SPACINGY         =3;
 
-//SINGPLE-PLAYER STUFF
-public static final int SP_STATSX       =50;
-public static final int SP_STATSY      = 50;
-
-public static final int SP_TIMEX      =  16;
-public static final int SP_TIMEY      =  (SCREENHEIGHT-32);
+// MAES 23/5/2011: moved SP_... stuff to EndLevel
 
 
 //NET GAME STUFF
@@ -627,6 +596,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.37 2011/05/13 17:41:54 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.38 2011/05/23 16:57:57 velktron Exp $";
 }
 

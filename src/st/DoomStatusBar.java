@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomStatusBar.java,v 1.3 2011/02/11 00:11:13 velktron Exp $
+// $Id: DoomStatusBar.java,v 1.4 2011/05/23 16:59:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,40 +23,33 @@ package st;
 //
 //-----------------------------------------------------------------------------
 
-import static data.Defines.*;
 import doom.event_t;
 
 public interface DoomStatusBar {
 
-// Size of statusbar.
-// Now sensitive for scaling.
-public static int ST_HEIGHT	=(int) (32*SCREEN_MUL);
-public static int ST_WIDTH	=SCREENWIDTH;
-public static int ST_Y		=(SCREENHEIGHT - ST_HEIGHT);
-public static int BG =4;
-public static int FG =0;
+/** Points to "screen 4" which is treated as a buffer */
+static final int BG =4;
+
+/** Points to "screen 0" which is what you actually see */
+ static final int FG =0;
 
 //
 // STATUS BAR
 //
 
-// Called by main loop.
+/** Called by main loop. */
 public boolean ST_Responder (event_t ev);
 
-// Called by main loop.
+/** Called by main loop. */
 public void ST_Ticker ();
 
-// Called by main loop.
+/** Called by main loop.*/
 public void ST_Drawer (boolean fullscreen, boolean refresh);
 
-// Called when the console player is spawned on each level.
+/** Called when the console player is spawned on each level. */
 public void ST_Start ();
 
-// Called by startup code.
+/** Called by startup code. */
 public void ST_Init ();
-
-//public boolean ST_Responder(event_t ev);
-
-
 
 }

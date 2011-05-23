@@ -2,6 +2,7 @@ package testers;
 
 import static data.Defines.PU_STATIC;
 import static data.Limits.MAXEVENTS;
+import n.DummyNetworkHandler;
 
 import hu.HU;
 import i.AWTDoom;
@@ -13,9 +14,7 @@ import p.LevelLoader;
 
 import automap.Map;
 
-import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
-import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.DummySoundDriver;
 import st.StatusBar;
@@ -24,9 +23,10 @@ import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import v.BufferedRenderer;
+import v.IVideoScale;
+import v.VideoScaleInfo;
 import w.DoomBuffer;
 import w.WadLoader;
-import data.Defines;
 import defines.*;
 import data.Tables;
 import doom.DoomMain;
@@ -37,8 +37,8 @@ import doom.wbstartstruct_t;
 /** This is a very simple tester for Menu module  */
 
 public class AWTRenderViewTester {
-    public static final int WIDTH=Defines.SCREENWIDTH;
-    public static final int HEIGHT=Defines.SCREENHEIGHT;
+
+    static IVideoScale VSI=new VideoScaleInfo(3.0f);
     
     public static void main(String[] argv) {
         try {
@@ -48,14 +48,16 @@ public class AWTRenderViewTester {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"/*,"sprites.wad"*/});
+    W.InitMultipleFiles(new String[] {"c:/dooms/doom1.wad"/*,"sprites.wad"*/});
     
     System.out.println("Total lumps read: "+W.numlumps);
 
     // Read the palette.
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     // Create a video renderer
-    BufferedRenderer V=new BufferedRenderer(WIDTH,HEIGHT);
+    BufferedRenderer V=new BufferedRenderer(VSI.getScreenWidth(),VSI.getScreenHeight());
+    V.setVideoScale(VSI);
+    V.initScaling();
     V.Init();
     byte[] pal=palette.getBuffer().array();
     
@@ -63,6 +65,12 @@ public class AWTRenderViewTester {
     
     IDoomSystem I=new DoomSystem();
     DoomMain DM=new DoomMain();
+    DM.setVideoScale(VSI);
+    DM.initScaling();
+    DM.singletics=true;
+    DM.setTicdup(1);
+    DM.DGN=new DummyNetworkHandler();
+    
     // Create the frame.
     AWTDoom frame = new AWTDoom(DM,V,pal);
     frame.InitGraphics();
@@ -80,7 +88,7 @@ public class AWTRenderViewTester {
     DM.gameepisode=1;
     DM.gamemap=1;
     DM.gamemission=GameMission_t.doom;
-    DM.gamemode=GameMode_t.shareware;
+    DM.setGameMode(GameMode_t.shareware);
     DM.wminfo=new wbstartstruct_t();
     // Simulate being in the mid of a level.
     DM.usergame=true;
@@ -110,30 +118,38 @@ public class AWTRenderViewTester {
     
    
     IDoomMenu M=DM.M=new Menu(DM);
-    Map AM=(Map) (DM.AM=new Map(DM));
+    Map AM=new Map(DM);
+    DM.AM=AM;
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
-    DM.R=new UnifiedRenderer(DM); 
-    DM.SM=DM.R;
+    DM.R=new UnifiedRenderer(DM);
     DM.TM=new SimpleTextureManager(DM);
-    
+    DM.SM=DM.R;    
     DM.P.updateStatus(DM);
     LL.updateStatus(DM);
     M.updateStatus(DM);
     ST.updateStatus(DM);
     AM.updateStatus(DM);
+    //DM.R.updateStatus(DM);
+   // Interesting bug: initializing the Unified renderer BEFORE applying
+    // scale info, results in VERY dark visplanes.
+    // This can't be done as easily with the Parallel  because a lot more
+    // stuff will break.
+   DM.initializeVideoScaleStuff();    
     DM.R.Init();
+    
     DM.P.Init();
     DM.players[0].updateStatus(DM);
     DM.PlayerReborn(0);
-
-    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
+    
     ST.Init();
     M.Init();
     ST.Start();
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     AM.LevelInit();
     AM.Start();
+    
     DM.R.SetViewSize(11, 0);
     DM.R.ExecuteSetViewSize();
     DM.TM.setSkyTexture(DM.TM.CheckTextureNumForName("SKY1"));

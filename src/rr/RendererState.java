@@ -8,15 +8,11 @@ import static data.Defines.ML_MAPPED;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMCOLORMAPS;
 import static data.Defines.PU_CACHE;
-import static data.Defines.SCREENHEIGHT;
-import static data.Defines.SCREENWIDTH;
-import static data.Defines.SCREEN_MUL;
 import static data.Defines.SIL_BOTH;
 import static data.Defines.SIL_BOTTOM;
 import static data.Defines.SIL_TOP;
 import static data.Defines.pw_invisibility;
 import static data.Limits.MAXHEIGHT;
-import static data.Limits.MAXOPENINGS;
 import static data.Limits.MAXSEGS;
 import static data.Limits.MAXVISSPRITES;
 import static data.Limits.MAXWIDTH;
@@ -68,6 +64,8 @@ import i.IDoomSystem;
 import st.StatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 import w.IWadLoader;
 import w.WadLoader;
 import w.name8;
@@ -78,6 +76,7 @@ import defines.GameMode_t;
 import doom.DoomContext;
 import doom.DoomMain;
 import doom.DoomStatus;
+import doom.IDoomGameNetworking;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
@@ -97,16 +96,17 @@ import doom.thinker_t;
  *
  */
 
-public abstract class RendererState implements DoomStatusAware, Renderer, SpriteManager{
+public abstract class RendererState implements DoomStatusAware, Renderer, SpriteManager,IVideoScaleAware{
 
     protected static final boolean DEBUG=false;
     protected static final boolean DEBUG2=false;
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
-    protected static final int[] BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
+    protected int[] BLANKCACHEDHEIGHT;//=new int[SCREENHEIGHT];
     
     //////////////////////////////// STATUS ////////////////
 
     protected DoomMain DM;
+    protected IDoomGameNetworking DGN;
     protected LevelLoader LL;
     protected IWadLoader W;
     protected SegDrawer MySegs;
@@ -127,8 +127,24 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
     public int viewwidth;
     public int viewheight;
 
+    // MAES: outsiders have no business peeking into this.
+    // Or...well..maybe they do. It's only used to center the "pause" X position.
+    // TODO: get rid of this?
     public int scaledviewwidth;
 
+    // The only reason to query scaledviewwidth from outside the renderer, is this.
+    public boolean isFullHeight(){
+        return (viewheight==SCREENHEIGHT);
+    }
+
+    public boolean isFullWidth(){
+        return (scaledviewwidth==SCREENWIDTH);
+    }
+    
+    public boolean isFullScreen(){
+        return isFullWidth() && isFullHeight();
+    }
+    
     /** killough: viewangleoffset is a legacy from the pre-v1.2 days, when Doom
      *  had Left/Mid/Right viewing. +/-ANG90 offsets were placed here on each
      *  node, by d_net.c, to set up a L/M/R session. */
@@ -146,7 +162,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
      *  floorclip starts out SCREENHEIGHT
      *  ceilingclip starts out -1
      */
-    protected short[]         floorclip=new short[SCREENWIDTH],   ceilingclip=new short[SCREENWIDTH];
+    protected short[] floorclip,ceilingclip;
     
     /** visplane_t*,  treat as indexes into visplanes */
     protected int       lastvisplane, floorplane,   ceilingplane;
@@ -157,13 +173,15 @@ public abstract class RendererState implements DoomStatusAware, Renderer, Sprite
     /** openings is supposed to show where "openings" in visplanes start and end e.g.
      *  due to sprites, windows etc.
      */
-    protected short[]         openings=new short[MAXOPENINGS];
+    protected short[]         openings;
     /** Maes: this is supposed to be a pointer inside openings */
     protected int           lastopening;//=new Short((short) 0);
 
     /** Increment every time a check is made 
      *  For some reason, this needs to be visible even by enemies thinking :-S*/
     public int validcount = 1;     
+    
+    public static int MAXOPENINGS;
     
 
  /** Who can set this? A: The Menu. */
@@ -465,6 +483,7 @@ validcount++;
      @Override
     public void updateStatus(DoomStatus DC){
         this.DM=DC.DM;
+        this.DGN=DC.DGN;
         this.LL=DC.LL;
         this.W=DC.W;
         this.V=DC.V;
@@ -502,8 +521,8 @@ validcount++;
     /** constant arrays
      *  used for psprite clipping and initializing clipping 
      */
-    protected short[]     negonearray=new short[SCREENWIDTH];
-    protected short[]     screenheightarray=new short[SCREENWIDTH];
+    protected short[]     negonearray; // MAES: in scaling
+    protected short[]     screenheightarray;// MAES: in scaling
 
     protected int     spryscale;
     protected int     sprtopscreen;
@@ -539,7 +558,7 @@ validcount++;
     //
     protected static final int FUZZTABLE = 50;
 
-    protected static final int FUZZOFF = SCREENWIDTH;
+    protected static int FUZZOFF;
 
     protected final int[] fuzzoffset =
         { FUZZOFF, -FUZZOFF, FUZZOFF, -FUZZOFF, FUZZOFF, FUZZOFF, -FUZZOFF,
@@ -556,15 +575,13 @@ validcount++;
     
     /** Refresh of things, i.e. objects represented by sprites. */
     
-    protected final class Things{
+    protected final class Things implements IVideoScaleAware{
 
         protected static final int MINZ    =            (FRACUNIT*4);
         protected static final int BASEYCENTER         =100;
         ThreadSort<vissprite_t> ts;
 
         public Things(){
-            negonearray=new short[SCREENWIDTH];
-            screenheightarray=new short[SCREENWIDTH];
             sprtemp=new spriteframe_t[MAX_SPRITEFRAMES];
             C2JUtils.initArrayOfObjects(sprtemp);
             vissprites=new vissprite_t[MAXVISSPRITES];
@@ -572,6 +589,28 @@ validcount++;
             vsprsortedhead=new vissprite_t();
             unsorted=new vissprite_t();
             ts=new ThreadSort<vissprite_t>(vissprites);
+        }
+        
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+        protected int SCREENWIDTH;
+        protected int SCREENHEIGHT;
+        protected IVideoScale vs;
+
+        @Override
+        public void setVideoScale(IVideoScale vs) {
+            this.vs=vs;
+        }
+
+        @Override
+        public void initScaling() {
+            this.SCREENHEIGHT=vs.getScreenHeight();
+            this.SCREENWIDTH=vs.getScreenWidth();
+
+            // Pre-scale stuff.
+
+            clipbot=new short[SCREENWIDTH];
+            cliptop=new short[SCREENWIDTH];
         }
         
        /* UNUSED?
@@ -848,9 +887,9 @@ validcount++;
          * or a special "overflow sprite" which just gets overwritten with
          * bogus data. 
          * 
-         * FIXME: It's a bit of dumb thing to do, since the overflow sprite is never renderered
+         * FIXME: It's a bit of dumb thing to do, since the overflow sprite is never rendered
          * but we have to copy data over it anyway. Would make more sense to check for it
-         * specifically and avoiding copying data.
+         * specifically and avoiding copying data, which should be more time consuming.
          * 
          * TODO: definitive fix for this would be to make it fully limit-removing.
          * 
@@ -1380,13 +1419,9 @@ validcount++;
             }
             */
         }
-
-
-
-
-
-        protected short[]       clipbot=new short[SCREENWIDTH];
-        protected short[]       cliptop=new short[SCREENWIDTH];
+        // MAES: Scale to SCREENWIDTH
+        protected short[]       clipbot;
+        protected short[]       cliptop;
         
         /**
          * R_DrawSprite
@@ -3072,10 +3107,10 @@ validcount++;
         void DrawPlanes();
     }
     
-    public abstract class PlaneDrawer implements IPlaneDrawer{
-        
+    public abstract class PlaneDrawer implements IPlaneDrawer, IVideoScaleAware{
         
 
+        
         //protected planefunction_t     floorfunc;
         //protected planefunction_t     ceilingfunc;
         
@@ -3086,35 +3121,35 @@ validcount++;
         // spanstart holds the start of a plane span
         // initialized to 0 at start
         //
-        protected int[]           spanstart=new int[SCREENHEIGHT];
-        protected int[]           spanstop=new int [SCREENHEIGHT];
-
+        protected int[]           spanstart,spanstop;
+        
         //
         // texture mapping
         //
-        protected byte[][]       planezlight;
+        protected byte[][] planezlight; // The distance lighting effect you see
         /** To treat as fixed_t */
         protected int         planeheight;
         /** To treat at fixed_t */
-        protected int[]           yslope=new int[SCREENHEIGHT];      
-        protected float[]           yslopef=new float[SCREENHEIGHT];
+        protected int[]           yslope;      
+        protected float[]           yslopef;
         /** To treat as fixed_t */
-        protected int[]           distscale=new int[SCREENWIDTH];
-        protected float[]           distscalef=new float[SCREENWIDTH];
+        protected int[]           distscale;
+        protected float[]           distscalef;
         /** To treat as fixed_t */
         protected int basexscale, baseyscale;
 
         /** To treat as fixed_t */
-        protected int[] cachedheight=new int[SCREENHEIGHT];
+        protected int[] cachedheight,cacheddistance,cachedxstep,cachedystep;
         
+        /** Call only after visplanes have been properly resized
+         *  for resolution. In case of dynamic resolution changes,
+         *  the old ones should just be discarded, as they would be 
+         *  nonsensical.
+         */
         
-        /** To treat as fixed_t */
-        protected int[]           cacheddistance=new int[SCREENHEIGHT];
-        /** To treat as fixed_t */
-        protected int[]           cachedxstep=new int[SCREENHEIGHT];
-        /** To treat as fixed_t */
-        protected int[]           cachedystep=new int[SCREENHEIGHT];
-        
+        protected void initVisplanes(){            
+            C2JUtils.initArrayOfObjects(visplanes);
+        }
 
         /**
          * R_CheckPlane
@@ -3148,23 +3183,23 @@ validcount++;
             
             int x;
             
-            /* If start is smaller than the plane's min... 
-             * 
-             * start     minx         maxx       stop
-             *   |       |            |          |
-             *   --------PPPPPPPPPPPPPP-----------
-             * 
-             */
+            // If start is smaller than the plane's min... 
+            // 
+            // start     minx         maxx       stop
+            //   |       |            |          |
+            //   --------PPPPPPPPPPPPPP-----------
+            // 
+            //
             if (start < pl.minx)
             {
             intrl = pl.minx;
             unionl = start;
-            /* Then we will have this: 
-             * 
-             * unionl    intrl        maxx       stop
-             *   |       |            |          |
-             *   --------PPPPPPPPPPPPPP-----------
-             */
+            // Then we will have this: 
+            // 
+            // unionl    intrl        maxx       stop
+            //   |       |            |          |
+            //   --------PPPPPPPPPPPPPP-----------
+            //
             
             }
             else
@@ -3172,20 +3207,20 @@ validcount++;
             unionl = pl.minx;
             intrl = start;
             
-            /* else we will have this: 
-             * 
-             *      union1 intrl      maxx       stop
-             *           |      |     |          |
-             *   --------PPPPPPPPPPPPPP-----------
-             *   
-             * unionl comes before intrl in any case.  
-             *   
-             */          
+            // else we will have this: 
+            // 
+            //      union1 intrl      maxx       stop
+            //           |      |     |          |
+            //   --------PPPPPPPPPPPPPP-----------
+            //   
+            // unionl comes before intrl in any case.  
+            //   
+            //          
             }
             
-            /* Same as before, for for stop and maxx.
-             * This time, intrh comes before unionh.
-             */
+            // Same as before, for for stop and maxx.
+            // This time, intrh comes before unionh.
+            //
             
             if (stop > pl.maxx)
             {
@@ -3198,9 +3233,9 @@ validcount++;
             intrh = stop;
             }
 
-            /* An interval is now defined, which is entirely contained in the
-             * visplane. 
-             */
+            // An interval is now defined, which is entirely contained in the
+            // visplane. 
+            //
 
             // If the value FF is NOT stored ANYWWHERE inside it, we bail out early
             for (x=intrl ; x<= intrh ; x++)
@@ -3434,6 +3469,43 @@ validcount++;
         {
           // Doh!
         }
+      
+      ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+      protected int SCREENWIDTH;
+      protected int SCREENHEIGHT;
+      protected IVideoScale vs;
+
+
+      @Override
+      public void setVideoScale(IVideoScale vs) {
+          this.vs=vs;
+      }
+
+      @Override
+      public void initScaling() {
+          this.SCREENHEIGHT=vs.getScreenHeight();
+          this.SCREENWIDTH=vs.getScreenWidth();
+
+          // Pre-scale stuff.
+
+          spanstart=new int[SCREENHEIGHT];
+          spanstop=new int [SCREENHEIGHT];
+          yslope=new int[SCREENHEIGHT];      
+          yslopef=new float[SCREENHEIGHT];          
+          distscale=new int[SCREENWIDTH];
+          distscalef=new float[SCREENWIDTH];          
+          cachedheight=new int[SCREENHEIGHT];
+          cacheddistance=new int[SCREENHEIGHT];
+          cachedxstep=new int[SCREENHEIGHT];
+          cachedystep=new int[SCREENHEIGHT];
+          
+          // HACK: visplanes are initialized globally. 
+          visplane_t.setVideoScale(vs);
+          visplane_t.initScaling();
+          initVisplanes();          
+          
+      }
         
       /////////////// VARIOUS BORING GETTERS ////////////////////
       
@@ -3570,7 +3642,10 @@ validcount++;
      *  
      *  By setting it to the max however 
      *  you get smoother light and get rid of 
-     *  lightsegshift globally, too.
+     *  lightsegshift globally, too. Of course, by increasing
+     *  the number of light levels, you also put more memory
+     *  pressure, and due to their being only 256 colors to 
+     *  begin with, visually, there won't be many differences.
      */
     protected  static final int LIGHTLEVELS=32, LIGHTSEGSHIFT=3;
 
@@ -3648,12 +3723,12 @@ validcount++;
    // flattening the arc to a flat projection plane.
    // There will be many angles mapped to the same X. 
 
-   protected final int[]         viewangletox=new int[FINEANGLES/2];
+   protected final int[] viewangletox=new int[FINEANGLES/2];
 
-   /** The xtoviewangleangle[] table maps a screen pixel
+   /** The xtoviewangle[] table maps a screen pixel
     * to the lowest viewangle that maps back to x ranges
     * from clipangle to -clipangle. */
-   protected final long[]         xtoviewangle=new long[SCREENWIDTH+1];
+   protected long[] xtoviewangle;// MAES: to resize
 
 
    // UNUSED.
@@ -4294,8 +4369,8 @@ validcount++;
           pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
           skyscale=(int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
 
-          BOBADJUST=(int)(Defines.SCREEN_MUL*65536.0);
-          WEAPONADJUST=(int) ((SCREENWIDTH/(2*Defines.SCREEN_MUL))*FRACUNIT);
+          BOBADJUST=(int)(SCREEN_MUL*65536.0);
+          WEAPONADJUST=(int) ((SCREENWIDTH/(2*SCREEN_MUL))*FRACUNIT);
           
           // thing clipping
           for (i=0 ; i<viewwidth ; i++)
@@ -4606,10 +4681,7 @@ validcount++;
             int result=MenuMisc.ReadFile("tranmap.dat", main_tranmap);
             if (result>0) return;
             System.out.print("fail.\n");
-        }        
-                
-
-
+        }
           {   // Compose a default transparent filter map based on PLAYPAL.
               System.out.print("Computing translucency map from scratch...");
             byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
@@ -5210,6 +5282,9 @@ validcount++;
       }
       }
       
+      /** An unrolled (4x) rendering loop with full quality */
+     // public final int dumb=63 * 64;
+      
       protected final class R_DrawSpanUnrolled2 implements colfunc_t {
           public void invoke(){
 
@@ -5248,38 +5323,24 @@ validcount++;
               f_xfrac += ds_xstep;
               f_yfrac += ds_ystep;
               
-              // Current texture index in u,v.
+              // UNROLL 2
               spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
-
-              // Lookup pixel from flat texture tile,
-              // re-index using light/colormap.
               screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
-
-              // Next step in u,v.
               f_xfrac += ds_xstep;
               f_yfrac += ds_ystep;
               
-              // Current texture index in u,v.
+              // UNROLL 3
               spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
-
-              // Lookup pixel from flat texture tile,
-              // re-index using light/colormap.
               screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
+              f_xfrac += ds_xstep;
+              f_yfrac += ds_ystep;
 
-              // Next step in u,v.
+              // UNROLL 4
+              spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
+              screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
               f_xfrac += ds_xstep;
               f_yfrac += ds_ystep;
               
-              // Current texture index in u,v.
-              spot = ((f_yfrac >> (16 - 6)) & (63 * 64)) + ((f_xfrac >> 16) & 63);
-
-              // Lookup pixel from flat texture tile,
-              // re-index using light/colormap.
-              screen[dest++] = ds_colormap[0x00FF&ds_source[spot]];
-
-              // Next step in u,v.
-              f_xfrac += ds_xstep;
-              f_yfrac += ds_ystep;
               count-=4;
           }
           
@@ -5598,15 +5659,15 @@ validcount++;
           try {
           System.out.print ("\nInit Texture and Flat Manager");
           TexMan=this.DM.TM;
-          
-            TexMan.InitTextures ();
           System.out.print ("\nInitTextures");
-          TexMan.InitFlats ();
+          TexMan.InitTextures ();
           System.out.print ("\nInitFlats");
-          InitSpriteLumps ();
+          TexMan.InitFlats ();
           System.out.print ("\nInitSprites");
-          InitColormaps ();
+          InitSpriteLumps ();
           System.out.print ("\nInitColormaps");
+          InitColormaps ();
+          
           } catch (IOException e) {
               // TODO Auto-generated catch block
               e.printStackTrace();
@@ -5901,9 +5962,9 @@ validcount++;
        }
        
        
-       /** Drawspan loop unrolled by 4.
-        *  
-        *  MAES: it actually does give a small speed boost (120 -> 130 fps with a Mul of 3.0)
+       /** Drawspan loop unrolled by 4. However it has low rendering quality
+        *  and bad distortion. However it does actually does give a 
+        *  small speed boost (120 -> 130 fps with a Mul of 3.0)
         * 
         */
        
@@ -5928,25 +5989,25 @@ validcount++;
            int rolls=0;
            while (count >= 4) {
                ytemp = position >> 4;
-               ytemp = ytemp & 4032;
+               ytemp = ytemp & 0xfc0;
                xtemp = position >>> 26;
                spot = xtemp | ytemp;
                position += step;         
                screen[dest] = colormap[0x00FF&source[spot]];
                ytemp = position >> 4;
-               ytemp = ytemp & 4032;
+               ytemp = ytemp & 0xfc0;
                xtemp = position >>> 26;
                spot = xtemp | ytemp;
                position += step;
                screen[dest+1] = colormap[0x00FF&source[spot]];
                ytemp = position >> 4;
-               ytemp = ytemp & 4032;
+               ytemp = ytemp & 0xfc0;
                xtemp = position >>> 26;
                spot = xtemp | ytemp;
                position += step;
                screen[dest+2] = colormap[0x00FF&source[spot]];
                ytemp = position >> 4;
-               ytemp = ytemp & 4032;
+               ytemp = ytemp & 0xfc0;
                xtemp = position >>> 26;
                spot = xtemp | ytemp;
                position += step;
@@ -5956,10 +6017,12 @@ validcount++;
                
                // Half-assed attempt to fix precision by forced periodic realignment.
                
-               if ((rolls++)%32==0){
+               
+               /*
+               if ((rolls++)%64==0){
             	   position = ((((rolls*4)*ds_xstep+ds_xfrac) << 10) & 0xffff0000) |
             	              ((((rolls*4)*ds_ystep+ds_yfrac) >> 6) & 0xffff);
-            	   }
+            	   } */
                
            }
            
@@ -5975,6 +6038,47 @@ validcount++;
        }
            
        }
+        
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+        protected int SCREENWIDTH;
+        protected int SCREENHEIGHT;
+        protected float SCREEN_MUL;
+        protected IVideoScale vs;
+
+
+        @Override
+        public void setVideoScale(IVideoScale vs) {
+            this.vs=vs;
+        }
+
+        @Override
+        public void initScaling() {
+            this.SCREENHEIGHT=vs.getScreenHeight();
+            this.SCREENWIDTH=vs.getScreenWidth();
+            this.SCREEN_MUL=vs.getScreenMul();
+            
+            // Pre-scale stuff.
+            BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
+            floorclip=new short[SCREENWIDTH];
+            ceilingclip=new short[SCREENWIDTH];
+            negonearray=new short[SCREENWIDTH]; // MAES: in scaling
+            screenheightarray=new short[SCREENWIDTH];// MAES: in scaling
+            xtoviewangle=new long[SCREENWIDTH+1];
+            FUZZOFF= SCREENWIDTH;
+            MAXOPENINGS= SCREENWIDTH * 64;
+
+            negonearray=new short[SCREENWIDTH];
+            screenheightarray=new short[SCREENWIDTH];
+            openings=new short[MAXOPENINGS];
+            // Initialize children objects
+            this.MyPlanes.setVideoScale(vs);
+            this.MyThings.setVideoScale(vs);
+            MyPlanes.initScaling();
+            MyThings.initScaling();
+            
+
+        }
        
       
 }

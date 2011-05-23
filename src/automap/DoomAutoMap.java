@@ -1,11 +1,11 @@
 package automap;
-import i.DoomStatusAware;
+import v.IVideoScaleAware;
 import doom.event_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomAutoMap.java,v 1.3 2010/09/27 15:07:44 velktron Exp $
+// $Id: DoomAutoMap.java,v 1.4 2011/05/23 16:57:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,7 +24,7 @@ import doom.event_t;
 //
 //-----------------------------------------------------------------------------
 
-public interface DoomAutoMap extends DoomStatusAware {
+public interface DoomAutoMap extends IVideoScaleAware {
 
 // Used by ST StatusBar stuff.
 public final int AM_MSGHEADER =(('a'<<24)+('m'<<16));

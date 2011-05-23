@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.24 2011/05/21 14:42:32 velktron Exp $
+// $Id: HU.java,v 1.25 2011/05/23 16:56:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,105 +17,6 @@ package hu;
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
-// $Log: HU.java,v $
-// Revision 1.24  2011/05/21 14:42:32  velktron
-// Adapted to use new gamemode system.
-//
-// Revision 1.23  2011/05/20 18:27:12  velktron
-// DoomMenu -> IDoomMenu
-//
-// Revision 1.22  2011/05/20 18:24:19  velktron
-// FINALLY fixed a stupid bug that broke HU messages.
-//
-// Revision 1.21  2011/05/18 16:52:40  velktron
-// Changed to DoomStatus
-//
-// Revision 1.20  2011/05/17 16:51:20  velktron
-// Switched to DoomStatus
-//
-// Revision 1.19  2011/05/10 10:39:18  velktron
-// Semi-playable Techdemo v1.3 milestone
-//
-// Revision 1.18  2011/02/11 00:11:13  velktron
-// A MUCH needed update to v1.3.
-//
-// Revision 1.17  2010/12/20 17:15:08  velktron
-// Made the renderer more OO -> TextureManager and other changes as well.
-//
-// Revision 1.16  2010/11/22 21:41:21  velktron
-// Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
-//
-// Revision 1.15  2010/11/22 14:54:53  velktron
-// Greater objectification of sectors etc.
-//
-// Revision 1.14  2010/10/07 15:42:16  velktron
-// *** empty log message ***
-//
-// Revision 1.13  2010/10/01 16:47:51  velktron
-// Fixed tab interception.
-//
-// Revision 1.12  2010/09/27 15:07:44  velktron
-// meh
-//
-// Revision 1.11  2010/09/27 02:27:29  velktron
-// BEASTLY update
-//
-// Revision 1.10  2010/09/23 15:11:57  velktron
-// A bit closer...
-//
-// Revision 1.9  2010/09/23 07:31:11  velktron
-// fuck
-//
-// Revision 1.8  2010/09/22 16:40:02  velktron
-// MASSIVE changes in the status passing model.
-// DoomMain and DoomGame unified.
-// Doomstat merged into DoomMain (now status and game functions are one).
-//
-// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
-//
-// Revision 1.7  2010/09/07 16:23:00  velktron
-// *** empty log message ***
-//
-// Revision 1.6  2010/09/02 15:56:54  velktron
-// Bulk of unified renderer copyediting done.
-//
-// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
-//
-// Revision 1.5  2010/08/30 15:53:19  velktron
-// Screen wipes work...Finale coded but untested.
-// GRID.WAD included for testing.
-//
-// Revision 1.4  2010/08/10 16:41:57  velktron
-// Threw some work into map loading.
-//
-// Revision 1.3 2010/07/29 15:28:59 velktron
-// More work on menus...and digging some dependencies..
-//
-// Revision 1.2 2010/07/06 15:20:23 velktron
-// Several changes in the WAD loading routine. Now lumps are directly unpacked
-// as "CacheableDoomObjects" and only defaulting will result in "raw" DoomBuffer
-// reads.
-//
-// Makes caching more effective.
-//
-// Revision 1.1 2010/06/30 08:58:51 velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still being worked on. For a good place to start and get an
-// idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1 2010/06/29 11:07:34 velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete,
-// and there's still mixed C code in there. I suggest you load everything up in
-// Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you can get an idea of
-// how a few of the implemented stuff works.
-//
-//
 // DESCRIPTION: Heads-up displays
 //
 // -----------------------------------------------------------------------------
@@ -128,6 +29,8 @@ import static doom.englsh.*;
 import i.DoomStatusAware;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 
 import m.IDoomMenu;
 import m.Menu;
@@ -145,9 +48,9 @@ import doom.evtype_t;
 import doom.player_t;
 
 
-public class HU implements DoomStatusAware {
+public class HU implements DoomStatusAware, IVideoScaleAware {
     public final static String rcsid =
-        "$Id: HU.java,v 1.24 2011/05/21 14:42:32 velktron Exp $";
+        "$Id: HU.java,v 1.25 2011/05/23 16:56:44 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -523,7 +426,7 @@ public class HU implements DoomStatusAware {
         // I don't really see the point in that, as in the WAD patches appear
         // to be all Little Endian... mystery :-S
         // HU_TITLEY = (167 - Swap.SHORT(hu_font[0].height));
-        HU_TITLEY = (167 - hu_font[0].height)*Defines.SAFE_SCALE;
+        HU_TITLEY = (167 - hu_font[0].height)*SAFE_SCALE;
         HU_INPUTY = (HU_MSGY + HU_MSGHEIGHT * hu_font[0].height + 1);
 
     }
@@ -1297,4 +1200,41 @@ public class HU implements DoomStatusAware {
         this.M=(Menu) DM.M;
 		
 	}
+	
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+	protected int SCREENWIDTH;
+	protected int SCREENHEIGHT;
+	protected int SAFE_SCALE;
+	protected IVideoScale vs;
+
+
+	@Override
+	public void setVideoScale(IVideoScale vs) {
+	    this.vs=vs;
+	}
+
+	@Override
+	public void initScaling() {
+	    this.SCREENHEIGHT=vs.getScreenHeight();
+	    this.SCREENWIDTH=vs.getScreenWidth();
+	    this.SAFE_SCALE=vs.getSafeScaling();
+	}
+	
 }
+
+//$Log: HU.java,v $
+//Revision 1.25  2011/05/23 16:56:44  velktron
+//Migrated to VideoScaleInfo.
+//
+//Revision 1.24  2011/05/21 14:42:32  velktron
+//Adapted to use new gamemode system.
+//
+//Revision 1.23  2011/05/20 18:27:12  velktron
+//DoomMenu -> IDoomMenu
+//
+//Revision 1.22  2011/05/20 18:24:19  velktron
+//FINALLY fixed a stupid bug that broke HU messages.
+//
+//Revision 1.21  2011/05/18 16:52:40  velktron
+//Changed to DoomStatus

@@ -4,8 +4,6 @@ import static data.Defines.HU_FONTSIZE;
 import static data.Defines.HU_FONTSTART;
 import static data.Defines.PU_CACHE;
 import static data.Defines.PU_LEVEL;
-import static data.Defines.SCREENHEIGHT;
-import static data.Defines.SCREENWIDTH;
 import static data.Defines.FF_FRAMEMASK;
 import static data.Limits.MAXPLAYERS;
 import static data.info.mobjinfo;
@@ -24,6 +22,8 @@ import rr.spritedef_t;
 import rr.spriteframe_t;
 import s.IDoomSound;
 import v.DoomVideoRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 import w.IWadLoader;
 import data.Defines;
 import data.mobjtype_t;
@@ -40,7 +40,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.15 2011/05/23 10:11:56 velktron Exp $
+// $Id: Finale.java,v 1.16 2011/05/23 16:56:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -59,9 +59,9 @@ import doom.gameaction_t;
 //
 //-----------------------------------------------------------------------------
 
-public class Finale implements DoomStatusAware{
+public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.15 2011/05/23 10:11:56 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.16 2011/05/23 16:56:56 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -628,7 +628,7 @@ protected void afterstopattack(){
       patch_t        patch=null;
       
       // erase the entire screen to a background
-      V.DrawPatchSolidScaled (0,0,Defines.SAFE_SCALE, Defines.SAFE_SCALE,0, W.CachePatchName ("BOSSBACK", PU_CACHE));
+      V.DrawPatchSolidScaled (0,0,SAFE_SCALE, SAFE_SCALE,0, W.CachePatchName ("BOSSBACK", PU_CACHE));
 
       this.CastPrint (castorder[castnum].name);
       
@@ -811,8 +811,31 @@ public void updateStatus(DoomStatus DC) {
     W=DC.W;
     R=DC.R;    
 	}
+
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+protected int SCREENWIDTH;
+protected int SCREENHEIGHT;
+protected int SAFE_SCALE;
+protected IVideoScale vs;
+
+
+@Override
+public void setVideoScale(IVideoScale vs) {
+    this.vs=vs;
 }
 
+@Override
+public void initScaling() {
+    this.SCREENHEIGHT=vs.getScreenHeight();
+    this.SCREENWIDTH=vs.getScreenWidth();
+    this.SAFE_SCALE=vs.getSafeScaling();
+
+    // Pre-scale stuff.
+
+}
+
+}
 
 
 ///$Log

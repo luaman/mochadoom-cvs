@@ -1,13 +1,12 @@
 package i;
 
-import v.BufferedRenderer;
-import w.WadLoader;
+import v.VideoScaleInfo;
 import doom.DoomMain;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.3 2010/09/25 17:37:13 velktron Exp $
+//$Id: Main.java,v 1.4 2011/05/23 16:59:59 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +21,9 @@ import doom.DoomMain;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.4  2011/05/23 16:59:59  velktron
+//Migrated to VideoScaleInfo.
+//
 //Revision 1.3  2010/09/25 17:37:13  velktron
 //Lots of changes.
 //
@@ -46,7 +48,7 @@ import doom.DoomMain;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.3 2010/09/25 17:37:13 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.4 2011/05/23 16:59:59 velktron Exp $";
 
     public static void main(String[] argv){
 
@@ -54,9 +56,18 @@ public class Main {
     	  // These are the most essential
           DoomMain D=new DoomMain();
 
+          // 23/5/2011: Experimental dynamic resolution subsystem
+          VideoScaleInfo vs=new VideoScaleInfo((float) 3.0);          
+          
+          // This should be set before ANYTHING involving
+          // the screen gets called.
+          D.setVideoScale(vs);
+          
+          // Initializing actually sets drawing positions, constants,
+          // etc.
+          D.initScaling();
           
           // Create AWT frame, but don't start it yet.
-          
           D.Init();
 
           // Bump argcount +1 to maintain CheckParm behavior

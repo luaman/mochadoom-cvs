@@ -256,17 +256,6 @@ public class SimpleTextureManager
         temp2 = W.GetNumForName ("S_END") - 1;
         temp3 = ((temp2-temp1+63)/64) + ((numtextures+63)/64);
         System.out.print("[");
-        for (int i = 0; i < temp3; i++)
-        System.out.print(" ");
-        System.out.print("         ]");
-        
-        char BKSPC=0x08;
-        for (int i = 0; i < temp3; i++)
-            
-        for (int bs=0;bs<11;bs++){
-            System.out.print(BKSPC);
-        }
-        
         for (int i=0 ; i<numtextures ; i++,directory++)
         {
         
@@ -719,7 +708,7 @@ public class SimpleTextureManager
               for (int i=0;i<numflats;i++){
                   flattranslation[i]=i;
                 //  System.out.printf("Verification: flat[%d] is %s in lump %d\n",i,W.GetNameForNum(flattranslation[i]),flatstorage[i]);  
-              } 
+              }
             }
     
     private final static String LUMPSTART="F_START";

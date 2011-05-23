@@ -1,14 +1,14 @@
 package f;
 
-import static data.Defines.*;
-import doom.DoomContext;
 import doom.DoomMain;
 import v.DoomVideoRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 import m.random;
 
-public class Wiper {
+public class Wiper implements IVideoScaleAware {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.8 2011/05/22 21:10:20 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.9 2011/05/23 16:56:56 velktron Exp $";
     
     random RND;
     DoomVideoRenderer V;
@@ -396,4 +396,26 @@ public class Wiper {
                 int   height,
                 int   ticks );
     }
+    
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+    protected int SCREENWIDTH;
+    protected int SCREENHEIGHT;
+    protected IVideoScale vs;
+
+
+    @Override
+    public void setVideoScale(IVideoScale vs) {
+        this.vs=vs;
+    }
+
+    @Override
+    public void initScaling() {
+        this.SCREENHEIGHT=vs.getScreenHeight();
+        this.SCREENWIDTH=vs.getScreenWidth();
+
+        // Pre-scale stuff.
+    }
+
+    
 }

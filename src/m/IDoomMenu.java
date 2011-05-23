@@ -1,12 +1,14 @@
 package m;
 
+import v.IVideoScaleAware;
 import i.DoomStatusAware;
+import doom.DoomStatus;
 import doom.event_t;
 
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: IDoomMenu.java,v 1.1 2011/05/20 18:27:12 velktron Exp $
+// $Id: IDoomMenu.java,v 1.2 2011/05/23 16:59:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,7 +31,7 @@ import doom.event_t;
  * 
  */
 
-public interface IDoomMenu extends DoomStatusAware{
+public interface IDoomMenu extends IVideoScaleAware{
 
     //
     // MENUS
@@ -70,4 +72,6 @@ public interface IDoomMenu extends DoomStatusAware{
     public int getScreenBlocks();
     
     public int getDetailLevel();
-}
+    
+    /** HACK: replicates status update here for stupid reasons */
+    public void updateStatus(DoomStatus DS);}

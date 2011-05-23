@@ -1,21 +1,28 @@
 package rr;
-import static data.Defines.*;
+import java.util.Arrays;
+
 import utils.C2JUtils;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 /** Now what is a visplane, anyway?
  *  Basically, it's a big buffer representing
- *  a top and a bottom ro
+ *  a top and a bottom boundary of a region to be filled with a
+ *  specific kind of flat. Think of it as an arbitrary boundary.
+ *  
+ *  These are refreshed continuously during rendering, and mark 
+ *  the limits between flat regions. Special values mean "do not 
+ *  render this column at all", while clipping out of the map bounds
+ *  results in well-known bleeding effects.
  * 
  * @author admin
  *
  */
-//
-//
 
 public class visplane_t{
     
     public static final int TOPOFFSET=1;
     public static final int MIDDLEPADDING=2;
-    public static final int BOTTOMOFFSET=SCREENWIDTH+TOPOFFSET+MIDDLEPADDING;
+    public static int BOTTOMOFFSET;
     public static final char SENTINEL=Character.MAX_VALUE;
     
     public visplane_t(){
@@ -56,7 +63,7 @@ public byte      pad4;*/
 char data[];
 
 // Hack to allow quick clearing of visplanes.
-protected static char[] clearvisplane=new char[SCREENWIDTH];
+protected static char[] clearvisplane;
 
 
 /** "Clear" the top with FF's.  */
@@ -88,12 +95,6 @@ public int getBottom(int index){
     return this.data[BOTTOMOFFSET+index];
     
 }
-
-static{
-    for (int i=0;i<clearvisplane.length;i++)
-        clearvisplane[i]=Character.MAX_VALUE;
-}
-
 
 public String toString(){
     sb.setLength(0);
@@ -136,6 +137,31 @@ public static int visplaneHash(int height, int picnum, int lightlevel){
 }
 
 protected static StringBuilder sb=new StringBuilder();
+
+
+// HACK: the resolution awareness is shared between all visplanes.
+// Change this if you ever plan on running multiple renderers with
+// different resolution or something.
+protected static int SCREENWIDTH;
+protected static int SCREENHEIGHT;
+protected static IVideoScale vs;
+
+public static void setVideoScale(IVideoScale vs) {
+    visplane_t.vs=vs;
+}
+
+public static void initScaling() {
+    SCREENHEIGHT=vs.getScreenHeight();
+    SCREENWIDTH=vs.getScreenWidth();
+
+    // Pre-scale stuff.
+    BOTTOMOFFSET=SCREENWIDTH+TOPOFFSET+MIDDLEPADDING;
+
+    if (clearvisplane==null || clearvisplane.length<SCREENWIDTH) {
+        clearvisplane=new char[SCREENWIDTH];
+        Arrays.fill(clearvisplane,Character.MAX_VALUE);
+        }
+}
 
 
 };

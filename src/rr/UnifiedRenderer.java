@@ -12,9 +12,7 @@ import doom.player_t;
 public class UnifiedRenderer extends RendererState{
     
     public UnifiedRenderer(DoomMain DM) {
-      this.DM=DM;
-      this.LL=DM.LL;
-      this.W=DM.W;
+      this.updateStatus(DM);
       this.MySegs=new Segs();
       this.MyBSP=new BSP();
       this.MyPlanes=new Planes();
@@ -23,7 +21,7 @@ public class UnifiedRenderer extends RendererState{
       this.V=DM.V;
       this.I=DM.I;
       // Span functions
-      DrawSpan=new R_DrawSpanUnrolled2();
+      DrawSpan=new R_DrawSpanUnrolled();
       DrawSpanLow=new R_DrawSpanLow();
       DrawTranslatedColumn=new R_DrawTranslatedColumn();
       DrawTLColumn=new R_DrawTLColumn();
@@ -50,10 +48,6 @@ public class UnifiedRenderer extends RendererState{
       }
   
   protected final class Planes extends PlaneDrawer{
-
-      public Planes (){
-          C2JUtils.initArrayOfObjects(visplanes);
-      }
 
       /* UNUSED Eternity-like version. Don't use.
       @Override
@@ -293,24 +287,24 @@ public void RenderPlayerView (player_t player)
   MyThings.ClearSprites ();
   
   // TODO: check for new console commands.
-  DM.NetUpdate ();
+  DGN.NetUpdate ();
 
   // The head node is the last node output.
   MyBSP.RenderBSPNode (LL.numnodes-1);
   
   // Check for new console commands.
-  DM.NetUpdate ();
+  DGN.NetUpdate ();
   
   // FIXME: "Warped floor" fixed, now to fix same-height visplane bleeding.
   MyPlanes.DrawPlanes ();
   
   // Check for new console commands.
-  DM.NetUpdate ();
+  DGN.NetUpdate ();
   
   MyThings.DrawMasked ();
 
   // Check for new console commands.
-  DM.NetUpdate ();             
+  DGN.NetUpdate ();             
 }
 
 

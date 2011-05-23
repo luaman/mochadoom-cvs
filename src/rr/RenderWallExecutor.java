@@ -1,12 +1,13 @@
 package rr;
 
-import static data.Defines.SCREENHEIGHT;
-import static data.Defines.SCREENWIDTH;
 import static m.fixed_t.FRACBITS;
 
 import java.util.ArrayList;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+
+import v.IVideoScale;
+import v.IVideoScaleAware;
 
 /** This is what actual executes the RenderWallInstruction.
  *  Essentially it's a self-contained column rendering function.
@@ -15,7 +16,7 @@ import java.util.concurrent.CyclicBarrier;
  *
  */
 
-public class RenderWallExecutor implements Runnable {
+public class RenderWallExecutor implements Runnable, IVideoScaleAware {
     
     private CyclicBarrier barrier;
     private RenderWallInstruction[] RWI;
@@ -167,4 +168,21 @@ public class RenderWallExecutor implements Runnable {
         
     }
     
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+    protected int SCREENWIDTH;
+    protected int SCREENHEIGHT;
+    protected IVideoScale vs;
+
+    @Override
+    public void setVideoScale(IVideoScale vs) {
+        this.vs=vs;
+    }
+
+    @Override
+    public void initScaling() {
+        this.SCREENHEIGHT=vs.getScreenHeight();
+        this.SCREENWIDTH=vs.getScreenWidth();
+    }
+
 }

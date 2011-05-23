@@ -2,6 +2,7 @@ package testers;
 
 import static data.Defines.PU_STATIC;
 import static data.Limits.MAXEVENTS;
+import n.DummyNetworkHandler;
 
 import hu.HU;
 import i.AWTDoom;
@@ -15,6 +16,7 @@ import automap.Map;
 
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
+import rr.UnifiedRenderer;
 import s.DummySoundDriver;
 import st.StatusBar;
 
@@ -22,9 +24,10 @@ import m.IDoomMenu;
 import m.Menu;
 import m.random;
 import v.BufferedRenderer;
+import v.IVideoScale;
+import v.VideoScaleInfo;
 import w.DoomBuffer;
 import w.WadLoader;
-import data.Defines;
 import defines.*;
 import data.Tables;
 import doom.DoomMain;
@@ -35,8 +38,8 @@ import doom.wbstartstruct_t;
 /** This is a very simple tester for Menu module  */
 
 public class AWTParallelRenderTester1 {
-    public static final int WIDTH=Defines.SCREENWIDTH;
-    public static final int HEIGHT=Defines.SCREENHEIGHT;
+
+    static IVideoScale VSI=new VideoScaleInfo(3.0f);
     
     public static void main(String[] argv) {
         try {
@@ -46,14 +49,16 @@ public class AWTParallelRenderTester1 {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"c:/dooms/doom1.wad"/*,"sprites.wad"*/});
     
     System.out.println("Total lumps read: "+W.numlumps);
 
     // Read the palette.
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     // Create a video renderer
-    BufferedRenderer V=new BufferedRenderer(WIDTH,HEIGHT);
+    BufferedRenderer V=new BufferedRenderer(VSI.getScreenWidth(),VSI.getScreenHeight());
+    V.setVideoScale(VSI);
+    V.initScaling();
     V.Init();
     byte[] pal=palette.getBuffer().array();
     
@@ -61,6 +66,12 @@ public class AWTParallelRenderTester1 {
     
     IDoomSystem I=new DoomSystem();
     DoomMain DM=new DoomMain();
+    DM.setVideoScale(VSI);
+    DM.initScaling();
+    DM.singletics=true;
+    DM.setTicdup(1);
+    DM.DGN=new DummyNetworkHandler();
+    
     // Create the frame.
     AWTDoom frame = new AWTDoom(DM,V,pal);
     frame.InitGraphics();
@@ -78,7 +89,7 @@ public class AWTParallelRenderTester1 {
     DM.gameepisode=1;
     DM.gamemap=1;
     DM.gamemission=GameMission_t.doom;
-    DM.gamemode=GameMode_t.shareware;
+    DM.setGameMode(GameMode_t.shareware);
     DM.wminfo=new wbstartstruct_t();
     // Simulate being in the mid of a level.
     DM.usergame=true;
@@ -105,9 +116,11 @@ public class AWTParallelRenderTester1 {
     DM.wminfo.maxkills=100;
     DM.wminfo.maxsecret=100;
     DM.wminfo.partime=28595;
-    DM.PlayerReborn(0);
+    
+   
     IDoomMenu M=DM.M=new Menu(DM);
-    Map AM=(Map) (DM.AM=new Map(DM));
+    Map AM=new Map(DM);
+    DM.AM=AM;
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
@@ -120,18 +133,19 @@ public class AWTParallelRenderTester1 {
     M.updateStatus(DM);
     ST.updateStatus(DM);
     AM.updateStatus(DM);
+    DM.initializeVideoScaleStuff();
     DM.R.Init();
     DM.P.Init();
     DM.players[0].updateStatus(DM);
     DM.PlayerReborn(0);
-
-    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
+    
     ST.Init();
     M.Init();
-    
     ST.Start();
+    LL.SetupLevel(1, 1, 0, skill_t.sk_hard);
     AM.LevelInit();
     AM.Start();
+    
     DM.R.SetViewSize(11, 0);
     DM.R.ExecuteSetViewSize();
     DM.TM.setSkyTexture(DM.TM.CheckTextureNumForName("SKY1"));
@@ -142,9 +156,10 @@ public class AWTParallelRenderTester1 {
     DM.R.FillBackScreen();
     DM.R.DrawViewBorder();
     
+    
     // Center on "bloody mess" in E1M1
-    //DM.players[0].mo.y+=1024<<16;
-    //DM.players[0].mo.x+=128<<16;
+    //DM.players[0].mo.y+=420<<16;
+    //DM.players[0].mo.x+=1650<<16;
         int pl=0;
         for (int i=0;i<20000;i++){
    
@@ -171,7 +186,7 @@ public class AWTParallelRenderTester1 {
         AM.Ticker();
         //AM.Drawer();
         ST.Ticker();        
-        DM.players[0].viewz=(30)<<16;
+        DM.players[0].viewz=(40)<<16;
         //DM.players[0].mo.x=ox+(int) ((12864<<16)*Math.cos(2*Math.PI*i/500.0));
         //DM.players[0].mo.y=oy+(int) ((64<<16)*Math.sin(2*Math.PI*i/500.0));
         //DM.players[0].mo.angle= ((long)(0xFFFFFFFFL*(Math.atan2(DM.players[0].mo.y-oy,DM.players[0].mo.x-ox)+Math.PI)/(2*Math.PI)))&0xFFFFFFFFL;

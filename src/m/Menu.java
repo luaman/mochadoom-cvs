@@ -25,7 +25,6 @@ import static data.Defines.KEY_RIGHTARROW;
 import static data.Defines.KEY_UPARROW;
 import static data.Defines.PU_CACHE;
 import static data.Defines.SAVESTRINGSIZE;
-import static data.Defines.SCREENWIDTH;
 import static data.dstrings.NUM_QUITMESSAGES;
 import static data.dstrings.SAVEGAMENAME;
 import static data.dstrings.endmsg;
@@ -45,11 +44,15 @@ import static doom.englsh.QSPROMPT;
 import static doom.englsh.SAVEDEAD;
 import static doom.englsh.SWSTRING;
 
+import i.DoomStatusAware;
+
 import java.io.IOException;
 
 import rr.RendererState;
 import rr.patch_t;
 import utils.C2JUtils;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 import w.DoomFile;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
@@ -57,7 +60,7 @@ import doom.englsh;
 import doom.event_t;
 import doom.evtype_t;
 
-public class Menu extends MenuMisc implements IDoomMenu{
+public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
 
 	////////////////// CONSTRUCTOR ////////////////
     
@@ -1888,6 +1891,25 @@ public class Menu extends MenuMisc implements IDoomMenu{
 	public int getDetailLevel() {
 		return this.detailLevel;
 	}
+	
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+	protected int SCREENWIDTH;
+	protected int SCREENHEIGHT;
+	protected IVideoScale vs;
+
+
+	@Override
+	public void setVideoScale(IVideoScale vs) {
+	    this.vs=vs;
+	}
+
+	@Override
+	public void initScaling() {
+	    this.SCREENHEIGHT=vs.getScreenHeight();
+	    this.SCREENWIDTH=vs.getScreenWidth();
+	}
+
 
 
 

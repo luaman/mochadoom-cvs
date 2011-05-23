@@ -1,6 +1,5 @@
 package data;
 
-import static data.Defines.SCREENWIDTH;
 import static m.fixed_t.FRACUNIT;
 
 /** Everything that constitutes a removable limit should go here */
@@ -12,7 +11,7 @@ public final class Limits {
 	public static final int MAXSEGS = 32;
 	public static final int MAXVISSPRITES = 4096;
 	public static final int MAXDRAWSEGS = 256;
-	public static final int MAXOPENINGS = SCREENWIDTH * 64;
+	// MAES: Moved MAXOPENINGS to renderer state, it's scale dependant.
 	public static final int CEILSPEED = FRACUNIT;
 	public static final int CEILWAIT = 150;
 	public static final int MAXCEILINGS = 30;

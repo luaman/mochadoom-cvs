@@ -60,7 +60,7 @@ public class ParallelRenderer extends RendererState  {
 	 * 
 	 */
 		
-	private RenderWallInstruction[] RWI=new RenderWallInstruction[3*SCREENWIDTH];
+	private RenderWallInstruction[] RWI;
 	
 	/** Increment this as you submit RWI to the "queue". Remember to reset to 0 when you have drawn everything!
 	 * 
@@ -75,7 +75,7 @@ public class ParallelRenderer extends RendererState  {
     
     public ParallelRenderer(DoomMain DM) {
       
-      this.DM=DM;
+      this.updateStatus(DM);
       this.LL=DM.LL;
       this.W=DM.W;
       this.MySegs=new ParallelSegs();
@@ -95,23 +95,27 @@ public class ParallelRenderer extends RendererState  {
       DrawColumnPlayer=DrawColumn;
       DrawColumnLow=DrawColumn;
       
-      
-      // Prepare parallel stuff
-      tp=   Executors.newFixedThreadPool(NUMWALLTHREADS+NUMFLOORTHREADS);
-      // Prepare the barrier for MAXTHREADS + main thread.
-      visplanebarrier=new CyclicBarrier(NUMWALLTHREADS+NUMFLOORTHREADS+1);
-      
-      vpw=new VisplaneWorker[NUMFLOORTHREADS];
-      
-      for (int i=0;i<NUMFLOORTHREADS;i++){
-      vpw[i]=new VisplaneWorker(visplanebarrier);
-      vpw[i].id=i;
-      
-
-      }
+      // MAES: only do that after scaling everything up properly
+      // initializeParallelStuff();
       
       
   }
+
+    private void initializeParallelStuff() {
+        // Prepare parallel stuff
+          tp=   Executors.newFixedThreadPool(NUMWALLTHREADS+NUMFLOORTHREADS);
+          // Prepare the barrier for MAXTHREADS + main thread.
+          visplanebarrier=new CyclicBarrier(NUMWALLTHREADS+NUMFLOORTHREADS+1);
+          
+          vpw=new VisplaneWorker[NUMFLOORTHREADS];
+          
+          for (int i=0;i<NUMFLOORTHREADS;i++){
+          vpw[i]=new VisplaneWorker(visplanebarrier);
+          vpw[i].id=i;
+          
+
+          }
+    }
  
   private final class ParallelSegs extends SegDrawer{
 
@@ -152,11 +156,6 @@ public class ParallelRenderer extends RendererState  {
       }
   
   protected final class ParallelPlanes extends PlaneDrawer{
-   
-      
-      public ParallelPlanes (){
-          C2JUtils.initArrayOfObjects(visplanes);
-      }
       
       /**
        * R_DrawPlanes
@@ -238,8 +237,9 @@ public class ParallelRenderer extends RendererState  {
 	      cachedystep=MyPlanes.getCachedYStep();
 	      distscale=MyPlanes.getDistScale();
 	      yslope=MyPlanes.getYslope();
-
-	}
+	      spanstart=new int[SCREENHEIGHT];
+	      spanstop=new int [SCREENHEIGHT];
+	      }
 	
 	@Override
 	public void run() {
@@ -537,8 +537,8 @@ public class ParallelRenderer extends RendererState  {
     	 }
       
       // Private to each thread.
-      int[]           spanstart=new int[SCREENHEIGHT];
-      int[]           spanstop=new int [SCREENHEIGHT];
+      int[]           spanstart;
+      int[]           spanstop;
       CyclicBarrier barrier;
       
   }
@@ -554,11 +554,13 @@ public class ParallelRenderer extends RendererState  {
  */
 
 private void InitRWISubsystem() {
-
-    C2JUtils.initArrayOfObjects(RWI);
-    
+    // CATCH: this must be executed AFTER screen is set, and
+    // AFTER we initialize the RWI themselves,
+    // before V is set (right?) 
     for (int i=0;i<NUMWALLTHREADS;i++){
         RWIExec[i]=new RenderWallExecutor(ylookup, screen,RWI,visplanebarrier);
+        RWIExec[i].setVideoScale(this.vs);
+        RWIExec[i].initScaling();
     }
 }
 
@@ -636,14 +638,14 @@ public void RenderPlayerView (player_t player)
   MyThings.ClearSprites ();
   
   // Check for new console commands.
-  DM.NetUpdate ();
+  DGN.NetUpdate ();
 
   // The head node is the last node output.
   MyBSP.RenderBSPNode (LL.numnodes-1);
   
   RenderRWIPipeline();
   // Check for new console commands.
-  DM.NetUpdate ();
+  DGN.NetUpdate ();
   
   // "Warped floor" fixed, same-height visplane merging fixed.
   MyPlanes.DrawPlanes ();
@@ -656,13 +658,13 @@ public void RenderPlayerView (player_t player)
 
   
   // Check for new console commands.
-  DM.NetUpdate ();
+  DGN.NetUpdate ();
   
   MyThings.DrawMasked ();
 
     
   // Check for new console commands.
-  DM.NetUpdate ();           
+  DGN.NetUpdate ();           
 }
  
 /**
@@ -706,6 +708,15 @@ public void Init ()
    R_InitTranMap(0);
    
    framecount = 0;
+}
+
+@Override
+public void initScaling(){
+    super.initScaling();
+    this.RWI=new RenderWallInstruction[SCREENWIDTH*3];
+    C2JUtils.initArrayOfObjects(RWI);
+    
+    initializeParallelStuff();
 }
 
   
