@@ -670,7 +670,7 @@ public void RenderPlayerView (player_t player)
  */
   
 //public int  detailLevel;
-//public int  screenblocks=9; // has default
+//public int  screenblocks=9; // has defa7ult
 
 public void Init ()
 
