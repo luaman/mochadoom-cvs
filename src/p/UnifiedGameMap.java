@@ -1445,7 +1445,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             episode = 1;
 
-            if (DM.isRegistered())
+            // MAES: if this isn't changed Ultimate Doom's switches
+            // won't work visually. TODO: are there any episode 4-only switches?
+            if (DM.isRetail())
                 episode = 2;
             else if (DM.isCommercial())
                 episode = 3;
