@@ -25,6 +25,7 @@ import rr.spriteframe_t;
 import s.IDoomSound;
 import v.DoomVideoRenderer;
 import w.IWadLoader;
+import data.Defines;
 import data.mobjtype_t;
 import data.sounds.musicenum_t;
 import data.state_t;
@@ -39,7 +40,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.14 2011/05/21 14:49:29 velktron Exp $
+// $Id: Finale.java,v 1.15 2011/05/23 10:11:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -60,7 +61,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.14 2011/05/21 14:49:29 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.15 2011/05/23 10:11:56 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -156,6 +157,8 @@ public void StartFinale ()
         
         // DOOM II and missions packs with E1, M34
         case commercial:
+        case pack_tnt:
+        case pack_plut:
         {
         S.ChangeMusic(musicenum_t.mus_read_m, true);
 
@@ -254,8 +257,8 @@ public void StartFinale ()
       
       if ( DS.isCommercial())
       return;
-          
-      if ((finalestage!=0) && finalecount> finaletext.length()*TEXTSPEED + TEXTWAIT)
+      // MAES: this is when we can transition to bunny.
+      if ((finalestage==0) && finalecount> finaletext.length()*TEXTSPEED + TEXTWAIT)
       {
       finalecount = 0;
       finalestage = 1;
@@ -410,7 +413,7 @@ public void StartFinale ()
       caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate.ordinal()];
       casttics = (int) caststate.tics;
       castdeath = false;
-      finalestage = 2;    
+      finalestage = 2;
       castframes = 0;
       castonmelee = 0;
       castattacking = false;
@@ -429,7 +432,7 @@ public void StartFinale ()
       if (--casttics > 0)
       return;         // not time to change state yet
           
-      if (caststate.tics == -1 || caststate.nextstate == statenum_t.S_NULL)
+      if (caststate.tics == -1 || caststate.nextstate == statenum_t.S_NULL || caststate.nextstate==null)
       {
       // switch from deathstate to next monster
       castnum++;
@@ -445,16 +448,11 @@ public void StartFinale ()
       {
       // just advance to next state in animation
       if (caststate == states[statenum_t.S_PLAY_ATK1.ordinal()]) {
-          stopattack();
-          // Do exit stuff...
-          casttics = (int) caststate.tics;
-          if (casttics == -1)
-          casttics = 15;
-          
-          //bye..
-          return;          
-      }
-         // goto stopattack;    // Oh, gross hack!
+          stopattack();  // Oh, gross hack!
+          afterstopattack();
+          return; // bye ...
+      	  }
+   
       st = caststate.nextstate;
       caststate = states[st.ordinal()];
       castframes++;
@@ -523,15 +521,19 @@ public void StartFinale ()
         stopattack();      
       }
       
-      casttics = (int) caststate.tics;
-      if (casttics == -1)
-      casttics = 15;
+      afterstopattack();
   }
 
 protected void stopattack(){
     castattacking = false;
     castframes = 0;
     caststate = states[mobjinfo[castorder[castnum].type.ordinal()].seestate.ordinal()];
+}
+
+protected void afterstopattack(){
+    casttics = (int) caststate.tics;
+    if (casttics == -1)
+    casttics = 15;
 }
   
   /**
@@ -573,7 +575,7 @@ protected void stopattack(){
       
       for (int i=0;i<ch.length;i++)
       {
-      c = ch[i]++;
+      c = ch[i++];
       if (c==0)
           break;
       c = Character.toUpperCase(c) - HU_FONTSTART;
@@ -626,7 +628,7 @@ protected void stopattack(){
       patch_t        patch=null;
       
       // erase the entire screen to a background
-      V.DrawPatch (0,0,0, W.CachePatchName ("BOSSBACK", PU_CACHE));
+      V.DrawPatchSolidScaled (0,0,Defines.SAFE_SCALE, Defines.SAFE_SCALE,0, W.CachePatchName ("BOSSBACK", PU_CACHE));
 
       this.CastPrint (castorder[castnum].name);
       
@@ -636,8 +638,8 @@ protected void stopattack(){
       sprframe = sprdef.spriteframes[ caststate.frame & FF_FRAMEMASK];
       lump = sprframe.lump[0];
       flip = eval(sprframe.flip[0]);
-               flip=false;
-              lump=0;
+              // flip=false;
+              //lump=0;
               
         patch = W.CachePatchNum(lump+R.getFirstSpriteLump(), PU_CACHE);
 
@@ -719,7 +721,7 @@ protected void stopattack(){
       if (scrolled < 0)
       scrolled = 0;
           
-      for ( x=0 ; x<SCREENWIDTH ; x++)
+      for ( x=0 ; x<320 ; x++)
       {
       if (x+scrolled < 320)
           this.DrawPatchCol (x, p1, x+scrolled);
@@ -731,8 +733,8 @@ protected void stopattack(){
       return;
       if (finalecount < 1180)
       {
-      V.DrawPatch ((SCREENWIDTH-13*8)/2,
-               (SCREENHEIGHT-8*8)/2,0, W.CachePatchName ("END0",PU_CACHE));
+      V.DrawPatch ((320-13*8)/2,
+               (320-8*8)/2,0, W.CachePatchName ("END0",PU_CACHE));
       laststage = 0;
       return;
       }
@@ -747,7 +749,7 @@ protected void stopattack(){
       }
       
       name=("END"+stage);
-      V.DrawPatch ((SCREENWIDTH-13*8)/2, (SCREENHEIGHT-8*8)/2,0, W.CachePatchName (name,PU_CACHE));
+      V.DrawPatch ((320-13*8)/2, (320-8*8)/2,0, W.CachePatchName (name,PU_CACHE));
   }
 
 
@@ -807,9 +809,8 @@ public void updateStatus(DoomStatus DC) {
     S=DC.S;
     HU=DC.HU;
     W=DC.W;
-    R=DC.R;
-    
-}
+    R=DC.R;    
+	}
 }
 
 
