@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.14 2011/05/21 16:53:24 velktron Exp $
+// $Id: EndLevel.java,v 1.15 2011/05/23 17:00:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.15  2011/05/23 17:00:39  velktron
+// Got rid of verbosity
+//
 // Revision 1.14  2011/05/21 16:53:24  velktron
 // Adapted to use new gamemode system.
 //
@@ -98,6 +101,8 @@ import m.random;
 import rr.*;
 import s.IDoomSound;
 import v.DoomVideoRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 
 /** This class (stuff.c) seems to implement the endlevel screens.
  *  If we want to go truly OO, it should be made non-.
@@ -106,7 +111,7 @@ import v.DoomVideoRenderer;
  *
  */
 
-public class EndLevel implements DoomStatusAware{
+public class EndLevel implements DoomStatusAware, IVideoScaleAware{
 
     ////////////////// STATUS ///////////////////
     private DoomMain DS;
@@ -133,6 +138,14 @@ public class EndLevel implements DoomStatusAware{
 public static final int FB= 0;
 private static final boolean RANGECHECKING = true;
 
+// Where to draw some stuff. To be scaled up, so they
+// are not final.
+
+public static int SP_STATSX;
+public static int SP_STATSY;
+
+public static int SP_TIMEX;
+public static int SP_TIMEY;
 
 // States for single-player
 protected static int SP_KILLS	=	0;
@@ -147,7 +160,6 @@ protected int SP_PAUSE	=	1;
 // in seconds
 protected  int SHOWNEXTLOCDELAY	=4;
 protected  int SHOWLASTLOCDELAY	=SHOWNEXTLOCDELAY;
-
 
 // used to accelerate or skip a stage
 int		acceleratestage;
@@ -1747,6 +1759,32 @@ public void updateStatus(DoomStatus DC) {
     this.S=DC.S;
 
     
+}
+
+
+//////////////////////////// VIDEO SCALE STUFF ////////////////////////////////
+
+protected int SCREENWIDTH;
+protected int SCREENHEIGHT;
+protected IVideoScale vs;
+
+
+@Override
+public void setVideoScale(IVideoScale vs) {
+    this.vs=vs;
+}
+
+@Override
+public void initScaling() {
+    this.SCREENHEIGHT=vs.getScreenHeight();
+    this.SCREENWIDTH=vs.getScreenWidth();
+
+    // Pre-scale stuff.
+    SP_STATSX       =50*vs.getSafeScaling();
+    SP_STATSY      = 50*vs.getSafeScaling();;
+
+    SP_TIMEX      =  16*vs.getSafeScaling();
+    SP_TIMEY      =  (SCREENHEIGHT-32)*vs.getSafeScaling();   
 }
 
 }

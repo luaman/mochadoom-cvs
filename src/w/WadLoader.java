@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.32 2011/05/22 21:08:28 velktron Exp $
+// $Id: WadLoader.java,v 1.33 2011/05/23 17:00:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.33  2011/05/23 17:00:39  velktron
+// Got rid of verbosity
+//
 // Revision 1.32  2011/05/22 21:08:28  velktron
 // Added better filename handling.
 //
@@ -421,7 +424,7 @@ public class WadLoader implements IWadLoader {
 				// LumpNameHash(lumpinfo[lump_p].name);
 				lumpinfo[lump_p].intname = name8
 						.getIntName(strupr(lumpinfo[lump_p].name));
-				System.out.println(lumpinfo[lump_p]);
+				//System.out.println(lumpinfo[lump_p]);
 			}
 			if (reloadname != null)
 				handle.close();
@@ -834,7 +837,7 @@ public class WadLoader implements IWadLoader {
 
 			// read the lump in
 
-			System.out.println("cache miss on lump " + lump);
+			//System.out.println("cache miss on lump " + lump);
 			// Read as a byte buffer anyway.
 			ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
 			ReadLump(lump, thebuffer);
@@ -842,7 +845,7 @@ public class WadLoader implements IWadLoader {
 			lumpcache[lump] = new DoomBuffer(thebuffer);
 
 		} else {
-			System.out.println("cache hit on lump " + lump);
+			//System.out.println("cache hit on lump " + lump);
 			// Z.ChangeTag (lumpcache[lump],tag);
 		}
 
