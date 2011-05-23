@@ -535,7 +535,7 @@ public abstract class SoftwareVideoRenderer
          column=patch.columns[w-1-col];
          
          // For each post...
-         System.out.println("Column"+(w-1-col));
+         //System.out.println("Column"+(w-1-col));
          for (int i=0;i<column.posts;i++){
              // Get pointer to post offset.
              int ptr=column.postofs[i];
