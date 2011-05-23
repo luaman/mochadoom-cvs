@@ -286,7 +286,7 @@ public class DoomStatus extends DoomContext {
     // wipegamestate can be set to -1 to force a wipe on the next draw
     public gamestate_t     wipegamestate = gamestate_t.GS_DEMOSCREEN;
     
-    public int mouseSensitivity=5;
+    public int mouseSensitivity=15;
     
     // debug flag to cancel adaptiveness
     // Set to true during timedemos.

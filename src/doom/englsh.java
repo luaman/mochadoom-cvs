@@ -3,7 +3,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: englsh.java,v 1.1 2010/06/30 08:58:50 velktron Exp $
+// $Id: englsh.java,v 1.2 2011/05/23 10:12:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -395,14 +395,14 @@ public final static String  E3TEXT =(
 "masterminded the invasion of the moon\n"+
 "bases and caused so much death has had\n"+
 "its ass kicked for all time.\n"+
-"+n"+
+"\n"+
 "A hidden doorway opens and you enter.\n"+
 "You've proven too tough for Hell to\n"+
 "contain, and now Hell at last plays\n"+
 "fair -- for you emerge from the door\n"+
 "to see the green fields of Earth!\n"+
 "Home at last.\n" +
-"+n"+
+"\n"+
 "You wonder what's been happening on\n"+
 "Earth while you were battling evil\n"+
 "unleashed. It's good that no Hell-\n"+
@@ -418,14 +418,14 @@ public final static String  E4TEXT =(
 "and brought forth eternal damnation and\n"+
 "suffering upon the horde as a true hero\n"+
 "would in the face of something so evil.\n"+
-"+n"+
+"\n"+
 "besides, someone was gonna pay for what\n"+
 "happened to daisy, your pet rabbit.\n"+
-"+n"+
+"\n"+
 "but now, you see spread before you more\n"+
 "potential pain and gibbitude as a nation\n"+
 "of demons run amok among our cities.\n"+
-"+n"+
+"\n"+
 "next stop, hell on earth!");
 
 
@@ -437,7 +437,7 @@ public final static String  C1TEXT =(
 "MONSTERS HAVE BROUGHT THEIR OWN REALITY\n" +
 "WITH THEM, AND THE STARPORT'S TECHNOLOGY\n" +
 "IS BEING SUBVERTED BY THEIR PRESENCE.\n" +
-"+n"+
+"\n"+
 "AHEAD, YOU SEE AN OUTPOST OF HELL, A\n" +
 "FORTIFIED ZONE. IF YOU CAN GET PAST IT,\n" +
 "YOU CAN PENETRATE INTO THE HAUNTED HEART\n" +
@@ -456,7 +456,7 @@ public final static String  C2TEXT =(
 "AND EVIL SPIRITS ARE YOUR ONLY NEIGHBORS.\n"+
 "YOU SIT BACK AND WAIT FOR DEATH, CONTENT\n"+
 "THAT YOU HAVE SAVED YOUR SPECIES.\n"+
-"+n"+
+"\n"+
 "BUT THEN, EARTH CONTROL BEAMS DOWN A\n"+
 "MESSAGE FROM SPACE: \"SENSORS HAVE LOCATED\n"+
 "THE SOURCE OF THE ALIEN INVASION. IF YOU\n"+
@@ -475,7 +475,7 @@ public final static String  C3TEXT =(
 "YOU SEE NO WAY TO DESTROY THE CREATURES'\n"+
 "ENTRYWAY ON THIS SIDE, SO YOU CLENCH YOUR\n"+
 "TEETH AND PLUNGE THROUGH IT.\n"+
-"+n"+
+"\n"+
 "THERE MUST BE A WAY TO CLOSE IT ON THE\n"+
 "OTHER SIDE. WHAT DO YOU CARE IF YOU'VE\n"+
 "GOT TO GO THROUGH HELL TO GET TO IT?");
@@ -491,7 +491,7 @@ public final static String  C4TEXT =(
 "UP AND DIES, ITS THRASHING LIMBS\n"+
 "DEVASTATING UNTOLD MILES OF HELL'S\n"+
 "SURFACE.\n"+
-"+n"+
+"\n"+
 "YOU'VE DONE IT. THE INVASION IS OVER.\n"+
 "EARTH IS SAVED. HELL IS A WRECK. YOU\n"+
 "WONDER WHERE BAD FOLKS WILL GO WHEN THEY\n"+
@@ -530,7 +530,7 @@ public final static String  P1TEXT  =(
 "room.  Damn!  There was supposed to be at\n"+
 "least one working prototype, but you can't\n"+
 "see it. The demons must have taken it.\n"+
-"+n"+
+"\n"+
 "You must find the prototype, or all your\n"+
 "struggles will have been wasted. Keep\n"+
 "moving, keep fighting, keep killing.\n"+
@@ -544,7 +544,7 @@ public final static String  P2TEXT =(
 "not stop you, and you've gotten to the\n"+
 "prototype Accelerator which is soon\n"+
 "efficiently and permanently deactivated.\n"+
-"+n"+
+"\n"+
 "You're good at that kind of thing.");
 
 
@@ -557,7 +557,7 @@ public final static String  P3TEXT =(
 "Gatekeeper, whose foul offspring is\n"+
 "cascading to Earth.  Yeah, he's bad. But\n"+
 "you know who's worse!\n"+
-"+n"+
+"\n"+
 "Grinning evilly, you check your gear, and\n"+
 "get ready to give the bastard a little Hell\n"+
 "of your own making!");
@@ -601,7 +601,7 @@ public final static String  T1TEXT =(
 "high turnover, it must be hard for poor\n"+
 "old UAC to buy corporate health insurance\n"+
 "nowadays..\n"+
-"+n"+
+"\n"+
 "Ahead lies the military complex, now\n"+
 "swarming with diseased horrors hot to get\n"+
 "their teeth into you. With luck, the\n"+
@@ -617,7 +617,7 @@ public final static String  T2TEXT =(
 "They might be planning a blood feast, but\n"+
 "you feel about as mean as two thousand\n"+
 "maniacs packed into one mad killer.\n"+
-"+n"+
+"\n"+
 "You don't plan to go down easy.");
 
 
@@ -639,7 +639,7 @@ public final static String  T4TEXT =(
 "to evaporate along with the evil stench \n"+
 "that filled the air. Jeeze, maybe you've\n"+
 "done it. Have you really won?\n"+
-"+n"+
+"\n"+
 "Something rumbles in the distance.\n"+
 "A blue light begins to glow inside the\n"+
 "ruined skull of the demon-spitter.");
@@ -661,7 +661,7 @@ public final static String  T6TEXT =(
 "next time around. Ahead lies a quiet town,\n"+
 "with peaceful flowing water, quaint\n"+
 "buildings, and presumably no Hellspawn.\n"+
-"+n"+
+"\n"+
 "As you step off the transport, you hear\n"+
 "the stomp of a cyberdemon's iron shoe.");
 
