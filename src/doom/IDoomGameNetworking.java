@@ -2,7 +2,7 @@ package doom;
 
 /** Doom is actually tied to its networking module.
  *  Therefore, no matter where and how you implement it, these functions
- *  need to be callable from withing many modules.
+ *  need to be callable from within many modules.
  *  
  *  This is the so called "game networking" which is internal and game-specific,
  *  and not system networking which deals with the low level sockets and packet 

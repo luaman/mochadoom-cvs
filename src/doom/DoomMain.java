@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.StringTokenizer;
 
 import n.DummyNetworkDriver;
@@ -52,6 +53,8 @@ import savegame.VanillaDSGHeader;
 import st.StatusBar;
 import utils.C2JUtils;
 import v.BufferedRenderer;
+import v.IVideoScale;
+import v.IVideoScaleAware;
 import w.DoomFile;
 import w.EndLevel;
 import w.WadLoader;
@@ -68,7 +71,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.43 2011/05/22 21:10:38 velktron Exp $
+// $Id: DoomMain.java,v 1.44 2011/05/23 17:00:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -92,9 +95,9 @@ import static utils.C2JUtils.*;
 //
 //-----------------------------------------------------------------------------
 
-public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom{
+public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.43 2011/05/22 21:10:38 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.44 2011/05/23 17:00:23 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -198,12 +201,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 break;
             if (automapactive)
                 AM.Drawer ();
-            if (wipe || (R.viewheight != SCREENHEIGHT && fullscreen) )
+            if (wipe || (!R.isFullHeight() && fullscreen) )
                 redrawsbar = true;
             if (inhelpscreensstate && !inhelpscreens)
                 redrawsbar = true;              // just put away the help screen
-            ST.Drawer (R.viewheight == SCREENHEIGHT, redrawsbar );
-            fullscreen = R.viewheight == SCREENHEIGHT;
+            ST.Drawer (R.isFullHeight(), redrawsbar );
+            fullscreen = R.isFullHeight();
             break;
 
         case GS_INTERMISSION:
@@ -244,7 +247,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
         // see if the border needs to be updated to the screen
-        if (gamestate == gamestate_t.GS_LEVEL && !automapactive && R.scaledviewwidth != SCREENWIDTH)
+        if (gamestate == gamestate_t.GS_LEVEL && !automapactive && !R.isFullScreen())
         {
             if (menuactive || menuactivestate || !viewactivestate)
                 borderdrawcount = 3;
@@ -361,7 +364,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             }
             else
             {
-                TryRunTics (); // will run at least one tic (in NET)
+                DGN.TryRunTics (); // will run at least one tic (in NET)
 
             }
 
@@ -1045,7 +1048,15 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // set it, create it, but don't make it visible yet.
         VI=new AWTDoom(this,(BufferedRenderer) V,pal);
         VI.InitGraphics ();
+        
+        // TODO Before we begin calling the various Init() stuff,
+        // we need to make sure that objects that support the IVideoScaleAware
+        // interface get set and initialized.
+        
+        initializeVideoScaleStuff();
 
+        // MAES: The status bar needs this update because it can "force"
+        // the video renderer to assign it a scratchpad screen (Screen 4).
         this.ST.updateStatus(this);
 
         // MAES: Check for Ultimate Doom in "doom.wad" filename.
@@ -1200,7 +1211,43 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     }
 
 
-	/**
+    List<IVideoScaleAware> videoScaleChildren;
+    
+	public  void initializeVideoScaleStuff() {
+	    
+	    videoScaleChildren=new ArrayList<IVideoScaleAware>();
+	    
+	    // The automap...
+	    videoScaleChildren.add(this.AM);
+	    // The finale...
+	    videoScaleChildren.add(this.F);
+        // The wiper...
+	    videoScaleChildren.add(this.WIPE);
+        // The heads up...
+	    videoScaleChildren.add(this.HU);
+        // The menu...
+        videoScaleChildren.add(this.M);
+        // The renderer (also has dependent children!)
+        videoScaleChildren.add(this.R);
+        // The Status Bar
+        videoScaleChildren.add(this.ST);
+        // Even the video renderer needs some initialization?
+        videoScaleChildren.add(this.V);
+        // Even the video renderer needs some initialization?
+        videoScaleChildren.add(this.WI);
+        
+        for(IVideoScaleAware i:videoScaleChildren){
+            if (i!=null){
+            i.setVideoScale(this.vs);
+            i.initScaling();
+            }
+        }
+
+	    
+    }
+
+
+    /**
 	 * 
 	 */
 	protected void CheckForPWADSInShareware() {
@@ -2877,8 +2924,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     /**
      * Since this is a fully OO implementation, we need a way to create
      * the instances of the Refresh daemon, the Playloop, the Wadloader 
-     * etc. which however are now completely independent of each other,
-     * and are typically only passed context when instantiated.
+     * etc. which however are now completely independent of each other
+     * (well, ALMOST), and are typically only passed context when 
+     * instantiated.
      * 
      *  If you instantiate one too early, it will have null context.
      *  
@@ -2894,6 +2942,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.DM=this;
         this.DG = this;
         this.DNI=new DummyNetworkDriver(this);
+        this.DGN=this; // DoomMain also handles its own Game Networking.
         this.RND=new random();    
         // In primis, the video renderer.
         this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
@@ -2909,7 +2958,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.HU=new HU(this);
         this.M=new Menu(this);
         this.LL=new LevelLoader(this);
-        this.R=new ParallelRenderer(this);
+        this.R=new UnifiedRenderer(this);
         this.P=new Actions(this);
 
         this.ST=new StatusBar(this);
@@ -3809,9 +3858,33 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public gameaction_t getGameAction() {       
         return this.gameaction;
     }
+    
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+    protected int SCREENWIDTH;
+    protected int SCREENHEIGHT;
+    protected int SAFE_SCALE;
+    protected IVideoScale vs;
+
+
+    @Override
+    public void setVideoScale(IVideoScale vs) {
+        this.vs=vs;
+    }
+
+    @Override
+    public void initScaling() {
+        this.SCREENHEIGHT=vs.getScreenHeight();
+        this.SCREENWIDTH=vs.getScreenWidth();
+        this.SAFE_SCALE=vs.getSafeScaling();
+    }
+    
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.44  2011/05/23 17:00:23  velktron
+//Migrated to VideoScaleInfo, DoomMain now is IGN.
+//
 //Revision 1.43  2011/05/22 21:10:38  velktron
 //Fixed an INCREDIBLY stupid bug in the wiper code, which prevented it from working correctly all this time -_-
 //
