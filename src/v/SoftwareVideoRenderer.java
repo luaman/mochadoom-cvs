@@ -1,8 +1,6 @@
 package v;
 
 import static data.Defines.RANGECHECK;
-import static data.Defines.SCREENHEIGHT;
-import static data.Defines.SCREENWIDTH;
 
 import i.IDoomSystem;
 
@@ -22,7 +20,7 @@ import rr.patch_t;
 import utils.C2JUtils;
 
 public abstract class SoftwareVideoRenderer
-        implements DoomVideoRenderer {
+        implements DoomVideoRenderer, IVideoScaleAware{
 
     IDoomSystem I;
     
@@ -743,6 +741,24 @@ public abstract class SoftwareVideoRenderer
           if (screens[screen][i]!=0) return false;
       }
       return true;
+  }
+  
+////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+  protected int SCREENWIDTH;
+  protected int SCREENHEIGHT;
+  protected IVideoScale vs;
+
+
+  @Override
+  public void setVideoScale(IVideoScale vs) {
+      this.vs=vs;
+  }
+
+  @Override
+  public void initScaling() {
+      this.SCREENHEIGHT=vs.getScreenHeight();
+      this.SCREENWIDTH=vs.getScreenWidth();
   }
 
     

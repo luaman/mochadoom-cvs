@@ -1,6 +1,5 @@
 package v;
 
-import java.awt.Color;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
 
@@ -13,7 +12,7 @@ import rr.patch_t;
  *
  */
 
-public interface DoomVideoRenderer {
+public interface DoomVideoRenderer extends IVideoScaleAware {
     // Allocates buffer screens, call before R_Init.
     public void Init();
 
