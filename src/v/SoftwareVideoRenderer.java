@@ -455,17 +455,21 @@ public abstract class SoftwareVideoRenderer
    }
    
    
-    scaleSolid(m,n, scrn);  
+    scaleSolid(m,n, scrn,m*patch.width);  
   }
   
 
-  protected final void scaleSolid(int m, int n, int screen){
-      int screenwidth=this.getWidth();
-      for (int i=0;i<this.getHeight();i+=n){
+  /** Pretty crude in-place scaling. It's fast, but only works full-screen 
+   * Width needs to be specific, height is implied.
+   *  */
+  
+  protected final void scaleSolid(int m, int n, int screen,int width){
+      int height=screens[screen].length/width;
+      for (int i=0;i<height;i+=n){
            
           for (int j=0;j<n-1;j++){
 
-              System.arraycopy(screens[screen], (i+j)*screenwidth, screens[screen],(i+j+1)*screenwidth,screenwidth);
+              System.arraycopy(screens[screen], (i+j)*width, screens[screen],(i+j+1)*width,width);
           }
       }
       
@@ -592,6 +596,12 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
   }
 #endif*/
 
+    // A very common operation, eliminates the need to pre-divide.
+    if (C2JUtils.flags(scrn,V_PREDIVIDE)){
+        x/=vs.getScalingX();
+        y/=vs.getScalingY();
+    }
+    
     if (C2JUtils.flags(scrn, V_NOSCALEPATCH))
         dupx = dupy = 1;
     else

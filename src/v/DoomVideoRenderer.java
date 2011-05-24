@@ -24,6 +24,7 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
     public static final int V_WHITEMAP          = 0x100000;   // draw white (for v_drawstring)
     public static final int V_FLIPPEDPATCH      = 0x200000;   // flipped in y
     public static final int V_TRANSLUCENTPATCH  = 0x400000;   // draw patch translucent    
+    public static final int V_PREDIVIDE  = 0x800000;   // pre-divide by best x/y scale.    
     
     // Allocates buffer screens, call before R_Init.
     public void Init();
