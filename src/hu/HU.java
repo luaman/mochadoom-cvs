@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.25 2011/05/23 16:56:44 velktron Exp $
+// $Id: HU.java,v 1.26 2011/05/24 17:45:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -48,9 +48,9 @@ import doom.evtype_t;
 import doom.player_t;
 
 
-public class HU implements DoomStatusAware, IVideoScaleAware {
+public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.25 2011/05/23 16:56:44 velktron Exp $";
+        "$Id: HU.java,v 1.26 2011/05/24 17:45:08 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -88,11 +88,15 @@ public class HU implements DoomStatusAware, IVideoScaleAware {
 
     protected final static int HU_INPUTHEIGHT = 1;
 
-    protected static final String[] chat_macros =
+    public String[] chat_macros =
         { HUSTR_CHATMACRO0, HUSTR_CHATMACRO1, HUSTR_CHATMACRO2,
                 HUSTR_CHATMACRO3, HUSTR_CHATMACRO4, HUSTR_CHATMACRO5,
                 HUSTR_CHATMACRO6, HUSTR_CHATMACRO7, HUSTR_CHATMACRO8,
                 HUSTR_CHATMACRO9 };
+    
+    public void setChatMacro(int i, String s){
+        this.chat_macros[i]=s;
+    }
 
     /** Needs to be seen by DoomGame */
     public final static String[] player_names =
@@ -389,6 +393,12 @@ public class HU implements DoomStatusAware, IVideoScaleAware {
     	}
     	this.w_title=new hu_textline_t();
     	this.w_chat=new hu_itext_t();
+    }
+
+    
+    /** Used only for testing */
+    public HU() {
+
     }
 
     /**
@@ -1224,6 +1234,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware {
 }
 
 //$Log: HU.java,v $
+//Revision 1.26  2011/05/24 17:45:08  velktron
+//IHeadsUp interface, setChatMacro method.
+//
 //Revision 1.25  2011/05/23 16:56:44  velktron
 //Migrated to VideoScaleInfo.
 //
