@@ -4322,7 +4322,7 @@ validcount++;
           {
               scaledviewwidth = setblocks*(SCREENWIDTH/10);
               // Height can only be a multiple of 8.
-              viewheight = (short) ((setblocks*(SCREENHEIGHT- StatusBar.ST_HEIGHT)/10)&~7);
+              viewheight = (short) ((setblocks*(SCREENHEIGHT- DM.ST.getHeight())/10)&~7);
           }
           
           detailshift = setdetail;
