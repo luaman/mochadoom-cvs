@@ -2,51 +2,46 @@ package m;
 
 import static data.Defines.*;
 import static doom.englsh.*;
-import doom.DoomContext;
+import utils.C2JUtils;
 import doom.DoomStatus;
 
 
-/** default settings enum */
+/** An anumeration with all possible settings and their defaults 
+ *  Given Doom's status as a parameter, they can "autoapply" themselves.
+ *  The can also be modified by reading from a file, or be used to
+ *  generate a string to be written to a file.
+ *  
+ */
 
 public enum Settings {
-
-       
     mouse_sensitivity(5),
     sfx_volume(8),
    music_volume(8),
    show_messages(1),
    key_right(KEY_RIGHTARROW),
-key_left(KEY_LEFTARROW),
-key_up(KEY_UPARROW),
-key_down(KEY_DOWNARROW),
-key_strafeleft(','),
-key_straferight('.'),
-
+   key_left(KEY_LEFTARROW),
+   key_up(KEY_UPARROW),
+   key_down(KEY_DOWNARROW),
+   key_strafeleft(','),
+   key_straferight('.'),
    key_fire(KEY_RCTRL),
    key_use(' '),
    key_strafe(KEY_RALT),
    key_speed(KEY_RSHIFT),
-
    use_mouse(1),
    mouseb_fire(0),
    mouseb_strafe(1),
    mouseb_forward(2),
-
    use_joystick( 0),
    joyb_fire(0),
    joyb_strafe(1),
    joyb_use(3),
    joyb_speed(2),
-
-   screenblocks( 9),
-   detaillevel( 0),
-
-   snd_channels( 3),
-
-
-
+   screenblocks(9),
+   detaillevel(0),
+   snd_channels(3),
    usegamma(0),
-
+   mb_used(2),
    chatmacro0(HUSTR_CHATMACRO0 ),
    chatmacro1(HUSTR_CHATMACRO1 ),
    chatmacro2( HUSTR_CHATMACRO2 ),
@@ -59,106 +54,169 @@ key_straferight('.'),
    chatmacro9( HUSTR_CHATMACRO9 );
 
         private Settings(int defaultval){
-            this.defaultval=defaultval;
-            this.sZdefaultval="";
+            this.setvalue=defaultval;
+            this.defaultvalue=defaultval;
             this.numeric=true;
+            this.szdefaultval=Integer.toString(defaultvalue);
         }
 
 private Settings(String defaultval){
-    this.defaultval=0;
-    this.sZdefaultval=defaultval;
+    this.defaultvalue=-1;
+    this.setszvalue=new String(defaultval);;
+    this.szdefaultval=new String(defaultval);
     this.numeric=false;
 }
 
-static public void applySetting(DoomContext DC, Settings s,String value){
+
+/** Each setting "knows" where it is appliable. Hardcoded,
+ *  mega-switch statement hack, unless you want to use reflection (ugh...)
+ *  
+ * @param DS
+ */
+public void applySetting(DoomStatus DS){
     
     int val=0;
-    if (s.numeric){
-        try{
-        val=Integer.parseInt(value);
-    } catch (NumberFormatException e){
-        // Imparseable or non-numeric
-        val=s.defaultval;
-    }
-    }
+    String Stringval;
+    if (this.numeric)
+        val=this.setvalue;
     
-    if (s.numeric){        
-    
-   switch(s){
-   
+    if (this.numeric){
+   switch(this){   
    case sfx_volume:
-       DC.DS.snd_SfxVolume=val;
+       DS.snd_SfxVolume=val;
        break;
    case music_volume:
-       DC.DS.snd_MusicVolume=val;
+       DS.snd_MusicVolume=val;
+       break;
    case show_messages: 
-       DC.M.setShowMessages(val);
-   }
-    }
+       DS.M.setShowMessages(C2JUtils.eval(val));
+       break;
+   case key_right:
+       DS.key_right=val;
+       break;
+   case key_left:
+       DS.key_left=val;
+       break;
+   case key_up:
+       DS.key_up=val;
+       break;
+   case key_down:
+       DS.key_down=val;
+       break;
+   case key_strafeleft:
+       DS.key_strafeleft=val;
+       break;
+   case key_straferight:
+       DS.key_straferight=val;
+       break;
+   case key_fire:
+       DS.key_fire=val;
+       break;
+   case key_use:
+       DS.key_use=val;
+       break;
+   case key_strafe:
+       DS.key_strafe=val;
+       break;
+   case key_speed:
+       DS.key_speed=val;
+       break;
+   case use_mouse:
+       DS.use_mouse=C2JUtils.eval(val);
+       break;
+   case mouseb_fire:
+       //DS.mouseb_fire=val;
+       break;
+   case mouseb_strafe:
+       //DS.mouseb_fire=val;
+       break;
+   case mouseb_forward:
+       //DS.mouseb_fire=val;
+       break;   
+   case use_joystick:
+       //DS.mouseb_fire=val;
+       break;
+   case joyb_fire:
+       //DS.mouseb_fire=val;
+       break;
+   case joyb_strafe:
+       //DS.mouseb_fire=val;
+       break;   
+   case joyb_use:
+       //DS.mouseb_fire=val;
+       break;
+   case joyb_speed:
+       //DS.mouseb_fire=val;
+       break;
+   case screenblocks:
+       DS.M.setScreenBlocks(val);
+       break;
+   case detaillevel:
+       //DS.mouseb_fire=val;
+       break;   
+   case snd_channels:
+       // Defined in sound.c, originally.
+       // TODO DS.numChannels=val;
+       break;
+   case mb_used:
+       // Memory used. Any practical use?
+       //TODO DS.mb_used=val;
+       break;
+   } // end mega-switch
+    } // end-numeric
+   else {
+       switch (this){
+       case chatmacro0:
+           DS.HU.setChatMacro(0, setszvalue);
+           break;
+       case chatmacro1:
+           DS.HU.setChatMacro(1, setszvalue);
+           break;
+       case chatmacro2:
+           DS.HU.setChatMacro(2, setszvalue);
+           break;
+       case chatmacro3:
+           DS.HU.setChatMacro(3, setszvalue);
+           break;
+       case chatmacro4:
+           DS.HU.setChatMacro(4, setszvalue);
+           break;
+       case chatmacro5:
+           DS.HU.setChatMacro(5, setszvalue);
+           break;
+       case chatmacro6:
+           DS.HU.setChatMacro(6, setszvalue);
+           break;
+       case chatmacro7:
+           DS.HU.setChatMacro(7, setszvalue);
+           break;
+       case chatmacro8:
+           DS.HU.setChatMacro(8, setszvalue);
+           break;
+       case chatmacro9:
+           DS.HU.setChatMacro(9, setszvalue);
+           break;
+           }
+    } // end string
+}
+   
+   
 
-new default_t("key_right",&key_right, KEY_RIGHTARROW),
-new default_t("key_left",&key_left, KEY_LEFTARROW),
-new default_t("key_up",&key_up, KEY_UPARROW),
-new default_t("key_down",&key_down, KEY_DOWNARROW),
-new default_t("key_strafeleft",&key_strafeleft, ','),
-new default_t("key_straferight",&key_straferight, '.'),
-
-    new default_t("key_fire",&key_fire, KEY_RCTRL),
-    new default_t("key_use",&key_use, ' '),
-    new default_t("key_strafe",&key_strafe, KEY_RALT),
-    new default_t("key_speed",&key_speed, KEY_RSHIFT),
 
 // UNIX hack, to be removed. 
 //#ifdef SNDSERV
-    new default_t("sndserver", (int *) &sndserver_filename, (int) "sndserver"),
-    new default_t("mb_used", &mb_used, 2),
-//#endif
-    
+//    new default_t("sndserver", (int *) &sndserver_filename, (int) "sndserver"),    
+//#endif    
 //#endif
 
 //#ifdef LINUX
-    new default_t("mousedev", (int*)&mousedev, (int)"/dev/ttyS0"),
-    new default_t("mousetype", (int*)&mousetype, (int)"microsoft"),
+//    new default_t("mousedev", (int*)&mousedev, (int)"/dev/ttyS0"),
+//    new default_t("mousetype", (int*)&mousetype, (int)"microsoft"),
 //#endif
 
-    new default_t("use_mouse",&usemouse, 1),
-    new default_t("mouseb_fire",&mousebfire,0),
-    new default_t("mouseb_strafe",&mousebstrafe,1),
-    new default_t("mouseb_forward",&mousebforward,2),
-
-    new default_t("use_joystick",&usejoystick, 0),
-    new default_t("joyb_fire",&joybfire,0),
-    new default_t("joyb_strafe",&joybstrafe,1),
-    new default_t("joyb_use",&joybuse,3),
-    new default_t("joyb_speed",&joybspeed,2),
-
-    new default_t("screenblocks",&screenblocks, 9),
-    new default_t("detaillevel",&detailLevel, 0),
-
-    new default_t("snd_channels",&numChannels, 3),
-
-
-
-    new default_t("usegamma",&usegamma, 0),
-
-    new default_t("chatmacro0", (int *) &chat_macros[0], (int) HUSTR_CHATMACRO0 ),
-    new default_t("chatmacro1", (int *) &chat_macros[1], (int) HUSTR_CHATMACRO1 ),
-    new default_t("chatmacro2", (int *) &chat_macros[2], (int) HUSTR_CHATMACRO2 ),
-    new default_t("chatmacro3", (int *) &chat_macros[3], (int) HUSTR_CHATMACRO3 ),
-    new default_t("chatmacro4", (int *) &chat_macros[4], (int) HUSTR_CHATMACRO4 ),
-    new default_t("chatmacro5", (int *) &chat_macros[5], (int) HUSTR_CHATMACRO5 ),
-    new default_t("chatmacro6", (int *) &chat_macros[6], (int) HUSTR_CHATMACRO6 ),
-    new default_t("chatmacro7", (int *) &chat_macros[7], (int) HUSTR_CHATMACRO7 ),
-    new default_t("chatmacro8", (int *) &chat_macros[8], (int) HUSTR_CHATMACRO8 ),
-    new default_t("chatmacro9", (int *) &chat_macros[9], (int) HUSTR_CHATMACRO9 )
-
-};
-    */
-
-}
-        public int defaultval;
-        public String sZdefaultval;
+        public int setvalue;
+        public String setszvalue;
+        public final int defaultvalue;
+        public final String szdefaultval;
         public boolean numeric=false;
-        
-        
     }
