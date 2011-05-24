@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: IDoomStatusBar.java,v 1.1 2011/05/24 11:31:23 velktron Exp $
+// $Id: IDoomStatusBar.java,v 1.2 2011/05/24 13:42:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -42,41 +42,27 @@ public interface IDoomStatusBar extends IVideoScaleAware{
     //
 
     /** Called by main loop. */
-    public boolean ST_Responder (event_t ev);
+    public boolean Responder (event_t ev);
 
     /** Called by main loop. */
-    public void ST_Ticker ();
+    public void Ticker ();
 
     /** Called by main loop.*/
-    public void ST_Drawer (boolean fullscreen, boolean refresh);
+    public void Drawer (boolean fullscreen, boolean refresh);
 
     /** Called when the console player is spawned on each level. */
-    public void ST_Start ();
+    public void Start ();
 
     /** Called by startup code. */
-    public void ST_Init ();
+    public void Init ();
+
+    /** Used externally to determine window scaling. 
+     *  This means that drawing transparent status bars is possible, but
+     *  it will look fugly because of the solid windowing (and possibly
+     *  HOMS).
+     */
+    public int getHeight();
     
-//
-// STATUS BAR
-//
-
-// Called by main loop.
-public boolean Responder (event_t ev);
-
-// Called by main loop.
-public void Ticker ();
-
-// Called by main loop.
-public void Drawer (boolean fullscreen, boolean refresh);
-
-// Called when the console player is spawned on each level.
-public void Start ();
-
-// Called by startup code.
-public void Init ();
-
-public void Stop();
-
 /** HACK: replicates status update here for stupid reasons */
 public void updateStatus(DoomStatus DS);
 

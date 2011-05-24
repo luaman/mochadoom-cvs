@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.28 2011/05/24 11:31:23 velktron Exp $
+// $Id: StatusBar.java,v 1.29 2011/05/24 13:42:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.29  2011/05/24 13:42:22  velktron
+// Fidgeting around with the STBar refresh
+//
 // Revision 1.28  2011/05/24 11:31:23  velktron
 // Got rid of a whole bunch of useless interfaces.
 //
@@ -158,10 +161,11 @@ import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
 import w.IWadLoader;
+import static v.DoomVideoRenderer.*;
 
 public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.28 2011/05/24 11:31:23 velktron Exp $";
+        "$Id: StatusBar.java,v 1.29 2011/05/24 13:42:22 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -658,7 +662,8 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             //V.DrawPatch(ST_X, 0, BG, sbar);
 
             if (DM.netgame)
-                V.DrawPatch(ST_FX, 0, BG, faceback);
+                V.DrawScaledPatch(ST_FX, 0, BG,vs, faceback);
+                //V.DrawPatch(ST_FX, 0, BG, faceback);
 
             V.CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
         }
@@ -668,7 +673,8 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
     public void Init() {
         veryfirsttime = 0;
         loadData();
-        // MAES: screen(4) of the Video Renderer is actually reserved for the status bar.       
+        // MAES: screen(4) of the Video Renderer is actually reserved for the status bar.
+        // The "clean" status bar is cached in there, and redrawn only as required.
         
         this.V.setScreen(4,ST_WIDTH,ST_HEIGHT);
     }
@@ -1497,7 +1503,11 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
     }
 
-    /** Binary Icon widget */
+    /** Binary Icon widget 
+     *  This is used for stuff such as keys or weapons, which you either have
+     *  or you don't.
+     * 
+     * */
 
     class st_binicon_t
             implements StatusBarWidget {
@@ -1555,9 +1565,9 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
                     I.Error("updateBinIcon: y - ST_Y < 0");
 
                 if (bi.val[valindex])
-                    V.DrawPatch(bi.x, bi.y, FG, bi.p);
+                    V./*DrawPatch*/DrawScaledPatch(bi.x, bi.y, V_PREDIVIDE|FG,vs, bi.p);
                 else
-                    V.CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
+                    V.CopyRect(x/vs.getScalingX(), y/vs.getScalingY() - ST_Y, BG, w*vs.getScalingX(), h*vs.getScalingY(), x, y, FG);
 
                 bi.oldval = bi.val[valindex];
             }
@@ -1653,7 +1663,9 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
                     V.CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
                 }
-                V.DrawPatch(this.x, this.y, FG, this.p[thevalue]);
+                
+                V.DrawScaledPatch(this.x, this.y, V_PREDIVIDE|FG, vs,this.p[thevalue]);
+                
                 this.oldinum = thevalue;
             }
         }
@@ -1714,6 +1726,7 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             this.on = on;
             this.onindex=onindex;
             this.p = pl;
+            this.numindex=numindex; // _D_ fixed this bug
         }
 
         // 
@@ -1751,13 +1764,14 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             }
 
             // clear the area
-            x = this.x - numdigits * w;
+            x = this.x - numdigits * w*BEST_X_SCALE;
 
             if (this.y - ST_Y < 0) {
                 I.Error("drawNum: n.y - ST_Y < 0");
             }
 
-            V.CopyRect(x, this.y - ST_Y, BG, w * numdigits, h, x, n.y, FG);
+            // Restore BG from buffer
+            //V.CopyRect(x, y- ST_Y, BG, w * numdigits*BEST_X_SCALE, h*BEST_Y_SCALE, x, y, FG);
 
             // if non-number, do not draw it
             if (num == 1994)
@@ -1767,18 +1781,22 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
             // in the special case of 0, you draw 0
             if (num == 0)
-                V.DrawPatch(x - w, n.y, FG, n.p[0]);
-
+                //V.DrawPatch(x - w, n.y, FG, n.p[0]);
+                V.DrawScaledPatch(x - w*vs.getScalingX(), n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, vs,n.p[0]);
+                
+                
             // draw the new number
             while (((num != 0) && (numdigits-- != 0))) {
-                x -= w;
-                V.DrawPatch(x, n.y, FG, n.p[num % 10]);
+                x -= w*BEST_X_SCALE;
+                //V.DrawPatch(x, n.y, FG, n.p[num % 10]);
+                V.DrawScaledPatch(x, n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH,vs, n.p[num % 10]);
                 num /= 10;
             }
 
             // draw a minus sign if necessary
             if (neg)
-                V.DrawPatch(x - 8, n.y, FG, sttminus);
+                V.DrawScaledPatch/*DrawPatch*/(x - 8*BEST_X_SCALE, n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH,vs, sttminus);
+                //V.DrawPatch(x - sttminus.width*vs.getScalingX(), n.y, FG, sttminus);
         }
 
         @Override
@@ -1809,7 +1827,7 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
         @Override
         public void update(boolean refresh) {
             if (refresh && this.n.on[0])
-                V.DrawPatch(n.x, n.y, FG, p);
+                V.DrawScaledPatch(n.x, n.y, V_PREDIVIDE|FG,vs, p);
 
             n.update(refresh);
         }
@@ -1833,15 +1851,17 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 	
 	// Size of statusbar.
 	// Now sensitive for scaling.
-	public static int ST_HEIGHT;
-	public static int ST_WIDTH;
-	public static int ST_Y;
+	public int ST_HEIGHT;
+	public int ST_WIDTH;
+	public int ST_Y;
 
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
 
 	protected int SCREENWIDTH;
 	protected int SCREENHEIGHT;
 	protected int SAFE_SCALE;
+	protected int BEST_X_SCALE;
+	protected int BEST_Y_SCALE;
 	protected IVideoScale vs;
 
 
@@ -1855,6 +1875,8 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 	    SCREENHEIGHT=vs.getScreenHeight();
 	    SCREENWIDTH=vs.getScreenWidth();
 	    SAFE_SCALE=vs.getSafeScaling();
+	    BEST_X_SCALE=vs.getScalingX();
+	    BEST_Y_SCALE=vs.getScalingY();
 	    
 	    // Pre-scale stuff.
 	    ST_HEIGHT =32*SAFE_SCALE;
@@ -1999,6 +2021,11 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
 	    
 	}
+
+    @Override
+    public int getHeight() {
+        return this.ST_HEIGHT;
+    }
 
 	
 }
