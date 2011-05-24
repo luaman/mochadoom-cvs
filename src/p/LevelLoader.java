@@ -29,7 +29,7 @@ import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
 import s.IDoomSound;
-import st.DoomStatusBarInterface;
+import st.IDoomStatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.DoomBuffer;
@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.22 2011/05/22 21:09:34 velktron Exp $
+// $Id: LevelLoader.java,v 1.23 2011/05/24 11:31:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.23  2011/05/24 11:31:47  velktron
+// Adapted to IDoomStatusBar
+//
 // Revision 1.22  2011/05/22 21:09:34  velktron
 // Added spechit overflow handling, and unused linedefs (with -1 sector) handling.
 //
@@ -159,7 +162,7 @@ public class LevelLoader implements DoomStatusAware{
 
 /////////////////// Status objects ///////////////////
     
-    DoomStatusBarInterface ST;
+    IDoomStatusBar ST;
     IDoomSystem I;
     IWadLoader W;
     DoomStatus DM;
@@ -169,7 +172,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.22 2011/05/22 21:09:34 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.23 2011/05/24 11:31:47 velktron Exp $";
 
   //  
   // MAP related Lookup tables.

@@ -15,7 +15,7 @@ import rr.SpriteManager;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.IDoomSound;
-import st.DoomStatusBarInterface;
+import st.IDoomStatusBar;
 import v.DoomVideoRenderer;
 import w.EndLevel;
 import w.IWadLoader;
@@ -43,7 +43,7 @@ public class DoomContext {
     public IDoomSystem I;
     public IDoomSound S;
     public DoomVideoInterface VI;
-    public DoomStatusBarInterface ST;
+    public IDoomStatusBar ST;
     public DoomVideoRenderer V;
     public DoomSystemNetworking DNI;
     public IDoomGameNetworking DGN;

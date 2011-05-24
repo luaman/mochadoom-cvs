@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.24 2011/05/23 16:57:39 velktron Exp $
+// $Id: Map.java,v 1.25 2011/05/24 11:31:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.25  2011/05/24 11:31:47  velktron
+// Adapted to IDoomStatusBar
+//
 // Revision 1.24  2011/05/23 16:57:39  velktron
 // Migrated to VideoScaleInfo.
 //
@@ -126,7 +129,7 @@ import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import rr.patch_t;
-import st.DoomStatusBarInterface;
+import st.IDoomStatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
@@ -138,14 +141,14 @@ public class Map implements DoomAutoMap, DoomStatusAware,IVideoScaleAware{
 
 /////////////////// Status objects ///////////////////
     
-DoomStatusBarInterface ST;
+IDoomStatusBar ST;
 IWadLoader W;
 DoomMain DM;
 DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.24 2011/05/23 16:57:39 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.25 2011/05/24 11:31:47 velktron Exp $";
 
 /*
 #include <stdio.h>
