@@ -255,5 +255,26 @@ public class C2JUtils {
             r[i].reset();
         }
     }
+
+    /** Useful for unquoting strings, since StringTokenizer won't do it for us.
+     *  Returns null upon any failure.
+     *  
+     * @param s
+     * @param c
+     * @return
+     */
+    
+    public static String unquote(String s, char c) {
+        int firstq=s.indexOf(c);
+        int lastq=s.lastIndexOf(c);
+        // Indexes valid?
+        if (firstq!=-1 && lastq!=-1){
+            if (firstq<lastq){
+                // Unquote string.
+                return s.substring(firstq,lastq);
+            }
+        }
+        return null;
+    }
     
 }
