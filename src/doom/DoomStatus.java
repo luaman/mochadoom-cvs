@@ -485,6 +485,13 @@ public class DoomStatus extends DoomContext {
     /* What bullshit, those are supposed to carry over from the very first main */
     public int myargc;
     public String[] myargv;
+    
+    
+    /** Not documented/used in linuxdoom. I supposed it could be used to
+     *  ignore mouse input?
+     */
+    
+    public boolean use_mouse;
 
     /**
      * M_CheckParm Checks for the given parameter in the program's command line
@@ -515,6 +522,10 @@ public class DoomStatus extends DoomContext {
     	initNetGameStuff();
     }
     
-    
 
 }
+
+// $Log: DoomStatus.java,v $
+// Revision 1.18  2011/05/24 17:44:37  velktron
+// usemouse added for defaults
+//
