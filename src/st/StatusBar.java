@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.27 2011/05/23 16:59:02 velktron Exp $
+// $Id: StatusBar.java,v 1.28 2011/05/24 11:31:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.28  2011/05/24 11:31:23  velktron
+// Got rid of a whole bunch of useless interfaces.
+//
 // Revision 1.27  2011/05/23 16:59:02  velktron
 // Migrated to VideoScaleInfo.
 //
@@ -156,9 +159,9 @@ import v.IVideoScale;
 import v.IVideoScaleAware;
 import w.IWadLoader;
 
-public class StatusBar implements DoomStatusBarInterface, DoomStatusAware, IVideoScaleAware {
+public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.27 2011/05/23 16:59:02 velktron Exp $";
+        "$Id: StatusBar.java,v 1.28 2011/05/24 11:31:23 velktron Exp $";
 
     // /// STATUS //////////
 

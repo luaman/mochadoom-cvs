@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomStatusBarInterface.java,v 1.5 2011/05/23 16:59:02 velktron Exp $
+// $Id: IDoomStatusBar.java,v 1.1 2011/05/24 11:31:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,8 +27,35 @@ import v.IVideoScaleAware;
 import doom.DoomStatus;
 import doom.event_t;
 
-public interface DoomStatusBarInterface extends IVideoScaleAware{
+public interface IDoomStatusBar extends IVideoScaleAware{
 
+    
+    
+    /** Points to "screen 4" which is treated as a buffer */
+    static final int BG =4;
+
+    /** Points to "screen 0" which is what you actually see */
+     static final int FG =0;
+
+    //
+    // STATUS BAR
+    //
+
+    /** Called by main loop. */
+    public boolean ST_Responder (event_t ev);
+
+    /** Called by main loop. */
+    public void ST_Ticker ();
+
+    /** Called by main loop.*/
+    public void ST_Drawer (boolean fullscreen, boolean refresh);
+
+    /** Called when the console player is spawned on each level. */
+    public void ST_Start ();
+
+    /** Called by startup code. */
+    public void ST_Init ();
+    
 //
 // STATUS BAR
 //
