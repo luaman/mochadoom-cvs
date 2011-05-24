@@ -19,7 +19,7 @@ public class DefaultsTester {
     
     MenuMisc.LoadDefaults(DS);
     
-    MenuMisc.defaultfile="nigger.cfg";
+    MenuMisc.defaultfile="ghetto.cfg";
     MenuMisc.SaveDefaults(DS);
 
     

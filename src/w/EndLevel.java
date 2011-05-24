@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.15 2011/05/23 17:00:39 velktron Exp $
+// $Id: EndLevel.java,v 1.16 2011/05/24 17:54:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.16  2011/05/24 17:54:02  velktron
+// Defaults tester
+//
 // Revision 1.15  2011/05/23 17:00:39  velktron
 // Got rid of verbosity
 //
@@ -100,6 +103,7 @@ import doom.wbstartstruct_t;
 import m.random;
 import rr.*;
 import s.IDoomSound;
+import st.IDoomStatusBar;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
@@ -119,6 +123,7 @@ public class EndLevel implements DoomStatusAware, IVideoScaleAware{
     private DoomVideoRenderer V;
     private IDoomSound S;
     private IWadLoader W;
+    private IDoomStatusBar ST;
     private random RND;
     
     private static int COUNT_KILLS=2;
@@ -1750,13 +1755,14 @@ protected static boolean RNGCHECK(int what, int min, int max){
 }
 
 @Override
-public void updateStatus(DoomStatus DC) {
-    this.DG=DC.DG;
-    this.DS=DC.DM;
-    this.V=DC.V;
-    this.W=DC.W;
-    this.RND=DC.RND;
-    this.S=DC.S;
+public void updateStatus(DoomStatus DS) {
+    this.DG=DS.DG;
+    this.DS=DS.DM;
+    this.V=DS.V;
+    this.W=DS.W;
+    this.RND=DS.RND;
+    this.S=DS.S;
+    this.ST=DS.ST;
 
     
 }
@@ -1784,7 +1790,7 @@ public void initScaling() {
     SP_STATSY      = 50*vs.getSafeScaling();;
 
     SP_TIMEX      =  16*vs.getSafeScaling();
-    SP_TIMEY      =  (SCREENHEIGHT-32)*vs.getSafeScaling();   
+    SP_TIMEY      =  (SCREENHEIGHT-ST.getHeight());   
 }
 
 }
