@@ -307,15 +307,15 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 
         public void keyPressed(KeyEvent e) {
  
-        	
-        	
-            //if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
+            e.consume();
         	if (e.getKeyCode()<=KeyEvent.VK_F12) {  
-        	addEvent(e);
+        	addEvent(e);        	
             }
         }
 
         public void keyReleased(KeyEvent e) {
+            e.consume();
+            
         	//if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
         		if (e.getKeyCode()<=KeyEvent.VK_F12) {
         		addEvent(e);
@@ -323,8 +323,9 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
         }
 
         public void keyTyped(KeyEvent e) {
-        //	if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0){
-        	if (e.getKeyCode()<=KeyEvent.VK_F12) {
+            e.consume();
+
+            if (e.getKeyCode()<=KeyEvent.VK_F12) {
         	addEvent(e);
         	}
         }
@@ -387,7 +388,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			event.data2 = event.data3 = 0;
 			event.type=evtype_t.ev_mouse;
 			DM.PostEvent(event);
-			System.err.println( "b");
+			//System.err.println( "b");
 			break;
 			// ButtonRelease
 		    case Event.MOUSE_UP:
@@ -405,7 +406,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			    ^ (MEV.getButton() == MouseEvent.BUTTON2 ? 4: 0);
 			event.data2 = event.data3 = 0;
 			DM.PostEvent(event);
-			System.err.println("bu");
+			//System.err.println("bu");
 			break;
 		    // MotionNotify:
 		    case Event.MOUSE_MOVE:
@@ -673,7 +674,9 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
       final Component me=this;
       
       // AWT: tab is a special case :-/
-      KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {  
+      KeyboardFocusManager.
+      getCurrentKeyboardFocusManager().
+      addKeyEventDispatcher(new KeyEventDispatcher() {  
           public boolean dispatchKeyEvent(KeyEvent e) {    
             if (e.getKeyCode() == KeyEvent.VK_TAB) {      
                 addEvent(new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
@@ -681,8 +684,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
             }  
             return false;
           }
-        });
-
+      });
       
       // AWT: create cursors.
       this.normal=this.getCursor();
@@ -791,7 +793,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 		      if (doPointerWarp--<=0)
 		  {
 			  Point p=this.getMousePosition();
-			  if (p==null){
+			  if (p!=null){
 		      robby.mouseMove(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2);
 			  lastmousex=this.getMousePosition().x;
 			  lastmousey=this.getMousePosition().y;
@@ -870,10 +872,11 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 
 	@Override
 	public void windowActivated(WindowEvent windowevent) {
+	    System.out.println("Window activated");
 		this.getInputContext().selectInputMethod(java.util.Locale.US);
 		
 	}
-
+	
 	@Override
 	public void windowClosed(WindowEvent windowevent) {
 		// TODO Auto-generated method stub
@@ -888,7 +891,9 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 
 	@Override
 	public void windowDeactivated(WindowEvent windowevent) {
-		// TODO Auto-generated method stub
+	    // Clear the queue if focus is lost.
+	    System.out.println("Eventqueue flushed!");
+		eventQueue.clear();
 		
 	}
 
