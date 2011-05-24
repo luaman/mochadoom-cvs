@@ -17,6 +17,7 @@ import java.io.IOException;
 
 import rr.SpriteManager;
 import rr.column_t;
+import rr.flat_t;
 import rr.patch_t;
 import rr.spritedef_t;
 import rr.spriteframe_t;
@@ -40,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.16 2011/05/23 16:56:56 velktron Exp $
+// $Id: Finale.java,v 1.17 2011/05/24 13:40:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.16 2011/05/23 16:56:56 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.17 2011/05/24 13:40:56 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -291,7 +292,7 @@ public void StartFinale ()
       int     cy;
       
       // erase the entire screen to a tiled background
-      src = (byte[])(W.CacheLumpName ( finaleflat , PU_CACHE)).getBuffer().array();
+      src = ((flat_t)W.CacheLumpName ( finaleflat , PU_CACHE,flat_t.class)).data;
       dest = V.getScreen(0);
 
       int destPos=0;
@@ -346,7 +347,7 @@ public void StartFinale ()
       w = hu_font[c].width;
       if (cx+w > SCREENWIDTH)
           break;
-      V.DrawPatch(cx, cy, 0, hu_font[c]);
+      V.DrawScaledPatch(cx, cy, 0, vs,hu_font[c]);
       cx+=w;
       }
       
