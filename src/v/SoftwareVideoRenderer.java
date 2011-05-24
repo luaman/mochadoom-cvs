@@ -556,76 +556,120 @@ public abstract class SoftwareVideoRenderer
       
   } 
    
+/**
+ * V_DrawScaledPatch
+ * like V_DrawPatch, but scaled 2,3,4 times the original size and position
+ * this is used for menu and title screens, with high resolutions
+ * 
+ *added:05-02-98:
+ *default params : scale patch and scale start
+ *
+ * Iniially implemented for Mocha Doom by _D_ (shamelessly ripped from 
+ * Eternity Engine ;-), adapted to scale based on a scaling object (VSI). 
+ *
+ */
+@Override
+public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t patch)
+{
+    int count;
+    int col;
+    column_t column;
+    int desttop;
+    byte[] dest = screens[scrn&0xFF];
+    //byte[] source;
 
-  /*
-  //
-  // V_DrawPatchDirect
-  // Draws directly to the screen on the pc. 
-  //
-  void
-  V_DrawPatchDirect
-  ( int       x,
-    int       y,
-    int       scrn,
-    patch_t*  patch ) 
+    int dupx, dupy;
+    int ofs;
+    int colfrac, rowfrac;
+    byte[] destend;
+
+    // draw an hardware converted patch
+    /*#ifdef HWRENDER
+  if (rendermode != render_soft)
   {
-      V_DrawPatch (x,y,scrn, patch); 
+      HWR_DrawPatch((GlidePatch_t *) patch, x, y, scrn);
+      return;
+  }
+#endif*/
 
-//      MAES: This stuff was commented out.
-   
-      int     count;
-      int     col; 
-      column_t*   column; 
-      byte*   desttop;
-      byte*   dest;
-      byte*   source; 
-      int     w; 
-       
-      y -= SHORT(patch->topoffset); 
-      x -= SHORT(patch->leftoffset); 
+    if (C2JUtils.flags(scrn, V_NOSCALEPATCH))
+        dupx = dupy = 1;
+    else
+    {
+        dupx = VSI.getScalingX();
+        dupy = VSI.getScalingY();
+    }
 
-  #ifdef RANGECHECK 
-      if (x<0
-      ||x+SHORT(patch->width) >this.width
-      || y<0
-      || y+SHORT(patch->height)>SCREENHEIGHT 
-      || (unsigned)scrn>4)
-      {
-      I_Error ("Bad V_DrawPatchDirect");
-      }
-  #endif 
-   
-      //  V_MarkRect (x, y, SHORT(patch->width), SHORT(patch->height)); 
-      desttop = destscreen + y*this.width/4 + (x>>2); 
-       
-      w = SHORT(patch->width); 
-      for ( col = 0 ; col<w ; col++) 
-      { 
-      outp (SC_INDEX+1,1<<(x&3)); 
-      column = (column_t *)((byte *)patch + LONG(patch->columnofs[col])); 
-   
-      // step through the posts in a column 
-       
-      while (column->topdelta != 0xff ) 
-      { 
-          source = (byte *)column + 3; 
-          dest = desttop + column->topdelta*this.width/4; 
-          count = column->length; 
-   
-          while (count--) 
-          { 
-          *dest = *source++; 
-          dest += this.width/4; 
-          } 
-          column = (column_t *)(  (byte *)column + column->length 
-                      + 4 ); 
-      } 
-      if ( ((++x)&3) == 0 ) 
-          desttop++;  // go to next byte, not next plane 
-      } 
-  } 
-  */
+    y -= /*SHORT(*/patch.topoffset/*)*/;
+    x -= /*SHORT(*/patch.leftoffset/*)*/;
 
+    colfrac = /*fixed_t.FixedDiv(fixed_t.FRACUNIT,*/ dupx /*<< fixed_t.FRACBITS)*/;
+    rowfrac = /*fixed_t.FixedDiv(fixed_t.FRACUNIT,*/ dupy /*<< fixed_t.FRACBITS)*/;
+
+    //desttop = screens[scrn & 0xFF];
+    if (C2JUtils.flags(scrn, V_NOSCALESTART))
+        desttop = (y * this.width) + x;
+    else
+        desttop = (y * dupy * this.width) + (x * dupx) /*+ scaledofs*/;
+    //destend = desttop + /*SHORT(*/patch.width/*)*/ * dupx;
+
+    int w = patch.width*dupx;
+
+    int colInc = 1;
+    col = 0;
+    if (C2JUtils.flags(scrn, V_FLIPPEDPATCH))
+    {
+        colInc = -1;
+        col = w-1;//(/*SHORT(*/patch.width/*)*/ << fixed_t.FRACBITS) + colfrac;
+    }
+    
+    for (; col >= 0 && col<w/*; desttop < destend*/; col += colInc, desttop++)
+    {
+        //column = (column_t *) ((byte *) patch + LONG(patch.columnofs[col >> FRACBITS]));
+        column=patch.columns[col/colfrac];
+
+        int destPos;
+        int ptr = 0;
+        int ptrOfs;
+
+        //while (column.topdelta != 0xff)
+        for (int i=0;i<column.posts;i++){
+            {
+                //source = (byte *) column + 3;
+                ptrOfs = column.postofs[i]+3;
+                ptr = 0;
+                short delta = column.postdeltas[i];
+
+                // Skip transparent rows...
+                if (delta==0xFF) break;
+
+                destPos = desttop + delta*dupy*this.width;  
+                //dest = desttop + column.topdelta * dupy * this.width;
+                count = column.length * dupy;
+
+                //ofs = 0;
+                //while (count-- > 0)
+                for (int j=0;j<column.postlen[i]*dupy;j++)
+                {
+                    //*dest = source[ofs >> fixed_t.FRACBITS];
+                    //dest += this.width;
+                   // try {
+                    dest[destPos] = column.data[ptrOfs+ptr/rowfrac];
+                    //}
+                    //catch (Exception e) {
+                    //e.printStackTrace();  //temporary hack to debug
+                    //}
+                    destPos += this.width;
+
+                    ptr++;
+                    //ofs += rowfrac;
+                }
+
+                //column = (column_t *) ((byte *) column + column.length + 4);
+            }
+        }
+    }
+}
 
   @Override
   public final void

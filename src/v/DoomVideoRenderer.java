@@ -13,6 +13,18 @@ import rr.patch_t;
  */
 
 public interface DoomVideoRenderer extends IVideoScaleAware {
+    
+    //flags hacked in scrn (not supported by all functions (see src))
+    // Added by _D_. Unsure if I should use VSI objects instead, as they
+    // already carry scaling information which doesn't need to be repacked...
+    public static final int V_NOSCALESTART =      0x010000;   // dont scale x,y, start coords
+    public static final int V_SCALESTART        = 0x020000;   // scale x,y, start coords
+    public static final int V_SCALEPATCH        = 0x040000;   // scale patch
+    public static final int V_NOSCALEPATCH      = 0x080000;   // don't scale patch
+    public static final int V_WHITEMAP          = 0x100000;   // draw white (for v_drawstring)
+    public static final int V_FLIPPEDPATCH      = 0x200000;   // flipped in y
+    public static final int V_TRANSLUCENTPATCH  = 0x400000;   // draw patch translucent    
+    
     // Allocates buffer screens, call before R_Init.
     public void Init();
 
@@ -58,5 +70,12 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
     public int getWidth();
     
     public int getHeight();
+    
+    /** Shamelessly ripped from Doom Legacy (for menus, etc) by _D_ ;-)
+     * It uses FLAGS (see above) hacked into the scrn parameter, to be
+     * parsed afterwards.
+     */
+    public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI,  // hacked flags in it...
+            patch_t patch);
     
 }
