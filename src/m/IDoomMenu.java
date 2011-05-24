@@ -8,7 +8,7 @@ import doom.event_t;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: IDoomMenu.java,v 1.2 2011/05/23 16:59:02 velktron Exp $
+// $Id: IDoomMenu.java,v 1.3 2011/05/24 17:46:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -71,7 +71,11 @@ public interface IDoomMenu extends IVideoScaleAware{
     
     public int getScreenBlocks();
     
+    public void setScreenBlocks(int val);
+    
     public int getDetailLevel();
     
     /** HACK: replicates status update here for stupid reasons */
-    public void updateStatus(DoomStatus DS);}
+    public void updateStatus(DoomStatus DS);
+}
+    

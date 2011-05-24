@@ -1882,6 +1882,11 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
     static final int sfx_vol = 0, sfx_empty1 = 1, music_vol = 2, sfx_empty2 = 3,
             sound_end = 4;
 
+    @Override
+    public void setScreenBlocks(int val) {
+        this.screenblocks=val;
+    }
+    
 	@Override
 	public int getScreenBlocks() {
 		return this.screenblocks;
