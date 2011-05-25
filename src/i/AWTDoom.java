@@ -175,14 +175,6 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
            
         }
         
-   /*     public void update() {
-            
-            Graphics2D g2d = (Graphics2D)drawhere.getGraphics();
-            //voli.getGraphics().drawImage(bi,0,0,null);
-            g2d.drawImage(screens[palette],0,0,this);
-            
-         } */
-        
         public String processEvents(){
             StringBuffer tmp=new StringBuffer();
             event_t event;
@@ -347,11 +339,15 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
      // modifications of eventQueue must be thread safe!
         private static LinkedList<AWTEvent> eventQueue = new LinkedList<AWTEvent>();
 
+        // This event here is static, and may be overwritten by others.
+        // However, when sending out messages, we create COPIES of it.
+        event_t event=new event_t();
+        
 	@Override
 	public void GetEvent() {
 		AWTEvent X_event;
 		MouseEvent MEV;
-		event_t event=new event_t();;
+		
 		  // put event-grabbing stuff in here
 		if (eventQueue.isEmpty()) return;	
 		X_event=nextEvent();
@@ -378,32 +374,26 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 		    // ButtonPress
 		    case Event.MOUSE_DOWN:
 		    MEV=(MouseEvent)X_event;
-			event.data1 =
-			    (MEV.getButton() & MouseEvent.BUTTON1)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 2 : 0)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 4 : 0)
-			    | (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0)
-			    | (MEV.getButton() == MouseEvent.BUTTON3 ? 2 : 0)
-			    | (MEV.getButton() == MouseEvent.BUTTON2 ? 4 : 0);
+			event.data1 = 
+			    (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0) |
+			    (MEV.getButton() == MouseEvent.BUTTON2 ? 2: 0)|
+			    (MEV.getButton() == MouseEvent.BUTTON3 ? 4: 0);
 			event.data2 = event.data3 = 0;
 			event.type=evtype_t.ev_mouse;
 			DM.PostEvent(event);
 			//System.err.println( "b");
 			break;
+			
 			// ButtonRelease
+			// This must send out an amended event.
+			
 		    case Event.MOUSE_UP:
 		    MEV=(MouseEvent)X_event;
 			event.type = evtype_t.ev_mouse;
-			event.data1 =
-			    (MEV.getButton() & MouseEvent.BUTTON1)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 2 : 0)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 4 : 0);
-			// suggest parentheses around arithmetic in operand of |
-			event.data1 =
-			    event.data1
-			    ^ (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0)
-			    ^ (MEV.getButton() == MouseEvent.BUTTON3 ? 2: 0)
-			    ^ (MEV.getButton() == MouseEvent.BUTTON2 ? 4: 0);
+			event.data1 ^= 
+		        (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0) |
+                (MEV.getButton() == MouseEvent.BUTTON2 ? 2: 0)|
+                (MEV.getButton() == MouseEvent.BUTTON3 ? 4: 0);
 			event.data2 = event.data3 = 0;
 			DM.PostEvent(event);
 			//System.err.println("bu");
@@ -429,7 +419,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			    		MEV.getY() != this.getHeight()/2)
 			    {
 				DM.PostEvent(event);
-				System.err.println( "m");
+				//System.err.println( "m");
 				mousemoved = false;
 			    } else
 			    {
@@ -438,12 +428,12 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			}
 			break;
 		    case Event.MOUSE_ENTER:
-		    	System.err.println("ACCEPTING keyboard input");
+		    	//System.err.println("ACCEPTING keyboard input");
 		    	this.setCursor(hidden);
 		    	ignorebutton=false;
 		    	break;
 		    case Event.MOUSE_EXIT:
-		    	System.err.println("IGNORING keyboard input");
+		    	//System.err.println("IGNORING keyboard input");
 		    	this.setCursor(normal);
 		    	
 		    	ignorebutton=true;
@@ -547,6 +537,9 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	 *  So, actually, we just switch to the proper BufferedImage
 	 *  for display (the raster data is shared, which allows
 	 *  this hack to work with minimal overhead).
+	 *  
+	 *  TODO: implement GAMMA in this way?
+	 *  
 	 */
 	
 	@Override
@@ -792,13 +785,14 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 		  {
 		      if (doPointerWarp--<=0)
 		  {
+		      // Don't warp back if we deliberately alt-tabbed away.
 			  Point p=this.getMousePosition();
 			  if (p!=null){
 		      robby.mouseMove(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2);
-			  lastmousex=this.getMousePosition().x;
-			  lastmousey=this.getMousePosition().y;
-			  doPointerWarp = POINTER_WARP_COUNTDOWN*15;
+			  lastmousex=this.getX()+this.getWidth()/2;
+			  lastmousey=this.getY()+this.getHeight()/2;
 			  }
+			  doPointerWarp = POINTER_WARP_COUNTDOWN;
 		  } 
 		      
 	    }
@@ -867,6 +861,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
     
 	@Override
     public boolean dispatchKeyEvent(KeyEvent e) {
+	    
 	return false;
 	}
 
