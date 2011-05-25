@@ -71,7 +71,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.44 2011/05/23 17:00:23 velktron Exp $
+// $Id: DoomMain.java,v 1.45 2011/05/25 17:56:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -97,7 +97,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.44 2011/05/23 17:00:23 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.45 2011/05/25 17:56:52 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -117,7 +117,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     public void PostEvent (event_t ev)
     {
-        events[eventhead] = ev;
+        // FIXME create a pool of reusable messages?
+        events[eventhead] = new event_t(ev);
         eventhead = (++eventhead)&(MAXEVENTS-1);
     }
 
@@ -1392,7 +1393,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * G_BuildTiccmd
      * Builds a ticcmd from all of the available inputs
      * or reads it from the demo buffer. 
-     * If recording a demo, write it out 
+     * If recording a demo, write it out .
+     * 
+     * The CURRENT event to process is written to the various 
+     * gamekeydown etc. arrays by the Responder method.
+     * So look there for any fuckups in constructing them.
+     * 
      */ 
 
     private void BuildTiccmd (ticcmd_t cmd) 
@@ -1736,10 +1742,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 gamekeydown[ev.data1] = false; 
             return false;   // always let key up events filter down 
 
-        case ev_mouse: 
+        case ev_mouse:
+            
             mousebuttons(0, ev.data1 & 1); 
             mousebuttons(1, ev.data1 & 2); 
-            mousebuttons(2, ev.data1 & 4); 
+            mousebuttons(2, ev.data1 & 4);
             mousex = ev.data2*(mouseSensitivity+5)/10; 
             mousey = ev.data3*(mouseSensitivity+5)/10; 
             return true;    // eat events 
@@ -1831,7 +1838,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 //memcpy (cmd, &netcmds[i][buf], sizeof(ticcmd_t));
                 netcmds[i][buf].copyTo(cmd);
 
-                // MAES: this is where actual demo commands are being issed or created!
+                // MAES: this is where actual demo commands are being issued or created!
                 // Essentially, a demo is a sequence of stored ticcmd_t with a header.
                 // Knowing that, it's possible to objectify it.
                 if (demoplayback) 
@@ -3882,6 +3889,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.45  2011/05/25 17:56:52  velktron
+//Introduced some fixes for mousebuttons etc.
+//
 //Revision 1.44  2011/05/23 17:00:23  velktron
 //Migrated to VideoScaleInfo, DoomMain now is IGN.
 //

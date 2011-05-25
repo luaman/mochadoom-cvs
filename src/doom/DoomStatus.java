@@ -394,11 +394,11 @@ public class DoomStatus extends DoomContext {
 
     public int key_speed=KEY_RSHIFT;
 
-    public int mousebfire;
+    public int mousebfire=0;
 
-    public int mousebstrafe;
+    public int mousebstrafe=1;
 
-    public int mousebforward;
+    public int mousebforward=2;
 
     public int joybfire;
 
@@ -526,6 +526,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.19  2011/05/25 17:56:52  velktron
+// Introduced some fixes for mousebuttons etc.
+//
 // Revision 1.18  2011/05/24 17:44:37  velktron
 // usemouse added for defaults
 //
