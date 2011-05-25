@@ -72,7 +72,9 @@ import w.name8;
 import data.Defines;
 import data.Limits;
 import data.Tables;
+import data.info;
 import defines.GameMode_t;
+import defines.statenum_t;
 import doom.DoomContext;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -1197,7 +1199,6 @@ validcount++;
             }
         
             sprdef = getSprites()[psp.state.sprite.ordinal()];
-        
             if(RANGECHECK){
             if ( (psp.state.frame & FF_FRAMEMASK)  >= sprdef.numframes)
             I.Error ("R_ProjectSprite: invalid sprite frame %i : %i ",
@@ -1213,6 +1214,7 @@ validcount++;
             // calculate edges of the shape. tx is expressed in "view units".
 
             // OPTIMIZE: if weaponadjust is computed in-place, noticeable slowdown occurs.
+            // MAES: actually that was not the problem.
             tx = (int) (FixedMul(psp.sx,BOBADJUST)-WEAPONADJUST);
             
             tx -= spriteoffset[lump];
@@ -1320,13 +1322,18 @@ validcount++;
             mceilingclip = negonearray;
             p_mceilingclip=0;
             
+           
             // add all active psprites
-            for (i=0, psp=viewplayer.psprites[i];
-             i<NUMPSPRITES;
-             i++)
+            // MAES 25/5/2011 Fixed another stupid bug that prevented
+            // PSP from actually being updated. This in turn uncovered
+            // other bugs in the way psp and state were treated, and the way
+            // flash states were set. It should be OK now.
+            for (i=0;i<NUMPSPRITES; i++)
             {
-            if (psp.state!=null)
+                psp=viewplayer.psprites[i];
+            if (psp.state!=null && psp.state.id!=0){
                 DrawPSprite (psp);
+                }            
             }
         }
 
@@ -5193,6 +5200,17 @@ validcount++;
       
       protected final class R_DrawColumnBoom implements colfunc_t{
           
+          // That's shit, doesn't help.
+         /* private final int SCREENWIDTH2=960*2;
+          private final int SCREENWIDTH3=960*3;
+          private final int SCREENWIDTH4=960*4;
+          private final int SCREENWIDTH5=SCREENWIDTH*5;
+          private final int SCREENWIDTH6=SCREENWIDTH*6;
+          private final int SCREENWIDTH7=SCREENWIDTH*7;
+          private final int SCREENWIDTH8=SCREENWIDTH*8; */
+
+              
+          
       public void invoke() 
       { 
         int              count; 
@@ -5273,7 +5291,8 @@ validcount++;
                   frac += fracstep;
                   screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
                   dest += SCREENWIDTH; 
-                  frac += fracstep;     
+                  frac += fracstep;
+                  
                 }
               if ((count & 1)!=0)
                   screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
