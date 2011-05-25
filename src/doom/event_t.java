@@ -5,7 +5,6 @@ package doom;
 public class event_t {
 	
 	public event_t(){
-		
 	}
 
 	   public event_t(event_t t){
@@ -32,6 +31,13 @@ public class event_t {
         this.data2 = data2;
         this.data3 = data3;
     }
+    
+    public void setFrom(event_t t){
+        this.type = t.type;
+        this.data1 = t.data1;
+        this.data2 = t.data2;
+        this.data3 = t.data3;
+    }
 
     public evtype_t type;
 
@@ -43,4 +49,5 @@ public class event_t {
 
     /** mouse/joystick y move */
     public int data3;
+
 };

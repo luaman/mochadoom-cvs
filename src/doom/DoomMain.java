@@ -14,6 +14,7 @@ import static data.dstrings.*;
 import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
+import pooling.EventPool;
 import automap.Map;
 import f.Finale;
 import f.Wiper;
@@ -71,7 +72,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.45 2011/05/25 17:56:52 velktron Exp $
+// $Id: DoomMain.java,v 1.46 2011/05/25 18:46:24 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -97,7 +98,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.45 2011/05/25 17:56:52 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.46 2011/05/25 18:46:24 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -108,8 +109,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public event_t[]         events=new event_t[MAXEVENTS];
     public int             eventhead;
     public int 		eventtail;
-
-
+    
     /**
      * D_PostEvent
      * Called by the I/O functions when input is detected
@@ -117,8 +117,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     public void PostEvent (event_t ev)
     {
-        // FIXME create a pool of reusable messages?
-        events[eventhead] = new event_t(ev);
+        // TODO create a pool of reusable messages?
+        // NEVERMIND we can use the original system.
+        events[eventhead].setFrom(ev);
         eventhead = (++eventhead)&(MAXEVENTS-1);
     }
 
@@ -140,9 +141,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )
         {
             ev = events[eventtail];
-            if (M.Responder (ev))
+            if (M.Responder (ev)){
+                //epool.checkIn(ev);
                 continue;               // menu ate the event
+                }
             Responder (ev);
+            // We're done with it, return it to the pool.
+            //epool.checkIn(ev);
         }
     }
 
@@ -2921,6 +2926,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public DoomMain(){
         // Init game status...
         super();
+        C2JUtils.initArrayOfObjects(events,event_t.class);
         this.I=new DoomSystem();
         //_D_: this needed to be removed, and isnt here in the linuxdoom source
         // this is because some variables are null at this point so we cant init the doomsystem yet
@@ -3889,6 +3895,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.46  2011/05/25 18:46:24  velktron
+//Implemented event_t pooling/reuse.
+//
 //Revision 1.45  2011/05/25 17:56:52  velktron
 //Introduced some fixes for mousebuttons etc.
 //
