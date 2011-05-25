@@ -445,7 +445,8 @@ public abstract class SoftwareVideoRenderer
                        // These lengths are already correct.
                        for (int j=0;j<column.postlen[i];j++){
                            for (int k=0;k<m;k++)
-                           dest[destPos] = column.data[ptr++];
+                           dest[destPos+k] = column.data[ptr];
+                           ptr++;
                            destPos += n*this.width;
                        }
                    }
