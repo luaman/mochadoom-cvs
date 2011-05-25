@@ -6,7 +6,7 @@ import doom.DoomMain;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.4 2011/05/23 16:59:59 velktron Exp $
+//$Id: Main.java,v 1.5 2011/05/25 17:56:30 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import doom.DoomMain;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.5  2011/05/25 17:56:30  velktron
+//just played a bit with resolutions.
+//
 //Revision 1.4  2011/05/23 16:59:59  velktron
 //Migrated to VideoScaleInfo.
 //
@@ -48,7 +51,7 @@ import doom.DoomMain;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.4 2011/05/23 16:59:59 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.5 2011/05/25 17:56:30 velktron Exp $";
 
     public static void main(String[] argv){
 
@@ -57,7 +60,7 @@ public class Main {
           DoomMain D=new DoomMain();
 
           // 23/5/2011: Experimental dynamic resolution subsystem
-          VideoScaleInfo vs=new VideoScaleInfo((float) 3.0);          
+          VideoScaleInfo vs=new VideoScaleInfo(3.0f);          
           
           // This should be set before ANYTHING involving
           // the screen gets called.
