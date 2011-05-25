@@ -9,8 +9,8 @@ public class state_t {
 		
 	}
        
-        public state_t(spritenum_t sprite, int frame, long tics, think_t action,
-            statenum_t nextstate, long misc1, long misc2) {
+        public state_t(spritenum_t sprite, int frame, int tics, think_t action,
+            statenum_t nextstate, int misc1, int misc2) {
         this.sprite = sprite;
         this.frame = frame;
         this.tics = tics;
@@ -18,11 +18,16 @@ public class state_t {
         this.nextstate = nextstate;
         this.misc1 = misc1;
         this.misc2 = misc2;
-    }
+        }
+        
         public spritenum_t   sprite;
-        /** was "unsigned" but wtf..*/
+        /** The frame should indicate which one of the frames available in the 
+         *  available spritenum should be used. This can also be flagged with
+         *  0x8000 indicating bright sprites.
+         */
+ 
         public int          frame;
-        public long          tics;
+        public int          tics;
         //TODO: proper implementation of (*action)
         // MAES: was actionp_t... which is typedeffed to think_t anyway,
         // and this is the only place it's invoked explicitly.
@@ -36,7 +41,7 @@ public class state_t {
          */
         public think_t         action;
         public statenum_t            nextstate;
-        public long          misc1, misc2;
+        public int misc1, misc2;
         /** relative index in state array. Needed sometimes. */
         public int id;
         
