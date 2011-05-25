@@ -2232,16 +2232,23 @@ public class Actions extends UnifiedGameMap {
   ( player_t player,
     pspdef_t psp ) 
   {
-      S.StartSound (player.mo, sfxenum_t.sfx_pistol);
-
-      if (!eval(player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]))
+      // For convenience.
+      int readyweap=player.readyweapon.ordinal();
+      int flashstate=weaponinfo[readyweap].flashstate.ordinal();
+      int current_state=psp.state.id;
+      
+      S.StartSound (player.mo, sfxenum_t.sfx_pistol);      
+      if (!eval(player.ammo[weaponinfo[readyweap].ammo.ordinal()]))
       return;
           
       player.mo.SetMobjState (statenum_t.S_PLAY_ATK2);
-      player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
-
-      player.SetPsprite (           ps_flash,
-            weaponinfo[player.readyweapon.ordinal()+(psp.state.id - states[statenum_t.S_CHAIN1.ordinal()].id)].flashstate
+      player.ammo[weaponinfo[readyweap].ammo.ordinal()]--;
+      
+      // MAES: Code to alternate between two different gun flashes
+      // needed a clear rewrite, as it was way too messy.
+      // We know that the flash states are a certain amount away from 
+      // the firing states. This amount is two frames.
+      player.SetPsprite (ps_flash,statenum_t.values()[flashstate+current_state-statenum_t.S_CHAIN1.ordinal()]
             );
 
       P_BulletSlope (player.mo);
