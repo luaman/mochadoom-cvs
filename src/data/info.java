@@ -9,7 +9,7 @@ import doom.think_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.8 2011/05/06 14:00:54 velktron Exp $
+// $Id: info.java,v 1.9 2011/05/25 17:54:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.9  2011/05/25 17:54:23  velktron
+// Added extra S_NULL information.
+//
 // Revision 1.8  2011/05/06 14:00:54  velktron
 // More of _D_'s changes committed.
 //
@@ -68,7 +71,7 @@ import doom.think_t;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.8 2011/05/06 14:00:54 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.9 2011/05/25 17:54:23 velktron Exp $";
 
 // Data.
 //#include "sounds.h"
@@ -178,6 +181,9 @@ void A_BrainExplode();
 //public static String[] sprnames=new String[NUMSPRITES];
 
 public static final state_t[]	states = {
+    // MAES: ATTENTION! The "null" state looks just like an imp. If you see it, then something's
+    // wrong. When you check for "null" state, you should actually check whether something 
+    // is set to S_NULL!
     new state_t(spritenum_t.SPR_TROO,0,-1,null,statenum_t.S_NULL,0,0),	// S_NULL
     // _D_: replaced "null" by "think_t.A_Light0" (see linuxdoom source)
     // I was trying to make the red fire around the gun apprear when we shoot
@@ -4719,6 +4725,8 @@ static {
 // Need to set them to simulate pointer-like operations.
 	for (int i=0;i<states.length;i++){
 		states[i].id=i;
+		
+		//states[0]=null;
 }
 }
 }
