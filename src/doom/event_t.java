@@ -8,6 +8,14 @@ public class event_t {
 		
 	}
 
+	   public event_t(event_t t){
+	        this.type = t.type;
+	        this.data1 = t.data1;
+	        this.data2 = t.data2;
+	        this.data3 = t.data3;
+	    }
+
+	
     public event_t(evtype_t type, int data) {
         this.type = type;
         this.data1 = data;
