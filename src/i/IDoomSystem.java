@@ -4,8 +4,6 @@ import doom.ticcmd_t;
 
 public interface IDoomSystem {
 
-	public int GetTime();
-
 	public void AllocLow(int length);
 
 	public void BeginRead();

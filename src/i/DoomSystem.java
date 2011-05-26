@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.8 2011/05/18 16:53:29 velktron Exp $
+// $Id: DoomSystem.java,v 1.9 2011/05/26 17:56:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.9  2011/05/26 17:56:32  velktron
+// Removed ticker functionality, moved to ITicker interface.
+//
 // Revision 1.8  2011/05/18 16:53:29  velktron
 // Implements IDoomSystem now.
 //
@@ -113,55 +116,6 @@ public byte[] ZoneBase (int	size)
 {
     return (new byte[mb_used*1024*1024]);
 }
-
-protected volatile long basetime=0;
-protected volatile int oldtics=0;
-
-/**
- * I_GetTime
- * returns time in 1/70th second tics
- */
-
-@Override
-public int GetTime ()
-{
-    long	tp;
-    //struct timezone	tzp;
-    int			newtics;
-    
-    // Attention: System.nanoTime() might not be consistent across multicore CPUs.
-    // To avoid the core getting back to the past,
-    tp=System.nanoTime();
-    if (basetime==0)
-	basetime = tp;
-    newtics = (int) (((tp-basetime)*TICRATE)/1000000000);// + tp.tv_usec*TICRATE/1000000;
-    if (newtics<oldtics) {
-    	System.err.println("Timer discrepancies detected :" + (++discrepancies));
-    	return oldtics;
-    }
-    return (oldtics=newtics);
-}
-
-protected long discrepancies=0;
-
-/**
- * I_GetTime
- * returns time in 1/70th second tics
- */
-
-/*@Override
-public int GetTime ()
-{
-    long	tp;
-    //struct timezone	tzp;
-    int			newtics;
-    
-    tp=System.currentTimeMillis();
-    if (basetime==0)
-	basetime = tp;
-    newtics = (int) (((tp-basetime)*TICRATE)/1000);// + tp.tv_usec*TICRATE/1000000;
-    return newtics;
-}*/
 
 //
 //I_Quit
