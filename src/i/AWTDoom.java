@@ -60,8 +60,10 @@ import java.util.StringTokenizer;
 
 import javax.swing.JFrame;
 
+import timing.ITicker;
 import v.BufferedRenderer;
 import doom.DoomMain;
+import doom.ICommandLineManager;
 import doom.event_t;
 import doom.evtype_t;
 
@@ -98,9 +100,10 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	
 	// Must be aware of "Doom" so we can pass it event messages inside a crude queue.
 	public DoomMain DM;
+	public ICommandLineManager CM;
 	private IDoomSystem I; // Must be aware of some other shit like event handler
-	private BufferedRenderer V;   // Must be able to "peg" itself to a raw byte array representing
-									// Screen 0
+	private BufferedRenderer V;
+	private ITicker TICK;      								
 	private byte[] RAWSCREEN;	  // RAW SCREEN DATA. Get from the Video Renderer.
 	private IndexColorModel[] cmaps;
 	  Robot robby;
@@ -145,6 +148,8 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
      
         public AWTDoom(DoomMain DM, BufferedRenderer V, byte[] cmap) {
         	this.DM=DM;
+        	this.CM=DM.CM;
+        	this.TICK=DM.TICK;
         	this.I=DM.I;
         	this.V= V;
         	this.cmap=cmap;
@@ -353,33 +358,40 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 		X_event=nextEvent();
 		//System.out.println("Event type:"+X_event.getID());
 			
-		// Check for Event.??? shit
+		// Keyboard events get priority vs mouse events.
+		// In the case of combined input, however, we need
 		if (!ignorebutton){
 		  switch (X_event.getID())
 		  {
-		    case Event.KEY_PRESS:
-			event=new event_t(evtype_t.ev_keydown, xlatekey((KeyEvent)X_event));
+		    case Event.KEY_PRESS: {
+		  
+			event.type=evtype_t.ev_keydown;
+			event.data1=xlatekey((KeyEvent)X_event);
 			DM.PostEvent(event);
 			//System.err.println("k");
 			break;
+		    }
 		    case Event.KEY_RELEASE:
-			event=new event_t(evtype_t.ev_keyup, xlatekey((KeyEvent)X_event));
-			DM.PostEvent(event);
+		    event.type=evtype_t.ev_keyup;
+	        event.data1=xlatekey((KeyEvent)X_event);
+	        DM.PostEvent(event);
 			//System.err.println( "ku");
 			break;
 		  }
 		}
 		
+		// Mouse events are also handled, but with secondary priority.
 		switch (X_event.getID()){
 		    // ButtonPress
 		    case Event.MOUSE_DOWN:
 		    MEV=(MouseEvent)X_event;
-			event.data1 = 
+		    event.type=evtype_t.ev_mouse;
+		    event.data1 = 
 			    (MEV.getButton() == MouseEvent.BUTTON1 ? 1: 0) |
 			    (MEV.getButton() == MouseEvent.BUTTON2 ? 2: 0)|
 			    (MEV.getButton() == MouseEvent.BUTTON3 ? 4: 0);
 			event.data2 = event.data3 = 0;
-			event.type=evtype_t.ev_mouse;
+			
 			DM.PostEvent(event);
 			//System.err.println( "b");
 			break;
@@ -400,17 +412,44 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			break;
 		    // MotionNotify:
 		    case Event.MOUSE_MOVE:
+		        MEV=(MouseEvent)X_event;
+		        // move WITHOUT buttons.
+		        event.data2 = (MEV.getX() - lastmousex) << 2;
+	            event.data3 = (lastmousey - MEV.getY()) << 2;
+
+	            System.out.println("Mouse moved without buttons: "+event.data1);
+	            if ((event.data2 | event.data3)!=0)
+	            {
+	                lastmousex = MEV.getX();
+	                lastmousey = MEV.getY();
+	                if (MEV.getX() != this.getWidth()/2 &&
+	                        MEV.getY() != this.getHeight()/2)
+	                {
+	                DM.PostEvent(event);
+	                //System.err.println( "m");
+	                mousemoved = false;
+	                } else
+	                {
+	                mousemoved = true;
+	                }
+	            }
+	            break;
+		        
+		        
 		    case Event.MOUSE_DRAG:
 		    MEV=(MouseEvent)X_event;
 			event.type = evtype_t.ev_mouse;
 			// Get buttons, as usual.
-			event.data1 =
-			    (MEV.getButton() & MouseEvent.BUTTON1)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON3) ? 2 : 0)
-			    | (flags(MEV.getButton() , MouseEvent.BUTTON2) ? 4 : 0);
+			// Well, NOT as usual: in case of a drag, the usual 
+			// mousebutton flags don't work.
+			event.data1 = 
+                1 |
+                (MEV.getModifiers() == MouseEvent.BUTTON2_DOWN_MASK ? 2: 0)|
+                (MEV.getModifiers() == MouseEvent.BUTTON3_DOWN_MASK ? 4: 0);
 			event.data2 = (MEV.getX() - lastmousex) << 2;
 			event.data3 = (lastmousey - MEV.getY()) << 2;
 
+			System.out.println("Mouse moved with buttons pressed: "+event.data1);
 			if ((event.data2 | event.data3)!=0)
 			{
 			    lastmousex = MEV.getX();
@@ -428,14 +467,25 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			}
 			break;
 		    case Event.MOUSE_ENTER:
-		    	//System.err.println("ACCEPTING keyboard input");
+		    	//System.err.println("ACCEPTING keyboard input");		        
 		    	this.setCursor(hidden);
+		    	// Forcibly clear events and set mouse input to center.
+		    	event.type=evtype_t.ev_mouse;
+		         event.data1 = 0;
+		         event.data2 = 0;
+		         event.data3 = 0;
+		         DM.PostEvent(event);
 		    	ignorebutton=false;
 		    	break;
 		    case Event.MOUSE_EXIT:
 		    	//System.err.println("IGNORING keyboard input");
-		    	this.setCursor(normal);
-		    	
+	              // Forcibly clear events and set mouse input to center.
+		        event.type=evtype_t.ev_mouse;
+                event.data1 = 0;
+                event.data2 = 0;
+                event.data3 = 0;
+                DM.PostEvent(event);
+		    	this.setCursor(normal);		    	
 		    	ignorebutton=true;
 		    	break;
 		    case Event.WINDOW_EXPOSE:
@@ -577,20 +627,20 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	  // Try setting the locale the US, otherwise there will be problems
 	  // with non-US keyboards.
 	  if (!this.getInputContext().selectInputMethod(java.util.Locale.US)){
-		  System.err.println("Could not set the input context to US! Kayboard input will be glitchy!");
+		  System.err.println("Could not set the input context to US! Keyboard input will be glitchy!");
 	  } else {
 		  System.err.println("Input context successfully set to US.");
 	  }
 	  
 	  //signal(SIGINT, (void (*)(int)) I_Quit);
 
-	  if (DM.CheckParm("-2")!=0)
+	  if (CM.CheckParm("-2")!=0)
 		multiply = 2;
 
-	  if (DM.CheckParm("-3")!=0)
+	  if (CM.CheckParm("-3")!=0)
 		multiply = 3;
 
-	  if (DM.CheckParm("-4")!=0)
+	  if (CM.CheckParm("-4")!=0)
 		multiply = 4;
 
       Dimension size = new Dimension();
@@ -605,8 +655,8 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
       }
       
 	  // check for command-line display name
-	  if ( (pnum=DM.CheckParm("-disp"))!=0 ) // suggest parentheses around assignment
-		displayname = DM.myargv[pnum+1];
+	  if ( (pnum=CM.CheckParm("-disp"))!=0 ) // suggest parentheses around assignment
+		displayname = CM.getArgv(pnum+1);
 	  else
 		displayname = null;
 
@@ -615,10 +665,10 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	  grabMouse = true; // DM.CheckParm("-grabmouse")!=0;
 
 	  // check for command-line geometry
-	  if ( (pnum=DM.CheckParm("-geom"))!=0 ) // suggest parentheses around assignment
+	  if ( (pnum=CM.CheckParm("-geom"))!=0 ) // suggest parentheses around assignment
 	  {
 		  try{
-		  String eval=DM.myargv[pnum+1].trim();
+		  String eval=CM.getArgv(pnum+1).trim();
 		// warning: char format, different type arg 3,5
 		//n = sscanf(myargv[pnum+1], "%c%d%c%d", &xsign, &x, &ysign, &y);
 		// OK, so we have to read a string that may contain
@@ -808,8 +858,8 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			  Point p=this.getMousePosition();
 			  if (p!=null){
 		      robby.mouseMove(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2);
-			  //lastmousex=this.getX()+this.getWidth()/2;
-			  //lastmousey=this.getY()+this.getHeight()/2;
+			  lastmousex=this.getX()+this.getWidth()/2;
+			  lastmousey=this.getY()+this.getHeight()/2;
 			  }
 			  doPointerWarp = POINTER_WARP_COUNTDOWN;
 		  } 
@@ -848,7 +898,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	    if (true)
         {
 
-        i = I.GetTime();
+        i = TICK.GetTime();
         tics = i - lasttic;
         lasttic = i;
         if (tics<1) 
