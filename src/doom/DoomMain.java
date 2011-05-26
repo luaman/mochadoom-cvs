@@ -14,7 +14,6 @@ import static data.dstrings.*;
 import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
-import pooling.EventPool;
 import automap.Map;
 import f.Finale;
 import f.Wiper;
@@ -52,6 +51,8 @@ import savegame.IDoomSaveGameHeader;
 import savegame.VanillaDSG;
 import savegame.VanillaDSGHeader;
 import st.StatusBar;
+import timing.MilliTicker;
+import timing.NanoTicker;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.IVideoScale;
@@ -72,7 +73,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.46 2011/05/25 18:46:24 velktron Exp $
+// $Id: DoomMain.java,v 1.47 2011/05/26 17:52:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -98,7 +99,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.46 2011/05/25 18:46:24 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.47 2011/05/26 17:52:52 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -109,7 +110,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public event_t[]         events=new event_t[MAXEVENTS];
     public int             eventhead;
     public int 		eventtail;
-    
+
     /**
      * D_PostEvent
      * Called by the I/O functions when input is detected
@@ -144,7 +145,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             if (M.Responder (ev)){
                 //epool.checkIn(ev);
                 continue;               // menu ate the event
-                }
+            }
             Responder (ev);
             // We're done with it, return it to the pool.
             //epool.checkIn(ev);
@@ -233,7 +234,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
             R.RenderPlayerView (players[displayplayer]);
             if (wipe){   
-            	System.out.println("Player view RENDERED before wipe!");
+                System.out.println("Player view RENDERED before wipe!");
             }
         }
 
@@ -301,13 +302,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Jesus Christ with a Super Shotgun!
         WIPE.EndScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
 
-        wipestart = I.GetTime () - 1;
+        wipestart = TICK.GetTime () - 1;
 
         do
         {
             do
             {
-                nowtime = I.GetTime ();
+                nowtime = TICK.GetTime ();
                 tics = nowtime - wipestart;
             } while (tics==0); // Wait until a single tic has passed.
             wipestart = nowtime;
@@ -337,7 +338,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (demorecording)
             BeginRecording ();
 
-        if (eval(CheckParm ("-debugfile")))
+        if (eval(CM.CheckParm ("-debugfile")))
         {
             String    filename="debug"+consoleplayer+".txt";
             System.out.println("debug output to: "+filename);
@@ -558,7 +559,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * to determine whether registered/commercial features
      * should be executed (notably loading PWAD's).
      */
-    
+
     public void IdentifyVersion ()
     {
 
@@ -613,7 +614,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         doom2fwad=(doomwaddir+ "/doom2f.wad");
 
         // MAES: Interesting. I didn't know of that :-o
-        if (eval(CheckParm ("-shdev")))
+        if (eval(CM.CheckParm ("-shdev")))
         {
             setGameMode(GameMode_t.shareware);
             devparm = true;
@@ -624,7 +625,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             return;
         }
 
-        if (eval(CheckParm ("-regdev")))
+        if (eval(CM.CheckParm ("-regdev")))
         {
             setGameMode(GameMode_t.registered);
             devparm = true;
@@ -636,7 +637,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             return;
         }
 
-        if (eval(CheckParm ("-comdev")))
+        if (eval(CM.CheckParm ("-comdev")))
         {
             setGameMode(GameMode_t.commercial);
             devparm = true;
@@ -690,7 +691,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         if ( testAccess (doomuwad,"r") )
         {
-        	// TODO auto-detect ultimate Doom even from doom.wad        	
+            // TODO auto-detect ultimate Doom even from doom.wad        	
             setGameMode(GameMode_t.retail);
             AddFile (doomuwad);
             return;
@@ -720,123 +721,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //I_Error ("Game mode indeterminate\n");
     }
 
-    /**
-     * Find a Response File
-     * 
-     * Not very well documented, but Doom apparently could use a sort of 
-     * script file with command line arguments inside, if you prepend @ to
-     * the command-like argument itself. The arguments themselves could
-     * be separated by any sort of whitespace or ASCII characters exceeding "z"
-     * in value.
-     * 
-     * E.g. doom @crap
-     * 
-     * would load a file named "crap".
-     * 
-     * Now, the original function is crap for several reasons: for one,
-     * it will bomb if more than 100 arguments <i>total</i> are formed.
-     * Memory allocation will also fail because the tokenizer used only
-     * stops at file size limit, not at maximum parsed arguments limit
-     * (MACARGVS = 100).
-     * 
-     * This is the wiki's entry:
-     * 
-     * doom @<response>
-     * This parameter tells the Doom engine to read from a response file, 
-     * a text file that may store additional command line parameters. 
-     * The file may have any name that is valid to the system, optionally 
-     * with an extension. The parameters are typed as in the command line 
-     * (-episode 2, for example), but one per line, where up to 100 lines
-     *  may be used. The additional parameters may be disabled for later 
-     *  use by placing a vertical bar (the | character) between the 
-     *  prefixing dash (-) and the rest of the parameter name.
-     * 
-     * 
-     */
-    public void FindResponseFile ()
-    {
-        try{
 
-            for (int i = 1;i < myargc;i++)
-                if (myargv[i].charAt(0)=='@')
-                {
-                    DoomFile        handle;
-                    // save o	    
-                    int             size;
-                    int             indexinfile;
-                    char[]    infile=null;
-                    char[]    file=null;
-                    // Fuck that, we're doing it properly.
-                    ArrayList<String>  parsedargs=new ArrayList<String>();
-                    ArrayList<String>    moreargs=new ArrayList<String>();
-                    String    firstargv;
-
-                    // READ THE RESPONSE FILE INTO MEMORY
-                    handle = new DoomFile(myargv[i].substring(1),"rb");
-                    if (!eval(handle))
-                    {
-                        System.out.print ("\nNo such response file!");
-                        System.exit(1);
-                    }
-                    System.out.println("Found response file "+myargv[i].substring(1));
-                    size = (int) handle.length();
-
-                    file = new char[size];
-                    handle.readNonUnicodeCharArray(file, file.length);
-                    handle.close();
-
-                    // Save first argument.
-                    firstargv = myargv[0];
-
-                    // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
-                    // This saves the old references.
-                    for (int k = i+1; k < myargc; k++)
-                        moreargs.add(myargv[k]);
-
-                    infile = file;
-                    indexinfile = 0;
-                    indexinfile++;  // SKIP PAST ARGV[0] (KEEP IT)
-                    // HMM? StringBuffer build=new StringBuffer();
-
-                    /* MAES: the code here looked like some primitive tokenizer.
-	       that assigned C-strings to memory locations.
-	       Instead, we'll tokenize the file input correctly here.
-                     */
-
-                    StringTokenizer tk=new StringTokenizer(String.copyValueOf(infile));
-
-
-
-                    //myargv = new String[tk.countTokens()+argc];
-                    parsedargs.add(firstargv);
-
-                    while(tk.hasMoreTokens())
-                    {
-                        parsedargs.add(tk.nextToken());
-                    }
-
-                    // Append the other args to the end.
-                    parsedargs.addAll(moreargs);
-
-                    /* NOW the original myargv is reset, but the old values still survive in 
-                     * the listarray.*/
-
-                    myargv= new String[parsedargs.size()];
-                    myargv=parsedargs.toArray(myargv);
-                    myargc = myargv.length;
-
-                    // DISPLAY ARGS
-                    System.out.println(myargc+" command-line args:");
-                    for (int k=0;k<myargc;k++)
-                        System.out.println(myargv[k]);
-
-                    // Stops at the first one. Pity, because we could do funky recursive stuff with that :-p
-                    break;
-                }
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-    }
 
 
     //
@@ -847,25 +732,38 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         int             p;
         StringBuffer file=new StringBuffer();
 
-        FindResponseFile ();
+        // TODO: This may modify the command line by appending more stuff
+        // from an external file. Since it can affect other stuff too,
+        // maybe it should be outside of Start() and into i.Main ?
+        CM.FindResponseFile ();
 
         IdentifyVersion ();
+
+
 
         // Sets unbuffered output in C. Not needed here. setbuf (stdout, NULL);
         modifiedgame = false;
 
-        nomonsters = eval(CheckParm ("-nomonsters"));
-        respawnparm = eval(CheckParm ("-respawn"));
-        fastparm = eval(CheckParm ("-fast"));
-        devparm = eval(CheckParm ("-devparm"));
-        if (eval(CheckParm ("-altdeath")))
+        nomonsters = eval(CM.CheckParm ("-nomonsters"));
+        respawnparm = eval(CM.CheckParm ("-respawn"));
+        fastparm = eval(CM.CheckParm ("-fast"));
+        devparm = eval(CM.CheckParm ("-devparm"));
+        if (eval(CM.CheckParm ("-altdeath")))
             //deathmatch = 2;
             altdeath=true;
-        else if (eval(CheckParm ("-deathmatch")))
+        else if (eval(CM.CheckParm ("-deathmatch")))
             deathmatch = true;
 
         // MAES: better extract a method for this.
         GenerateTitle();
+
+        // Print ticker info. It has already been set at Init() though.
+        if (eval(CM.CheckParm("-millis"))){
+            System.out.println("ITicker: Using millisecond accuracy timer.");
+        }
+        else {
+            System.out.println("ITicker: Using nanosecond accuracy timer.");
+        }
 
         System.out.println(title.toString());
 
@@ -873,7 +771,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             System.out.println(D_DEVSTR);
 
         // Running from CDROM?
-        if (eval(CheckParm("-cdrom")))
+        if (eval(CM.CheckParm("-cdrom")))
         {
             System.out.println(D_CDROM);
             //System.get("c:\\doomdata",0);
@@ -881,14 +779,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }	
 
         // turbo option
-        if ( eval(p=CheckParm ("-turbo")) )
+        if ( eval(p=CM.CheckParm ("-turbo")) )
         {
             int     scale = 200;
             //int forwardmove[2];
             // int sidemove[2];
 
-            if (p<myargc-1)
-                scale = Integer.parseInt(myargv[p+1]);
+            if (p<CM.getArgc()-1)
+                scale = Integer.parseInt(CM.getArgv(p+1));
             if (scale < 10)
                 scale = 10;
             if (scale > 400)
@@ -905,12 +803,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //
         // convenience hack to allow -wart e m to add a wad file
         // prepend a tilde to the filename so wadfile will be reloadable
-        p = CheckParm ("-wart");
+        p = CM.CheckParm ("-wart");
         if (eval(p))
         {
-            char[] tmp=myargv[p].toCharArray();
+            char[] tmp=CM.getArgv(p).toCharArray();
             tmp[4]= 'p';// big hack, change to -warp
-            myargv[p]=new String(tmp);    
+            CM.setArgv(p,new String(tmp));    
             GameMode_t gamemode=getGameMode();
             // Map name handling.
             switch (gamemode )
@@ -920,14 +818,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             case registered:
                 file.append("~");
                 file.append(DEVMAPS);
-                file.append(String.format("E%cM%c.wad", myargv[p+1], myargv[p+2]));
+                file.append(String.format("E%cM%c.wad", CM.getArgv(p+1), CM.getArgv(p+2)));
                 file.append(String.format("Warping to Episode %s, Map %s.\n",
-                    myargv[p+1],myargv[p+2]));
+                    CM.getArgv(p+1),CM.getArgv(p+2)));
                 break;
 
             case commercial:
             default:
-                p = Integer.parseInt(myargv[p+1]);
+                p = Integer.parseInt(CM.getArgv(p+1));
                 if (p<10){
                     file.append("~");
                     file.append(DEVMAPS);
@@ -944,25 +842,25 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             AddFile (file.toString());
         }
 
-        p = CheckParm ("-file");
+        p = CM.CheckParm ("-file");
         if (eval(p))
         {
             // the parms after p are wadfile/lump names,
             // until end of parms or another - preceded parm
             modifiedgame = true;            // homebrew levels
-            while (++p != myargc && myargv[p].charAt(0) != '-')
-                AddFile (myargv[p]);
+            while (++p != CM.getArgc() && CM.getArgv(p).charAt(0) != '-')
+                AddFile (CM.getArgv(p));
         }
 
-        p = CheckParm ("-playdemo");
+        p = CM.CheckParm ("-playdemo");
 
         if (!eval(p))
-            p = CheckParm ("-timedemo");
+            p = CM.CheckParm ("-timedemo");
 
-        if (eval(p) && p < myargc-1)
+        if (eval(p) && p < CM.getArgc()-1)
         {
-            AddFile (myargv[p+1]+".lmp");
-            System.out.printf("Playing demo %s.lmp.\n",myargv[p+1]);
+            AddFile (CM.getArgv(p+1)+".lmp");
+            System.out.printf("Playing demo %s.lmp.\n",CM.getArgv(p+1));
         }
 
         // get skill / episode / map from parms
@@ -972,46 +870,47 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         autostart = false;
 
 
-        p = CheckParm ("-skill");
-        if (eval(p) && p < myargc-1)
+        p = CM.CheckParm ("-skill");
+        if (eval(p) && p < CM.getArgc()-1)
         {
-            startskill = skill_t.values()[myargv[p+1].charAt(0)-'1'];
+            startskill = skill_t.values()[CM.getArgv(p+1).charAt(0)-'1'];
             autostart = true;
         }
 
-        p = CheckParm ("-episode");
-        if (eval(p) && p < myargc-1)
+        p = CM.CheckParm ("-episode");
+        if (eval(p) && p < CM.getArgc()-1)
         {
-            startepisode = myargv[p+1].charAt(0)-'0';
+            startepisode = CM.getArgv(p+1).charAt(0)-'0';
             startmap = 1;
             autostart = true;
         }
 
-        p = CheckParm ("-timer");
-        if (eval(p) && p < myargc-1 && deathmatch)
+        p = CM.CheckParm ("-timer");
+        if (eval(p) && p < CM.getArgc()-1 && deathmatch)
         {
             int     time;
-            time = Integer.parseInt(myargv[p+1]);
+            time = Integer.parseInt(CM.getArgv(p+1));
             System.out.print("Levels will end after "+time+" minute");
             if (time>1)
                 System.out.print("s");
             System.out.print(".\n");
         }
 
-        p = CheckParm ("-avg");
-        if (eval(p) && p < myargc-1 && deathmatch)
+        // OK, and exactly how is this enforced?
+        p = CM.CheckParm ("-avg");
+        if (eval(p) && p < CM.getArgc()-1 && deathmatch)
             System.out.print("Austin Virtual Gaming: Levels will end after 20 minutes\n");
 
-        p = CheckParm ("-warp");
-        if (eval(p) && p < myargc-1)
+        p = CM.CheckParm ("-warp");
+        if (eval(p) && p < CM.getArgc()-1)
         {
             if (isCommercial())
-                startmap = Integer.parseInt(myargv[p+1]);
+                startmap = Integer.parseInt(CM.getArgv(p+1));
             else
             {
                 int eval=11;
                 try {
-                    eval=Integer.parseInt(myargv[p+1]);
+                    eval=Integer.parseInt(CM.getArgv(p+1));
                 } catch (Exception e){
                     // swallow exception. No warp.
                 }
@@ -1035,7 +934,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         V.Init ();
 
         System.out.print ("M_LoadDefaults: Load system defaults.\n");
-        //TODO: M.LoadDefaults ();              // load before initing other systems
+        MenuMisc.LoadDefaults (this);              // load before initing other systems
 
         System.out.print ("Z_Init: Init zone memory allocation daemon. \n");
         // DUMMY: Z_Init ();
@@ -1054,11 +953,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // set it, create it, but don't make it visible yet.
         VI=new AWTDoom(this,(BufferedRenderer) V,pal);
         VI.InitGraphics ();
-        
-        // TODO Before we begin calling the various Init() stuff,
+
+        // MAES: Before we begin calling the various Init() stuff,
         // we need to make sure that objects that support the IVideoScaleAware
         // interface get set and initialized.
-        
+
         initializeVideoScaleStuff();
 
         // MAES: The status bar needs this update because it can "force"
@@ -1067,7 +966,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // MAES: Check for Ultimate Doom in "doom.wad" filename.
         CheckForUltimateDoom();
-        
+
         // Check for -file in shareware
         CheckForPWADSInShareware();
 
@@ -1142,8 +1041,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         ST.Init ();
 
         // check for a driver that wants intermission stats
-        p = CheckParm ("-statcopy");
-        if (eval(p) && p<myargc-1)
+        p = CM.CheckParm ("-statcopy");
+        if (eval(p) && p<CM.getArgc()-1)
         {
 
             // TODO: statcopy = (void*)atoi(myargv[p+1]);
@@ -1151,11 +1050,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
         // start the apropriate game based on parms
-        p = CheckParm ("-record");
+        p = CM.CheckParm ("-record");
 
-        if (eval(p) && p < myargc-1)
+        if (eval(p) && p < CM.getArgc()-1)
         {
-            RecordDemo (myargv[p+1]);
+            RecordDemo (CM.getArgv(p+1));
             autostart = true;
         }
 
@@ -1166,28 +1065,28 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             players[i].updateStatus(this);
         }
 
-        p = CheckParm ("-timedemo");
-        if (eval(p) && p < myargc-1)
+        p = CM.CheckParm ("-timedemo");
+        if (eval(p) && p < CM.getArgc()-1)
         {
-            TimeDemo (myargv[p+1]);
+            TimeDemo (CM.getArgv(p+1));
             DoomLoop ();  // never returns
         }
 
-        p = CheckParm ("-loadgame");
-        if (eval(p) && p < myargc-1)
+        p = CM.CheckParm ("-loadgame");
+        if (eval(p) && p < CM.getArgc()-1)
         {
             file.delete(0, file.length());
-            if (eval(CheckParm("-cdrom"))){
+            if (eval(CM.CheckParm("-cdrom"))){
                 file.append("c:\\doomdata\\");
                 file.append(SAVEGAMENAME);
                 file.append("%c.dsg");
-                file.append(myargv[p+1].charAt(0));
+                file.append(CM.getArgv(p+1).charAt(0));
             }
             else
             {
                 file.append(SAVEGAMENAME);
                 file.append("%c.dsg");
-                file.append(myargv[p+1].charAt(0));
+                file.append(CM.getArgv(p+1).charAt(0));
 
             }
             LoadGame(file.toString());
@@ -1205,11 +1104,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
 
-        p = CheckParm ("-playdemo");
-        if (eval(p) && p < myargc-1)
+        p = CM.CheckParm ("-playdemo");
+        if (eval(p) && p < CM.getArgc()-1)
         {
             singledemo = true;              // quit after one demo
-            DeferedPlayDemo (myargv[p+1]);
+            DeferedPlayDemo (CM.getArgv(p+1));
             DoomLoop ();  // never returns
         }
 
@@ -1218,19 +1117,19 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
 
     List<IVideoScaleAware> videoScaleChildren;
-    
-	public  void initializeVideoScaleStuff() {
-	    
-	    videoScaleChildren=new ArrayList<IVideoScaleAware>();
-	    
-	    // The automap...
-	    videoScaleChildren.add(this.AM);
-	    // The finale...
-	    videoScaleChildren.add(this.F);
+
+    public  void initializeVideoScaleStuff() {
+
+        videoScaleChildren=new ArrayList<IVideoScaleAware>();
+
+        // The automap...
+        videoScaleChildren.add(this.AM);
+        // The finale...
+        videoScaleChildren.add(this.F);
         // The wiper...
-	    videoScaleChildren.add(this.WIPE);
+        videoScaleChildren.add(this.WIPE);
         // The heads up...
-	    videoScaleChildren.add(this.HU);
+        videoScaleChildren.add(this.HU);
         // The menu...
         videoScaleChildren.add(this.M);
         // The renderer (also has dependent children!)
@@ -1241,23 +1140,23 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         videoScaleChildren.add(this.V);
         // Even the video renderer needs some initialization?
         videoScaleChildren.add(this.WI);
-        
+
         for(IVideoScaleAware i:videoScaleChildren){
             if (i!=null){
-            i.setVideoScale(this.vs);
-            i.initScaling();
+                i.setVideoScale(this.vs);
+                i.initScaling();
             }
         }
 
-	    
+
     }
 
 
     /**
-	 * 
-	 */
-	protected void CheckForPWADSInShareware() {
-		if (modifiedgame)
+     * 
+     */
+    protected void CheckForPWADSInShareware() {
+        if (modifiedgame)
         {
             // These are the lumps that will be checked in IWAD,
             // if any one is not present, execution will be aborted.
@@ -1280,15 +1179,15 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                     if (W.CheckNumForName(name[i].toUpperCase())<0)
                         I.Error("\nThis is not the registered version: "+name[i]);
         }
-	}
+    }
 
-	/** Check whether the "doom.wad" we actually loaded
-	 *  is ultimate Doom's, by checking if it contains 
-	 *  e4m1 - e4m9.
-	 * 
-	 */
-	protected void CheckForUltimateDoom() {
-		if (isRegistered())
+    /** Check whether the "doom.wad" we actually loaded
+     *  is ultimate Doom's, by checking if it contains 
+     *  e4m1 - e4m9.
+     * 
+     */
+    protected void CheckForUltimateDoom() {
+        if (isRegistered())
         {
             // These are the lumps that will be checked in IWAD,
             // if any one is not present, execution will be aborted.
@@ -1299,34 +1198,34 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
             // Check for fake IWAD with right name,
             // but w/o all the lumps of the registered version. 
-                if (!CheckForLumps(lumps)) return;
-                // Checks passed, so we can set the mode to Ultimate
-                setGameMode(GameMode_t.retail);
+            if (!CheckForLumps(lumps)) return;
+            // Checks passed, so we can set the mode to Ultimate
+            setGameMode(GameMode_t.retail);
         }
-		
-	}
+
+    }
 
 
-	/** Check if ALL of the lumps exist.
-	 * 
-	 * @param name
-	 * @return
-	 */
-	protected boolean CheckForLumps(String[] name) {
-		for (int i = 0;i < name.length; i++)
-		    if (W.CheckNumForName(name[i].toUpperCase())<0) {
-		    	// Even one is missing? Not OK.
-		    	return false; 
-		    }
-		return true;
-	}
+    /** Check if ALL of the lumps exist.
+     * 
+     * @param name
+     * @return
+     */
+    protected boolean CheckForLumps(String[] name) {
+        for (int i = 0;i < name.length; i++)
+            if (W.CheckNumForName(name[i].toUpperCase())<0) {
+                // Even one is missing? Not OK.
+                return false; 
+            }
+        return true;
+    }
 
 
-	/**
-	 * 
-	 */
-	protected void GenerateTitle() {
-		switch ( getGameMode() )
+    /**
+     * 
+     */
+    protected void GenerateTitle() {
+        switch ( getGameMode() )
         {
         case retail:
             title.append("                         ");
@@ -1389,7 +1288,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             title.append("                           ");
             break;
         }
-	}
+    }
 
     // Used in BuildTiccmd.
     protected ticcmd_t   base=new ticcmd_t();
@@ -1429,6 +1328,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         forward = side = 0;
 
+        
+        
         // use two stage accelerative turning
         // on the keyboard and joystick
         if (joyxmove < 0
@@ -1654,7 +1555,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         LL.SetupLevel (gameepisode, gamemap, 0, gameskill);    
         displayplayer = consoleplayer;      // view the guy you are playing    
-        starttime = I.GetTime (); 
+        starttime = TICK.GetTime (); 
         gameaction = gameaction_t.ga_nothing; 
         //Z_CheckHeap ();
 
@@ -1748,7 +1649,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             return false;   // always let key up events filter down 
 
         case ev_mouse:
-            
+
             mousebuttons(0, ev.data1 & 1); 
             mousebuttons(1, ev.data1 & 2); 
             mousebuttons(2, ev.data1 & 4);
@@ -1886,8 +1787,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 { 
                     switch (players[i].cmd.buttons & BT_SPECIALMASK) 
                     { 
-                    case BTS_PAUSE: 
-                        paused ^= paused; 
+                    case BTS_PAUSE:
+                        // MAES: fixed stupid ^pause bug.
+                        paused = !paused; 
                         if (paused)
                             S.PauseSound ();
                         else
@@ -1895,7 +1797,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                         break; 
 
                     case BTS_SAVEGAME: 
-                        if (savedescription!=null) 
+                        if (savedescription==null) 
                             savedescription=new String( "NET GAME"); 
                         savegameslot =  
                             (players[i].cmd.buttons & BTS_SAVEMASK)>>BTS_SAVESHIFT; 
@@ -2235,11 +2137,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             switch(gamemap)
             {
             case 8:
-            	// MAES: end of episode
+                // MAES: end of episode
                 gameaction =  gameaction_t.ga_victory;
                 return;
             case 9:
-            	// MAES: end of secret level
+                // MAES: end of secret level
                 for (i=0 ; i<MAXPLAYERS ; i++) 
                     players[i].didsecret = true; 
                 break;
@@ -2261,7 +2163,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             for (i=0 ; i<MAXPLAYERS ; i++) 
                 players[i].didsecret = true; 
         } 
-        */
+         */
 
 
         wminfo.didsecret = players[consoleplayer].didsecret; 
@@ -2407,65 +2309,64 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     protected void DoLoadGame () 
     { 
-   try{ 
-     int     i;  
-     //char[]    vcheck=new char[VERSIONSIZE]; 
-     StringBuffer vcheck=new StringBuffer();
-     IDoomSaveGameHeader header=new VanillaDSGHeader();
-     IDoomSaveGame dsg=new VanillaDSG();
-     dsg.updateStatus(this.DM);
-     gameaction = gameaction_t.ga_nothing; 
+        try{ 
+            int     i;  
+            StringBuffer vcheck=new StringBuffer();
+            VanillaDSGHeader header=new VanillaDSGHeader();
+            IDoomSaveGame dsg=new VanillaDSG();
+            dsg.updateStatus(this.DM);
+            gameaction = gameaction_t.ga_nothing; 
 
-     DoomFile f=new DoomFile(savename, "r"); 
+            DoomFile f=new DoomFile(savename, "r"); 
 
-     header.read(f);
-     f.seek(0);
-     
-     
-     // skip the description field 
-     vcheck.append("version ");
-     vcheck.append(VERSION);
+            header.read(f);
+            f.seek(0);
 
-     if (vcheck.toString().compareTo(header.getVersion())!=0) 
-     return;             // bad version 
- 
 
-     gameskill = header.getGameskill(); 
-     gameepisode = header.getGameepisode(); 
-     gamemap = header.getGamemap(); 
-     for (i=0 ; i<MAXPLAYERS ; i++) 
-     playeringame[i] = header.getPlayeringame()[i]; 
+            // skip the description field 
+            vcheck.append("version ");
+            vcheck.append(VERSION);
 
-     // load a base level 
-     InitNew (gameskill, gameepisode, gamemap); 
+            if (vcheck.toString().compareTo(header.getVersion())!=0) 
+                return;             // bad version 
 
-     // get the times 
-     leveltime = header.getLeveltime(); 
 
-     // dearchive all the modifications
-     boolean ok=dsg.doLoad(f);
-     f.close();
+            gameskill = header.getGameskill(); 
+            gameepisode = header.getGameepisode(); 
+            gamemap = header.getGamemap(); 
+            for (i=0 ; i<MAXPLAYERS ; i++) 
+                playeringame[i] = header.getPlayeringame()[i]; 
 
-     // MAES: this will cause a forced exit.
-     // The problem is that the status will have already been altered 
-     // (perhaps VERY badly) so it makes no sense to progress.
-     // If you want it bullet-proof, you could implement
-     // a "tentative loading" subsystem, which will only alter the game
-     // if everything works out without errors. But who cares :-p
-     if (!ok) 
-     I.Error("Bad savegame");
+            // load a base level 
+            InitNew (gameskill, gameepisode, gamemap); 
 
-     // done 
-     //Z_Free (savebuffer); 
+            // get the times 
+            leveltime = header.getLeveltime(); 
 
-     if (R.setsizeneeded)
-     R.ExecuteSetViewSize ();
+            // dearchive all the modifications
+            boolean ok=dsg.doLoad(f);
+            f.close();
 
-     // draw the pattern into the back screen
-     R.FillBackScreen ();   
-   } catch (Exception e){
-       e.printStackTrace();
-   }
+            // MAES: this will cause a forced exit.
+            // The problem is that the status will have already been altered 
+            // (perhaps VERY badly) so it makes no sense to progress.
+            // If you want it bullet-proof, you could implement
+            // a "tentative loading" subsystem, which will only alter the game
+            // if everything works out without errors. But who cares :-p
+            if (!ok) 
+                I.Error("Bad savegame");
+
+            // done 
+            //Z_Free (savebuffer); 
+
+            if (R.setsizeneeded)
+                R.ExecuteSetViewSize ();
+
+            // draw the pattern into the back screen
+            R.FillBackScreen ();   
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     } 
 
 
@@ -2486,57 +2387,57 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     private void DoSaveGame () 
     { 
-        /*
+     
+        try{
      String    name; 
-     char[]    name2=new char[VERSIONSIZE]; 
-     String   description; 
+     //char[]    name2=new char[VERSIONSIZE]; 
+     String   description;
+     StringBuffer build=new StringBuffer();
+     IDoomSaveGameHeader header=new VanillaDSGHeader();
+     IDoomSaveGame dsg=new VanillaDSG();
+     dsg.updateStatus(this.DM);
      int     length; 
      int     i; 
 
-     if (M_CheckParm("-cdrom"))
-     name="c:\\doomdata\\"+SAVEGAMENAME+"%d.dsg");
-     else
-     sprintf (name,SAVEGAMENAME"%d.dsg",savegameslot); 
+     if (eval(CM.CheckParm("-cdrom"))) {
+         build.append("c:\\doomdata\\");
+         build.append(SAVEGAMENAME);
+         build.append("%d.dsg");
+     } else {         
+      build.append(SAVEGAMENAME);
+      build.append("%d.dsg"); 
+     }
+     
+     name=String.format(build.toString(), savegameslot);
+     
      description = savedescription; 
 
-     save_p = savebuffer = screens[1]+0x4000; 
-
-     memcpy (save_p, description, SAVESTRINGSIZE); 
-     save_p += SAVESTRINGSIZE; 
-     memset (name2,0,sizeof(name2)); 
-     sprintf (name2,"version %i",VERSION); 
-     memcpy (save_p, name2, VERSIONSIZE); 
-     save_p += VERSIONSIZE; 
-
-         *save_p++ = gameskill; 
-         *save_p++ = gameepisode; 
-         *save_p++ = gamemap; 
-     for (i=0 ; i<MAXPLAYERS ; i++) 
-         *save_p++ = playeringame[i]; 
-         *save_p++ = leveltime>>16; 
-         *save_p++ = leveltime>>8; 
-         *save_p++ = leveltime; 
-
-     P_ArchivePlayers (); 
-     P_ArchiveWorld (); 
-     P_ArchiveThinkers (); 
-     P_ArchiveSpecials (); 
-
-         *save_p++ = 0x1d;       // consistancy marker 
-
-     length = save_p - savebuffer; 
-     if (length > SAVEGAMESIZE) 
-     I_Error ("Savegame buffer overrun"); 
-     M_WriteFile (name, savebuffer, length);
-     */ 
+     header.setName(description);
+     header.setVersion(String.format("version %d",VERSION));
+     header.setGameskill(gameskill);
+     header.setGameepisode(gameepisode);
+     header.setGamemap(gamemap);
+     header.setPlayeringame(playeringame);
+     dsg.setHeader(header);
+     
+     // Try opening a save file. No intermediate buffer (performance?)
+     DoomFile f=new DoomFile(name, "rw");
+     boolean ok=dsg.doSave(f);
+     f.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+     // Saving is not as destructive as loading.
+     
      gameaction = gameaction_t.ga_nothing; 
-     savedescription = "";      
+        savedescription = "";      
 
-     players[consoleplayer].message = GGSAVED; 
+        players[consoleplayer].message = GGSAVED; 
 
-     // draw the pattern into the back screen
-     R.FillBackScreen ();    
-         
+        // draw the pattern into the back screen
+        R.FillBackScreen ();
+     
+
     } 
 
 
@@ -2766,8 +2667,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         buf.append(".lmp");
         demoname=buf.toString();
         // maxsize = 0x20000;
-        i = CheckParm ("-maxdemo");
-        // if (i!=0 && i<myargc-1)
+        i = CM.CheckParm ("-maxdemo");
+        // if (i!=0 && i<CM.getArgc()-1)
         // maxsize = Integer.parseInt(myargv[i+1])*1024;
         demobuffer = new VanillaDoomDemo(); 
         //demoend = maxsize;
@@ -2860,8 +2761,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     //
     public void TimeDemo (String name) 
     {    
-        nodrawers = CheckParm ("-nodraw")!=0; 
-        noblit = CheckParm ("-noblit")!=0; 
+        nodrawers = CM.CheckParm ("-nodraw")!=0; 
+        noblit = CM.CheckParm ("-noblit")!=0; 
         timingdemo = true; 
         singletics = true;
         defdemoname = name;
@@ -2885,7 +2786,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         if (timingdemo) 
         {
-            endtime = I.GetTime (); 
+            endtime = TICK.GetTime (); 
             I.Error ("timed %d gametics in %d realtics",gametic 
                 , (endtime-starttime)); 
         } 
@@ -2953,6 +2854,16 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Random number generator.
 
         this.DM=this;
+
+        // Set ticker.
+        if (eval(CM.CheckParm("-millis"))){
+
+            TICK=new MilliTicker();
+        }
+        else {
+            TICK=new NanoTicker();
+        }
+
         this.DG = this;
         this.DNI=new DummyNetworkDriver(this);
         this.DGN=this; // DoomMain also handles its own Game Networking.
@@ -2971,9 +2882,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.HU=new HU(this);
         this.M=new Menu(this);
         this.LL=new LevelLoader(this);
-        this.R=new UnifiedRenderer(this);
-        this.P=new Actions(this);
+        
+        // This will set R.
+        selectRenderer();
 
+        this.P=new Actions(this);
         this.ST=new StatusBar(this);
         this.AM=new Map(this);
         this.TM=new SimpleTextureManager(this);
@@ -2991,6 +2904,45 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.F = new Finale(this);
         ((DoomSystem)(this.I)).updateStatus(this);
 
+    }
+
+
+    protected void selectRenderer() {
+        // Serial or parallel renderer (serial is default, but can be forced)
+        if (eval(CM.CheckParm("-serialrenderer"))){
+            this.R=new UnifiedRenderer(this);    
+        } else 
+
+            // Parallel. Either with default values (2,1) or user-specified.
+            if (eval(CM.CheckParm("-parallelrenderer"))){        
+                int p = CM.CheckParm ("-parallelrenderer");
+                if (eval(p) && p < CM.getArgc()-1)
+                {
+                    // Next two args must be numbers.
+                    int walls=2, floors=1;
+                    startmap = Integer.parseInt(CM.getArgv(p+1));
+                    // Try parsing walls.
+                    try {
+                        walls=Integer.parseInt(CM.getArgv(p+1));
+                    } catch (Exception e){
+                        // OK, move on anyway.
+                    }
+
+                    // Try parsing floors. If wall succeeded, but floors
+                    // not, it will default to 1.
+                    try {
+                        floors=Integer.parseInt(CM.getArgv(p+2));
+                    } catch (Exception e){
+                        // OK, move on anyway.
+                    }
+
+                    // In the worst case, we will use the defaults.
+                    this.R=new ParallelRenderer(this,walls,floors);
+                }
+            } else {
+                // Force serial
+                this.R=new UnifiedRenderer(this);   
+            }
     }
 
 
@@ -3420,7 +3372,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         int             gameticdiv;
 
         // check time
-        nowtime = I.GetTime ()/ticdup;
+        nowtime = TICK.GetTime ()/ticdup;
         newtics = nowtime - gametime;
         gametime = nowtime;
 
@@ -3505,8 +3457,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         event_t ev;
         int     stoptic;
 
-        stoptic = I.GetTime () + 2; 
-        while (I.GetTime() < stoptic) 
+        stoptic = TICK.GetTime () + 2; 
+        while (TICK.GetTime() < stoptic) 
             VI.StartTic (); 
 
         VI.StartTic ();
@@ -3716,7 +3668,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
 
         // get real tics        
-        entertic = I.GetTime ()/ticdup;
+        entertic = TICK.GetTime ()/ticdup;
         realtics = entertic - oldentertics;
         oldentertics = entertic;
 
@@ -3800,13 +3752,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             // Finds the node with the lowest number of tics.
             for (i=0 ; i<doomcom.numnodes ; i++)
                 if (nodeingame[i] && nettics[i] < lowtic)
-                    lowtic = nettics[i]; // TODO: where is nettics increased?
+                    lowtic = nettics[i];
 
             if (lowtic < gametic/ticdup)
                 I.Error ("TryRunTics: lowtic < gametic");
 
             // don't stay in here forever -- give the menu a chance to work
-            int time=I.GetTime();
+            int time=TICK.GetTime();
             if (time/ticdup - entertic >= 20)
             {
                 M.Ticker ();
@@ -3864,15 +3816,15 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     @Override
     public void setGameAction(gameaction_t action) {
         this.gameaction=action;
-        }
+    }
 
 
     @Override
     public gameaction_t getGameAction() {       
         return this.gameaction;
     }
-    
-////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
+
+    ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
 
     protected int SCREENWIDTH;
     protected int SCREENHEIGHT;
@@ -3891,10 +3843,19 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.SCREENWIDTH=vs.getScreenWidth();
         this.SAFE_SCALE=vs.getSafeScaling();
     }
-    
+
+
+    public void setCommandLineArgs(ICommandLineManager cM) {
+        this.CM=cM;
+
+    }
+
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.47  2011/05/26 17:52:52  velktron
+//Several fixes. Pause bug, added more command-line options, started saving subsystem.
+//
 //Revision 1.46  2011/05/25 18:46:24  velktron
 //Implemented event_t pooling/reuse.
 //
