@@ -1,13 +1,15 @@
 package p;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import w.statenum_t;
 import data.state_t;
 
-public class pspdef_t implements IReadableDoomObject{
+public class pspdef_t implements IReadableDoomObject,IPackableDoomObject{
 
     public pspdef_t(){
         state=new state_t();
@@ -29,6 +31,15 @@ public class pspdef_t implements IReadableDoomObject{
         tics=f.readLEInt();
         sx=f.readLEInt();
         sy=f.readLEInt();
+    }
+    
+    @Override
+    public void pack(ByteBuffer f) throws IOException {
+        // TODO: where/when is state set?
+        f.putInt(state.id);
+        f.putInt(tics);
+        f.putInt(sx);
+        f.putInt(sy);
     }
 
 }
