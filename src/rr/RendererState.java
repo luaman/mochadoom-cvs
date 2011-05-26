@@ -482,6 +482,8 @@ validcount++;
      System.out.println("Drawseg buffer resized. Actual capacity "+drawsegs.length);
  }
  
+ 
+ 
      @Override
     public void updateStatus(DoomStatus DC){
         this.DM=DC.DM;
@@ -581,7 +583,7 @@ validcount++;
 
         protected static final int MINZ    =            (FRACUNIT*4);
         protected static final int BASEYCENTER         =100;
-        ThreadSort<vissprite_t> ts;
+        // UNUSED ThreadSort<vissprite_t> ts;
 
         public Things(){
             sprtemp=new spriteframe_t[MAX_SPRITEFRAMES];
@@ -590,7 +592,7 @@ validcount++;
             C2JUtils.initArrayOfObjects(vissprites);
             vsprsortedhead=new vissprite_t();
             unsorted=new vissprite_t();
-            ts=new ThreadSort<vissprite_t>(vissprites);
+            // ts=new ThreadSort<vissprite_t>(vissprites);
         }
         
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
@@ -614,18 +616,8 @@ validcount++;
             clipbot=new short[SCREENWIDTH];
             cliptop=new short[SCREENWIDTH];
         }
-        
-       /* UNUSED?
-         class maskdraw_t
-        {
-            int     x1;
-            int     x2;
-            
-            int     column;
-            int     topclip;
-            int     bottomclip;
 
-        }; */
+////////////////////////////////////////////////////////////////////////////
 
         /**
          * R_InstallSpriteLump
@@ -671,17 +663,18 @@ validcount++;
                 // the lump should be used for all rotations
             if (sprtemp[frame].rotate == 0){
                 /* MAES: Explanation: we stumbled upon this lump before, 
-                 * and decided that this frame should have no more
-                 * rotations, hence we bomb.
+                 * and decided that this frame should have no more rotations, 
+                 * hence we found an error and we bomb everything.
                  */
                 I.Error ("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump", spritename, 'A'+frame);
             }
 
             // This should NEVER happen!
             if (sprtemp[frame].rotate == 1) {
-                /* MAES: This can only happen if we decided that a sprite's frame was already decided to have
-                 * rotations, but now we stumble upon another occurence of "rotation 0". Or if you use naive
-                 * true/false evaluation for .rotate ( -1 is also an admissible value).
+                /* MAES: This can only happen if we decided that a sprite's frame was 
+                 * already decided to have rotations, but now we stumble upon another
+                 * occurence of "rotation 0". Or if you use naive true/false evaluation
+                 * for .rotate ( -1 is also an admissible value).
                  */
                 I.Error ("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump", spritename, 'A'+frame);          
             }
@@ -758,8 +751,9 @@ validcount++;
             System.out.println("Preparing sprite "+i);
             spritename = namelist[i];
             
-            // FIXME: the original code actually set everything to "-1" here, including the "boolean" 
-            // value. The idea was to create a "tristate" of sorts. Goto InstallSpriteLumps for more.
+            // FIXME: the original code actually set everything to "-1" here, including the 
+            // "boolean" rotate value. The idea was to create a "tristate" of sorts, where -1
+            // means a sprite of uncertain status. Goto InstallSpriteLumps for more.
             for (int j=0;j<sprtemp.length;j++){
                 Arrays.fill(sprtemp[j].flip,(byte)-1);
                 Arrays.fill(sprtemp[j].lump,(short)-1);
@@ -1208,13 +1202,13 @@ validcount++;
 
             // Base frame for "angle 0" aka viewed from dead-front.
             lump = sprframe.lump[0];
-            // TODO: where can this be set?
+            // TODO: where can this be set? MAES: at sprite loadtime.            
             flip = (boolean)(sprframe.flip[0]!=0);
            
             // calculate edges of the shape. tx is expressed in "view units".
 
             // OPTIMIZE: if weaponadjust is computed in-place, noticeable slowdown occurs.
-            // MAES: actually that was not the problem.
+            // MAES: actually that was not what was causing it.
             tx = (int) (FixedMul(psp.sx,BOBADJUST)-WEAPONADJUST);
             
             tx -= spriteoffset[lump];
@@ -1752,7 +1746,8 @@ validcount++;
             // Newend should have a value of 2 if we are at the beginning of a new frame.
             next = newend;
             newend++;
-            
+
+            if (next>=solidsegs.length) ResizeSolidSegs();
             while (next != start)
             {
              // *next=*(next-1);
@@ -1764,7 +1759,7 @@ validcount++;
              * and so on until we reach the start. This means that at some
              * point, the value of the start solidseg is duplicated.
              */
-                
+  
                 solidsegs[next].copy(solidsegs[next-1]);
                 
             next--;
@@ -1816,6 +1811,7 @@ validcount++;
                 {
                 // Remove a post.
                 // MAES: this is a struct copy.
+                    if (next>=solidsegs.length) ResizeSolidSegs();
                     solidsegs[++start].copy(solidsegs[next]);
                 }
 
@@ -1845,12 +1841,27 @@ validcount++;
             {
             // Remove a post.
              // MAES: this is a struct copy.
+              // MAES: this can overflow, breaking e.g. MAP30 of Final Doom.
+                if (next>=solidsegs.length) ResizeSolidSegs();
                 solidsegs[++start].copy(solidsegs[next]);
             }
 
             newend = start+1;
             return;
         }      
+    }
+    
+    protected final void ResizeSolidSegs() {
+        cliprange_t[] tmp=new cliprange_t[solidsegs.length*2];
+        System.arraycopy(solidsegs, 0, tmp, 0, solidsegs.length);
+        
+        C2JUtils.initArrayOfObjects(tmp,solidsegs.length,tmp.length);
+        
+        // Bye bye, old solidsegs.
+        solidsegs=tmp;   
+        //MAXDRAWSEGS*=2;
+       
+        System.out.println("Solidseg buffer resized. Actual capacity: "+solidsegs.length);
     }
 
 
@@ -5717,12 +5728,7 @@ validcount++;
          } */
 
        protected  int     spritememory;
-        
        
-      
-       
-
-      
       /**
        * R_InitSprites
        * Called at program start.
