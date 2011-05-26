@@ -36,8 +36,8 @@ import doom.thinker_t;
 public class ParallelRenderer extends RendererState  {
 
 	////////// PARALLEL OBJECTS /////////////
-	private final static int NUMWALLTHREADS=4;
-	private final static int NUMFLOORTHREADS=1;
+	private final int NUMWALLTHREADS;
+	private int NUMFLOORTHREADS;
 	private Executor tp;
 	private VisplaneWorker[] vpw;
 	
@@ -67,42 +67,49 @@ public class ParallelRenderer extends RendererState  {
 	 */
 	private int RWIcount=0;
 	
-	private RenderWallExecutor[] RWIExec=new RenderWallExecutor[NUMWALLTHREADS];
+	private RenderWallExecutor[] RWIExec;
 	
 
 	
     private static final boolean DEBUG=false;
     
+    public ParallelRenderer(DoomMain DM, int wallthread, int floorthreads) {
+
+        this.updateStatus(DM);
+        this.LL=DM.LL;
+        this.W=DM.W;
+        this.MySegs=new ParallelSegs();
+        this.MyBSP=new BSP();
+        this.MyPlanes=new ParallelPlanes();
+        this.MyThings=new Things();
+        // We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
+        this.V=DM.V;
+        this.I=DM.I;
+        // Span functions
+        DrawSpan=new R_DrawSpanUnrolled();
+        DrawSpanLow=new R_DrawSpanLow();
+        DrawTranslatedColumn=new R_DrawTranslatedColumn();
+        DrawTLColumn=new R_DrawTLColumn();
+        DrawFuzzColumn=new R_DrawFuzzColumn();
+        DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
+        DrawColumnPlayer=DrawColumn;
+        DrawColumnLow=DrawColumn;
+        this.NUMWALLTHREADS=wallthread;
+        this.NUMFLOORTHREADS=floorthreads;
+        
+        }
+    
+    /** Default constructor, 2 wall threads and one floor thread.
+     * 
+     * @param DM
+     */
     public ParallelRenderer(DoomMain DM) {
-      
-      this.updateStatus(DM);
-      this.LL=DM.LL;
-      this.W=DM.W;
-      this.MySegs=new ParallelSegs();
-      this.MyBSP=new BSP();
-      this.MyPlanes=new ParallelPlanes();
-      this.MyThings=new Things();
-      // We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
-      this.V=DM.V;
-      this.I=DM.I;
-      // Span functions
-      DrawSpan=new R_DrawSpanUnrolled();
-      DrawSpanLow=new R_DrawSpanLow();
-      DrawTranslatedColumn=new R_DrawTranslatedColumn();
-      DrawTLColumn=new R_DrawTLColumn();
-      DrawFuzzColumn=new R_DrawFuzzColumn();
-      DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
-      DrawColumnPlayer=DrawColumn;
-      DrawColumnLow=DrawColumn;
-      
-      // MAES: only do that after scaling everything up properly
-      // initializeParallelStuff();
-      
-      
-  }
+      this(DM,2,1);
+    }
 
     private void initializeParallelStuff() {
         // Prepare parallel stuff
+          RWIExec=new RenderWallExecutor[NUMWALLTHREADS];
           tp=   Executors.newFixedThreadPool(NUMWALLTHREADS+NUMFLOORTHREADS);
           // Prepare the barrier for MAXTHREADS + main thread.
           visplanebarrier=new CyclicBarrier(NUMWALLTHREADS+NUMFLOORTHREADS+1);
