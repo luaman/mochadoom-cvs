@@ -171,7 +171,7 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
            // compared to actually DRAWING the stuff.
            if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();
            //voli.getGraphics().drawImage(bi,0,0,null);
-           g2d.drawImage(screens[palette],0,20,this);
+           g2d.drawImage(screens[palette],0,0,this);
            
         }
         
@@ -594,14 +594,14 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 		multiply = 4;
 
       Dimension size = new Dimension();
-      size.width = 8+width * multiply;
-      size.height = 54+(height * multiply);
+      size.width = this.width * multiply;
+      size.height = height * multiply;
 
       // Create AWT Robot for forcing mouse
       try {
       robby=new Robot();
       } catch (Exception e){
-    	  System.out.println("AWT Robot could not be created, mouse input focus will be loose!");
+    	  System.out.println("AWT Mouse Robot could not be created, mouse input focus will be loose!");
       }
       
 	  // check for command-line display name
@@ -652,12 +652,9 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 	  // AWT: create the canvas.
 	  try{
       drawhere=new Canvas();
-      drawhere.setSize(size);
+      drawhere.setPreferredSize(size);
       drawhere.setBounds(0, 0, drawhere.getWidth()-1,drawhere.getHeight()-1);
       drawhere.setBackground(Color.black);
-      
-      // AWT: Add canvas to component.
-      this.add(drawhere);
       
       // AWT: Add listeners.
       drawhere.addKeyListener(this);
@@ -678,14 +675,6 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
             return false;
           }
       });
-      
-      // AWT: create cursors.
-      this.normal=this.getCursor();
-      this.hidden=this.createInvisibleCursor();
-      
-      //AWT: Make visible and "peg" the g2d Object to the Canvas,
-      // else it will be nullified.
-      this.setVisible(true);
       
       // MAC OS X fix: let this be null, HERE, but set it to context
       // inside paint(). Should be Windows and Linux friendly, as well.
@@ -718,12 +707,42 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 							   X_screen), X_visual, AllocAll); */
 
 
-	  // create the main window
-	  this.setBounds(x, y, width, height);
-      this.setSize(size);
-	  this.setResizable(false);
+	  // create the main window	  
+      //AWT: Make visible and "peg" the g2d Object to the Canvas,
+      // else it will be nullified.
+	  
+	  //this.setSize(0, 0);
+      //this.setVisible(true);
+      //System.out.println("Null size "+this.getSize());
+      //System.out.println("Insets top "+this.getInsets().top);
+      //System.out.println("Insets bottom "+this.getInsets().bottom);
+      // THe ACTUAL size to set is a bit tricky, and can only
+      // be determined after the window has actually been set,
+      // and OS-dependent stuff like borders, title bar etc. have been drawn.
+      // Jesus -_-
+      
+     // Dimension truesize=this.getSize();
+   //   System.out.println("Desired size "+size);
+	 // this.setSize(size.width+truesize.width,size.height+truesize.height);
+	//  System.out.println("True size "+this.getSize());
+	  this.add(drawhere);
+	  this.getContentPane().setPreferredSize(drawhere.getPreferredSize());
+	  this.pack();
+	  this.setVisible(true);
+	  
+	  //this.width=this.getSize().width;
+	  //this.height=this.getSize().height;
+      //this.setBounds(x, y, width, height);
+      this.setResizable(false);
 	    this.setTitle(Strings.MOCHA_DOOM_TITLE);
 	    this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	      // AWT: create cursors.
+	      this.normal=this.getCursor();
+	      this.hidden=this.createInvisibleCursor();
+	      
+	      
+	      // AWT: Add canvas to component.
+	      
 	  //this.setDefaultLookAndFeelDecorated(false);
 	  
 	  // wait until it is OK to draw
@@ -789,8 +808,8 @@ public class AWTDoom extends JFrame implements WindowListener,KeyEventDispatcher
 			  Point p=this.getMousePosition();
 			  if (p!=null){
 		      robby.mouseMove(this.getX()+this.getWidth()/2, this.getY()+this.getHeight()/2);
-			  lastmousex=this.getX()+this.getWidth()/2;
-			  lastmousey=this.getY()+this.getHeight()/2;
+			  //lastmousex=this.getX()+this.getWidth()/2;
+			  //lastmousey=this.getY()+this.getHeight()/2;
 			  }
 			  doPointerWarp = POINTER_WARP_COUNTDOWN;
 		  } 
