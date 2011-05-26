@@ -27,7 +27,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.19 2011/05/26 13:39:15 velktron Exp $
+// $Id: MenuMisc.java,v 1.20 2011/05/26 17:54:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -51,7 +51,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.19 2011/05/26 13:39:15 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.20 2011/05/26 17:54:16 velktron Exp $";
     ////////////////////// CONTEXT ///////////////////
 
     DoomStatus DM;
@@ -180,6 +180,7 @@ public abstract class MenuMisc{
 
                         // All settings should be lower case.
                         name=name.toLowerCase();
+                        System.out.printf("NAME: %s VALUE: %s\n",name,value);
                         Settings setme;
                         try {
                             setme=Enum.valueOf(Settings.class,name);
@@ -199,19 +200,55 @@ public abstract class MenuMisc{
                             if (!setme.numeric)
                                 setme.applySetting(DS);
                         } else {
+                            
+                            boolean fail=false;
                             try {
+                                // Try it as an integer.
                                 setme.setvalue= Integer.parseInt(value);
                             } catch (NumberFormatException e){
-                                // Cannot be parsed, nothing to set.
+                                fail=true;
+                            }
+                            
+                            if (fail)
+                             try {    
+                                  // Try it as a hex value. Must be preceded by 0x
+                                 fail=false;
+                                 int hexpos=value.toLowerCase().indexOf("0x");
+                                 if (hexpos>-1){
+                                     String substring=value.substring(hexpos+2);
+                                     setme.setvalue= Integer.parseInt(substring,16);
+                                 } else 
+                                 fail=true;
+                             } catch (NumberFormatException e){
+                                 fail=true;
+                             }
+                             
+                             if (fail)
+                                 try {
+                                      // Try it as a character. Must be quoted for
+                                     // this to work, with a length of 3.
+                                     fail=false;
+                                     System.out.printf("Trying %s\n",value);
+                                     if (value.length()==3 && 
+                                         value.charAt(0)=='\'' &&
+                                         value.charAt(2)=='\'') {
+                                      setme.setvalue= value.charAt(1);
+                                     System.out.printf("%s set to value %d or character %c\n",setme.name(),setme.setvalue,value.charAt(1));
+                                     } else continue;
+                                 } catch (NumberFormatException e){
+                                     fail=true;
+                                        }
+                                 
+                                 if (fail) {
                                 System.err.printf("Cannot parse expected numerical setting: %s of %s\n",value,name);
                                 // Next while.
                                 continue;
+                                 }
                             }
                             if (setme.numeric){
                                 
                                 setme.applySetting(DS);
                             }
-                        }
                 } // end-while
 
 
@@ -448,6 +485,9 @@ public void ScreenShot ()
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.20  2011/05/26 17:54:16  velktron
+// Removed some Menu verbosity, better defaults functionality.
+//
 // Revision 1.19  2011/05/26 13:39:15  velktron
 // Now using ICommandLineManager
 //

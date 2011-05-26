@@ -1065,13 +1065,11 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
                 break;
 
             case KEY_ESCAPE:
-            	System.out.println("ESCAPE pressed, end of input");
                 saveStringEnter = false;
                 C2JUtils.strcpy(savegamestrings[saveSlot], saveOldString);
                 break;
 
-            case KEY_ENTER:
-            	System.out.println("ENTER pressed, end of input");
+            case KEY_ENTER:            	
                 saveStringEnter = false;
                 if (savegamestrings[saveSlot][0] != 0)
                     DoSave(saveSlot);
@@ -1079,7 +1077,6 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
 
             default:
                 ch = Character.toUpperCase(ch);
-        		System.out.println("You ARGUABLY typed "+ch);    
             	if (ch != 32)
                     if (ch - HU_FONTSTART < 0
                             || ch - HU_FONTSTART >= HU_FONTSIZE)
@@ -1390,8 +1387,9 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
     //
     public void ClearMenus() {
         DM.menuactive = false;
-        if (!DM.netgame && DM.usergame && DM.paused)
-            DM.setPaused(true);
+        // MAES: was commented out :-/
+        //if (!DM.netgame && DM.usergame && DM.paused)
+        //    DM.setPaused(true);
     }
 
     /**
