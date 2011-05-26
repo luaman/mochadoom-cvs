@@ -26,8 +26,8 @@ public class SaveGameHeaderTester {
 
     public static void main(String[] argv) throws Exception {
 
-    ByteBuffer buf=MenuMisc.ReadFile("doomsav2.dsg");
-    DoomFile f=new DoomFile("doomsav2.dsg","r");
+    ByteBuffer buf=MenuMisc.ReadFile("doomsav0.dsg");
+    DoomFile f=new DoomFile("doomsav0.dsg","r");
     DoomStatus DS=new DoomStatus();
     
     VanillaDSGHeader vdsg=new VanillaDSGHeader();
@@ -45,7 +45,7 @@ public class SaveGameHeaderTester {
     DS.gameepisode=1;
     DS.gamemap=1;
     DS.gamemission=GameMission_t.doom;
-    DS.gamemode=GameMode_t.shareware;
+    DS.setGameMode(GameMode_t.shareware);
     IDoomSound S=new DummySoundDriver();            
     DS.S=S;
     DS.W=W;
