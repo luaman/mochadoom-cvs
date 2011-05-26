@@ -4,6 +4,7 @@ import i.DoomStatusAware;
 import i.IDoomSystem;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
@@ -24,7 +25,9 @@ import rr.RendererState;
 import rr.sector_t;
 import s.IDoomSound;
 import utils.C2JUtils;
+import w.DoomBuffer;
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import static utils.C2JUtils.*;
 import static data.Limits.*;
@@ -53,7 +56,7 @@ import static p.mobj_t.MF_SHADOW;
  */
 
 public class player_t /*extends mobj_t */
-        implements Cloneable ,DoomStatusAware, IReadableDoomObject
+        implements Cloneable ,DoomStatusAware, IReadableDoomObject, IPackableDoomObject
         {
 	
     /** Probably doomguy needs to know what the fuck is going on */
@@ -1331,64 +1334,79 @@ SetPsprite
     
     public void write(DoomFile f) throws IOException{
 
-    
-        // The player is special in that it unambigously allows identifying
-        // its own map object in an absolute way. Once we identify
-        // at least one (e.g. object #45 is pointer 0x43545345) then, since
-        // map objects are stored in a nice serialized order.
-        
-        f.writeLEInt(mo.hashCode());
-        f.writeLEInt(playerstate);
-        // TODO: cmd.write
-        this.cmd.read(f);
-        this.viewz=f.readLEInt();
-        this.viewheight= f.readLEInt();
-        this.deltaviewheight= f.readLEInt();
-        this.bob=f.readLEInt();
-        this.health[0]=f.readLEInt();
-        this.armorpoints[0]=f.readLEInt(); 
-        this.armortype=f.readLEInt(); 
-        f.readIntArray(this.powers, ByteOrder.LITTLE_ENDIAN); 
-        f.readBooleanIntArray(this.cards);
-        this.backpack=f.readIntBoolean();
-        f.readIntArray(frags, ByteOrder.LITTLE_ENDIAN);
-        this.readyweapon=weapontype_t.values()[f.readLEInt()];
-        this.pendingweapon=weapontype_t.values()[f.readLEInt()];
-        f.readBooleanIntArray(this.weaponowned);
-        f.readIntArray(ammo,ByteOrder.LITTLE_ENDIAN);
-        f.readIntArray(maxammo,ByteOrder.LITTLE_ENDIAN);
-        // Read these as "int booleans"
-        this.attackdown=f.readIntBoolean();
-        this.usedown=f.readIntBoolean();
-        this.cheats=f.readLEInt();
-        this.refire=f.readLEInt();
-        // For intermission stats.
-        this.killcount=f.readLEInt();
-        this.itemcount=f.readLEInt();
-        this.secretcount=f.readLEInt();
-        // Hint messages.
-        f.skipBytes(4);
-        // For screen flashing (red or bright).
-        this.damagecount=f.readLEInt();
-        this.bonuscount=f.readLEInt();
-        // Who did damage (NULL for floors/ceilings).
-        // TODO: must be properly denormalized before saving/loading
-        f.skipBytes(4); // TODO: waste a read for attacker mobj.
-        // So gun flashes light up areas.
-        this.extralight=f.readLEInt();
-        // Current PLAYPAL, ???
-        //  can be set to REDCOLORMAP for pain, etc.
-        this.fixedcolormap=f.readLEInt();
-        this.colormap=f.readLEInt();
-        // PSPDEF _is_ readable.
-        for (pspdef_t p: this.psprites)
-            p.read(f);
-        this.didsecret=f.readIntBoolean();
+        // It's much more convenient to pre-buffer, since
+        // we'll be writing all Little Endian stuff.
+        ByteBuffer b=ByteBuffer.allocate(280);
+        this.pack(b);
         // Total size should be 280 bytes.
+        // Write everything nicely and at once.        
+        f.write(b.array());
     }
     
     // Used to disambiguate between objects
     public int p_mobj;
+
+    @Override
+    public void pack(ByteBuffer buf)
+            throws IOException {
+        
+        ByteOrder bo=ByteOrder.LITTLE_ENDIAN;
+        buf.order(bo);
+        // The player is special in that it unambiguously allows identifying
+        // its own map object in an absolute way. Once we identify
+        // at least one (e.g. object #45 is pointer 0x43545345) then, since
+        // map objects are stored in a nice serialized order by using
+        // their next/prev pointers, you can reconstruct their
+        // relationships a posteriori.
+        // Store our own hashcode or "pointer" if you wish.
+        buf.putInt(mo.hashCode());
+        buf.putInt(playerstate);
+        cmd.pack(buf);
+        buf.putInt(viewz);        
+        buf.putInt(viewheight);
+        buf.putInt(deltaviewheight);
+        buf.putInt(bob);
+        buf.putInt(health[0]);
+        buf.putInt(armorpoints[0]); 
+        buf.putInt(armortype);
+        DoomBuffer.putIntArray(buf,this.powers,this.powers.length,bo); 
+        DoomBuffer.putBooleanIntArray(buf,this.cards,this.cards.length, bo);
+        DoomBuffer.putBooleanInt(buf,backpack,bo);
+        DoomBuffer.putIntArray(buf,this.frags,this.frags.length,bo);
+        buf.putInt(readyweapon.ordinal());
+        buf.putInt(pendingweapon.ordinal());
+        DoomBuffer.putBooleanIntArray(buf,this.weaponowned,this.weaponowned.length, bo);
+        DoomBuffer.putIntArray(buf,this.ammo,this.ammo.length, bo);
+        DoomBuffer.putIntArray(buf,this.maxammo,this.maxammo.length, bo);
+        // Read these as "int booleans"
+        DoomBuffer.putBooleanInt(buf,attackdown,bo);
+        DoomBuffer.putBooleanInt(buf,usedown,bo);        
+        buf.putInt(cheats);
+        buf.putInt(refire);
+        // For intermission stats.
+        buf.putInt(this.killcount);
+        buf.putInt(this.itemcount);
+        buf.putInt(this.secretcount);
+        // Hint messages.
+        buf.putInt(0);
+        // For screen flashing (red or bright).
+        buf.putInt(this.damagecount);
+        buf.putInt(this.bonuscount);
+        // Who did damage (NULL for floors/ceilings).
+        // TODO: must be properly denormalized before saving/loading
+        buf.putInt(this.attacker.hashCode());
+        // So gun flashes light up areas.
+        buf.putInt(this.extralight);
+        // Current PLAYPAL, ???
+        //  can be set to REDCOLORMAP for pain, etc.
+        buf.putInt(this.fixedcolormap);
+        buf.putInt(this.colormap);
+        // PSPDEF _is_ readable.
+        for (pspdef_t p: this.psprites)
+            p.pack(buf);
+        buf.putInt(this.didsecret?1:0);
+        
+    }
 
         
     }
