@@ -53,6 +53,31 @@ public class DoomBuffer implements CacheableDoomObject  {
         }
     }
     
+    public static void putIntArray(ByteBuffer buf,int[] s,int len,ByteOrder bo) throws IOException {
+        buf.order(bo);
+        
+        if ((s==null)||(len==0)) return;
+        
+        for (int i=0;i<Math.min(len,s.length);i++){           
+            buf.putInt(s[i]);
+        }
+    }
+    
+    public static void putBooleanIntArray(ByteBuffer buf,boolean[] s,int len,ByteOrder bo) throws IOException {
+        buf.order(bo);
+        
+        if ((s==null)||(len==0)) return;
+        
+        for (int i=0;i<Math.min(len,s.length);i++){           
+            buf.putInt(s[i]?1:0);
+        }
+    }
+    
+    public static void putBooleanInt(ByteBuffer buf,boolean s,ByteOrder bo) throws IOException {
+        buf.order(bo);        
+            buf.putInt(s?1:0);
+    }
+    
     public static void readCharArray(ByteBuffer buf,char[] s,int len) throws IOException {
 
         if ((s==null)||(len==0)) return;
