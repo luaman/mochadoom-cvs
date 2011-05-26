@@ -1,7 +1,5 @@
 package demo;
 
-import static data.Defines.PU_STATIC;
-import static data.Defines.VERSION;
 import static data.Limits.MAXPLAYERS;
 
 import java.io.IOException;
@@ -13,10 +11,7 @@ import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
 import w.DoomFile;
-import w.IWritableDoomObject;
 import defines.skill_t;
-import doom.gameaction_t;
-import doom.ticcmd_t;
 
 public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
 
