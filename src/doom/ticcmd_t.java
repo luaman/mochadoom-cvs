@@ -2,6 +2,7 @@ package doom;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import w.CacheableDoomObject;
 import w.DoomFile;
@@ -152,26 +153,15 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
         
     }
     
-    
-    /** Special note: the only occasion where we'd ever be interested
-     *  in reading ticcmd_t's from a lump is when playing back demos.
-     *  Therefore, we use this specialized reading method which does NOT,
-     *  I repeat, DOES NOT set all fields and some are read differently.
-     *  NOT 1:1 intercangeable with the Datagram methods!  
-     * 
+    /** This is useful only when loading/saving players from savegames.
+     *  It's NOT interchangeable with datagram methods, because it
+     *  does not use the network byte order.
      */
+
     @Override
     public void unpack(ByteBuffer f)
             throws IOException {
-    	
-    	// MAES: the original ID code for reference.
-    	// demo_p++ is a pointer inside a raw byte buffer.
-    	
-     //cmd->forwardmove = ((signed char)*demo_p++); 
-     //cmd->sidemove = ((signed char)*demo_p++); 
-     //cmd->angleturn = ((unsigned char)*demo_p++)<<8; 
-     //cmd->buttons = (unsigned char)*demo_p++; 
-    	
+        f.order(ByteOrder.LITTLE_ENDIAN);
         forwardmove=f.get();
         sidemove=   f.get();        
         // Even if they use the "unsigned char" syntax, angleturn is signed.
@@ -190,11 +180,15 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
      */
     public void pack(ByteBuffer f)
             throws IOException {
-    	
+        f.order(ByteOrder.LITTLE_ENDIAN);
         f.put(forwardmove);
-        f.put(sidemove);
-        f.put((byte) (angleturn>>>8));
-        f.put((byte) buttons);        
+        f.put(sidemove);        
+        // LE order on disk for vanilla compatibility.
+        f.putShort(angleturn);
+        f.putShort(consistancy);
+        // We crimp these to bytes :-(
+        f.put((byte) chatchar);
+        f.put((byte) buttons);     
     }
     
 };
