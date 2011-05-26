@@ -14,7 +14,7 @@ import w.animenum_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.38 2011/05/23 16:57:57 velktron Exp $
+// $Id: Defines.java,v 1.39 2011/05/26 17:56:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -129,6 +129,8 @@ public static final int    NUMPOWERS=6;
 // Most key data are simple ascii (uppercased).
 //
 // Maes: using chars here instead of bytes.
+// NOTE: the codes used here are arbitrary, however they must
+// match what's used in the default.cfg files.
 
 public final static char KEY_RIGHTARROW  =0x00ae;
 public final static char KEY_LEFTARROW   =0x00ac;
@@ -596,6 +598,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.38 2011/05/23 16:57:57 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.39 2011/05/26 17:56:03 velktron Exp $";
 }
 
