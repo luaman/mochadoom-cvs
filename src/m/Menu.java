@@ -78,6 +78,7 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
 	        this.I=DM.I;
 	        this.S=DM.S;
 	        this.R=(RendererState) DM.R;
+	        this.TICK=DM.TICK;
 		
 	}
     
@@ -405,7 +406,7 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
         String name;
 
         for (i = 0; i < load_end; i++) {
-            if (DM.CheckParm("-cdrom") != 0)
+            if (DM.CM.CheckParm("-cdrom") != 0)
                 name = "c:\\doomdata\\" + SAVEGAMENAME + (i) + ".dsg";
             else
                 name = SAVEGAMENAME + (i) + ".dsg";
@@ -984,65 +985,65 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
         
         // Joystick input
         
-        if (ev.type == evtype_t.ev_joystick && joywait < I.GetTime()) {
+        if (ev.type == evtype_t.ev_joystick && joywait < TICK.GetTime()) {
             if (ev.data3 == -1) {
                 ch = KEY_UPARROW;
-                joywait = I.GetTime() + 5;
+                joywait = TICK.GetTime() + 5;
             } else if (ev.data3 == 1) {
                 ch = KEY_DOWNARROW;
-                joywait = I.GetTime() + 5;
+                joywait = TICK.GetTime() + 5;
             }
 
             if (ev.data2 == -1) {
                 ch = KEY_LEFTARROW;
-                joywait = I.GetTime() + 2;
+                joywait = TICK.GetTime() + 2;
             } else if (ev.data2 == 1) {
                 ch = KEY_RIGHTARROW;
-                joywait = I.GetTime() + 2;
+                joywait = TICK.GetTime() + 2;
             }
 
             if ((ev.data1 & 1) != 0) {
                 ch = KEY_ENTER;
-                joywait = I.GetTime() + 5;
+                joywait = TICK.GetTime() + 5;
             }
             if ((ev.data1 & 2) != 0) {
                 ch = KEY_BACKSPACE;
-                joywait = I.GetTime() + 5;
+                joywait = TICK.GetTime() + 5;
             }
         } else 
         // Mouse input 
         {
-            if (ev.type == evtype_t.ev_mouse && mousewait < I.GetTime()) {
+            if (ev.type == evtype_t.ev_mouse && mousewait < TICK.GetTime()) {
                 mousey += ev.data3;
                 if (mousey < lasty - 30) {
                     ch = KEY_DOWNARROW;
-                    mousewait = I.GetTime() + 5;
+                    mousewait = TICK.GetTime() + 5;
                     mousey = lasty -= 30;
                 } else if (mousey > lasty + 30) {
                     ch = KEY_UPARROW;
-                    mousewait = I.GetTime() + 5;
+                    mousewait = TICK.GetTime() + 5;
                     mousey = lasty += 30;
                 }
 
                 mousex += ev.data2;
                 if (mousex < lastx - 30) {
                     ch = KEY_LEFTARROW;
-                    mousewait = I.GetTime() + 5;
+                    mousewait = TICK.GetTime() + 5;
                     mousex = lastx -= 30;
                 } else if (mousex > lastx + 30) {
                     ch = KEY_RIGHTARROW;
-                    mousewait = I.GetTime() + 5;
+                    mousewait = TICK.GetTime() + 5;
                     mousex = lastx += 30;
                 }
 
                 if ((ev.data1 & 1) != 0) {
                     ch = KEY_ENTER;
-                    mousewait = I.GetTime() + 15;
+                    mousewait = TICK.GetTime() + 15;
                 }
 
                 if ((ev.data1 & 2) != 0) {
                     ch = KEY_BACKSPACE;
-                    mousewait = I.GetTime() + 15;
+                    mousewait = TICK.GetTime() + 15;
                 }
             } else if (ev.type == evtype_t.ev_keydown) {
                 ch = (char) ev.data1;
@@ -1808,7 +1809,7 @@ public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
         public void invoke(int choice) {
             String name;
 
-            if (DM.CheckParm("-cdrom") != 0)
+            if (DM.CM.CheckParm("-cdrom") != 0)
                 name = ("c:\\doomdata\\" + SAVEGAMENAME + (choice) + ".dsg");
             else
                 name = (SAVEGAMENAME + (choice) + ".dsg");

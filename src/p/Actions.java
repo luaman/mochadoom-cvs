@@ -7835,18 +7835,18 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       // See if -TIMER needs to be used.
       SPECS.levelTimer = false;
       
-      i = DM.CheckParm("-avg");
+      i = DM.CM.CheckParm("-avg");
       if (eval(i) && DM.deathmatch)
       {
           SPECS.levelTimer = true;
           SPECS.levelTimeCount = 20 * 60 * 35;
       }
       
-      i = DM.CheckParm("-timer");
+      i = DM.CM.CheckParm("-timer");
       if (eval(i) && DM.deathmatch)
       {
       int time;
-      time = Integer.parseInt(DM.myargv[i+1]) * 60 * 35;
+      time = Integer.parseInt(DM.CM.getArgv(i+1)) * 60 * 35;
       SPECS.levelTimer = true;
       SPECS.levelTimeCount = time;
       }

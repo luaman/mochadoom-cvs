@@ -17,6 +17,7 @@ import doom.DoomStatus;
 import doom.IDoomGame;
 import rr.RendererState;
 import s.IDoomSound;
+import timing.ITicker;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.DoomFile;
@@ -26,7 +27,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.18 2011/05/24 17:46:03 velktron Exp $
+// $Id: MenuMisc.java,v 1.19 2011/05/26 13:39:15 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -50,7 +51,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.18 2011/05/24 17:46:03 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.19 2011/05/26 13:39:15 velktron Exp $";
     ////////////////////// CONTEXT ///////////////////
 
     DoomStatus DM;
@@ -61,6 +62,7 @@ public abstract class MenuMisc{
     RendererState R;
     IDoomSystem I;
     IDoomSound S;
+    ITicker TICK;
 
     //
     // M_WriteFile
@@ -72,7 +74,7 @@ public abstract class MenuMisc{
     int		usemouse;
     int		usejoystick;
 
-    // extern byte	scantokey[128];
+    char [] scantokey;
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -138,10 +140,10 @@ public abstract class MenuMisc{
             Settings.values()[i].applySetting(DS);
 
         // check for a custom default file
-        i = DS.CheckParm("-config");
-        if ((i>0) && i<DS.myargc-1)
+        i = DS.CM.CheckParm("-config");
+        if ((i>0) && i<DS.CM.getArgc()-1)
         {
-            defaultfile = DS.myargv[i+1];
+            defaultfile = DS.CM.getArgv(i+1);
             System.out.printf("	default file: %s\n",defaultfile);
         }
         else
@@ -446,6 +448,9 @@ public void ScreenShot ()
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.19  2011/05/26 13:39:15  velktron
+// Now using ICommandLineManager
+//
 // Revision 1.18  2011/05/24 17:46:03  velktron
 // Added vanilla default.cfg loading.
 //

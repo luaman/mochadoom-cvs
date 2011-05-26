@@ -25,7 +25,7 @@ import doom.doomdata_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BasicNetworkInterface.java,v 1.4 2011/05/18 16:54:31 velktron Exp $
+// $Id: BasicNetworkInterface.java,v 1.5 2011/05/26 13:39:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -40,6 +40,9 @@ import doom.doomdata_t;
 // GNU General Public License for more details.
 //
 // $Log: BasicNetworkInterface.java,v $
+// Revision 1.5  2011/05/26 13:39:06  velktron
+// Now using ICommandLineManager
+//
 // Revision 1.4  2011/05/18 16:54:31  velktron
 // Changed to DoomStatus
 //
@@ -67,16 +70,12 @@ public class BasicNetworkInterface
         implements DoomSystemNetworking, DoomStatusAware {
 
 
-  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.4 2011/05/18 16:54:31 velktron Exp $";
+  public static final String rcsid = "$Id: BasicNetworkInterface.java,v 1.5 2011/05/26 13:39:06 velktron Exp $";
 
   ////////////// STATUS ///////////
   
   IDoomSystem I;
   protected DoomMain DM;
-  
-  // Mirror those in Doomstat.
-  //String[] myargv;
-  //int myargc;
   
   public BasicNetworkInterface(DoomContext DC){
       this.DM=DC.DM;
@@ -339,10 +338,10 @@ public class BasicNetworkInterface
       //DM.netbuffer = netbuffer;
 
       // set up for network
-      i = DM.CheckParm ("-dup");
-      if ((i!=0) && i< DM.myargc-1)
+      i = DM.CM.CheckParm ("-dup");
+      if ((i!=0) && i< DM.CM.getArgc()-1)
       {
-          doomcom.ticdup = (short) (DM.myargv[i+1].charAt(0)-'0');
+          doomcom.ticdup = (short) (DM.CM.getArgv(i+1).charAt(0)-'0');
           if (doomcom.ticdup < 1)
               doomcom.ticdup = 1;
           if (doomcom.ticdup > 9)
@@ -351,21 +350,21 @@ public class BasicNetworkInterface
       else
           doomcom. ticdup = 1;
 
-      if (DM.CheckParm ("-extratic")!=0)
+      if (DM.CM.CheckParm ("-extratic")!=0)
           doomcom. extratics = 1;
       else
           doomcom. extratics = 0;
 
-      p = DM.CheckParm ("-port");
-      if ((p!=0) && (p<DM.myargc-1))
+      p = DM.CM.CheckParm ("-port");
+      if ((p!=0) && (p<DM.CM.getArgc()-1))
       {
-          DOOMPORT = Integer.parseInt(DM.myargv[p+1]);
+          DOOMPORT = Integer.parseInt(DM.CM.getArgv(p+1));
           System.out.println ("using alternate port "+DOOMPORT);
       }
 
       // parse network game options,
       //  -net <consoleplayer> <host> <host> ...
-      i = DM.CheckParm ("-net");
+      i = DM.CM.CheckParm ("-net");
       if (i==0)
       {
           // single player game
@@ -380,7 +379,7 @@ public class BasicNetworkInterface
       DM.netgame = true;
 
       // parse player number and host list
-      doomcom.consoleplayer = (short) (DM.myargv[i+1].charAt(0)-'1');
+      doomcom.consoleplayer = (short) (DM.CM.getArgv(i+1).charAt(0)-'1');
       
       RECVPORT = SENDPORT = DOOMPORT;
       if (doomcom.consoleplayer == 0)
@@ -391,10 +390,10 @@ public class BasicNetworkInterface
       doomcom.numnodes = 1;  // this node for sure
 
       i++;
-      while (++i < DM.myargc && DM.myargv[i].charAt(0) != '-')
+      while (++i < DM.CM.getArgc() && DM.CM.getArgv(i).charAt(0) != '-')
       {
           try {
-          InetAddress addr = InetAddress.getByName(DM.myargv[i]);
+          InetAddress addr = InetAddress.getByName(DM.CM.getArgv(i));
           DatagramSocket ds = new DatagramSocket(null);
           ds.setReuseAddress(true);
           ds.connect(addr, SENDPORT);

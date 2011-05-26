@@ -28,10 +28,6 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 	DoomMain DM;
 	IDoomGameNetworking DGN;
 
-	// Mirror those in Doomstat.
-	String[] myargv;
-	int myargc;
-
 	public DummyNetworkDriver(DoomStatus DC){
 		updateStatus(DC);
 	}
@@ -61,8 +57,6 @@ public class DummyNetworkDriver implements NetConsts,DoomSystemNetworking, DoomS
 	public void updateStatus(DoomStatus DC) {
 		this.DM=DC.DM;
 		this.DGN=DC.DM;
-		this.myargv=DM.myargv;
-		this.myargc=DM.myargc;
 	}
 
 }

@@ -16,6 +16,7 @@ import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.IDoomSound;
 import st.IDoomStatusBar;
+import timing.ITicker;
 import v.DoomVideoRenderer;
 import w.EndLevel;
 import w.IWadLoader;
@@ -59,4 +60,6 @@ public class DoomContext {
     public Wiper WIPE;
     public TextureManager TM;
     public SpriteManager SM;
+    public ICommandLineManager CM;
+    public ITicker TICK;
 }

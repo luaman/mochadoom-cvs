@@ -481,10 +481,7 @@ public class DoomStatus extends DoomContext {
     protected mobj_t[] bodyque = new mobj_t[BODYQUESIZE];
 
     public byte[] statcopy; // for statistics driver
-    
-    /* What bullshit, those are supposed to carry over from the very first main */
-    public int myargc;
-    public String[] myargv;
+
     
     
     /** Not documented/used in linuxdoom. I supposed it could be used to
@@ -493,26 +490,6 @@ public class DoomStatus extends DoomContext {
     
     public boolean use_mouse;
 
-    /**
-     * M_CheckParm Checks for the given parameter in the program's command line
-     * arguments. Returns the argument number (1 to argc-1) or 0 if not present
-     * 
-     * OK, now WHY ON EARTH was this be defined in m_menu.c?
-     * 
-     * MAES: this needs to be modified for Java, or else bump myargc one element up.
-     * 
-     */
-
-    public int CheckParm(String check) {
-        int i;
-
-        for (i = 1; i < myargc; i++) {
-            if (check.compareToIgnoreCase(myargv[i]) == 0)
-                return i;
-        }
-
-        return 0;
-    }
 
     public DoomStatus(){
     	players = new player_t[MAXPLAYERS];
@@ -526,6 +503,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.20  2011/05/26 13:39:52  velktron
+// Now using ICommandLineManager
+//
 // Revision 1.19  2011/05/25 17:56:52  velktron
 // Introduced some fixes for mousebuttons etc.
 //

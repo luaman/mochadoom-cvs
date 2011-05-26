@@ -1,12 +1,14 @@
 package i;
 
 import v.VideoScaleInfo;
+import doom.CommandLine;
 import doom.DoomMain;
+import doom.ICommandLineManager;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.5 2011/05/25 17:56:30 velktron Exp $
+//$Id: Main.java,v 1.6 2011/05/26 13:39:26 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +23,9 @@ import doom.DoomMain;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.6  2011/05/26 13:39:26  velktron
+//Now using ICommandLineManager
+//
 //Revision 1.5  2011/05/25 17:56:30  velktron
 //just played a bit with resolutions.
 //
@@ -51,7 +56,7 @@ import doom.DoomMain;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.5 2011/05/25 17:56:30 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.6 2011/05/26 13:39:26 velktron Exp $";
 
     public static void main(String[] argv){
 
@@ -61,6 +66,11 @@ public class Main {
 
           // 23/5/2011: Experimental dynamic resolution subsystem
           VideoScaleInfo vs=new VideoScaleInfo(3.0f);          
+          
+          ICommandLineManager CM=new CommandLine(argv);
+          
+          // 
+          D.setCommandLineArgs(CM);
           
           // This should be set before ANYTHING involving
           // the screen gets called.
@@ -72,13 +82,6 @@ public class Main {
           
           // Create AWT frame, but don't start it yet.
           D.Init();
-
-          // Bump argcount +1 to maintain CheckParm behavior
-          D.myargc = argv.length+1; 
-          
-          D.myargv = new String[D.myargc];
-          
-          System.arraycopy(argv, 0, D.myargv, 1, argv.length);
           
           D.Start (); 
 
