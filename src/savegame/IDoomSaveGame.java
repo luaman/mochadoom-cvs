@@ -11,4 +11,5 @@ public interface IDoomSaveGame extends DoomStatusAware{
     boolean doLoad(DoomFile f);
     IDoomSaveGameHeader getHeader();
     void setHeader(IDoomSaveGameHeader header);
+    boolean doSave(DoomFile f);
 }

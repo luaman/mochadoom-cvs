@@ -55,13 +55,12 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
 
     @Override
     public IDoomSaveGameHeader getHeader() {
-        // TODO Auto-generated method stub
-        return null;
+        return header;
     }
 
     @Override
     public void setHeader(IDoomSaveGameHeader header) {
-        // TODO Auto-generated method stub
+        this.header=(VanillaDSGHeader) header;
         
     }
 
@@ -142,27 +141,13 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
      // Multiplayer savegames are different!
      if (!DS.playeringame[i])
          continue;
+     
      PADSAVEP(f); // this will move us on the 52th byte, instead of 50th.
-     DS.players[i].read(f);
-     
-     //memcpy (&players[i],save_p, sizeof(player_t));
-     //save_p += sizeof(player_t);
-     
-     // will be set when unarc thinker
-     DS.players[i].mo = null;   
-     DS.players[i].message = null;
-     DS.players[i].attacker = null;
+
+     // State will have to be serialized when saving.
+     DS.players[i].write(f);
 
      
-     for (j=0 ; j<player_t.NUMPSPRITES ; j++)
-     {
-         if (C2JUtils.eval(DS.players[i].psprites[j].state))
-         {
-             // MAES HACK to accomoadate state_t type punning a-posteriori
-             DS.players[i].psprites[j].state =
-             info.states[DS.players[i].psprites[j].readstate];
-         }
-     }
      }
  }
  
@@ -580,6 +565,25 @@ protected void UnArchiveSpecials () throws IOException
         this.LL=DS.LL;
         this.A=DS.P;
         
+    }
+
+
+    @Override
+    public boolean doSave(DoomFile f) {
+            try {
+             // The header must have been set, at this point.
+            header.write(f);
+            this.f=f;
+            //header.read(f);
+            ArchivePlayers ();
+            // TODO: the rest...
+            f.write(0x1D);
+            } catch (Exception e){
+                e.printStackTrace();
+                System.err.printf("Error while saving savegame! Cause: %s",e.getMessage());
+                return false; // Needed to shut up compiler.
+            }
+        return true;
     }
 
 }

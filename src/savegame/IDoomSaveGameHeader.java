@@ -1,5 +1,7 @@
 package savegame;
 
+import w.DoomFile;
+import w.IReadWriteDoomObject;
 import w.IReadableDoomObject;
 import defines.skill_t;
 
@@ -12,7 +14,7 @@ import defines.skill_t;
  *
  */
 
-public interface IDoomSaveGameHeader extends IReadableDoomObject {
+public interface IDoomSaveGameHeader {
 
     String getName();
 
@@ -47,9 +49,5 @@ public interface IDoomSaveGameHeader extends IReadableDoomObject {
     void setGamemap(int gamemap);
 
     int getGamemap();
-
-    
-
-    
 
 }
