@@ -265,13 +265,15 @@ public class C2JUtils {
      */
     
     public static String unquote(String s, char c) {
+        System.out.printf("Unquoting %s \n",s);
+        
         int firstq=s.indexOf(c);
         int lastq=s.lastIndexOf(c);
         // Indexes valid?
         if (firstq!=-1 && lastq!=-1){
             if (firstq<lastq){
                 // Unquote string.
-                return s.substring(firstq,lastq);
+                return s.substring(firstq+1,lastq);
             }
         }
         return null;
