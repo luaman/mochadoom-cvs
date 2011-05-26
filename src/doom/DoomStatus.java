@@ -164,8 +164,6 @@ public class DoomStatus extends DoomContext {
     public boolean menuactive; // Menu overlayed?
 
     public boolean paused; // Game Pause?
-    
-    
 
     // -------------------------
     // Internal parameters for sound rendering.
@@ -389,7 +387,7 @@ public class DoomStatus extends DoomContext {
     public int key_fire=KEY_RCTRL;
 
     public int key_use=' ';
-
+    
     public int key_strafe=KEY_RALT;
 
     public int key_speed=KEY_RSHIFT;
@@ -503,6 +501,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.21  2011/05/26 17:52:11  velktron
+// Now using ICommandLineManager
+//
 // Revision 1.20  2011/05/26 13:39:52  velktron
 // Now using ICommandLineManager
 //
