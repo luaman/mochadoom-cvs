@@ -74,7 +74,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.48 2011/05/27 13:26:56 velktron Exp $
+// $Id: DoomMain.java,v 1.49 2011/05/27 19:44:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -100,7 +100,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.48 2011/05/27 13:26:56 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.49 2011/05/27 19:44:39 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -2420,6 +2420,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      header.setGameepisode(gameepisode);
      header.setGamemap(gamemap);
      header.setPlayeringame(playeringame);
+     header.setLeveltime(leveltime);
      dsg.setHeader(header);
      
      // Try opening a save file. No intermediate buffer (performance?)
@@ -3855,6 +3856,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.49  2011/05/27 19:44:39  velktron
+//More fooling around with savegames.
+//
 //Revision 1.48  2011/05/27 13:26:56  velktron
 //A slightly better, though not perfect, way to handle input, partially based on_D_'s work.
 //

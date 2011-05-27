@@ -69,7 +69,7 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
 
     //////// CURRENT MOVEMENT AND INPUT STATUS //////////////
 
-    protected static final int POINTER_WARP_COUNTDOWN = 3;
+    protected static final int POINTER_WARP_COUNTDOWN = 1;
     protected int lastmousex;
     protected int lastmousey;
     protected Point lastmouse;
@@ -460,9 +460,9 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
                 // Don't warp back if we deliberately alt-tabbed away.
                 Point p=canvas.getMousePosition();
                 if (p!=null){
-                    robby.mouseMove(canvas.getWidth()/2, canvas.getHeight()/2);
-                    lastmousex=canvas.getWidth()/2;
-                    lastmousey=canvas.getHeight()/2;
+                    robby.mouseMove(canvas.getX()+canvas.getWidth()/2, canvas.getY()+canvas.getHeight()/2);
+                    lastmousex=canvas.getX()+canvas.getWidth()/2;
+                    lastmousey=canvas.getY()+canvas.getHeight()/2;
                     //System.out.printf("Mouse FORCED back to %d %d\n", lastmousex, lastmousey);
                 }
                 doPointerWarp = POINTER_WARP_COUNTDOWN;
