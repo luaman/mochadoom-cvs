@@ -5,7 +5,6 @@ import static data.Defines.PU_STATIC;
 import static data.Limits.MAXEVENTS;
 
 import hu.HU;
-import i.AWTDoom;
 import i.DoomSystem;
 import i.IDoomSystem;
 import i.InputListener;
@@ -14,6 +13,8 @@ import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
+
+import awt.AWTDoom;
 
 import rr.patch_t;
 import s.DummySoundDriver;

@@ -1,6 +1,5 @@
 package doom;
 
-import i.AWTDoom;
 import i.DoomSystem;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,6 +14,8 @@ import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
+import awt.AWTDoom;
+import awt.AWTDoom2;
 import f.Finale;
 import f.Wiper;
 import g.DoomSaveGame;
@@ -73,7 +74,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.47 2011/05/26 17:52:52 velktron Exp $
+// $Id: DoomMain.java,v 1.48 2011/05/27 13:26:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -99,7 +100,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.47 2011/05/26 17:52:52 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.48 2011/05/27 13:26:56 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1631,8 +1632,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 return true;    // finale ate the event 
         } 
 
+        
         switch (ev.type) 
-        { 
+        {
         case ev_keydown: 
             if (ev.data1 == KEY_PAUSE) 
             { 
@@ -3853,6 +3855,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.48  2011/05/27 13:26:56  velktron
+//A slightly better, though not perfect, way to handle input, partially based on_D_'s work.
+//
 //Revision 1.47  2011/05/26 17:52:52  velktron
 //Several fixes. Pause bug, added more command-line options, started saving subsystem.
 //

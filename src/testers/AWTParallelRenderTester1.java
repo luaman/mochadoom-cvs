@@ -5,7 +5,6 @@ import static data.Limits.MAXEVENTS;
 import n.DummyNetworkHandler;
 
 import hu.HU;
-import i.AWTDoom;
 import i.DoomSystem;
 import i.IDoomSystem;
 
@@ -13,6 +12,7 @@ import p.Actions;
 import p.LevelLoader;
 
 import automap.Map;
+import awt.AWTDoom;
 
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;

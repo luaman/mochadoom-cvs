@@ -5,7 +5,6 @@ import static data.Defines.PU_STATIC;
 import static data.Limits.MAXEVENTS;
 
 import hu.HU;
-import i.AWTDoom;
 import i.DoomSystem;
 import i.IDoomSystem;
 import i.InputListener;
@@ -19,6 +18,7 @@ import p.Actions;
 import p.LevelLoader;
 
 import automap.Map;
+import awt.AWTDoom;
 
 import rr.UnifiedRenderer;
 import rr.patch_t;

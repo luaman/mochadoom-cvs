@@ -5,7 +5,6 @@ package testers;
  */
 
 import static p.MapUtils.InterceptVector;
-import i.AWTDoom;
 
 import java.awt.Point;
 import java.io.IOException;
@@ -22,6 +21,7 @@ import p.intercept_t;
 import p.mobj_t;
 import rr.line_t;
 import rr.sector_t;
+import awt.AWTDoom;
 import b.BotGame;
 import b.Reachable;
 import b.SearchNode_t;

@@ -2,11 +2,12 @@ package testers;
 
 import static data.Defines.PU_STATIC;
 
-import i.AWTDoom;
 import i.IDoomSystem;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
+
+import awt.AWTDoom;
 
 import m.random;
 import s.IDoomSound;
