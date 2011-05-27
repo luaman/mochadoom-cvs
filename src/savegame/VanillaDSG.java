@@ -541,7 +541,6 @@ protected void reconstructPointers(){
     
     int curr; // next or prev index
     
-    
     // We start from the player's index, if found.
     // We subtract -1 so it matches that inside the thinkers list.
     for (int i=(player-1);i<TL.size()-1;i++){
@@ -553,11 +552,12 @@ protected void reconstructPointers(){
     // We also search backwards, in case player wasn't first object
     // (can this even happen, in vanilla?)
     // -1 so it matches that of the TL list.
-    for (int i=(player-1);i>0;i++){
+    for (int i=(player-1);i>0;i--){
         // Get "prev" pointer.
-        curr=TL.get(i).previd;
-        pointindex.put(curr,TL.get(i-1));
+    	curr=TL.get(i).previd;
+    	pointindex.put(curr,TL.get(i-1));
     }
+
 }
 
 /** Allows reconstructing infighting targets from stored pointers/indices from
@@ -767,7 +767,7 @@ protected void UnArchiveSpecials () throws IOException
      ceiling.sector = LL.sectors[ceiling.sectorid];
      ceiling.sector.specialdata = ceiling;
 
-     if (ceiling.function.getType()==Defines.acp1)
+     if (ceiling.function!=null)
      ceiling.function = think_t.T_MoveCeiling;
 
      A.AddThinker (ceiling);
