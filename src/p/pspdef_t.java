@@ -36,7 +36,8 @@ public class pspdef_t implements IReadableDoomObject,IPackableDoomObject{
     @Override
     public void pack(ByteBuffer f) throws IOException {
         // TODO: where/when is state set?
-        f.putInt(state.id);
+        if (state==null) f.putInt(0);
+        else f.putInt(state.id);
         f.putInt(tics);
         f.putInt(sx);
         f.putInt(sy);

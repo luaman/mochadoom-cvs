@@ -118,7 +118,7 @@ public class Actions extends UnifiedGameMap {
       //
 
 
-      ceiling_t[]  activeceilings=new ceiling_t[MAXCEILINGS];
+      private ceiling_t[]  activeceilings=new ceiling_t[MAXCEILINGS];
 
 
       /**
@@ -249,9 +249,9 @@ public class Actions extends UnifiedGameMap {
           
           for (i = 0; i < MAXCEILINGS;i++)
           {
-          if (activeceilings[i] == null)
+          if (getActiveceilings()[i] == null)
           {
-              activeceilings[i] = c;
+              getActiveceilings()[i] = c;
               return;
           }
           }
@@ -268,11 +268,11 @@ public class Actions extends UnifiedGameMap {
           
           for (i = 0;i < MAXCEILINGS;i++)
           {
-          if (activeceilings[i] == c)
+          if (getActiveceilings()[i] == c)
           {
-              activeceilings[i].sector.specialdata = null;
-              RemoveThinker (activeceilings[i]);
-              activeceilings[i] = null;
+              getActiveceilings()[i].sector.specialdata = null;
+              RemoveThinker (getActiveceilings()[i]);
+              getActiveceilings()[i] = null;
               break;
           }
           }
@@ -289,12 +289,12 @@ public class Actions extends UnifiedGameMap {
           
           for (i = 0;i < MAXCEILINGS;i++)
           {
-          if (activeceilings[i]!=null
-              && (activeceilings[i].tag == line.tag)
-              && (activeceilings[i].direction == 0))
+          if (getActiveceilings()[i]!=null
+              && (getActiveceilings()[i].tag == line.tag)
+              && (getActiveceilings()[i].direction == 0))
           {
-              activeceilings[i].direction = activeceilings[i].olddirection;
-              activeceilings[i].function
+              getActiveceilings()[i].direction = getActiveceilings()[i].olddirection;
+              getActiveceilings()[i].function
                 = think_t.T_MoveCeiling;
           }
           }
@@ -696,13 +696,13 @@ public class Actions extends UnifiedGameMap {
           rtn = 0;
           for (i = 0;i < MAXCEILINGS;i++)
           {
-          if (activeceilings[i]!=null
-              && (activeceilings[i].tag == line.tag)
-              && (activeceilings[i].direction != 0))
+          if (getActiveceilings()[i]!=null
+              && (getActiveceilings()[i].tag == line.tag)
+              && (getActiveceilings()[i].direction != 0))
           {
-              activeceilings[i].olddirection = activeceilings[i].direction;
-              activeceilings[i].function = null;
-              activeceilings[i].direction = 0;       // in-stasis
+              getActiveceilings()[i].olddirection = getActiveceilings()[i].direction;
+              getActiveceilings()[i].function = null;
+              getActiveceilings()[i].direction = 0;       // in-stasis
               rtn = 1;
           }
           }
@@ -7935,7 +7935,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       
       //  Init other misc stuff
       for (i = 0;i < MAXCEILINGS;i++)
-      activeceilings[i] = null;
+      getActiveceilings()[i] = null;
 
       for (i = 0;i < MAXPLATS;i++)
       PEV.activeplats[i] = null;
@@ -8056,6 +8056,20 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
           currentthinker = currentthinker.next;
       }
   }
+
+
+
+
+public void setActiveceilings(ceiling_t[] activeceilings) {
+    this.activeceilings = activeceilings;
+}
+
+
+
+
+public ceiling_t[] getActiveceilings() {
+    return activeceilings;
+}
 
 
 

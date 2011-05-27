@@ -1,11 +1,13 @@
 package rr;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import p.Interceptable;
 import p.divline_t;
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import static data.Defines.ML_TWOSIDED;
 import static m.BBox.BOXBOTTOM;
@@ -19,7 +21,7 @@ import doom.thinker_t;
 
 /** This is the actual linedef */
 
-public class line_t implements Interceptable, IReadableDoomObject{
+public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomObject{
 
         public line_t(){
             sidenum=new short[2];
@@ -194,6 +196,16 @@ public class line_t implements Interceptable, IReadableDoomObject{
         this.flags = f.readLEShort();
         this.special = f.readLEShort();
         this.tag = f.readLEShort();
+    }
+
+    @Override
+    public void pack(ByteBuffer buffer) {
+        buffer.putShort(flags);
+        buffer.putShort(special);
+        buffer.putShort(tag);
+        //buffer.putShort((short) 0XDEAD);
+        //buffer.putShort((short) 0XBABE);
+        //buffer.putShort((short) 0XBEEF);
     }
       
       

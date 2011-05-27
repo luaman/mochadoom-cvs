@@ -1,6 +1,7 @@
 package p;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import m.random;
 import rr.SectorAction;
@@ -58,5 +59,16 @@ public class lightflash_t extends SectorAction{
         maxtime=f.readLEInt();
         mintime=f.readLEInt();
         }
+    
+    @Override
+    public void pack(ByteBuffer b) throws IOException{
+        super.pack(b); //12            
+        b.putInt(super.sectorid); // 16
+        b.putInt(count); //20
+        b.putInt(maxlight);//24
+        b.putInt(minlight);//28
+        b.putInt(maxtime);//32
+        b.putInt(mintime);//36
+    }
     
 }

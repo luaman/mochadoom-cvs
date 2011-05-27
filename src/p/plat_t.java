@@ -1,6 +1,7 @@
 package p;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import rr.SectorAction;
 import rr.sector_t;
@@ -30,11 +31,27 @@ public class plat_t extends SectorAction implements IReadableDoomObject{
             high=f.readLEInt();
             wait=f.readLEInt();
             count=f.readLEInt();
-            status=plat_e.values()[f.readInt()];
-            oldstatus=plat_e.values()[f.readInt()];
+            status=plat_e.values()[f.readLEInt()];
+            oldstatus=plat_e.values()[f.readLEInt()];
             crush=f.readIntBoolean();
             tag=f.readLEInt();
             type=plattype_e.values()[f.readLEInt()];        
             }
+        
+        @Override
+        public void pack(ByteBuffer b) throws IOException{
+            super.pack(b); //12            
+            b.putInt(super.sectorid); // 16
+            b.putInt(speed);//20
+            b.putInt(low); // 24
+            b.putInt(high); //28
+            b.putInt(wait); //32
+            b.putInt(count); //36
+            b.putInt(status.ordinal()); //40
+            b.putInt(oldstatus.ordinal()); //44
+            b.putInt(crush?1:0); // 48
+            b.putInt(tag); // 52
+            b.putInt(type.ordinal()); // 56
+        }
         
     } 

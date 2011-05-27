@@ -1,6 +1,7 @@
 package p;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import rr.SectorAction;
 import w.DoomFile;
@@ -34,5 +35,17 @@ public class vldoor_t extends SectorAction implements IReadableDoomObject{
             topwait=f.readLEInt();
             topcountdown=f.readLEInt();            
             }
+        
+        @Override
+        public void pack(ByteBuffer b) throws IOException{
+            super.pack(b); //12            
+            b.putInt(type.ordinal()); // 16
+            b.putInt(super.sectorid); // 20
+            b.putInt(topheight); // 24
+            b.putInt(speed); //28
+            b.putInt(direction); // 32
+            b.putInt(topwait); //36
+            b.putInt(topcountdown); //40
+        }
         
     }

@@ -26,7 +26,7 @@ actionf_p2	acp2;
 
 public enum think_t {
 	
-	A_Light0(0),
+	A_Light0(2),
     A_WeaponReady(2),
     A_Lower(2),
     A_Raise(2),
@@ -109,8 +109,9 @@ public enum think_t {
 	T_MoveFloor(1),
 	T_VerticalDoor(1),
 	T_PlatRaise(1);
+	
     think_t(){
-	    type=0;
+	    type=0; // Default, but Doom has no "type 0" functions!
 	}
 	
     think_t(int type){

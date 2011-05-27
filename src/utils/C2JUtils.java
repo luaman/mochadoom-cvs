@@ -279,4 +279,10 @@ public class C2JUtils {
         return null;
     }
     
+    /** Return either 0 or a hashcode */
+    public static final int pointer(Object o){
+        if (o==null) return 0;
+        else return o.hashCode();
+    }
+    
 }

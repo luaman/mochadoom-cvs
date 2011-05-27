@@ -1,11 +1,14 @@
 package p;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+
 import rr.SectorAction;
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 
-public class ceiling_t extends SectorAction implements IReadableDoomObject{
+public class ceiling_t extends SectorAction implements IReadableDoomObject,IPackableDoomObject{
 
         public ceiling_e   type;
         /** fixed_t */
@@ -42,4 +45,18 @@ public class ceiling_t extends SectorAction implements IReadableDoomObject{
             olddirection=f.readLEInt();            
             }
 
+        @Override
+        public void pack(ByteBuffer b) throws IOException{
+            super.pack(b); //12            
+            b.putInt(type.ordinal()); // 16
+            b.putInt(super.sectorid); // 20
+            b.putInt(bottomheight); 
+            b.putInt(topheight); // 28
+            b.putInt(speed);
+            b.putInt(crush?1:0); 
+            b.putInt(direction); // 40
+            b.putInt(tag);
+            b.putInt(olddirection); //48
+        }
+        
         }

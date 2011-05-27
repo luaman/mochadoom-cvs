@@ -1,9 +1,11 @@
 package savegame;
-import static data.Limits.MAXPLAYERS;
+import static data.Limits.*;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -147,11 +149,73 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
      // State will have to be serialized when saving.
      DS.players[i].write(f);
 
-     
+     System.out.printf("Player %d has mobj hashcode %d",(1+i),DS.players[i].mo.hashCode());
      }
  }
- 
+
  //
+//P_ArchiveWorld
+//
+protected void ArchiveWorld () throws IOException
+{
+  int         i;
+  int         j;
+  sector_t       sec;
+  line_t     li;
+  side_t     si;
+  short      put;
+  
+  //put = (short *)save_p;
+  
+  // do sectors (allocate 14 bytes per sector)
+  ByteBuffer buffer=ByteBuffer.allocate(LL.numsectors*14);
+  buffer.order(ByteOrder.LITTLE_ENDIAN);
+  
+  deAdaptSectors();
+  for (i=0; i<LL.numsectors ; i++)
+  {
+      sec=LL.sectors[i];
+      // MAES: sectors are actually carefully
+      // marshalled, so we don't just read/write
+      // their entire memory footprint to disk.
+      sec.pack(buffer);
+  }
+  
+  adaptSectors();
+  f.write(buffer.array(),0,buffer.position());
+  
+  // do lines 
+  // Allocate for the worst-case scenario (6+20 per line)
+  buffer=ByteBuffer.allocate(LL.numlines*(6+20));
+  buffer.order(ByteOrder.LITTLE_ENDIAN);
+  buffer.position(0); 
+  
+  //final side_t test1=new side_t(0x11111111,0x11111111,(short) 0x1111,(short)0x1111,(short)0x1111,null);
+  //final side_t test2=new side_t(0x22222222,0x22222222,(short) 0x2222,(short)0x2222,(short)0x2222,null);
+  
+  for (i=0; i<LL.numlines ; i++)
+  {
+  li=LL.lines[i];
+  li.pack(buffer);
+
+  for (j=0 ; j<2 ; j++)
+  {
+      if (li.sidenum[j] == -1)
+      continue;
+      si = LL.sides[li.sidenum[j]];
+      si.pack(buffer);
+      //if (j==0) test1.pack(buffer);
+      //else test2.pack(buffer);
+      
+  }
+  }
+  
+  int write=buffer.position();
+  f.write(buffer.array(),0,write);
+}
+
+ 
+//
 //P_UnArchiveWorld
 //
 protected final void UnArchiveWorld () throws IOException
@@ -164,7 +228,7 @@ protected final void UnArchiveWorld () throws IOException
   // short      get;
   //get = (short *)save_p;
 
-  List<sector_t> sectors=new ArrayList<sector_t>();
+  //List<sector_t> sectors=new ArrayList<sector_t>();
   // do sectors
   for (i=0; i<LL.numsectors ; i++)
   {
@@ -205,6 +269,10 @@ protected final void UnArchiveWorld () throws IOException
   }
   
 }
+
+/** Convert loaded sectors from vanilla savegames into the internal,
+ *  continuous index progression, by intercepting breaks corresponding to markers.
+ */
 
 protected void adaptSectors(){
 	sector_t sec;
@@ -259,6 +327,64 @@ protected void adaptSectors(){
 	}
 }
 
+/** De-convert sectors from an absolute to a vanilla-like index
+ *  progression, by adding proper skips
+ */
+
+protected void deAdaptSectors(){
+    sector_t sec;
+    switch(DS.getGameMode()){
+    case registered:
+    case shareware:
+    for (int i=0;i<LL.numsectors;i++){
+        sec=LL.sectors[i];
+        // Between the F1_START and F1_END mark (in vanilla)
+        if (sec.floorpic<54){
+            sec.floorpic+=1;
+        } else {
+        // Between the F2_START and F2_END mark (in vanilla)
+            sec.floorpic+=3;
+        }
+        if (sec.ceilingpic<54){
+            sec.ceilingpic+=1;
+        } else {
+        // Between the F2_START and F2_END mark (in vanilla)
+            sec.ceilingpic+=3;
+        }
+        
+    }
+    break;
+    case commercial:
+    case pack_plut:
+    case pack_tnt:
+        
+        for (int i=0;i<LL.numsectors;i++){
+            sec=LL.sectors[i];
+            // Between the F1_START and F1_END mark (in vanilla)
+            if (sec.floorpic<54){
+                sec.floorpic+=1;
+            } else 
+            if (sec.floorpic<99){
+            // Between the F2_START and F2_END mark (in vanilla)
+                sec.floorpic+=3;
+            } else {
+                sec.floorpic+=5;
+            }
+            
+            if (sec.ceilingpic<54){
+                sec.ceilingpic+=1;
+            } else if (sec.ceilingpic<99){
+            // Between the F2_START and F2_END mark (in vanilla)
+                sec.ceilingpic+=3;
+            } else {
+                sec.ceilingpic+=5;
+            }
+            
+        }
+    }
+}
+
+
 //
 //Thinkers
 //
@@ -269,6 +395,44 @@ protected enum thinkerclass_t
 }
  
 List<mobj_t> TL=new ArrayList<mobj_t>();
+
+//
+//P_UnArchiveThinkers
+//
+protected void ArchiveThinkers () throws IOException
+{
+    thinker_t      th;
+    mobj_t     mobj;
+
+// save off the current thinkers
+for (th = A.getThinkerCap().next ; th != A.getThinkerCap(); th=th.next)
+{
+if (th.function!=null && th.function==think_t.P_MobjThinker)
+{
+    // Indicate valid thinker
+    f.writeByte(thinkerclass_t.tc_mobj.ordinal());
+    // Pad...
+    PADSAVEP(f);
+    mobj=(mobj_t)th;
+    mobj.write(f);
+   
+    // MAES: state is explicit in state.id
+   // save_p += sizeof(*mobj);
+   // mobj->state = (state_t *)(mobj->state - states);
+    
+    // MAES: player is automatically generated at runtime and handled by the writer.
+    //if (mobj->player)
+    //mobj->player = (player_t *)((mobj->player-players) + 1);
+    continue;
+}
+    
+// I_Error ("P_ArchiveThinkers: Unknown thinker function");
+}
+
+// add a terminating marker
+f.writeByte(thinkerclass_t.tc_end.ordinal());
+
+}
 
 //
 //P_UnArchiveThinkers
@@ -312,6 +476,7 @@ protected void UnArchiveThinkers () throws IOException
  switch (tclass)
  {
    case tc_end:
+       // That's how we know when to stop.
        end=true;
      break;     // end of list
          
@@ -378,7 +543,7 @@ protected void reconstructPointers(){
     
     
     // We start from the player's index, if found.
-    // -1 so it matches that of the TL list.
+    // We subtract -1 so it matches that inside the thinkers list.
     for (int i=(player-1);i<TL.size()-1;i++){
         // Get "next" pointer.
         curr=TL.get(i).nextid;
@@ -422,6 +587,150 @@ protected enum specials_e
     tc_endspecials
 
 } ;   
+
+//
+//P_UrchiveSpecials
+//
+protected void ArchiveSpecials () throws IOException
+{
+  specials_e        tclass;
+ceiling_t      ceiling;
+vldoor_t       door;
+floormove_t    floor;
+plat_t     plat;
+lightflash_t   flash;
+strobe_t       strobe;
+glow_t     glow;
+int i;
+
+// Try estimating the number of thinkers. It doesn't have to be exact, just
+// getting an upper bound will be OK.
+int estimate=0;
+for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.next)
+    estimate++;
+
+// Most of these objects are quite hefty, but estimating 128 bytes tops
+// for each should do (largest one is 56);
+ByteBuffer buffer=ByteBuffer.allocate(128);
+buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+// save off the current thinkers
+for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.next){
+    
+    // Write out any pending objects.
+    if (buffer.position()>0){
+        f.write(buffer.array(),0,buffer.position());
+        System.out.println("Wrote out "+buffer.position()+" bytes");
+            
+        }
+    
+    // Back to the beginning.
+    buffer.position(0);
+    
+    // So ceilings don't think?
+    if (th.function== null) {
+        // i maintains status between iterations
+        for (i = 0; i < MAXCEILINGS;i++)
+        if (A.getActiveceilings()[i] == (ceiling_t)th)
+            break;
+        
+        if (i<MAXCEILINGS)
+        {
+        f.writeByte(specials_e.tc_ceiling.ordinal());
+        PADSAVEP(f);        
+        // Set id for saving        
+        ceiling=(ceiling_t)th;
+        ceiling.sectorid=ceiling.sector.id;
+        ceiling.pack(buffer);        
+        }
+        continue;
+    }
+
+    // Well, apparently some do.
+    if (th.function== think_t.T_MoveCeiling) {
+        
+        f.writeByte(specials_e.tc_ceiling.ordinal());
+        PADSAVEP(f);        
+        ceiling=(ceiling_t)th;
+        ceiling.sectorid=ceiling.sector.id;
+        ceiling.pack(buffer);
+        continue;
+        }
+   
+    // Well, apparently some do.
+    if (th.function== think_t.T_VerticalDoor) {
+
+        f.writeByte(specials_e.tc_door.ordinal());
+        PADSAVEP(f);
+        door=(vldoor_t)th;
+        door.sectorid=door.sector.id;
+        door.pack(buffer);
+        continue;
+        }
+    
+    // Well, apparently some do.
+    if (th.function== think_t.T_MoveFloor) {
+        f.writeByte(specials_e.tc_floor.ordinal());
+        PADSAVEP(f);
+        floor=(floormove_t)th;
+        floor.sectorid=floor.sector.id;
+        floor.pack(buffer);
+        continue;
+        }
+    
+    // Well, apparently some do.
+    if (th.function== think_t.T_PlatRaise) {
+        f.writeByte(specials_e.tc_plat.ordinal());
+        PADSAVEP(f);
+        plat=(plat_t)th;
+        plat.sectorid=plat.sector.id;
+        plat.pack(buffer);
+        continue;
+        }
+
+    // Well, apparently some do.
+    if (th.function== think_t.T_LightFlash) {
+        f.writeByte(specials_e.tc_flash.ordinal());
+        PADSAVEP(f);
+        flash=(lightflash_t)th;
+        flash.sectorid=flash.sector.id;
+        flash.pack(buffer);
+        continue;
+        }
+
+    // Well, apparently some do.
+    if (th.function== think_t.T_StrobeFlash) {
+        f.writeByte(specials_e.tc_strobe.ordinal());
+        PADSAVEP(f);
+        strobe=(strobe_t)th;
+        strobe.sectorid=strobe.sector.id;
+        strobe.pack(buffer);
+        continue;
+        }
+    
+    // Well, apparently some do.
+    if (th.function== think_t.T_Glow) {
+        f.writeByte(specials_e.tc_glow.ordinal());
+        PADSAVEP(f);
+        glow=(glow_t)th;
+        glow.sectorid=glow.sector.id;
+        glow.pack(buffer);
+        continue;
+        }
+    
+}
+
+if (buffer.position()>0){
+    f.write(buffer.array(),0,buffer.position());
+    System.out.println("Wrote out "+buffer.position()+" bytes");
+        
+    }
+
+
+// Finito!
+f.writeByte((byte) specials_e.tc_endspecials.ordinal());
+}
+
 
 //
 //P_UnArchiveSpecials
@@ -551,12 +860,21 @@ protected void UnArchiveSpecials () throws IOException
     protected final int PADSAVEP(int save_p){
         return (save_p += (4 - ((int) save_p & 3)) & 3);
     }
-    protected final void PADSAVEP(DoomFile f) throws IOException{
+    
+    //protected final int PADSAVEP(ByteBuffer b, int save_p){
+    //    ByteBuffer
+    //    return (save_p += (4 - ((int) save_p & 3)) & 3);
+    //}
+
+    protected final long PADSAVEP(DoomFile f) throws IOException{
         long save_p=f.getFilePointer();
-        System.out.printf("Current position %d Padding by %d bytes\n",save_p,((4 - ((int) save_p & 3)) & 3));
-        
-        f.seek(save_p+((4 - ((int) save_p & 3)) & 3));
-    }
+        int padding =(4 - ((int) save_p & 3)) & 3;
+        System.out.printf("Current position %d Padding by %d bytes\n",save_p,padding);        
+        f.seek(save_p+padding);
+        return padding;        
+        }
+    
+    
 
 
     @Override
@@ -572,10 +890,16 @@ protected void UnArchiveSpecials () throws IOException
     public boolean doSave(DoomFile f) {
             try {
              // The header must have been set, at this point.
-            header.write(f);
-            this.f=f;
+                this.f=f;
+                f.setLength(0); // Kill old info.
+                header.write(f);
+            
+            
             //header.read(f);
             ArchivePlayers ();
+            ArchiveWorld();
+            ArchiveThinkers();  
+            ArchiveSpecials();
             // TODO: the rest...
             f.write(0x1D);
             } catch (Exception e){

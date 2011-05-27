@@ -3,6 +3,7 @@ package p;
 import static p.DoorDefines.GLOWSPEED;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import rr.SectorAction;
 import w.DoomFile;
@@ -47,5 +48,14 @@ public class glow_t extends SectorAction{
             maxlight=f.readLEInt();
             direction=f.readLEInt();
             }
+        
+        @Override
+        public void pack(ByteBuffer b) throws IOException{
+            super.pack(b); //12            
+            b.putInt(super.sectorid); // 16
+            b.putInt(minlight);//20
+            b.putInt(maxlight);//24
+            b.putInt(direction);//38
+        }
         
     }

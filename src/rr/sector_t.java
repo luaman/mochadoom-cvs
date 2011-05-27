@@ -3,9 +3,13 @@ package rr;
 import static data.Limits.MAXINT;
 import static data.Limits.MAX_ADJOINING_SECTORS;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.FRACBITS;
 import static p.DoorDefines.*;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import m.random;
 import doom.think_t;
 import doom.thinker_t;
@@ -18,6 +22,7 @@ import p.strobe_t;
 import p.vldoor_e;
 import p.vldoor_t;
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 
 /**
@@ -27,7 +32,7 @@ import w.IReadableDoomObject;
  * @author admin
  *
  */
-public class sector_t implements IReadableDoomObject{
+public class sector_t implements IReadableDoomObject, IPackableDoomObject{
 
     
     public ThinkerList TL;
@@ -431,8 +436,8 @@ public class sector_t implements IReadableDoomObject{
     	// savegames, and in vanilla savegames, not all info
     	// is saved (or read) from disk.          
     	
-        this.floorheight = f.readLEShort() << m.fixed_t.FRACBITS;
-        this.ceilingheight = f.readLEShort() << m.fixed_t.FRACBITS;
+        this.floorheight = f.readLEShort() << FRACBITS;
+        this.ceilingheight = f.readLEShort() << FRACBITS;
         // MAES: it may be necessary to apply a hack in order to
         // read vanilla savegames.
         this.floorpic = (short) f.readLEShort();
@@ -442,5 +447,19 @@ public class sector_t implements IReadableDoomObject{
         this.special = f.readLEShort();      // needed?
         this.tag =f.readLEShort();      // needed?
     }
+
+    @Override
+    public void pack(ByteBuffer b){
      
+        b.putShort((short) (floorheight>>FRACBITS));
+        b.putShort((short) (ceilingheight>>FRACBITS));
+        // MAES: it may be necessary to apply a hack in order to
+        // read vanilla savegames.
+        b.putShort(floorpic);
+        b.putShort(ceilingpic);
+        //f.skipBytes(4);
+        b.putShort(lightlevel);
+        b.putShort(special);
+        b.putShort(tag);
+    }
  }

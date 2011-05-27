@@ -1359,7 +1359,7 @@ SetPsprite
         // their next/prev pointers, you can reconstruct their
         // relationships a posteriori.
         // Store our own hashcode or "pointer" if you wish.
-        buf.putInt(mo.hashCode());
+        buf.putInt(pointer(mo));
         buf.putInt(playerstate);
         cmd.pack(buf);
         buf.putInt(viewz);        
@@ -1394,7 +1394,7 @@ SetPsprite
         buf.putInt(this.bonuscount);
         // Who did damage (NULL for floors/ceilings).
         // TODO: must be properly denormalized before saving/loading
-        buf.putInt(this.attacker.hashCode());
+        buf.putInt(pointer(attacker));
         // So gun flashes light up areas.
         buf.putInt(this.extralight);
         // Current PLAYPAL, ???
@@ -1407,6 +1407,5 @@ SetPsprite
         buf.putInt(this.didsecret?1:0);
         
     }
-
         
     }

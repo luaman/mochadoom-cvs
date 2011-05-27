@@ -4,18 +4,20 @@ import static data.Defines.acp1;
 import static data.Defines.FLOATSPEED;
 import static data.Defines.GRAVITY;
 import static data.Defines.VIEWHEIGHT;
-import static data.info.mobjinfo;
 import static data.info.states;
 import static p.MapUtils.AproxDistance;
+import static utils.C2JUtils.pointer;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
-import m.random;
 import rr.subsector_t;
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
+import w.IWritableDoomObject;
 import data.Tables;
-import data.doomdata;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -93,7 +95,7 @@ import doom.thinker_t;
  *
  */
 
-public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObject   {
+public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObject,IPackableDoomObject, IReadableDoomObject   {
    
     Actions A;    
     
@@ -481,6 +483,68 @@ public class mobj_t extends thinker_t implements Interceptable, IReadableDoomObj
     // Fields used only during DSG unmarshalling
     public int stateid;
     public int playerid;
+
+    @Override
+    public void write(DoomFile f)
+            throws IOException {
+        
+        // More efficient, avoids duplicating code and
+        // handles little endian better.
+        ByteBuffer buffer=ByteBuffer.allocate(154);
+        this.pack(buffer);
+        System.out.println("Wrote out mobj length: "+buffer.position());
+        f.write(buffer.array());
+        
+    }
+
+    public void pack(ByteBuffer b) throws IOException{
+        ByteOrder bo=ByteOrder.LITTLE_ENDIAN;        
+        b.order(bo);
+        
+        super.pack(b); // Read the head thinker.
+        b.putInt(x);
+        b.putInt(y);
+        b.putInt(z);
+        b.putInt(pointer(snext));
+        b.putInt(pointer(sprev));
+        b.putInt((int) (this.angle&Tables.BITS32));
+        b.putInt(this.sprite.ordinal());
+        b.putInt(this.frame);
+        b.putInt(pointer(bnext));
+        b.putInt(pointer(bprev));
+        b.putInt(pointer(subsector));
+        b.putInt(floorz);
+        b.putInt(ceilingz);
+        b.putInt(radius);
+        b.putInt(height);
+        b.putInt(momx);
+        b.putInt(momy);
+        b.putInt(momz);
+        b.putInt(validcount);
+        b.putInt(type.ordinal());
+        b.putInt(pointer(info)); // TODO: mobjinfo
+        b.putInt((int) (this.tics&Tables.BITS32));
+        //System.out.println("State"+f);
+        b.putInt(this.state.id); // TODO: state OK?
+        b.putInt(this.flags);
+        b.putInt(this.health);
+        b.putInt(this.movedir);
+        b.putInt(this.movecount);
+        // TODO: maybe we can set p_target before and save that instead?
+        b.putInt(pointer(target));
+        b.putInt(this.reactiontime);        
+        b.putInt(this.threshold);
+        // Check for player.
+        if (this.player!=null){
+            b.putInt(1+this.player.identify());
+            System.out.printf("Mobj with hashcode %d is player %d",pointer(this),1+this.player.identify());
+            
+        } else b.putInt(0);        b.putInt(lastlook);
+        spawnpoint.pack(b);
+        b.putInt(0xefbeadde); // MARKER
+        //b.putInt(pointer(tracer)); // TODO: tracer id        
+    }
+    
 
     // TODO: a linked list of sectors where this object appears
     // public msecnode_t touching_sectorlist;

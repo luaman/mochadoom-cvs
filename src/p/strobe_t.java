@@ -1,6 +1,7 @@
 package p;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import rr.SectorAction;
 import w.DoomFile;
@@ -41,5 +42,16 @@ public class strobe_t extends SectorAction{
             darktime=f.readLEInt();
             brighttime=f.readLEInt();       
             }
+        
+        @Override
+        public void pack(ByteBuffer b) throws IOException{
+            super.pack(b); //12            
+            b.putInt(super.sectorid); // 16
+            b.putInt(count); //20
+            b.putInt(maxlight);//24
+            b.putInt(minlight);//28
+            b.putInt(darktime);//32
+            b.putInt(brighttime);//36
+        }
         
     };

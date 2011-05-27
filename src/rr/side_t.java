@@ -1,17 +1,19 @@
 package rr;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import static m.fixed_t.FRACBITS;
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
-import m.fixed_t;
 
 /** The SideDef.
  * 
  * @author admin
  *
  */
-public class side_t implements IReadableDoomObject{
+public class side_t implements IReadableDoomObject, IPackableDoomObject{
      /** (fixed_t) add this to the calculated texture column */
      public int textureoffset;
      
@@ -47,16 +49,22 @@ public class side_t implements IReadableDoomObject{
     @Override
     public void read(DoomFile f)
             throws IOException {
-        this.textureoffset = f.readLEShort() << fixed_t.FRACBITS;
-        this.rowoffset = f.readLEShort() << fixed_t.FRACBITS;
+        this.textureoffset = f.readLEShort() << FRACBITS;
+        this.rowoffset = f.readLEShort() << FRACBITS;
         this.toptexture = f.readLEShort();
         this.bottomtexture = f.readLEShort();
         this.midtexture = f.readLEShort();
         //this.sectorid=f.readLEInt();
         
     }
-    
 
-    
+    @Override
+    public void pack(ByteBuffer buffer) {
+        buffer.putShort((short) (textureoffset>> FRACBITS));
+        buffer.putShort((short) (rowoffset>> FRACBITS));
+        buffer.putShort(toptexture);
+        buffer.putShort(bottomtexture);
+        buffer.putShort(midtexture);        
+        }
      
  }

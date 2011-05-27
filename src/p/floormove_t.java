@@ -3,6 +3,7 @@ package p;
 import static utils.C2JUtils.flags;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import rr.SectorAction;
 import rr.sector_t;
@@ -55,5 +56,17 @@ public class floormove_t extends SectorAction implements IReadableDoomObject{
         speed=f.readLEInt();        
         }
    
+    @Override
+    public void pack(ByteBuffer b) throws IOException{
+        super.pack(b); //12            
+        b.putInt(type.ordinal()); // 16
+        b.putInt(crush?1:0); //20
+        b.putInt(super.sectorid); // 24
+        b.putInt(direction); // 28
+        b.putInt(newspecial); // 32
+        b.putShort(texture); // 34
+        b.putInt(floordestheight); // 38
+        b.putInt(speed); // 42
+    }
     
 }

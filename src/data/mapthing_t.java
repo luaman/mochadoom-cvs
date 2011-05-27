@@ -8,12 +8,13 @@ import m.Swap;
 
 import w.CacheableDoomObject;
 import w.DoomFile;
+import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import w.IWritableDoomObject;
 
 /** mapthing_t ... same on disk AND in memory, wow?! */
 
-public class mapthing_t implements CacheableDoomObject,IReadableDoomObject,IWritableDoomObject,Cloneable{
+public class mapthing_t implements CacheableDoomObject,IPackableDoomObject,IReadableDoomObject,IWritableDoomObject,Cloneable{
     public short x;
 
     public short y;
@@ -57,12 +58,12 @@ public class mapthing_t implements CacheableDoomObject,IReadableDoomObject,IWrit
     @Override
     public void write(DoomFile f)
             throws IOException {
-        // TODO: Little endian OK?
-        f.writeShort(Swap.SHORT(x));
-        f.writeShort(Swap.SHORT(y));
-        f.writeShort(Swap.SHORT(angle));
-        f.writeShort(Swap.SHORT(type));
-        f.writeShort(Swap.SHORT(options));
+        
+        // More efficient, avoids duplicating code and
+        // handles little endian better.
+        ByteBuffer buffer=ByteBuffer.allocate(10);
+        this.pack(buffer);
+        f.write(buffer.array());
         
     }
 
@@ -75,4 +76,13 @@ public class mapthing_t implements CacheableDoomObject,IReadableDoomObject,IWrit
         type=f.readLEShort();
         options=x=f.readLEShort();
         }
+
+    public void pack(ByteBuffer b) {
+        b.order(ByteOrder.LITTLE_ENDIAN);
+        b.putShort(x);
+        b.putShort(y);
+        b.putShort(angle);
+        b.putShort(type);
+        b.putShort(options);        
+    }
 }
