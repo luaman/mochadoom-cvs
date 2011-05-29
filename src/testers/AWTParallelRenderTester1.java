@@ -19,6 +19,7 @@ import rr.SimpleTextureManager;
 import rr.UnifiedRenderer;
 import s.DummySoundDriver;
 import st.StatusBar;
+import timing.MilliTicker;
 
 import m.IDoomMenu;
 import m.Menu;
@@ -30,6 +31,7 @@ import w.DoomBuffer;
 import w.WadLoader;
 import defines.*;
 import data.Tables;
+import doom.CommandLine;
 import doom.DoomMain;
 import doom.event_t;
 import doom.ticcmd_t;
@@ -49,7 +51,7 @@ public class AWTParallelRenderTester1 {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"c:/dooms/doom1.wad"/*,"sprites.wad"*/});
+    W.InitMultipleFiles(new String[] {"doom1.wad"/*,"sprites.wad"*/});
     
     System.out.println("Total lumps read: "+W.numlumps);
 
@@ -66,6 +68,9 @@ public class AWTParallelRenderTester1 {
     
     IDoomSystem I=new DoomSystem();
     DoomMain DM=new DoomMain();
+    CommandLine CM=new CommandLine(argv);
+    DM.CM=CM;
+    DM.TICK=new MilliTicker();    
     DM.setVideoScale(VSI);
     DM.initScaling();
     DM.singletics=true;
@@ -75,6 +80,7 @@ public class AWTParallelRenderTester1 {
     // Create the frame.
     AWTDoom frame = new AWTDoom(DM,V,pal);
     frame.InitGraphics();
+
     DM.I=I;
     DM.VI=frame;
     DM.S=new DummySoundDriver();
