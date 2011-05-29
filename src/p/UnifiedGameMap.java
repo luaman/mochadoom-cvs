@@ -49,7 +49,7 @@ import automap.DoomAutoMap;
 import hu.HU;
 import i.DoomStatusAware;
 import i.IDoomSystem;
-import m.random;
+import m.IRandom;
 import rr.RendererState;
 import rr.SpriteManager;
 import rr.TextureManager;
@@ -102,7 +102,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     DoomAutoMap AM;
 
-    random RND;
+    IRandom RND;
 
     RendererState R;
     

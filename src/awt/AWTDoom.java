@@ -487,9 +487,19 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 		this.eventhandler.GetEvent();		
 	}
 
+	@Override
+	public void ShutdownGraphics() {
+		this.dispose();
+		((JFrame)this).dispose();
+		
+	}
+
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.3  2011/05/29 22:15:32  velktron
+//Introduced IRandom interface.
+//
 //Revision 1.2  2011/05/29 20:58:58  velktron
 //Added better mouse grabbing method, more reliable, more cross-OS.
 //

@@ -9,7 +9,7 @@ import java.awt.image.IndexColorModel;
 
 import awt.AWTDoom;
 
-import m.random;
+import m.DoomRandom;
 import s.IDoomSound;
 import s.DummySoundDriver;
 import utils.C2JUtils;
@@ -73,7 +73,7 @@ public class EndLevelTester {
     DC.DM=DC;
     DC.W=W;
     DC.V=V;
-    DC.RND=new random();
+    DC.RND=new DoomRandom();
     DC.players[0].cmd=new ticcmd_t();
     DC.players[0].itemcount=1337;
     DC.players[0].killcount=1337;

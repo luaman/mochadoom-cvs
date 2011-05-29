@@ -24,7 +24,7 @@ import javax.imageio.ImageIO;
 
 import m.IDoomMenu;
 import m.Menu;
-import m.random;
+import m.DoomRandom;
 import p.LevelLoader;
 import p.mobj_t;
 import rr.patch_t;
@@ -227,7 +227,7 @@ public class DoomApplet
         DC.DS=ds;
         DC.W=W;
         DC.V=V;
-        DC.RND=new random();
+        DC.RND=new DoomRandom();
         ST=new StatusBar(DC);
         ST.Start();
         LevelLoader PL=new LevelLoader(DC);

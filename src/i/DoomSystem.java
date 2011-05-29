@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.9 2011/05/26 17:56:32 velktron Exp $
+// $Id: DoomSystem.java,v 1.10 2011/05/29 22:15:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.10  2011/05/29 22:15:32  velktron
+// Introduced IRandom interface.
+//
 // Revision 1.9  2011/05/26 17:56:32  velktron
 // Removed ticker functionality, moved to ITicker interface.
 //
@@ -70,6 +73,7 @@
 
 package i;
 
+import m.MenuMisc;
 import doom.DoomMain;
 import doom.DoomStatus;
 import doom.ticcmd_t;
@@ -123,13 +127,13 @@ public byte[] ZoneBase (int	size)
 @Override
 public void Quit ()
 {
-    // TODO:
- DM.CheckDemoStatus();
+
+ //DM.CheckDemoStatus();
  DM.QuitNetGame ();
  // TODO: I.ShutdownSound();
  // TODO: DM.S.ShutdownMusic();
- // TODO: M.SaveDefaults ();
- // DM.VI.ShutdownGraphics();
+ MenuMisc.SaveDefaults(DM);
+ DM.VI.ShutdownGraphics();
  System.exit(0);
 }
 
@@ -188,6 +192,8 @@ public void Error (String error, Object ... args)
     // Shutdown. Here might be other errors.
     if (DM.demorecording)
 	DM.DG.CheckDemoStatus();
+    DM.VI.ShutdownGraphics();    
+    
     DM.QuitNetGame ();
    // DM.VI.ShutdownGraphics();
     

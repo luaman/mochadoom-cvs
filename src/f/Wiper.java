@@ -4,13 +4,13 @@ import doom.DoomMain;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
-import m.random;
+import m.IRandom;
 
 public class Wiper implements IVideoScaleAware {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.9 2011/05/23 16:56:56 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.10 2011/05/29 22:15:32 velktron Exp $";
     
-    random RND;
+    IRandom RND;
     DoomVideoRenderer V;
     
     /** These don't seem to be used anywhere */

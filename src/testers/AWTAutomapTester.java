@@ -27,7 +27,7 @@ import st.StatusBar;
 
 import m.IDoomMenu;
 import m.Menu;
-import m.random;
+import m.DoomRandom;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.SimpleRenderer;
@@ -92,7 +92,7 @@ public class AWTAutomapTester {
     DM.gameskill=skill_t.sk_hard;
     //C2JUtils.initArrayOfObjects(DM.players,player_t.class);
     
-    DM.RND=new random();
+    DM.RND=new DoomRandom();
     DM.players[0].cmd=new ticcmd_t();
     DM.players[0].itemcount=1337;
     DM.players[0].killcount=1337;

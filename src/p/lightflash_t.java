@@ -3,7 +3,7 @@ package p;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import m.random;
+import m.IRandom;
 import rr.SectorAction;
 import w.DoomFile;
 
@@ -13,7 +13,7 @@ import w.DoomFile;
 
 public class lightflash_t extends SectorAction{
 	
-    private random RND;
+    private IRandom RND;
     
     public int     count;
     public int     maxlight;
@@ -25,7 +25,7 @@ public class lightflash_t extends SectorAction{
     
     }
     
-    public lightflash_t(random RND){
+    public lightflash_t(IRandom RND){
         this.RND=RND;
     }
     

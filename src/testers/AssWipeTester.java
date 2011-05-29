@@ -6,7 +6,8 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
-import m.random;
+import m.DoomRandom;
+import m.IRandom;
 import rr.patch_t;
 import v.BufferedRenderer;
 import w.DoomBuffer;
@@ -27,7 +28,7 @@ public class AssWipeTester {
     
     WadLoader W=new WadLoader(DC.I);
     
-    random RND=new random();
+    IRandom RND=new DoomRandom();
     DC.RND=RND;        
     DC.W=W;
     

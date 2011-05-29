@@ -1,6 +1,6 @@
 package p;
 
-import m.random;
+import m.IRandom;
 import rr.SectorAction;
 
 //
@@ -9,13 +9,13 @@ import rr.SectorAction;
 
 public class fireflicker_t extends SectorAction{
 	
-     private random RND;
+     private IRandom RND;
     
      public int     count;
      public int     maxlight;
      public int     minlight;
      
-     public fireflicker_t(random RND){
+     public fireflicker_t(IRandom RND){
          this.RND=RND;
      }
      

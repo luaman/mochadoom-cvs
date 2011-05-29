@@ -15,7 +15,7 @@ import rr.patch_t;
 
 import m.IDoomMenu;
 import m.Menu;
-import m.random;
+import m.DoomRandom;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.SimpleRenderer;
@@ -78,7 +78,7 @@ public class MenuTester {
     DM.usergame=true;
     C2JUtils.initArrayOfObjects(DM.players,player_t.class);
     
-    DM.RND=new random();
+    DM.RND=new DoomRandom();
     DM.players[0].cmd=new ticcmd_t();
     DM.players[0].itemcount=1337;
     DM.players[0].killcount=1337;

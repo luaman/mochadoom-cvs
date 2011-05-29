@@ -22,7 +22,7 @@ import timing.MilliTicker;
 
 import m.IDoomMenu;
 import m.Menu;
-import m.random;
+import m.DoomRandom;
 import v.BufferedRenderer;
 import v.IVideoScale;
 import v.VideoScaleInfo;
@@ -100,7 +100,7 @@ public class AWTRenderViewTester {
     DM.gameskill=skill_t.sk_hard;
     //C2JUtils.initArrayOfObjects(DM.players,player_t.class);
     
-    DM.RND=new random();
+    DM.RND=new DoomRandom();
     DM.players[0].cmd=new ticcmd_t();
     DM.players[0].itemcount=1337;
     DM.players[0].killcount=1337;

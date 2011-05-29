@@ -16,4 +16,6 @@ public interface DoomVideoInterface {
 
 	public void UpdateNoBlit();
 
+	public void ShutdownGraphics();
+
 }

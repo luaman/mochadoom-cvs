@@ -10,7 +10,7 @@ import automap.Map;
 import p.LevelLoader;
 import p.mobj_t;
 
-import m.random;
+import m.DoomRandom;
 
 import st.StatusBar;
 
@@ -60,7 +60,7 @@ public class AutoMapTester {
     DM.DM=(DoomMain) DM;
     DM.W=W;
     DM.V=V;
-    DM.RND=new random();
+    DM.RND=new DoomRandom();
     DM.players[0].cmd=new ticcmd_t();
     DM.players[0].itemcount=1337;
     DM.players[0].killcount=1337;

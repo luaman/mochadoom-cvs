@@ -15,7 +15,7 @@ import javax.swing.JFrame;
 
 import m.IDoomMenu;
 import m.Menu;
-import m.random;
+import m.DoomRandom;
 import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
@@ -88,7 +88,7 @@ public class AutoMapTester2 {
     ds.DM=ds;
     ds.W=W;
     ds.V=V;
-    ds.RND=new random();
+    ds.RND=new DoomRandom();
     ds.players[0].cmd=new ticcmd_t();
     ds.players[0].itemcount=1337;
     ds.players[0].killcount=1337;

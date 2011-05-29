@@ -1,6 +1,7 @@
 package testers;
 
-import m.random;
+import m.DoomRandom;
+import m.IRandom;
 
 /** Another microbenchmark. According to this, casting "unsigned bytes" to chars is 
  * faster when performed with a logical function, rather than with arithmetic or
@@ -15,7 +16,7 @@ public class Unsigned {
 
     public static void main(String[] argv){
         int TESTS=100000000;
-       random r=new random();
+        IRandom r=new DoomRandom();
         
        byte[] values=new byte[TESTS];
        

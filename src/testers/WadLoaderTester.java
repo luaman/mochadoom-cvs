@@ -45,18 +45,10 @@ public class WadLoaderTester {
     ds.gameepisode=1;
     ds.gamemap=1;
     ds.gamemission=GameMission_t.doom;
-    
-    DoomContext DC=new DoomContext();
-    //DC.DM=DC;
-    DC.W=W;
+    ds.W=W;
     
     // Testing "Heads Up" clases. Notice how we pass "doomstate" and "WadLoader" as instances,
     // instead of globals. OO all the way, baby!
-    
-    HU hu=new HU(DC);
-    hu.Init();
-    
-    // Make a lame-ass attempt at loading some vertexes.
     
     // Determine number of lumps:
     //  total lump length / vertex record length.

@@ -7,7 +7,7 @@ import hu.HU;
 import i.IDoomSystem;
 import i.DoomVideoInterface;
 import m.IDoomMenu;
-import m.random;
+import m.IRandom;
 import p.Actions;
 import p.LevelLoader;
 import rr.RendererState;
@@ -40,7 +40,7 @@ public class DoomContext {
     public DoomMain DM;
     public IDoomGame DG;
     public IWadLoader W;
-    public random RND;
+    public IRandom RND;
     public IDoomSystem I;
     public IDoomSound S;
     public DoomVideoInterface VI;

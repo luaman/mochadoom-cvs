@@ -10,7 +10,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import m.random;
+import m.DoomRandom;
+import m.IRandom;
 import doom.think_t;
 import doom.thinker_t;
 import p.ThinkerList;
@@ -36,7 +37,7 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
 
     
     public ThinkerList TL;
-    public random RND;
+    public IRandom RND;
     
     public sector_t(){
         soundorg =new degenmobj_t();
@@ -82,21 +83,6 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
      public int id;     
      
      public String toString(){
-         /*sb.setLength(0);
-         sb.append("Sector id: ");
-         sb.append(id);
-         sb.append('\t');
-         sb.append("FloorHeight: ");
-         sb.append(Integer.toHexString(this.floorheight));
-         sb.append('\t');
-         sb.append("Ceilingheight: ");
-         sb.append(Integer.toHexString(this.ceilingheight));
-         sb.append('\t');
-         sb.append("Floorpic: ");
-         sb.append(this.floorpic);
-         sb.append('\t');
-         sb.append("Ceilingpic: ");
-         sb.append(this.ceilingpic);*/
     	 String str=String.format("Sector: %x %x %d %d %d %d %d\n",
     	  	floorheight,
     		ceilingheight,

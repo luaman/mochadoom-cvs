@@ -19,9 +19,10 @@ import f.Finale;
 import f.Wiper;
 import g.DoomSaveGame;
 import hu.HU;
+import m.JavaRandom;
 import m.Menu;
 import m.MenuMisc;
-import m.random;
+import m.DoomRandom;
 import static doom.NetConsts.*;
 import static doom.englsh.*;
 import data.Tables;
@@ -73,7 +74,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.50 2011/05/29 21:07:09 velktron Exp $
+// $Id: DoomMain.java,v 1.51 2011/05/29 22:15:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -99,7 +100,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.50 2011/05/29 21:07:09 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.51 2011/05/29 22:15:32 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1776,7 +1777,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                     if (players[i].mo!=null) 
                         consistancy[i][buf] = (short) players[i].mo.x; 
                     else 
-                        consistancy[i][buf] = (short) RND.rndindex; 
+                        consistancy[i][buf] = (short) RND.getIndex(); 
                 } 
             }
         }
@@ -2855,7 +2856,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * */
 
     public void Init(){
-        // Random number generator.
+       
 
         this.DM=this;
 
@@ -2871,7 +2872,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.DG = this;
         this.DNI=new DummyNetworkDriver(this);
         this.DGN=this; // DoomMain also handles its own Game Networking.
-        this.RND=new random();    
+        // Random number generator, but we can have others too.
+        this.RND=new JavaRandom();    
         // In primis, the video renderer.
         this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
         this.S=new DummySoundDriver();
@@ -3857,6 +3859,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.51  2011/05/29 22:15:32  velktron
+//Introduced IRandom interface.
+//
 //Revision 1.50  2011/05/29 21:07:09  velktron
 //Added FORCED and PAINFUL event clearing!
 //

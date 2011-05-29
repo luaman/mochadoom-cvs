@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.16 2011/05/24 17:54:02 velktron Exp $
+// $Id: EndLevel.java,v 1.17 2011/05/29 22:15:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.17  2011/05/29 22:15:32  velktron
+// Introduced IRandom interface.
+//
 // Revision 1.16  2011/05/24 17:54:02  velktron
 // Defaults tester
 //
@@ -100,7 +103,7 @@ import doom.event_t;
 import doom.player_t;
 import doom.wbplayerstruct_t;
 import doom.wbstartstruct_t;
-import m.random;
+import m.IRandom;
 import rr.*;
 import s.IDoomSound;
 import st.IDoomStatusBar;
@@ -124,7 +127,7 @@ public class EndLevel implements DoomStatusAware, IVideoScaleAware{
     private IDoomSound S;
     private IWadLoader W;
     private IDoomStatusBar ST;
-    private random RND;
+    private IRandom RND;
     
     private static int COUNT_KILLS=2;
     private static int COUNT_ITEMS=4;

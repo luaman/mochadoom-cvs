@@ -13,7 +13,7 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
-import m.random;
+import m.DoomRandom;
 import p.LevelLoader;
 import p.mobj_t;
 import st.StatusBar;
@@ -71,7 +71,7 @@ public class AutoMapTester3 {
     DC.DS=ds;
     DC.W=W;
     DC.V=V;
-    DC.RND=new random();
+    DC.RND=new DoomRandom();
     ds.players[0].cmd=new ticcmd_t();
     ds.players[0].itemcount=1337;
     ds.players[0].killcount=1337;

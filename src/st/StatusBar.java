@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.30 2011/05/29 20:54:43 velktron Exp $
+// $Id: StatusBar.java,v 1.31 2011/05/29 22:15:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.31  2011/05/29 22:15:32  velktron
+// Introduced IRandom interface.
+//
 // Revision 1.30  2011/05/29 20:54:43  velktron
 // Fixed status bar scaling
 //
@@ -148,8 +151,8 @@ import p.mobj_t;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 import i.DoomVideoInterface;
+import m.IRandom;
 import m.cheatseq_t;
-import m.random;
 import data.sounds.musicenum_t;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -168,7 +171,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.30 2011/05/29 20:54:43 velktron Exp $";
+        "$Id: StatusBar.java,v 1.31 2011/05/29 22:15:32 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -180,7 +183,7 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
     protected DoomMain DM;
 
-    protected random RND;
+    protected IRandom RND;
     
     protected IDoomSystem I;
     

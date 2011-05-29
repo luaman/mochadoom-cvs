@@ -10,7 +10,7 @@ import javax.swing.JFrame;
 
 import m.IDoomMenu;
 import m.Menu;
-import m.random;
+import m.DoomRandom;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import w.DoomBuffer;
@@ -68,7 +68,7 @@ public class MenuVideoTester {
     DC.DS=ds;
     DC.W=W;
     DC.V=V;
-    DC.RND=new random();
+    DC.RND=new DoomRandom();
     ds.players[0].cmd=new ticcmd_t();
     ds.players[0].itemcount=1337;
     ds.players[0].killcount=1337;
