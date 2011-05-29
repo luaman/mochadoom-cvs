@@ -18,7 +18,7 @@ public class thinker_t implements IReadableDoomObject,IPackableDoomObject{
    /** extra fields, to use when archiving/unarchiving for
     * identification. Also in blocklinks, etc.
     */
-   public int id,previd, nextid;
+   public int id,previd, nextid,functionid;
    
 @Override
 public void read(DoomFile f)
@@ -27,11 +27,8 @@ public void read(DoomFile f)
     // but they are rather useless once on disk.
     previd=f.readLEInt();
     nextid=f.readLEInt();
-   int tmp=f.readLEInt();
-  // tmp&=0x00ff;
-   //this.function=think_t.values()[tmp];
-    
-}
+    functionid=f.readLEInt();    
+	}
 
 /** This adds 12 bytes */
 
@@ -43,6 +40,6 @@ public void pack(ByteBuffer b)
     b.putInt(pointer(prev));
     b.putInt(pointer(next));
     b.putInt(pointer(function));    
-}
+	}
 
 }
