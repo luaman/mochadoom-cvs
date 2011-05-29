@@ -482,9 +482,17 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
         
     }
 
+    // Convenience, for testers.
+	public void GetEvent() {
+		this.eventhandler.GetEvent();		
+	}
+
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.2  2011/05/29 20:58:58  velktron
+//Added better mouse grabbing method, more reliable, more cross-OS.
+//
 //Revision 1.1  2011/05/27 13:26:56  velktron
 //A slightly better, though not perfect, way to handle input, partially based on_D_'s work.
 //

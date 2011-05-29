@@ -95,7 +95,7 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
         } catch (Exception e){
             System.out.println("AWT Robot could not be created, mouse input focus will be loose!");
         }
-
+        
     }
 
     //////////// LISTENERS //////////
@@ -199,7 +199,7 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
 
     final event_t event=new event_t();
     // Special FORCED and PAINFUL key and mouse cancel event.
-    final event_t cancelkey=new event_t(evtype_t.ev_keydown,0,0,0);
+    final event_t cancelkey=new event_t(evtype_t.ev_clear,0xFF,0,0);
     final event_t cancelmouse=new event_t(evtype_t.ev_mouse,0,0,0);
     int prevmousebuttons;
     
@@ -283,9 +283,16 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
             //System.err.println("bu");
             break;
             // MotionNotify:
+        case Event.WINDOW_MOVED:
+        	// Moving the window does change the absolute reference point, while events only
+        	// give a RELATIVE one.
+        	offset.x=(int) (canvas.getLocationOnScreen().x);
+        	offset.y=(int) (canvas.getLocationOnScreen().y);
+        	//System.out.printf("Center MOVED to %d %d\n", center.x, center.y);
         case Event.MOUSE_MOVE:
             MEV=(MouseEvent)X_event;
             tmp=MEV.getPoint();
+            //this.AddPoint(tmp,center);
             event.type = evtype_t.ev_mouse;
             this.mousedx=tmp.x-this.lastmousex;
             this.mousedy=this.lastmousey-tmp.y;
@@ -294,10 +301,10 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
             MEV=(MouseEvent)X_event;
             // A pure move has no buttons.
             event.data1=prevmousebuttons=0;
-            event.data2 = (mousedx) << 2;
-            event.data3 = (mousedy) << 2;
+            event.data2 = (mousedx) << 3;
+            event.data3 = (mousedy) << 3;
 
-            //System.out.printf("Mouse MOVED to %d %d\n", mousedx, mousedy);
+           // System.out.printf("Mouse MOVED to %d %d\n", lastmousex, lastmousey);
             //System.out.println("Mouse moved without buttons: "+event.data1);
             if ((event.data2 | event.data3)!=0)
             {
@@ -315,10 +322,12 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
         case Event.MOUSE_DRAG:
             MEV=(MouseEvent)X_event;
             tmp=MEV.getPoint();
+            //this.AddPoint(tmp,center);
             this.mousedx=tmp.x-this.lastmousex;
             this.mousedy=this.lastmousey-tmp.y;
             this.lastmousex=tmp.x;
             this.lastmousey=tmp.y;
+           // System.out.printf("Mouse MOVED to %d %d\n", lastmousex, lastmousey);
 
             event.type = evtype_t.ev_mouse;
             // Get buttons, as usual.
@@ -330,8 +339,8 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
                 //(MEV.getModifiers() == MouseEvent.BUTTON1_DOWN_MASK ? 1: 0)|
                 //(MEV.getModifiers() == MouseEvent.BUTTON2_DOWN_MASK ? 2: 0)|
                 //(MEV.getModifiers() == MouseEvent.BUTTON3_DOWN_MASK ? 4: 0);
-            event.data2 = (mousedx) << 2;
-            event.data3 = (mousedy) << 2;
+            event.data2 = (mousedx) << 3;
+            event.data3 = (mousedy) << 3;
 
             //System.out.printf("Mouse DRAGGED to %d %d\n", mousedx, mousedy);
             //System.out.println("Mouse moved with buttons pressed: "+event.data1);
@@ -349,6 +358,9 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
             //System.err.println("ACCEPTING keyboard input");
             canvas.requestFocus();
             canvas.setCursor(hidden);
+        	offset.x=(int) (canvas.getLocationOnScreen().x);
+        	offset.y=(int) (canvas.getLocationOnScreen().y);
+        	System.out.printf("Offset MOVED to %d %d\n", offset.x, offset.y);
             this.grabMouse();
             ignorebutton=false;
             break;
@@ -357,12 +369,20 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
 
             DM.PostEvent(cancelmouse);
             DM.PostEvent(cancelkey);
+            lastmousex=canvas.getWidth()/2;
+            lastmousey=canvas.getHeight()/2;
+            offset.x=(int) (canvas.getLocationOnScreen().x);
+        	offset.y=(int) (canvas.getLocationOnScreen().y);
+        	System.out.printf("FORCED and PAINFUL event clearing!\n");
             canvas.setCursor(normal);             
             ignorebutton=true;
             break;
         case Event.WINDOW_EXPOSE:
+        	offset.x=(int) (canvas.getLocationOnScreen().x);
+        	offset.y=(int) (canvas.getLocationOnScreen().y);
+        	System.out.printf("Center MOVED to %d %d\n", offset.x, offset.y);
             // No real single equivalent for "ConfigureNotify"
-        case Event.WINDOW_MOVED:
+
         case Event.WINDOW_DESTROY:
             break;
         default:
@@ -372,6 +392,8 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
         }
 
     }
+    
+    Point offset=new Point();
 
     /** Returns true if flags are included in arg.
      * Synonymous with (flags & arg)!=0
@@ -460,9 +482,12 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
                 // Don't warp back if we deliberately alt-tabbed away.
                 Point p=canvas.getMousePosition();
                 if (p!=null){
-                    robby.mouseMove(canvas.getX()+canvas.getWidth()/2, canvas.getY()+canvas.getHeight()/2);
-                    lastmousex=canvas.getX()+canvas.getWidth()/2;
-                    lastmousey=canvas.getY()+canvas.getHeight()/2;
+                	
+                	
+                   robby.mouseMove(	offset.x+canvas.getWidth()/2,
+                		   offset.y+canvas.getHeight()/2);
+                    lastmousex=/*center.x+*/canvas.getWidth()/2;
+                    lastmousey=/*center.y+*/canvas.getHeight()/2;
                     //System.out.printf("Mouse FORCED back to %d %d\n", lastmousex, lastmousey);
                 }
                 doPointerWarp = POINTER_WARP_COUNTDOWN;
@@ -579,4 +604,9 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
 
     }
 
+    protected void AddPoint(Point A, Point B){
+    	A.x+=B.x;
+    	A.y+=B.y;
+    }
+    
 }
