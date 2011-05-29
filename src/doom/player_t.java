@@ -8,7 +8,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import m.random;
+import m.DoomRandom;
+import m.IRandom;
 
 import data.state_t;
 import defines.*;
@@ -64,7 +65,7 @@ public class player_t /*extends mobj_t */
     private IDoomGame DG;
     private Actions P;
     private RendererState R;
-    private random RND;
+    private IRandom RND;
     private IDoomSystem I;
     private IDoomSound S;
 	
@@ -611,15 +612,15 @@ public void CalcHeight ()
   // OPTIMIZE: tablify angle
   // Note: a LUT allows for effects
   //  like a ramp with low health.
-  bob =
+  this.bob =
   FixedMul (mo.momx, mo.momx)
   + FixedMul (mo.momy,mo.momy);
   
-  bob >>= 2;
+  this.bob >>= 2;
 
         
-  if (bob>MAXBOB)
-  bob = MAXBOB;
+  if (this.bob>MAXBOB)
+	  this.bob = MAXBOB;
 
   
   
@@ -631,12 +632,11 @@ public void CalcHeight ()
       viewz = mo.ceilingz-4*FRACUNIT;
 
   viewz = mo.z + viewheight;
-  this.bob=bob;
   return;
   }
       
   angle = (FINEANGLES/20*DS.leveltime)&FINEMASK;
-  bob = FixedMul ( bob/2, finesine[angle]);
+  bob = FixedMul ( this.bob/2, finesine[angle]);
 
   
   // move viewheight
@@ -665,7 +665,7 @@ public void CalcHeight ()
   }
   }
   viewz = mo.z + viewheight + bob;
-  this.bob=bob;
+
   if (viewz > mo.ceilingz-4*FRACUNIT)
   viewz = mo.ceilingz-4*FRACUNIT;
 } 
@@ -924,7 +924,7 @@ SetPsprite
         // A LUT would allow for different modes,
         //  and add flexibility.
 
-        swing = bob;
+        swing = this.bob;
 
         angle = (FINEANGLES/70*DS.leveltime)&FINEMASK;
         swingx = FixedMul ( swing, finesine[angle]);
