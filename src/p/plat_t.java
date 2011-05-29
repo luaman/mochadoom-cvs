@@ -21,6 +21,13 @@ public class plat_t extends SectorAction implements IReadableDoomObject{
         public int     tag;
         public plattype_e  type;
         
+        public plat_t (){
+        	// These must never be null so they get the lowest ordinal value.
+        	// by default.
+        	this.status=plat_e.up;
+        	this.oldstatus=plat_e.up;
+        }
+        
         @Override
         public void read(DoomFile f) throws IOException{
 
@@ -33,6 +40,8 @@ public class plat_t extends SectorAction implements IReadableDoomObject{
             count=f.readLEInt();
             status=plat_e.values()[f.readLEInt()];
             oldstatus=plat_e.values()[f.readLEInt()];
+            System.out.println(status);
+            System.out.println(oldstatus);
             crush=f.readIntBoolean();
             tag=f.readLEInt();
             type=plattype_e.values()[f.readLEInt()];        
@@ -49,6 +58,8 @@ public class plat_t extends SectorAction implements IReadableDoomObject{
             b.putInt(count); //36
             b.putInt(status.ordinal()); //40
             b.putInt(oldstatus.ordinal()); //44
+            System.out.println(status);
+            System.out.println(oldstatus);
             b.putInt(crush?1:0); // 48
             b.putInt(tag); // 52
             b.putInt(type.ordinal()); // 56
