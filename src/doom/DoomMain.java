@@ -15,7 +15,6 @@ import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
 import awt.AWTDoom;
-import awt.AWTDoom2;
 import f.Finale;
 import f.Wiper;
 import g.DoomSaveGame;
@@ -74,7 +73,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.49 2011/05/27 19:44:39 velktron Exp $
+// $Id: DoomMain.java,v 1.50 2011/05/29 21:07:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -100,7 +99,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.49 2011/05/27 19:44:39 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.50 2011/05/29 21:07:09 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -739,9 +738,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         CM.FindResponseFile ();
 
         IdentifyVersion ();
-
-
-
+        
         // Sets unbuffered output in C. Not needed here. setbuf (stdout, NULL);
         modifiedgame = false;
 
@@ -1635,6 +1632,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         switch (ev.type) 
         {
+        case ev_clear:
+        	// PAINFULLY and FORCEFULLY clear the buttons.
+            Arrays.fill(gamekeydown, false); 
+            return false; // Nothing more to do here. 
         case ev_keydown: 
             if (ev.data1 == KEY_PAUSE) 
             { 
@@ -3856,6 +3857,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.50  2011/05/29 21:07:09  velktron
+//Added FORCED and PAINFUL event clearing!
+//
 //Revision 1.49  2011/05/27 19:44:39  velktron
 //More fooling around with savegames.
 //
