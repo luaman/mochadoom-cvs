@@ -138,7 +138,9 @@ public class column_t implements CacheableDoomObject, IReadableDoomObject{
         // That's the TOTAL length including all padding.
         // This means we redundantly read some data
         len=(int) (skipped);
-        this.data=new byte[len];
+        // For the same reason that the texman allows extra memory, we
+        // spare 4 extra bytes per column.
+        this.data=new byte[len+4];
         
         this.postofs=new int[postno];
         this.postlen=new short[postno];
