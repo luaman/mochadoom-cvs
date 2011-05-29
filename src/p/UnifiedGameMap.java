@@ -1724,6 +1724,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         thinkercap.prev = thinker;
     }
 
+    public void ClearPlatsBeforeLoading(){
+        for (int i = 0; i < MAXPLATS; i++) {
+                PEV.activeplats[i] = null;
+            }
+    }
+    
     public void AddActivePlat(plat_t plat) {
         int i;
 

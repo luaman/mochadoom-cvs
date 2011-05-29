@@ -8075,4 +8075,3 @@ public ceiling_t[] getActiveceilings() {
 
 
 }
-
