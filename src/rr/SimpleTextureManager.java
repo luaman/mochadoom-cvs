@@ -484,7 +484,10 @@ public class SimpleTextureManager
      
         // Now block is divided into columns. We need to allocate enough data for each column
         for (int i=0;i<texture.width;i++)
-            block[i]=new byte[texture.height];
+        	// NASTY hack: apparently the renderer is supposed to overflow.
+        	// I'd rather waste some extra memory than try to fix 20 years worth
+        	// of rendering functions.
+            block[i]=new byte[texture.height+4];
         
 
         collump = texturecolumnlump[texnum];
