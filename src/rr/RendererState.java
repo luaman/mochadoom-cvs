@@ -5159,10 +5159,10 @@ validcount++;
           // These are all "unsigned". Watch out for bit shifts!
           int        frac, fracstep, fracstep2,fracstep3, fracstep4;   
        
-          count = dc_yh - dc_yl + 1; 
+          count = dc_yh - dc_yl+1; 
 
           source = dc_source;
-          dc_source_ofs+=15;
+          // dc_source_ofs+=15; // ???? WHY
           colormap = dc_colormap;      
           dest = ylookup[dc_yl] + columnofs[dc_x];  
            
@@ -5173,9 +5173,9 @@ validcount++;
           fracstep3 = fracstep2+fracstep;
           fracstep4 = fracstep3+fracstep;
           
-          while (count >= 8) 
+          while (count > 8) 
           { 
-              screen[dest] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
+          screen[dest] = colormap[0x00FF&source[dc_source_ofs+frac>>>25]]; 
           screen[dest +SCREENWIDTH] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep)>>>25]]; 
           screen[dest + SCREENWIDTH*2] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep2)>>>25]]; 
           screen[dest + SCREENWIDTH*3] = colormap[0x00FF&source[dc_source_ofs+(frac+fracstep3)>>>25]];
@@ -5190,7 +5190,7 @@ validcount++;
           frac += fracstep4; 
           dest += SCREENWIDTH*8; 
           count -= 8;
-          } 
+          }
           
           while (count > 0)
           { 
@@ -5210,17 +5210,6 @@ validcount++;
        */
       
       protected final class R_DrawColumnBoom implements colfunc_t{
-          
-          // That's shit, doesn't help.
-         /* private final int SCREENWIDTH2=960*2;
-          private final int SCREENWIDTH3=960*3;
-          private final int SCREENWIDTH4=960*4;
-          private final int SCREENWIDTH5=SCREENWIDTH*5;
-          private final int SCREENWIDTH6=SCREENWIDTH*6;
-          private final int SCREENWIDTH7=SCREENWIDTH*7;
-          private final int SCREENWIDTH8=SCREENWIDTH*8; */
-
-              
           
       public void invoke() 
       { 
@@ -5289,7 +5278,7 @@ validcount++;
             }
          else
             {
-              while ((count-=4)>=0)   // texture height is a power of 2 -- killough
+              while (count>=4)   // texture height is a power of 2 -- killough
                 {
                   screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
                   dest += SCREENWIDTH; 
@@ -5303,10 +5292,15 @@ validcount++;
                   screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
                   dest += SCREENWIDTH; 
                   frac += fracstep;
-                  
+                  count-=4;
                 }
-              if ((count & 1)!=0)
+              
+              	while (count>0){
                   screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  count--;
+              	}
             } 
         }
       }
