@@ -131,25 +131,29 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
               while (--count>0);
             }
          else
-            {
-              while ((count-=4)>=0)   // texture height is a power of 2 -- killough
-                {
-                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
-                  dest += SCREENWIDTH; 
-                  frac += fracstep;
-                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
-                  dest += SCREENWIDTH; 
-                  frac += fracstep;
-                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
-                  dest += SCREENWIDTH; 
-                  frac += fracstep;
-                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
-                  dest += SCREENWIDTH; 
-                  frac += fracstep;     
-                }
-              if ((count & 1)!=0)
-                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
-            } 
+        	 while (count>=4)   // texture height is a power of 2 -- killough
+             {
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
+               count-=4;
+             }
+           
+           	while (count>0){
+               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               dest += SCREENWIDTH; 
+               frac += fracstep;
+               count--;
+           	}
         }
         }
         try {
