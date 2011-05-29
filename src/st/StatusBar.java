@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.29 2011/05/24 13:42:22 velktron Exp $
+// $Id: StatusBar.java,v 1.30 2011/05/29 20:54:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.30  2011/05/29 20:54:43  velktron
+// Fixed status bar scaling
+//
 // Revision 1.29  2011/05/24 13:42:22  velktron
 // Fidgeting around with the STBar refresh
 //
@@ -165,7 +168,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.29 2011/05/24 13:42:22 velktron Exp $";
+        "$Id: StatusBar.java,v 1.30 2011/05/29 20:54:43 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -1077,6 +1080,10 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
      * Clearly we can't do that in Java unless said variables are inside an
      * array and we provide both the array AND an index. For other cases, we
      * must simply build ad-hoc hacks.
+     * 
+     * In any case, only "status" updates are performed here. Actual visual
+     * updates are performed by the Drawer.
+     * 
      */
 
     public void updateWidgets() {
@@ -1091,15 +1098,7 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
         else
             w_ready.numindex =
                 weaponinfo[plyr.readyweapon.ordinal()].ammo.ordinal();
-        // {
-        // static int tic=0;
-        // static int dir=-1;
-        // if (!(tic&15))
-        // plyr.ammo[weaponinfo[plyr.readyweapon].ammo]+=dir;
-        // if (plyr.ammo[weaponinfo[plyr.readyweapon].ammo] == -100)
-        // dir = 1;
-        // tic++;
-        // }
+
         w_ready.data = plyr.readyweapon.ordinal();
 
         // if (*w_ready.on)
@@ -1650,13 +1649,19 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             }
 
             // Unified treatment of boolean and integer references
+            // So the widget will update iff:
+            // a) It's on AND
+            // b) The new value is different than the old one
+            // c) Neither of them is -1
+            // d) We actually asked for a refresh.
             if (this.on[onindex] && ((this.oldinum != thevalue) || refresh)
                     && (thevalue != -1)) {
-                if (this.oldinum != -1) {
-                    x = this.x - this.p[this.oldinum].leftoffset;
-                    y = this.y - this.p[this.oldinum].topoffset;
-                    w = this.p[this.oldinum].width;
-                    h = this.p[this.oldinum].height;
+            	// Previous value must not have been -1.
+                if (this.oldinum != -1) { 
+                    x = this.x - this.p[this.oldinum].leftoffset*BEST_X_SCALE;
+                    y = this.y - this.p[this.oldinum].topoffset*BEST_Y_SCALE;
+                    w = this.p[this.oldinum].width*BEST_X_SCALE;
+                    h = this.p[this.oldinum].height*BEST_Y_SCALE;
 
                     if (y - ST_Y < 0)
                         I.Error("updateMultIcon: y - ST_Y < 0");
@@ -1742,8 +1747,8 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             int numdigits = this.width;
             int num = ((int[]) this.numarray)[this.numindex];
 
-            int w = this.p[0].width;
-            int h = this.p[0].height;
+            int w = this.p[0].width*BEST_X_SCALE;
+            int h = this.p[0].height*BEST_Y_SCALE;
             int x = this.x;
 
             boolean neg;
@@ -1764,14 +1769,15 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             }
 
             // clear the area
-            x = this.x - numdigits * w*BEST_X_SCALE;
+            x = this.x - numdigits * w;
 
             if (this.y - ST_Y < 0) {
                 I.Error("drawNum: n.y - ST_Y < 0");
             }
 
             // Restore BG from buffer
-            //V.CopyRect(x, y- ST_Y, BG, w * numdigits*BEST_X_SCALE, h*BEST_Y_SCALE, x, y, FG);
+           
+            V.CopyRect(x, y- ST_Y, BG, w * numdigits, h, x, y, FG);
 
             // if non-number, do not draw it
             if (num == 1994)
@@ -1782,12 +1788,12 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             // in the special case of 0, you draw 0
             if (num == 0)
                 //V.DrawPatch(x - w, n.y, FG, n.p[0]);
-                V.DrawScaledPatch(x - w*vs.getScalingX(), n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, vs,n.p[0]);
+                V.DrawScaledPatch(x - w, n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, vs,n.p[0]);
                 
                 
             // draw the new number
             while (((num != 0) && (numdigits-- != 0))) {
-                x -= w*BEST_X_SCALE;
+                x -= w;
                 //V.DrawPatch(x, n.y, FG, n.p[num % 10]);
                 V.DrawScaledPatch(x, n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH,vs, n.p[num % 10]);
                 num /= 10;
@@ -1936,8 +1942,8 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 	     ST_KEY2Y = (int) (191*SAFE_SCALE);
 
 	    // Ammunition counter.
-	    ST_AMMO0WIDTH = 3*SAFE_SCALE;;
-	    ST_AMMO0HEIGHT = 6*SAFE_SCALE;;
+	    ST_AMMO0WIDTH = 3*SAFE_SCALE;
+	    ST_AMMO0HEIGHT = 6*SAFE_SCALE;
 
 	     ST_AMMO0X = (int) (288*SAFE_SCALE);
 
@@ -1963,14 +1969,14 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
 	    // Indicate maximum ammunition.
 	    // Only needed because backpack exists.
-	    ST_MAXAMMO0WIDTH = 3*SAFE_SCALE;;
-	    ST_MAXAMMO0HEIGHT = 5*SAFE_SCALE;;
+	    ST_MAXAMMO0WIDTH = 3*SAFE_SCALE;
+	    ST_MAXAMMO0HEIGHT = 5*SAFE_SCALE;
 
 	     ST_MAXAMMO0X = (int) (314*SAFE_SCALE);
 	     ST_MAXAMMO0Y = (int) (173*SAFE_SCALE);
 
 	    ST_MAXAMMO1WIDTH = ST_MAXAMMO0WIDTH;
-	    ST_MAXAMMO1X = 314*SAFE_SCALE;;
+	    ST_MAXAMMO1X = 314*SAFE_SCALE;
 	     ST_MAXAMMO1Y = (int) (179*SAFE_SCALE);
 
 	    ST_MAXAMMO2WIDTH = ST_MAXAMMO0WIDTH;
