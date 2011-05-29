@@ -748,7 +748,7 @@ protected void UnArchiveSpecials () throws IOException
  
  //List<thinker_t> A=new ArrayList<thinker_t>();
  
- 
+ A.ClearPlatsBeforeLoading();
  // read in saved thinkers
  while (true)
  {
@@ -803,9 +803,8 @@ protected void UnArchiveSpecials () throws IOException
      plat.sector = LL.sectors[plat.sectorid];
      plat.sector.specialdata = plat;
 
-     if (plat.function!=null)
+     if (plat.functionid!=0)
      plat.function =  think_t.T_PlatRaise;
-
      
      A.AddThinker (plat);
      A.AddActivePlat(plat);
