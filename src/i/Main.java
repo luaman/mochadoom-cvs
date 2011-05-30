@@ -8,7 +8,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.6 2011/05/26 13:39:26 velktron Exp $
+//$Id: Main.java,v 1.7 2011/05/30 15:51:32 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import doom.ICommandLineManager;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.7  2011/05/30 15:51:32  velktron
+//*** empty log message ***
+//
 //Revision 1.6  2011/05/26 13:39:26  velktron
 //Now using ICommandLineManager
 //
@@ -56,7 +59,7 @@ import doom.ICommandLineManager;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.6 2011/05/26 13:39:26 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.7 2011/05/30 15:51:32 velktron Exp $";
 
     public static void main(String[] argv){
 
@@ -73,7 +76,7 @@ public class Main {
           D.setCommandLineArgs(CM);
           
           // This should be set before ANYTHING involving
-          // the screen gets called.
+          // the screen gets called... but it can be delayed until later.
           D.setVideoScale(vs);
           
           // Initializing actually sets drawing positions, constants,
