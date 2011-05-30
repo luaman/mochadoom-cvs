@@ -289,7 +289,16 @@ public class DoomStatus extends DoomContext {
     // debug flag to cancel adaptiveness
     // Set to true during timedemos.
     public boolean singletics=false;
-
+    
+    /* A "fastdemo" is a demo with a clock that tics as
+     * fast as possible, yet it maintains adaptiveness and doesn't
+     * try to render everything at all costs.
+     */
+    protected boolean fastdemo;
+    protected boolean normaldemo;
+    
+    protected String loaddemo;
+    
     public int bodyqueslot;
 
     // Needed to store the number of the dummy sky flat.
@@ -501,6 +510,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.22  2011/05/30 15:50:42  velktron
+// Changed to work with new Abstract classes
+//
 // Revision 1.21  2011/05/26 17:52:11  velktron
 // Now using ICommandLineManager
 //

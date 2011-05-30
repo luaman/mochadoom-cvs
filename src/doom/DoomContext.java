@@ -6,6 +6,7 @@ import f.Wiper;
 import hu.HU;
 import i.IDoomSystem;
 import i.DoomVideoInterface;
+import m.AbstractDoomMenu;
 import m.IDoomMenu;
 import m.IRandom;
 import p.Actions;
@@ -15,13 +16,13 @@ import rr.SpriteManager;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import s.IDoomSound;
+import st.AbstractStatusBar;
 import st.IDoomStatusBar;
 import timing.ITicker;
 import v.DoomVideoRenderer;
 import w.EndLevel;
 import w.IWadLoader;
-import automap.DoomAutoMap;
-
+import automap.AbstractAutoMap;
 
 /** Since a lot of stuff requires shared/global access to 
  *  the WadLoader, the Renderer, the Video system etc. and
@@ -44,17 +45,17 @@ public class DoomContext {
     public IDoomSystem I;
     public IDoomSound S;
     public DoomVideoInterface VI;
-    public IDoomStatusBar ST;
+    public AbstractStatusBar ST;
     public DoomVideoRenderer V;
     public DoomSystemNetworking DNI;
     public IDoomGameNetworking DGN;
     public LevelLoader LL;
-    public IDoomMenu M;
+    public AbstractDoomMenu M;
     public Actions P;
     public RendererState R;
     public HU HU;
     public UnifiedRenderer RD;
-    public DoomAutoMap AM;
+    public AbstractAutoMap AM;
     public Finale F;
     public EndLevel WI;
     public Wiper WIPE;
