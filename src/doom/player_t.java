@@ -11,6 +11,7 @@ import java.util.Arrays;
 import m.DoomRandom;
 import m.IRandom;
 
+import data.Tables;
 import data.state_t;
 import defines.*;
 import data.sounds.sfxenum_t;
@@ -227,6 +228,7 @@ public class player_t /*extends mobj_t */
         Arrays.fill(this.powers, 0);
         Arrays.fill(this.weaponowned, false);
         //Arrays.fill(this.psprites, null);
+        this.cheats=0; // Forgot to clear up cheats flag...
         this.armortype = 0;
         this.attackdown = false;
         this.attacker = null;
@@ -266,13 +268,14 @@ public class player_t /*extends mobj_t */
         ticcmd_t cmd = this.cmd;
 
         mo.angle += (cmd.angleturn << 16);
-      
+        mo.angle&=BITS32;
+        
         // Do not let the player control movement
         // if not onground.
         onground = (mo.z <= mo.floorz);
 
         if (cmd.forwardmove != 0 && onground)
-            Thrust(mo.angle&BITS32, cmd.forwardmove * 2048);
+            Thrust(mo.angle, cmd.forwardmove * 2048);
 
         if (cmd.sidemove != 0 && onground)
             Thrust((mo.angle - ANG90)&BITS32, cmd.sidemove * 2048);
@@ -707,7 +710,7 @@ public void DeathThink ()
                attacker.x,
                attacker.y);
   
-  delta = angle - mo.angle;
+  delta = Tables.addAngles(angle, - mo.angle);
   
   if (delta < ANG5 || delta > -ANG5)
   {
