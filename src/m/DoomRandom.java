@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomRandom.java,v 1.1 2011/05/29 22:15:32 velktron Exp $
+// $Id: DoomRandom.java,v 1.2 2011/05/30 02:24:30 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: DoomRandom.java,v $
+// Revision 1.2  2011/05/30 02:24:30  velktron
+// *** empty log message ***
+//
 // Revision 1.1  2011/05/29 22:15:32  velktron
 // Introduced IRandom interface.
 //
@@ -103,11 +106,10 @@ public void ClearRandom ()
 }
 
 public DoomRandom(){
-    this.ClearRandom();
 }
 
 public int getIndex(){
-	return rndindex;
+	return prndindex;
 }
 
 }
