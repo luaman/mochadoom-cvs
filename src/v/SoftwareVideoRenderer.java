@@ -205,6 +205,42 @@ public abstract class SoftwareVideoRenderer
 
   }
   
+  /**
+   *  V_Fillrect 
+   */
+  @Override
+  public void FillRect(int srcx, int srcy, int width,
+          int height,int destscrn){
+      // These are pointers inside an array.
+      byte[]  dest=screens[destscrn]; 
+
+      if  (RANGECHECK) {
+          if (srcx<0
+                  ||srcx+width >this.width
+                  || srcy<0
+                  || srcy+height>SCREENHEIGHT 
+                  || destscrn>4)
+          {
+              I.Error ("Bad V_FillRect");
+          }
+      } 
+      this.MarkRect (srcx, srcy, width, height); 
+
+
+      // MAES: these were pointers to a specific position inside the screen.
+      int srcPos = this.width*srcy+srcx; 
+
+      for ( ; height>0 ; height--) 
+      { 
+    	  for (int i=0;i<width;i++){
+          dest[srcPos+i]=0;
+    	  }
+          //memcpy (dest, src, width); 
+          srcPos += this.width; 
+      }
+
+  }
+  
   /** V_DrawPatch
    * Masks a column based masked pic to the screen. 
    *  desttop, dest and source were byte*

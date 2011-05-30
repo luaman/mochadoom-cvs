@@ -31,6 +31,9 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
 
     public void CopyRect(int srcx, int srcy, int srcscrn, int width,
             int height, int destx, int desty, int destscrn);
+    
+    public void FillRect(int srcx, int srcy, int width,
+            int height,int destscrn);
 
     public void DrawPatch(int x, int y, int scrn, patch_t patch);
     
