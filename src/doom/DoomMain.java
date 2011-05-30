@@ -74,7 +74,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.51 2011/05/29 22:15:32 velktron Exp $
+// $Id: DoomMain.java,v 1.52 2011/05/30 02:26:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -100,7 +100,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.51 2011/05/29 22:15:32 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.52 2011/05/30 02:26:29 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -452,11 +452,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         usergame = false;               // no save / end game here
         paused = false;
         gameaction = gameaction_t.ga_nothing;
-
-        if ( isRetail() )
+        
+        if ( isRetail()) // Allows access to a 4th demo.
             demosequence = (demosequence+1)%7;
         else
             demosequence = (demosequence+1)%6;
+        
+        System.out.println("DEMOSEQUENCE "+demosequence);
 
         switch (demosequence)
         {
@@ -581,6 +583,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         String home;
         String doomwaddir;
         doomwaddir = System.getenv("DOOMWADDIR");
+        if (doomwaddir!=null){
+                System.out.println("DOOMWADDIR found. Will be used with priority\n");
+        }
+        
         home = System.getenv("HOME");
         if (NORMALUNIX){
             if (!eval(home))
@@ -2741,7 +2747,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         fastparm = demobuffer.isFastparm();
         nomonsters = demobuffer.isNomonsters();
         consoleplayer = demobuffer.getConsoleplayer();
-
+        // Do this, otherwise previously loaded demos will be stuck at their end.
+        demobuffer.resetDemo();
+        
         boolean[] pigs=demobuffer.getPlayeringame();
         for (i=0 ; i<MAXPLAYERS ; i++) 
             playeringame[i] = pigs[i]; 
@@ -2792,8 +2800,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (timingdemo) 
         {
             endtime = TICK.GetTime (); 
-            I.Error ("timed %d gametics in %d realtics",gametic 
-                , (endtime-starttime)); 
+            I.Error ("timed %d gametics in %d realtics = %f frames per second",gametic 
+                , (endtime-starttime), ((float)(gametic*35.0f))/((float)(endtime-starttime))); 
         } 
 
         if (demoplayback) 
@@ -2873,7 +2881,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.DNI=new DummyNetworkDriver(this);
         this.DGN=this; // DoomMain also handles its own Game Networking.
         // Random number generator, but we can have others too.
-        this.RND=new JavaRandom();    
+        this.RND=new DoomRandom();    
         // In primis, the video renderer.
         this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
         this.S=new DummySoundDriver();
@@ -3859,6 +3867,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.52  2011/05/30 02:26:29  velktron
+//DOOMWADDIR message.
+//
 //Revision 1.51  2011/05/29 22:15:32  velktron
 //Introduced IRandom interface.
 //
