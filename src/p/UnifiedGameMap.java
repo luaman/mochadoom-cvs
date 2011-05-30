@@ -30,6 +30,7 @@ import static data.info.mobjinfo;
 import static data.info.sprnames;
 import static data.info.states;
 import static doom.englsh.*;
+import automap.AbstractAutoMap;
 
 import static doom.items.weaponinfo;
 import static m.fixed_t.FRACUNIT;
@@ -45,7 +46,6 @@ import static p.mobj_t.MF_NOSECTOR;
 import static p.mobj_t.MF_SPECIAL;
 import static p.mobj_t.MF_JUSTHIT;
 import static p.mobj_t.MF_MISSILE;
-import automap.DoomAutoMap;
 import hu.HU;
 import i.DoomStatusAware;
 import i.IDoomSystem;
@@ -100,7 +100,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     IWadLoader W;
 
-    DoomAutoMap AM;
+    AbstractAutoMap AM;
 
     IRandom RND;
 
