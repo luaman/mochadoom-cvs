@@ -8,7 +8,7 @@ import m.IRandom;
 
 public class Wiper implements IVideoScaleAware {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.10 2011/05/29 22:15:32 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.11 2011/05/30 02:24:47 velktron Exp $";
     
     IRandom RND;
     DoomVideoRenderer V;
@@ -207,13 +207,24 @@ public class Wiper implements IVideoScaleAware {
         // setup initial column positions
         // (y<0 => not ready to scroll yet)
         y = new int[width];
+        
         y[0] = -(RND.M_Random()%16);
-        for (i=1;i<width;i++)
+        
+        for (int j=1;j<Y_SCALE;j++){
+        	y[j]=y[j-1];
+        }
+        
+        for (i=Y_SCALE;i<width;i+=Y_SCALE)
         {
-        r = (RND.M_Random()%3) - 1;
-        y[i] = y[i-1] + r;
-        if (y[i] > 0) y[i] = 0;
-        else if (y[i] == -16) y[i] = -15;
+            r = (RND.M_Random()%3) - 1;
+            y[i] = y[i-1] + r;
+            if (y[i] > 0) y[i] = 0;
+            else if (y[i] == -16) y[i] = -15;
+            
+        	for (int j=1;j<Y_SCALE;j++){
+        		y[i+j]=y[i];
+        	}
+        
         }
 
         return false;
@@ -259,7 +270,7 @@ public class Wiper implements IVideoScaleAware {
             {
                 
                 
-            dy = (y[i] < 16) ? y[i]+1 : 8;
+            dy = (y[i] < 16*Y_SCALE) ? y[i]+Y_SCALE : 8*Y_SCALE;
             if (y[i]+dy >= height) dy = height - y[i];
             ps = i*height+y[i];// &((short *)wipe_scr_end)[i*height+y[i]];
             pd = y[i]*width+i;//&((short *)wipe_scr)[y[i]*width+i];
@@ -281,6 +292,8 @@ public class Wiper implements IVideoScaleAware {
             pd = y[i]*width+i; //&((short *)wipe_scr)[y[i]*width+i];
             idx = 0;
 
+            // This draws a column shifted by y[i]
+            
             for (int j=height-y[i];j>0;j--)
             {
                 d[pd+idx] = s[ps++];
@@ -401,6 +414,7 @@ public class Wiper implements IVideoScaleAware {
 
     protected int SCREENWIDTH;
     protected int SCREENHEIGHT;
+    protected int Y_SCALE;
     protected IVideoScale vs;
 
 
@@ -413,6 +427,7 @@ public class Wiper implements IVideoScaleAware {
     public void initScaling() {
         this.SCREENHEIGHT=vs.getScreenHeight();
         this.SCREENWIDTH=vs.getScreenWidth();
+        this.Y_SCALE=vs.getScalingY();
 
         // Pre-scale stuff.
     }
