@@ -369,10 +369,7 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
 
             DM.PostEvent(cancelmouse);
             DM.PostEvent(cancelkey);
-            lastmousex=canvas.getWidth()/2;
-            lastmousey=canvas.getHeight()/2;
-            offset.x=(int) (canvas.getLocationOnScreen().x);
-        	offset.y=(int) (canvas.getLocationOnScreen().y);
+            reposition();
         	System.out.printf("FORCED and PAINFUL event clearing!\n");
             canvas.setCursor(normal);             
             ignorebutton=true;
@@ -392,6 +389,16 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
         }
 
     }
+
+	/** Update relative position offset, and force mouse there.
+	 * 
+	 */
+	void reposition() {
+		lastmousex=canvas.getWidth()/2;
+		lastmousey=canvas.getHeight()/2;
+		offset.x=(int) (canvas.getLocationOnScreen().x);
+		offset.y=(int) (canvas.getLocationOnScreen().y);
+	}
     
     Point offset=new Point();
 

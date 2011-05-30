@@ -1,45 +1,14 @@
 package awt;
 
-import static data.Defines.KEY_BACKSPACE;
-import static data.Defines.KEY_DOWNARROW;
-import static data.Defines.KEY_ENTER;
-import static data.Defines.KEY_EQUALS;
-import static data.Defines.KEY_ESCAPE;
-import static data.Defines.KEY_F1;
-import static data.Defines.KEY_F10;
-import static data.Defines.KEY_F11;
-import static data.Defines.KEY_F12;
-import static data.Defines.KEY_F2;
-import static data.Defines.KEY_F3;
-import static data.Defines.KEY_F4;
-import static data.Defines.KEY_F5;
-import static data.Defines.KEY_F6;
-import static data.Defines.KEY_F7;
-import static data.Defines.KEY_F8;
-import static data.Defines.KEY_F9;
-import static data.Defines.KEY_LEFTARROW;
-import static data.Defines.KEY_MINUS;
-import static data.Defines.KEY_PAUSE;
-import static data.Defines.KEY_RALT;
-import static data.Defines.KEY_RCTRL;
-import static data.Defines.KEY_RIGHTARROW;
-import static data.Defines.KEY_RSHIFT;
-import static data.Defines.KEY_TAB;
-import static data.Defines.KEY_UPARROW;
-
-import i.DoomEventInterface;
 import i.DoomVideoInterface;
 import i.IDoomSystem;
 import i.InputListener;
 import i.Strings;
 
-import java.awt.AWTEvent;
 import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Event;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -48,18 +17,9 @@ import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Robot;
-import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
-import java.util.LinkedList;
 import java.util.StringTokenizer;
 
 import javax.swing.JFrame;
@@ -69,7 +29,6 @@ import v.BufferedRenderer;
 import doom.DoomMain;
 import doom.ICommandLineManager;
 import doom.event_t;
-import doom.evtype_t;
 
 /** A simple Doom display & keyboard driver for AWT.
  *  Uses a Canvas for painting and implements some
@@ -401,6 +360,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
       this.setResizable(false);
 	  this.setTitle(Strings.MOCHA_DOOM_TITLE);
 	  this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	  this.eventhandler.reposition();
 	   
 	  screens=V.getBufferedScreens(0, cmaps);
 	  RAWSCREEN=V.getScreen(0);
@@ -497,6 +457,9 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.4  2011/05/30 02:25:50  velktron
+//Centering and offsetting on expose, proper exiting.
+//
 //Revision 1.3  2011/05/29 22:15:32  velktron
 //Introduced IRandom interface.
 //
