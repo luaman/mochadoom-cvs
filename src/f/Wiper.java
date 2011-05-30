@@ -1,53 +1,21 @@
 package f;
 
 import doom.DoomMain;
-import v.DoomVideoRenderer;
-import v.IVideoScale;
-import v.IVideoScaleAware;
-import m.IRandom;
 
-public class Wiper implements IVideoScaleAware {
+public class Wiper extends AbstractWiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.11 2011/05/30 02:24:47 velktron Exp $";
-    
-    IRandom RND;
-    DoomVideoRenderer V;
-    
-    /** These don't seem to be used anywhere */
-    
-    public static enum wipe
-    {
-        // simple gradual pixel change for 8-bit only
-    	// MAES: this transition isn't guaranteed to always terminate
-    	// see Chocolate Strife develpment. Unused in Doom anyway.
-        ColorXForm,
-        
-        // weird screen melt
-        Melt,  
-
-        NUMWIPES
-    };
+    static final String rcsid = "$Id: Wiper.java,v 1.12 2011/05/30 15:46:15 velktron Exp $";
     
     protected wipefun[] wipes;
     
     public Wiper(DoomMain DC){
-        this.RND=DC.RND;
-        this.V=DC.V;
+        this.updateStatus(DC);
         wipes=new wipefun[]{
         new wipe_initColorXForm(), new wipe_doColorXForm(), new wipe_exitColorXForm(),
         new wipe_initMelt(), new wipe_doMelt(), new wipe_exitMelt()
         };
     }
-    //
-//                           SCREEN WIPE PACKAGE
-    //
 
-    /** when false, stop the wipe */
-    protected volatile boolean  go = false;
-
-    protected byte[]    wipe_scr_start;
-    protected byte[]    wipe_scr_end;
-    protected byte[]    wipe_scr;
 
 
     /** They sure have an obsession with shit...this is supposed to do some
@@ -324,6 +292,7 @@ public class Wiper implements IVideoScaleAware {
 
     /** Sets "from" screen and stores it in "screen 2"*/
     
+    @Override
     public boolean
     StartScreen
     ( int   x,
@@ -343,6 +312,7 @@ public class Wiper implements IVideoScaleAware {
 
     /** Sets "to" screen and stores it to "screen 3" */
 
+    @Override
     public boolean
     EndScreen
     ( int   x,
@@ -359,9 +329,7 @@ public class Wiper implements IVideoScaleAware {
         //V.DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
         return false;
     }
-
-
-    
+    @Override
     public boolean
     ScreenWipe
     ( int   wipeno,
@@ -409,28 +377,5 @@ public class Wiper implements IVideoScaleAware {
                 int   height,
                 int   ticks );
     }
-    
-////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
-
-    protected int SCREENWIDTH;
-    protected int SCREENHEIGHT;
-    protected int Y_SCALE;
-    protected IVideoScale vs;
-
-
-    @Override
-    public void setVideoScale(IVideoScale vs) {
-        this.vs=vs;
-    }
-
-    @Override
-    public void initScaling() {
-        this.SCREENHEIGHT=vs.getScreenHeight();
-        this.SCREENWIDTH=vs.getScreenWidth();
-        this.Y_SCALE=vs.getScalingY();
-
-        // Pre-scale stuff.
-    }
-
     
 }
