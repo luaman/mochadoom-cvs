@@ -570,7 +570,7 @@ protected void rewirePointers(){
     for(mobj_t th: TL){
         if (th.p_target!=0){
             th.target=pointindex.get(th.p_target);
-            System.out.printf("Object %s has target %s\n",th.type.toString(),th.target.type.toString());
+           // System.out.printf("Object %s has target %s\n",th.type.toString(),th.target.type.toString());
         }
     }
 }
