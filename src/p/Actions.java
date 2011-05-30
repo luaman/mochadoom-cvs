@@ -1973,7 +1973,7 @@ public class Actions extends UnifiedGameMap {
       player.mo.angle = R.PointToAngle2 (player.mo.x,
                            player.mo.y,
                            linetarget.x,
-                           linetarget.y);
+                           linetarget.y)&BITS32;
       }
   }
 
@@ -2008,7 +2008,7 @@ public class Actions extends UnifiedGameMap {
       
       // turn to face target
       angle = R.PointToAngle2 (player.mo.x, player.mo.y,
-                   linetarget.x, linetarget.y);
+                   linetarget.x, linetarget.y)&BITS32;
       /* FIXME: this comparison is going to fail.... or not?
        If e.g. angle = 359 degrees (which will be mapped to a small negative number),       
        and player.mo.angle = 160 degrees (a large, positive value), the result will be a 
@@ -2461,14 +2461,18 @@ public class Actions extends UnifiedGameMap {
         if (actor.movedir < 8)
         {
             actor.angle &= (7<<29);
+            actor.angle&=BITS32;
+            // Nice problem, here!
             delta = (int) (actor.angle - (actor.movedir << 29));
 
             if (delta > 0)
-                actor.angle -= ANG90/2;
+                actor.angle -= ANG45;
             else if (delta < 0)
-                actor.angle += ANG90/2;
+                actor.angle += ANG45;
         }
 
+        
+        
         if (actor.target==null
                 || !flags(actor.target.flags,MF_SHOOTABLE))
         {
@@ -2776,10 +2780,11 @@ public class Actions extends UnifiedGameMap {
         actor.angle = R.PointToAngle2 (actor.x,
                         actor.y,
                         actor.target.x,
-                        actor.target.y);
+                        actor.target.y)&BITS32;
         
         if (flags(actor.target.flags , MF_SHADOW))
         actor.angle += (RND.P_Random()-RND.P_Random())<<21;
+        actor.angle&=BITS32;
     }
 
 
@@ -3036,7 +3041,7 @@ public class Actions extends UnifiedGameMap {
         exact = R.PointToAngle2 (actor.x,
                      actor.y,
                      dest.x,
-                     dest.y);
+                     dest.y)&BITS32;
         
         // MAES: let's analyze the logic here...
         // So exact is the angle between the missile and its target. 
@@ -3895,6 +3900,11 @@ public class Actions extends UnifiedGameMap {
             
         // shoot a cube at current target
         targ = braintargets[braintargeton];
+        
+        // Load-time fix: awake on zero numbrain targets, if A_BrainSpit is called.
+        if (numbraintargets==0) {this.A_BrainAwake(mo);
+        						 return;
+        						}
         braintargeton = (braintargeton+1)%numbraintargets;
 
         // spawn brain missile
@@ -4481,7 +4491,7 @@ if (th.info.seesound!=null)
 	S.StartSound(th, th.info.seesound);
 
 th.target = source;    // where it came from
-an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y);  
+an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y)&BITS32;  
 
 // fuzzy player
 if (flags(dest.flags , MF_SHADOW))
@@ -4614,7 +4624,7 @@ CheckMissileSpawn (th);
         ang = R.PointToAngle2 ( inflictor.x,
                     inflictor.y,
                     target.x,
-                    target.y);
+                    target.y)&BITS32;
             
         thrust = damage*(FRACUNIT>>3)*100/target.info.mass;
 
@@ -6332,13 +6342,14 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         
         side = ld.PointOnLineSide (slidemo.x, slidemo.y);
         
-        lineangle = R.PointToAngle2 (0,0, ld.dx, ld.dy);
+        lineangle = R.PointToAngle2 (0,0, ld.dx, ld.dy)&BITS32;
 
         if (side == true)
         lineangle += ANG180;
+        lineangle&=BITS32;
 
-        moveangle = R.PointToAngle2 (0,0, tmxmove, tmymove);
-        deltaangle = moveangle-lineangle;
+        moveangle = R.PointToAngle2 (0,0, tmxmove, tmymove)&BITS32;
+        deltaangle = (moveangle-lineangle)&BITS32;
 
         if (deltaangle > ANG180)
         deltaangle += ANG180;
