@@ -227,8 +227,8 @@ extralight = player.extralight;
 
 viewz = player.viewz;
 
-viewsin = finesine[(int) (viewangle>>>ANGLETOFINESHIFT)];
-viewcos = finecosine[(int) (viewangle>>>ANGLETOFINESHIFT)];
+viewsin = Tables.finesine(viewangle);
+viewcos = Tables.finecosine(viewangle);
 
 sscount = 0;
 
@@ -267,8 +267,8 @@ viewangle = actor.angle&BITS32;
 
 viewz = actor.z+actor.height;
 
-viewsin = finesine[(int) (viewangle>>>ANGLETOFINESHIFT)];
-viewcos = finecosine[(int) (viewangle>>>ANGLETOFINESHIFT)];
+viewsin = finesine(viewangle);
+viewcos = finecosine(viewangle);
 
 sscount = 0;
    
@@ -3921,12 +3921,12 @@ validcount++;
            if (x>y)
            {
            // octant 8
-           return (-tantoangle[SlopeDiv(y,x)])&BITS32;
+           return (-tantoangle[SlopeDiv(y,x)]);
            }
            else
            {
            // octant 7
-           return ANG270+tantoangle[ SlopeDiv(x,y)];
+           return (ANG270+tantoangle[ SlopeDiv(x,y)]);
            }
        }
        }
@@ -4108,17 +4108,21 @@ validcount++;
        dy = temp;
        }
        
+       if (dx==dy){
+    	   if (dx==0) return 0;
+       }
        
        /* If both dx and dy are zero, this is going to bomb.
           Fixeddiv will return MAXINT aka 7FFFFFFF, >> DBITS will make it 3FFFFFF,
-          which is enough to break tantoangle[]. 
+          which is more than enough to break tantoangle[]. 
           
           In the original C code, this probably didn't matter: there would probably be garbage orientations
-          thrown all around. However this is unacceptable in Java however.
+          thrown all around. However this is unacceptable in Java.
        */
        
-       angle=Math.max( FixedDiv(dy,dx), 2048)>>DBITS;
-           
+       //angle=Math.max( FixedDiv(dy,dx), 2048)>>DBITS;
+      // angle=(FixedDiv(dy,dx)&0x7FF)>>DBITS;
+       angle=(FixedDiv(dy,dx)>>DBITS)&0x7ff;
        angle = (int) (((tantoangle[angle ]+ANG90)&BITS32) >> ANGLETOFINESHIFT);
        
        // use as cosine
@@ -4387,7 +4391,7 @@ validcount++;
           pspriteiscale = (int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
           skyscale=(int) (FRACUNIT*(SCREENWIDTH/(viewwidth*(float)SCREEN_MUL)));
 
-          BOBADJUST=(int)(SCREEN_MUL*65536.0);
+          BOBADJUST=(int)(this.vs.getSafeScaling()<<15);
           WEAPONADJUST=(int) ((SCREENWIDTH/(2*SCREEN_MUL))*FRACUNIT);
           
           // thing clipping
@@ -4464,7 +4468,7 @@ validcount++;
 
           /* This part actually draws the border itself, without bevels */
           
-          for (y = 0; y < SCREENHEIGHT - SBARHEIGHT; y++) {
+          for (y = 0; y < SCREENHEIGHT - DM.ST.getHeight(); y++) {
               for (x = 0; x < SCREENWIDTH / 64; x++) {
                   // memcpy (dest, src+((y&63)<<6), 64);
                   System.arraycopy(src.data, ((y & 63) << 6), dest, destPos, 64);
@@ -4671,12 +4675,19 @@ validcount++;
       protected static final int TSC= 12;        /* number of fixed point digits in filter percent */
       byte[] main_tranmap;
       
-      // Maes: a "cleaner" way to construct a transparency map.
-      // Essentially we average each color's RGB values vs each other
-      // and then  remap the blend to the closest existing color.
-      // E.g. for finding mix of colors 0 and 100, we avg them, and
-      // find that e.g. their mix is closest to color 139.            
-      // Then we create the colormap table by putting 139 at position 0,100.
+      /* Maes: a "cleaner" way to construct a transparency map, at 
+       * least compared to Boom. 
+       * 
+       * Essentially we average each color's RGB values vs each other
+       * and then  remap the blend to the closest existing color.
+       * E.g. for finding mix of colors 0 and 100, we avg them, and
+       * find that e.g. their mix is closest to color 139.            
+       * Then we create the colormap table by putting 139 at position 0,100.
+       * 
+       * Since this is a particularly time-consuming process, it would 
+       * be better to preload it from disk or a PWAD lump, if possible.
+       * 
+       */
       
       protected void R_InitTranMap(int progress)
       {
@@ -4701,7 +4712,7 @@ validcount++;
             System.out.print("fail.\n");
         }
           {   // Compose a default transparent filter map based on PLAYPAL.
-              System.out.print("Computing translucency map from scratch...");
+              System.out.print("Computing translucency map from scratch...that's gonna be SLOW...");
             byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
             main_tranmap = new byte[256*256];  // killough 4/11/98
             Color[] basepal=new Color[256];
@@ -4743,7 +4754,8 @@ validcount++;
                 }
             }
             System.out.print("...done\n");
-            MenuMisc.WriteFile("tranmap.dat", main_tranmap, main_tranmap.length);
+            if(MenuMisc.WriteFile("tranmap.dat", main_tranmap, main_tranmap.length))
+             System.out.print("TRANMAP.DAT saved to disk for your convenience! Next time will be faster.\n");
           }
             
       }
@@ -4793,8 +4805,8 @@ validcount++;
 
       protected final  void DrawMaskedColumn (byte[] column)
       {
-          int     topscreen;
-          int     bottomscreen;
+          int topscreen;
+          int bottomscreen;
           int basetexturemid; // fixed_t
           int topdelta;
           int length;
