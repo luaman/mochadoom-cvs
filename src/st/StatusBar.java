@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.31 2011/05/29 22:15:32 velktron Exp $
+// $Id: StatusBar.java,v 1.32 2011/05/30 02:21:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.32  2011/05/30 02:21:08  velktron
+// Fixed number widget diffdraw
+//
 // Revision 1.31  2011/05/29 22:15:32  velktron
 // Introduced IRandom interface.
 //
@@ -171,7 +174,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.31 2011/05/29 22:15:32 velktron Exp $";
+        "$Id: StatusBar.java,v 1.32 2011/05/30 02:21:08 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -1746,8 +1749,9 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
             if (this.numindex==largeammo) return;
             
-            st_number_t n = this;
-            int numdigits = this.width;
+            //st_number_t n = this;
+            int numdigits = this.width; // HELL NO. This only worked while the width happened
+            							// to be 3.
             int num = ((int[]) this.numarray)[this.numindex];
 
             int w = this.p[0].width*BEST_X_SCALE;
@@ -1779,32 +1783,34 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             }
 
             // Restore BG from buffer
+            //V.FillRect(x+(numdigits-3) * w, y, w*3 , h, FG);
            
-            V.CopyRect(x, y- ST_Y, BG, w * numdigits, h, x, y, FG);
+            System.out.println(numdigits-3);
+            V.CopyRect(x+(numdigits-3)*w, y- ST_Y, BG, w * 3, h, x+(numdigits-3)*w, y, FG);
 
             // if non-number, do not draw it
             if (num == 1994)
                 return;
 
-            x = n.x;
+            x = this.x;
 
             // in the special case of 0, you draw 0
             if (num == 0)
                 //V.DrawPatch(x - w, n.y, FG, n.p[0]);
-                V.DrawScaledPatch(x - w, n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, vs,n.p[0]);
+                V.DrawScaledPatch(x - w, this.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH, vs,p[0]);
                 
                 
             // draw the new number
             while (((num != 0) && (numdigits-- != 0))) {
                 x -= w;
                 //V.DrawPatch(x, n.y, FG, n.p[num % 10]);
-                V.DrawScaledPatch(x, n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH,vs, n.p[num % 10]);
+                V.DrawScaledPatch(x, this.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH,vs, p[num % 10]);
                 num /= 10;
             }
 
             // draw a minus sign if necessary
             if (neg)
-                V.DrawScaledPatch/*DrawPatch*/(x - 8*BEST_X_SCALE, n.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH,vs, sttminus);
+                V.DrawScaledPatch/*DrawPatch*/(x - 8*BEST_X_SCALE, this.y, FG|V_NOSCALESTART|V_TRANSLUCENTPATCH,vs, sttminus);
                 //V.DrawPatch(x - sttminus.width*vs.getScalingX(), n.y, FG, sttminus);
         }
 
