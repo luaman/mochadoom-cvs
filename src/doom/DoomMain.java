@@ -1,5 +1,6 @@
 package doom;
 
+import i.DoomStatusAware;
 import i.DoomSystem;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -52,6 +53,8 @@ import savegame.IDoomSaveGameHeader;
 import savegame.VanillaDSG;
 import savegame.VanillaDSGHeader;
 import st.StatusBar;
+import timing.FastTicker;
+import timing.ITicker;
 import timing.MilliTicker;
 import timing.NanoTicker;
 import utils.C2JUtils;
@@ -74,7 +77,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.52 2011/05/30 02:26:29 velktron Exp $
+// $Id: DoomMain.java,v 1.53 2011/05/30 15:50:58 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -100,7 +103,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.52 2011/05/30 02:26:29 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.53 2011/05/30 15:50:58 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -765,7 +768,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Print ticker info. It has already been set at Init() though.
         if (eval(CM.CheckParm("-millis"))){
             System.out.println("ITicker: Using millisecond accuracy timer.");
-        }
+        } else if (eval(CM.CheckParm("-fasttic"))){
+                System.out.println("ITicker: Using fastest possible timer.");
+            }
         else {
             System.out.println("ITicker: Using nanosecond accuracy timer.");
         }
@@ -856,19 +861,34 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             while (++p != CM.getArgc() && CM.getArgv(p).charAt(0) != '-')
                 AddFile (CM.getArgv(p));
         }
-
+        
         p = CM.CheckParm ("-playdemo");
+                
+        if (eval(p)) normaldemo=true;
+        else {
+            p=CM.CheckParm ("-fastdemo");        
+            if (eval(p)){
+            System.out.println("Fastdemo mode. Boundless clock!");
+            fastdemo=true;
+            this.TICK=new FastTicker();            
+            }
+            else        
+                if (!eval(p)) {
+                    p = CM.CheckParm ("-timedemo");
+                    if (eval(p)) singletics=true;
+                }
+        }
 
-        if (!eval(p))
-            p = CM.CheckParm ("-timedemo");
-
-        if (eval(p) && p < CM.getArgc()-1)
+        // If any of the previous succeeded, try grabbing the filename.
+        if ((normaldemo||fastdemo||singletics) && p < CM.getArgc()-1)
         {
-            AddFile (CM.getArgv(p+1)+".lmp");
-            System.out.printf("Playing demo %s.lmp.\n",CM.getArgv(p+1));
+            loaddemo=CM.getArgv(p+1);
+            AddFile (loaddemo+".lmp");
+            System.out.printf("Playing demo %s.lmp.\n",loaddemo);
         }
 
         // get skill / episode / map from parms
+        // FIXME: should get them FROM THE DEMO itself.
         startskill = skill_t.sk_medium;
         startepisode = 1;
         startmap = 1;
@@ -1070,10 +1090,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             players[i].updateStatus(this);
         }
 
-        p = CM.CheckParm ("-timedemo");
-        if (eval(p) && p < CM.getArgc()-1)
+        //p = CM.CheckParm ("-timedemo");
+        if (singletics)
         {
-            TimeDemo (CM.getArgv(p+1));
+            TimeDemo (loaddemo);
             DoomLoop ();  // never returns
         }
 
@@ -1109,11 +1129,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
 
-        p = CM.CheckParm ("-playdemo");
-        if (eval(p) && p < CM.getArgc()-1)
+        if (fastdemo||normaldemo)
         {
             singledemo = true;              // quit after one demo
-            DeferedPlayDemo (CM.getArgv(p+1));
+            if (fastdemo) timingdemo=true;
+            DeferedPlayDemo (loaddemo);
             DoomLoop ();  // never returns
         }
 
@@ -1560,7 +1580,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         LL.SetupLevel (gameepisode, gamemap, 0, gameskill);    
         displayplayer = consoleplayer;      // view the guy you are playing    
-        starttime = TICK.GetTime (); 
         gameaction = gameaction_t.ga_nothing; 
         //Z_CheckHeap ();
 
@@ -1571,8 +1590,27 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         sendpause = sendsave = paused = false; 
         Arrays.fill (mousearray, false);
         Arrays.fill(joyarray, false); 
+        
+        
+        // killough 5/13/98: in case netdemo has consoleplayer other than green
+        ST.Start();
+        HU.Start();
+        
+        // killough: make -timedemo work on multilevel demos
+        // Move to end of function to minimize noise -- killough 2/22/98:
+
+        if (timingdemo)
+          {
+            if (first)
+              {
+                starttime = RealTime.GetTime();
+                first=false;
+              }
+          }
+        
     } 
 
+    protected boolean first=true;
 
     /**
      * G_Responder  
@@ -2782,26 +2820,27 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         gameaction = gameaction_t.ga_playdemo; 
     } 
 
-
-    /**
- =================== 
- = 
- = G_CheckDemoStatus 
- = 
- = Called after a death or level completion to allow demos to be cleaned up 
- = Returns true if a new demo loop action will take place 
- =================== 
+    
+    /** G_CheckDemoStatus
+     * 
+     * Called after a death or level completion to allow demos to be cleaned up
+     * Returns true if a new demo loop action will take place
+     *  
      */ 
 
     public boolean CheckDemoStatus () 
     { 
         int endtime; 
-
+        
         if (timingdemo) 
         {
-            endtime = TICK.GetTime (); 
+            endtime = RealTime.GetTime ();
+            // killough -- added fps information and made it work for longer demos:
+            long realtics=endtime-starttime;    
+            
+            MenuMisc.SaveDefaults(this);
             I.Error ("timed %d gametics in %d realtics = %f frames per second",gametic 
-                , (endtime-starttime), ((float)(gametic*35.0f))/((float)(endtime-starttime))); 
+                , realtics, gametic*(double)(TICRATE)/realtics); 
         } 
 
         if (demoplayback) 
@@ -2836,7 +2875,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         return false; 
     } 
 
-
+    /** This should always be available for real timing */
+    private ITicker RealTime;
+    
     public DoomMain(){
         // Init game status...
         super();
@@ -2845,7 +2886,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //_D_: this needed to be removed, and isnt here in the linuxdoom source
         // this is because some variables are null at this point so we cant init the doomsystem yet
         //I.Init();
-        gamestate=gamestate_t.GS_DEMOSCREEN;
+        gamestate=gamestate_t.GS_DEMOSCREEN;        
+        
+        this.RealTime=new MilliTicker();
     }
 
     /**
@@ -2857,7 +2900,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * 
      *  If you instantiate one too early, it will have null context.
      *  
-     *  The trick is to construct objects in the correct order
+     *  The trick is to construct objects in the correct order. Some of
+     *  them have Init() methods which are NOT yet safe to call.
      *  
      *  FIXME: Probably I should add a sort of deferred status update?
      * 
@@ -2865,61 +2909,73 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     public void Init(){
        
-
+        status_holders=new ArrayList<DoomStatusAware>();
+        
+        // Doommain is both "main" and handles most of the game status.
         this.DM=this;
-
-        // Set ticker.
+        this.DG = this;
+        this.DGN=this; // DoomMain also handles its own Game Networking.
+             
+        // Set ticker. It is a shared status object, but not a holder itself.
         if (eval(CM.CheckParm("-millis"))){
 
             TICK=new MilliTicker();
         }
-        else {
+        else if (eval(CM.CheckParm("-fasttic"))){
+            TICK=new FastTicker();
+        } else {
             TICK=new NanoTicker();
         }
-
-        this.DG = this;
-        this.DNI=new DummyNetworkDriver(this);
-        this.DGN=this; // DoomMain also handles its own Game Networking.
+        
+        // Network "driver"
+        status_holders.add((DoomStatusAware) (this.DNI=new DummyNetworkDriver(this)));
+        
         // Random number generator, but we can have others too.
         this.RND=new DoomRandom();    
-        // In primis, the video renderer.
-        this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
         this.S=new DummySoundDriver();
-        this.W=new WadLoader(this.I);
-        // It's better if these are supplied externally.
-        // In secundis, the Wad Loader
-
-
-        this.WIPE=new Wiper(this);   
+        this.W=new WadLoader(this.I); // The wadloader is a "weak" status holder.
+        status_holders.add(this.WIPE=new Wiper(this));   
 
         // Then the menu...
-        this.HU=new HU(this);
-        this.M=new Menu(this);
-        this.LL=new LevelLoader(this);
+        status_holders.add(this.HU=new HU(this));
+        status_holders.add(this.M=new Menu(this));
+        status_holders.add(this.LL=new LevelLoader(this));
         
         // This will set R.
         selectRenderer();
-
-        this.P=new Actions(this);
-        this.ST=new StatusBar(this);
-        this.AM=new Map(this);
+        status_holders.add(this.R);
+        status_holders.add((this.P=new Actions(this)));
+        status_holders.add(this.ST=new StatusBar(this));
+        status_holders.add(this.AM=new Map(this)); // Call Init later.
         this.TM=new SimpleTextureManager(this);
         this.SM=this.R;
 
-        this.LL.updateStatus(this);
-        this.P.updateStatus(this);
-        this.M.updateStatus(this);
-        this.HU.updateStatus(this);
-        this.R.updateStatus(this);
-
         //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
         // it seems to fit perfectly here
-        this.WI = new EndLevel(this);    
-        this.F = new Finale(this);
-        ((DoomSystem)(this.I)).updateStatus(this);
+        status_holders.add(this.WI = new EndLevel(this));    
+        status_holders.add(this.F = new Finale(this));
+        
+        // TODO: find out if we have requests for a specific resolution,
+        // and try honouring them as closely as possible.
+        // determineVisualsFromCLI();
+        
+        this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
+        status_holders.add((DoomStatusAware) this.I);
+        updateStatusHolders(this);
+
 
     }
+    
+    private void updateStatusHolders(DoomStatus DS){
+        for (DoomStatusAware dsa : status_holders){
+            dsa.updateStatus(DS);
+        }
+    }
 
+    /** A list with objects that do hold status and need to be aware of 
+     *  it.
+     */
+    private List<DoomStatusAware> status_holders;
 
     protected void selectRenderer() {
         // Serial or parallel renderer (serial is default, but can be forced)
@@ -3867,6 +3923,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.53  2011/05/30 15:50:58  velktron
+//Status holders and -fastdemo introduced.
+//
 //Revision 1.52  2011/05/30 02:26:29  velktron
 //DOOMWADDIR message.
 //
