@@ -27,7 +27,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.20 2011/05/26 17:54:16 velktron Exp $
+// $Id: MenuMisc.java,v 1.21 2011/05/30 15:46:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -51,30 +51,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.20 2011/05/26 17:54:16 velktron Exp $";
-    ////////////////////// CONTEXT ///////////////////
-
-    DoomStatus DM;
-    IDoomGame DG;
-    IWadLoader W;
-    DoomVideoRenderer V;
-    HU HU;
-    RendererState R;
-    IDoomSystem I;
-    IDoomSound S;
-    ITicker TICK;
-
-    //
-    // M_WriteFile
-    //
-
-    //
-    // DEFAULTS
-    //
-    int		usemouse;
-    int		usejoystick;
-
-    char [] scantokey;
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.21 2011/05/30 15:46:50 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -485,6 +462,9 @@ public void ScreenShot ()
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.21  2011/05/30 15:46:50  velktron
+// AbstractDoomMenu implemented.
+//
 // Revision 1.20  2011/05/26 17:54:16  velktron
 // Removed some Menu verbosity, better defaults functionality.
 //

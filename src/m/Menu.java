@@ -44,15 +44,11 @@ import static doom.englsh.QSPROMPT;
 import static doom.englsh.SAVEDEAD;
 import static doom.englsh.SWSTRING;
 
-import i.DoomStatusAware;
-
 import java.io.IOException;
 
-import rr.RendererState;
 import rr.patch_t;
 import utils.C2JUtils;
 import v.IVideoScale;
-import v.IVideoScaleAware;
 import w.DoomFile;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
@@ -60,28 +56,13 @@ import doom.englsh;
 import doom.event_t;
 import doom.evtype_t;
 
-public class Menu extends MenuMisc implements IDoomMenu, DoomStatusAware{
+public class Menu extends AbstractDoomMenu {
 
 	////////////////// CONSTRUCTOR ////////////////
     
     public Menu(DoomStatus DS){
     	this.updateStatus(DS);
     }
-    
-	@Override
-	public void updateStatus(DoomStatus DS) {
-	       this.DM=DS.DM;
-	       this.DG=DS.DG;
-	        this.V=DM.V;
-	        this.W=DM.W;
-	        this.HU=DM.HU;
-	        this.I=DM.I;
-	        this.S=DM.S;
-	        this.R=(RendererState) DM.R;
-	        this.TICK=DM.TICK;
-		
-	}
-    
 
     /** The fonts  ... must "peg" them to those from HU */
     patch_t[] hu_font = new patch_t[HU_FONTSIZE];
