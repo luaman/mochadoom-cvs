@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.33 2011/05/30 10:34:20 velktron Exp $
+// $Id: StatusBar.java,v 1.34 2011/05/30 15:47:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.34  2011/05/30 15:47:34  velktron
+// AbstractStatusBar introduced.
+//
 // Revision 1.33  2011/05/30 10:34:20  velktron
 // Fixed binicon refresh bug...
 //
@@ -148,13 +151,11 @@ import defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Defines.*;
 import static doom.englsh.*;
-import static automap.DoomAutoMap.*;
+import static automap.IAutoMap.*;
 import static doom.player_t.*;
 import static doom.items.*;
 import static data.Tables.*;
 import p.mobj_t;
-
-import i.DoomStatusAware;
 import i.IDoomSystem;
 import i.DoomVideoInterface;
 import m.IRandom;
@@ -171,13 +172,12 @@ import rr.patch_t;
 import s.IDoomSound;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
-import v.IVideoScaleAware;
 import w.IWadLoader;
 import static v.DoomVideoRenderer.*;
 
-public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAware {
+public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.33 2011/05/30 10:34:20 velktron Exp $";
+        "$Id: StatusBar.java,v 1.34 2011/05/30 15:47:34 velktron Exp $";
 
     // /// STATUS //////////
 
