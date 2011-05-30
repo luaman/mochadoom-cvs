@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.25 2011/05/24 11:31:47 velktron Exp $
+// $Id: Map.java,v 1.26 2011/05/30 15:45:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.26  2011/05/30 15:45:44  velktron
+// AbstractAutoMap and IAutoMap
+//
 // Revision 1.25  2011/05/24 11:31:47  velktron
 // Adapted to IDoomStatusBar
 //
@@ -137,7 +140,7 @@ import v.IVideoScaleAware;
 import w.IWadLoader;
 import m.cheatseq_t;
 
-public class Map implements DoomAutoMap, DoomStatusAware,IVideoScaleAware{
+public class Map extends AbstractAutoMap{
 
 /////////////////// Status objects ///////////////////
     
@@ -148,7 +151,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.25 2011/05/24 11:31:47 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.26 2011/05/30 15:45:44 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -254,9 +257,12 @@ public Map(DoomStatus DS) {
     m_paninc=new mpoint_t();
     
     this.plr=DM.players[DM.displayplayer];
-    this.scanline=new byte[V.getHeight()*V.getWidth()];
 }
 
+@Override
+public void Init(){
+    
+}
 
 /** translates between frame-buffer and map distances */
 private final int FTOM(int x){return FixedMul(((x)<<16),scale_ftom);}
@@ -1633,7 +1639,7 @@ public void initScaling() {
     // Pre-scale stuff.
     finit_width = SCREENWIDTH;
     finit_height = SCREENHEIGHT - 32*vs.getSafeScaling();
-
+    this.scanline=new byte[SCREENWIDTH*SCREENHEIGHT];
 }
 
 }
