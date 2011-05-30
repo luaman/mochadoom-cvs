@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.32 2011/05/30 02:21:08 velktron Exp $
+// $Id: StatusBar.java,v 1.33 2011/05/30 10:34:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.33  2011/05/30 10:34:20  velktron
+// Fixed binicon refresh bug...
+//
 // Revision 1.32  2011/05/30 02:21:08  velktron
 // Fixed number widget diffdraw
 //
@@ -174,7 +177,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAware {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.32 2011/05/30 02:21:08 velktron Exp $";
+        "$Id: StatusBar.java,v 1.33 2011/05/30 10:34:20 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -674,6 +677,7 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
                 V.DrawScaledPatch(ST_FX, 0, BG,vs, faceback);
                 //V.DrawPatch(ST_FX, 0, BG, faceback);
 
+            // Buffers the background.
             V.CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
         }
 
@@ -1560,19 +1564,18 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
             int w;
             int h;
 
-            if (bi.on[onindex] && (bi.oldval != ((bi.val[valindex] || refresh)))) {
+            if (bi.on[onindex] && ((bi.oldval != bi.val[valindex]) || refresh)) {
                 x = bi.x - bi.p.leftoffset;
                 y = bi.y - bi.p.topoffset;
                 w = bi.p.width;
                 h = bi.p.height;
 
                 if (y - ST_Y < 0)
-                    I.Error("updateBinIcon: y - ST_Y < 0");
-
+                    I.Error("updateBinIcon: y - ST_Y < 0");                    
                 if (bi.val[valindex])
-                    V./*DrawPatch*/DrawScaledPatch(bi.x, bi.y, V_PREDIVIDE|FG,vs, bi.p);
+                    V.DrawScaledPatch(bi.x, bi.y, V_PREDIVIDE|FG,vs, bi.p);
                 else
-                    V.CopyRect(x/vs.getScalingX(), y/vs.getScalingY() - ST_Y, BG, w*vs.getScalingX(), h*vs.getScalingY(), x, y, FG);
+                    V.CopyRect(x/vs.getScalingX(), y/vs.getScalingY() - ST_Y, BG, w*BEST_X_SCALE, h*BEST_Y_SCALE, x, y, FG);
 
                 bi.oldval = bi.val[valindex];
             }
@@ -1671,10 +1674,12 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
                     if (y - ST_Y < 0)
                         I.Error("updateMultIcon: y - ST_Y < 0");
-
+                    //System.out.printf("Restoring at x y %d %d w h %d %d\n",x, y - ST_Y,w,h);
                     V.CopyRect(x, y - ST_Y, BG, w, h, x, y, FG);
+                    //V.FillRect(x, y - ST_Y, w, h, FG);
                 }
                 
+                //System.out.printf("Drawing at x y %d %d w h %d %d\n",this.x,this.y,p[thevalue].width,p[thevalue].height);
                 V.DrawScaledPatch(this.x, this.y, V_PREDIVIDE|FG, vs,this.p[thevalue]);
                 
                 this.oldinum = thevalue;
@@ -1784,8 +1789,6 @@ public class StatusBar implements IDoomStatusBar, DoomStatusAware, IVideoScaleAw
 
             // Restore BG from buffer
             //V.FillRect(x+(numdigits-3) * w, y, w*3 , h, FG);
-           
-            System.out.println(numdigits-3);
             V.CopyRect(x+(numdigits-3)*w, y- ST_Y, BG, w * 3, h, x+(numdigits-3)*w, y, FG);
 
             // if non-number, do not draw it
