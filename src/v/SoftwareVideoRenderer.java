@@ -650,9 +650,18 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
     }
 
     // Eliminates.
-    // MAES: added this fix so that non-zero patch offsets are taken into account automatically.
-    y -= /*SHORT(*/patch.topoffset*dupx;/*)*/;
-    x -= /*SHORT(*/patch.leftoffset*dupy;/*)*/;
+    // MAES: added this fix so that non-zero patch offsets can be 
+    // taken into account, regardless of whether we use pre-scaled
+    // coords or not. Only Doomguy's face needs this hack for now.
+    
+    if (C2JUtils.flags(scrn, V_SCALEOFFSET)) {
+    y -= patch.topoffset*dupx;
+    x -= patch.leftoffset*dupy;
+    } else {
+        y -= patch.topoffset;
+        x -= patch.leftoffset;
+    }
+    
 
     colfrac = dupx;
     rowfrac = dupy;
@@ -790,6 +799,60 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
       srcPos += width; 
       destPos += this.width; 
       } 
+  }
+  
+  
+  /** Replaces DrawPatchCol for bunny scrolled in Finale.
+   * 
+   * 
+   */
+  
+  @Override
+  public final void
+  DrawPatchColScaled
+  ( int       x, patch_t  patch,int col, 
+          IVideoScale vs, int       screen )
+  {
+      column_t   column;
+      int   source;
+      final byte[]   dest;
+      int   desttop;
+      final int scale=vs.getScalingX();
+      
+      column = patch.columns[col];
+      desttop = x*scale; // Scale X position.
+      dest=screens[screen];
+      // step through the posts in a column
+      
+      
+      for (int i=0;i<column.posts;i++){
+          // Get pointer to post offset.
+          source=column.postofs[i];
+          // Get post delta
+          short delta=column.postdeltas[i];
+          // We skip delta, len and padding.
+          source+=3; 
+          
+          // Skip transparent rows...
+          if (delta==0xFF) break;
+
+            
+          
+          // Replicate each column scale times vertically,
+          // with spaced pixels.
+          final int startsource=source;
+          for (int kl=0;kl<scale;kl++){
+              int destPos = desttop + (delta+kl)*SCREENWIDTH;
+          for (int j=0;j<column.postlen[i];j++){
+              final byte data=column.data[source++];
+              // replicate each column's pixel horizontally and vertically.
+                  for (int k=0;k<scale;k++)
+                  dest[destPos+k] =data; 
+                 destPos += scale*SCREENWIDTH;
+              }
+          source=startsource;
+          }
+      }
   }
 
   public final int getHeight() {
