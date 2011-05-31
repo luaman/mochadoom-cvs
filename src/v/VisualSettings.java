@@ -37,7 +37,7 @@ public class VisualSettings {
         
         // If -multiply was successful, trump any others.
         // Implied to be a solid multiple of the vanilla resolution.
-        if (width>0 && width<=5) new VideoScaleInfo(width); 
+        if (width>0 && width<=5) return new VideoScaleInfo(width); 
         
         // Width defined?
         p=CM.CheckParm("-width");

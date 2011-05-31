@@ -625,7 +625,7 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
     int dupx, dupy;
     int colfrac, rowfrac;
 
-    System.out.printf("V_DrawScaledPatch %d %d \n",x,y);
+   // System.out.printf("V_DrawScaledPatch %d %d \n",x,y);
     // draw an hardware converted patch
     /*#ifdef HWRENDER
   if (rendermode != render_soft)
@@ -649,11 +649,10 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
         dupy = VSI.getScalingY();
     }
 
-    // Eliminates. This only works correctly if both x,y and the patch itself are
-    // unscaled. If both are PRESCALED however, it will only work correctly
-    // for 0 amounts.
-    y -= /*SHORT(*/patch.topoffset/*)*/;
-    x -= /*SHORT(*/patch.leftoffset/*)*/;
+    // Eliminates.
+    // MAES: added this fix so that non-zero patch offsets are taken into account automatically.
+    y -= /*SHORT(*/patch.topoffset*dupx;/*)*/;
+    x -= /*SHORT(*/patch.leftoffset*dupy;/*)*/;
 
     colfrac = dupx;
     rowfrac = dupy;
