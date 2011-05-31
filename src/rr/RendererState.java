@@ -58,7 +58,6 @@ import p.LevelLoader;
 import p.UnifiedGameMap;
 import p.mobj_t;
 import p.pspdef_t;
-import psort.ThreadSort;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 import st.StatusBar;
