@@ -278,6 +278,13 @@ public class C2JUtils {
         return null;
     }
     
+    public static String unquoteIfQuoted(String s, char c) {        
+        
+    	String tmp=unquote(s,c);
+    	if (tmp!=null) return tmp;
+        return s;
+    }
+    
     /** Return either 0 or a hashcode */
     public static final int pointer(Object o){
         if (o==null) return 0;
