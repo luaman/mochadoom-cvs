@@ -96,9 +96,29 @@ public class patch_t implements /*IReadableDoomObject,*/CacheableDoomObject{
         for (int i=0;i<this.width;i++){
         	// Go to offset.
         	b.position(this.columnofs[i]);
+        	try {
         	this.columns[i].unpack(b);
+        	} catch (Exception e){
+        		// Error during loading. Column will be set to a special
+        		// error column rather than breaking stuff later on.
+        		this.columns[i]=invalid_column;
+        	}
         }
 
     }
+    
+    private final static column_t invalid_column;
+    
+    // Temporary safeguard vs badly computed stuff.
+    static{
+    	invalid_column=new column_t();
+    	invalid_column.data=new byte[133];
+    for (int i=4;i<133;i++){
+    	invalid_column.data[i]=(byte) (i-4);
+    }
+    invalid_column.posts=1;
+    invalid_column.length=128;
+    invalid_column.topdelta=0;
    
+    }
 }

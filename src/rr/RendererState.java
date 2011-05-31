@@ -5594,13 +5594,16 @@ validcount++;
               patch_t r=W.CachePatchNum(lump,PU_CACHE);
           return r.columns[ofs].data;
       }
+          
+          this.dc_source_ofs=0;
           // Texture should be composite, but it doesn't yet exist. Create it. 
           if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
 
           // This implies that texturecomposite actually stores raw, compressed columns,
           // or else those "ofs" would go in-between.
           // The source offset int this case is 0, else we'll skip over stuff.
-          this.dc_source_ofs=0;
+          
+
           return TexMan.getTextureComposite(tex,col);
       }
 
