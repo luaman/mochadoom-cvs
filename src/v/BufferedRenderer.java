@@ -14,7 +14,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.11 2010/11/15 17:15:54 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.12 2011/05/31 12:24:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,6 +28,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.12  2011/05/31 12:24:52  velktron
+// Fixed bogus +1 screen allocation.
+//
 // Revision 1.11  2010/11/15 17:15:54  velktron
 // Fixed masked columns rendering, introduced unrolled span and column functions from Boom (thanks, Lee Killough :-)
 //
@@ -138,7 +141,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.11 2010/11/15 17:15:54 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.12 2011/05/31 12:24:52 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -176,12 +179,12 @@ public final void Init ()
  int		i;
  for (i=0 ; i<4 ; i++){
 	//screens[i] = new byte[this.getHeight()*this.getWidth()];
-     this.setScreen(i, this.width, this.height+1);
+     this.setScreen(i, this.width, this.height);
      
 	}
      dirtybox=new BBox();
      
-     colbuf=new byte[width][height+1];
+     colbuf=new byte[width][height];
 }
 
 /** This implementation will "tie" a bufferedimage to the underlying byte raster.
@@ -354,13 +357,14 @@ int[] palette;
 int[] raster;
 
 /** Get a bunch of BufferedImages "pegged" on the same output screen of this
- *  Doom Video Renderer, but with a but with different palettes, defined in icms[]
+ *  Doom Video Renderer, but with different palettes, defined in icms[]
  *  This is VERY speed efficient assuming that an IndexedColorModel will be used,
- *  rather than a 24-bit canvas, and memory overhead is minimal. Call this ONLY
+ *  rather than a 32-bit canvas, and memory overhead is minimal. Call this ONLY
  *  ONCE when initializing the video renderer, else it will invalidate pretty much
  *  everything in an ongoing game.
  * 
- *  Only works with BufferedRenderer though.
+ *  NOTE: this will actually CREATE a new byte array for the screen, so it's important
+ *  that this is called BEFORE anything else taps into it.
  * 
  * @param screen
  * @param icms

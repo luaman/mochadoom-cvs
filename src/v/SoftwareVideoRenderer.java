@@ -606,7 +606,10 @@ public abstract class SoftwareVideoRenderer
  *default params : scale patch and scale start
  *
  * Iniially implemented for Mocha Doom by _D_ (shamelessly ripped from 
- * Eternity Engine ;-), adapted to scale based on a scaling object (VSI). 
+ * Eternity Engine ;-), adapted to scale based on a scaling info object (VSI).
+ * 
+ * Unless overriden by flags, starting x and y are automatically
+ * scaled (implied V_SCALESTART)
  *
  */
 @Override
@@ -620,10 +623,9 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
     //byte[] source;
 
     int dupx, dupy;
-    int ofs;
     int colfrac, rowfrac;
-    byte[] destend;
 
+    System.out.printf("V_DrawScaledPatch %d %d \n",x,y);
     // draw an hardware converted patch
     /*#ifdef HWRENDER
   if (rendermode != render_soft)
@@ -647,11 +649,14 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
         dupy = VSI.getScalingY();
     }
 
+    // Eliminates. This only works correctly if both x,y and the patch itself are
+    // unscaled. If both are PRESCALED however, it will only work correctly
+    // for 0 amounts.
     y -= /*SHORT(*/patch.topoffset/*)*/;
     x -= /*SHORT(*/patch.leftoffset/*)*/;
 
-    colfrac = /*fixed_t.FixedDiv(fixed_t.FRACUNIT,*/ dupx /*<< fixed_t.FRACBITS)*/;
-    rowfrac = /*fixed_t.FixedDiv(fixed_t.FRACUNIT,*/ dupy /*<< fixed_t.FRACBITS)*/;
+    colfrac = dupx;
+    rowfrac = dupy;
 
     //desttop = screens[scrn & 0xFF];
     if (C2JUtils.flags(scrn, V_NOSCALESTART))
