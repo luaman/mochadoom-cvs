@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.27 2011/05/31 21:42:30 velktron Exp $
+// $Id: HU.java,v 1.28 2011/05/31 23:46:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -31,6 +31,7 @@ import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
+import v.SoftwareVideoRenderer;
 
 import m.IDoomMenu;
 import m.Menu;
@@ -50,7 +51,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.27 2011/05/31 21:42:30 velktron Exp $";
+        "$Id: HU.java,v 1.28 2011/05/31 23:46:18 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -436,7 +437,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         // I don't really see the point in that, as in the WAD patches appear
         // to be all Little Endian... mystery :-S
         // HU_TITLEY = (167 - Swap.SHORT(hu_font[0].height));
-        HU_TITLEY = (167 - hu_font[0].height)*SAFE_SCALE;
+        HU_TITLEY = (167 - hu_font[0].height);
         HU_INPUTY = (HU_MSGY + HU_MSGHEIGHT * hu_font[0].height + 1);
 
     }
@@ -1147,7 +1148,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                     if (x + w > SCREENWIDTH)
                         break;
                     
-                    V.DrawPatchDirect(x, y, FG, f[c - sc]);
+                    V.DrawScaledPatch(x, y, FG,vs, f[c - sc]);
                     x += w;
                 } else {
                     // Leave a space
@@ -1160,7 +1161,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
             // draw the cursor if requested
             if (drawcursor
                     && x + this.f['_' - this.sc].width <= SCREENWIDTH) {
-                V.DrawPatchDirect(x, this.y, FG, this.f['_' - this.sc]);
+                V.DrawScaledPatch(x, this.y, FG,vs, this.f['_' - this.sc]);
             }
         }
 
@@ -1244,6 +1245,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 }
 
 //$Log: HU.java,v $
+//Revision 1.28  2011/05/31 23:46:18  velktron
+//Fixed scaling.
+//
 //Revision 1.27  2011/05/31 21:42:30  velktron
 //Handling for map33
 //
