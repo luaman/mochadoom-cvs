@@ -61,6 +61,8 @@ import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
+import v.VideoScaleInfo;
+import v.VisualSettings;
 import w.DoomFile;
 import w.EndLevel;
 import w.WadLoader;
@@ -77,7 +79,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.53 2011/05/30 15:50:58 velktron Exp $
+// $Id: DoomMain.java,v 1.54 2011/05/31 16:26:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -103,7 +105,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.53 2011/05/30 15:50:58 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.54 2011/05/31 16:26:10 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -460,8 +462,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             demosequence = (demosequence+1)%7;
         else
             demosequence = (demosequence+1)%6;
-        
-        System.out.println("DEMOSEQUENCE "+demosequence);
 
         switch (demosequence)
         {
@@ -1607,6 +1607,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 first=false;
               }
           }
+        
+        // Try reclaiming some memory from limit-expanded buffers.
+        R.resetLimits();
         
     } 
 
@@ -2909,6 +2912,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     public void Init(){
        
+        // The various objects that need to "sense" the global status
+        // end up here. This allows one-call updates.
         status_holders=new ArrayList<DoomStatusAware>();
         
         // Doommain is both "main" and handles most of the game status.
@@ -2956,8 +2961,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         status_holders.add(this.F = new Finale(this));
         
         // TODO: find out if we have requests for a specific resolution,
-        // and try honouring them as closely as possible.
-        // determineVisualsFromCLI();
+        // and try honouring them as closely as possible.       
+
+        // 23/5/2011: Experimental dynamic resolution subsystem
+        vs=VisualSettings.parse(CM);
+        
+        // Initializing actually sets drawing positions, constants,
+        // etc. for main. Children will be set later in Start().
+        this.initScaling();
         
         this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
         status_holders.add((DoomStatusAware) this.I);
@@ -3923,6 +3934,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.54  2011/05/31 16:26:10  velktron
+//Sprite buffer reset.
+//
 //Revision 1.53  2011/05/30 15:50:58  velktron
 //Status holders and -fastdemo introduced.
 //
