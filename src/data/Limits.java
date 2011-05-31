@@ -9,7 +9,7 @@ public final class Limits {
 	// Obvious rendering limits
 	public static final int MAXVISPLANES = 128;
 	public static final int MAXSEGS = 32;
-	public static final int MAXVISSPRITES = 4096;
+	public static final int MAXVISSPRITES = 128;
 	public static final int MAXDRAWSEGS = 256;
 	// MAES: Moved MAXOPENINGS to renderer state, it's scale dependant.
 	public static final int CEILSPEED = FRACUNIT;
