@@ -27,7 +27,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.21 2011/05/30 15:46:50 velktron Exp $
+// $Id: MenuMisc.java,v 1.22 2011/05/31 09:57:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -51,7 +51,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.21 2011/05/30 15:46:50 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.22 2011/05/31 09:57:45 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -147,6 +147,8 @@ public abstract class MenuMisc{
                     if (tokens==2){
                         name=tk.nextToken();
                         value=tk.nextToken();
+                        String tmp=C2JUtils.unquote(value,'"');
+                        if (tmp!=null) value=tmp;
                     } else if (tokens>2){
                         // String tokenizer can't recognize quoted strings
                         name=tk.nextToken();
@@ -462,6 +464,9 @@ public void ScreenShot ()
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.22  2011/05/31 09:57:45  velktron
+// Fixed broken parsing of unspaced strings. It's never fun having to come up with your own function for string manipulation!
+//
 // Revision 1.21  2011/05/30 15:46:50  velktron
 // AbstractDoomMenu implemented.
 //
