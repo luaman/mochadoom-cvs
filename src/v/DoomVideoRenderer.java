@@ -21,11 +21,11 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
     public static final int V_SCALESTART        = 0x020000;   // scale x,y, start coords
     public static final int V_SCALEPATCH        = 0x040000;   // scale patch
     public static final int V_NOSCALEPATCH      = 0x080000;   // don't scale patch
-    public static final int V_WHITEMAP          = 0x100000;   // draw white (for v_drawstring)
+    public static final int V_WHITEMAP          = 0x100000;   // draw white (for v_drawstring)    
     public static final int V_FLIPPEDPATCH      = 0x200000;   // flipped in y
     public static final int V_TRANSLUCENTPATCH  = 0x400000;   // draw patch translucent    
     public static final int V_PREDIVIDE  = 0x800000;   // pre-divide by best x/y scale.    
-    
+    public static final int V_SCALEOFFSET = 0x1000000; // Scale the patch offset
     // Allocates buffer screens, call before R_Init.
     public void Init();
 
@@ -81,5 +81,8 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
      */
     public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI,  // hacked flags in it...
             patch_t patch);
+
+    void DrawPatchColScaled(int x,  patch_t patch,int col, IVideoScale vs,
+            int screen);
     
 }
