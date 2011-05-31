@@ -199,7 +199,7 @@ SpriteManager,IVideoScaleAware,ILimitResettable{
  ( int       blocks,
  int       detail )
  {
-     System.out.println("SetViewSize");
+  //   System.out.println("SetViewSize");
   setsizeneeded = true;
   setblocks = blocks;
   setdetail = detail;
@@ -4313,7 +4313,7 @@ validcount++;
           if (scaledviewwidth == SCREENWIDTH)
               return;
 
-          top = ((SCREENHEIGHT - SBARHEIGHT) - viewheight) / 2;
+          top = ((SCREENHEIGHT - DM.ST.getHeight()) - viewheight) / 2;
           side = (SCREENWIDTH - scaledviewwidth) / 2;
 
           // copy top and one line of left side
@@ -4333,7 +4333,7 @@ validcount++;
           }
 
           // ?
-          V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT - SBARHEIGHT);
+          V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT - DM.ST.getHeight());
       }
 
       /**
@@ -4368,8 +4368,10 @@ validcount++;
               scaledviewwidth = setblocks*(SCREENWIDTH/10);
               // Height can only be a multiple of 8.
               viewheight = (short) ((setblocks*(SCREENHEIGHT- DM.ST.getHeight())/10)&~7);
+              //viewheight-=8; // Correct to lower multiple.
+              System.out.println("Viewheight "+viewheight);
           }
-          
+         
           detailshift = setdetail;
           viewwidth = scaledviewwidth>>detailshift;
           
@@ -4564,7 +4566,7 @@ validcount++;
           if (width == SCREENWIDTH)
               viewwindowy = 0;
           else
-              viewwindowy = (SCREENHEIGHT - SBARHEIGHT - height) >> 1;
+              viewwindowy = (SCREENHEIGHT - DM.ST.getHeight() - height) >> 1;
 
           // Preclaculate all row offsets.
           for (i = 0; i < height; i++)
