@@ -473,7 +473,7 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         this.reactiontime=f.readLEInt();        
         this.threshold=f.readLEInt();
         this.playerid=f.readLEInt(); // TODO: player. Non null should mean that it IS a player.
-        this.lastlook=f.readInt();
+        this.lastlook=f.readLEInt();
         spawnpoint.read(f);
         f.skipBytes(4); // TODO: tracer
      }
