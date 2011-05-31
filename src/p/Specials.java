@@ -1,5 +1,6 @@
 package p;
 
+import doom.player_t;
 import m.fixed_t;
 import static m.fixed_t.*;
 import rr.line_t;
@@ -9,7 +10,7 @@ import rr.side_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Specials.java,v 1.5 2011/02/11 00:11:13 velktron Exp $
+// $Id: Specials.java,v 1.6 2011/05/31 16:33:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -128,7 +129,6 @@ public static final int GLOWSPEED	=		8;
 public static final int STROBEBRIGHT=		5;
 public static final int FASTDARK	=		15;
 public static final int SLOWDARK	=		35;
-}
 
 
 public void    P_SpawnFireFlicker (sector_t sector);
@@ -151,7 +151,7 @@ EV_LightTurnOn
   int		bright );
 
 public void    T_Glow(glow_t g);
-public void    P_SpawnGlowingLight(sector_t* sector);
+public void    P_SpawnGlowingLight(sector_t sector);
 
  // max # of wall switches in a level
 public static final int MAXSWITCHES	=	50;
@@ -160,7 +160,7 @@ public static final int MAXSWITCHES	=	50;
 public static final int MAXBUTTONS		=16;
 
  // 1 second, in ticks. 
-#public static final int BUTTONTIME   =   35         ;    
+public static final int BUTTONTIME   =   35         ;    
 
 //extern button_t	buttonlist[MAXBUTTONS]; 
 
@@ -186,9 +186,9 @@ EV_DoPlat
   plattype_e	type,
   int		amount );
 
-void    P_AddActivePlat(plat_t* plat);
-void    P_RemoveActivePlat(plat_t* plat);
-void    EV_StopPlat(line_t* line);
+void    P_AddActivePlat(plat_t plat);
+void    P_RemoveActivePlat(plat_t plat);
+void    EV_StopPlat(line_t line);
 void    P_ActivateInStasis(int tag);
 
 public static final int VDOORSPEED	=	FRACUNIT*2;
@@ -219,7 +219,6 @@ P_SpawnDoorRaiseIn5Mins
   int		secnum );
 
 }
-
 
 // UNUSED
 //
@@ -356,5 +355,4 @@ EV_Teleport
 ( line_t*	line,
   int		side,
   mobj_t*	thing );
-
-}
+*/
