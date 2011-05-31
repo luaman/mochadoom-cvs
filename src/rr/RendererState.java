@@ -321,7 +321,7 @@ validcount++;
      }          
      
      // Found a visplane, but we can't add anymore.
-     if (lastvisplane == MAXVISPLANES){
+     if (lastvisplane == visplanes.length){
      //I.Error ("R_FindPlane: no more visplanes");
          ResizeVisplanes();
      
@@ -2507,8 +2507,8 @@ validcount++;
             drawseg_t seg;
 
             // don't overflow and crash
-            if (ds_p == MAXDRAWSEGS)
-            return;     
+            if (ds_p == drawsegs.length)
+            	ResizeDrawsegs();     
                 
         if( RANGECHECK){
             if (start >=viewwidth || start > stop)
@@ -3300,7 +3300,7 @@ validcount++;
             // SPLIT: make a new visplane at "last" position, copying materials and light.
             // TODO: visplane overflows could occur at this point.
             
-            if (lastvisplane==MAXVISPLANES){
+            if (lastvisplane==visplanes.length){
                 ResizeVisplanes();
             }
                       
