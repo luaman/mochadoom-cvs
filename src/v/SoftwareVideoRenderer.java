@@ -528,6 +528,10 @@ public abstract class SoftwareVideoRenderer
                     || scrn>4);
     }
 
+  public void DrawPatchSolidScaled ( int x, int y,  int scrn, IVideoScale vs, patch_t patch ){
+      this.DrawPatchSolidScaled(x, y, vs.getScalingX(), vs.getScalingY(),scrn, patch);
+  }
+  
   /**
    * V_DrawPatchFlipped 
    * Masks a column based masked pic to the screen.
