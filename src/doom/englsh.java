@@ -3,7 +3,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: englsh.java,v 1.4 2011/05/31 21:45:51 velktron Exp $
+// $Id: englsh.java,v 1.5 2011/05/31 21:46:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -210,7 +210,7 @@ public final static String  HUSTR_30="level 30: icon of sin";
 
 public final static String  HUSTR_31="level 31: wolfenstein";
 public final static String  HUSTR_32="level 32: grosse";
-public final static String  HUSTR_33="level 33: Betray";
+public final static String  HUSTR_33="level 33: betray";
 
 public final static String  PHUSTR_1="level 1: congo";
 public final static String  PHUSTR_2="level 2: well of souls";
