@@ -51,6 +51,8 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
 
     public void DrawPatchSolidScaled ( int x, int y,int m, int n, int scrn, patch_t patch );
     
+    public void DrawPatchSolidScaled ( int x, int y,  int scrn, IVideoScale vs, patch_t patch );
+    
     // Draw a linear block of pixels into the view buffer.
     public void DrawBlock(int x, int y, int scrn, int width, int height,
             byte[] src);
