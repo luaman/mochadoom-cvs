@@ -3,7 +3,7 @@ package w;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.17 2011/05/29 22:15:32 velktron Exp $
+// $Id: EndLevel.java,v 1.18 2011/05/31 12:25:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package w;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.18  2011/05/31 12:25:14  velktron
+// Endlevel -mostly- scaled correctly.
+//
 // Revision 1.17  2011/05/29 22:15:32  velktron
 // Introduced IRandom interface.
 //
@@ -92,6 +95,7 @@ package w;
 
 import static data.Defines.*;
 import static data.Limits.*;
+import static v.DoomVideoRenderer.*;
 import i.DoomStatusAware;
 import defines.*;
 import data.sounds.musicenum_t;
@@ -292,14 +296,14 @@ protected void drawLF()
     int y = WI_TITLEY;
 
     // draw <LevelName> 
-    V.DrawPatch((SCREENWIDTH - lnames[wbs.last].width)/2,
-		y, FB, lnames[wbs.last]);
+    V.DrawScaledPatch((SCREENWIDTH - lnames[wbs.last].width*BEST_X_SCALE)/2,
+        y, V_NOSCALESTART|FB,vs, lnames[wbs.last]);
 
     // draw "Finished!"
-    y += (5*lnames[wbs.last].height)/4;
+    y += (5*lnames[wbs.last].height*BEST_Y_SCALE)/4;
     
-    V.DrawPatch((SCREENWIDTH - finished.width)/2,
-		y, FB, finished);
+    V.DrawScaledPatch((SCREENWIDTH - finished.width*BEST_X_SCALE)/2,
+        y, V_NOSCALESTART|FB,vs, finished);
 }
 
 
@@ -310,14 +314,16 @@ protected void drawEL()
     int y = WI_TITLEY;
 
     // draw "Entering"
-    V.DrawPatch((SCREENWIDTH - entering.width)/2,
-		y, FB, entering);
-
+    V./*DrawPatchDirect*/DrawScaledPatch((SCREENWIDTH - entering.width*BEST_X_SCALE)/2,
+        y, V_NOSCALESTART|FB,vs, entering);
+    
+    
     // draw level
-    y += (5*lnames[wbs.next].height)/4;
+    y += (5*lnames[wbs.next].height*BEST_Y_SCALE)/4;
 
-    V.DrawPatch((SCREENWIDTH - lnames[wbs.next].width)/2,
-		y, FB, lnames[wbs.next]);
+
+    V./*DrawPatchDirect*/DrawScaledPatch((SCREENWIDTH - lnames[wbs.next].width*BEST_X_SCALE)/2,
+        y, V_NOSCALESTART|FB,vs, lnames[wbs.next]);
 
 }
 
@@ -366,8 +372,10 @@ drawOnLnode
 
     if (fits && i<2)
     {
-	V.DrawPatch(lnodes[wbs.epsd][n].x, lnodes[wbs.epsd][n].y,
-		    FB, c[i]);
+	//V.DrawPatch(lnodes[wbs.epsd][n].x, lnodes[wbs.epsd][n].y,
+	//	    FB, c[i]);
+        V./*DrawPatchDirect*/DrawScaledPatch(lnodes[wbs.epsd][n].x, lnodes[wbs.epsd][n].y,
+            FB, vs,c[i]);
     }
     else
     {
@@ -476,7 +484,7 @@ protected void drawAnimatedBack()
 	a = anims[wbs.epsd][i];
 
 	if (a.ctr >= 0)
-	    V.DrawPatch(a.loc.x, a.loc.y, FB, a.p[a.ctr]);
+	    V.DrawScaledPatch(a.loc.x, a.loc.y, FB,vs, a.p[a.ctr]);
     }
 
 }
@@ -532,14 +540,14 @@ drawNum
     // draw the new number
     while ((digits--)!=0)
     {
-	x -= fontwidth;
-	V.DrawPatch(x, y, FB, num[ n % 10 ]);
+	x -= fontwidth*BEST_X_SCALE;
+	V.DrawScaledPatch(x, y, V_NOSCALESTART|FB,vs, num[ n % 10 ]);
 	n /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
-	V.DrawPatch(x-=8, y, FB, wiminus);
+	V.DrawScaledPatch(x-=8*BEST_X_SCALE, y, V_NOSCALESTART|FB,vs, wiminus);
 
     return x;
 
@@ -556,7 +564,7 @@ drawPercent
     if (p < 0)
 	return;
 
-    V.DrawPatch(x, y, FB, percent);
+    V.DrawScaledPatch(x, y, V_NOSCALESTART|FB,vs, percent);
     drawNum(x, y, p, -1);
 }
 
@@ -585,19 +593,19 @@ protected void drawTime
 	do
 	{
 	    n = (t / div) % 60;
-	    x = drawNum(x, y, n, 2) - colon.width;
+	    x = drawNum(x, y, n, 2) - colon.width*BEST_X_SCALE;
 	    div *= 60;
 
 	    // draw
 	    if ((div==60) || (t / div)>0)
-		V.DrawPatch(x, y, FB, colon);
+		V.DrawScaledPatch(x, y, V_NOSCALESTART|FB, vs,colon);
 	    
 	} while ((t / div)>0);
     }
     else
     {
 	// "sucks"
-	V.DrawPatch(x - sucks.width, y, FB, sucks); 
+	V.DrawScaledPatch(x - sucks.width*BEST_X_SCALE, y, V_NOSCALESTART|FB, vs,sucks); 
     }
 }
 
@@ -1319,7 +1327,7 @@ protected void drawStats()
     // line height
     int lh;	
 
-    lh = (3*num[0].height)/2;
+    lh = (3*num[0].height*BEST_Y_SCALE)/2;
 
     slamBackground();
 
@@ -1328,21 +1336,21 @@ protected void drawStats()
     
     drawLF();
 
-    V.DrawPatch(SP_STATSX, SP_STATSY, FB, kills);
+    V.DrawScaledPatch(SP_STATSX, SP_STATSY, V_NOSCALESTART|FB,vs, kills);
     drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
 
-    V.DrawPatch(SP_STATSX, SP_STATSY+lh, FB, items);
+    V.DrawScaledPatch(SP_STATSX, SP_STATSY+lh, V_NOSCALESTART|FB,vs, items);
     drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
 
-    V.DrawPatch(SP_STATSX, SP_STATSY+2*lh, FB, sp_secret);
+    V.DrawScaledPatch(SP_STATSX, SP_STATSY+2*lh, V_NOSCALESTART|FB,vs, sp_secret);
     drawPercent(SCREENWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
 
-    V.DrawPatch(SP_TIMEX, SP_TIMEY, FB, time);
+    V.DrawScaledPatch(SP_TIMEX, SP_TIMEY, V_NOSCALESTART|FB,vs, time);
     drawTime(SCREENWIDTH/2 - SP_TIMEX, SP_TIMEY, cnt_time);
 
     if (wbs.epsd < 3)
     {
-	V.DrawPatch(SCREENWIDTH/2 + SP_TIMEX, SP_TIMEY, FB, par);
+	V.DrawScaledPatch(SCREENWIDTH/2 + SP_TIMEX, SP_TIMEY, V_NOSCALESTART|FB,vs, par);
 	drawTime(SCREENWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
     }
 
@@ -1437,9 +1445,9 @@ protected void loadData()
           name= "INTERPIC";
     }
 
-    // background
+    // background - draw it to screen 1 for quick redraw.
     bg = (patch_t) W.CacheLumpName(name, PU_CACHE,patch_t.class);    
-    V.DrawPatch(0, 0, 1, bg);
+    V.DrawPatchSolidScaled(0, 0, BEST_X_SCALE, BEST_Y_SCALE,1, bg);
 
 
     // UNUSED unsigned char *pic = screens[1];
@@ -1776,6 +1784,8 @@ public void updateStatus(DoomStatus DS) {
 protected int SCREENWIDTH;
 protected int SCREENHEIGHT;
 protected IVideoScale vs;
+protected int BEST_X_SCALE;
+protected int BEST_Y_SCALE;
 
 
 @Override
@@ -1787,7 +1797,9 @@ public void setVideoScale(IVideoScale vs) {
 public void initScaling() {
     this.SCREENHEIGHT=vs.getScreenHeight();
     this.SCREENWIDTH=vs.getScreenWidth();
-
+    this.BEST_X_SCALE=vs.getScalingX();
+    this.BEST_Y_SCALE=vs.getScalingY();
+    
     // Pre-scale stuff.
     SP_STATSX       =50*vs.getSafeScaling();
     SP_STATSY      = 50*vs.getSafeScaling();;
