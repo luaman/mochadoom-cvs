@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.18 2011/05/31 12:39:49 velktron Exp $
+// $Id: Finale.java,v 1.19 2011/05/31 16:26:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.18 2011/05/31 12:39:49 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.19 2011/05/31 16:26:47 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -388,7 +388,7 @@ public void StartFinale ()
       new castinfo_t(CC_ARCH, mobjtype_t.MT_VILE),
       new castinfo_t(CC_SPIDER, mobjtype_t.MT_SPIDER),
       new castinfo_t(CC_CYBER, mobjtype_t.MT_CYBORG),
-      new castinfo_t(CC_HERO, mobjtype_t.MT_PLAYER),
+      new castinfo_t(CC_HERO, mobjtype_t.MT_PLAYER),      
       new castinfo_t(null,null)
   };
 
@@ -634,7 +634,6 @@ protected void afterstopattack(){
       this.CastPrint (castorder[castnum].name);
       
       // draw the current frame in the middle of the screen
-      // TODO: Sprites are in Renderer;
       sprdef = R.getSprites()[caststate.sprite.ordinal()];
       sprframe = sprdef.spriteframes[ caststate.frame & FF_FRAMEMASK];
       lump = sprframe.lump[0];
@@ -725,17 +724,17 @@ protected void afterstopattack(){
       for ( x=0 ; x<320 ; x++)
       {
       if (x+scrolled < 320)
-          this.DrawPatchCol (x, p1, x+scrolled);
+          V.DrawPatchColScaled (x, p1, x+scrolled,vs,0);
       else
-          this.DrawPatchCol (x, p2, x+scrolled - 320);       
+          V.DrawPatchColScaled (x, p2, x+scrolled - 320,vs,0);       
       }
       
       if (finalecount < 1130)
       return;
       if (finalecount < 1180)
       {
-      V.DrawPatch ((320-13*8)/2,
-               (320-8*8)/2,0, W.CachePatchName ("END0",PU_CACHE));
+      V.DrawScaledPatch ((320-13*8)/2,
+               (320-8*8)/2,0,vs, W.CachePatchName ("END0",PU_CACHE));
       laststage = 0;
       return;
       }
@@ -750,7 +749,7 @@ protected void afterstopattack(){
       }
       
       name=("END"+stage);
-      V.DrawPatch ((320-13*8)/2, (320-8*8)/2,0, W.CachePatchName (name,PU_CACHE));
+      V.DrawScaledPatch ((320-13*8)/2, (320-8*8)/2,0, vs,W.CachePatchName (name,PU_CACHE));
   }
 
 
@@ -773,21 +772,21 @@ protected void afterstopattack(){
       {
         case 1:
           if ( DS.isCommercial())
-            V.DrawPatch (0,0,0,
+            V.DrawPatchSolidScaled (0,0,this.SAFE_SCALE,this.SAFE_SCALE,0,
                W.CachePatchName("CREDIT",PU_CACHE));
           else
-            V.DrawPatch (0,0,0,
+              V.DrawPatchSolidScaled (0,0,this.SAFE_SCALE,this.SAFE_SCALE,0,
                 W.CachePatchName("HELP2",PU_CACHE));
           break;
         case 2:
-          V.DrawPatch(0,0,0,
+            V.DrawPatchSolidScaled (0,0,this.SAFE_SCALE,this.SAFE_SCALE,0,
               W.CachePatchName("VICTORY2",PU_CACHE));
           break;
         case 3:
           BunnyScroll ();
           break;
         case 4:
-          V.DrawPatch (0,0,0,
+            V.DrawPatchSolidScaled (0,0,this.SAFE_SCALE,this.SAFE_SCALE,0,
                W.CachePatchName("ENDPIC",PU_CACHE));
           break;
       }
