@@ -79,7 +79,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.54 2011/05/31 16:26:10 velktron Exp $
+// $Id: DoomMain.java,v 1.55 2011/05/31 17:10:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -105,7 +105,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.54 2011/05/31 16:26:10 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.55 2011/05/31 17:10:57 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -881,10 +881,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // If any of the previous succeeded, try grabbing the filename.
         if ((normaldemo||fastdemo||singletics) && p < CM.getArgc()-1)
-        {
+        {   
             loaddemo=CM.getArgv(p+1);
             AddFile (loaddemo+".lmp");
             System.out.printf("Playing demo %s.lmp.\n",loaddemo);
+            autostart=true;
         }
 
         // get skill / episode / map from parms
@@ -892,7 +893,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         startskill = skill_t.sk_medium;
         startepisode = 1;
         startmap = 1;
-        autostart = false;
+        //autostart = false;
 
 
         p = CM.CheckParm ("-skill");
@@ -1094,6 +1095,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (singletics)
         {
             TimeDemo (loaddemo);
+            autostart = true;
             DoomLoop ();  // never returns
         }
 
@@ -1133,6 +1135,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         {
             singledemo = true;              // quit after one demo
             if (fastdemo) timingdemo=true;
+            InitNew (startskill, startepisode, startmap);
+            gamestate=gamestate_t.GS_DEMOSCREEN;
             DeferedPlayDemo (loaddemo);
             DoomLoop ();  // never returns
         }
@@ -2741,16 +2745,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         demobuffer.setNomonsters(nomonsters);
         demobuffer.setConsoleplayer(consoleplayer);
         demobuffer.setPlayeringame(playeringame);
-    } 
-
-
-
-
+    }
+    
     String   defdemoname;
-
-
-
-
+    
     /**
      * G_PlayDemo 
      */
@@ -2758,7 +2756,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public void DeferedPlayDemo (String name) 
     { 
         defdemoname = name; 
-        // TODO: set to nothing for now.
         gameaction = gameaction_t.ga_playdemo; 
     } 
 
@@ -3934,6 +3931,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.55  2011/05/31 17:10:57  velktron
+//Fixed demo autostart
+//
 //Revision 1.54  2011/05/31 16:26:10  velktron
 //Sprite buffer reset.
 //
