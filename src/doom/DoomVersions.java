@@ -72,7 +72,7 @@ public class DoomVersions {
 	public GameMode_t tryOnlyOne(String iwad, String doomwaddir) {
 		
 		// Is it a known and valid version?
-		GameMode_t tmp=VersionChecker.get(iwad);
+		GameMode_t tmp=VersionChecker.get(iwad.toLowerCase());
 		if (tmp!=null) {
 		// Can we read it?
 		if (C2JUtils.testAccess(doomwaddir+iwad, "r"))

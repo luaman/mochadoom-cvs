@@ -79,7 +79,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.56 2011/05/31 21:45:51 velktron Exp $
+// $Id: DoomMain.java,v 1.57 2011/05/31 22:43:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -105,7 +105,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.56 2011/05/31 21:45:51 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.57 2011/05/31 22:43:18 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -586,6 +586,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         {
         	System.out.println("-iwad specified. Will be used with priority\n");
             String test=CM.getArgv(p+1);
+            
+            // It might be quoted.
+            test=C2JUtils.unquoteIfQuoted(test,'"');
+            
             String separator=System.getProperty("file.separator");
             doomwaddir=test.substring(0, 1+test.lastIndexOf(separator));
             String iwad=test.substring( 1+test.lastIndexOf(separator));
@@ -862,7 +866,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             // until end of parms or another - preceded parm
             modifiedgame = true;            // homebrew levels
             while (++p != CM.getArgc() && CM.getArgv(p).charAt(0) != '-')
-                AddFile (CM.getArgv(p));
+                AddFile (C2JUtils.unquoteIfQuoted(CM.getArgv(p),'"'));
         }
         
         p = CM.CheckParm ("-playdemo");
@@ -3941,6 +3945,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.57  2011/05/31 22:43:18  velktron
+//Added support for quoted IWAD and PWAD args.
+//
 //Revision 1.56  2011/05/31 21:45:51  velktron
 //Added XBLA version as explicitly supported.
 //
