@@ -264,8 +264,7 @@ public class C2JUtils {
      * @return
      */
     
-    public static String unquote(String s, char c) {
-        System.out.printf("Unquoting %s \n",s);
+    public static String unquote(String s, char c) {        
         
         int firstq=s.indexOf(c);
         int lastq=s.lastIndexOf(c);
