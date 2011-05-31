@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.19 2011/05/31 16:26:47 velktron Exp $
+// $Id: Finale.java,v 1.20 2011/05/31 21:46:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.19 2011/05/31 16:26:47 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.20 2011/05/31 21:46:37 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -79,32 +79,13 @@ public class Finale implements DoomStatusAware, IVideoScaleAware{
   private static int TEXTSPEED   =3;
   private static int TEXTWAIT  =  250;
 
-  String   e1text = E1TEXT;
-  String   e2text = E2TEXT;
-  String   e3text = E3TEXT;
-  String   e4text = E4TEXT;
+  String[] doom_text = {E1TEXT,E2TEXT,E3TEXT,E4TEXT};
 
-  String   c1text = C1TEXT;
-  String   c2text = C2TEXT;
-  String   c3text = C3TEXT;
-  String   c4text = C4TEXT;
-  String   c5text = C5TEXT;
-  String   c6text = C6TEXT;
+  String[] doom2_text ={C1TEXT,C2TEXT,C3TEXT, C4TEXT,C5TEXT, C6TEXT};
 
-  String   p1text = P1TEXT;
-  String   p2text = P2TEXT;
-  String   p3text = P3TEXT;
-  String   p4text = P4TEXT;
-  String   p5text = P5TEXT;
-  String   p6text = P6TEXT;
-
-  String   t1text = T1TEXT;
-  String   t2text = T2TEXT;
-  String   t3text = T3TEXT;
-  String   t4text = T4TEXT;
-  String   t5text = T5TEXT;
-  String   t6text = T6TEXT;
-
+  String[] plut_text ={P1TEXT,P2TEXT,P3TEXT, P4TEXT,P5TEXT, P6TEXT};
+  String[] tnt_text ={T1TEXT,T2TEXT,T3TEXT, T4TEXT,T5TEXT, T6TEXT};
+  
   String   finaletext;
   String   finaleflat;
 
@@ -117,7 +98,27 @@ public void StartFinale ()
       DS.gamestate = gamestate_t.GS_FINALE;
       DS.viewactive = false;
       DS.automapactive = false;
+      String[] texts = null;
 
+      // Pick proper text.
+      switch (DS.getGameMode()){
+      case commercial:
+      case pack_xbla:
+      	texts=doom2_text;
+      	break;
+      case pack_tnt:
+      	texts=tnt_text;
+      	break;
+      case pack_plut:
+      	texts=plut_text;
+      	break;
+      case shareware:
+      case registered:
+      case retail:
+    	  texts=doom_text;
+    	  break;
+      }
+      
       // Okay - IWAD dependend stuff.
       // This has been changed severly, and
       //  some stuff might have changed in the process.
@@ -130,24 +131,24 @@ public void StartFinale ()
         case retail:
         {
             S.ChangeMusic(musicenum_t.mus_victor, true);
-      
+            
       switch (DS.gameepisode)
       {
         case 1:
           finaleflat = "FLOOR4_8";
-          finaletext = e1text;
+          finaletext = texts[0];
           break;
         case 2:
           finaleflat = "SFLR6_1";
-          finaletext = e2text;
+          finaletext = texts[1];
           break;
         case 3:
           finaleflat = "MFLR8_4";
-          finaletext = e3text;
+          finaletext = texts[2];
           break;
         case 4:
           finaleflat = "MFLR8_3";
-          finaletext = e4text;
+          finaletext = texts[3];
           break;
         default:
           // Ouch.
@@ -158,6 +159,7 @@ public void StartFinale ()
         
         // DOOM II and missions packs with E1, M34
         case commercial:
+        case pack_xbla:
         case pack_tnt:
         case pack_plut:
         {
@@ -167,27 +169,27 @@ public void StartFinale ()
         {
           case 6:
             finaleflat = "SLIME16";
-            finaletext = c1text;
+            finaletext = texts[0];
             break;
           case 11:
             finaleflat = "RROCK14";
-            finaletext = c2text;
+            finaletext = texts[1];
             break;
           case 20:
             finaleflat = "RROCK07";
-            finaletext = c3text;
+            finaleflat=texts[2];
             break;
           case 30:
             finaleflat = "RROCK17";
-            finaletext = c4text;
+            finaletext = texts[3];
             break;
           case 15:
             finaleflat = "RROCK13";
-            finaletext = c5text;
+            finaletext = texts[4];
             break;
           case 31:
             finaleflat = "RROCK19";
-            finaletext = c6text;
+            finaletext = texts[5];
             break;
           default:
             // Ouch.
@@ -201,7 +203,7 @@ public void StartFinale ()
         default:
             S.ChangeMusic(musicenum_t.mus_read_m, true);
       finaleflat = "F_SKY1"; // Not used anywhere else.
-      finaletext = c1text;  // FIXME - other text, music?
+      finaletext = doom2_text[1];;  // FIXME - other text, music?
       break;
       }
       
