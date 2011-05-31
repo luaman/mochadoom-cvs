@@ -8,7 +8,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.7 2011/05/30 15:51:32 velktron Exp $
+//$Id: Main.java,v 1.8 2011/05/31 16:27:14 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import doom.ICommandLineManager;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.8  2011/05/31 16:27:14  velktron
+//Resolution not handled here anymore.
+//
 //Revision 1.7  2011/05/30 15:51:32  velktron
 //*** empty log message ***
 //
@@ -59,29 +62,19 @@ import doom.ICommandLineManager;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.7 2011/05/30 15:51:32 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.8 2011/05/31 16:27:14 velktron Exp $";
 
     public static void main(String[] argv){
 
     	
     	  // These are the most essential
           DoomMain D=new DoomMain();
-
-          // 23/5/2011: Experimental dynamic resolution subsystem
-          VideoScaleInfo vs=new VideoScaleInfo(3.0f);          
+  
           
           ICommandLineManager CM=new CommandLine(argv);
           
           // 
           D.setCommandLineArgs(CM);
-          
-          // This should be set before ANYTHING involving
-          // the screen gets called... but it can be delayed until later.
-          D.setVideoScale(vs);
-          
-          // Initializing actually sets drawing positions, constants,
-          // etc.
-          D.initScaling();
           
           // Create AWT frame, but don't start it yet.
           D.Init();
