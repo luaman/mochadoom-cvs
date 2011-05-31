@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.35 2011/05/31 12:39:31 velktron Exp $
+// $Id: StatusBar.java,v 1.36 2011/05/31 13:32:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package st;
 // GNU General Public License for more details.
 //
 // $Log: StatusBar.java,v $
+// Revision 1.36  2011/05/31 13:32:03  velktron
+// Added V_SCALEOFFSET flag to doomguy's mug.
+//
 // Revision 1.35  2011/05/31 12:39:31  velktron
 // Face centering fixed.
 //
@@ -180,7 +183,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.35 2011/05/31 12:39:31 velktron Exp $";
+        "$Id: StatusBar.java,v 1.36 2011/05/31 13:32:03 velktron Exp $";
 
     // /// STATUS //////////
 
@@ -1683,7 +1686,7 @@ public class StatusBar extends AbstractStatusBar   {
                 }
                 
                 //System.out.printf("Drawing at x y %d %d w h %d %d\n",this.x,this.y,p[thevalue].width,p[thevalue].height);
-                V.DrawScaledPatch(this.x,this.y, V_NOSCALESTART|FG, vs,this.p[thevalue]);
+                V.DrawScaledPatch(this.x,this.y, V_SCALEOFFSET|V_NOSCALESTART|FG, vs,this.p[thevalue]);
                 
                 this.oldinum = thevalue;
             }
