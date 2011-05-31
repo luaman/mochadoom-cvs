@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.17 2011/05/24 13:40:56 velktron Exp $
+// $Id: Finale.java,v 1.18 2011/05/31 12:39:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.17 2011/05/24 13:40:56 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.18 2011/05/31 12:39:49 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -606,7 +606,7 @@ protected void afterstopattack(){
       }
           
       w = hu_font[c].width;
-      V.DrawPatch(cx, 180, 0, hu_font[c]);
+      V.DrawScaledPatch(cx, 180, 0,vs, hu_font[c]);
       cx+=w;
       }
       
@@ -644,10 +644,10 @@ protected void afterstopattack(){
               
         patch = W.CachePatchNum(lump+R.getFirstSpriteLump(), PU_CACHE);
 
-      if (flip)
-      V.DrawPatchFlipped (160,170,0,patch);
-      else
-      V.DrawPatch (160,170,0,patch);
+        if (flip)
+            V.DrawScaledPatch (160,170,0 | DoomVideoRenderer.V_FLIPPEDPATCH,vs,patch);
+        else
+            V.DrawScaledPatch (160,170,0,vs,patch);
   }
 
 
