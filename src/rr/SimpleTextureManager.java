@@ -503,9 +503,9 @@ public class SimpleTextureManager
         {
 
         realpatch = W.CachePatchNum(patch[i].patch, PU_CACHE);
-            if (realpatch.name=="SKY1"){
-                System.out.println("Sky found!");
-            }
+       //     if (realpatch.name=="SKY1"){
+       //         System.out.println("Sky found!");
+       //     }
         x1 = patch[i].originx;
         x2 = x1 + realpatch.width;
 

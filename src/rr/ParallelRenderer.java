@@ -684,29 +684,34 @@ public void RenderPlayerView (player_t player)
 public void Init ()
 
 {
-	drawsegs=new drawseg_t[MAXDRAWSEGS];
-	C2JUtils.initArrayOfObjects(drawsegs);
+    // Any good reason for this to be here?
+    //drawsegs=new drawseg_t[MAXDRAWSEGS];
+    //C2JUtils.initArrayOfObjects(drawsegs);
 	
 	// DON'T FORGET ABOUT MEEEEEE!!!11!!!
 	this.screen=V.getScreen(0);
 	
-	InitData ();
    System.out.print("\nR_InitData");
+   InitData ();
    //InitPointToAngle ();
    System.out.print("\nR_InitPointToAngle");
-   InitTables ();
+   
    // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
    System.out.print ("\nR_InitTables");
-
+   InitTables ();
+   
    SetViewSize (DM.M.getScreenBlocks(), DM.M.getDetailLevel());
-   MyPlanes.InitPlanes ();
+   
    System.out.print ("\nR_InitPlanes");
-   InitLightTables ();
+   MyPlanes.InitPlanes ();
+   
    System.out.print("\nR_InitLightTables");
+   InitLightTables ();
    
    System.out.print("\nR_InitSkyMap: "+TexMan.InitSkyMap ());
-   InitTranslationTables ();
+   
    System.out.print("\nR_InitTranslationsTables");
+   InitTranslationTables ();
    
    System.out.print("\nR_InitRWISubsystem: ");
    InitRWISubsystem();

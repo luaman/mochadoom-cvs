@@ -97,7 +97,7 @@ SpriteManager,IVideoScaleAware,ILimitResettable{
     protected static final boolean DEBUG=false;
     protected static final boolean DEBUG2=false;
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
-    protected int[] BLANKCACHEDHEIGHT;//=new int[SCREENHEIGHT];
+    protected int[] BLANKCACHEDHEIGHT;
     
     //////////////////////////////// STATUS ////////////////
 
@@ -2362,12 +2362,20 @@ validcount++;
     }
     
     
-    protected abstract class SegDrawer{
+    protected abstract class SegDrawer implements ILimitResettable{
 
         protected static final int HEIGHTBITS   =   12;
         protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
         
-        
+        public void resetLimits(){
+            drawseg_t[] tmp=new drawseg_t[MAXDRAWSEGS];
+            System.arraycopy(drawsegs, 0, tmp, 0, MAXDRAWSEGS);
+
+            // Now, that was quite a haircut!.
+            drawsegs=tmp;   
+          
+            System.out.println("Drawseg buffer cut back to original limit of "+MAXDRAWSEGS);
+        }
         
         /** R_RenderMaskedSegRange
          * 
@@ -2375,7 +2383,7 @@ validcount++;
          * @param x1
          * @param x2
          */
-        public void
+        public final void
         RenderMaskedSegRange
         ( drawseg_t ds,
           int       x1,
@@ -3110,7 +3118,9 @@ validcount++;
         protected column_t    col;
         
         public SegDrawer(){
-            col=new column_t();          
+            col=new column_t();
+            drawsegs=new drawseg_t[MAXDRAWSEGS];
+            C2JUtils.initArrayOfObjects(drawsegs);
            }
         
     }
@@ -6129,6 +6139,7 @@ validcount++;
         public void resetLimits(){
             // Call it only at the beginning of new levels.
             MyThings.resetLimits();
+            MySegs.resetLimits();
         }
       
 }
