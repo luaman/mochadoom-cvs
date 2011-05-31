@@ -4,7 +4,7 @@ import doom.DoomMain;
 
 public class Wiper extends AbstractWiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.12 2011/05/30 15:46:15 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.13 2011/05/31 16:26:35 velktron Exp $";
     
     protected wipefun[] wipes;
     
@@ -163,7 +163,6 @@ public class Wiper extends AbstractWiper {
     {
         int i, r;
         
-        System.out.println("Called!");
         // copy start screen to main screen
         System.arraycopy(wipe_scr_start, 0,wipe_scr, 0,width*height);
         
