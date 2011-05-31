@@ -3,7 +3,7 @@ package doom;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: englsh.java,v 1.2 2011/05/23 10:12:39 velktron Exp $
+// $Id: englsh.java,v 1.3 2011/05/31 16:25:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -686,6 +686,9 @@ public final static String  CC_MANCU="MANCUBUS";
 public final static String  CC_ARCH="ARCH-VILE";
 public final static String  CC_SPIDER="THE SPIDER MASTERMIND";
 public final static String  CC_CYBER="THE CYBERDEMON";
+public final static String  CC_NAZI="WAFFEN SS. SIEG HEIL!";
+public final static String  CC_KEEN="COMMANDER KEEN";
+public final static String  CC_BARREL="EXPLODING BARREL";
 public final static String  CC_HERO="OUR HERO";
 
 }
