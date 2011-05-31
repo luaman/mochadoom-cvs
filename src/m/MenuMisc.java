@@ -27,7 +27,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.22 2011/05/31 09:57:45 velktron Exp $
+// $Id: MenuMisc.java,v 1.23 2011/05/31 13:33:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -51,7 +51,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.22 2011/05/31 09:57:45 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.23 2011/05/31 13:33:54 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -103,12 +103,7 @@ public abstract class MenuMisc{
     public static void LoadDefaults (DoomStatus DS)
     {
         int		i;
-        int		len;
         DoomFile	f;
-        String	def;
-        String	strparm;
-        String	newstring;
-        int		parm;
         boolean	isstring;
 
         // set everything to base values
@@ -121,7 +116,7 @@ public abstract class MenuMisc{
         if ((i>0) && i<DS.CM.getArgc()-1)
         {
             defaultfile = DS.CM.getArgv(i+1);
-            System.out.printf("	default file: %s\n",defaultfile);
+            //System.out.printf("	default file: %s\n",defaultfile);
         }
         else
             defaultfile = basedefault;
@@ -159,7 +154,7 @@ public abstract class MenuMisc{
 
                         // All settings should be lower case.
                         name=name.toLowerCase();
-                        System.out.printf("NAME: %s VALUE: %s\n",name,value);
+                        //System.out.printf("NAME: %s VALUE: %s\n",name,value);
                         Settings setme;
                         try {
                             setme=Enum.valueOf(Settings.class,name);
@@ -207,12 +202,12 @@ public abstract class MenuMisc{
                                       // Try it as a character. Must be quoted for
                                      // this to work, with a length of 3.
                                      fail=false;
-                                     System.out.printf("Trying %s\n",value);
+                                     //System.out.printf("Trying %s\n",value);
                                      if (value.length()==3 && 
                                          value.charAt(0)=='\'' &&
                                          value.charAt(2)=='\'') {
                                       setme.setvalue= value.charAt(1);
-                                     System.out.printf("%s set to value %d or character %c\n",setme.name(),setme.setvalue,value.charAt(1));
+                                     //System.out.printf("%s set to value %d or character %c\n",setme.name(),setme.setvalue,value.charAt(1));
                                      } else continue;
                                  } catch (NumberFormatException e){
                                      fail=true;
@@ -464,6 +459,9 @@ public void ScreenShot ()
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.23  2011/05/31 13:33:54  velktron
+// -verbosity
+//
 // Revision 1.22  2011/05/31 09:57:45  velktron
 // Fixed broken parsing of unspaced strings. It's never fun having to come up with your own function for string manipulation!
 //
