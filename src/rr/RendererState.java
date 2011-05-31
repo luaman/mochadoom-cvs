@@ -98,7 +98,8 @@ import doom.thinker_t;
  *
  */
 
-public abstract class RendererState implements DoomStatusAware, Renderer, SpriteManager,IVideoScaleAware{
+public abstract class RendererState implements DoomStatusAware, Renderer, 
+SpriteManager,IVideoScaleAware,ILimitResettable{
 
     protected static final boolean DEBUG=false;
     protected static final boolean DEBUG2=false;
@@ -457,27 +458,26 @@ validcount++;
  }
  
  protected final void ResizeVisplanes() {
-     visplane_t[] tmp=new visplane_t[MAXVISPLANES*2];
-     System.arraycopy(visplanes, 0, tmp, 0, MAXVISPLANES);
+     visplane_t[] tmp=new visplane_t[visplanes.length*2];
+     System.arraycopy(visplanes, 0, tmp, 0, visplanes.length);
      
-     C2JUtils.initArrayOfObjects(tmp,MAXVISPLANES,tmp.length);
+     C2JUtils.initArrayOfObjects(tmp,visplanes.length,tmp.length);
      
      // Bye bye, old visplanes.
      visplanes=tmp;   
-     MAXVISPLANES*=2;
     
      System.out.println("Visplane buffer resized. Actual capacity "+visplanes.length);
  }
  
  protected final void ResizeDrawsegs() {
-     drawseg_t[] tmp=new drawseg_t[this.MAXDRAWSEGS*2];
-     System.arraycopy(drawsegs, 0, tmp, 0, MAXDRAWSEGS);
+     drawseg_t[] tmp=new drawseg_t[drawsegs.length*2];
+     System.arraycopy(drawsegs, 0, tmp, 0, drawsegs.length);
      
-     C2JUtils.initArrayOfObjects(tmp,MAXDRAWSEGS,tmp.length);
+     C2JUtils.initArrayOfObjects(tmp,drawsegs.length,tmp.length);
      
-     // Bye bye, old visplanes.
+     // Bye bye, old drawsegs.
      drawsegs=tmp;   
-     MAXDRAWSEGS*=2;
+     //MAXDRAWSEGS*=2;
     
      System.out.println("Drawseg buffer resized. Actual capacity "+drawsegs.length);
  }
@@ -579,7 +579,7 @@ validcount++;
     
     /** Refresh of things, i.e. objects represented by sprites. */
     
-    protected final class Things implements IVideoScaleAware{
+    protected final class Things implements IVideoScaleAware, ILimitResettable{
 
         protected static final int MINZ    =            (FRACUNIT*4);
         protected static final int BASEYCENTER         =100;
@@ -593,6 +593,16 @@ validcount++;
             vsprsortedhead=new vissprite_t();
             unsorted=new vissprite_t();
             // ts=new ThreadSort<vissprite_t>(vissprites);
+        }
+        
+        public void resetLimits(){
+            vissprite_t[] tmp=new vissprite_t[MAXVISSPRITES];
+            System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
+
+            // Now, that was quite a haircut!.
+            vissprites=tmp;   
+          
+            System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
         }
         
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
@@ -712,7 +722,7 @@ validcount++;
        /**
         * R_InitSpriteDefs
         * Pass a null terminated list of sprite names (4 chars exactly) to be used.
-        * Builds the sprite rotation matrixes to accoun tfor horizontally flipped sprites.
+        * Builds the sprite rotation matrixes to account for horizontally flipped sprites.
         * Will report an error if the lumps are inconsistent.
         * Only called at startup.
         *
@@ -748,7 +758,7 @@ validcount++;
             // Just compare 4 characters as ints
             for (int i=0 ; i<numsprites ; i++)
             {
-            System.out.println("Preparing sprite "+i);
+            //System.out.println("Preparing sprite "+i);
             spritename = namelist[i];
             
             // FIXME: the original code actually set everything to "-1" here, including the 
@@ -772,9 +782,9 @@ validcount++;
                 char[] cname=W.GetLumpInfo(l).name.toCharArray();
                 if (cname.length==6 || cname.length==8) // Sprite names must be this way
                 
-                /* If the check is successful, we keep looking for more frames
-                 * for a particular sprite e.g. TROOAx, TROOHxHy etc.    
-                 */
+                // If the check is successful, we keep looking for more frames
+                // for a particular sprite e.g. TROOAx, TROOHxHy etc.    
+                //
                 if (W.GetLumpInfo(l).intname == intname)
                 {
                 frame = cname[4] - 'A';
@@ -797,13 +807,13 @@ validcount++;
                 }
             }
             
-            /* check the frames that were found for completeness
-             * This can only be -1 at this point if we didn't install
-             * a single frame successfuly.
-             */
+            // check the frames that were found for completeness
+            // This can only be -1 at this point if we didn't install
+            // a single frame successfuly.
+            //
             if (maxframe == -1)
             {
-                System.out.println("Sprite "+spritename+" has no frames!");
+                //System.out.println("Sprite "+spritename+" has no frames!");
                 getSprites()[i].numframes = 0;
                 // We move on to the next sprite with this one.
                 continue;
@@ -869,12 +879,7 @@ validcount++;
             vissprite_p=0;
         }
 
-
-        //
-        // 
-        //
-        vissprite_t overflowsprite=new vissprite_t();
-
+        private final vissprite_t overflowsprite=new vissprite_t();
         
         /**
          * R_NewVisSprite
@@ -893,13 +898,28 @@ validcount++;
          */
         public vissprite_t NewVisSprite ()
         {
-            if (vissprite_p == (MAXVISSPRITES-1))
-            return overflowsprite;
+            if (vissprite_p == (vissprites.length-1)) {
+                ResizeSprites();
+            }
+            //return overflowsprite;
             
             vissprite_p++;
             return vissprites[vissprite_p-1];
         }
+        
       
+        protected final void ResizeSprites() {
+            vissprite_t[] tmp=new vissprite_t[vissprites.length*2];
+            System.arraycopy(vissprites, 0, tmp, 0, vissprites.length);
+            
+            C2JUtils.initArrayOfObjects(tmp,vissprites.length,tmp.length);
+            
+            // Bye bye, old vissprites.
+            vissprites=tmp;   
+           
+            System.out.println("Vissprites resized. Actual capacity "+vissprites.length);
+        }
+        
         /**
          * R_DrawVisSprite
          *  mfloorclip and mceilingclip should also be set.
@@ -6110,6 +6130,12 @@ validcount++;
             
 
         }
-       
+
+//////////////////////////////   LIMIT RESETTING //////////////////
+        @Override
+        public void resetLimits(){
+            // Call it only at the beginning of new levels.
+            MyThings.resetLimits();
+        }
       
 }
