@@ -74,7 +74,8 @@ public class DoomStatus extends DoomContext {
     public boolean isCommercial(){
     	return (gamemod== GameMode_t.commercial ||
     			gamemod== GameMode_t.pack_plut ||
-    			gamemod== GameMode_t.pack_tnt);
+    			gamemod== GameMode_t.pack_tnt ||
+    			gamemod== GameMode_t.pack_xbla);
     }
     
     /** Retail means Ultimate.
@@ -510,6 +511,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.23  2011/05/31 21:45:51  velktron
+// Added XBLA version as explicitly supported.
+//
 // Revision 1.22  2011/05/30 15:50:42  velktron
 // Changed to work with new Abstract classes
 //

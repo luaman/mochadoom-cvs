@@ -79,7 +79,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.55 2011/05/31 17:10:57 velktron Exp $
+// $Id: DoomMain.java,v 1.56 2011/05/31 21:45:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -105,7 +105,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.55 2011/05/31 17:10:57 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.56 2011/05/31 21:45:51 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -558,6 +558,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         wadfiles[numwadfiles] = newfile;
     }
+    
 
     /**
      * IdentifyVersion
@@ -569,22 +570,35 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     public void IdentifyVersion ()
     {
 
-        String	doom1wad=null,
-        doomwad=null,
-        doomuwad=null,
-        doom2wad=null,
-        doom2fwad=null,
-        plutoniawad=null,
-        tntwad=null;
-
+        String home;
+        String doomwaddir;
+        DoomVersions vcheck=new DoomVersions();
+        
         // By default.
         language=Language_t.english;
-
+        
+        // First, check for -iwad parameter.
+        // If valid, then it trumps all others.
+        
+        int p;
+        p=CM.CheckParm("-iwad");
+        if (eval(p))
+        {
+        	System.out.println("-iwad specified. Will be used with priority\n");
+            String test=CM.getArgv(p+1);
+            String separator=System.getProperty("file.separator");
+            doomwaddir=test.substring(0, 1+test.lastIndexOf(separator));
+            String iwad=test.substring( 1+test.lastIndexOf(separator));
+            GameMode_t attempt=vcheck.tryOnlyOne(iwad,doomwaddir);
+            if (attempt!=null) {
+            	AddFile(doomwaddir+iwad);
+            	this.setGameMode(attempt);
+            	return;
+            }
+        } else {
         // Unix-like checking. Might come in handy sometimes.   
         // This should ALWAYS be activated, else doomwaddir etc. won't be defined.
 
-        String home;
-        String doomwaddir;
         doomwaddir = System.getenv("DOOMWADDIR");
         if (doomwaddir!=null){
                 System.out.println("DOOMWADDIR found. Will be used with priority\n");
@@ -600,28 +614,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // None found, using current.
         if (!eval(doomwaddir))
             doomwaddir = ".";
-
-        // Commercial.
-        doom2wad = (doomwaddir+ "/doom2.wad");
-
-        // Retail.
-        doomuwad = (doomwaddir+ "/doomu.wad");    
-
-        // Registered.
-        doomwad = (doomwaddir+ "/doom.wad");
-
-        // Shareware.
-        doom1wad = (doomwaddir+ "/doom1.wad");
-
-        // Bug, dear Shawn.
-        // Insufficient malloc, caused spurious realloc errors.
-        plutoniawad = (doomwaddir+ "/plutonia.wad");
-
-        tntwad = (doomwaddir+ "/tnt.wad");
-
-
-        // French stuff.
-        doom2fwad=(doomwaddir+ "/doom2f.wad");
+    
+        	vcheck.tryThemAll(doomwaddir);
+        }
 
         // MAES: Interesting. I didn't know of that :-o
         if (eval(CM.CheckParm ("-shdev")))
@@ -666,58 +661,66 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
 
-        if ( testAccess(doom2fwad,"r" ))
+        if ( testAccess(vcheck.doom2fwad,"r" ))
         {
             setGameMode(GameMode_t.commercial);
             // C'est ridicule!
             // Let's handle languages in config files, okay?
             language = Language_t.french;
             System.out.println("French version\n");
-            AddFile (doom2fwad);
+            AddFile (vcheck.doom2fwad);
             return;
         }
 
 
-        if ( testAccess(doom2wad,"r" ))
+        if ( testAccess(vcheck.doom2wad,"r" ))
         {
             setGameMode(GameMode_t.commercial);
-            AddFile (doom2wad);
+            AddFile (vcheck.doom2wad);
             return;
         }
 
-        if ( testAccess (plutoniawad, "r" ) )
+        if ( testAccess (vcheck.plutoniawad, "r" ) )
         {
             setGameMode(GameMode_t.pack_plut);
-            AddFile (plutoniawad);
+            AddFile (vcheck.plutoniawad);
             return;
         }
 
-        if ( testAccess ( tntwad, "r" ) )
+        if ( testAccess ( vcheck.tntwad, "r" ) )
         {
             setGameMode(GameMode_t.pack_tnt);
-            AddFile (tntwad);
+            AddFile (vcheck.tntwad);
             return;
         }
-
-        if ( testAccess (doomuwad,"r") )
+        
+        if ( testAccess ( vcheck.tntwad, "r" ) )
         {
-            // TODO auto-detect ultimate Doom even from doom.wad        	
-            setGameMode(GameMode_t.retail);
-            AddFile (doomuwad);
+            setGameMode(GameMode_t.pack_xbla);
+            AddFile (vcheck.xblawad);
             return;
         }
 
-        if ( testAccess (doomwad,"r") )
+        if ( testAccess (vcheck.doomuwad,"r") )
+        {
+            // TODO auto-detect ultimate Doom even from doom.wad
+        	// Maes: this is done later on.
+            setGameMode(GameMode_t.retail);
+            AddFile (vcheck.doomuwad);
+            return;
+        }
+
+        if ( testAccess (vcheck.doomwad,"r") )
         {
             setGameMode(GameMode_t.registered);
-            AddFile (doomwad);
+            AddFile (vcheck.doomwad);
             return;
         }
 
-        if ( testAccess (doom1wad,"r") )
+        if ( testAccess (vcheck.doom1wad,"r") )
         {
             setGameMode(GameMode_t.shareware);
-            AddFile (doom1wad);
+            AddFile (vcheck.doom1wad);
             return;
         }
 
@@ -1028,6 +1031,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         case commercial:
         case pack_tnt:
         case pack_plut:
+        case pack_xbla:
             System.out.print ("===========================================================================\n");
             System.out.print ("                 Commercial product - do not distribute!\n");
             System.out.print ("         Please report software piracy to the SPA: 1-800-388-PIR8\n");
@@ -1296,7 +1300,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             title.append(".");
             title.append(VERSION%100);
             title.append("                           ");
-            //gamemode=GameMode_t.commercial;
             break;
         case pack_tnt:
             title.append("                            ");
@@ -1305,7 +1308,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             title.append(".");
             title.append(VERSION%100);
             title.append("                           ");
-            //gamemode=GameMode_t.commercial;
+            break;
+        case pack_xbla:
+            title.append("                            ");
+            title.append("DOOM 2: No Rest for the Living v");
+            title.append(VERSION/100);
+            title.append(".");
+            title.append(VERSION%100);
+            title.append("                           ");
             break;
 
         default:
@@ -2168,7 +2178,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     { 
         // IF NO WOLF3D LEVELS, NO SECRET EXIT!
         if ( isCommercial()
-                && (W.CheckNumForName("map31")<0))
+                && (W.CheckNumForName("MAP31")<0))
             secretexit = false;
         else
             secretexit = true; 
@@ -3931,6 +3941,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.56  2011/05/31 21:45:51  velktron
+//Added XBLA version as explicitly supported.
+//
 //Revision 1.55  2011/05/31 17:10:57  velktron
 //Fixed demo autostart
 //
