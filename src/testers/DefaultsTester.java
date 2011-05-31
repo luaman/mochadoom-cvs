@@ -14,7 +14,7 @@ public class DefaultsTester {
     public static void main(String[] argv) {
 
     DoomStatus DS=new DoomStatus();
-    IDoomMenu dummy= new DummyMenu();
+    m.AbstractDoomMenu dummy= new DummyMenu();
     DS.M=dummy;
     DS.HU=new HU();
     DS.CM=new CommandLine(argv);
