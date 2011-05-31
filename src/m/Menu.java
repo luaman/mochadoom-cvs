@@ -414,14 +414,14 @@ public class Menu extends AbstractDoomMenu {
     private void DrawSaveLoadBorder(int x, int y) {
         int i;
 
-        V.DrawPatchDirect(x - 8, y + 7, 0, W.CachePatchName("M_LSLEFT"));
+        V.DrawScaledPatch(x - 8, y + 7, 0, vs,W.CachePatchName("M_LSLEFT"));
 
         for (i = 0; i < 24; i++) {
-            V.DrawPatchDirect(x, y + 7, 0, W.CachePatchName("M_LSCNTR"));
+            V.DrawScaledPatch(x, y + 7, 0, vs,W.CachePatchName("M_LSCNTR"));
             x += 8;
         }
 
-        V.DrawPatchDirect(x, y + 7, 0, W.CachePatchName("M_LSRGHT"));
+        V.DrawScaledPatch(x, y + 7, 0, vs,W.CachePatchName("M_LSRGHT"));
     }
 
     public void DrawThermo(int x, int y, int thermWidth, int thermDot) {
@@ -429,25 +429,25 @@ public class Menu extends AbstractDoomMenu {
         int i;
 
         xx = x;
-        V.DrawPatchDirect(xx, y, 0, W.CachePatchName("M_THERML"));
+        V.DrawScaledPatch(xx, y, 0, vs,W.CachePatchName("M_THERML"));
         xx += 8;
         for (i = 0; i < thermWidth; i++) {
-            V.DrawPatchDirect(xx, y, 0, W.CachePatchName("M_THERMM"));
+            V.DrawScaledPatch(xx, y, 0, vs,W.CachePatchName("M_THERMM"));
             xx += 8;
         }
-        V.DrawPatchDirect(xx, y, 0, W.CachePatchName("M_THERMR"));
+        V.DrawScaledPatch(xx, y, 0,vs, W.CachePatchName("M_THERMR"));
 
-        V.DrawPatchDirect((x + 8) + thermDot * 8, y, 0, W
+        V.DrawScaledPatch((x + 8) + thermDot * 8, y, 0,vs, W
                 .CachePatchName("M_THERMO"));
     }
 
     public void DrawEmptyCell(menu_t menu, int item) {
-        V.DrawPatchDirect(menu.x - 10, menu.y + item * LINEHEIGHT - 1, 0,
+        V.DrawScaledPatch(menu.x - 10, menu.y + item * LINEHEIGHT - 1, 0,vs,
             (patch_t) W.CacheLumpName("M_CELL1", PU_CACHE, patch_t.class));
     }
 
     public void DrawSelCell(menu_t menu, int item) {
-        V.DrawPatchDirect(menu.x - 10, menu.y + item * LINEHEIGHT - 1, 0,
+        V.DrawScaledPatch(menu.x - 10, menu.y + item * LINEHEIGHT - 1, 0,vs,
             (patch_t) W.CacheLumpName("M_CELL2", PU_CACHE, patch_t.class));
     }
 
@@ -458,7 +458,7 @@ public class Menu extends AbstractDoomMenu {
     	@Override
     	public void invoke(){
         int i;
-        V.DrawPatchDirect(72, 28, 0, W.CachePatchName("M_SAVEG"));
+        V.DrawScaledPatch(72, 28, 0, vs,W.CachePatchName("M_SAVEG"));
         for (i = 0; i < load_end; i++) {
             DrawSaveLoadBorder(LoadDef.x, LoadDef.y + LINEHEIGHT * i);
             WriteText(LoadDef.x, LoadDef.y + LINEHEIGHT * i, savegamestrings[i]);
@@ -495,7 +495,7 @@ public class Menu extends AbstractDoomMenu {
         @Override
         public void invoke(int choice) {
             // we are going to be intercepting all chars
-        	System.out.println("ACCEPTING typing input");
+        	//System.out.println("ACCEPTING typing input");
             saveStringEnter = true;
 
             saveSlot = choice;
@@ -684,7 +684,7 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke(int choice) {
-            System.out.println("In M_ReadThis");
+            //System.out.println("In M_ReadThis");
             choice = 0;
             SetupNextMenu(ReadDef1);
         }
@@ -897,7 +897,7 @@ public class Menu extends AbstractDoomMenu {
             if (cx + w > SCREENWIDTH)
                 break;
             
-            V.DrawPatchDirect(cx, cy, 0, hu_font[c]);
+            V.DrawScaledPatch(cx, cy, 0,vs, hu_font[c]);
             cx += w;
         }
 
@@ -936,7 +936,7 @@ public class Menu extends AbstractDoomMenu {
             w = hu_font[c].width;
             if (cx + w > SCREENWIDTH)
                 break;
-            V.DrawPatchDirect(cx, cy, 0, hu_font[c]);
+            V.DrawScaledPatch(cx, cy, 0,vs, hu_font[c]);
             cx += w;
         }
 
@@ -1068,7 +1068,7 @@ public class Menu extends AbstractDoomMenu {
                         && StringWidth(savegamestrings[saveSlot]) < (SAVESTRINGSIZE - 2) * 8) {
                     savegamestrings[saveSlot][saveCharIndex++] = ch;
                     savegamestrings[saveSlot][saveCharIndex] = 0;
-                    System.out.println(String.valueOf(savegamestrings[saveSlot]));
+                    //System.out.println(String.valueOf(savegamestrings[saveSlot]));
                 }
                 break;
             }
@@ -1115,7 +1115,7 @@ public class Menu extends AbstractDoomMenu {
                 return true;
 
             case KEY_F1: // Help key
-                System.out.println("F1 Pressed");
+                //System.out.println("F1 Pressed");
                 StartControlPanel();
 
                 if (DM.isRetail() || currentMenu==ReadDef1)
@@ -1237,8 +1237,8 @@ public class Menu extends AbstractDoomMenu {
             return true;
 
         case KEY_ENTER: {
-            System.out.println("ENTER pressed on active menu.");
-            System.out.println(currentMenu.menuitems[itemOn].routine);
+            //System.out.println("ENTER pressed on active menu.");
+            //System.out.println(currentMenu.menuitems[itemOn].routine);
             
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && currentMenu.menuitems[itemOn].status != 0) {
@@ -1352,14 +1352,14 @@ public class Menu extends AbstractDoomMenu {
             max = currentMenu.numitems;
             for (int i = 0; i < max; i++) {
                 if (currentMenu.menuitems[i].name != null && currentMenu.menuitems[i].name!="")
-                    V.DrawPatchDirect(x, y, 0, W.CachePatchName(
+                    V.DrawScaledPatch(x, y, 0,vs, W.CachePatchName(
                         currentMenu.menuitems[i].name, PU_CACHE));
                 y += LINEHEIGHT;
             }
 
             // DRAW SKULL
-            V.DrawPatchDirect(x + SKULLXOFF, currentMenu.y - 5 + itemOn
-                    * LINEHEIGHT, 0, W.CachePatchName(skullName[whichSkull],
+            V.DrawScaledPatch(x + SKULLXOFF, currentMenu.y - 5 + itemOn
+                    * LINEHEIGHT, 0, vs,W.CachePatchName(skullName[whichSkull],
                 PU_CACHE));
     }
 
@@ -1477,9 +1477,9 @@ public class Menu extends AbstractDoomMenu {
             if (x + w > SCREENWIDTH)
                 break;
             if (direct)
-                V.DrawPatchDirect(x, y, 0, hu_font[c]);
+                V.DrawScaledPatch(x, y, 0,vs, hu_font[c]);
             else
-                V.DrawPatch(x, y, 0, hu_font[c]);
+                V.DrawScaledPatch(x, y, 0,vs, hu_font[c]);
             x += w;
         }
 
@@ -1496,7 +1496,7 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            V.DrawPatchDirect(54, 38, 0, W.CachePatchName("M_EPISOD"));
+            V.DrawScaledPatch(54, 38, 0,vs, W.CachePatchName("M_EPISOD"));
         }
 
     }
@@ -1511,7 +1511,7 @@ public class Menu extends AbstractDoomMenu {
         public void invoke() {
             int i;
 
-            V.DrawPatchDirect(72, 28, 0, W.CachePatchName("M_LOADG"));
+            V.DrawScaledPatch(72, 28, 0,vs, W.CachePatchName("M_LOADG"));
             for (i = 0; i < load_end; i++) {
                 DrawSaveLoadBorder(LoadDef.x, LoadDef.y + LINEHEIGHT * i);
                 WriteText(LoadDef.x, LoadDef.y + LINEHEIGHT * i,
@@ -1525,7 +1525,7 @@ public class Menu extends AbstractDoomMenu {
             implements DrawRoutine {
         @Override
         public void invoke() {
-            V.DrawPatchDirect(94, 2, 0, (patch_t) (W.CachePatchName("M_DOOM")));
+            V.DrawScaledPatch(94, 2, 0,vs, (patch_t) (W.CachePatchName("M_DOOM")));
         }
     }
 
@@ -1534,8 +1534,8 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            V.DrawPatchDirect(96, 14, 0, (patch_t) W.CachePatchName("M_NEWG"));
-            V.DrawPatchDirect(54, 38, 0, (patch_t) W.CachePatchName("M_SKILL"));
+            V.DrawScaledPatch(96, 14, 0, vs,(patch_t) W.CachePatchName("M_NEWG"));
+            V.DrawScaledPatch(54, 38, 0, vs,(patch_t) W.CachePatchName("M_SKILL"));
         }
     }
 
@@ -1548,13 +1548,13 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            V.DrawPatchDirect(108, 15, 0, W.CachePatchName("M_OPTTTL"));
+            V.DrawScaledPatch(108, 15, 0, vs,W.CachePatchName("M_OPTTTL"));
 
-            V.DrawPatchDirect(OptionsDef.x + 175, OptionsDef.y + LINEHEIGHT
-                    * detail, 0, W.CachePatchName(detailNames[detailLevel]));
+            V.DrawScaledPatch(OptionsDef.x + 175, OptionsDef.y + LINEHEIGHT
+                    * detail, 0,vs, W.CachePatchName(detailNames[detailLevel]));
 
-            V.DrawPatchDirect(OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT
-                    * messages, 0, W.CachePatchName(msgNames[showMessages?1:0]));
+            V.DrawScaledPatch(OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT
+                    * messages, 0,vs, W.CachePatchName(msgNames[showMessages?1:0]));
 
             DrawThermo(OptionsDef.x, OptionsDef.y + LINEHEIGHT
                     * (mousesens + 1), 10, DM.mouseSensitivity);
@@ -1575,16 +1575,16 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            System.out.println("DrawReadThis1 invoked");
+            //System.out.println("DrawReadThis1 invoked");
             inhelpscreens = true;
             switch (DM.getGameMode()) {
             case commercial:
-                V.DrawPatchDirect(0, 0, 0, W.CachePatchName("HELP"));
+                V.DrawPatchSolidScaled(0, 0, 0, vs,W.CachePatchName("HELP"));
                 break;
             case shareware:
             case registered:
             case retail:
-                V.DrawPatchDirect(0, 0, 0, W.CachePatchName("HELP1"));
+                V.DrawPatchSolidScaled(0, 0, 0,vs, W.CachePatchName("HELP1"));
                 break;
             default:
                 break;
@@ -1601,17 +1601,17 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            System.out.println("DrawReadThis2 invoked");
+            //System.out.println("DrawReadThis2 invoked");
             inhelpscreens = true;
             switch (DM.getGameMode()) {
             case retail:
             case commercial:
                 // This hack keeps us from having to change menus.
-                V.DrawPatchDirect(0, 0, 0, W.CachePatchName("CREDIT"));
+                V.DrawPatchSolidScaled(0, 0, 0, vs,W.CachePatchName("CREDIT"));
                 break;
             case shareware:
             case registered:
-                V.DrawPatchDirect(0, 0, 0, W.CachePatchName("HELP2"));
+                V.DrawPatchSolidScaled(0, 0, 0, vs,W.CachePatchName("HELP2"));
                 break;
             default:
                 break;
@@ -1627,7 +1627,7 @@ public class Menu extends AbstractDoomMenu {
             implements DrawRoutine {
 
         public void invoke() {
-            V.DrawPatchDirect(60, 38, 0, (patch_t) W.CacheLumpName("M_SVOL",
+            V.DrawScaledPatch(60, 38, 0,vs, (patch_t) W.CacheLumpName("M_SVOL",
                 PU_CACHE, patch_t.class));
 
             DrawThermo(SoundDef.x, SoundDef.y + LINEHEIGHT * (sfx_vol + 1), 16,

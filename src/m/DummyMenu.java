@@ -5,7 +5,7 @@ import doom.DoomStatus;
 import doom.event_t;
 
 public class DummyMenu
-        implements IDoomMenu {
+        extends AbstractDoomMenu {
 
     @Override
     public void setVideoScale(IVideoScale vs) {
