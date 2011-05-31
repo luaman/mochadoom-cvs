@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.26 2011/05/24 17:45:08 velktron Exp $
+// $Id: HU.java,v 1.27 2011/05/31 21:42:30 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -50,7 +50,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.26 2011/05/24 17:45:08 velktron Exp $";
+        "$Id: HU.java,v 1.27 2011/05/31 21:42:30 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -176,7 +176,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                 HUSTR_18, HUSTR_19, HUSTR_20,
 
                 HUSTR_21, HUSTR_22, HUSTR_23, HUSTR_24, HUSTR_25, HUSTR_26,
-                HUSTR_27, HUSTR_28, HUSTR_29, HUSTR_30, HUSTR_31, HUSTR_32 };
+                HUSTR_27, HUSTR_28, HUSTR_29, HUSTR_30, HUSTR_31, HUSTR_32,HUSTR_33 };
 
     protected String[] mapnamesp = // Plutonia WAD map names.
         { PHUSTR_1, PHUSTR_2, PHUSTR_3, PHUSTR_4, PHUSTR_5, PHUSTR_6, PHUSTR_7,
@@ -454,10 +454,20 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         // so they can either work as functions, or be set whenever the HU is started
         // (typically once per level). They need to be aware of game progress,
         // and episode numbers <1 will cause it to bomb.
-        this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 1];
+        // MAES: hack to handle Betray in XBLA 31/5/2011
+        if ((DM.gamemap>32) && (DM.getGameMode()==GameMode_t.pack_xbla)){
+        this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 2];
+
+
         this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
-        this.HU_TITLEP = mapnamesp[DM.gamemap - 1]; // fixed from HU_TITLEP
-        this.HU_TITLET = mapnamest[DM.gamemap - 1];
+        this.HU_TITLEP = mapnamesp[DM.gamemap - 2]; // fixed from HU_TITLEPw
+        this.HU_TITLET = mapnamest[DM.gamemap - 2];
+        } else {
+            this.HU_TITLE = mapnames[(DM.gameepisode - 1) * 9 + DM.gamemap - 1];
+            this.HU_TITLE2 = mapnames2[DM.gamemap - 1];
+            this.HU_TITLEP = mapnamesp[DM.gamemap - 1]; // fixed from HU_TITLEP
+            this.HU_TITLET = mapnamest[DM.gamemap - 1];
+        }
 
         if (headsupactive)
             this.Stop();
@@ -1234,6 +1244,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 }
 
 //$Log: HU.java,v $
+//Revision 1.27  2011/05/31 21:42:30  velktron
+//Handling for map33
+//
 //Revision 1.26  2011/05/24 17:45:08  velktron
 //IHeadsUp interface, setChatMacro method.
 //
