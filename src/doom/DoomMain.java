@@ -79,7 +79,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.57 2011/05/31 22:43:18 velktron Exp $
+// $Id: DoomMain.java,v 1.58 2011/06/01 00:08:07 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -105,7 +105,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.57 2011/05/31 22:43:18 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.58 2011/06/01 00:08:07 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -865,7 +865,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             // the parms after p are wadfile/lump names,
             // until end of parms or another - preceded parm
             modifiedgame = true;            // homebrew levels
-            while (++p != CM.getArgc() && CM.getArgv(p).charAt(0) != '-')
+            // MAES 1/6/2011: Avoid + to avoid clashing with +map
+            while (++p != CM.getArgc() && CM.getArgv(p).charAt(0) != '-' && CM.getArgv(p).charAt(0) != '+')
                 AddFile (C2JUtils.unquoteIfQuoted(CM.getArgv(p),'"'));
         }
         
@@ -934,6 +935,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (eval(p) && p < CM.getArgc()-1 && deathmatch)
             System.out.print("Austin Virtual Gaming: Levels will end after 20 minutes\n");
 
+        // MAES 31/5/2011: added support for +map variation.
         p = CM.CheckParm ("-warp");
         if (eval(p) && p < CM.getArgc()-1)
         {
@@ -962,6 +964,29 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             autostart = true;
         }
 
+        // Maes: 1/6/2011 Added +map support
+        p = CM.CheckParm ("+map");
+        if (eval(p)) 
+        {
+            if (isCommercial()) {
+                startmap = parseAsMapXX(CM.getArgv(p+1));
+                if (startmap!=-1){
+                	autostart = true;
+            	}
+            }
+            else
+            {
+                int eval=parseAsExMx(CM.getArgv(p+1));
+                if (eval!=-1){
+
+                    startepisode = Math.max(1,eval/10);
+                    startmap = Math.max(1,eval%10);
+                    autostart = true;
+                }
+            }
+            
+        }
+        
         // init subsystems
         System.out.print ("V_Init: allocate screens.\n");
         V.Init ();
@@ -1153,7 +1178,37 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     }
 
 
-    List<IVideoScaleAware> videoScaleChildren;
+    private int parseAsMapXX(String argv) {
+    	
+    	if (argv.length()!=5) return -1; // Nah.
+    	if (argv.toLowerCase().lastIndexOf("map")!=0) return -1; // Meh.
+    	int map;
+    	try {
+    		map=Integer.parseInt(argv.substring(3));
+    	} catch (NumberFormatException e){
+    		return -1; // eww
+    	}
+    	
+		return map;
+	}
+
+    private int parseAsExMx(String argv) {
+    	
+    	if (argv.length()!=4) return -1; // Nah.
+    	if (argv.toLowerCase().lastIndexOf("e")!=0) return -1; // Meh.
+    	if (argv.toLowerCase().lastIndexOf("m")!=2) return -1; // Meh.
+    	int episode,mission;
+    	try {
+    		episode=Integer.parseInt(argv.substring(1,2));
+    		mission=Integer.parseInt(argv.substring(3,4));
+    	} catch (NumberFormatException e){
+    		return -1; // eww
+    	}
+    	
+		return episode*10+mission;
+	}
+    
+	List<IVideoScaleAware> videoScaleChildren;
 
     public  void initializeVideoScaleStuff() {
 
@@ -3945,6 +4000,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.58  2011/06/01 00:08:07  velktron
+//Added +map command line parameter.
+//
 //Revision 1.57  2011/05/31 22:43:18  velktron
 //Added support for quoted IWAD and PWAD args.
 //
