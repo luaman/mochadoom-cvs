@@ -8,7 +8,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.8 2011/05/31 16:27:14 velktron Exp $
+//$Id: Main.java,v 1.9 2011/06/01 00:08:35 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import doom.ICommandLineManager;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.9  2011/06/01 00:08:35  velktron
+//Downsized to essentiality.
+//
 //Revision 1.8  2011/05/31 16:27:14  velktron
 //Resolution not handled here anymore.
 //
@@ -62,7 +65,7 @@ import doom.ICommandLineManager;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.8 2011/05/31 16:27:14 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.9 2011/06/01 00:08:35 velktron Exp $";
 
     public static void main(String[] argv){
 
@@ -78,8 +81,8 @@ public class Main {
           
           // Create AWT frame, but don't start it yet.
           D.Init();
-          
-          D.Start (); 
+
+          D.Start ();
 
           return;
         } 
