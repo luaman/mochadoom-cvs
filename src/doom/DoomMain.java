@@ -16,6 +16,7 @@ import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
 import awt.AWTDoom;
+import awt.AWTDoom3;
 import f.Finale;
 import f.Wiper;
 import g.DoomSaveGame;
@@ -79,7 +80,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.60 2011/06/01 00:46:15 velktron Exp $
+// $Id: DoomMain.java,v 1.61 2011/06/01 17:35:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -105,7 +106,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.60 2011/06/01 00:46:15 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.61 2011/06/01 17:35:56 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -904,6 +905,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //autostart = false;
 
 
+        p = CM.CheckParm ("-novert");
+        if (eval(p) && p < CM.getArgc()-1)
+        {
+            novert=!(CM.getArgv(p+1).toLowerCase().compareTo("disable")==0);
+            if (!novert) System.out.println("-novert ENABLED (default)");
+            else System.out.println("-novert DISABLED. Hope you know what you're doing...");
+        }
+
         p = CM.CheckParm ("-skill");
         if (eval(p) && p < CM.getArgc()-1)
         {
@@ -1009,8 +1018,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         System.out.print ("VI_Init: set colormaps.\n");
         byte[] pal=W.CacheLumpName("PLAYPAL", PU_STATIC).getBuffer().array();
         // set it, create it, but don't make it visible yet.
-        VI=new AWTDoom(this,(BufferedRenderer) V,pal);
-        VI.InitGraphics ();
+        
+        p = CM.CheckParm ("-mochaevents");
+        if (eval(p)) VI=new AWTDoom3(this,(BufferedRenderer) V,pal);
+        else VI=new AWTDoom(this,(BufferedRenderer) V,pal);
+        
+        VI=new AWTDoom3(this,(BufferedRenderer) V,pal);
+        VI.InitGraphics();
 
         // MAES: Before we begin calling the various Init() stuff,
         // we need to make sure that objects that support the IVideoScaleAware
@@ -1570,7 +1584,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             } 
         } 
 
-        forward += mousey; 
+        // By default, no vertical mouse movement
+        if (!novert) forward += mousey; 
+
         if (strafe) 
             side += mousex*2; 
         else 
@@ -4000,6 +4016,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.61  2011/06/01 17:35:56  velktron
+//Techdemo v1.4a level. Default novert and experimental mochaevents interface.
+//
 //Revision 1.60  2011/06/01 00:46:15  velktron
 //-keycode debug.
 //
