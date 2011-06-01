@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.37 2011/06/01 00:07:26 velktron Exp $
+// $Id: StatusBar.java,v 1.38 2011/06/01 18:13:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -33,28 +33,20 @@ import static doom.player_t.*;
 import static doom.items.*;
 import static data.Tables.*;
 import p.mobj_t;
-import i.IDoomSystem;
-import i.DoomVideoInterface;
-import m.IRandom;
 import m.cheatseq_t;
 import data.sounds.musicenum_t;
-import doom.DoomMain;
 import doom.DoomStatus;
 import doom.event_t;
 import doom.evtype_t;
 import doom.player_t;
 import doom.weapontype_t;
-import rr.RendererState;
 import rr.patch_t;
-import s.IDoomSound;
-import v.DoomVideoRenderer;
 import v.IVideoScale;
-import w.IWadLoader;
 import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.37 2011/06/01 00:07:26 velktron Exp $";
+        "$Id: StatusBar.java,v 1.38 2011/06/01 18:13:37 velktron Exp $";
 
    
     
@@ -723,9 +715,9 @@ public class StatusBar extends AbstractStatusBar   {
                      * players[consoleplayer].mo.y);
                      */
                     mobj_t mo = DM.players[DM.consoleplayer].mo;
-                    plyr.message = String.format("ang= 0x%x; x,y= (0x%x, 0x%x)",
-                                Integer.toHexString((int) mo.angle) + "0x",
-                                Integer.toHexString(mo.x) + "0x",
+                    plyr.message = String.format("ang= 0x%s; x,y= (0x%s, 0x%s)",
+                                Integer.toHexString((int) mo.angle),
+                                Integer.toHexString(mo.x),
                                 Integer.toHexString(mo.y));
                 }
             }
@@ -1899,6 +1891,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.38  2011/06/01 18:13:37  velktron
+//Fixed idmypos crash.
+//
 //Revision 1.37  2011/06/01 00:07:26  velktron
 //Moved status, fixed soundinterface.
 //
