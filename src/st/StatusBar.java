@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.36 2011/05/31 13:32:03 velktron Exp $
+// $Id: StatusBar.java,v 1.37 2011/06/01 00:07:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,135 +16,6 @@ package st;
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
-//
-// $Log: StatusBar.java,v $
-// Revision 1.36  2011/05/31 13:32:03  velktron
-// Added V_SCALEOFFSET flag to doomguy's mug.
-//
-// Revision 1.35  2011/05/31 12:39:31  velktron
-// Face centering fixed.
-//
-// Revision 1.34  2011/05/30 15:47:34  velktron
-// AbstractStatusBar introduced.
-//
-// Revision 1.33  2011/05/30 10:34:20  velktron
-// Fixed binicon refresh bug...
-//
-// Revision 1.32  2011/05/30 02:21:08  velktron
-// Fixed number widget diffdraw
-//
-// Revision 1.31  2011/05/29 22:15:32  velktron
-// Introduced IRandom interface.
-//
-// Revision 1.30  2011/05/29 20:54:43  velktron
-// Fixed status bar scaling
-//
-// Revision 1.29  2011/05/24 13:42:22  velktron
-// Fidgeting around with the STBar refresh
-//
-// Revision 1.28  2011/05/24 11:31:23  velktron
-// Got rid of a whole bunch of useless interfaces.
-//
-// Revision 1.27  2011/05/23 16:59:02  velktron
-// Migrated to VideoScaleInfo.
-//
-// Revision 1.26  2011/05/21 15:00:14  velktron
-// Adapted to use new gamemode system.
-//
-// Revision 1.25  2011/05/18 16:57:21  velktron
-// Changed to DoomStatus
-//
-// Revision 1.24  2011/05/17 16:52:02  velktron
-// Switched to DoomStatus
-//
-// Revision 1.23  2011/05/10 10:39:18  velktron
-// Semi-playable Techdemo v1.3 milestone
-//
-// Revision 1.22  2010/12/20 17:15:08  velktron
-// Made the renderer more OO -> TextureManager and other changes as well.
-//
-// Revision 1.21  2010/12/12 19:06:18  velktron
-// Tech Demo v1.1 release.
-//
-// Revision 1.20  2010/11/22 21:41:22  velktron
-// Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
-//
-// Revision 1.19  2010/11/17 23:55:06  velktron
-// Kind of playable/controllable.
-//
-// Revision 1.18  2010/11/14 20:30:29  velktron
-// Resolution changes...kind of.
-//
-// Revision 1.17  2010/11/11 15:31:28  velktron
-// Fixed "warped floor" error.
-//
-// Revision 1.16  2010/09/27 15:07:44  velktron
-// meh
-//
-// Revision 1.15  2010/09/27 02:27:29  velktron
-// BEASTLY update
-//
-// Revision 1.14  2010/09/24 17:58:39  velktron
-// Menus and HU  functional -mostly.
-//
-// Revision 1.13  2010/09/23 20:36:45  velktron
-// *** empty log message ***
-//
-// Revision 1.12  2010/09/23 15:11:57  velktron
-// A bit closer...
-//
-// Revision 1.11  2010/09/23 07:31:11  velktron
-// fuck
-//
-// Revision 1.10  2010/09/13 15:39:17  velktron
-// Moving towards an unified gameplay approach...
-//
-// Revision 1.9  2010/09/08 21:09:01  velktron
-// Better display "driver".
-//
-// Revision 1.8  2010/09/06 10:23:24  velktron
-// Alternative rendering method
-//
-// Revision 1.7  2010/08/27 23:46:57  velktron
-// Introduced Buffered renderer, which makes tapping directly into byte[] screen buffers mapped to BufferedImages possible.
-//
-// Revision 1.6  2010/08/26 16:43:42  velktron
-// Automap functional, biatch.
-//
-// Revision 1.5  2010/08/25 15:16:07  velktron
-// Status bar functional.
-//
-// Revision 1.4 2010/08/25 00:50:59 velktron
-// Some more work...
-//
-// Revision 1.3 2010/08/13 14:06:36 velktron
-// Endlevel screen fully functional!
-//
-// Revision 1.2 2010/07/20 15:52:56 velktron
-// LOTS of changes, Automap almost complete. Use of fixed_t inside methods
-// severely limited.
-//
-// Revision 1.1 2010/07/03 23:24:13 velktron
-// Added a LOT of stuff, like Status bar code & objects. Now we're cooking with
-// gas!
-//
-// Revision 1.1 2010/06/30 08:58:51 velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still being worked on. For a good place to start and get an
-// idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1 2010/06/29 11:07:34 velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete,
-// and there's still mixed C code in there. I suggest you load everything up in
-// Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you can get an idea of
-// how a few of the implemented stuff works.
-//
 //
 // DESCRIPTION:
 // Status bar code.
@@ -183,25 +54,9 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.36 2011/05/31 13:32:03 velktron Exp $";
+        "$Id: StatusBar.java,v 1.37 2011/06/01 00:07:26 velktron Exp $";
 
-    // /// STATUS //////////
-
-    protected DoomVideoRenderer V;
-
-    protected IWadLoader W;
-
-    protected RendererState R;
-
-    protected DoomMain DM;
-
-    protected IRandom RND;
-    
-    protected IDoomSystem I;
-    
-    protected DoomVideoInterface VI;
-
-    protected IDoomSound S;
+   
     
     // Size of statusbar.
     // Now sensitive for scaling.
@@ -1861,17 +1716,6 @@ public class StatusBar extends AbstractStatusBar   {
     interface StatusBarWidget {
         public void update(boolean refresh);
     }
-
-	@Override
-	public void updateStatus(DoomStatus DC) {
-        this.DM=DC.DM;
-        this.V=DC.V;
-        this.W=DC.W;
-        this.RND=DC.RND;
-        this.R= DC.R;
-        this.VI=DC.VI;
-        this.I=DC.I;
-    }
 	
 	// Size of statusbar.
 	// Now sensitive for scaling.
@@ -2053,3 +1897,43 @@ public class StatusBar extends AbstractStatusBar   {
 
 	
 }
+
+//$Log: StatusBar.java,v $
+//Revision 1.37  2011/06/01 00:07:26  velktron
+//Moved status, fixed soundinterface.
+//
+//Revision 1.36  2011/05/31 13:32:03  velktron
+//Added V_SCALEOFFSET flag to doomguy's mug.
+//
+//Revision 1.35  2011/05/31 12:39:31  velktron
+//Face centering fixed.
+//
+//Revision 1.34  2011/05/30 15:47:34  velktron
+//AbstractStatusBar introduced.
+//
+//Revision 1.33  2011/05/30 10:34:20  velktron
+//Fixed binicon refresh bug...
+//
+//Revision 1.32  2011/05/30 02:21:08  velktron
+//Fixed number widget diffdraw
+//
+//Revision 1.31  2011/05/29 22:15:32  velktron
+//Introduced IRandom interface.
+//
+//Revision 1.30  2011/05/29 20:54:43  velktron
+//Fixed status bar scaling
+//
+//Revision 1.29  2011/05/24 13:42:22  velktron
+//Fidgeting around with the STBar refresh
+//
+//Revision 1.28  2011/05/24 11:31:23  velktron
+//Got rid of a whole bunch of useless interfaces.
+//
+//Revision 1.27  2011/05/23 16:59:02  velktron
+//Migrated to VideoScaleInfo.
+//
+//Revision 1.26  2011/05/21 15:00:14  velktron
+//Adapted to use new gamemode system.
+//
+//Revision 1.25  2011/05/18 16:57:21  velktron
+//Changed to DoomStatus
