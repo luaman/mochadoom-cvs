@@ -330,7 +330,8 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 			robby.mouseMove(offset.x + win_w2, offset.y + win_h2);
 			
 		}
-		//mousedx=mousedy=0; // don't spaz.
+		
+		mousedx=mousedy=0; // don't spaz.
 
     }
     
