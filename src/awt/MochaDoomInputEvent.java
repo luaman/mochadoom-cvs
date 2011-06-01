@@ -27,13 +27,28 @@ public class MochaDoomInputEvent {
 		static final int MouseExited =10;
 		static final int MouseEntered=11;
 		static final int WindowMoving=12;
+		static final int FocusGained=13;
+		static final int FocusLost=14;
+		static final int KEY_MASK=0X100; // Extract info from lower bits for this
+		
 		int type;
+		int value;
 		AWTEvent ev;
 		
 		MochaDoomInputEvent(int type, AWTEvent ev) {
 			this.type = type;
 			this.ev = ev;
 		}
+		
+		MochaDoomInputEvent(int type, int value) {
+			this.type=type;
+			this.value=value;
+			}
+
+		/** Just a friendly way to remind the child component to
+		 *  position and initialize itself correctly for the first
+		 *  use.
+		 */
 		
 		static MochaDoomInputEvent GET_YOUR_ASS_OFF = new
 		MochaDoomInputEvent(ConfigureNotify, null);

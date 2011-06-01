@@ -39,12 +39,15 @@ import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.util.LinkedList;
@@ -53,10 +56,10 @@ import doom.DoomMain;
 import doom.event_t;
 import doom.evtype_t;
 
-public class MochaEvents implements WindowListener,ComponentListener,KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener,DoomEventInterface {
+public class MochaEvents implements WindowListener,ComponentListener,KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener,WindowFocusListener,DoomEventInterface {
 
     // modifications of eventQueue must be thread safe!
-    static LinkedList<MochaDoomInputEvent> eventQueue = new LinkedList<MochaDoomInputEvent>();
+    private LinkedList<MochaDoomInputEvent> eventQueue = new LinkedList<MochaDoomInputEvent>();
 
     //// STATUS STUFF ///////////
     public final DoomMain DM;
@@ -105,7 +108,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         }
     }
 
-    public static MochaDoomInputEvent nextEvent() {
+    public MochaDoomInputEvent nextEvent() {
     	MochaDoomInputEvent ev;
         synchronized (eventQueue) {
             ev = (!eventQueue.isEmpty())?(MochaDoomInputEvent)eventQueue.removeFirst():null;
@@ -129,7 +132,6 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         MochaDoomInputEvent X_event;
         MouseEvent MEV;
         Point tmp;
-
         // put event-grabbing stuff in here
         if (eventQueue.isEmpty()) return;   
         X_event=nextEvent();
@@ -141,7 +143,6 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             switch (X_event.type)
             {
             case MochaDoomInputEvent.KeyPress: {
-
                 event.type=evtype_t.ev_keydown;
                 event.data1=xlatekey((KeyEvent)X_event.ev);
                 DM.PostEvent(event);
@@ -155,6 +156,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 //System.err.println("k");s
                 break;
             }
+            
             case MochaDoomInputEvent.KeyRelease:
                 event.type=evtype_t.ev_keyup;
                 event.data1=xlatekey((KeyEvent)X_event.ev);
@@ -169,7 +171,22 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                     }
                 //System.err.println( "ku");
                 break;
-            }
+            
+        case MochaDoomInputEvent.KeyType:
+            event.type=evtype_t.ev_keyup;
+            event.data1=xlatekey((KeyEvent)X_event.ev);
+            DM.PostEvent(event);
+            
+            if (prevmousebuttons!=0){
+                
+                // Allow combined mouse/keyboard events.
+                event.data1=prevmousebuttons;
+                event.type=evtype_t.ev_mouse;
+                DM.PostEvent(event);
+                }
+            //System.err.println( "ku");
+            break;
+        }
         }
 
         // Ignore ALL mouse events if we are moving the window.
@@ -259,38 +276,37 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         // Now for window events. This includes the mouse breaking the border.
         
         switch (X_event.type){
+        case MochaDoomInputEvent.FocusLost:
         case MochaDoomInputEvent.MouseExited:
             // Forcibly clear events                 
             DM.PostEvent(cancelmouse);
             DM.PostEvent(cancelkey);
-            //reposition();
-        	//System.out.printf("FORCED and PAINFUL event clearing!\n");
             canvas.setCursor(normal);             
             ignorebutton=true;
             break;
             
         case MochaDoomInputEvent.WindowMoving:
         	// Don't try to reposition immediately during a move
-        	// event.
+        	// event, wait for a mouse click.
         	we_are_moving=true;
         	ignorebutton=true;
-        	System.out.println("Move events: "+move);
+            // Forcibly clear events                 
+            DM.PostEvent(cancelmouse);
+            DM.PostEvent(cancelkey);
         	move++;
         	break;
         case MochaDoomInputEvent.MouseEntered:
+        case MochaDoomInputEvent.FocusGained:
         	we_are_moving=false;
-        	ignorebutton=false;
+        	reposition();
         case MochaDoomInputEvent.ConfigureNotify:
         case MochaDoomInputEvent.CreateNotify:
             // All events that have to do with the window being changed,
         	// moved etc. should go here. The most often result
         	// in focus being lost and position being changed, so we
         	// need to take charge.
-
             canvas.requestFocus();
-            canvas.setCursor(hidden);
-            if (!we_are_moving)
-            		reposition();        	
+            reposition();            			
         	ignorebutton=false;
 			break;
         default:
@@ -331,7 +347,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
         
         canvas.getInputContext().selectInputMethod(java.util.Locale.US);
-
+        canvas.setCursor(hidden);
 		//System.out.printf("Jake 2 method: offset MOVED to %d %d\n", offset.x, offset.y);
 		
 	}
@@ -355,6 +371,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
     @Override
     public void windowActivated(WindowEvent windowevent) {
+    	System.out.println("Window activated");
     	eventQueue.add(new MochaDoomInputEvent(MochaDoomInputEvent.ConfigureNotify, null));
     	}
 
@@ -410,35 +427,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         Cursor hiddenCursor = Toolkit.getDefaultToolkit( ).createCustomCursor(transparentImage, new Point(1, 1),    "HiddenCursor");
         return hiddenCursor;
     }
-
-    public void grabMouse() {
-        // Warp the pointer back to the middle of the window
-        //  or it will wander off - that is, the game will
-        //  loose input focus within X11.
-        if (grabMouse)
-        {
-            if (doPointerWarp--<=0)
-            {
-                // Don't warp back if we deliberately alt-tabbed away.
-                Point p=canvas.getMousePosition();
-                if (p!=null){
-                	
-                	
-                   robby.mouseMove(	offset.x+canvas.getWidth()/2,
-                		   offset.y+canvas.getHeight()/2);
-                    lastmousex=/*center.x+*/canvas.getWidth()/2;
-                    lastmousey=/*center.y+*/canvas.getHeight()/2;
-                    //System.out.printf("Mouse FORCED back to %d %d\n", lastmousex, lastmousey);
-                }
-                doPointerWarp = POINTER_WARP_COUNTDOWN;
-            } 
-
-        }
-
-        mousemoved = false;
-
-    }
-
+   
     /** FIXME: input must be made scancode dependent rather than VK_Dependent,
      *  else a lot of things just don't work. 
      * 
@@ -536,7 +525,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             break;
         }
 
-        //System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
+        System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
 
         // Sanitize. Nothing beyond F12 must pass through, else you will
         // get the "all cheats" bug.
@@ -553,11 +542,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
     
     ///////////////////////// KEYBOARD EVENTS ///////////////////////////////////
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent e) {
 
-        return false;
-    }
 
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode()<=KeyEvent.VK_F12) {  
@@ -577,9 +562,9 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
     }
 
     public void keyTyped(KeyEvent e) {
-        //if (e.getKeyCode()<=KeyEvent.VK_F12) {
-//        	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyPress,e));
-  //      }
+        if (e.getKeyCode()<=KeyEvent.VK_F12) {
+        	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyType,e));
+       }
 
         e.consume();        
     }
@@ -588,7 +573,8 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
     @Override
     public void mouseClicked(MouseEvent mouseevent) {
-    	// Marks the end of a move
+    	// Marks the end of a move. A press + release during a move will
+    	// trigger a "click" event, which is handled specially.
     	if (we_are_moving) {
     		we_are_moving=false;
     		reposition();
@@ -599,21 +585,25 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
     @Override
     public void mouseEntered(MouseEvent mouseevent) {
-    	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.ConfigureNotify,null));
+    	//System.out.println("Mouse entered");
+    	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.MouseEntered,null));
     	}
 
     @Override
     public void mouseExited(MouseEvent mouseevent) {
+    	//System.out.println("Mouse exited");
     	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.MouseExited,null));
     	}
 
     @Override
     public void mousePressed(MouseEvent mouseevent) {
+    	if (!we_are_moving) // Don't let presses go through when moving.
     	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.ButtonPress,mouseevent));
     	}
 
     @Override
     public void mouseReleased(MouseEvent mouseevent) {
+    	if (!we_are_moving) // Don't let presses go through when moving.
     	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.ButtonRelease,mouseevent));
     	}
 
@@ -651,7 +641,30 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 	@Override
 	public void componentShown(ComponentEvent e) {
 		eventQueue.add(new MochaDoomInputEvent(MochaDoomInputEvent.CreateNotify, null));
-		
+	}
+
+	@Override
+	public void windowGainedFocus(WindowEvent arg0) {
+		eventQueue.add(new MochaDoomInputEvent(MochaDoomInputEvent.FocusGained, null));
+	}
+
+
+	@Override
+	public void windowLostFocus(WindowEvent arg0) {
+		eventQueue.add(new MochaDoomInputEvent(MochaDoomInputEvent.FocusLost, null));
+	}
+
+
+	public  boolean hasMoreEvents() {
+		return !this.eventQueue.isEmpty();
+	}
+
+
+	@Override
+	public boolean dispatchKeyEvent(KeyEvent e) {
+		//if (e.getKeyCode() == KeyEvent.VK_TAB)
+		//	eventQueue.add(new MochaDoomInputEvent(MochaDoomInputEvent.KeyRelease, e));
+		return false;
 	}
     
 }
