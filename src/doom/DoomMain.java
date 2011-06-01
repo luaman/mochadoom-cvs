@@ -80,7 +80,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.61 2011/06/01 17:35:56 velktron Exp $
+// $Id: DoomMain.java,v 1.62 2011/06/01 17:40:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -106,7 +106,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.61 2011/06/01 17:35:56 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.62 2011/06/01 17:40:17 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1020,10 +1020,15 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // set it, create it, but don't make it visible yet.
         
         p = CM.CheckParm ("-mochaevents");
-        if (eval(p)) VI=new AWTDoom3(this,(BufferedRenderer) V,pal);
-        else VI=new AWTDoom(this,(BufferedRenderer) V,pal);
+        if (eval(p)) {
+        	System.out.print("Using MOCHAEVENTS AWT inteface\n");
+        	VI=new AWTDoom3(this,(BufferedRenderer) V,pal);
+        }
+        else {
+        	System.out.print("Using DEFAULT AWT inteface\n");
+        	VI=new AWTDoom(this,(BufferedRenderer) V,pal);
+        }
         
-        VI=new AWTDoom3(this,(BufferedRenderer) V,pal);
         VI.InitGraphics();
 
         // MAES: Before we begin calling the various Init() stuff,
@@ -4016,6 +4021,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.62  2011/06/01 17:40:17  velktron
+//Techdemo v1.4a level. Default novert and experimental mochaevents interface.
+//
 //Revision 1.61  2011/06/01 17:35:56  velktron
 //Techdemo v1.4a level. Default novert and experimental mochaevents interface.
 //

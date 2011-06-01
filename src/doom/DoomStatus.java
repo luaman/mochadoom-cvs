@@ -415,6 +415,9 @@ public class DoomStatus extends DoomContext {
     public int joybuse;
 
     public int joybspeed;
+    
+    /** Cancel vertical mouse movement by default */
+    protected boolean novert=true;
 
     protected int MAXPLMOVE() {
         return forwardmove[1];
@@ -511,6 +514,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.25  2011/06/01 17:35:56  velktron
+// Techdemo v1.4a level. Default novert and experimental mochaevents interface.
+//
 // Revision 1.24  2011/06/01 00:37:58  velktron
 // Changed default keys to WASD.
 //
