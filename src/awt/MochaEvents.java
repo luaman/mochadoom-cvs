@@ -528,7 +528,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             break;
         }
 
-        System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
+        //System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
         return rc;//Math.min(rc,KEY_F12);
 
     }
