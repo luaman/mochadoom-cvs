@@ -237,7 +237,6 @@ protected final void UnArchiveWorld () throws IOException
       // unmarshalled, so we don't just read/write
       // their entire memory footprint to disk.
       sec.read(f);
-      System.out.println("Sector"+i+": "+sec);
       sec.specialdata = null;
       sec.soundtarget = null;
   }
