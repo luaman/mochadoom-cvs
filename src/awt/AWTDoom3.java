@@ -370,10 +370,7 @@ public class AWTDoom3 extends JFrame implements DoomVideoInterface{
 	@Override
 	public void StartTic() {
 
-		  if (!this.isActive()){
-			 System.out.println("I am not active?!");
-			return;
-		  }
+		  if (!this.isActive()) return;
 
 		//  System.out.println("Getting events...");
 		  while (eventhandler.hasMoreEvents())
@@ -454,6 +451,9 @@ public class AWTDoom3 extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom3.java,v $
+//Revision 1.3  2011/06/01 17:42:49  velktron
+//Removed stupid nagging.
+//
 //Revision 1.2  2011/06/01 17:17:24  velktron
 //New event system.
 //
