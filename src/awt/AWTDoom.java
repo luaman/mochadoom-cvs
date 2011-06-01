@@ -346,6 +346,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
       addKeyEventDispatcher(new KeyEventDispatcher() {  
           public boolean dispatchKeyEvent(KeyEvent e) {    
             if (e.getKeyCode() == KeyEvent.VK_TAB) {      
+            	System.out.println("TAB pressed");
                 eventhandler.addEvent(new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
 
             }  
@@ -457,6 +458,9 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.5  2011/06/01 17:17:24  velktron
+//New event system.
+//
 //Revision 1.4  2011/05/30 02:25:50  velktron
 //Centering and offsetting on expose, proper exiting.
 //

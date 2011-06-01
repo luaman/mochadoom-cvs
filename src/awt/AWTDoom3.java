@@ -325,16 +325,23 @@ public class AWTDoom3 extends JFrame implements DoomVideoInterface{
 	  // We need to "peg" it to the JFrame, rather than the canvas,
 	  // and the handler itself cannot auto-assign it.
 	  
-      final Component me=this;
+      final Component me=drawhere;
 	  
       KeyboardFocusManager.
       getCurrentKeyboardFocusManager().
       addKeyEventDispatcher(new KeyEventDispatcher() {
+    	  
+    	  boolean press=false;
           public boolean dispatchKeyEvent(KeyEvent e) {    
             if (e.getKeyCode() == KeyEvent.VK_TAB) {
-                eventhandler.keyReleased(
+            	// MAES: simulating a key type.
+            	if (press)
+                eventhandler.keyPressed(
                 		new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
-
+            	else
+                    eventhandler.keyReleased(
+                    		new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
+            	press=!press;
             }  
             return false;
           }
@@ -447,6 +454,9 @@ public class AWTDoom3 extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom3.java,v $
+//Revision 1.2  2011/06/01 17:17:24  velktron
+//New event system.
+//
 //Revision 1.1  2011/06/01 17:04:23  velktron
 //New event system.
 //

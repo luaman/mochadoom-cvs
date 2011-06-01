@@ -231,7 +231,7 @@ public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,
                 event.type=evtype_t.ev_mouse;
                 DM.PostEvent(event);
                 }
-                //System.err.println("k");s
+                //System.err.println("k");
                 break;
             }
             case Event.KEY_RELEASE:

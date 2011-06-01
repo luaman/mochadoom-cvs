@@ -56,6 +56,13 @@ import doom.DoomMain;
 import doom.event_t;
 import doom.evtype_t;
 
+/** An alternate events class, more suited for handling the complex situations
+ *  that might arise during daily use.
+ * 
+ * @author vepitrop
+ *
+ */
+
 public class MochaEvents implements WindowListener,ComponentListener,KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener,WindowFocusListener,DoomEventInterface {
 
     // modifications of eventQueue must be thread safe!
@@ -153,7 +160,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 event.type=evtype_t.ev_mouse;
                 DM.PostEvent(event);
                 }
-                //System.err.println("k");s
+                //System.err.println("k");
                 break;
             }
             
@@ -518,17 +525,10 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 rc = rc-KeyEvent.VK_A +'a';
                 break;
             }
-            // Unknown. Probably fucking up with the keyboard locale. Switch to be sure.
-            // Sorry for this horrible hack, but Java can't read locale-free keycodes -_-
-            // this.getInputContext().selectInputMethod(java.util.Locale.US);
-            //if (rc>KEY_F12) rc=KEY_RSHIFT;
             break;
         }
 
         System.out.println("Typed "+e.getKeyCode()+" char "+e.getKeyChar()+" mapped to "+Integer.toHexString(rc));
-
-        // Sanitize. Nothing beyond F12 must pass through, else you will
-        // get the "all cheats" bug.
         return rc;//Math.min(rc,KEY_F12);
 
     }
