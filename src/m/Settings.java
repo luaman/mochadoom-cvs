@@ -37,7 +37,7 @@ public enum Settings {
    joyb_strafe(1),
    joyb_use(3),
    joyb_speed(2),
-   screenblocks(9),
+   screenblocks(10),
    detaillevel(0),
    snd_channels(3),
    usegamma(0),

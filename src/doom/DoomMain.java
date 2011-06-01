@@ -79,7 +79,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.59 2011/06/01 00:37:59 velktron Exp $
+// $Id: DoomMain.java,v 1.60 2011/06/01 00:46:15 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -105,7 +105,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.59 2011/06/01 00:37:59 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.60 2011/06/01 00:46:15 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1765,7 +1765,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             } 
             if (ev.data1 <NUMKEYS) 
                 gamekeydown[ev.data1] = true;
-            System.out.println("Keycode "+ev.data1);
             return true;    // eat key down events 
 
         case ev_keyup: 
@@ -4001,6 +4000,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.60  2011/06/01 00:46:15  velktron
+//-keycode debug.
+//
 //Revision 1.59  2011/06/01 00:37:59  velktron
 //Changed default keys to WASD.
 //
