@@ -386,13 +386,13 @@ public class DoomStatus extends DoomContext {
 
     public int key_left=KEY_LEFTARROW;
 
-    public int key_up=KEY_UPARROW;
+    public int key_up='w';
 
-    public int key_down=KEY_DOWNARROW;
+    public int key_down='a';
 
-    public int key_strafeleft=',';
+    public int key_strafeleft='s';
 
-    public int key_straferight='.';
+    public int key_straferight='d';
 
     public int key_fire=KEY_RCTRL;
 
@@ -511,6 +511,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.24  2011/06/01 00:37:58  velktron
+// Changed default keys to WASD.
+//
 // Revision 1.23  2011/05/31 21:45:51  velktron
 // Added XBLA version as explicitly supported.
 //

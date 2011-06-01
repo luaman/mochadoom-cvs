@@ -20,10 +20,10 @@ public enum Settings {
    show_messages(1),
    key_right(KEY_RIGHTARROW),
    key_left(KEY_LEFTARROW),
-   key_up(KEY_UPARROW),
-   key_down(KEY_DOWNARROW),
-   key_strafeleft(','),
-   key_straferight('.'),
+   key_up('w'),
+   key_down('s'),
+   key_strafeleft('a'),
+   key_straferight('d'),
    key_fire(KEY_RCTRL),
    key_use(' '),
    key_strafe(KEY_RALT),
@@ -67,6 +67,10 @@ private Settings(String defaultval){
     this.numeric=false;
 }
 
+final static char w='w';
+final static char a='a';
+final static char s='s';
+final static char d='d';
 
 /** Each setting "knows" where it is appliable. Hardcoded,
  *  mega-switch statement hack, unless you want to use reflection (ugh...)
