@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.38 2011/06/01 18:13:37 velktron Exp $
+// $Id: StatusBar.java,v 1.39 2011/06/02 14:20:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -42,11 +42,12 @@ import doom.player_t;
 import doom.weapontype_t;
 import rr.patch_t;
 import v.IVideoScale;
+import z.IZone;
 import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.38 2011/06/01 18:13:37 velktron Exp $";
+        "$Id: StatusBar.java,v 1.39 2011/06/02 14:20:45 velktron Exp $";
 
    
     
@@ -1206,17 +1207,52 @@ public class StatusBar extends AbstractStatusBar   {
     }
 
     public void unloadGraphics() {
-        /*
-         * int i; // unload the numbers, tall and short for (i=0;i<10;i++) {
-         * Z_ChangeTag(tallnum[i], PU_CACHE); Z_ChangeTag(shortnum[i],
-         * PU_CACHE); } // unload tall percent Z_ChangeTag(tallpercent,
-         * PU_CACHE); // unload arms background Z_ChangeTag(armsbg, PU_CACHE);
-         * // unload gray #'s for (i=0;i<6;i++) Z_ChangeTag(arms[i][0],
-         * PU_CACHE); // unload the key cards for (i=0;i<NUMCARDS;i++)
-         * Z_ChangeTag(keys[i], PU_CACHE); Z_ChangeTag(sbar, PU_CACHE);
-         * Z_ChangeTag(faceback, PU_CACHE); for (i=0;i<ST_NUMFACES;i++)
-         * Z_ChangeTag(faces[i], PU_CACHE);
-         */
+        
+    	 IZone Z=DM.Z;
+    	
+          int i; // unload the numbers, tall and short 
+          for (i=0;i<10;i++) {
+        	  Z.Free(tallnum[i]);
+        	  tallnum[i]=null;
+        	  Z.Free(shortnum[i]);
+        	  shortnum[i]=null;
+          }
+        
+       // unload tall percent
+          Z.Free(tallpercent);
+          tallpercent=null;
+          	
+        	  
+         // unload arms background          
+          Z.Free(armsbg);
+          armsbg=null;
+         // unload gray #'s          
+          for (i=0;i<6;i++) { 
+        	  Z.Free(arms[i][0]);
+        	  arms[i][0]=null;
+        	  Z.Free(arms[i][1]);
+        	  arms[i][1]=null;
+
+          }
+          
+          // unload the key cards for (i=0;i<NUMCARDS;i++)
+          
+          for (i=0;i<6;i++) { 
+        	  Z.Free(keys[i]);
+        	  keys[i]=null;
+          }
+          
+          Z.Free(sbar);
+          sbar=null;
+          
+          Z.Free(faceback);
+          faceback=null;
+          
+           for (i=0;i<ST_NUMFACES;i++){
+        	   Z.Free(faces[i]);
+        	   faces[i]=null;
+           }
+         
 
         // Note: nobody ain't seen no unloading
         // of stminus yet. Dude.
@@ -1891,6 +1927,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.39  2011/06/02 14:20:45  velktron
+//Implemented unloading code....kind of pointless, really.
+//
 //Revision 1.38  2011/06/01 18:13:37  velktron
 //Fixed idmypos crash.
 //
