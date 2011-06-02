@@ -55,6 +55,14 @@ import doom.DoomMain;
 import doom.event_t;
 import doom.evtype_t;
 
+/** A very basic event handling class, directly based on linuxdoom's.
+ *  Sadly, it doesn't work so well cross-platform. Use MochaEvents instead.
+ * 
+ * @author velktron
+ *
+ */
+
+@Deprecated
 public class AWTEvents implements WindowListener,KeyEventDispatcher,KeyListener,MouseListener,MouseMotionListener,DoomEventInterface {
 
     // modifications of eventQueue must be thread safe!

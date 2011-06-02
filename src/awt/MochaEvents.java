@@ -57,9 +57,10 @@ import doom.event_t;
 import doom.evtype_t;
 
 /** An alternate events class, more suited for handling the complex situations
- *  that might arise during daily use.
+ *  that might arise during daily use, window moving, etc.
+ *  Use instead of the old AWTEvents, which is present but deprecated.
  * 
- * @author vepitrop
+ * @author vekltron
  *
  */
 

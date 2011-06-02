@@ -68,7 +68,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	private BufferedRenderer V;    // Must have a video renderer....
 	private ITicker TICK;          // Must be aware of the ticker/
 	private byte[] RAWSCREEN;	   // RAW SCREEN DATA. Get from the Video Renderer.
-	private AWTEvents eventhandler; // Separate event handler a la _D_.
+	private MochaEvents eventhandler; // Separate event handler a la _D_.
 	                               // However I won't make it fully "eternity like" yet
 	                               // also because it works quite flakey on Linux.
 	
@@ -227,28 +227,10 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	  } else {
 		  System.err.println("Input context successfully set to US.");
 	  }
-	  
-	  //signal(SIGINT, (void (*)(int)) I_Quit);
-
-	  if (CM.CheckParm("-2")!=0)
-		multiply = 2;
-
-	  if (CM.CheckParm("-3")!=0)
-		multiply = 3;
-
-	  if (CM.CheckParm("-4")!=0)
-		multiply = 4;
 
       Dimension size = new Dimension();
       size.width = this.width * multiply;
       size.height = height * multiply;
-
-      // Create AWT Robot for forcing mouse
-      try {
-      robby=new Robot();
-      } catch (Exception e){
-    	  System.out.println("AWT Mouse Robot could not be created, mouse input focus will be loose!");
-      }
       
 	  // check for command-line display name
 	  if ( (pnum=CM.CheckParm("-disp"))!=0 ) // suggest parentheses around assignment
@@ -300,12 +282,16 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
       drawhere.setBounds(0, 0, drawhere.getWidth()-1,drawhere.getHeight()-1);
       drawhere.setBackground(Color.black);
       
-      this.eventhandler=new AWTEvents(DM,drawhere);
+      this.eventhandler=new MochaEvents(DM,drawhere);
       
       // AWT: Add listeners to CANVAS element.
       drawhere.addKeyListener(eventhandler);
       drawhere.addMouseListener(eventhandler);
       drawhere.addMouseMotionListener(eventhandler);
+      addComponentListener(eventhandler);
+      addWindowFocusListener(eventhandler);
+      addWindowListener(eventhandler);
+      
       
 	  } catch (Exception e){
 		  I.Error("Error creating AWTDoom frame. Exiting.");
@@ -343,12 +329,19 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	  
       KeyboardFocusManager.
       getCurrentKeyboardFocusManager().
-      addKeyEventDispatcher(new KeyEventDispatcher() {  
+      addKeyEventDispatcher(new KeyEventDispatcher() {
+    	  
+    	  boolean press=false;
           public boolean dispatchKeyEvent(KeyEvent e) {    
-            if (e.getKeyCode() == KeyEvent.VK_TAB) {      
-            	System.out.println("TAB pressed");
-                eventhandler.addEvent(new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
-
+            if (e.getKeyCode() == KeyEvent.VK_TAB) {
+            	// MAES: simulating a key type.
+            	if (press)
+                eventhandler.keyPressed(
+                		new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
+            	else
+                    eventhandler.keyReleased(
+                    		new KeyEvent(me, e.getID(), System.nanoTime(),0 , KeyEvent.VK_TAB, KeyEvent.CHAR_UNDEFINED));
+            	press=!press;
             }  
             return false;
           }
@@ -361,8 +354,9 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
       this.setResizable(false);
 	  this.setTitle(Strings.MOCHA_DOOM_TITLE);
 	  this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	  this.eventhandler.reposition();
-	   
+	  // Gently tell the eventhandler to wake up and set itself.	  
+	  this.requestFocus();
+	  this.eventhandler.addEvent(MochaDoomInputEvent.GET_YOUR_ASS_OFF);
 	  screens=V.getBufferedScreens(0, cmaps);
 	  RAWSCREEN=V.getScreen(0);
 	} 
@@ -376,14 +370,13 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	@Override
 	public void StartTic() {
 
-		  if (!this.isActive())
-			return;
+		  if (!this.isActive()) return;
 
 		//  System.out.println("Getting events...");
-		  while (!AWTEvents.eventQueue.isEmpty())
+		  while (eventhandler.hasMoreEvents())
 			eventhandler.GetEvent();
 		      
-		    eventhandler.grabMouse();
+		    //eventhandler.grabMouse();
 
 		
 	}
@@ -458,7 +451,16 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom.java,v $
-//Revision 1.5  2011/06/01 17:17:24  velktron
+//Revision 1.6  2011/06/02 14:54:18  velktron
+//Old AWTEvents deprecated. MochaEvents now default.
+//
+//Revision 1.3  2011/06/01 17:42:49  velktron
+//Removed stupid nagging.
+//
+//Revision 1.2  2011/06/01 17:17:24  velktron
+//New event system.
+//
+//Revision 1.1  2011/06/01 17:04:23  velktron
 //New event system.
 //
 //Revision 1.4  2011/05/30 02:25:50  velktron
