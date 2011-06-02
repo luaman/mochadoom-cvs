@@ -9,11 +9,11 @@ public class lumpinfo_t {
         public int hash;
         // A 64-bit hash that just maps an 8-char string to a long num, good for hashing
         // or for direct comparisons.
-        public long stringhash;
-        // Intepreting the first 32 bits of their name as an int.
-        public int intname;
-        public int next;
-        public int index;
+        //public long stringhash;
+        // Intepreting the first 32 bits of their name as an int. Used in initsprites.
+        public int intname; 
+        // public int next;
+        //public int index;
         
         public int hashCode(){
             return hash;
