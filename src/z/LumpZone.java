@@ -15,7 +15,7 @@ import static data.Defines.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LumpZone.java,v 1.1 2011/06/02 13:58:52 velktron Exp $
+// $Id: LumpZone.java,v 1.2 2011/06/02 14:55:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,6 +29,9 @@ import static data.Defines.*;
 // for more details.
 //
 // $Log: LumpZone.java,v $
+// Revision 1.2  2011/06/02 14:55:59  velktron
+// -debug info
+//
 // Revision 1.1  2011/06/02 13:58:52  velktron
 // Lame pseudo-zone system.
 //
@@ -72,7 +75,7 @@ import static data.Defines.*;
 
 public class LumpZone implements IZone{
 
-	public static String rcsid = "$Id: LumpZone.java,v 1.1 2011/06/02 13:58:52 velktron Exp $";
+	public static String rcsid = "$Id: LumpZone.java,v 1.2 2011/06/02 14:55:59 velktron Exp $";
 
 	Hashtable<CacheableDoomObject, Integer> zone;
 
@@ -114,13 +117,16 @@ public class LumpZone implements IZone{
 		// won't be referenced anywhere else.
 		if (lumpno!=null) {
 			disklumps[lumpno]=null;
-			System.out.printf("Lump %d %d freed\n",lump.hashCode(),lumpno);
+			//System.out.printf("Lump %d %d freed\n",lump.hashCode(),lumpno);
 		}
 	}
 
 }
 
 //$Log: LumpZone.java,v $
+//Revision 1.2  2011/06/02 14:55:59  velktron
+//-debug info
+//
 //Revision 1.1  2011/06/02 13:58:52  velktron
 //Lame pseudo-zone system.
 //
