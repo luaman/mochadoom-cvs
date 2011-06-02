@@ -149,7 +149,7 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
      // State will have to be serialized when saving.
      DS.players[i].write(f);
 
-     System.out.printf("Player %d has mobj hashcode %d",(1+i),DS.players[i].mo.hashCode());
+     //System.out.printf("Player %d has mobj hashcode %d",(1+i),DS.players[i].mo.hashCode());
      }
  }
 
@@ -247,7 +247,7 @@ protected final void UnArchiveWorld () throws IOException
   li=LL.lines[i];
   // MAES: something similar occurs with lines, too.
   li.read(f);
-  System.out.println("Line "+i+": "+li);
+  //System.out.println("Line "+i+": "+li);
   //System.out.print(i+ " {");
   for (j=0 ; j<2 ; j++)
   {
@@ -264,7 +264,7 @@ protected final void UnArchiveWorld () throws IOException
       si.read(f);
 
   }
-  System.out.printf("Position at end of WORLD: %d\n",f.getFilePointer());
+  //System.out.printf("Position at end of WORLD: %d\n",f.getFilePointer());
   }
   
 }
@@ -524,9 +524,9 @@ protected void reconstructPointers(){
     
     for(mobj_t th: TL){
         
-        System.out.printf("Thinker with id %d has prev %x next %x\n",th.id,th.previd,th.nextid);
+       // System.out.printf("Thinker with id %d has prev %x next %x\n",th.id,th.previd,th.nextid);
         if (th.player!=null){
-        System.out.printf("Thinker with id %d is player %d with mobj pointer %x\n",th.id,th.player.identify(),th.player.p_mobj);
+       // System.out.printf("Thinker with id %d is player %d with mobj pointer %x\n",th.id,th.player.identify(),th.player.p_mobj);
         player=th.id;
         // Player found, so that's our first key.
         pointindex.put(th.player.p_mobj,th);
@@ -619,7 +619,7 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     // Write out any pending objects.
     if (buffer.position()>0){
         f.write(buffer.array(),0,buffer.position());
-        System.out.println("Wrote out "+buffer.position()+" bytes");
+        //System.out.println("Wrote out "+buffer.position()+" bytes");
             
         }
     
@@ -630,7 +630,7 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     if (th.function== null) {
         // i maintains status between iterations
         for (i = 0; i < MAXCEILINGS;i++)
-        if (A.getActiveceilings()[i] == (ceiling_t)th)
+        if ((th instanceof ceiling_t) && (A.getActiveceilings()[i] == (ceiling_t)th))
             break;
         
         if (i<MAXCEILINGS)
@@ -721,7 +721,7 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
 
 if (buffer.position()>0){
     f.write(buffer.array(),0,buffer.position());
-    System.out.println("Wrote out "+buffer.position()+" bytes");
+    //System.out.println("Wrote out "+buffer.position()+" bytes");
         
     }
 
@@ -867,21 +867,17 @@ protected void UnArchiveSpecials () throws IOException
     protected final long PADSAVEP(DoomFile f) throws IOException{
         long save_p=f.getFilePointer();
         int padding =(4 - ((int) save_p & 3)) & 3;
-        System.out.printf("Current position %d Padding by %d bytes\n",save_p,padding);        
+        //System.out.printf("Current position %d Padding by %d bytes\n",save_p,padding);        
         f.seek(save_p+padding);
         return padding;        
         }
-    
-    
-
 
     @Override
     public void updateStatus(DoomStatus DS) {
         this.DS=DS;
         this.LL=DS.LL;
-        this.A=DS.P;
-        
-    }
+        this.A=DS.P;       
+    	}
 
 
     @Override
