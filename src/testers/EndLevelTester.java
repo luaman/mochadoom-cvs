@@ -7,7 +7,7 @@ import i.IDoomSystem;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 
-import awt.AWTDoom;
+import awt.OldAWTDoom;
 
 import m.DoomRandom;
 import s.IDoomSound;
@@ -15,7 +15,6 @@ import s.DummySoundDriver;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import w.DoomBuffer;
-import w.EndLevel;
 import w.WadLoader;
 import data.Defines;
 import defines.*;
@@ -23,6 +22,7 @@ import doom.DoomMain;
 import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
+import f.EndLevel;
 
 /** This is a very simple tester for the End Level screen drawer.
  *  MAES: this is mostly historical. Too many changes have occured
@@ -92,7 +92,7 @@ public class EndLevelTester {
     DC.wminfo.maxsecret=100;
     DC.wminfo.partime=28595;
     //JFrame frame = new JFrame("MochaDoom");
-    AWTDoom shit = new AWTDoom(DC, V, pal);
+    OldAWTDoom shit = new OldAWTDoom(DC, V, pal);
     shit.InitGraphics();
     
     //frame.setBounds(frame.getX(), frame.getY(), WIDTH, 240);

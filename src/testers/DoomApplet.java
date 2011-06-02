@@ -32,7 +32,6 @@ import st.StatusBar;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import w.DoomBuffer;
-import w.EndLevel;
 import w.WadLoader;
 import automap.DoomAutoMap;
 import automap.Map;
@@ -47,6 +46,7 @@ import doom.player_t;
 import doom.ticcmd_t;
 import doom.wbstartstruct_t;
 import doom.weapontype_t;
+import f.EndLevel;
 import f.Wiper;
 
 public class DoomApplet

@@ -18,7 +18,7 @@ import p.Actions;
 import p.LevelLoader;
 
 import automap.Map;
-import awt.AWTDoom;
+import awt.OldAWTDoom;
 
 import rr.UnifiedRenderer;
 import rr.patch_t;
@@ -71,7 +71,7 @@ public class AWTAutomapTester {
     IDoomSystem I=new DoomSystem();
     DoomMain DM=new DoomMain();
     // Create the frame.
-    AWTDoom frame = new AWTDoom(DM,V,pal);
+    OldAWTDoom frame = new OldAWTDoom(DM,V,pal);
     frame.InitGraphics();
     DM.I=I;
     DM.VI=frame;

@@ -21,7 +21,7 @@ import p.intercept_t;
 import p.mobj_t;
 import rr.line_t;
 import rr.sector_t;
-import awt.AWTDoom;
+import awt.OldAWTDoom;
 import b.BotGame;
 import b.Reachable;
 import b.SearchNode_t;
@@ -126,7 +126,7 @@ public class BotTester {
 		
 		public DoomMainTester(String[] args) {
 		    this.Init();
-		    this.VI = new AWTDoom(this,null,null);
+		    this.VI = new OldAWTDoom(this,null,null);
 		    this.DNI = new NetInterfaceTester(this);
 		    this.myargv = args;
 		    this.myargc = this.myargv.length; // Bump argcount +1 to maintain CheckParm behavior

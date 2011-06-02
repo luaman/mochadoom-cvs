@@ -14,7 +14,7 @@ import java.awt.image.IndexColorModel;
 
 import javax.swing.JFrame;
 
-import awt.AWTDoom;
+import awt.OldAWTDoom;
 
 import rr.patch_t;
 import s.DummySoundDriver;
@@ -68,7 +68,7 @@ public class AWTMenuTester {
     IDoomSystem I=new DoomSystem();
     DoomMain DM=new DoomMain();
     // Create the frame.
-    AWTDoom frame = new AWTDoom(DM,V,pal);
+    OldAWTDoom frame = new OldAWTDoom(DM,V,pal);
     DM.I=I;
     DM.VI=frame;
     DM.S=new DummySoundDriver();

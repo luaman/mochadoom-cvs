@@ -12,7 +12,7 @@ import p.Actions;
 import p.LevelLoader;
 
 import automap.Map;
-import awt.AWTDoom;
+import awt.OldAWTDoom;
 
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
@@ -77,7 +77,7 @@ public class AWTParallelRenderTester1 {
     DM.DGN=new DummyNetworkHandler();
     
     // Create the frame.
-    AWTDoom frame = new AWTDoom(DM,V,pal);
+    OldAWTDoom frame = new OldAWTDoom(DM,V,pal);
     frame.InitGraphics();
 
     DM.I=I;
