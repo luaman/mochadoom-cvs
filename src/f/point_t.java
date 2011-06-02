@@ -1,4 +1,4 @@
-package w;
+package f;
 
 public class point_t {
      public point_t(int x, int y) {
