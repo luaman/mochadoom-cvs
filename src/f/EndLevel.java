@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.1 2011/06/02 14:00:48 velktron Exp $
+// $Id: EndLevel.java,v 1.2 2011/06/02 14:14:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.2  2011/06/02 14:14:28  velktron
+// Implemented endlevel unloading of graphics, changed state enum.
+//
 // Revision 1.1  2011/06/02 14:00:48  velktron
 // Moved Endlevel stuff  to f, where it makes more sense.
 //
@@ -145,6 +148,13 @@ public class EndLevel implements DoomStatusAware, IVideoScaleAware{
     private static int COUNT_TIME=8;
     private static int COUNT_DONE=10;
     
+    static enum endlevel_state{
+    	NoState,
+    	StatCount,
+    	ShowNextLoc, 
+    	JustShutOff
+    }
+    
     
 //
 // GENERAL DATA
@@ -186,7 +196,7 @@ int		acceleratestage;
 int		me;
 
  // specifies current state )
-int	state;
+endlevel_state	state;
 
 // contains information passed into intermission
 public wbstartstruct_t	wbs;
@@ -459,7 +469,7 @@ protected void updateAnimatedBack()
 		
 	      case ANIM_LEVEL:
 		// gawd-awful hack for level anims
-		if (!(state == StatCount && i == 7)
+		if (!(state == endlevel_state.StatCount && i == 7)
 		    && wbs.next == a.data1)
 		{
 		    a.ctr++;
@@ -618,6 +628,7 @@ protected void drawTime
 
 protected void End()
 {
+	state=endlevel_state.JustShutOff;
     unloadData();
 }
 
@@ -687,7 +698,7 @@ protected void unloadData()
 
 protected void initNoState()
 {
-    state = NoState;
+    state = endlevel_state.NoState;
     acceleratestage = 0;
     cnt = 10;
 }
@@ -709,7 +720,7 @@ boolean		snl_pointeron = false;
 
 protected void initShowNextLoc()
 {
-    state = ShowNextLoc;
+    state = endlevel_state.ShowNextLoc;
     acceleratestage = 0;
     cnt = SHOWNEXTLOCDELAY * TICRATE;
 
@@ -810,7 +821,7 @@ protected void initDeathmatchStats()
     int		i;
     int		j;
 
-    state = StatCount;
+    state = endlevel_state.StatCount;
     acceleratestage = 0;
     dm_state = 1;
 
@@ -1036,7 +1047,7 @@ protected void drawDeathmatchStats()
 
     int i;
 
-    state = StatCount;
+    state = endlevel_state.StatCount;
     acceleratestage = 0;
     ng_state = 1;
 
@@ -1272,7 +1283,7 @@ protected void drawNetgameStats()
 
  protected void initStats()
 {
-    state = StatCount;
+    state = endlevel_state.StatCount;
     acceleratestage = 0;
     sp_state = 1;
     cnt_kills[0] = cnt_items[0] = cnt_secret[0] = -1;
@@ -1489,7 +1500,13 @@ public void Ticker()
 	
       case NoState:
 	updateNoState();
-	break;
+	 break;
+      case JustShutOff:
+    	  // We just finished, and graphics have been unloaded.
+    	  // If we don't consume a tick in this way, Doom
+    	  // will try to draw unloaded graphics.
+    	  state=endlevel_state.NoState;
+    	  break;
     }
 
 }
