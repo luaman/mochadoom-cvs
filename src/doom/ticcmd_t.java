@@ -187,6 +187,6 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
         f.put((byte) buttons);     
     }
     
-    private static ByteBuffer iobuffer=ByteBuffer.allocate(10);
+    private static ByteBuffer iobuffer=ByteBuffer.allocate(8);
     
 };

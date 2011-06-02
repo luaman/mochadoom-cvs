@@ -26,11 +26,9 @@ public class thinker_t implements CacheableDoomObject,IReadableDoomObject,IPacka
 @Override
 public void read(DoomFile f)
         throws IOException {
-	
-	// Read 12 bytes.
 	readbuffer.position(0);
 	readbuffer.order(ByteOrder.LITTLE_ENDIAN);
-	f.read(readbuffer.array(), 0,12);
+	f.read(readbuffer.array());
 	unpack(readbuffer);
 	}
 

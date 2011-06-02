@@ -439,69 +439,39 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         }
     } 
     
-    
-  //_D_: to permit this object to save/load
-    public void read(DoomFile f) throws IOException {
-        super.read(f); // Read the head thinker.
-        this.x=f.readLEInt();
-        this.y=f.readLEInt();
-        this.z=f.readLEInt();
-        f.skipBytes(8); // TODO: snext, sprev. When are those set?
-        this.angle=Tables.BITS32&f.readLEInt();
-        this.sprite=spritenum_t.values()[f.readLEInt()];
-        this.frame=f.readLEInt();
-        f.skipBytes(8); // TODO: bnext, bprev. When are those set?
-        f.skipBytes(4); // TODO: subsector
-        this.floorz=f.readLEInt();
-        this.ceilingz=f.readLEInt();
-        this.radius=f.readLEInt();
-        this.height=f.readLEInt();
-        this.momx=f.readLEInt();
-        this.momy=f.readLEInt();
-        this.momz=f.readLEInt();
-        this.validcount=f.readInt();
-        this.type=mobjtype_t.values()[f.readLEInt()];
-        f.skipBytes(4); // TODO: mobjinfo
-        this.tics=Tables.BITS32&f.readLEInt();
-        //System.out.println("State"+f.readLEInt());
-        this.stateid=f.readLEInt(); // TODO: state OK?
-        this.flags=f.readLEInt();
-        this.health=f.readLEInt();
-        this.movedir=f.readLEInt();
-        this.movecount=f.readLEInt();
-        this.p_target=f.readLEInt();
-        this.reactiontime=f.readLEInt();        
-        this.threshold=f.readLEInt();
-        this.playerid=f.readLEInt(); // TODO: player. Non null should mean that it IS a player.
-        this.lastlook=f.readLEInt();
-        spawnpoint.read(f);
-        f.skipBytes(4); // TODO: tracer
-     }
-    
     public int         eflags; //DOOM LEGACY
 
     // Fields used only during DSG unmarshalling
     public int stateid;
     public int playerid;
+    public int p_tracer;
 
+    //_D_: to permit this object to save/load
+    public void read(DoomFile f) throws IOException {
+        // More efficient, avoids duplicating code and
+        // handles little endian better.
+    	buffer.position(0);
+    	buffer.order(ByteOrder.LITTLE_ENDIAN);
+    	f.read(buffer.array());
+        this.unpack(buffer);
+     	}
+    
     @Override
     public void write(DoomFile f)
             throws IOException {
         
         // More efficient, avoids duplicating code and
         // handles little endian better.
-        ByteBuffer buffer=ByteBuffer.allocate(154);
+    	buffer.position(0);
+    	buffer.order(ByteOrder.LITTLE_ENDIAN);
         this.pack(buffer);
-        System.out.println("Wrote out mobj length: "+buffer.position());
         f.write(buffer.array());
         
     }
 
     public void pack(ByteBuffer b) throws IOException{
-        ByteOrder bo=ByteOrder.LITTLE_ENDIAN;        
-        b.order(bo);
-        
-        super.pack(b); // Read the head thinker.
+        b.order(ByteOrder.LITTLE_ENDIAN);
+        super.pack(b); // Pack the head thinker.
         b.putInt(x);
         b.putInt(y);
         b.putInt(z);
@@ -524,27 +494,63 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         b.putInt(type.ordinal());
         b.putInt(pointer(info)); // TODO: mobjinfo
         b.putInt((int) (this.tics&Tables.BITS32));
-        //System.out.println("State"+f);
         b.putInt(this.state.id); // TODO: state OK?
         b.putInt(this.flags);
         b.putInt(this.health);
         b.putInt(this.movedir);
         b.putInt(this.movecount);
-        // TODO: maybe we can set p_target before and save that instead?
-        b.putInt(pointer(target));
+        b.putInt(pointer(target)); // TODO: p_target?
         b.putInt(this.reactiontime);        
         b.putInt(this.threshold);
         // Check for player.
         if (this.player!=null){
             b.putInt(1+this.player.identify());
-            System.out.printf("Mobj with hashcode %d is player %d",pointer(this),1+this.player.identify());
-            
-        } else b.putInt(0);        b.putInt(lastlook);
-        spawnpoint.pack(b);
-        b.putInt(0xefbeadde); // MARKER
-        //b.putInt(pointer(tracer)); // TODO: tracer id        
+            //System.out.printf("Mobj with hashcode %d is player %d",pointer(this),1+this.player.identify());
+        } else b.putInt(0);
+        b.putInt(lastlook);
+        spawnpoint.pack(b);       
+        b.putInt(pointer(tracer)); // tracer pointer stored.        
     }
     
+    public void unpack(ByteBuffer b) throws IOException {
+    	b.order(ByteOrder.LITTLE_ENDIAN);
+        super.unpack(b); // 12 Read the head thinker.
+        this.x=b.getInt(); //16
+        this.y=b.getInt(); //20
+        this.z=b.getInt(); //24
+        b.getLong(); // TODO: snext, sprev. When are those set? 32
+        this.angle=Tables.BITS32&b.getInt(); // 36
+        this.sprite=spritenum_t.values()[b.getInt()]; //40 
+        this.frame=b.getInt(); //44
+        b.getLong(); // TODO: bnext, bprev. When are those set? 52
+        b.getInt(); // TODO: subsector 56
+        this.floorz=b.getInt(); // 60
+        this.ceilingz=b.getInt(); // 64
+        this.radius=b.getInt(); // 68
+        this.height=b.getInt(); // 72
+        this.momx=b.getInt(); // 76
+        this.momy=b.getInt(); // 80
+        this.momz=b.getInt(); //84
+        this.validcount=b.getInt(); // 88
+        this.type=mobjtype_t.values()[b.getInt()]; // 92
+        b.getInt(); // TODO: mobjinfo (deduced from type) //96 
+        this.tics=Tables.BITS32&b.getInt(); //100
+        //System.out.println("State"+f.readLEInt());
+        this.stateid=b.getInt(); // TODO: state OK?
+        this.flags=b.getInt();
+        this.health=b.getInt();
+        this.movedir=b.getInt();
+        this.movecount=b.getInt();
+        this.p_target=b.getInt();
+        this.reactiontime=b.getInt();        
+        this.threshold=b.getInt();
+        this.playerid=b.getInt(); // TODO: player. Non null should mean that it IS a player.
+        this.lastlook=b.getInt();
+        spawnpoint.unpack(b);
+        this.p_tracer=b.getInt(); // TODO: tracer
+     }
+    
+    private static ByteBuffer buffer=ByteBuffer.allocate(154);
 
     // TODO: a linked list of sectors where this object appears
     // public msecnode_t touching_sectorlist;
