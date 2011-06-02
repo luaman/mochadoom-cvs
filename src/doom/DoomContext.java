@@ -1,6 +1,7 @@
 package doom;
 
 import n.DoomSystemNetworking;
+import f.EndLevel;
 import f.Finale;
 import f.Wiper;
 import hu.HU;
@@ -20,8 +21,9 @@ import st.AbstractStatusBar;
 import st.IDoomStatusBar;
 import timing.ITicker;
 import v.DoomVideoRenderer;
-import w.EndLevel;
 import w.IWadLoader;
+import z.FakeZone;
+import z.IZone;
 import automap.AbstractAutoMap;
 
 /** Since a lot of stuff requires shared/global access to 
@@ -63,4 +65,5 @@ public class DoomContext {
     public SpriteManager SM;
     public ICommandLineManager CM;
     public ITicker TICK;
+    public IZone Z=new FakeZone(); // Can only be set to something else by wadloader. 
 }
