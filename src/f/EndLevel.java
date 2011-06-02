@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.3 2011/06/02 14:53:21 velktron Exp $
+// $Id: EndLevel.java,v 1.4 2011/06/02 14:56:48 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.4  2011/06/02 14:56:48  velktron
+// imports
+//
 // Revision 1.3  2011/06/02 14:53:21  velktron
 // Moved Endlevel constants to AbstractEndLevel
 //
@@ -105,7 +108,6 @@ package f;
 import static data.Defines.*;
 import static data.Limits.*;
 import static v.DoomVideoRenderer.*;
-import i.DoomStatusAware;
 import defines.*;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
