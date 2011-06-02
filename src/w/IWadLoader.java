@@ -3,6 +3,9 @@ package w;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import doom.DoomMain;
+import doom.DoomStatus;
+
 import rr.patch_t;
 
 public interface IWadLoader {
@@ -214,4 +217,7 @@ public interface IWadLoader {
 
 	public abstract lumpinfo_t GetLumpInfo(int i);
 
+	/** Set a zoning mechanism other than the dummy one */
+	public abstract void setZone(DoomStatus DS);
+	
 }

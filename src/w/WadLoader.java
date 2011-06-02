@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.33 2011/05/23 17:00:39 velktron Exp $
+// $Id: WadLoader.java,v 1.34 2011/06/02 14:23:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.34  2011/06/02 14:23:20  velktron
+// Added ability to "peg" an IZone manager.
+//
 // Revision 1.33  2011/05/23 17:00:39  velktron
 // Got rid of verbosity
 //
@@ -154,9 +157,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
 
+import doom.DoomStatus;
+
 import rr.patch_t;
 
 import utils.C2JUtils;
+import z.IZone;
+import z.LumpZone;
 import z.memblock_t;
 
 import static data.Defines.*;
@@ -165,7 +172,8 @@ import i.*;
 public class WadLoader implements IWadLoader {
 
 	protected IDoomSystem I;
-
+	protected IZone Z;
+	
 	//
 	// GLOBALS
 	//
@@ -419,16 +427,13 @@ public class WadLoader implements IWadLoader {
 				// Make all lump names uppercase. Searches should also be uppercase only.
 				lumpinfo[lump_p].name = fileinfo[fileinfo_p].name.toUpperCase();
 				lumpinfo[lump_p].hash =lumpinfo[lump_p].name.hashCode();
-				lumpinfo[lump_p].stringhash = name8
-						.getLongHash(strupr(lumpinfo[lump_p].name));
+				// lumpinfo[lump_p].stringhash = name8.getLongHash(strupr(lumpinfo[lump_p].name));
 				// LumpNameHash(lumpinfo[lump_p].name);
-				lumpinfo[lump_p].intname = name8
-						.getIntName(strupr(lumpinfo[lump_p].name));
+				lumpinfo[lump_p].intname = name8.getIntName(strupr(lumpinfo[lump_p].name));
 				//System.out.println(lumpinfo[lump_p]);
 			}
 			if (reloadname != null)
 				handle.close();
-		
 	}
 
 	/* (non-Javadoc)
@@ -513,6 +518,7 @@ public class WadLoader implements IWadLoader {
 		// set up caching
 		size = numlumps;
 		lumpcache = new CacheableDoomObject[size];
+		Z.setLumps(lumpcache);
 		preloaded = new boolean[size];
 
 		if (lumpcache == null)
@@ -550,9 +556,10 @@ public class WadLoader implements IWadLoader {
 	 * 
      * @param name
      * @return
-	 */
+	 *
+	 * UNUSED
 
-	public int CheckNumForName2(String name) {
+	    public int CheckNumForName2(String name) {
 
 		// scan backwards so patch lump files take precedence
 		int lump_p = numlumps;
@@ -571,7 +578,7 @@ public class WadLoader implements IWadLoader {
 
 		// TFB. Not found.
 		return -1;
-	}
+	} */
 
 	/**
 	 * Old, shitty method for CheckNumForName. It's an overly literal
@@ -583,7 +590,7 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 * @param name
 	 * @return
-	 */
+	 *
 
 	public int CheckNumForName3(String name) {
 
@@ -612,7 +619,7 @@ public class WadLoader implements IWadLoader {
 
 		// TFB. Not found.
 		return -1;
-	}
+	} */
 
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#GetLumpinfoForName(java.lang.String)
@@ -677,7 +684,6 @@ public class WadLoader implements IWadLoader {
         }
         return null;
     }
-
 	
 	//
 	// W_LumpLength
@@ -765,6 +771,7 @@ public class WadLoader implements IWadLoader {
 			// read the lump in
 
 			// System.out.println("cache miss on lump "+lump);
+			// Fake Zone system: mark this particular lump with the tag specified
 			// ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[lump]);
 			// Read as a byte buffer anyway.
 			ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
@@ -808,6 +815,8 @@ public class WadLoader implements IWadLoader {
 			// Z.ChangeTag (lumpcache[lump],tag);
 		}
 
+		 Z.Track(lumpcache[lump],lump);
+		 
 		return lumpcache[lump];
 	}
 
@@ -872,6 +881,8 @@ public class WadLoader implements IWadLoader {
 
 		}
 
+		// We still track ONE lump.
+		Z.Track(lumpcache[lump],lump);
 		return;
 	}
 
@@ -1049,8 +1060,8 @@ public class WadLoader implements IWadLoader {
 
 		doomhash = new Hashtable<String, Integer>(numlumps);
 
-		for (int i = 0; i < numlumps; i++)
-			lumpinfo[i].index = -1; // mark slots empty
+		//for (int i = 0; i < numlumps; i++)
+		//	lumpinfo[i].index = -1; // mark slots empty
 
 		// Insert nodes to the beginning of each chain, in first-to-last
 		// lump order, so that the last lump of a given name appears first
@@ -1080,6 +1091,12 @@ public class WadLoader implements IWadLoader {
 	@Override
 	public lumpinfo_t GetLumpInfo(int i) {
 		return this.lumpinfo[i];
+	}
+
+	@Override
+	public void setZone(DoomStatus DS) {
+		Z=DS.Z=new LumpZone();
+		
 	}
 
 }
