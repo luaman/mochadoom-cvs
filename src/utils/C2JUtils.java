@@ -83,6 +83,22 @@ public class C2JUtils {
     	return len-1;
     }
     
+    /** C-like string length (null termination).
+     * 
+     * @param s1
+     * @return 
+     */
+    static public String nullTerminatedString(char[] s) {
+    	if (s==null) return "";
+    	int len=0;
+    	
+    	while(s[len++]>0){
+    		if (len>=s.length) break;
+            }
+    	
+    	return new String (s,0,len-1);
+    }
+    
     /** Automatically "initializes" arrays of objects with their
      * default constuctor. It's better than doing it by hand, IMO.
      * If you have a better way, be my guest.
