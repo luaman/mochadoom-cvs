@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.2 2011/06/02 14:14:28 velktron Exp $
+// $Id: EndLevel.java,v 1.3 2011/06/02 14:53:21 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.3  2011/06/02 14:53:21  velktron
+// Moved Endlevel constants to AbstractEndLevel
+//
 // Revision 1.2  2011/06/02 14:14:28  velktron
 // Implemented endlevel unloading of graphics, changed state enum.
 //
@@ -119,7 +122,6 @@ import s.IDoomSound;
 import st.IDoomStatusBar;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
-import v.IVideoScaleAware;
 import w.IWadLoader;
 import w.animenum_t;
 import z.IZone;
@@ -131,7 +133,7 @@ import z.IZone;
  *
  */
 
-public class EndLevel implements DoomStatusAware, IVideoScaleAware{
+public class EndLevel extends AbstractEndLevel {
 
     ////////////////// STATUS ///////////////////
     private DoomMain DS;
@@ -154,6 +156,10 @@ public class EndLevel implements DoomStatusAware, IVideoScaleAware{
     	ShowNextLoc, 
     	JustShutOff
     }
+    
+  //GLOBAL LOCATIONS
+    private static final int WI_TITLEY       =2;
+    private static final int WI_SPACINGY         =3;
     
     
 //
