@@ -180,7 +180,7 @@ public class Menu extends AbstractDoomMenu {
             EndGame, EndGameResponse, Episode, FinishReadThis, LoadGame,
             LoadSelect, MusicVol, NewGame, Options, VerifyNightmare,
             SaveSelect, SfxVol, SizeDisplay, SaveGame, Sound, QuitDOOM,
-            QuitResponse, QuickLoadResponse, ReadThis, ReadThis2;
+            QuitResponse, QuickLoadResponse, QuickSaveResponse, ReadThis, ReadThis2;
 
     /** DrawRoutine class definitions, replacing "function pointers". */
 
@@ -211,6 +211,7 @@ public class Menu extends AbstractDoomMenu {
 
         QuitDOOM = new M_QuitDOOM();
         QuickLoadResponse = new M_QuickLoadResponse();
+        QuickSaveResponse= new M_QuickSaveResponse();
         QuitResponse = new M_QuitResponse();
         
         ReadThis = new M_ReadThis();
@@ -558,8 +559,8 @@ public class Menu extends AbstractDoomMenu {
             quickSaveSlot = -2; // means to pick a slot now
             return;
         }
-        tempstring = (QSPROMPT + savegamestrings[quickSaveSlot]);
-        // TODO:M_StartMessage(tempstring,M_QuickSaveResponse,true);
+        tempstring = String.format(QSPROMPT,C2JUtils.nullTerminatedString(savegamestrings[quickSaveSlot]));
+        StartMessage(tempstring,this.QuickSaveResponse,true);
     }
 
     //
@@ -603,7 +604,7 @@ public class Menu extends AbstractDoomMenu {
             StartMessage(QSAVESPOT, null, false);
             return;
         }
-        tempstring = (QLPROMPT + savegamestrings[quickSaveSlot]);
+        tempstring = String.format(QLPROMPT, C2JUtils.nullTerminatedString(savegamestrings[quickSaveSlot]));
         StartMessage(tempstring, QuickLoadResponse, true);
     }
 
@@ -1182,7 +1183,7 @@ public class Menu extends AbstractDoomMenu {
                 DM.players[DM.consoleplayer].message = gammamsg[usegamma];
                 // FIXME: it's pointless to reload the same palette.
                 //I.SetPalette (W.CacheLumpName ("PLAYPAL",PU_CACHE));
-                //VI.SetPalette(0);
+                DM.VI.SetPalette(0);
                 V.setUsegamma(usegamma);
                 return true;
 
