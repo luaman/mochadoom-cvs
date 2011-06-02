@@ -143,14 +143,10 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
     @Override
     public void read(DoomFile f)
             throws IOException {
-        forwardmove=f.readByte();
-        sidemove=   f.readByte();        
-        angleturn=f.readLEShort();
-        consistancy=f.readLEShort();
-        // We blow these up to full chars.
-        chatchar=(char) f.readByte();
-        buttons=(char) f.readByte();
-        
+    	iobuffer.position(0);
+    	iobuffer.order(ByteOrder.LITTLE_ENDIAN);
+    	f.read(iobuffer.array());
+    	unpack(iobuffer);
     }
     
     /** This is useful only when loading/saving players from savegames.
@@ -190,5 +186,7 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
         f.put((byte) chatchar);
         f.put((byte) buttons);     
     }
+    
+    private static ByteBuffer iobuffer=ByteBuffer.allocate(10);
     
 };
