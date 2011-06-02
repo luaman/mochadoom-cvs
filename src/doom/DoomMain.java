@@ -15,8 +15,9 @@ import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
+import awt.OldAWTDoom;
 import awt.AWTDoom;
-import awt.AWTDoom3;
+import f.EndLevel;
 import f.Finale;
 import f.Wiper;
 import g.DoomSaveGame;
@@ -65,7 +66,6 @@ import v.IVideoScaleAware;
 import v.VideoScaleInfo;
 import v.VisualSettings;
 import w.DoomFile;
-import w.EndLevel;
 import w.WadLoader;
 import static data.Defines.*;
 import static data.Limits.*;
@@ -80,7 +80,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.62 2011/06/01 17:40:17 velktron Exp $
+// $Id: DoomMain.java,v 1.63 2011/06/02 14:54:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -106,7 +106,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.62 2011/06/01 17:40:17 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.63 2011/06/02 14:54:53 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -745,7 +745,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     //
     // D_DoomMain
     //
-    public void Start ()
+    @SuppressWarnings("deprecation")
+	public void Start ()
     {
         int             p;
         StringBuffer file=new StringBuffer();
@@ -1008,6 +1009,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         System.out.print ("W_Init: Init WADfiles.\n");
         try {
+        	W.setZone(this);
             W.InitMultipleFiles (wadfiles);
         } catch (Exception e1) {
             // TODO Auto-generated catch block
@@ -1019,17 +1021,19 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         byte[] pal=W.CacheLumpName("PLAYPAL", PU_STATIC).getBuffer().array();
         // set it, create it, but don't make it visible yet.
         
-        p = CM.CheckParm ("-mochaevents");
-        if (eval(p)) {
-        	System.out.print("Using MOCHAEVENTS AWT inteface\n");
-        	VI=new AWTDoom3(this,(BufferedRenderer) V,pal);
+        p = CM.CheckParm ("-oldawtevents");
+        if (!eval(p)) {
+        	// This is the "mochaevents" interface, now default.
+        	VI=new AWTDoom(this,(BufferedRenderer) V,pal);
         }
         else {
-        	System.out.print("Using DEFAULT AWT inteface\n");
-        	VI=new AWTDoom(this,(BufferedRenderer) V,pal);
+        	System.out.print("Using OLDER AWT inteface. Some stuff may be broken!\n");
+        	VI=new OldAWTDoom(this,(BufferedRenderer) V,pal);
         }
         
         VI.InitGraphics();
+        
+        
 
         // MAES: Before we begin calling the various Init() stuff,
         // we need to make sure that objects that support the IVideoScaleAware
@@ -1039,7 +1043,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // MAES: The status bar needs this update because it can "force"
         // the video renderer to assign it a scratchpad screen (Screen 4).
-        this.ST.updateStatus(this);
+        // Since we're at it, let's update everything, it's easy!
+        
+        this.updateStatusHolders(this);
 
         // MAES: Check for Ultimate Doom in "doom.wad" filename.
         CheckForUltimateDoom();
@@ -4021,6 +4027,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.63  2011/06/02 14:54:53  velktron
+//MochaEvents is default. IZone connector for IWadloader.
+//
 //Revision 1.62  2011/06/01 17:40:17  velktron
 //Techdemo v1.4a level. Default novert and experimental mochaevents interface.
 //
