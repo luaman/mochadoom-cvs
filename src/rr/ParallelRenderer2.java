@@ -18,23 +18,16 @@ import doom.DoomMain;
 import doom.player_t;
 import doom.thinker_t;
 
-/** This is Mocha Doom's famous parallel software renderer. It builds
- *  on the basic software renderer, but adds specialized handling for 
- *  drawing segs (walls) and spans (floors) in parallel. There's inherent
- *  parallelism between walls and floor, and internal parallelism between
- *  walls and between floors. However, visplane limits and openings
- *  need to be pre-computed before any actual drawing starts, that's why
- *  rendering of walls is stored in "RWI"s or "Render Wall Instructions",
- *  and then rendered once they are all in place and the can be parallelized
- *  between rendering threads. 
- *  
- *  Rendering of sprites is NOT parallelized yet (and probably not worth it,
- *  at this point).
+/** This is a second attempt at building a seg-focused parallel renderer, instead of
+ * column-based. It does function, but is broken and has unsolved data dependencies.
+ * It's therefore not used in official releases, and I chose to deprecate it.
+ * If you still want to develop it, be my guest.
  * 
- * @author admin
+ * @author velktron
  *
  */
 
+@Deprecated
 public class ParallelRenderer2 extends RendererState  {
 
 	////////// PARALLEL OBJECTS /////////////
@@ -43,6 +36,7 @@ public class ParallelRenderer2 extends RendererState  {
 	private Executor tp;
 	private VisplaneWorker[] vpw;
 	
+	private CyclicBarrier wallbarrier;
 	private CyclicBarrier visplanebarrier;
 		
 	private RenderSegInstruction[] RSI;
@@ -50,9 +44,9 @@ public class ParallelRenderer2 extends RendererState  {
 	/** Increment this as you submit RWI to the "queue". Remember to reset to 0 when you have drawn everything!
 	 * 
 	 */
-	private int RWIcount=0;
+	private int RSIcount=0;
 	
-	private RenderSegExecutor[] RWIExec;
+	private RenderSegExecutor[] RSIExec;
 	
 
 	
@@ -89,15 +83,16 @@ public class ParallelRenderer2 extends RendererState  {
      * @param DM
      */
     public ParallelRenderer2(DoomMain DM) {
-      this(DM,2,1);
+      this(DM,1,1);
     }
 
     private void initializeParallelStuff() {
         // Prepare parallel stuff
-          RWIExec=new RenderSegExecutor[NUMWALLTHREADS];
+          RSIExec=new RenderSegExecutor[NUMWALLTHREADS];
           tp=   Executors.newFixedThreadPool(NUMWALLTHREADS+NUMFLOORTHREADS);
           // Prepare the barrier for MAXTHREADS + main thread.
-          visplanebarrier=new CyclicBarrier(NUMWALLTHREADS+NUMFLOORTHREADS+1);
+          wallbarrier=new CyclicBarrier(NUMWALLTHREADS+1);
+          visplanebarrier=new CyclicBarrier(NUMFLOORTHREADS+1);
           
           vpw=new VisplaneWorker[NUMFLOORTHREADS];
           
@@ -113,31 +108,12 @@ public class ParallelRenderer2 extends RendererState  {
 
       public ParallelSegs(){
           super();
-      }
-      
-      /**
-       * R_RenderSegLoop
-       * Draws zero, one, or two textures (and possibly a masked texture) 
-       * for walls. Can draw or mark the starting pixel of floor and ceiling 
-       * textures. Also sets the actual sprite clipping info (where sprites should be cut)
-       * 
-       * Since rw_x ranges are non-overlapping, rendering all walls means completing
-       * the clipping list as well.
-       * 
-       * FIXME: the only difference between the parallel and the non-parallel version is
-       * that the parallel doesn't draw immediately but rather, generates RWIs.
-       * This can surely be unified to avoid replicating code.
-       * 
-       * CALLED: CORE LOOPING ROUTINE.
-       *
-       *
-       */
-      
+      }     
+
       @Override
-      public void RenderSegLoop () 
+      protected void RenderSegLoop () 
       {
-          int     angle; // angle_t
-          int     index;
+
           int         yl; // low
           int         yh; // hight
           int         mid;
@@ -145,6 +121,8 @@ public class ParallelRenderer2 extends RendererState  {
           int         top;
           int         bottom;
          
+          GenerateRSI();
+          
           for ( ; rw_x < rw_stopx ; rw_x++)
           {
           // mark floor / ceiling areas
@@ -190,50 +168,11 @@ public class ParallelRenderer2 extends RendererState  {
           }
           
           // texturecolumn and lighting are independent of wall tiers
-          if (segtextured)
-          {
-              // calculate texture offset
-             
-              
-            // CAREFUL: a VERY anomalous point in the code. Their sum is supposed
-            // to give an angle not exceeding 45 degrees (or 0x0FFF after shifting).
-            // If added with pure unsigned rules, this doesn't hold anymore,
-            // not even if accounting for overflow.
-              angle = Tables.toBAMIndex(rw_centerangle + (int)xtoviewangle[rw_x]);
-              //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
-            //angle&=0x1FFF;
-              
-            // FIXME: We are accessing finetangent here, the code seems pretty confident
-            // in that angle won't exceed 4K no matter what. But xtoviewangle
-            // alone can yield 8K when shifted.
-            // This usually only overflows if we idclip and look at certain directions 
-           // (probably angles get fucked up), however it seems rare enough to just 
-           // "swallow" the exception. You can eliminate it by anding with 0x1FFF if you're so inclined. 
-            
-            texturecolumn = rw_offset-FixedMul(finetangent[angle],rw_distance);
-             texturecolumn >>= FRACBITS;
-            // calculate lighting
-            index = rw_scale>>LIGHTSCALESHIFT;
-    
-
-              if (index >=  MAXLIGHTSCALE )
-              index = MAXLIGHTSCALE-1;
-
-              dc_colormap = walllights[index];
-              dc_x = rw_x;
-              dc_iscale = (int) (0xffffffffL / rw_scale);
-          }
-          
+                    
           // draw the wall tiers
           if (midtexture!=0)
           {
               // single sided line
-              dc_yl = yl;
-              dc_yh = yh;
-              dc_texheight = TexMan.getTextureheight(midtexture)>>FRACBITS; // killough
-              dc_texturemid = rw_midtexturemid;              
-              dc_source = GetColumn(midtexture,texturecolumn);
-              CompleteColumn();
               ceilingclip[rw_x] = (short) viewheight;
               floorclip[rw_x] = -1;
           }
@@ -251,14 +190,7 @@ public class ParallelRenderer2 extends RendererState  {
 
               if (mid >= yl)
               {
-                  dc_yl = yl;
-                  dc_yh = mid;
-                  dc_texturemid = rw_toptexturemid;
-                  dc_texheight=TexMan.getTextureheight(toptexture)>>FRACBITS;
-                  dc_source = GetColumn(toptexture,texturecolumn);
-                  //dc_source_ofs=0;
-                  CompleteColumn();
-                  ceilingclip[rw_x] = (short) mid;
+                   ceilingclip[rw_x] = (short) mid;
               }
               else
                   ceilingclip[rw_x] = (short) (yl-1);
@@ -282,15 +214,6 @@ public class ParallelRenderer2 extends RendererState  {
               
               if (mid <= yh)
               {
-                  dc_yl = mid;
-                  dc_yh = yh;
-                  dc_texturemid = rw_bottomtexturemid;
-                  dc_texheight=TexMan.getTextureheight(bottomtexture)>>FRACBITS;
-                  dc_source = GetColumn(bottomtexture,
-                              texturecolumn);
-                  CompleteColumn();
-      
-                  
                   floorclip[rw_x] = (short) mid;
               }
               else
@@ -316,48 +239,51 @@ public class ParallelRenderer2 extends RendererState  {
           bottomfrac += bottomstep;
           }
       }
-      
-      /** Parallel version. Since there's so much crap to take into account when rendering, the number of
-       * walls to render is unknown a-priori and the BSP trasversal itself is not worth parallelizing,
-       * it makes more sense to store "rendering instructions" as quickly as the BSP can be transversed,
-       * and then execute those in parallel. Also saves on having to duplicate way too much status.
-       */
-      
-      @Override
-      protected final void CompleteColumn(){
+
+      protected final void GenerateRSI(){
           /*(int centery, int dc_iscale, int dc_source_ofs, int dc_texturemid,
           int dc_x, int dc_yh, int dc_yl, int[] columnofs, byte[] dc_colormap, byte[] dc_source){*/
-          if (RWIcount>=RSI.length){
+          if (RSIcount>=RSI.length){
               ResizeRWIBuffer();
           }
               
-          RSI[RWIcount].bottomfrac=bottomfrac;
-          RSI[RWIcount].bottomstep=bottomstep;
-          RSI[RWIcount].bottomtexture=bottomtexture;
-          RSI[RWIcount].markceiling=markceiling;
-          RSI[RWIcount].markfloor=markfloor;
-          RSI[RWIcount].midtexture=midtexture;
-          RSI[RWIcount].pixhigh=pixhigh;
-          RSI[RWIcount].pixhighstep=pixhighstep;
-          RSI[RWIcount].pixlow=pixlow;
-          RSI[RWIcount].pixlowstep=pixlowstep;
-          RSI[RWIcount].rw_bottomtexturemid=rw_bottomtexturemid;
-          RSI[RWIcount].rw_centerangle=rw_centerangle;
-          RSI[RWIcount].rw_distance=rw_distance;
-          RSI[RWIcount].rw_midtexturemid=rw_midtexturemid;
-          RSI[RWIcount].rw_offset=rw_offset;
-          RSI[RWIcount].rw_scale=rw_scale;
-          RSI[RWIcount].rw_scalestep=rw_scalestep;
-          RSI[RWIcount].rw_stopx=rw_stopx;
-          RSI[RWIcount].rw_toptexturemid=rw_toptexturemid;
-          RSI[RWIcount].rw_x=rw_x;
-          RSI[RWIcount].segtextured=segtextured;
-          RSI[RWIcount].topfrac=topfrac;
-          RSI[RWIcount].topstep=topstep;
-          RSI[RWIcount].toptexture=toptexture;
-
-          RWIcount++;
+          RSI[RSIcount].bottomfrac=bottomfrac;
+          RSI[RSIcount].bottomstep=bottomstep;
+          RSI[RSIcount].bottomtexture=bottomtexture;
+          RSI[RSIcount].markceiling=markceiling;
+          RSI[RSIcount].markfloor=markfloor;
+          RSI[RSIcount].midtexture=midtexture;
+          RSI[RSIcount].pixhigh=pixhigh;
+          RSI[RSIcount].pixhighstep=pixhighstep;
+          RSI[RSIcount].pixlow=pixlow;
+          RSI[RSIcount].pixlowstep=pixlowstep;
+          RSI[RSIcount].rw_bottomtexturemid=rw_bottomtexturemid;
+          RSI[RSIcount].rw_centerangle=rw_centerangle;
+          RSI[RSIcount].rw_distance=rw_distance;
+          RSI[RSIcount].rw_midtexturemid=rw_midtexturemid;
+          RSI[RSIcount].rw_offset=rw_offset;
+          RSI[RSIcount].rw_scale=rw_scale;
+          RSI[RSIcount].rw_scalestep=rw_scalestep;
+          RSI[RSIcount].rw_stopx=rw_stopx;
+          RSI[RSIcount].rw_toptexturemid=rw_toptexturemid;
+          RSI[RSIcount].rw_x=rw_x;
+          RSI[RSIcount].segtextured=segtextured;
+          RSI[RSIcount].topfrac=topfrac;
+          RSI[RSIcount].topstep=topstep;
+          RSI[RSIcount].toptexture=toptexture;
+          RSI[RSIcount].walllights=walllights;
+          RSI[RSIcount].viewheight=viewheight;
+          RSI[RSIcount].floorplane=floorplane;
+          RSI[RSIcount].ceilingplane=ceilingplane;
+          RSIcount++;
       }
+
+
+	@Override
+	protected void CompleteColumn() {
+		// TODO Auto-generated method stub
+		
+	}
 
 
       
@@ -766,11 +692,11 @@ private void InitRWISubsystem() {
     // AFTER we initialize the RWI themselves,
     // before V is set (right?) 
     for (int i=0;i<NUMWALLTHREADS;i++){
-        RWIExec[i]=new RenderSegExecutor(screen,
+        RSIExec[i]=new RenderSegExecutor(screen,
         		this, TexMan, RSI, ceilingclip, floorclip, columnofs, 
-        		xtoviewangle, ylookup, walllights, this.visplanebarrier);
-        RWIExec[i].setVideoScale(this.vs);
-        RWIExec[i].initScaling();
+        		xtoviewangle, ylookup, this.visplanes,walllights, this.wallbarrier);
+        RSIExec[i].setVideoScale(this.vs);
+        RSIExec[i].initScaling();
     }
 }
 
@@ -790,23 +716,23 @@ private void ResizeRWIBuffer() {
     RSI=tmp;   
     
     for (int i=0;i<NUMWALLTHREADS;i++){
-      // TODO  RWIExec[i].updateRWI(RSI);
+      RSIExec[i].updateRSI(RSI);
     }
     
     System.out.println("RWI Buffer resized. Actual capacity "+RSI.length);
 }
 
 
-private void RenderRWIPipeline() {
+private void RenderRSIPipeline() {
 
     for (int i=0;i<NUMWALLTHREADS;i++){
-        RWIExec[i].setRange((i*RWIcount)/NUMWALLTHREADS, ((i+1)*RWIcount)/NUMWALLTHREADS);
+        RSIExec[i].setRange((i*RSIcount)/NUMWALLTHREADS, ((i+1)*RSIcount)/NUMWALLTHREADS);
         //RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
-        tp.execute(RWIExec[i]);
+        tp.execute(RSIExec[i]);
     }
     
     //System.out.println("RWI count"+RWIcount);
-    RWIcount=0;
+    RSIcount=0;
 }
 
 
@@ -852,19 +778,26 @@ public void RenderPlayerView (player_t player)
 
   // The head node is the last node output.
   MyBSP.RenderBSPNode (LL.numnodes-1);
-  
-  RenderRWIPipeline();
+  MyPlanes.ClearClips ();
+  RenderRSIPipeline();
   // Check for new console commands.
   DGN.NetUpdate ();
+  
+  try {
+	    wallbarrier.await();
+	} catch (Exception e){
+	    e.printStackTrace();
+	}
   
   // "Warped floor" fixed, same-height visplane merging fixed.
   MyPlanes.DrawPlanes ();
   
   try {
-    visplanebarrier.await();
-} catch (Exception e){
-    e.printStackTrace();
-}
+	    visplanebarrier.await();
+	} catch (Exception e){
+	    e.printStackTrace();
+	}
+
 
   
   // Check for new console commands.
@@ -928,7 +861,7 @@ public void Init ()
 @Override
 public void initScaling(){
     super.initScaling();
-    this.RSI=new RenderSegInstruction[SCREENWIDTH*3];
+    this.RSI=new RenderSegInstruction[MAXSEGS*3];
     C2JUtils.initArrayOfObjects(RSI);
     
     initializeParallelStuff();
