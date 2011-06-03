@@ -27,7 +27,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.23 2011/05/31 13:33:54 velktron Exp $
+// $Id: MenuMisc.java,v 1.24 2011/06/03 16:37:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -51,7 +51,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.23 2011/05/31 13:33:54 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.24 2011/06/03 16:37:09 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -448,7 +448,7 @@ public void ScreenShot ()
             DoomSystem.MiscError("Couldn't read file %s (%s)", name, e.getMessage());
             return -1;
         }
-        System.arraycopy(buf, 0, buffer, 0, length);
+        System.arraycopy(buf, 0, buffer, 0, Math.min(count,buffer.length));
         return length;
     }
 
@@ -459,11 +459,15 @@ public void ScreenShot ()
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.24  2011/06/03 16:37:09  velktron
+// Readfile will only read at most as much as the buffer allows.
+//
 // Revision 1.23  2011/05/31 13:33:54  velktron
 // -verbosity
 //
 // Revision 1.22  2011/05/31 09:57:45  velktron
-// Fixed broken parsing of unspaced strings. It's never fun having to come up with your own function for string manipulation!
+// Fixed broken parsing of unspaced strings. 
+// It's never fun having to come up with your own function for string manipulation!
 //
 // Revision 1.21  2011/05/30 15:46:50  velktron
 // AbstractDoomMenu implemented.
