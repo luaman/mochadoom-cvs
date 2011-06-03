@@ -523,10 +523,8 @@ protected void reconstructPointers(){
     int player=0;
     
     for(mobj_t th: TL){
-        
-       // System.out.printf("Thinker with id %d has prev %x next %x\n",th.id,th.previd,th.nextid);
+
         if (th.player!=null){
-       // System.out.printf("Thinker with id %d is player %d with mobj pointer %x\n",th.id,th.player.identify(),th.player.p_mobj);
         player=th.id;
         // Player found, so that's our first key.
         pointindex.put(th.player.p_mobj,th);
@@ -569,6 +567,7 @@ protected void rewirePointers(){
     for(mobj_t th: TL){
         if (th.p_target!=0){
             th.target=pointindex.get(th.p_target);
+            th.tracer=pointindex.get(th.tracer);
            // System.out.printf("Object %s has target %s\n",th.type.toString(),th.target.type.toString());
         }
     }
@@ -720,9 +719,7 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
 }
 
 if (buffer.position()>0){
-    f.write(buffer.array(),0,buffer.position());
-    //System.out.println("Wrote out "+buffer.position()+" bytes");
-        
+    f.write(buffer.array(),0,buffer.position());        
     }
 
 
