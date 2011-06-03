@@ -505,11 +505,13 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         // Check for player.
         if (this.player!=null){
             b.putInt(1+this.player.identify());
+
             //System.out.printf("Mobj with hashcode %d is player %d",pointer(this),1+this.player.identify());
         } else b.putInt(0);
         b.putInt(lastlook);
         spawnpoint.pack(b);       
         b.putInt(pointer(tracer)); // tracer pointer stored.        
+
     }
     
     public void unpack(ByteBuffer b) throws IOException {
