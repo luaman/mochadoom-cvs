@@ -98,6 +98,8 @@ SpriteManager,IVideoScaleAware,ILimitResettable,IGetColumn{
     protected static final boolean DEBUG2=false;
     // HACK: An all zeroes array used for fast clearing of certain visplanes.
     protected int[] BLANKCACHEDHEIGHT;
+    protected short[] BLANKFLOORCLIP;
+    protected short[] BLANKCEILINGCLIP;
     
     //////////////////////////////// STATUS ////////////////
 
@@ -2866,7 +2868,7 @@ validcount++;
             floorplane = MyPlanes.CheckPlane (floorplane, rw_x, rw_stopx-1);
             }
 
-            RenderSegLoop ();
+            RenderSegLoop();
 
             // After rendering is actually performed, clipping is set.
             
@@ -2924,7 +2926,7 @@ validcount++;
          *
          */
         
-        public void RenderSegLoop () 
+        protected void RenderSegLoop () 
         {
             int     angle; // angle_t
             int     index;
@@ -3339,11 +3341,9 @@ validcount++;
              * 
              */
             
-            for (int i=0 ; i<viewwidth ; i++)
-            {
-            floorclip[i] =(short) viewheight;
-            ceilingclip[i] = -1;
-            }
+            // Maes: this should be faster, since it's called so often.
+            System.arraycopy(BLANKFLOORCLIP,0,floorclip,0,viewwidth);
+            System.arraycopy(BLANKCEILINGCLIP,0,ceilingclip,0,viewwidth);
 
             // Point to #1 in visplane list? OK... ?!
             lastvisplane = 0;          
@@ -3362,6 +3362,13 @@ validcount++;
             // scale will be unit scale at SCREENWIDTH/2 distance
             basexscale = FixedDiv (finecosine[angle],centerxfrac);
             baseyscale = -FixedDiv (finesine[angle],centerxfrac);
+        }
+        
+        public void ClearClips ()
+        {              
+            
+            System.arraycopy(BLANKFLOORCLIP,0,floorclip,0,viewwidth);
+            System.arraycopy(BLANKCEILINGCLIP,0,ceilingclip,0,viewwidth);
         }
         
         /**
@@ -3856,8 +3863,7 @@ validcount++;
     temp = dx;
     dx = dy;
     dy = temp;
-       }
-    
+       }   
        angle = (int) ((tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT);
 
        // use as cosine
@@ -4462,6 +4468,13 @@ validcount++;
               scalelight[i][j] = colormaps[level];
           }
           }
+          
+          for (i=0 ; i<viewwidth ; i++)
+          {
+          BLANKFLOORCLIP[i] =(short) viewheight;
+          BLANKCEILINGCLIP[i] = -1;
+          }
+          
       }
       
       public void FillBackScreen() {
@@ -4720,23 +4733,40 @@ validcount++;
         int lump = W.CheckNumForName("TRANMAP");
         boolean ok=false;
         
-        // If a tranlucency filter map lump is present, use it
+        // PRIORITY: a map file has been specified from commandline. Try to read it.
+        int p; String tranmap;
+        if ((p=DM.CM.CheckParm("-tranmap"))!=0){
+        	if ((tranmap=DM.CM.getArgv(p+1))!=null){
+        if (C2JUtils.testAccess(tranmap, "r")){
+            System.out.printf("Translucency map file %s specified in -tranmap arg. Attempting to use...",tranmap);
+            main_tranmap=new byte[256*256];  // killough 4/11/98
+            int result=MenuMisc.ReadFile(tranmap, main_tranmap);
+            if (result>0) return;
+            System.out.print("...failure.\n");
+        		}
+        	}
+        }
+        
+        // Next, if a tranlucency filter map lump is present, use it
         if (lump != -1) {  // Set a pointer to the translucency filter maps.
           System.out.print("Translucency map found in lump. Attempting to use...");
           //main_tranmap=new byte[256*256];  // killough 4/11/98
-          main_tranmap = W.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC);   // killough 4/11/98          
-          return;
-          
+          main_tranmap = W.CacheLumpNumAsRawBytes(lump, Defines.PU_STATIC);   // killough 4/11/98
+          // Tolerate 64K or more.
+          if (main_tranmap.length>=0x10000) return;
+          System.out.print("...failure.\n"); // Not good, try something else.
         }
         
-        // A map file already exists. Try to read it.
+        // A default map file already exists. Try to read it.
         if (C2JUtils.testAccess("tranmap.dat", "r")){
-            System.out.print("Translucency map found in lump. Attempting to use...");
+            System.out.print("Translucency map found in default tranmap.dat file. Attempting to use...");
             main_tranmap=new byte[256*256];  // killough 4/11/98
             int result=MenuMisc.ReadFile("tranmap.dat", main_tranmap);
-            if (result>0) return;
-            System.out.print("fail.\n");
-        }
+            if (result>0) return;  // Something went wrong, so fuck that.          
+        	}
+        
+
+        // Nothing to do, so we must synthesize it from scratch. And, boy, is it slooow.
           {   // Compose a default transparent filter map based on PLAYPAL.
               System.out.print("Computing translucency map from scratch...that's gonna be SLOW...");
             byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL", Defines.PU_STATIC);
@@ -4761,15 +4791,15 @@ validcount++;
             
             // Init distance map. Every original palette colour has a
             // certain distance from all the others. The diagonal is zero.
-            // The interpretation that e.g. the mixture of color 2 and 8 will
+            // The interpretation is that e.g. the mixture of color 2 and 8 will
             // have a RGB value, which is closest to euclidean distance to
-            // e.g. original color 9. Therefore we should put "9" in there.
-            // a distance of 0, so it shoul
+            // e.g. original color 9. Therefore we should put "9" in the (2,8)
+            // and (8,2) cells of the tranmap.
             
             final float[] tmpdist=new float[256];
             
             for (int a=0;a<256;a++){
-                for (int b=0;b<256;b++){
+                for (int b=a;b<256;b++){
                     // We evaluate the mixture of a and b
                     // Construct distance table vs all of the ORIGINAL colors.
                     for (int k=0;k<256;k++){
@@ -4777,6 +4807,7 @@ validcount++;
                         }
                     
                     main_tranmap[(a<<8)|b]=(byte) findMin(tmpdist);
+                    main_tranmap[(b<<8)|a]=(byte) findMin(tmpdist);
                 }
             }
             System.out.print("...done\n");
@@ -6127,6 +6158,10 @@ validcount++;
             
             // Pre-scale stuff.
             BLANKCACHEDHEIGHT=new int[SCREENHEIGHT];
+            BLANKFLOORCLIP=new short[SCREENWIDTH];
+            BLANKCEILINGCLIP=new short[SCREENWIDTH];
+
+
             floorclip=new short[SCREENWIDTH];
             ceilingclip=new short[SCREENWIDTH];
             negonearray=new short[SCREENWIDTH]; // MAES: in scaling
