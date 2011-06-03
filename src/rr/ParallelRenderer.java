@@ -74,7 +74,6 @@ public class ParallelRenderer extends RendererState  {
     private static final boolean DEBUG=false;
     
     public ParallelRenderer(DoomMain DM, int wallthread, int floorthreads) {
-
         this.updateStatus(DM);
         this.LL=DM.LL;
         this.W=DM.W;
@@ -149,7 +148,7 @@ public class ParallelRenderer extends RendererState  {
           RWI[RWIcount].dc_x=dc_x;
           RWI[RWIcount].dc_yh=dc_yh;
           RWI[RWIcount].dc_yl=dc_yl;
-          RWI[RWIcount].columnofs=columnofs;
+          //RWI[RWIcount].columnofs=columnofs;
           RWI[RWIcount].dc_colormap=dc_colormap;
           RWI[RWIcount].dc_source=dc_source;
           RWI[RWIcount].dc_source_ofs=dc_source_ofs;
@@ -565,7 +564,7 @@ private void InitRWISubsystem() {
     // AFTER we initialize the RWI themselves,
     // before V is set (right?) 
     for (int i=0;i<NUMWALLTHREADS;i++){
-        RWIExec[i]=new RenderWallExecutor(ylookup, screen,RWI,visplanebarrier);
+        RWIExec[i]=new RenderWallExecutor(columnofs,ylookup, screen,RWI,visplanebarrier);
         RWIExec[i].setVideoScale(this.vs);
         RWIExec[i].initScaling();
     }

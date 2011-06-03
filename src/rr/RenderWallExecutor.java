@@ -20,11 +20,13 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
     
     private CyclicBarrier barrier;
     private RenderWallInstruction[] RWI;
-    private int[] ylookup;
-    private byte[] screen;
+    private final int[] ylookup;
+    private final byte[] screen;
+    private final int[] columnofs;
     private int start, end,numthreads=1;
     
-    public RenderWallExecutor(int[] ylookup, byte[] screen, RenderWallInstruction[] RWI, CyclicBarrier barrier){
+    public RenderWallExecutor(int[] columnofs,int[] ylookup, byte[] screen, RenderWallInstruction[] RWI, CyclicBarrier barrier){
+    	this.columnofs=columnofs;
         this.ylookup=ylookup;
         this.screen=screen;
         this.RWI=RWI;
@@ -52,7 +54,6 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
         int dc_yh;
         int dc_yl;
         int dc_texheight;
-        int[] columnofs;
         byte[] dc_colormap;
         byte[] dc_source;
 
@@ -69,8 +70,6 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
         dc_yh=RWI[i].dc_yh;
         dc_yl=RWI[i].dc_yl;
         dc_texheight=RWI[i].dc_texheight;
-                
-        columnofs=RWI[i].columnofs;
         dc_colormap=RWI[i].dc_colormap; 
         dc_source=RWI[i].dc_source;
         

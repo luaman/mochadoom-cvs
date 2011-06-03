@@ -16,7 +16,7 @@ public class RenderWallInstruction {
     int dc_x;
     int dc_yh;
     int dc_yl;
-    int[] columnofs;
+    //int[] columnofs;
     byte[] dc_colormap;
     byte[] dc_source;
 }
