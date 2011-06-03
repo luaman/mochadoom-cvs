@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.34 2011/06/02 14:23:20 velktron Exp $
+// $Id: WadLoader.java,v 1.35 2011/06/03 16:35:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.35  2011/06/03 16:35:27  velktron
+// Default fakezone
+//
 // Revision 1.34  2011/06/02 14:23:20  velktron
 // Added ability to "peg" an IZone manager.
 //
@@ -162,6 +165,7 @@ import doom.DoomStatus;
 import rr.patch_t;
 
 import utils.C2JUtils;
+import z.FakeZone;
 import z.IZone;
 import z.LumpZone;
 import z.memblock_t;
@@ -518,6 +522,7 @@ public class WadLoader implements IWadLoader {
 		// set up caching
 		size = numlumps;
 		lumpcache = new CacheableDoomObject[size];
+		if (Z==null) Z=new FakeZone();
 		Z.setLumps(lumpcache);
 		preloaded = new boolean[size];
 
