@@ -92,7 +92,7 @@ import doom.thinker_t;
  */
 
 public abstract class RendererState implements DoomStatusAware, Renderer, 
-SpriteManager,IVideoScaleAware,ILimitResettable{
+SpriteManager,IVideoScaleAware,ILimitResettable,IGetColumn{
 
     protected static final boolean DEBUG=false;
     protected static final boolean DEBUG2=false;
@@ -2921,6 +2921,7 @@ validcount++;
          * 
          * CALLED: CORE LOOPING ROUTINE.
          *
+         *
          */
         
         public void RenderSegLoop () 
@@ -3688,17 +3689,17 @@ validcount++;
      *  pressure, and due to their being only 256 colors to 
      *  begin with, visually, there won't be many differences.
      */
-    protected  static final int LIGHTLEVELS=32, LIGHTSEGSHIFT=3;
+    public static final int LIGHTLEVELS=32, LIGHTSEGSHIFT=3;
 
     // These are a bit more tricky to figure out though.
     
-    protected  static final int MAXLIGHTSCALE=       48;
-    protected  static final int LIGHTSCALESHIFT =    12;
-    protected static final int MAXLIGHTZ      =    128;
-    protected  static final int LIGHTZSHIFT    = 20;
+    public static final int MAXLIGHTSCALE=       48;
+    public static final int LIGHTSCALESHIFT =    12;
+    public static final int MAXLIGHTZ      =    128;
+    public static final int LIGHTZSHIFT    = 20;
 
    /** Fineangles in the SCREENWIDTH wide window. */
-    protected  static final int FIELDOFVIEW   =   FINEANGLES/4;   
+    public  static final int FIELDOFVIEW   =   FINEANGLES/4;   
    
    /** Use in conjunction with pfixedcolormap */
    protected byte[]      fixedcolormap;
@@ -5574,6 +5575,8 @@ validcount++;
        * R_GetColumn
        * @throws IOException 
        */
+      
+      @Override
       public byte[] GetColumn
       ( int       tex,
         int       col ) 
@@ -5607,6 +5610,11 @@ validcount++;
           return TexMan.getTextureComposite(tex,col);
       }
 
+      @Override
+      public final int getDCSourceOffset(){
+    	  return dc_source_ofs;
+      }
+      
       /**
        * R_GetColumn variation: returns a pointer to a column_t
        * rather than raw data.
