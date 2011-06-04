@@ -29,4 +29,6 @@ public interface ICommandLineManager {
 
     public abstract void setArgv(int index, String string);
 
+	boolean CheckParmBool(String check);
+
 }

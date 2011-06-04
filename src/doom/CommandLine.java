@@ -70,6 +70,18 @@ public class CommandLine implements ICommandLineManager {
         return 0;
     }
     
+    @Override
+    public boolean CheckParmBool(String check) {
+        int i;
+
+        for (i = 1; i < myargc; i++) {
+            if (check.compareToIgnoreCase(myargv[i]) == 0)
+                return true;
+        }
+
+        return false;
+    }
+    
     /**
      * Find a Response File
      * 
