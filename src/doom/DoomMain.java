@@ -49,6 +49,7 @@ import rr.SimpleTextureManager;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
+import s.AudioSystemSoundDriver;
 import s.DummySoundDriver;
 import savegame.IDoomSaveGame;
 import savegame.IDoomSaveGameHeader;
@@ -80,7 +81,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.63 2011/06/02 14:54:53 velktron Exp $
+// $Id: DoomMain.java,v 1.64 2011/06/04 11:05:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -106,7 +107,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.63 2011/06/02 14:54:53 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.64 2011/06/04 11:05:09 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3029,8 +3030,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         status_holders.add((DoomStatusAware) (this.DNI=new DummyNetworkDriver(this)));
         
         // Random number generator, but we can have others too.
-        this.RND=new DoomRandom();    
-        this.S=new DummySoundDriver();
+        this.RND=new DoomRandom();
+        
+        // Obviously, nomusic && nosfx = nosound.
+        if (!CM.CheckParmBool("-nosound")&& !(CM.CheckParmBool("-nomusic")&& CM.CheckParmBool("-nosfx"))) 
+        this.S=new AudioSystemSoundDriver(this,8,CM.CheckParmBool("-nomusic"),CM.CheckParmBool("-nosfx"));
+        else 
+        	this.S=new DummySoundDriver();
         this.W=new WadLoader(this.I); // The wadloader is a "weak" status holder.
         status_holders.add(this.WIPE=new Wiper(this));   
 
@@ -4027,6 +4033,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.64  2011/06/04 11:05:09  velktron
+//Added use of _D_'s sound system. Consider VERY experimental for now.
+//
 //Revision 1.63  2011/06/02 14:54:53  velktron
 //MochaEvents is default. IZone connector for IWadloader.
 //
