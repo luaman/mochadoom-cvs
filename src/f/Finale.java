@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.20 2011/05/31 21:46:37 velktron Exp $
+// $Id: Finale.java,v 1.21 2011/06/04 11:03:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.20 2011/05/31 21:46:37 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.21 2011/06/04 11:03:36 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -773,11 +773,11 @@ protected void afterstopattack(){
       switch (DS.gameepisode)
       {
         case 1:
-          if ( DS.isCommercial())
+          if ( DS.isCommercial() || DS.isRegistered())
             V.DrawPatchSolidScaled (0,0,this.SAFE_SCALE,this.SAFE_SCALE,0,
                W.CachePatchName("CREDIT",PU_CACHE));
-          else
-              V.DrawPatchSolidScaled (0,0,this.SAFE_SCALE,this.SAFE_SCALE,0,
+          else // Fun fact: Registered/Ultimate Doom has no "HELP2" lump.
+        	 V.DrawPatchSolidScaled (0,0,this.SAFE_SCALE,this.SAFE_SCALE,0,
                 W.CachePatchName("HELP2",PU_CACHE));
           break;
         case 2:
