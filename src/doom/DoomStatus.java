@@ -52,18 +52,18 @@ public class DoomStatus extends DoomContext {
      *  etc. can be handled more cleanly.
      * */
 
-    private GameMode_t gamemod;
+    private GameMode_t gamemode;
     
     public void setGameMode(GameMode_t mode){
-    	this.gamemod=mode;
+    	this.gamemode=mode;
     }
     
     public GameMode_t getGameMode(){
-    	return gamemod;
+    	return gamemode;
     }
     
     public boolean isShareware(){
-    	return (gamemod== GameMode_t.shareware);
+    	return (gamemode== GameMode_t.shareware);
     }
     
     
@@ -72,10 +72,10 @@ public class DoomStatus extends DoomContext {
      * @return
      */
     public boolean isCommercial(){
-    	return (gamemod== GameMode_t.commercial ||
-    			gamemod== GameMode_t.pack_plut ||
-    			gamemod== GameMode_t.pack_tnt ||
-    			gamemod== GameMode_t.pack_xbla);
+    	return (gamemode== GameMode_t.commercial ||
+    			gamemode== GameMode_t.pack_plut ||
+    			gamemode== GameMode_t.pack_tnt ||
+    			gamemode== GameMode_t.pack_xbla);
     }
     
     /** Retail means Ultimate.
@@ -83,7 +83,7 @@ public class DoomStatus extends DoomContext {
      * @return
      */
     public boolean isRetail(){
-    	return (gamemod== GameMode_t.retail );
+    	return (gamemode== GameMode_t.retail );
     }
     
     /** Registered is a subset of Ultimate 
@@ -92,7 +92,7 @@ public class DoomStatus extends DoomContext {
      */
 
     public boolean isRegistered(){
-    	return (gamemod== GameMode_t.registered || gamemod== GameMode_t.registered );
+    	return (gamemode== GameMode_t.registered || gamemode== GameMode_t.retail );
     }
     
     public GameMission_t gamemission;
@@ -514,6 +514,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.26  2011/06/04 11:04:25  velktron
+// Fixed registered/ultimate identification.
+//
 // Revision 1.25  2011/06/01 17:35:56  velktron
 // Techdemo v1.4a level. Default novert and experimental mochaevents interface.
 //
