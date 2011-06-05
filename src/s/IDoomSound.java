@@ -7,7 +7,7 @@ import p.mobj_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: IDoomSound.java,v 1.1 2011/05/18 16:57:08 velktron Exp $
+// $Id: IDoomSound.java,v 1.2 2011/06/05 22:54:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -96,4 +96,10 @@ public interface IDoomSound {
 	public void SetSfxVolume(int volume);
 
 	public void StartMusic(int music_id);
+
+	void StopChannel(int channel);
+
+	void ShutdownSound();
+
+	void ShutdownMusic();
 }
