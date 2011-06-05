@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.10 2011/05/29 22:15:32 velktron Exp $
+// $Id: DoomSystem.java,v 1.11 2011/06/05 22:52:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.11  2011/06/05 22:52:28  velktron
+// Proper audio subsystem shutdown.
+//
 // Revision 1.10  2011/05/29 22:15:32  velktron
 // Introduced IRandom interface.
 //
@@ -130,8 +133,8 @@ public void Quit ()
 
  //DM.CheckDemoStatus();
  DM.QuitNetGame ();
- // TODO: I.ShutdownSound();
- // TODO: DM.S.ShutdownMusic();
+ DM.S.ShutdownSound();
+ DM.S.ShutdownMusic();
  MenuMisc.SaveDefaults(DM);
  DM.VI.ShutdownGraphics();
  System.exit(0);
