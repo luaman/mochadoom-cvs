@@ -110,4 +110,22 @@ public class DummySoundDriver implements IDoomSound{
         
     }
 
+	@Override
+	public void ShutdownMusic() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void ShutdownSound() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void StopChannel(int channel) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
