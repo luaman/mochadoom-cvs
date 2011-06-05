@@ -27,5 +27,7 @@ public class channel_t
     
     AudioFormat format;
     
+	public int sfxVolume;
+    
 	SourceDataLine auline = null;
 }

@@ -22,6 +22,7 @@ import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import p.mobj_t;
+import s.AudioSystemSoundDriver2.DoomSound;
 import w.DoomBuffer;
 
 import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
@@ -30,6 +31,7 @@ import data.sounds;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomMain;
+import doom.DoomStatus;
 
 /** David Martel's sound driver for Mocha Doom. Excellent work!
  * 
@@ -37,15 +39,14 @@ import doom.DoomMain;
  *
  */
 
-public class AudioSystemSoundDriver implements IDoomSound{
-
-	DoomMain DM;
+public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSound{
 
 	Sequencer sequencer;
 	
 	HashMap<String,DoomSound> cachedSounds = new HashMap<String,DoomSound>();
 	
-	private final SoundThread[] soundThread;
+	private final SoundWorker[] channels;
+	private final Thread[] soundThread;
 	
 	/** A class representing a sample in memory */
 	class DoomSound {
@@ -102,10 +103,12 @@ public class AudioSystemSoundDriver implements IDoomSound{
 	Receiver receiver;
 	Synthesizer synthesizer;
 
-	public AudioSystemSoundDriver(DoomMain DM, int channels, boolean nomusic, boolean nosound) {
-		this.DM = DM;
+	public AudioSystemSoundDriver(DoomStatus DS, int numChannels, boolean nomusic, boolean nosound) {
+		super(DS,numChannels);
 		
-		soundThread= new SoundThread[channels];
+		channels= new SoundWorker[numChannels];
+		soundThread= new Thread[numChannels];
+		super.channels=this.channels;
 		
 		if (!nomusic){
 		try {
@@ -132,9 +135,9 @@ public class AudioSystemSoundDriver implements IDoomSound{
 	public void ChangeMusic(int music_id, boolean looping) {
 		try {
 			String id = "D_"+sounds.S_music[music_id].name.toUpperCase();
-			int lump = DM.W.GetNumForName(id);
+			int lump = DS.W.GetNumForName(id);
 
-			byte[] bytes = ((DoomBuffer)DM.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class )).getBuffer().array();
+			byte[] bytes = ((DoomBuffer)DS.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class )).getBuffer().array();
 			
 	        ByteInputStream bis = new ByteInputStream(bytes, bytes.length);
 	        
@@ -162,71 +165,51 @@ public class AudioSystemSoundDriver implements IDoomSound{
 	    } 
 	}
 
-	/** A Thread for playing digital sound effects. Obviously you need as many as channels?
-	 * 
-	 *
-	 */
 	
-	public class SoundThread extends Thread {
-		DoomSound currentSound = null;
-		byte[] abData = new byte[EXTERNAL_BUFFER_SIZE];
-		SourceDataLine auline = null;
+	
+	public void addSound(DoomSound ds, mobj_t origin) {
+		boolean one=true;
+		
+		for (int i = 0; i < channels.length; i++) {
+			// Force using the same origin, if available.
+			// This effectively limits sounds to 2 for player,
+			// menu, crushers etc.
+			if (channels[i].currentSound != null && channels[i].origin==origin){
+				one=!one; // First time, we self-deny.
+				if (one){
+				System.out.printf("Overriding channel %d for mobj %s\n",i,origin);
+				channels[i].stopSound();
+				channels[i].addSound(ds);
+				return;
+				}
+				}
+		}
+		
+		// Otherwise, fetch a fresh channel.
+		
+		for (int i = 0; i < channels.length; i++) {			
+			
+			if (channels[i].currentSound == null) {
+				channels[i].addSound(ds,origin);
+				System.out.printf("Sound added to channel %d for mobj %s\n",i,origin);
+				//			forced=0;
+				return;
+			}
+		}
 
-		/** This is how you tell the thread to play a sound,
-		 * I suppose.  */
-		
-		public void addSound(DoomSound ds) {
-			this.currentSound = ds;
-		}
-		
-		public void run() {
-			DoomSound currentSoundSync;
-			AudioInputStream ai2;
-			while (true) {
-				currentSoundSync = currentSound;
-				if (currentSoundSync != null) {
-			        int nBytesRead = 0;
-			        
-			        //FloatControl fc = (FloatControl)auline.getControl(FloatControl.Type.MASTER_GAIN);
-			        //float vol = fc.getMinimum()+(fc.getMaximum()-fc.getMinimum())*(float)sfxVolume/15f;
-			        //fc.setValue(vol);
-			        
-			        try { 
-			            while (nBytesRead != -1) { 
-			                nBytesRead = currentSoundSync.ais.read(abData, 0, abData.length);
-			                if (nBytesRead >= 0) 
-			                    auline.write(abData, 0, nBytesRead);
-			                //ai2 = ais;
-			                //if (ai2 != ai)
-			                //	break;
-			            } 
-			        } catch (Exception e) { 
-			            e.printStackTrace();
-			            return;
-			        } finally { 
-			            auline.drain();
-			            //auline.close();
-			        } 
-			        currentSound = null;
-				}
-				
-				try {
-					Thread.sleep(1);
-				} catch (InterruptedException e) {
-				}
-			}
+		// Forcibly add to the oldest channel, if nothing else was available.
+		{
+			System.out.println("FORCING channel "+forced);
+
+			channels[forced].stopSound();
+			channels[forced].addSound(ds);
+
+			forced++;
+			forced%=channels.length;
 		}
 	}
 	
-	
-	public void addSound(DoomSound ds) {
-		for (int i = 0; i < soundThread.length; i++) {
-			if (soundThread[i].currentSound == null) {
-				soundThread[i].addSound(ds);
-				break;
-			}
-		}
-	}
+	int forced=0;
 	
 	int sfxVolume;
 	int musicVolume;
@@ -234,7 +217,8 @@ public class AudioSystemSoundDriver implements IDoomSound{
 	@Override
 	public void Init(int sfxVolume, int musicVolume) {
 		for (int i = 0; i < soundThread.length; i++) {
-			soundThread[i] = new SoundThread();
+			channels[i]=new SoundWorker();
+			soundThread[i] = new Thread(channels[i]);
 			soundThread[i].start();
 		}
 		
@@ -304,14 +288,14 @@ public class AudioSystemSoundDriver implements IDoomSound{
 				  musicenum_t.mus_e1m9	// Tim		e4m9
 		    };
 		    
-		    if (DM.gameepisode < 4)
-		      mnum = musicenum_t.mus_e1m1.ordinal() + (DM.gameepisode-1)*9 + DM.gamemap-1;
+		    if (DS.gameepisode < 4)
+		      mnum = musicenum_t.mus_e1m1.ordinal() + (DS.gameepisode-1)*9 + DS.gamemap-1;
 		    else
-		      mnum = spmus[DM.gamemap-1].ordinal();
+		      mnum = spmus[DS.gamemap-1].ordinal();
 		   // }	
 		    
-		    if (DM.isCommercial())
-		    	mnum = 32+DM.gamemap; // for DOOM II
+		    if (DS.isCommercial())
+		    	mnum = 32+DS.gamemap; // for DOOM II
 		    
 		  // HACK FOR COMMERCIAL
 		  //  if (commercial && mnum > mus_e3m9)	
@@ -340,7 +324,7 @@ public class AudioSystemSoundDriver implements IDoomSound{
 
 	private Position curPosition;
 	 
-    private final int EXTERNAL_BUFFER_SIZE = 524288; // 128Kb 
+  
  
     enum Position { 
         LEFT, RIGHT, NORMAL
@@ -361,7 +345,7 @@ public class AudioSystemSoundDriver implements IDoomSound{
 		if (sound == null) {
 			int lump;
 			try {
-			lump = DM.W.GetNumForName(id);
+			lump = DS.W.GetNumForName(id);
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -371,7 +355,7 @@ public class AudioSystemSoundDriver implements IDoomSound{
 			// OK, so we load the sound...
 			// If it's vanilla, we obviously need to handle only its
 			// own sample format with DoomToWave.
-			byte[] bytes = ((DoomBuffer)DM.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class )).getBuffer().array();
+			byte[] bytes = ((DoomBuffer)DS.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class )).getBuffer().array();
 			
 	        ByteInputStream bis = new ByteInputStream(bytes, bytes.length);
 	        
@@ -418,25 +402,30 @@ public class AudioSystemSoundDriver implements IDoomSound{
         	e.printStackTrace();
         }
 
-        if (soundThread[0].auline == null) {
+        if (channels[0].auline == null) {
         	AudioFormat format = sound.ais.getFormat();
         	DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 
         	try { 
         		for (int i = 0; i < soundThread.length; i++) {
-        			soundThread[i].auline = (SourceDataLine) AudioSystem.getLine(info);
-        			soundThread[i].auline.open(format);
+        			channels[i].auline = (SourceDataLine) AudioSystem.getLine(info);
+        			channels[i].auline.open(format);
 
-        			if (soundThread[i].auline.isControlSupported(FloatControl.Type.PAN)) { 
-        				FloatControl pan = (FloatControl) soundThread[i].auline
+        			
+        			// Add individual volume control.
+        			if (channels[i].auline.isControlSupported(FloatControl.Type.VOLUME)){
+        				channels[i].vc=(FloatControl) channels[i].auline
+        				.getControl(FloatControl.Type.VOLUME);
+        			}
+        			
+        			// Add individual pan control (TODO: proper positioning).
+        			if (channels[i].auline.isControlSupported(FloatControl.Type.PAN)){
+        				channels[i].pc=(FloatControl) channels[i].auline
         				.getControl(FloatControl.Type.PAN);
-        				if (curPosition == Position.RIGHT) 
-        					pan.setValue(1.0f);
-        				else if (curPosition == Position.LEFT) 
-        					pan.setValue(-1.0f);
-        			} 
-
-        			soundThread[i].auline.start();
+        			}
+        			channels[i].sfxVolume=this.sfxVolume;
+        			channels[i].format=format;
+        			channels[i].auline.start();
         		}
         	} catch (LineUnavailableException e) { 
         		e.printStackTrace();
@@ -447,7 +436,7 @@ public class AudioSystemSoundDriver implements IDoomSound{
         	} 
         }
 
-        addSound(sound);
+        addSound(sound,origin);
 
 	}
 
@@ -477,6 +466,49 @@ public class AudioSystemSoundDriver implements IDoomSound{
     public void ChangeMusic(musicenum_t musicid, boolean looping) {
         ChangeMusic(musicid.ordinal(), looping);
     }
+
+	@Override
+	public void ShutdownMusic() {
+		sequencer.stop();
+		sequencer.close();		
+	}
+
+	@Override
+	public void ShutdownSound()
+	{    
+
+	  // Wait till all pending sounds are finished.
+	  int done = 0;
+	  int i;
+	  
+
+	  // FIXME (below).
+	  //fprintf( stderr, "I_ShutdownSound: NOT finishing pending sounds\n");
+	  //fflush( stderr );
+	  
+	  while ( done==0 )
+	  {
+	    for( i=0 ; i<numChannels && !(channels[i].isPlaying()) ; i++);
+	    // FIXME. No proper channel output.
+	    //if (i==8)
+	    done=1;
+	  }
+	  
+	  for( i=0 ; i<numChannels; i++){
+		channels[i].terminate=true;  
+		try {
+			this.soundThread[i].join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	  }
+	  
+	  
+	  
+	  // Done.
+	  return;
+	}
 
 }
 

@@ -393,7 +393,7 @@ S_StartSoundAtVolume
 				       sep,
 				       pitch,
 				       priority);
-}	
+}
 
 void
 S_StartSound
