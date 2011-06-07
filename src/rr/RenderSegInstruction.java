@@ -1,9 +1,8 @@
 package rr;
 
-/** This is all the information needed to draw a particular SEG. It's quite
- *  a lot, actually. 27 entries!
- *  
- *  It's deprecated, like the class that use it.
+/** This is all the information needed to draw a particular SEG.
+ * It's quite a lot, actually, but much better than in testing
+ * versions.
  *  
  */
 
@@ -19,7 +18,6 @@ public class RenderSegInstruction {
 	rw_scalestep,rw_midtexturemid,rw_toptexturemid,rw_bottomtexturemid;
 	public int viewheight;
 	byte[][] walllights;
-	public int ceilingplane;
-	public int floorplane;
 	public int centery;
+
 }

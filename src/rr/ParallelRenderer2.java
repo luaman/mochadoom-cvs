@@ -118,6 +118,7 @@ public class ParallelRenderer2 extends RendererState  {
 			int     texturecolumn=0; // fixed_t
 			int         top;
 			int         bottom;
+			int dc_b=0, dc_m=0,dc_t = 0;
 
 			// Generate Seg rendering instruction BEFORE the looping start
 			// and anything is modified. The loop will be repeated in the
@@ -183,6 +184,9 @@ public class ParallelRenderer2 extends RendererState  {
 				// Don't to any drawing, only compute bounds.
 				if (midtexture!=0)
 				{
+					
+					dc_source = GetColumn(midtexture,texturecolumn);
+					dc_m=dc_source_ofs;
 					// single sided line
 					ceilingclip[rw_x] = (short) viewheight;
 					floorclip[rw_x] = -1;
@@ -201,7 +205,9 @@ public class ParallelRenderer2 extends RendererState  {
 
 						if (mid >= yl)
 						{
-							ceilingclip[rw_x] = (short) mid;
+			                dc_source = GetColumn(toptexture,texturecolumn);
+			                dc_t=dc_source_ofs;
+			                ceilingclip[rw_x] = (short) mid;
 						}
 						else
 							ceilingclip[rw_x] = (short) (yl-1);
@@ -225,7 +231,8 @@ public class ParallelRenderer2 extends RendererState  {
 
 						if (mid <= yh)
 						{
-
+		                    dc_source = GetColumn(bottomtexture,texturecolumn);
+		                    dc_b=dc_source_ofs;
 							floorclip[rw_x] = (short) mid;
 						}
 						else
@@ -250,6 +257,7 @@ public class ParallelRenderer2 extends RendererState  {
 				topfrac += topstep;
 				bottomfrac += bottomstep;
 			}
+
 		}
 
 		protected final void GenerateRSI(){
@@ -286,8 +294,8 @@ public class ParallelRenderer2 extends RendererState  {
 			rsi.toptexture=toptexture;
 			rsi.walllights=walllights;
 			rsi.viewheight=viewheight;
-			rsi.floorplane=floorplane;
-			rsi.ceilingplane=ceilingplane;
+			//rsi.floorplane=floorplane;
+			//rsi.ceilingplane=ceilingplane;
 			RSIcount++;
 		}
 
@@ -704,8 +712,10 @@ public class ParallelRenderer2 extends RendererState  {
 		// CATCH: this must be executed AFTER screen is set, and
 		// AFTER we initialize the RWI themselves,
 		// before V is set (right?) 
+		
+		offsets=new int[NUMWALLTHREADS];
 		for (int i=0;i<NUMWALLTHREADS;i++){
-			RSIExec[i]=new RenderSegExecutor(screen,
+			RSIExec[i]=new RenderSegExecutor(i,screen,
 					this, TexMan, RSI,this.BLANKCEILINGCLIP,this.BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, 
 					xtoviewangle, ylookup, this.visplanes,walllights, this.visplanebarrier);
 			RSIExec[i].setVideoScale(this.vs);

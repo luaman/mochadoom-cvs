@@ -68,8 +68,9 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 
 	protected static final int HEIGHTBITS   =   12;
 	protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
+	private final int id;
 
-	public RenderSegExecutor(byte[] screen, 
+	public RenderSegExecutor(int id,byte[] screen, 
 			IGetColumn  gc,
 			TextureManager texman,
 			RenderSegInstruction[] RSI,
@@ -83,6 +84,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 			visplane_t[] visplanes,
 			byte[][] walllights,
 			CyclicBarrier barrier){
+		this.id=id;
 		this.GC=gc;
 		this.TM=texman;
 		this.screen=screen;
@@ -349,8 +351,8 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                 dc_yh = yh;
                 dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
                 dc_texturemid = rsi.rw_midtexturemid;    
-                dc_source = GC.GetColumn(rsi.midtexture,texturecolumn);
-                dc_source_ofs=GC.getDCSourceOffset();
+                dc_source = GC.GetColumn(rsi.midtexture,texturecolumn,this.id);
+                dc_source_ofs=GC.getDCSourceOffset(id);
                 CompleteColumn();
                 ceilingclip[rw_x] = (short) rsi.viewheight;
                 floorclip[rw_x] = -1;
@@ -373,8 +375,8 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                     dc_yh = mid;
                     dc_texturemid = rsi.rw_toptexturemid;
                     dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
-                    dc_source = GC.GetColumn(rsi.toptexture,texturecolumn);
-                    dc_source_ofs=GC.getDCSourceOffset();
+                    dc_source = GC.GetColumn(rsi.toptexture,texturecolumn,id);
+                    dc_source_ofs=GC.getDCSourceOffset(id);
                     CompleteColumn();
     				ceilingclip[rw_x] = (short) mid;
 				}
@@ -404,9 +406,8 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                     dc_yh = yh;
                     dc_texturemid = rsi.rw_bottomtexturemid;
                     dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
-                    dc_source = GC.GetColumn(rsi.bottomtexture,
-                                texturecolumn);
-                    dc_source_ofs=GC.getDCSourceOffset();
+                    dc_source = GC.GetColumn(rsi.bottomtexture,texturecolumn,id);
+                    dc_source_ofs=GC.getDCSourceOffset(id);
                     CompleteColumn();
 					floorclip[rw_x] = (short) mid;
 				}
@@ -452,6 +453,9 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.7  2011/06/07 21:21:15  velktron
+// Definitively fixed jitter bug, which was due to dc_offset_contention. Now the alternative parallel renderer is just as good as the original one.
+//
 // Revision 1.6  2011/06/07 13:35:38  velktron
 // Definitively fixed drawing priority/zones. Now to solve the jitter :-/
 //
