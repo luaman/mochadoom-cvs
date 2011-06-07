@@ -41,7 +41,7 @@ import doom.wbstartstruct_t;
 
 public class AWTParallelRenderTester1 {
 
-    static IVideoScale VSI=new VideoScaleInfo(3.0f);
+    static IVideoScale VSI=new VideoScaleInfo(4.0f);
     
     public static void main(String[] argv) {
         try {
@@ -130,7 +130,7 @@ public class AWTParallelRenderTester1 {
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
-    DM.R=new ParallelRenderer(DM); 
+    DM.R=new ParallelRenderer(DM,2,1); 
     DM.SM=DM.R;
     DM.TM=new SimpleTextureManager(DM);
     
@@ -164,7 +164,7 @@ public class AWTParallelRenderTester1 {
     
     
     // Center on "bloody mess" in E1M1
-    //DM.players[0].mo.y+=420<<16;
+    DM.players[0].mo.y+=420<<16;
     //DM.players[0].mo.x+=1650<<16;
         int pl=0;
         for (int i=0;i<20000;i++){

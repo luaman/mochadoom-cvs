@@ -40,7 +40,7 @@ import doom.wbstartstruct_t;
 
 public class AWTRenderViewTester {
 
-    static IVideoScale VSI=new VideoScaleInfo(3.0f);
+    static IVideoScale VSI=new VideoScaleInfo(4.0f);
     
     public static void main(String[] argv) {
         try {
