@@ -16,6 +16,7 @@ import awt.AWTDoom;
 import awt.OldAWTDoom;
 
 import rr.ParallelRenderer;
+import rr.ParallelRenderer2;
 import rr.SimpleTextureManager;
 import s.DummySoundDriver;
 import st.StatusBar;
@@ -39,7 +40,7 @@ import doom.wbstartstruct_t;
 
 /** This is a very simple tester for Menu module  */
 
-public class AWTParallelRenderTester1 {
+public class AWTParallelRenderTester2 {
 
     static IVideoScale VSI=new VideoScaleInfo(3.0f);
     
@@ -130,7 +131,7 @@ public class AWTParallelRenderTester1 {
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
-    DM.R=new ParallelRenderer(DM); 
+    DM.R=new ParallelRenderer2(DM,1,1); 
     DM.SM=DM.R;
     DM.TM=new SimpleTextureManager(DM);
     
