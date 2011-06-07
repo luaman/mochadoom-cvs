@@ -13,7 +13,7 @@ public class RenderSegInstruction {
 	public int toptexture,midtexture,bottomtexture;
 	public int  pixhigh,pixlow,pixhighstep,pixlowstep,
 	topfrac,    topstep,bottomfrac, bottomstep;	
-	public boolean markceiling,markfloor,segtextured;
+	public boolean segtextured;
 	public long     rw_centerangle; // angle_t
 	/** fixed_t */
 	public int     rw_offset,rw_distance,rw_scale,
@@ -22,4 +22,5 @@ public class RenderSegInstruction {
 	byte[][] walllights;
 	public int ceilingplane;
 	public int floorplane;
+	public int centery;
 }

@@ -18,12 +18,12 @@ import v.IVideoScaleAware;
  *  FIXME there's a complex data dependency with visplanes and 
  *  ceilingclip/floorclip I was not quite able to fix, and probably
  *  it's not worth it. So deprecated it is.
+ *  
  * 
  * @author velktron
  *
  */
 
-@Deprecated
 public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 
 	// This needs to be set by the partitioner.
@@ -120,169 +120,151 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		int         yl; // low
 		int         yh; // hight
 		int         mid;
-		int top,bottom;
 		
 		RenderSegInstruction rsi;
 
 		// For each "SegDraw" instruction...
-		for (int i=end-1;i>=start;i--){
+		for (int i=start;i<end;i++){
 			rsi=RSI[i];
+			centery=rsi.centery;
+			
+			// These are going to be modified A LOT, so we cache them here.
+			int pixlow=rsi.pixlow;
+			int pixhigh=rsi.pixhigh;
+			int pixhighstep=rsi.pixhighstep;
+			int pixlowstep=rsi.pixlowstep;
+			int rw_scale=rsi.rw_scale;
+			int topfrac=rsi.topfrac;
+			int bottomfrac=rsi.bottomfrac;
+			int bottomstep=rsi.bottomstep;
+			int rw_scalestep=rsi.rw_scalestep;
+			int topstep=rsi.topstep;
 			//System.out.printf("Executing RSI %d from %d to %d\n",i,rsi.rw_x,rsi.rw_stopx);
 			int     texturecolumn=0; // fixed_t
-			for ( ; rsi.rw_x < rsi.rw_stopx ; rsi.rw_x++)
-            {
-            // mark floor / ceiling areas
-            yl = (rsi.topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
 
-            // no space above wall?
-            if (yl < ceilingclip[rsi.rw_x]+1)
-                yl = ceilingclip[rsi.rw_x]+1;
-            
-            if (rsi.markceiling)
-            {
-                /*top = ceilingclip[rsi.rw_x]+1;
-                bottom = yl-1;
+	        {
+	           
+	            for ( int rw_x=rsi.rw_x; rw_x < rsi.rw_stopx ; rw_x++)
+	            {
+	            // mark floor / ceiling areas
+	            yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
 
-                if (bottom >= floorclip[rw_x])
-                bottom = floorclip[rw_x]-1;
+	            // no space above wall?
+	            if (yl < ceilingclip[rw_x]+1)
+	                yl = ceilingclip[rw_x]+1;
+	                
+	            yh = bottomfrac>>HEIGHTBITS;
 
-                if (top <= bottom)
-                {
-                    visplanes[ceilingplane].setTop(rw_x,(char) top);
-                    visplanes[ceilingplane].setBottom(rw_x, (char) bottom);
-                } */
-            }
-                
-            yh = rsi.bottomfrac>>HEIGHTBITS;
+	            if (yh >= floorclip[rw_x])
+	                yh = floorclip[rw_x]-1;
+	            
+	          //  System.out.printf("Thread: rw %d yl %d yh %d\n",rw_x,yl,yh);
 
-            if (yh >= floorclip[rsi.rw_x])
-                yh = floorclip[rsi.rw_x]-1;
+	            // A particular seg has been identified as a floor marker.
+	            
+	            
+	            // texturecolumn and lighting are independent of wall tiers
+	            if (rsi.segtextured)
+	            {
+	                // calculate texture offset
+	               
+	                
+	              // CAREFUL: a VERY anomalous point in the code. Their sum is supposed
+	              // to give an angle not exceeding 45 degrees (or 0x0FFF after shifting).
+	              // If added with pure unsigned rules, this doesn't hold anymore,
+	              // not even if accounting for overflow.
+	                angle = Tables.toBAMIndex(rsi.rw_centerangle + (int)xtoviewangle[rw_x]);
+	                //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
+	              //angle&=0x1FFF;
+	                
+	              // FIXME: We are accessing finetangent here, the code seems pretty confident
+	              // in that angle won't exceed 4K no matter what. But xtoviewangle
+	              // alone can yield 8K when shifted.
+	              // This usually only overflows if we idclip and look at certain directions 
+	             // (probably angles get fucked up), however it seems rare enough to just 
+	             // "swallow" the exception. You can eliminate it by anding with 0x1FFF if you're so inclined. 
+	              
+	              texturecolumn = rsi.rw_offset-FixedMul(finetangent[angle],rsi.rw_distance);
+	               texturecolumn >>= FRACBITS;
+	              // calculate lighting
+	              index = rw_scale>>LIGHTSCALESHIFT;
+	      
 
-            // A particular seg has been identified as a floor marker.
-            
-            if (rsi.markfloor)
-            {
-                top = yh+1;
-                bottom = floorclip[rsi.rw_x]-1;
-                if (top <= ceilingclip[rsi.rw_x])
-                top = ceilingclip[rsi.rw_x]+1;
+	                if (index >=  MAXLIGHTSCALE )
+	                index = MAXLIGHTSCALE-1;
 
-                if (top <= bottom)
-                {
-                visplanes[rsi.floorplane].setTop(rsi.rw_x, (char) top);
-                visplanes[rsi.floorplane].setBottom(rsi.rw_x,  (char) bottom);
-                }
-            }
-            
-            // texturecolumn and lighting are independent of wall tiers
-            if (rsi.segtextured)
-            {
-                // calculate texture offset
-               
-                angle = Tables.toBAMIndex(rsi.rw_centerangle + (int)xtoviewangle[rsi.rw_x]);
+	                dc_colormap = rsi.walllights[index];
+	                dc_x = rw_x;
+	                dc_iscale = (int) (0xffffffffL / rw_scale);
+	            }
+	            
+	            // draw the wall tiers
+	            if (rsi.midtexture!=0)
+	            {
+	                // single sided line
+	                dc_yl = yl;
+	                dc_yh = yh;
+	                dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
+	                dc_texturemid = rsi.rw_midtexturemid;    
+	                dc_source = GC.GetColumn(rsi.midtexture,texturecolumn);
+	                dc_source_ofs=GC.getDCSourceOffset();
+	                CompleteColumn();
+	            }
+	            else
+	            {
+	                // two sided line
+	                if (rsi.toptexture!=0)
+	                {
+	                // top wall
+	                mid = pixhigh>>HEIGHTBITS;
+	                pixhigh += pixhighstep;
 
-              
-              texturecolumn = rsi.rw_offset-FixedMul(finetangent[angle],rsi.rw_distance);
-              texturecolumn >>= FRACBITS;
-              // calculate lighting
-              index = rsi.rw_scale>>LIGHTSCALESHIFT;
-      
+	                if (mid >= floorclip[rw_x])
+	                    mid = floorclip[rw_x]-1;
 
-                if (index >=  MAXLIGHTSCALE )
-                index = MAXLIGHTSCALE-1;
+	                if (mid >= yl)
+	                {
+	                    dc_yl = yl;
+	                    dc_yh = mid;
+	                    dc_texturemid = rsi.rw_toptexturemid;
+	                    dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
+	                    dc_source = GC.GetColumn(rsi.toptexture,texturecolumn);
+	                    dc_source_ofs=GC.getDCSourceOffset();
+	                    CompleteColumn();
+	                } 
+	                } // if toptexture
 
-                dc_colormap = rsi.walllights[index];
-                dc_x = rsi.rw_x;
-                dc_iscale = (int) (0xffffffffL / rsi.rw_scale);
-            }
-            
-            // draw the wall tiers
-            if (rsi.midtexture!=0)
-            {
-                // single sided line
-                dc_yl = yl;
-                dc_yh = yh;
-                dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
-                dc_texturemid = rsi.rw_midtexturemid;              
-                dc_source = GC.GetColumn(rsi.midtexture,texturecolumn);
-                dc_source_ofs=GC.getDCSourceOffset();
-                CompleteColumn();
-                ceilingclip[rsi.rw_x] = (short) rsi.viewheight;
-                floorclip[rsi.rw_x] = -1;
-            }
-            else
-            {
-                // two sided line
-                if (rsi.toptexture!=0)
-                {
-                // top wall
-                mid = rsi.pixhigh>>HEIGHTBITS;
-                rsi.pixhigh += rsi.pixhighstep;
+	                // no top wall
+	                    
+	                if (rsi.bottomtexture!=0)
+	                {
+	                // bottom wall
+	                mid = (pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
+	                pixlow += pixlowstep;
 
-                if (mid >= floorclip[rsi.rw_x])
-                    mid = floorclip[rsi.rw_x]-1;
+	                // no space above wall?
+	                if (mid <= ceilingclip[rw_x])
+	                    mid = ceilingclip[rw_x]+1;
+	                
+	                if (mid <= yh)
+	                {
+	                    dc_yl = mid;
+	                    dc_yh = yh;
+	                    dc_texturemid = rsi.rw_bottomtexturemid;
+	                    dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
+	                    dc_source = GC.GetColumn(rsi.bottomtexture,
+	                                texturecolumn);
+	                    dc_source_ofs=GC.getDCSourceOffset();
+	                    CompleteColumn();
+	                }
 
-                if (mid >= yl)
-                {
-                    dc_yl = yl;
-                    dc_yh = mid;
-                    dc_texturemid = rsi.rw_toptexturemid;
-                    dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
-                    dc_source = GC.GetColumn(rsi.toptexture,texturecolumn);
-                    dc_source_ofs=GC.getDCSourceOffset();
-                    CompleteColumn();
-                    ceilingclip[rsi.rw_x] = (short) mid;
-                }
-                else
-                    ceilingclip[rsi.rw_x] = (short) (yl-1);
-                }
-                else
-                {
-                // no top wall
-                if (rsi.markceiling)
-                    ceilingclip[rsi.rw_x] = (short) (yl-1);
-                }
-                    
-                if (rsi.bottomtexture!=0)
-                {
-                // bottom wall
-                mid = (rsi.pixlow+HEIGHTUNIT-1)>>HEIGHTBITS;
-                rsi.pixlow += rsi.pixlowstep;
-
-                // no space above wall?
-                if (mid <= ceilingclip[rsi.rw_x])
-                    mid = ceilingclip[rsi.rw_x]+1;
-                
-                if (mid <= yh)
-                {
-                    dc_yl = mid;
-                    dc_yh = yh;
-                    dc_texturemid = rsi.rw_bottomtexturemid;
-                    dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
-                    dc_source = GC.GetColumn(rsi.bottomtexture,
-                                texturecolumn);
-                    dc_source_ofs=GC.getDCSourceOffset();
-                    CompleteColumn();
-        
-                    
-                    floorclip[rsi.rw_x] = (short) mid;
-                }
-                else
-                    floorclip[rsi.rw_x] = (short) (yh+1);
-                }
-                else
-                {
-                // no bottom wall
-                if (rsi.markfloor)
-                    floorclip[rsi.rw_x] = (short) (yh+1);
-                }
-                    
-            }
-                
-            rsi.rw_scale += rsi.rw_scalestep;
-            rsi.topfrac += rsi.topstep;
-            rsi.bottomfrac +=rsi.bottomstep;
-            }
+	            } // end-bottomtexture
+	           } // end-else (two-sided line)
+	                rw_scale += rw_scalestep;
+	                topfrac += topstep;
+	                bottomfrac += bottomstep;
+	            } // end-rw 
+	        } // end-block
 		} // end-instruction
 
 		try {
@@ -308,7 +290,6 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		int fracstep;     
 
 		count = dc_yh - dc_yl + 1; 
-
 
 		if (count <= 0)    // Zero length, column does not exceed a pixel.
 			return; 
@@ -412,3 +393,8 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		this.visplanes=vpo;
 		}
 }
+
+// $Log: RenderSegExecutor.java,v $
+// Revision 1.3  2011/06/07 00:11:11  velktron
+// Fixed alternate parallel renderer (seg based). No longer deprecated.
+//
