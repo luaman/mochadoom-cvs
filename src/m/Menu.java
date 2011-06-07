@@ -1768,7 +1768,7 @@ public class Menu extends AbstractDoomMenu {
             }
 
             // Yet another hack...
-            if (DM.isRegistered() && (choice > 2)) {
+            if (!DM.isRetail() && (choice > 2)) {
                 System.err
                         .print("M_Episode: 4th episode requires UltimateDOOM\n");
                 choice = 0;
