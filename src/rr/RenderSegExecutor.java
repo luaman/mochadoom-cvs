@@ -120,7 +120,8 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		int         yl; // low
 		int         yh; // hight
 		int         mid;
-		
+		int pixlow,pixhigh,pixhighstep,pixlowstep;
+		int rw_scale,topfrac,bottomfrac,bottomstep;
 		RenderSegInstruction rsi;
 
 		// For each "SegDraw" instruction...
@@ -129,14 +130,14 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 			centery=rsi.centery;
 			
 			// These are going to be modified A LOT, so we cache them here.
-			int pixlow=rsi.pixlow;
-			int pixhigh=rsi.pixhigh;
-			int pixhighstep=rsi.pixhighstep;
-			int pixlowstep=rsi.pixlowstep;
-			int rw_scale=rsi.rw_scale;
-			int topfrac=rsi.topfrac;
-			int bottomfrac=rsi.bottomfrac;
-			int bottomstep=rsi.bottomstep;
+			pixlow=rsi.pixlow;
+			pixhigh=rsi.pixhigh;
+			pixhighstep=rsi.pixhighstep;
+			pixlowstep=rsi.pixlowstep;
+			rw_scale=rsi.rw_scale;
+			topfrac=rsi.topfrac;
+			bottomfrac=rsi.bottomfrac;
+			bottomstep=rsi.bottomstep;
 			int rw_scalestep=rsi.rw_scalestep;
 			int topstep=rsi.topstep;
 			//System.out.printf("Executing RSI %d from %d to %d\n",i,rsi.rw_x,rsi.rw_stopx);
@@ -395,6 +396,9 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.4  2011/06/07 00:50:47  velktron
+// Alternate Parallel Renderer fixed.
+//
 // Revision 1.3  2011/06/07 00:11:11  velktron
 // Fixed alternate parallel renderer (seg based). No longer deprecated.
 //

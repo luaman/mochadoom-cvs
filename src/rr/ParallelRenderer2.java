@@ -27,7 +27,6 @@ import doom.thinker_t;
  *
  */
 
-@Deprecated
 public class ParallelRenderer2 extends RendererState  {
 
 	////////// PARALLEL OBJECTS /////////////
@@ -36,7 +35,7 @@ public class ParallelRenderer2 extends RendererState  {
 	private Executor tp;
 	private VisplaneWorker[] vpw;
 
-	private CyclicBarrier wallbarrier;
+	// private CyclicBarrier wallbarrier;
 	private CyclicBarrier visplanebarrier;
 
 	private RenderSegInstruction[] RSI;
@@ -83,7 +82,7 @@ public class ParallelRenderer2 extends RendererState  {
 	 * @param DM
 	 */
 	public ParallelRenderer2(DoomMain DM) {
-		this(DM,1,1);
+		this(DM,2,1);
 	}
 
 	private void initializeParallelStuff() {
@@ -91,8 +90,8 @@ public class ParallelRenderer2 extends RendererState  {
 		RSIExec=new RenderSegExecutor[NUMWALLTHREADS];
 		tp=   Executors.newFixedThreadPool(NUMWALLTHREADS+NUMFLOORTHREADS);
 		// Prepare the barrier for MAXTHREADS + main thread.
-		wallbarrier=new CyclicBarrier(NUMWALLTHREADS+1);
-		visplanebarrier=new CyclicBarrier(NUMFLOORTHREADS+1);
+		//wallbarrier=new CyclicBarrier(NUMWALLTHREADS+1);
+		visplanebarrier=new CyclicBarrier(NUMFLOORTHREADS+NUMWALLTHREADS+1);
 
 		vpw=new VisplaneWorker[NUMFLOORTHREADS];
 
@@ -710,7 +709,7 @@ public class ParallelRenderer2 extends RendererState  {
 		for (int i=0;i<NUMWALLTHREADS;i++){
 			RSIExec[i]=new RenderSegExecutor(screen,
 					this, TexMan, RSI, ceilingclip, floorclip, columnofs, 
-					xtoviewangle, ylookup, this.visplanes,walllights, this.wallbarrier);
+					xtoviewangle, ylookup, this.visplanes,walllights, this.visplanebarrier);
 			RSIExec[i].setVideoScale(this.vs);
 			RSIExec[i].initScaling();
 		}
@@ -798,12 +797,6 @@ public class ParallelRenderer2 extends RendererState  {
 		RenderRSIPipeline();
 		// Check for new console commands.
 		DGN.NetUpdate ();
-
-		try {
-			wallbarrier.await();
-		} catch (Exception e){
-			e.printStackTrace();
-		}
 
 		// "Warped floor" fixed, same-height visplane merging fixed.
 		MyPlanes.DrawPlanes ();

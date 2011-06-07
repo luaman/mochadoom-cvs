@@ -7,7 +7,6 @@ package rr;
  *  
  */
 
-@Deprecated
 public class RenderSegInstruction {    
 	public int     rw_x,rw_stopx;
 	public int toptexture,midtexture,bottomtexture;
