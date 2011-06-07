@@ -5,6 +5,11 @@ package data;
 //
 
 public class sfxinfo_t {
+	
+		public sfxinfo_t(){
+			
+		}
+	
         // up to 6-character name
         public String   name;
 
