@@ -98,8 +98,6 @@ public class ParallelRenderer2 extends RendererState  {
 		for (int i=0;i<NUMFLOORTHREADS;i++){
 			vpw[i]=new VisplaneWorker(visplanebarrier);
 			vpw[i].id=i;
-
-
 		}
 	}
 
@@ -698,20 +696,22 @@ public class ParallelRenderer2 extends RendererState  {
 	/**
 	 * R_InitRWISubsystem
 	 * 
-	 * Initialize RWIs and RWI Executors.
-	 * Pegs them to the RWI, ylookup and screen[0].
+	 * Initialize RSIs and RSI Executors.
+	 * Pegs them to the RSI, ylookup and screen[0].
 	 */
 
-	private void InitRWISubsystem() {
+	private void InitRSISubsystem() {
 		// CATCH: this must be executed AFTER screen is set, and
 		// AFTER we initialize the RWI themselves,
 		// before V is set (right?) 
 		for (int i=0;i<NUMWALLTHREADS;i++){
 			RSIExec[i]=new RenderSegExecutor(screen,
-					this, TexMan, RSI, ceilingclip, floorclip, columnofs, 
+					this, TexMan, RSI,this.BLANKCEILINGCLIP,this.BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, 
 					xtoviewangle, ylookup, this.visplanes,walllights, this.visplanebarrier);
 			RSIExec[i].setVideoScale(this.vs);
 			RSIExec[i].initScaling();
+			// Each SegExecutor sticks to its own half (or 1/nth) of the screen.
+			RSIExec[i].setScreenRange(i*(SCREENWIDTH/NUMWALLTHREADS),(i+1)*(SCREENWIDTH/NUMWALLTHREADS));
 		}
 	}
 
@@ -741,7 +741,7 @@ public class ParallelRenderer2 extends RendererState  {
 	private void RenderRSIPipeline() {
 
 		for (int i=0;i<NUMWALLTHREADS;i++){
-			RSIExec[i].setRange((i*RSIcount)/NUMWALLTHREADS, ((i+1)*RSIcount)/NUMWALLTHREADS);
+			RSIExec[i].setRSIEnd(RSIcount);
 			//RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
 			tp.execute(RSIExec[i]);
 		}
@@ -793,7 +793,7 @@ public class ParallelRenderer2 extends RendererState  {
 
 		// The head node is the last node output.
 		MyBSP.RenderBSPNode (LL.numnodes-1);
-		MyPlanes.ClearClips ();
+		
 		RenderRSIPipeline();
 		// Check for new console commands.
 		DGN.NetUpdate ();
@@ -859,7 +859,7 @@ public class ParallelRenderer2 extends RendererState  {
 		InitTranslationTables ();
 
 		System.out.print("\nR_InitRWISubsystem: ");
-		InitRWISubsystem();
+		InitRSISubsystem();
 
 		System.out.print("\nR_InitTranMap: ");
 		R_InitTranMap(0);
