@@ -12,7 +12,7 @@ public class RenderSegInstruction {
 	public int toptexture,midtexture,bottomtexture;
 	public int  pixhigh,pixlow,pixhighstep,pixlowstep,
 	topfrac,    topstep,bottomfrac, bottomstep;	
-	public boolean segtextured;
+	public boolean segtextured,markfloor,markceiling;
 	public long     rw_centerangle; // angle_t
 	/** fixed_t */
 	public int     rw_offset,rw_distance,rw_scale,

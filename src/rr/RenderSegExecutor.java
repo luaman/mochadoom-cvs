@@ -27,7 +27,7 @@ import v.IVideoScaleAware;
 public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 
 	// This needs to be set by the partitioner.
-	private int start, end,numthreads=1;
+	private int start, end;
 	// These need to be set on creation, and are unchangeable.
 	private final IGetColumn GC;
 	private final TextureManager TM;
@@ -37,7 +37,6 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	private final int[] ylookup,columnofs;
 	private final byte[] screen;
 	private final short[] ceilingclip, floorclip;
-	private visplane_t visplanes[];
 	
 	// All that stuff (yikes!) must come from RSIs.
 	// It's a reduced set of what RenderSegLoop uses,
@@ -88,7 +87,6 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		this.xtoviewangle=xtoviewangle;
 		this.columnofs=columnofs;
 		this.ylookup=ylookup;
-		this.visplanes=visplanes;
 	}
 
 	public void setRange(int start, int end){
@@ -99,7 +97,6 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	public void setRange(int start, int end,int numthreads){
 		this.end=end;
 		this.start=start;
-		this.numthreads=numthreads;
 	}
 
 	class seginfo_t{
@@ -210,18 +207,20 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	                dc_source = GC.GetColumn(rsi.midtexture,texturecolumn);
 	                dc_source_ofs=GC.getDCSourceOffset();
 	                CompleteColumn();
+	                ceilingclip[rw_x] = (short) rsi.viewheight;
+	                floorclip[rw_x] = -1;
 	            }
 	            else
 	            {
 	                // two sided line
-	                if (rsi.toptexture!=0)
-	                {
-	                // top wall
-	                mid = pixhigh>>HEIGHTBITS;
-	                pixhigh += pixhighstep;
+	            	if (rsi.toptexture!=0)
+					{
+						// top wall
+						mid = pixhigh>>HEIGHTBITS;
+						pixhigh += pixhighstep;
 
-	                if (mid >= floorclip[rw_x])
-	                    mid = floorclip[rw_x]-1;
+						if (mid >= floorclip[rw_x])
+							mid = floorclip[rw_x]-1;
 
 	                if (mid >= yl)
 	                {
@@ -232,10 +231,17 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	                    dc_source = GC.GetColumn(rsi.toptexture,texturecolumn);
 	                    dc_source_ofs=GC.getDCSourceOffset();
 	                    CompleteColumn();
-	                } 
-	                } // if toptexture
-
-	                // no top wall
+	    				ceilingclip[rw_x] = (short) mid;
+					}
+					else
+						ceilingclip[rw_x] = (short) (yl-1);
+					}  // if toptexture
+					else
+					{
+						// no top wall
+						if (rsi.markceiling)
+							ceilingclip[rw_x] = (short) (yl-1);
+					} 
 	                    
 	                if (rsi.bottomtexture!=0)
 	                {
@@ -257,9 +263,19 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	                                texturecolumn);
 	                    dc_source_ofs=GC.getDCSourceOffset();
 	                    CompleteColumn();
-	                }
+						floorclip[rw_x] = (short) mid;
+					}
+					else
+						floorclip[rw_x] = (short) (yh+1);
 
 	            } // end-bottomtexture
+				else
+				{
+					// no bottom wall
+					if (rsi.markfloor)
+						floorclip[rw_x] = (short) (yh+1);
+				}
+	                
 	           } // end-else (two-sided line)
 	                rw_scale += rw_scalestep;
 	                topfrac += topstep;
@@ -389,13 +405,12 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	public void updateRSI(RenderSegInstruction[] rsi) {
 		this.RSI=rsi;
 		}
-	
-	public void updateVisplanes(visplane_t[] vpo) {
-		this.visplanes=vpo;
-		}
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.5  2011/06/07 01:32:32  velktron
+// Parallel Renderer 2 still buggy :-(
+//
 // Revision 1.4  2011/06/07 00:50:47  velktron
 // Alternate Parallel Renderer fixed.
 //

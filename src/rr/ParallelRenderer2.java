@@ -265,8 +265,8 @@ public class ParallelRenderer2 extends RendererState  {
 			rsi.bottomfrac=bottomfrac;
 			rsi.bottomstep=bottomstep;
 			rsi.bottomtexture=bottomtexture;
-			//rsi.markceiling=markceiling;
-			//rsi.markfloor=markfloor;
+			rsi.markceiling=markceiling;
+			rsi.markfloor=markfloor;
 			rsi.midtexture=midtexture;
 			rsi.pixhigh=pixhigh;
 			rsi.pixhighstep=pixhighstep;
