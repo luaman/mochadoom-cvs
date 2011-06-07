@@ -6,8 +6,6 @@ import javax.sound.sampled.SourceDataLine;
 
 import p.mobj_t;
 
-import s.AudioSystemSoundDriver.DoomSound;
-
 
 /** A Thread for playing digital sound effects. Obviously you need as many as channels?
  * 
@@ -46,8 +44,10 @@ public class SoundWorker extends channel_t implements Runnable {
 			if (currentSoundSync != null) {
 		        int nBytesRead = 0;
 		        
+		        if (vc!=null){
 		        float vol = vc.getMinimum()+(vc.getMaximum()-vc.getMinimum())*(float)sfxVolume/(float)s.AbstractDoomAudio.MAX_VOLUME;
 		        vc.setValue(vol);
+		        }
 		        
 		        try { 
 		            while (nBytesRead != -1) { 

@@ -4,7 +4,6 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.SourceDataLine;
 
 import p.mobj_t;
-import s.AudioSystemSoundDriver.DoomSound;
 import data.sfxinfo_t;
 
 public class channel_t 

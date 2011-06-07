@@ -63,26 +63,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 	protected final SoundThread[] channels;
 	protected final Thread[] sthreads;
 
-	/** A class representing a sample in memory */
-	class DoomSound {
-		byte[] bytes;
-		AudioInputStream ais = null;
 
-		public DoomSound(byte[] bytes) {
-			this.bytes = bytes;
-
-			try { 
-				ais = AudioSystem.getAudioInputStream(new ByteInputStream(bytes, bytes.length));
-				//audioInputStream.reset();
-			} catch (UnsupportedAudioFileException e1) { 
-				e1.printStackTrace();
-				return;
-			} catch (IOException e1) { 
-				e1.printStackTrace();
-				return;
-			} 
-		}
-	}
 
 	/** FIXME Hmm... probably needs work?
 	 *  
@@ -193,7 +174,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 	 *
 	 */
 
-	public class SoundThread extends channel_t implements ISoundThread,Runnable {
+	public class SoundThread extends channel_t implements Runnable {
 		// Play at least this before even forced interruptions.
 		protected static final int MAX_PLAYBACK_CHUNK = 1024;
 
@@ -219,14 +200,12 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 		/** This is how you tell the thread to play a sound,
 		 * I suppose.  */
 
-		@Override
 		public void addSound(DoomSound ds, mobj_t origin) {
 			this.currentSound = ds;
 			this.origin=origin;
 			this.auline.start();
 		}
 
-		@Override
 		public void forceStop(DoomSound ds) {
 			//System.out.println("Forced signaled");
 			if (auline.isActive()) auline.stop();
@@ -289,7 +268,6 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 				auline.start();
 				}
 
-		@Override
 		public void addSound(DoomSound ds) {
 			// TODO Auto-generated method stub
 			

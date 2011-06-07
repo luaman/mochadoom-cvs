@@ -13,7 +13,6 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.Synthesizer;
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
@@ -22,7 +21,6 @@ import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import p.mobj_t;
-import s.AudioSystemSoundDriver2.DoomSound;
 import w.DoomBuffer;
 
 import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
@@ -30,7 +28,6 @@ import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 import data.sounds;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
-import doom.DoomMain;
 import doom.DoomStatus;
 
 /** David Martel's sound driver for Mocha Doom. Excellent work!
@@ -47,27 +44,6 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 	
 	private final SoundWorker[] channels;
 	private final Thread[] soundThread;
-	
-	/** A class representing a sample in memory */
-	class DoomSound {
-		byte[] bytes;
-		AudioInputStream ais = null;
-		
-		public DoomSound(byte[] bytes) {
-			this.bytes = bytes;
-			
-	        try { 
-	        	ais = AudioSystem.getAudioInputStream(new ByteInputStream(bytes, bytes.length));
-	            //audioInputStream.reset();
-	        } catch (UnsupportedAudioFileException e1) { 
-	            e1.printStackTrace();
-	            return;
-	        } catch (IOException e1) { 
-	            e1.printStackTrace();
-	            return;
-	        } 
-		}
-	}
 	
 	/** FIXME Hmm... probably needs work?
 	 *  
@@ -177,7 +153,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 			if (channels[i].currentSound != null && channels[i].origin==origin){
 				one=!one; // First time, we self-deny.
 				if (one){
-				System.out.printf("Overriding channel %d for mobj %s\n",i,origin);
+				//System.out.printf("Overriding channel %d for mobj %s\n",i,origin);
 				channels[i].stopSound();
 				channels[i].addSound(ds);
 				return;
@@ -191,7 +167,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 			
 			if (channels[i].currentSound == null) {
 				channels[i].addSound(ds,origin);
-				System.out.printf("Sound added to channel %d for mobj %s\n",i,origin);
+				//System.out.printf("Sound added to channel %d for mobj %s\n",i,origin);
 				//			forced=0;
 				return;
 			}
@@ -416,7 +392,11 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
         			if (channels[i].auline.isControlSupported(FloatControl.Type.VOLUME)){
         				channels[i].vc=(FloatControl) channels[i].auline
         				.getControl(FloatControl.Type.VOLUME);
-        			}
+        			}/* else 
+        				if(channels[i].auline.isControlSupported(FloatControl.Type.MASTER_GAIN)){
+            				channels[i].vc=(FloatControl) channels[i].auline
+            				.getControl(FloatControl.Type.MASTER_GAIN);
+        			}*/
         			
         			// Add individual pan control (TODO: proper positioning).
         			if (channels[i].auline.isControlSupported(FloatControl.Type.PAN)){
