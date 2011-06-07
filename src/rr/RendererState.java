@@ -5698,8 +5698,7 @@ validcount++;
        * @throws IOException 
        */
       
-      @Override
-      public byte[] GetColumn
+      protected final byte[] GetColumn
       ( int       tex,
         int       col ) 
       {
@@ -5719,8 +5718,39 @@ validcount++;
               patch_t r=W.CachePatchNum(lump,PU_CACHE);
           return r.columns[ofs].data;
       }
-          
+      
           this.dc_source_ofs=0;
+          // Texture should be composite, but it doesn't yet exist. Create it. 
+          if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
+
+          // This implies that texturecomposite actually stores raw, compressed columns,
+          // or else those "ofs" would go in-between.
+          // The source offset int this case is 0, else we'll skip over stuff.
+          
+          return TexMan.getTextureComposite(tex,col);
+      }
+
+      @Override
+      public byte[] GetColumn( int tex, int col, int index) 
+      {
+          int     lump,ofs;
+          
+          col &= TexMan.getTexturewidthmask(tex);
+          lump = TexMan.getTextureColumnLump(tex, col);
+          ofs=TexMan.getTextureColumnOfs(tex, col);
+          
+          // If pointing inside a non-zero, positive lump, then it's not a composite texture.
+          // Read from disk.
+          if (lump > 0){
+              // This will actually return a pointer to a patch's columns.
+              // That is, to the ONE column exactly.{
+              // If the caller needs access to a raw column, we must point 3 bytes "ahead".
+              offsets[index]=3;
+              patch_t r=W.CachePatchNum(lump,PU_CACHE);
+          return r.columns[ofs].data;
+          }
+          
+          this.offsets[index]=0;
           // Texture should be composite, but it doesn't yet exist. Create it. 
           if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
 
@@ -5731,11 +5761,14 @@ validcount++;
 
           return TexMan.getTextureComposite(tex,col);
       }
-
+ 
+      
       @Override
-      public final int getDCSourceOffset(){
-    	  return dc_source_ofs;
+      public final int getDCSourceOffset(int index){
+    	  return offsets[index];
       }
+      
+      int[] offsets;
       
       /**
        * R_GetColumn variation: returns a pointer to a column_t
