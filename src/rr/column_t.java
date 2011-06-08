@@ -57,7 +57,7 @@ public class column_t implements CacheableDoomObject, IReadableDoomObject{
 	        
 	        // First byte of a post should be its "topdelta"
             guesspostdeltas[postno]=(short)topdelta;
-	        guesspostofs[postno]=skipped; // 0 for first post
+	        guesspostofs[postno]=skipped+3; // 0 for first post
 
 	        // Read one more byte...this should be the post length.
 	        postlen=(short)C2JUtils.toUnsignedByte(buf.get());
@@ -105,7 +105,7 @@ public class column_t implements CacheableDoomObject, IReadableDoomObject{
                 guesspostdeltas[postno]=(short)topdelta;
             //}
                 // This is where this posts starts.
-        guesspostofs[postno]=skipped;        
+        guesspostofs[postno]=skipped+3; // Pre-add 3.        
         postlen=(short)f.readUnsignedByte();
         guesspostlens[postno++]=postlen;
         // So, we already read 2 bytes (topdelta + length)
@@ -174,3 +174,7 @@ public class column_t implements CacheableDoomObject, IReadableDoomObject{
 }
 
 
+// $Log: column_t.java,v $
+// Revision 1.14  2011/06/08 16:11:13  velktron
+// IMPORTANT: postofs now skip delta,height and padding ENTIRELY (added +3). This eliminates the need to add +3 before accessing the data, saving some CPU cycles for each column. Of course, anything using column_t must take this into account.
+//
