@@ -9,7 +9,7 @@ import doom.think_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.10 2011/06/08 18:09:51 velktron Exp $
+// $Id: info.java,v 1.11 2011/06/08 18:26:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.11  2011/06/08 18:26:42  velktron
+// Actually, the death state was fine. The problem was in Actions.
+//
 // Revision 1.10  2011/06/08 18:09:51  velktron
 // Fixed MT_BARREL xdeathstate
 //
@@ -74,7 +77,7 @@ import doom.think_t;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.10 2011/06/08 18:09:51 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.11 2011/06/08 18:26:42 velktron Exp $";
 
 // Data.
 //#include "sounds.h"
@@ -1955,8 +1958,7 @@ public static mobjinfo_t[] mobjinfo = {
 	statenum_t.S_NULL,		// meleestate
 	statenum_t.S_NULL,		// missilestate
 	statenum_t.S_BEXP,		// deathstate
-	statenum_t.S_BEXP,		// xdeathstate
-	//- MAES this was set to NULL and caused "too damaged" barrels to simply disappear. 
+	statenum_t.S_NULL,		// xdeathstate
 	sfxenum_t.sfx_barexp,		// deathsound
 	0,		// speed
 	10*FRACUNIT,		// radius
