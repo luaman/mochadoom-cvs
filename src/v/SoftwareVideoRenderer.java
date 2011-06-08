@@ -290,7 +290,7 @@ public abstract class SoftwareVideoRenderer
           // Get post delta
           short delta=column.postdeltas[i];
           // We skip delta, len and padding.
-          ptr+=3; 
+          // ptr+=3; NOT NEEDED< pre-skipped at parsing. 
           
           // Skip transparent rows...
           if (delta==0xFF) break;
@@ -373,7 +373,7 @@ public abstract class SoftwareVideoRenderer
                // Get post delta
                short delta=column.postdeltas[i];
                // We skip delta, len and padding.
-               ptr+=3; 
+               //ptr+=3; 
 
                // Skip transparent rows...
                if (delta==0xFF) break;
@@ -404,7 +404,7 @@ public abstract class SoftwareVideoRenderer
                // Get post delta
                short delta=column.postdeltas[i];
                // We skip delta, len and padding.
-               ptr+=3; 
+               //ptr+=3; 
 
                // Skip transparent rows...
                if (delta==0xFF) break;
@@ -437,7 +437,7 @@ public abstract class SoftwareVideoRenderer
                    // Get post delta
                    short delta=column.postdeltas[i];
                    // We skip delta, len and padding.
-                   ptr+=3; 
+                   //ptr+=3; 
 
                    // Skip transparent rows...
                    if (delta==0xFF) break;
@@ -471,7 +471,7 @@ public abstract class SoftwareVideoRenderer
                        // Get post delta
                        short delta=column.postdeltas[i];
                        // We skip delta, len and padding.
-                       ptr+=3; 
+                       //ptr+=3; 
 
                        // Skip transparent rows...
                        if (delta==0xFF) break;
@@ -536,6 +536,11 @@ public abstract class SoftwareVideoRenderer
    * V_DrawPatchFlipped 
    * Masks a column based masked pic to the screen.
    * Flips horizontally, e.g. to mirror face.
+   * 
+   * Currently UNUSED, as any occurence to it is also scaled and
+   * best served by another function.
+   * 
+   * 
    */
 
   public final void DrawPatchFlipped ( int      x,   int        y,    int       scrn,  patch_t  patch ) 
@@ -585,7 +590,7 @@ public abstract class SoftwareVideoRenderer
              // Get post delta
              int delta=C2JUtils.toUnsignedByte(column.data[ptr]);
              // We skip delta, len and padding.
-             ptr+=3;
+             //ptr+=3;
              if (delta==0xFF) break;
              int destPos = desttop+delta*this.width;
              //count = column.length; 
@@ -699,8 +704,7 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
         //while (column.topdelta != 0xff)
         for (int i=0;i<column.posts;i++){
             {
-                //source = (byte *) column + 3;
-                ptrOfs = column.postofs[i]+3;
+                ptrOfs = column.postofs[i];//+3;
                 ptr = 0;
                 short delta = column.postdeltas[i];
 
@@ -715,14 +719,7 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
                 //while (count-- > 0)
                 for (int j=0;j<column.postlen[i]*dupy;j++)
                 {
-                    //*dest = source[ofs >> fixed_t.FRACBITS];
-                    //dest += this.width;
-                   // try {
                     dest[destPos] = column.data[ptrOfs+ptr/rowfrac];
-                    //}
-                    //catch (Exception e) {
-                    //e.printStackTrace();  //temporary hack to debug
-                    //}
                     destPos += this.width;
 
                     ptr++;
@@ -835,7 +832,7 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
           // Get post delta
           short delta=column.postdeltas[i];
           // We skip delta, len and padding.
-          source+=3; 
+          //source+=3;  NOT NEEDED ANYMORE, skipped by parsing.
           
           // Skip transparent rows...
           if (delta==0xFF) break;
