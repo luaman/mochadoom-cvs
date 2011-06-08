@@ -81,7 +81,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.65 2011/06/08 17:41:57 velktron Exp $
+// $Id: DoomMain.java,v 1.66 2011/06/08 17:43:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -107,7 +107,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.65 2011/06/08 17:41:57 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.66 2011/06/08 17:43:29 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3072,7 +3072,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
 
         status_holders.add((DoomStatusAware) this.I);
-        status_holders.add((DoomStatusAware) this.VI);
+        status_holders.add((DoomStatusAware) this.V);
         updateStatusHolders(this);
 
 
@@ -4035,6 +4035,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.66  2011/06/08 17:43:29  velktron
+//VI -> V
+//
 //Revision 1.65  2011/06/08 17:41:57  velktron
 //Added VI to list of status holders.
 //
