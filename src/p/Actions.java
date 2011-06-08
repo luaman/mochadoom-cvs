@@ -4788,7 +4788,7 @@ CheckMissileSpawn (th);
         }
 
         if (target.health < -target.info.spawnhealth 
-        && target.info.xdeathstate!=null)
+        && target.info.xdeathstate!=statenum_t.S_NULL)
         {
             target.SetMobjState(target.info.xdeathstate);
         }
