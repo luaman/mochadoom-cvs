@@ -18,4 +18,6 @@ public interface DoomVideoInterface {
 
 	public void ShutdownGraphics();
 
+	public void setGamma(int usegamma);
+
 }
