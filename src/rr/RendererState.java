@@ -5043,6 +5043,8 @@ validcount++;
           if (dc_yl <= mceilingclip[p_mceilingclip+dc_x])
               dc_yl = mceilingclip[p_mceilingclip+dc_x]+1;
 
+          dc_texheight=0;
+          
           // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
           if (dc_yl <= dc_yh && dc_yh < viewheight)
           {
@@ -5053,8 +5055,8 @@ validcount++;
               
               // Drawn by either R_DrawColumn
               //  or (SHADOW) R_DrawFuzzColumn.
-              dc_source_ofs+=3; // This makes us point into the first valid pixel of a post. I hope.
-              dc_texheight=0; // killough. Sprites and masked textures get no tiling safeguard, obviously.
+              //dc_source_ofs+=3; // This makes us point into the first valid pixel of a post. I hope.
+               // killough. Sprites and masked textures get no tiling safeguard, obviously.
               
                colfunc.invoke();
           }
