@@ -1178,6 +1178,7 @@ public class Menu extends AbstractDoomMenu {
 
             case KEY_F11: // gamma toggle
                 int usegamma = V.getUsegamma();
+                usegamma++;
                 if (usegamma > 4)
                     usegamma = 0;
                 DM.players[DM.consoleplayer].message = gammamsg[usegamma];
