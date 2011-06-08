@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.21 2011/06/04 11:03:36 velktron Exp $
+// $Id: Finale.java,v 1.22 2011/06/08 17:38:55 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.21 2011/06/04 11:03:36 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.22 2011/06/08 17:38:55 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -492,7 +492,7 @@ public void StartFinale ()
         default: sfx = null; break;
       }
           
-      if (sfx !=null) ;
+      if (sfx !=null) // Fixed mute thanks to _D_ 8/6/2011
           S.StartSound (null, sfx);
       }
       
