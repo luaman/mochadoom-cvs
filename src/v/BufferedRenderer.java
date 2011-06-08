@@ -14,7 +14,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.12 2011/05/31 12:24:52 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.13 2011/06/08 17:24:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,6 +28,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.13  2011/06/08 17:24:42  velktron
+// Possible to set gamma values and request new buffered images during runtime.
+//
 // Revision 1.12  2011/05/31 12:24:52  velktron
 // Fixed bogus +1 screen allocation.
 //
@@ -141,7 +144,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.12 2011/05/31 12:24:52 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.13 2011/06/08 17:24:42 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -211,6 +214,23 @@ public final void setScreen(int index, int width, int height){
     // will also appear in the image.
     
     screens[index]=((DataBufferByte)screenbuffer[index].getRaster().getDataBuffer()).getData();
+
+}
+
+
+/** We only call this once we have a stable WritableRaster, and we only want
+ *  a different colormodel (e.g. after changing gamma). It's slower than keepings
+ *  severerl BufferedImages ready, so it's only used when changing gamma. The
+ *  backing screen, array etc. should not have changed at this moment.
+ * 
+ * @param index
+ * @param r
+ */
+
+protected final void setScreen(int index, WritableRaster r){
+
+    
+    screenbuffer[index]=new BufferedImage(this.icm,r,false,null);    
 
 }
 
@@ -374,20 +394,29 @@ int[] raster;
 public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
         
         BufferedImage[] b=new BufferedImage[icms.length];
-    // Map databuffer to one of the screens.
-
+        // 	Map databuffer to one of the screens.        
+        
         // Create the first of the screens.
         this.icm=icms[screen];
-        // This will create the first buffered image (and its data array)/
-        // as screenbuffer "screen". Usually this is screen 0.
-        setScreen(screen,this.getWidth(),this.getHeight());
+        
+        // MEGA hack: all images share the same raster data as screenbuffer[screen]
+        // If this is the first time we called this method, the actually backing array
+        // will be actually created.
+        
+        if (r==null){
+        	// This will create the first buffered image (and its data array)/
+           // as screenbuffer "screen". Usually this is screen 0.
+    	   // WE ONLY DO THIS ONCE PER INSTANCE, OTHERWISE WHEN CHANGING GAMMA
+           // THE OLD BYTE ARRAYS WILL BECOME UNDISPLAYABLE    	   	
+        	setScreen(screen,this.getWidth(),this.getHeight());
+        	r= screenbuffer[screen].getRaster();
+       		}
+        else setScreen(screen,r);
 
-        b[screen]=this.screenbuffer[screen];
-            
         
-        // MEGA hack: all images share the same raster data as screenbuffer[screen].
-        WritableRaster r=    screenbuffer[screen].getRaster();
-        
+        	// This is the base image for this set of palettes (usually index 0).
+            b[screen]=this.screenbuffer[screen];
+       
         // Create the rest of the screens (with different palettes) on the same raster.
         for (int i=0;i<icms.length;i++){
             if (i!=screen)
@@ -395,12 +424,14 @@ public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
             
         }
         
-        this.report(b);
+        //this.report(b);
         
         
         return b;
         
     }
+
+WritableRaster r;
 
 /** Returns a Raster of one of the internal screen BufferedImages.
  *  Call ONLY after V.Init() has been called!

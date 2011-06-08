@@ -2,6 +2,8 @@ package v;
 
 import static data.Defines.RANGECHECK;
 
+import i.DoomStatusAware;
+import i.DoomVideoInterface;
 import i.IDoomSystem;
 
 import java.awt.image.BufferedImage;
@@ -12,6 +14,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 import data.Defines;
+import doom.DoomStatus;
 
 import m.BBox;
 
@@ -20,9 +23,15 @@ import rr.patch_t;
 import utils.C2JUtils;
 
 public abstract class SoftwareVideoRenderer
-        implements DoomVideoRenderer, IVideoScaleAware{
+        implements DoomVideoRenderer, IVideoScaleAware, DoomStatusAware{
 
     IDoomSystem I;
+    DoomVideoInterface VI;
+    
+    public final void updateStatus(DoomStatus DM){
+    	this.VI=DM.VI;
+    	this.I=DM.I;
+    }
     
  // Now where did these came from? /*[5][256]*/
     public static final short[][] gammatable =
@@ -135,7 +144,7 @@ public abstract class SoftwareVideoRenderer
         CENTERY=        (h/2);
     }
     
-    public int  usegamma;
+    public int  usegamma=0;
     
     public final int getUsegamma() {
         return usegamma;
@@ -143,6 +152,7 @@ public abstract class SoftwareVideoRenderer
 
     public final void setUsegamma(int usegamma) {
         this.usegamma = usegamma;
+        this.VI.setGamma(usegamma);
     }
     
     /** V_Markrect:
