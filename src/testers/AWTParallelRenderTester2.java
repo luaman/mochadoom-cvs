@@ -131,7 +131,7 @@ public class AWTParallelRenderTester2 {
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     LevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
-    DM.R=new ParallelRenderer2(DM,2,1); 
+    DM.R=new ParallelRenderer2(DM,1,1); 
     DM.SM=DM.R;
     DM.TM=new SimpleTextureManager(DM);
     
