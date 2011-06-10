@@ -4206,21 +4206,10 @@ validcount++;
        dx = Math.abs(x - viewx);
        dy = Math.abs(y - viewy);
        
-       // Sanity check, else it's going to bomb.
-       /* if (dx==0){
-           //
-           if (dy>0) angle= Tables.toBAMIndex(ANG90);
-           else           
-           if (dy<0) angle= Tables.toBAMIndex(ANG270);
-           else
-                     angle= 0;     
-       }
-       
-       else { */
-       
        // If something is farther north/south than west/east, it gets swapped. 
        // Probably as a crude way to avoid divisions by zero. This divides
-       // the field into octants, rather than quadrants, where the biggest angle to consider is 45...right?
+       // the field into octants, rather than quadrants, where the biggest angle to 
+       // consider is 45...right? So dy/dx can never exceed 1.0, in theory.
        
        if (dy>dx)
        {
@@ -4229,22 +4218,33 @@ validcount++;
        dy = temp;
        }
        
-       if (dx==dy){
-    	   if (dx==0) return 0;
-       }
+       // If one or both of the distances are *exactly* zero at this point,
+       // then this means that the wall is in your face anyway, plus we want to
+       // avoid a division by zero. So you get zero.
+  	   if (dx==0) return 0;
+
        
-       /* If both dx and dy are zero, this is going to bomb.
+       /* If dx is zero, this is going to bomb.
           Fixeddiv will return MAXINT aka 7FFFFFFF, >> DBITS will make it 3FFFFFF,
           which is more than enough to break tantoangle[]. 
           
-          In the original C code, this probably didn't matter: there would probably be garbage orientations
-          thrown all around. However this is unacceptable in Java.
+          In the original C code, this probably didn't matter: there would 
+          probably be garbage orientations thrown all around. However this 
+          is unacceptable in Java. OK, so the safeguard above prevents that. 
+          Still... this method is only called once per visible wall per frame,
+          so one check more or less at this point won't change much. It's 
+          better to be safe than sorry.
+          
        */
+     
+       // This effectively limits the angle to
+      angle=Math.max( FixedDiv(dy,dx), 2048)>>DBITS;
+      //angle=FixedDiv(dy,dx)>>DBITS;
        
-       //angle=Math.max( FixedDiv(dy,dx), 2048)>>DBITS;
-      // angle=(FixedDiv(dy,dx)&0x7FF)>>DBITS;
-       angle=(FixedDiv(dy,dx)>>DBITS)&0x7ff;
-       angle = (int) (((tantoangle[angle ]+ANG90)&BITS32) >> ANGLETOFINESHIFT);
+      // Since the division will be 0xFFFF at most, DBITS will restrict
+      // the maximum angle index to 7FF, about 45, so adding ANG90 with
+      // no other safeguards is OK.
+      angle = (int) ((tantoangle[angle ]+ANG90) >> ANGLETOFINESHIFT);
        
        // use as cosine
        dist = FixedDiv (dx, finesine[angle] ); 
@@ -4466,8 +4466,6 @@ validcount++;
               scaledviewwidth = setblocks*(SCREENWIDTH/10);
               // Height can only be a multiple of 8.
               viewheight = (short) ((setblocks*(SCREENHEIGHT- DM.ST.getHeight())/10)&~7);
-              //viewheight-=8; // Correct to lower multiple.
-              System.out.println("Viewheight "+viewheight);
           }
          
           detailshift = setdetail;
