@@ -1,13 +1,10 @@
 package s;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Stack;
 
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiDevice;
@@ -19,7 +16,6 @@ import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Synthesizer;
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
@@ -31,15 +27,10 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import p.mobj_t;
 import w.DoomBuffer;
-
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
-
-import data.musicinfo_t;
 import data.sfxinfo_t;
 import data.sounds;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
-import doom.DoomMain;
 import doom.DoomStatus;
 
 /** David Martel's sound driver for Mocha Doom. Excellent work!
@@ -60,7 +51,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 
 	HashMap<String,DoomSound> cachedSounds = new HashMap<String,DoomSound>();
 	
-	protected final SoundThread[] channels;
+	protected final SoundWorker[] channels;
 	protected final Thread[] sthreads;
 
 
@@ -99,13 +90,13 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 			}
 		}
 	}  
-
+	
 	Receiver receiver;
 	Synthesizer synthesizer;
 
 	public AudioSystemSoundDriver2(DoomStatus DS, int numChannels, boolean nomusic, boolean nosound) {
 		super(DS,numChannels);
-		this.channels= new SoundThread[numChannels];
+		this.channels= new SoundWorker[numChannels];
 		super.channels=this.channels;
 		this.sthreads= new Thread[numChannels];
 
@@ -138,7 +129,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 
 			byte[] bytes = ((DoomBuffer)DS.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class )).getBuffer().array();
 
-			ByteInputStream bis = new ByteInputStream(bytes, bytes.length);
+			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 
 			QMusToMid q = new QMusToMid();
 			//OutputStream fos = new FileOutputStream("C:\\Users\\David\\Documents\\test.mid");
@@ -148,7 +139,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 			q.convert(bis, baos, true, 0, 0, true, new QMusToMid.Ptr<Integer>(0));
 
 			bis.close();
-			bis = new ByteInputStream(baos.toByteArray(), baos.size());
+			bis = new ByteArrayInputStream(baos.toByteArray());
 
 			Sequence sequence = MidiSystem.getSequence(bis);
 
@@ -165,118 +156,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 		} 
 	}
 
-	/** A Thread for playing digital sound effects.
-	 * 
-	 *  Obviously you need as many as channels?
-	 *   
-	 *  In order not to end up in a hell of effects,
-	 *  certain types of sounds must be limited to 1 per object.
-	 *
-	 */
-
-	public class SoundThread extends channel_t implements Runnable {
-		// Play at least this before even forced interruptions.
-		protected static final int MAX_PLAYBACK_CHUNK = 1024;
-
-		byte[] abData = new byte[EXTERNAL_BUFFER_SIZE];
-
-		FloatControl fc;
-		FloatControl pc;
-		DoomSound currentSoundSync;
-		
-		int id;
-		/** Used to find out whether the same object is continuously making
-		 *  sounds. E.g. the player, ceilings etc. In that case, they must be
-		 *  interrupted.
-		 */
-		mobj_t origin;
-		public boolean terminate;
-
-		public SoundThread(int id){
-			this.sfxinfo=new sfxinfo_t();
-			this.id=id;
-		}
-
-		/** This is how you tell the thread to play a sound,
-		 * I suppose.  */
-
-		public void addSound(DoomSound ds, mobj_t origin) {
-			this.currentSound = ds;
-			this.origin=origin;
-			this.auline.start();
-		}
-
-		public void forceStop(DoomSound ds) {
-			//System.out.println("Forced signaled");
-			if (auline.isActive()) auline.stop();
-			this.auline.flush();
-			this.currentSound = ds;
-		}
-
-		public void run() {
-
-			while (!terminate) {
-				currentSoundSync = currentSound;
-				if (currentSoundSync != null) {
-					int nBytesRead = 0;
-					// Assuming 15 values at most?
-					float vol = fc.getMinimum()+(fc.getMaximum()-fc.getMinimum())*(float)sfxVolume/15f;
-					fc.setValue(vol);			        
-
-					try {
-
-						while (nBytesRead != -1) {
-							nBytesRead = currentSoundSync.ais.read(abData, 0, abData.length);
-							//System.out.printf("Channel %d Offset: %d Interrupted: %b\n",id,offset,force);
-							if (nBytesRead >= 0){ 
-								auline.write(abData, 0, nBytesRead);
-							}
-						}
-					} catch (Exception e) { 
-						System.out.println(sfxVolume);
-						e.printStackTrace();
-						return;
-					} finally {
-						// The previous steps are actually VERY fast.
-						// However this one waits until the data has been
-						// consumed, Interruptions/signals won't reach  here,
-						// so it's pointless trying to interrupt the actual filling.
-						//long a=System.nanoTime();
-						auline.drain();
-						//long b=System.nanoTime();
-						//System.out.printf("Channel %d completed in %f.\n",id,(float)(b-a)/1000000000f);
-						}
-					// Report that this channel is free.
-					currentSound = null;
-
-				}
-
-				// If we don't sleep at least a bit here, busy waiting become
-				// way too taxing.
-
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-				} 
-			}
-		}
-
-		public void stopSound() {
-				auline.stop();
-				auline.flush();
-				currentSound = null;
-				auline.start();
-				}
-
-		public void addSound(DoomSound ds) {
-			// TODO Auto-generated method stub
-			
-		}
-
-		public boolean isPlaying() {
-			return (this.currentSound!=null);
-		}
-	}
+	
 
 	public void addPlayerSound(DoomSound ds){
 		// TODO: reserve one channel for player?
@@ -337,7 +217,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 		SetChannels();
 		
 		for (int i = 0; i < channels.length; i++) {
-			channels[i] = new SoundThread(i);
+			channels[i] = new SoundWorker(i);
 			this.sthreads[i]=new Thread(channels[i]);
 			sthreads[i].start();
 		}
@@ -462,9 +342,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 		StartSound(origin, sound_id.ordinal());
 	}
 
-	private Position curPosition;
-
-	private final int EXTERNAL_BUFFER_SIZE = 524288; // 128Kb 
+	private Position curPosition;	
 
 	enum Position { 
 		LEFT, RIGHT, NORMAL
@@ -500,7 +378,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 			// Force the wad manager to "forget" it, since it's also cached here.
 			DS.Z.Free(DS.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class));
 
-			ByteInputStream bis = new ByteInputStream(bytes, bytes.length);
+			ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 
 			try {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -511,7 +389,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 				sound = new DoomSound(baos.toByteArray());
 				cachedSounds.put(id, sound);
 				//bis.close();
-				//bis = new ByteInputStream(baos.toByteArray(), baos.size());
+				//bis = new ByteArrayInputStream(baos.toByteArray(), baos.size());
 			} catch (FileNotFoundException e2) {
 				// TODO Auto-generated catch block
 				e2.printStackTrace();
@@ -627,7 +505,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 		try {
 			//sound.ais.reset();
 			// TODO: why not cache ByteOutputStreams instead?
-			sound.ais = AudioSystem.getAudioInputStream(new ByteInputStream(sound.bytes, sound.bytes.length));
+			sound.ais = AudioSystem.getAudioInputStream(new ByteArrayInputStream(sound.bytes));
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -734,7 +612,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 	    return cnum;
 	}
 	
-	private final boolean getAudioLineForChannel(SoundThread str,AudioFormat format){
+	private final boolean getAudioLineForChannel(SoundWorker str,AudioFormat format){
 		try {		
 
 			DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
@@ -742,7 +620,7 @@ public class AudioSystemSoundDriver2 extends AbstractDoomAudio implements IDoomS
 			str.auline = (SourceDataLine) AudioSystem.getLine(info);
 			str.auline.open(format);
 			// TODO: set individual per-thread volume controls here.
-			str.fc = (FloatControl)str.auline.getControl(FloatControl.Type.VOLUME);
+			str.vc = (FloatControl)str.auline.getControl(FloatControl.Type.VOLUME);
 			// TODO: proper positioning.
 			if (str.auline.isControlSupported(FloatControl.Type.PAN)) {
 				str.pc = (FloatControl) str.auline

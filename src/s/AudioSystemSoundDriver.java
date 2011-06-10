@@ -1,5 +1,6 @@
 package s;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -22,8 +23,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 import p.mobj_t;
 import w.DoomBuffer;
-
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 
 import data.sounds;
 import data.sounds.musicenum_t;
@@ -115,7 +114,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 
 			byte[] bytes = ((DoomBuffer)DS.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class )).getBuffer().array();
 			
-	        ByteInputStream bis = new ByteInputStream(bytes, bytes.length);
+	        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 	        
 	        QMusToMid q = new QMusToMid();
 	        //OutputStream fos = new FileOutputStream("C:\\Users\\David\\Documents\\test.mid");
@@ -125,7 +124,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 	        q.convert(bis, baos, true, 0, 0, true, new QMusToMid.Ptr<Integer>(0));
 	        	  
 	        bis.close();
-	        bis = new ByteInputStream(baos.toByteArray(), baos.size());
+	        bis = new ByteArrayInputStream(baos.toByteArray());
 	        
 	        Sequence sequence = MidiSystem.getSequence(bis);
 	        
@@ -161,7 +160,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 				}
 		}
 		
-		// Otherwise, fetch a fresh channel.
+		// Otherwise, fetch ByteInputStreama fresh channel.
 		
 		for (int i = 0; i < channels.length; i++) {			
 			
@@ -193,7 +192,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 	@Override
 	public void Init(int sfxVolume, int musicVolume) {
 		for (int i = 0; i < soundThread.length; i++) {
-			channels[i]=new SoundWorker();
+			channels[i]=new SoundWorker(i);
 			soundThread[i] = new Thread(channels[i]);
 			soundThread[i].start();
 		}
@@ -333,7 +332,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 			// own sample format with DoomToWave.
 			byte[] bytes = ((DoomBuffer)DS.W.CacheLumpNum( lump, 0/*PU_MUSIC*/, DoomBuffer.class )).getBuffer().array();
 			
-	        ByteInputStream bis = new ByteInputStream(bytes, bytes.length);
+	        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
 	        
 	        try {
 	        	ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -368,7 +367,7 @@ public class AudioSystemSoundDriver extends AbstractDoomAudio implements IDoomSo
 		
 		try {
 			//sound.ais.reset();
-			sound.ais = AudioSystem.getAudioInputStream(new ByteInputStream(sound.bytes, sound.bytes.length));
+			sound.ais = AudioSystem.getAudioInputStream(new ByteArrayInputStream(sound.bytes));
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
