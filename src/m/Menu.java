@@ -654,7 +654,7 @@ public class Menu extends AbstractDoomMenu {
                 break;
             }
 
-            S.SetMusicVolume(DM.snd_MusicVolume /* *8 */);
+            S.SetMusicVolume(DM.snd_MusicVolume*8);
         }
     }
 
