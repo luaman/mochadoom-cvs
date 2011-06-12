@@ -555,7 +555,7 @@ public class AbstractDoomAudio implements IDoomSound{
 					volume);
 		}    
 
-		IMUS.SetMusicVolume(127);
+		IMUS.SetMusicVolume(volume);
 		IMUS.SetMusicVolume(volume);
 		snd_MusicVolume = volume;
 	}
