@@ -634,7 +634,7 @@ public class Menu extends AbstractDoomMenu {
                 break;
             }
 
-           S.SetSfxVolume(DM.snd_SfxVolume /* *8 */);
+           S.SetSfxVolume(DM.snd_SfxVolume *8);
         }
     }
 
