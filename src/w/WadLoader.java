@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.35 2011/06/03 16:35:27 velktron Exp $
+// $Id: WadLoader.java,v 1.36 2011/06/12 21:52:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.36  2011/06/12 21:52:11  velktron
+// Made CheckNumForName uppercase-proof, at last.
+//
 // Revision 1.35  2011/06/03 16:35:27  velktron
 // Default fakezone
 //
@@ -666,7 +669,7 @@ public class WadLoader implements IWadLoader {
 	public int GetNumForName(String name) {
 		int i;
 
-		i = CheckNumForName(name);
+		i = CheckNumForName(name.toUpperCase());
 
 		if (i == -1) {
 			Exception e = new Exception();
