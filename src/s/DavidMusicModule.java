@@ -2,7 +2,9 @@ package s;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 
+import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
@@ -24,6 +26,9 @@ import javax.sound.midi.Transmitter;
 
 public class DavidMusicModule implements IMusic {
 	
+	public static final int CHANGE_VOLUME=7;
+	public static final int CHANGE_VOLUME_FINE=9;
+	
 	Synthesizer synthesizer;
 	Sequencer sequencer;
 	Receiver receiver;
@@ -37,16 +42,39 @@ public class DavidMusicModule implements IMusic {
 	@Override
 	public void InitMusic() {
 		try {
-			MidiDevice.Info[] info = MidiSystem.getMidiDeviceInfo();   
-		     for (int i = 0; i < info.length; i++)   
-		          System.out.println(info[i].getName()+"\t\t\t"/*+ mdev.isOpen()*/); 
 			
-			sequencer = MidiSystem.getSequencer(true);
-		    sequencer.open();
+			// MEGA HACK: if we don't "peg" to devices found in this list, and
+			// just get the defaults, volume controls won't function properly.
+			 int x=-1,y=-1;
+			MidiDevice.Info[] info = MidiSystem.getMidiDeviceInfo();   
+		     for (int i = 0; i < info.length; i++)  {
+		    	 MidiDevice mdev=MidiSystem.getMidiDevice(info[i]);
+		    	 if (mdev instanceof Sequencer) x=i;
+		    	 if (mdev instanceof Synthesizer) y=i;
+		        //  System.out.println(info[i].getName()+"\t\t\t"+ mdev.isOpen()+"\t"+mdev.hashCode());
+		          
+		     }
+		
+		     //System.out.printf("x %d y %d \n",x,y);
+		     //--This sets the Sequencer and Synthesizer  
+		     //--The indices x and y correspond to the correct entries for the  
+		     //--default Sequencer and Synthesizer, as determined above  	       
+		      
+		    if (x!=-1)
+		    	sequencer = (Sequencer) MidiSystem.getMidiDevice(info[x]);
+		    else
+		    	sequencer = (Sequencer) MidiSystem.getSequencer(true);
+			sequencer.open();
 
-		    synthesizer = MidiSystem.getSynthesizer();  
-		    synthesizer.open();
-
+		    //synthesizer = MidiSystem.getSynthesizer(); 
+			if (y!=-1)
+				synthesizer = (Synthesizer) MidiSystem.getMidiDevice(info[y]);
+			else
+				synthesizer = MidiSystem.getSynthesizer(); 
+			
+			synthesizer.open();
+			System.out.println("Synth "+synthesizer.hashCode());
+			
 		    receiver = synthesizer.getReceiver();
 		    transmitter = sequencer.getTransmitter();
 		    transmitter.setReceiver(receiver);
@@ -63,26 +91,41 @@ public class DavidMusicModule implements IMusic {
 
 	@Override
 	public void SetMusicVolume(int volume) {
-		MidiChannel[] channels = synthesizer.getChannels();   
-	     for (int i = 0; i < channels.length; i++)   {
-	          channels[i].controlChange(7, 0);
-	          channels[i].controlChange(39, 0);
-	     }
-	     
-		try {  
-
-			ShortMessage volumeMessage = new ShortMessage();  
-
-			for (int i = 0; i < channels.length; i++) {
-				volumeMessage.setMessage(ShortMessage.CONTROL_CHANGE, i, 7, volume);  
-				receiver.send(volumeMessage, -1);
-			}  
-
-		} catch (Exception e) {  
-
-			e.printStackTrace();  
-
-		}
+		
+		 // NOTE: variable 'midiVolume' is an int between 0 and 127
+        if( synthesizer.getDefaultSoundbank() == null )
+        {
+            // HARDWARE SYNTHESIZER
+            try
+            {
+                ShortMessage volumeMessage = new ShortMessage();
+                for( int i = 0; i < synthesizer.getChannels().length; i++ )
+                {
+                    volumeMessage.setMessage( ShortMessage.CONTROL_CHANGE,
+                        i, CHANGE_VOLUME, volume );
+                    MidiSystem.getReceiver().send( volumeMessage, -1 );
+                }
+            }
+            catch( InvalidMidiDataException imde )
+            {
+                System.err.println( "Invalid MIDI data." );
+                return;
+            }
+            catch( MidiUnavailableException mue )
+            {
+                System.err.println( "MIDI unavailable." );
+                return;
+            }
+        }
+        else
+        {
+            // SOFTWARE SYNTHESIZER:
+            MidiChannel[] channels = synthesizer.getChannels();
+            for( int c = 0; channels != null && c < channels.length; c++ )
+            {
+                channels[c].controlChange( CHANGE_VOLUME, volume );
+            }
+        }
 
 	}
 
