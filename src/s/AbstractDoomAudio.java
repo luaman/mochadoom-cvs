@@ -195,10 +195,10 @@ public class AbstractDoomAudio implements IDoomSound{
 
 
 		// Debug.
-		/* System.err.printf(
-	  	   "S_StartSoundAtVolume: playing sound %d (%s)\n",
-	  	   sfx_id, S_sfx[sfx_id].name );
-		 */
+		// System.err.printf(
+	  	//   "S_StartSoundAtVolume: playing sound %d (%s)\n",
+	  	//   sfx_id, S_sfx[sfx_id].name );
+		 
 
 		// check for bogus sound #
 		if (sfx_id < 1 || sfx_id > NUMSFX){
@@ -249,8 +249,11 @@ public class AbstractDoomAudio implements IDoomSound{
 				sep 	= NORM_SEP;
 			}
 
-			if (!rc)
+			if (!rc) {
+				//System.err.printf("S_StartSoundAtVolume: Sound %d (%s) rejected because: inaudible\n",
+			  	//   sfx_id, S_sfx[sfx_id].name );
 				return;
+			}
 		}	
 		else
 		{
@@ -326,13 +329,17 @@ public class AbstractDoomAudio implements IDoomSound{
 		// ones map with the "soft" ones?
 		// Essentially we're begging to get an actual channel.
 		
-
+		
+		
 		channels[cnum].handle = ISND.StartSound(sfx_id,
 				/*sfx->data,*/
 				volume,
 				sep,
 				pitch,
 				priority);
+		
+		//System.err.printf("Handle %d for channel %d for sound %s\n",channels[cnum].handle,
+		//		cnum,sfx.name);
 	}	
 
 
@@ -556,7 +563,6 @@ public class AbstractDoomAudio implements IDoomSound{
 		}    
 
 		IMUS.SetMusicVolume(volume);
-		IMUS.SetMusicVolume(volume);
 		snd_MusicVolume = volume;
 	}
 
@@ -740,7 +746,7 @@ public class AbstractDoomAudio implements IDoomSound{
 		// volume calculation
 		if (approx_dist < S_CLOSE_DIST)
 		{
-			vps.volume = DS.snd_SfxVolume-15;
+			vps.volume = DS.snd_SfxVolume;
 		}
 		else if (DS.gamemap == 8)
 		{
@@ -785,7 +791,6 @@ public class AbstractDoomAudio implements IDoomSound{
 				break;
 			else if (origin!=null &&  channels[cnum].origin ==  origin)
 			{
-				System.err.printf("S_getChannel: interrupting sound of %s on channel %d\n",origin.type.name(),cnum);
 				StopChannel(cnum);
 				break;
 			}
@@ -801,13 +806,11 @@ public class AbstractDoomAudio implements IDoomSound{
 			if (cnum == numChannels)
 			{
 				// FUCK!  No lower priority.  Sorry, Charlie.
-				System.err.printf("S_getChannel:  FUCK!  No lower priority.  Sorry, Charlie.\n");
 				return -1;
 			}
 			else
 			{
 				// Otherwise, kick out lower priority.
-				System.err.printf("S_getChannel: kicking out channel %d\n",cnum);
 				StopChannel(cnum);
 			}
 		}

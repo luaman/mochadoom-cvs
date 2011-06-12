@@ -246,16 +246,28 @@ public class DavidSFXModule implements ISound{
         				channels[c].vc=(FloatControl) channels[c].auline
         				.getControl(Type.MASTER_GAIN);
         			}
-        			// else 
-        			//	if(channels[i].auline.isControlSupported(FloatControl.Type.MASTER_GAIN)){
-            		//		channels[i].vc=(FloatControl) channels[i].auline
-            		//		.getControl(FloatControl.Type.MASTER_GAIN);
-        			//}
+        			
+
+        			// Add individual pitch control.
+        			if (channels[c].auline.isControlSupported(Type.SAMPLE_RATE)){
+        				channels[c].pc=(FloatControl) channels[c].auline
+        				.getControl(Type.SAMPLE_RATE);
+        			} else {
+        				System.err.printf("SAMPLE_RATE for channel %d NOT supported!\n",c);
+        			}
         			
         			// Add individual pan control (TODO: proper positioning).
         			if (channels[c].auline.isControlSupported(Type.BALANCE)){
-        				channels[c].pc=(FloatControl) channels[c].auline
+        				channels[c].bc=(FloatControl) channels[c].auline
         				.getControl(FloatControl.Type.BALANCE);
+        			} else {
+        				System.err.printf("BALANCE for channel %d NOT supported!\n",c);
+        				if (channels[c].auline.isControlSupported(Type.PAN)){        					
+        				channels[c].bc=(FloatControl) channels[c].auline
+        				.getControl(FloatControl.Type.PAN);
+        			} else {
+        				System.err.printf("PAN for channel %d NOT supported!\n",c);
+        			}
         			}
 
         			channels[c].auline.start();
@@ -266,6 +278,7 @@ public class DavidSFXModule implements ISound{
 		channels[c].setVolume(vol);
 		channels[c].setPanning(sep);
 		channels[c].addSound(sound, handle);
+		channels[c].setPitch(pitch);
 		this.channelhandles.put(handle,c);
         return handle;
 		
@@ -367,7 +380,8 @@ public class DavidSFXModule implements ISound{
 			byte[] abData = new byte[EXTERNAL_BUFFER_SIZE];
 
 			FloatControl vc; // linear volume control
-			FloatControl pc; // panning control
+			FloatControl bc; // balance/panning control
+			FloatControl pc; // pitcj control
 			DoomSound currentSoundSync;
 			DoomSound currentSound;
 			
@@ -376,6 +390,7 @@ public class DavidSFXModule implements ISound{
 				this.handle=IDLE_HANDLE;;
 			}
 			
+
 			int id;
 			/** Used to find out whether the same object is continuously making
 			 *  sounds. E.g. the player, ceilings etc. In that case, they must be
@@ -404,7 +419,6 @@ public class DavidSFXModule implements ISound{
 			public void setVolume(int volume){
 				if (vc!=null){
 				float vol = linear2db[volume];
-				System.out.println("Actual volume" +vol) ;
 				vc.setValue(vol);
 				}
 			}
@@ -412,8 +426,18 @@ public class DavidSFXModule implements ISound{
 			public void setPanning(int sep){
 				// Q: how does Doom's sep map to stereo panning?
 				// A: Apparently it's 0-255 L-R.
+				if (bc!=null){
+				float pan= bc.getMinimum()+(bc.getMaximum()-bc.getMinimum())*(float)sep/ISound.PANNING_STEPS;
+				bc.setValue(pan);
+				}
+			}
+			
+			
+			public void setPitch(int pitch){
+				// Q: how does Doom map pitch numbers to actual variations?
+				// A: Apparently it's 128 for normal pitch, so 0-255 is -/+ something...maybe 50%?
 				if (pc!=null){
-				float pan= pc.getMinimum()+(pc.getMaximum()-pc.getMinimum())*(float)sep/256;
+				float pan= pc.getValue()*(float)(1+(float)(pitch-128)/128);
 				pc.setValue(pan);
 				}
 			}
