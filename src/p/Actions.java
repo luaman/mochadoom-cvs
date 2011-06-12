@@ -2394,7 +2394,7 @@ public class Actions extends UnifiedGameMap {
         
         // go into chase state
       seeyou:
-        if (actor.info.seesound!=null)
+        if (actor.info.seesound!=null && actor.info.seesound!=sfxenum_t.sfx_None)
         {
         int     sound;
             
@@ -2497,9 +2497,9 @@ public class Actions extends UnifiedGameMap {
         if (actor.info.meleestate!=statenum_t.S_NULL /*null*/
                 && EN.CheckMeleeRange (actor))
         {
-            if (actor.info.attacksound!=null)
+            if (actor.info.attacksound!=null){
                 S.StartSound (actor, actor.info.attacksound);
-
+            }
             actor.SetMobjState(actor.info.meleestate);
             return;
         }
