@@ -1,8 +1,11 @@
 package data;
 
-//
-//SoundFX struct.
-//
+/**
+ *   SoundFX struct.
+ *    
+ *   
+ *
+ */
 
 public class sfxinfo_t {
 	
@@ -10,19 +13,20 @@ public class sfxinfo_t {
 			
 		}
 	
-        // up to 6-character name
+        /** up to 6-character name */
         public String   name;
 
-        // Sfx singularity (only one at a time)
+        /** Sfx singularity (only one at a time) */
         public boolean     singularity;
 
-        // Sfx priority
+        /** Sfx priority */
         public int     priority;
 
         // referenced sound if a link
         // MAES: since in pure hackish C style, a "0" value would be used as a boolean, we'll need to distinguish more
         // unambiguously. So for querying, look at the "linked" boolean or a getter.
         public boolean linked;
+        
         public sfxinfo_t  link;
 
         public sfxinfo_t getLink() {
@@ -40,7 +44,7 @@ public class sfxinfo_t {
         // volume if a link
         public int     volume;
 
-        // sound data (used to be void*)
+        /** sound data (used to be void*) */
         public byte[]  data;
 
         // this is checked every second to see if sound
@@ -95,6 +99,16 @@ public class sfxinfo_t {
             this.pitch = pitch;
             this.volume = volume;
             this.usefulness = usefulness;
+        }
+        
+        public int identify(sfxinfo_t[] array){
+        	for (int i=0;i<array.length;i++){
+        		if (array[i]==this){
+        			return i;
+        		}
+        	}
+        	// Duh
+        	return 0;
         }
         
     };
