@@ -42,6 +42,14 @@ public class C2JUtils {
         return s1;
     }
     
+	public static byte[] toByteArray(String str) {
+		byte[] retour = new byte[str.length()];
+		for (int i = 0; i < str.length(); i++) {
+			retour[i] = (byte)(str.charAt(i) & 0xFF);
+		}
+		return retour;
+	}
+    
     /** Emulates C-style "string comparison".
      *  "Strings" are considered null-terminated,
      *  and comparison is performed only up to the smaller
