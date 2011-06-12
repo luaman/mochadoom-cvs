@@ -15,49 +15,13 @@ import data.sounds.sfxenum_t;
 public class DummySoundDriver implements IDoomSound{
 
 	@Override
-	public void ChangeMusic(int music_id, boolean looping) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void Init(int sfxVolume, int musicVolume) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void PauseSound() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void ResumeSound() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void SetMusicVolume(int volume) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void SetSfxVolume(int volume) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void Start() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void StartMusic(int music_id) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -81,13 +45,31 @@ public class DummySoundDriver implements IDoomSound{
 	}
 
 	@Override
+	public void StopSound(mobj_t origin) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void ChangeMusic(int musicnum, boolean looping) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
 	public void StopMusic() {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void StopSound(mobj_t origin) {
+	public void PauseSound() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void ResumeSound() {
 		// TODO Auto-generated method stub
 		
 	}
@@ -99,31 +81,25 @@ public class DummySoundDriver implements IDoomSound{
 	}
 
 	@Override
-	public void StartMusic(musicenum_t musicenum_t) {
-		// TODO Auto-generated method stub
-		
-	}
-
-    @Override
-    public void ChangeMusic(musicenum_t musicid, boolean looping) {
-        // TODO Auto-generated method stub
-        
-    }
-
-	@Override
-	public void ShutdownMusic() {
+	public void SetMusicVolume(int volume) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void ShutdownSound() {
+	public void SetSfxVolume(int volume) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void StopChannel(int channel) {
+	public void StartMusic(int music_id) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void StartMusic(musicenum_t music_id) {
 		// TODO Auto-generated method stub
 		
 	}
