@@ -147,18 +147,20 @@ public class DoomIO {
 			 return bytes;
 		 }
 
+		 /*
 		 public static byte[] toByteArray(boolean[] bools, int nbBytes) {
 			 byte[] bytes = new byte[bools.length*nbBytes];
 			 for (int i = 0; i < bools.length; i++) {
 				 copyBytes(toByteArray(bools[i], nbBytes), bytes, i*nbBytes);
 			 }
 			 return bytes;
-		 }
+		 } */
 
+		 /*
 		 public static byte[] toByteArray(Boolean bool, int nbBytes) {
 			 int val = (bool?1:0);
 			 return toByteArray(val, nbBytes);
-		 }
+		 }*/
 
 		 public static byte[] toByteArray(Integer str, int nbBytes) {
 			 Long val = str.longValue();
