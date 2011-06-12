@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.11 2011/06/05 22:52:28 velktron Exp $
+// $Id: DoomSystem.java,v 1.12 2011/06/12 21:54:31 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.12  2011/06/12 21:54:31  velktron
+// Separate music + sound closing.
+//
 // Revision 1.11  2011/06/05 22:52:28  velktron
 // Proper audio subsystem shutdown.
 //
@@ -133,8 +136,8 @@ public void Quit ()
 
  //DM.CheckDemoStatus();
  DM.QuitNetGame ();
- DM.S.ShutdownSound();
- DM.S.ShutdownMusic();
+ DM.ISND.ShutdownSound();
+ DM.IMUS.ShutdownMusic();
  MenuMisc.SaveDefaults(DM);
  DM.VI.ShutdownGraphics();
  System.exit(0);
