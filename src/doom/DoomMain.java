@@ -45,11 +45,17 @@ import static data.Defines.NORMALUNIX;
 import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
 import rr.ParallelRenderer;
+import rr.ParallelRenderer2;
 import rr.SimpleTextureManager;
 import rr.TextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
-import s.AudioSystemSoundDriver;
+import s.AbstractDoomAudio;
+import s.AudioSystemSoundDriver3;
+import s.DavidMusicModule;
+import s.DavidSFXModule;
+import s.DummyMusic;
+import s.DummySFX;
 import s.DummySoundDriver;
 import savegame.IDoomSaveGame;
 import savegame.IDoomSaveGameHeader;
@@ -81,7 +87,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.67 2011/06/10 17:03:26 velktron Exp $
+// $Id: DoomMain.java,v 1.68 2011/06/12 21:55:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -107,7 +113,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.67 2011/06/10 17:03:26 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.68 2011/06/12 21:55:18 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -384,17 +390,17 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
             // Update display, next frame, with current state.
             Display ();
-            /*
-#ifndef SNDSERV
+            
+//#ifndef SNDSERV
 	// Sound mixing for the buffer is snychronous.
-	I_UpdateSound();
-#endif	
+	ISND.UpdateSound();
+//#endif	
 	// Synchronous sound output is explicitly called.
-#ifndef SNDINTR
+//#ifndef SNDINTR
 	// Update sound output.
-	I_SubmitSound();
-#endif
-             */
+	//I_SubmitSound();
+//#endif
+             
         }
     }
 
@@ -1114,6 +1120,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         CheckNetGame ();
 
         System.out.print ("S_Init: Setting up sound.\n");
+        ISND.InitSound();
+        IMUS.InitMusic();
         S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
 
         System.out.print ("HU_Init: Setting up heads up display.\n");
@@ -3028,12 +3036,19 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         // Random number generator, but we can have others too.
         this.RND=new DoomRandom();
+
+        // Sound "drivers" before the game sound controller.
+        
+        this.IMUS=new DavidMusicModule();
+        this.ISND=new DavidSFXModule(this,16);
         
         // Obviously, nomusic && nosfx = nosound.
         if (!CM.CheckParmBool("-nosound")&& !(CM.CheckParmBool("-nomusic")&& CM.CheckParmBool("-nosfx"))) 
-        this.S=new AudioSystemSoundDriver(this,8,CM.CheckParmBool("-nomusic"),CM.CheckParmBool("-nosfx"));
+        this.S=new AbstractDoomAudio(this,8);
         else 
         	this.S=new DummySoundDriver();
+
+        
         this.W=new WadLoader(this.I); // The wadloader is a "weak" status holder.
         status_holders.add(this.WIPE=new Wiper(this));   
 
@@ -4032,6 +4047,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.68  2011/06/12 21:55:18  velktron
+//Defaulting/testing new sound "drivers"
+//
 //Revision 1.67  2011/06/10 17:03:26  velktron
 //We don't need to be so verbose anymore ;-)
 //
