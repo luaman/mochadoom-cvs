@@ -487,7 +487,7 @@ public class SimpleTextureManager
         	// NASTY hack: apparently the renderer is supposed to overflow.
         	// I'd rather waste some extra memory than try to fix 20 years worth
         	// of rendering functions.
-            block[i]=new byte[texture.height+4];
+            block[i]=new byte[texture.height];
         
 
         collump = texturecolumnlump[texnum];
@@ -602,7 +602,7 @@ public class SimpleTextureManager
             System.arraycopy( patch.data, source, cache, position,count);
             
             // This should position us at the beginning of the next post
-            source=patch.postofs[i]+patch.postlen[i]+4;
+            source=patch.postofs[i]+patch.postlen[i]+1;
         }
     }
 
