@@ -8,7 +8,7 @@ import p.mobj_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: IDoomSound.java,v 1.3 2011/06/12 20:54:25 velktron Exp $
+// $Id: IDoomSound.java,v 1.4 2011/06/13 18:58:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -121,6 +121,8 @@ public interface IDoomSound {
 	 * @param looping
 	 */
 	public void ChangeMusic(int musicnum, boolean looping);
+	
+	public void ChangeMusic(musicenum_t musicnum, boolean looping);
 
 	/** Stops the music fer sure. */
 	public void StopMusic();
