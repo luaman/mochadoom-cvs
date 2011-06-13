@@ -4325,6 +4325,9 @@ int     x;
 int     y;
 int     z;
   
+// MAES: safeguard against zero or less unknown things.
+if (mthing.type<1) return;
+
 // count deathmatch start positions
 if (mthing.type == 11)
 {
