@@ -94,6 +94,8 @@ public class AbstractDoomAudio implements IDoomSound{
 
 		System.err.printf("S_Init: default sfx volume %d\n", sfxVolume);
 
+		this.snd_SfxVolume=sfxVolume;
+		this.snd_MusicVolume=musicVolume;
 		// Whatever these did with DMX, these are rather dummies now.
 		// MAES: any implementation-dependant channel setup should start here.
 		ISND.SetChannels();
@@ -196,10 +198,10 @@ public class AbstractDoomAudio implements IDoomSound{
 
 		// Debug.
 		
-		if (origin!=null && origin.type!=null)
-		 System.err.printf(
-	  	   "S_StartSoundAtVolume: playing sound %d (%s) from %s %d\n",
-	  	   sfx_id, S_sfx[sfx_id].name , origin.type.toString(),origin.hashCode());
+		//if (origin!=null && origin.type!=null)
+		// System.err.printf(
+	  	//   "S_StartSoundAtVolume: playing sound %d (%s) from %s %d\n",
+	  	 //  sfx_id, S_sfx[sfx_id].name , origin.type.toString(),origin.hashCode());
 		 
 
 		// check for bogus sound #
@@ -340,8 +342,8 @@ public class AbstractDoomAudio implements IDoomSound{
 				pitch,
 				priority);
 		
-		//System.err.printf("Handle %d for channel %d for sound %s\n",channels[cnum].handle,
-		//		cnum,sfx.name);
+		System.err.printf("Handle %d for channel %d for sound %s vol %d\n",channels[cnum].handle,
+				cnum,sfx.name,volume);
 	}	
 
 
@@ -456,7 +458,7 @@ public class AbstractDoomAudio implements IDoomSound{
 
 	public void ResumeSound()
 	{
-		if (mus_playing!=null && !mus_paused)
+		if (mus_playing!=null && mus_paused)
 		{
 			IMUS.ResumeSong(mus_playing.handle);
 			mus_paused = false;
@@ -504,7 +506,7 @@ public class AbstractDoomAudio implements IDoomSound{
 				if (ISND.SoundIsPlaying(c.handle))
 				{
 					// initialize parameters
-					vps.volume = DS.snd_SfxVolume;
+					vps.volume = snd_SfxVolume;
 					vps.pitch = NORM_PITCH;
 					vps.sep = NORM_SEP;
 
@@ -519,9 +521,9 @@ public class AbstractDoomAudio implements IDoomSound{
 							StopChannel(cnum);
 							continue;
 						}
-						else if (vps.volume > DS.snd_SfxVolume)
+						else if (vps.volume > snd_SfxVolume)
 						{
-							vps.volume = DS.snd_SfxVolume;
+							vps.volume = snd_SfxVolume;
 						}
 					}
 
@@ -637,6 +639,7 @@ public class AbstractDoomAudio implements IDoomSound{
 
 		// play it
 		IMUS.PlaySong(music.handle, looping);
+		SetMusicVolume(this.snd_MusicVolume);
 
 		mus_playing = music;
 	}
@@ -754,23 +757,29 @@ public class AbstractDoomAudio implements IDoomSound{
 		// volume calculation
 		if (approx_dist < S_CLOSE_DIST)
 		{
-			vps.volume = DS.snd_SfxVolume;
+			vps.volume = snd_SfxVolume;
 		}
 		else if (DS.gamemap == 8)
 		{
 			if (approx_dist > S_CLIPPING_DIST)
 				approx_dist = S_CLIPPING_DIST;
 
-			vps.volume = 15+ ((DS.snd_SfxVolume-15)
+			vps.volume = 15+ ((snd_SfxVolume-15)
 					*((S_CLIPPING_DIST - approx_dist)>>FRACBITS))
 					/ S_ATTENUATOR;
 		}
 		else
 		{
 			// distance effect
-			vps.volume = (DS.snd_SfxVolume
+			vps.volume = (snd_SfxVolume
 					* ((S_CLIPPING_DIST - approx_dist)>>FRACBITS))
-					/ S_ATTENUATOR; 
+					/ S_ATTENUATOR;
+			// Let's do some maths here: S_CLIPPING_DIST-approx_dist
+			// can be at most 0x04100000. shifting left means 0x0410,
+			// or 1040 in decimal. 
+			// The unmultiplied max volume is 15, attenuator is 1040.
+			// So snd_SfxVolume should be 0-127.
+			
 		}
 
 		return (vps.volume > 0);
