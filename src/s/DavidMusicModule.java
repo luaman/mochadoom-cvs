@@ -2,11 +2,13 @@ package s;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.List;
-
+import javax.sound.midi.ControllerEventListener;
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaEventListener;
+import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiDevice;
+import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Receiver;
@@ -34,6 +36,8 @@ public class DavidMusicModule implements IMusic {
 	Receiver receiver;
 	Transmitter transmitter;
 	boolean songloaded;
+	private int volume;
+	private boolean looping;
 	
 	public DavidMusicModule(){
 
@@ -66,6 +70,30 @@ public class DavidMusicModule implements IMusic {
 		    	sequencer = (Sequencer) MidiSystem.getSequencer(true);
 			sequencer.open();
 
+			// Add looping controller for volume
+			
+			sequencer.addMetaEventListener(new MetaEventListener(){
+				@Override
+				public void meta(MetaMessage metamessage) {
+				if ( metamessage.getType() == 47 ) { // end of stream			
+					if (songloaded && looping){
+					 System.out.println("Looping song");
+				     //sequencer.stop();
+				     sequencer.setTickPosition(0);
+				     
+				     sequencer.start();
+				     try {
+						Thread.sleep(10);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				     SetMusicVolume(volume);
+					}
+				}
+			}
+			});
+			
 		    //synthesizer = MidiSystem.getSynthesizer(); 
 			if (y!=-1)
 				synthesizer = (Synthesizer) MidiSystem.getMidiDevice(info[y]);
@@ -92,6 +120,9 @@ public class DavidMusicModule implements IMusic {
 	@Override
 	public void SetMusicVolume(int volume) {
 		
+		System.out.println("Midi volume set to "+volume);
+		
+		this.volume=volume;
 		 // NOTE: variable 'midiVolume' is an int between 0 and 127
         if( synthesizer.getDefaultSoundbank() == null )
         {
@@ -131,13 +162,16 @@ public class DavidMusicModule implements IMusic {
 
 	@Override
 	public void PauseSong(int handle) {
-		// TODO Auto-generated method stub
-
-	}
+		if (songloaded)
+		sequencer.stop();
+		}
 
 	@Override
-	public void ResumeSong(int handle) {
-		// TODO Auto-generated method stub
+	public void ResumeSong(int handle) {		
+		if (songloaded){
+			System.out.println("Resuming song");
+		sequencer.start();
+		}
 
 	}
 
@@ -173,11 +207,23 @@ public class DavidMusicModule implements IMusic {
 	@Override
 	public void PlaySong(int handle, boolean looping) {
 		if (songloaded){
-        if (looping)
-        	sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
-        else
-        	sequencer.setLoopCount(0);
+			this.looping=looping;
+       // if (looping)
+       // 	sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
+       // else
+       // 	sequencer.setLoopCount(0);
         sequencer.start(); // Start playing
+        
+        // HACK Nasty hack to allow volume setting to actually work.
+        // Calling SetMusicVolume immediately after looping or starting didn't
+        // work as intended.
+        try {
+			Thread.sleep(10);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        this.SetMusicVolume(volume);
 		}
 	}
 
