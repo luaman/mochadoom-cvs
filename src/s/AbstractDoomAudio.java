@@ -195,9 +195,11 @@ public class AbstractDoomAudio implements IDoomSound{
 
 
 		// Debug.
-		// System.err.printf(
-	  	//   "S_StartSoundAtVolume: playing sound %d (%s)\n",
-	  	//   sfx_id, S_sfx[sfx_id].name );
+		
+		if (origin!=null && origin.type!=null)
+		 System.err.printf(
+	  	   "S_StartSoundAtVolume: playing sound %d (%s) from %s %d\n",
+	  	   sfx_id, S_sfx[sfx_id].name , origin.type.toString(),origin.hashCode());
 		 
 
 		// check for bogus sound #
@@ -590,6 +592,12 @@ public class AbstractDoomAudio implements IDoomSound{
 	public void StartMusic(musicenum_t m_id)
 	{
 		ChangeMusic(m_id.ordinal(), false);
+	}
+	
+	public void ChangeMusic(musicenum_t musicnum,
+			boolean			looping )
+	{
+		ChangeMusic(musicnum.ordinal(), false);
 	}
 
 
