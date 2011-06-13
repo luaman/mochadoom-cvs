@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.39 2011/06/02 14:20:45 velktron Exp $
+// $Id: StatusBar.java,v 1.40 2011/06/13 21:03:48 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.39 2011/06/02 14:20:45 velktron Exp $";
+        "$Id: StatusBar.java,v 1.40 2011/06/13 21:03:48 velktron Exp $";
 
    
     
@@ -716,10 +716,8 @@ public class StatusBar extends AbstractStatusBar   {
                      * players[consoleplayer].mo.y);
                      */
                     mobj_t mo = DM.players[DM.consoleplayer].mo;
-                    plyr.message = String.format("ang= 0x%s; x,y= (0x%s, 0x%s)",
-                                Integer.toHexString((int) mo.angle),
-                                Integer.toHexString(mo.x),
-                                Integer.toHexString(mo.y));
+                    plyr.message = String.format("ang= 0x%x; x,y= (0x%s, 0x%x)",
+                                mo.angle,mo.x,mo.y);
                 }
             }
 
@@ -753,7 +751,8 @@ public class StatusBar extends AbstractStatusBar   {
                         && ((epsd > 4) || (map > 9)))
                     return false;
 
-                if (DM.isRegistered()
+                // MAES: If it's doom.wad but not ultimate
+                if (DM.isRegistered()&& !DM.isRetail()
                         && ((epsd > 3) || (map > 9)))
                     return false;
 
@@ -1927,6 +1926,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.40  2011/06/13 21:03:48  velktron
+//Fixed Ultimate Doom clev bug
+//
 //Revision 1.39  2011/06/02 14:20:45  velktron
 //Implemented unloading code....kind of pointless, really.
 //
