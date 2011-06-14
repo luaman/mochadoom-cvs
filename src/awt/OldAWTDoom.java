@@ -26,6 +26,7 @@ import javax.swing.JFrame;
 
 import timing.ITicker;
 import v.BufferedRenderer;
+import v.SoftwareVideoRenderer;
 import doom.DoomMain;
 import doom.ICommandLineManager;
 import doom.event_t;
@@ -76,7 +77,7 @@ public class OldAWTDoom extends JFrame implements DoomVideoInterface{
 	                               // also because it works quite flakey on Linux.
 	
 	
-	private IndexColorModel[] cmaps;
+	private IndexColorModel[][] cmaps;
 	  Robot robby;
 		Canvas drawhere;
 		/** These are the actual screens */
@@ -148,26 +149,12 @@ public class OldAWTDoom extends JFrame implements DoomVideoInterface{
             return tmp.toString();
         }
         
-        
-        
-        
         // This stuff should NOT get through in keyboard events.
         protected final int UNACCEPTABLE_MODIFIERS=(int) (InputEvent.ALT_GRAPH_DOWN_MASK+
         										 InputEvent.META_DOWN_MASK+
         										 InputEvent.META_MASK+
         										 InputEvent.WINDOW_EVENT_MASK+
         										 InputEvent.WINDOW_FOCUS_EVENT_MASK);
-
-        
-        
-
-        
-
-
-  
-
-	
-
 
 	/**
 	 * I_SetPalette
@@ -316,21 +303,9 @@ public class OldAWTDoom extends JFrame implements DoomVideoInterface{
 
 	  // create the colormaps
 	  
-	  if (cmap!=null|| cmap.length<768) {
-		  // As many as are likely contained
-		  maxpalettes=cmap.length/768;
-		  System.out.println(maxpalettes + " palettes read");
-		  cmaps=new IndexColorModel[maxpalettes];
-	
-		  // Now we have our palettes.
-	    for (int i=0;i<maxpalettes;i++){
-	     cmaps[i]=new IndexColorModel(8, 256,cmap, i*768, false);
-	    }
-	  } else {
-		  // Allow it to pull from some default location?
-		  System.err.println("Palettes could not be set up. Bye");
-		  System.exit(-1);
-	  }
+   // create the colormaps
+      
+      createPalettes();
 	    
 	 /* this.s  pals=V.getBufferedScreens(0, icms);
 	  cmaps = XCreateColormap(X_display, RootWindow(X_display,
@@ -365,9 +340,7 @@ public class OldAWTDoom extends JFrame implements DoomVideoInterface{
 	  this.setTitle(Strings.MOCHA_DOOM_TITLE);
 	  this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	  this.eventhandler.reposition();
-	   
-	  screens=V.getBufferedScreens(0, cmaps);
-	  RAWSCREEN=V.getScreen(0);
+      setGamma(0);
 	} 
 
 	@Override
@@ -458,9 +431,64 @@ public class OldAWTDoom extends JFrame implements DoomVideoInterface{
 		
 	}
 
+	 protected void createPalettes() {
+	        if (cmap!=null|| cmap.length<768) {
+	              // As many as are likely contained
+	              maxpalettes=cmap.length/768;
+	              System.out.println(maxpalettes + " palettes read");
+	              
+	              // As many as gammas.
+	              cmaps=new IndexColorModel[SoftwareVideoRenderer.gammatable.length][];
+	              
+	              // First set of palettes, normal gamma.
+	              cmaps[0]=new IndexColorModel[maxpalettes];
+	        
+	              // Now we have our palettes.
+	              for (int i=0;i<maxpalettes;i++){
+	                  cmaps[0][i]=new IndexColorModel(8, 256,cmap, i*768, false);
+	                    }
+	            
+	            // Wire the others according to the gamma table.
+	              byte[] tmpcmap=new byte[768];
+	              
+	              // For each gamma value...
+	              for (int j=1;j<SoftwareVideoRenderer.gammatable.length;j++){
+	                  
+	                  cmaps[j]=new IndexColorModel[maxpalettes];
+	                  
+	                  // For each palette
+	                  for (int i=0;i<maxpalettes;i++){
+	                      
+	                      for (int k=1;k<256;k++){
+	                          tmpcmap[3*k]=(byte) SoftwareVideoRenderer.gammatable[j][0x00FF&cmap[i*768+3*k]]; // R
+	                          tmpcmap[3*k+1]=(byte) SoftwareVideoRenderer.gammatable[j][0x00FF&cmap[1+i*768+3*k]]; // G
+	                          tmpcmap[3*k+2]=(byte) SoftwareVideoRenderer.gammatable[j][0x00FF&cmap[2+i*768+3*k]]; // B
+	                        }
+
+	                      cmaps[j][i]=new IndexColorModel(8, 256,tmpcmap, 0, false);
+	                    }
+	              }
+
+	              
+	          } else {
+	              // Allow it to pull from some default location?
+	              System.err.println("Palette and colormaps could not be set up. Bye");
+	              System.exit(-1);
+	          }
+	    } 
+	    
+	    public void setGamma(int level){
+	        System.out.println("Setting gamma "+level);
+	        screens=V.getBufferedScreens(0, cmaps[level]);
+	        RAWSCREEN=V.getScreen(0);
+	    }
+	
 }
 
 //$Log: OldAWTDoom.java,v $
+//Revision 1.2  2011/06/14 09:54:20  velktron
+//Separated palette generation/fixed OldAWTDoom
+//
 //Revision 1.1  2011/06/02 14:54:18  velktron
 //Old AWTEvents deprecated. MochaEvents now default.
 //
