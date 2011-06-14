@@ -4324,9 +4324,6 @@ mobj_t     mobj;
 int     x;
 int     y;
 int     z;
-  
-// MAES: safeguard against zero or less unknown things.
-if (mthing.type<1) return;
 
 // count deathmatch start positions
 if (mthing.type == 11)
@@ -4340,8 +4337,19 @@ if (DM.deathmatch_p < 10/*DM.deathmatchstarts[10]*/)
 return;
 }
 
+if (mthing.type <= 0)
+{
+    // Ripped from Chocolate Doom :-p
+	// Thing type 0 is actually "player -1 start".  
+    // For some reason, Vanilla Doom accepts/ignores this.
+	// MAES: no kidding.
+
+    return;
+}
+
+
 // check for players specially
-if (mthing.type <= 4)
+if (mthing.type <= 4 && mthing.type > 0)  // killough 2/26/98 -- fix crashes
 {
 // save spots for respawning in network games
 DM.playerstarts[mthing.type-1] = mthing;
@@ -4371,7 +4379,7 @@ if (mthing.type == mobjinfo[i].doomednum)
   break;
 
 if (i==NUMMOBJTYPES)
-I.Error ("P_SpawnMapThing: Unknown type %i at (%i, %i)",
+I.Error ("P_SpawnMapThing: Unknown type %d at (%d, %d)",
    mthing.type,
    mthing.x, mthing.y);
   
