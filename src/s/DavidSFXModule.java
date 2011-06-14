@@ -43,37 +43,34 @@ public class DavidSFXModule implements ISound{
 
 	
 	public static final int IDLE_HANDLE = -1;
+	public static final int BUSY_HANDLE = -2;
+	
 	HashMap<String,DoomSound> cachedSounds = new HashMap<String,DoomSound>();
 	HashMap<Integer,Integer> channelhandles = new HashMap<Integer,Integer>();
 	
 	public final float[] linear2db;
 	
 	
-	private final SoundWorker[] channels;
-	private final Thread[] soundThread;
-	private final int numChannels;
+	private SoundWorker[] channels;
+	private Thread[] soundThread;
+	private int numChannels;
 	private final DoomStatus DS;
 	
-	public DavidSFXModule(DoomStatus DS, int numChannels) {
+	public DavidSFXModule(DoomStatus DS) {
 		this.DS=DS;
-		this.numChannels=numChannels;
-		channels= new SoundWorker[numChannels];
-		soundThread= new Thread[numChannels];
-		
 		linear2db=computeLinear2DB();
 		
 		}
 	
-	
     private float[] computeLinear2DB() {
     	
     	// Maximum volume is 0 db, minimum is ... -96 db.
-    	// We rig this so that half-scale actually gives half power,
-    	// and so is -3 dB.
+    	// We rig this so that half-scale actually gives quarter power,
+    	// and so is -6 dB.
     	float[] tmp=new float[VOLUME_STEPS];
     	
     	for (int i=0;i<VOLUME_STEPS;i++){
-    		float linear=(float)(10*Math.log10((float)i/(float)VOLUME_STEPS));
+    		float linear=(float)(20*Math.log10((float)i/(float)VOLUME_STEPS));
     		// Hack. The minimum allowed value as of now is -80 db.
     		if (linear<-36.0) linear=-36.0f;
     		tmp[i]= linear;
@@ -147,7 +144,11 @@ public class DavidSFXModule implements ISound{
 	}
 
 	@Override
-	public void SetChannels() {
+	public void SetChannels(int numChannels) {
+		
+		this.numChannels=numChannels;
+		channels= new SoundWorker[numChannels];
+		soundThread= new Thread[numChannels];
 		
 		// This is actually called from IDoomSound.
 		for (int i = 0; i < numChannels; i++) {
@@ -194,14 +195,14 @@ public class DavidSFXModule implements ISound{
 		
 		String sid = "DS"+sounds.S_sfx[id].name.toUpperCase();
 		if (sid.equals("DSNONE"))
-			return IDLE_HANDLE;
+			return BUSY_HANDLE;
 		
 		// MAES: apparently, we need not worry about finding available channels here,
 		// just assign it to something.
 
 		DoomSound sound = retrieveSoundData(sid);
 		if (sound == null)
-			return IDLE_HANDLE;
+			return BUSY_HANDLE;
 		
 		try {
 			//sound.ais.reset();
@@ -227,9 +228,10 @@ public class DavidSFXModule implements ISound{
         	if (!channels[c].isPlaying()) break;
 
         // Shouldn't happen, but no _actual_ channels were free. Tough cookie.
-        if (c>=numChannels) return IDLE_HANDLE;
+        if (c>=numChannels) 
+        	return BUSY_HANDLE;
         
-        System.out.println("Picked "+c);
+       // System.out.println("Picked "+c);
         // Create a dataline for the "lucky" channel.
         if (channels[c].auline == null) {
         	AudioFormat format = sound.ais.getFormat();
@@ -242,10 +244,17 @@ public class DavidSFXModule implements ISound{
 				e.printStackTrace();
 			}
         			// Add individual volume control.
-        			if (channels[c].auline.isControlSupported(Type.MASTER_GAIN)){
+        			if (channels[c].auline.isControlSupported(Type.MASTER_GAIN))
         				channels[c].vc=(FloatControl) channels[c].auline
         				.getControl(Type.MASTER_GAIN);
-        			}
+        			else {
+        			System.err.printf("MASTER_GAIN for channel %d NOT supported!\n",c);
+        			if (channels[c].auline.isControlSupported(Type.VOLUME))
+            				channels[c].vc=(FloatControl) channels[c].auline
+            				.getControl(Type.VOLUME);
+        			else 
+        				System.err.printf("VOLUME for channel %d NOT supported!\n",c);
+        			} 
         			
 
         			// Add individual pitch control.
@@ -254,7 +263,7 @@ public class DavidSFXModule implements ISound{
         				.getControl(Type.SAMPLE_RATE);
         			} else {
         				System.err.printf("SAMPLE_RATE for channel %d NOT supported!\n",c);
-        			}
+        			} 
         			
         			// Add individual pan control (TODO: proper positioning).
         			if (channels[c].auline.isControlSupported(Type.BALANCE)){
@@ -275,6 +284,8 @@ public class DavidSFXModule implements ISound{
 
         // The handle is the current game time.
         int handle=DS.gametic;
+        
+        System.err.printf("Playing %d vol %d on channel %d\n",handle,vol,c);
 		channels[c].setVolume(vol);
 		channels[c].setPanning(sep);
 		channels[c].addSound(sound, handle);
@@ -295,7 +306,7 @@ public class DavidSFXModule implements ISound{
 	@Override
 	public boolean SoundIsPlaying(int handle) {
 		return this.channelhandles.containsKey(handle);
-	}
+		}
 
 	
 	@Override
@@ -308,7 +319,7 @@ public class DavidSFXModule implements ISound{
 		
 		int i=getChannelFromHandle(handle);
 		// None has it?
-		if (i!=IDLE_HANDLE){
+		if (i!=BUSY_HANDLE){
 			//System.err.printf("Updating sound with handle %d in channel %d\n",handle,i);
 			channels[i].setVolume(vol);
 			//channels[i].setPanning(sep);
@@ -320,14 +331,14 @@ public class DavidSFXModule implements ISound{
 	/** Internal use. 
 	 * 
 	 * @param handle
-	 * @return the channel that has the handle, or -1 if none has it.
+	 * @return the channel that has the handle, or -2 if none has it.
 	 */
 	private int getChannelFromHandle(int handle){
 		// Which channel has it?
 		Integer hnd=this.channelhandles.get(handle);
 		if (hnd!=null) 
 			return hnd;
-		else return IDLE_HANDLE;
+		else return BUSY_HANDLE;
 	}
 	
 	/** Get data for a particular lump, if not cached already */
@@ -418,10 +429,16 @@ public class DavidSFXModule implements ISound{
 			 */
 			public void setVolume(int volume){
 				if (vc!=null){
-				float vol = linear2db[volume];
-				vc.setValue(vol);
+					if (vc.getType()==FloatControl.Type.MASTER_GAIN) {
+						float vol = linear2db[volume];
+						vc.setValue(vol);
+						}
+					else if (vc.getType()==FloatControl.Type.VOLUME){
+						float vol = vc.getMinimum()+(vc.getMaximum()-vc.getMinimum())*(float)volume/127f;
+						vc.setValue(vol);
+					}
 				}
-			}
+				}
 			
 			public void setPanning(int sep){
 				// Q: how does Doom's sep map to stereo panning?
@@ -435,9 +452,9 @@ public class DavidSFXModule implements ISound{
 			
 			public void setPitch(int pitch){
 				// Q: how does Doom map pitch numbers to actual variations?
-				// A: Apparently it's 128 for normal pitch, so 0-255 is -/+ something...maybe 50%?
+				// A: Apparently it's 128 for normal pitch, so 0-255 is -/+ something...maybe 12.5%?
 				if (pc!=null){
-				float pan= pc.getValue()*(float)(1+(float)(pitch-128)/128);
+				float pan= pc.getValue()*(float)(1+(float)(pitch-128)/512);
 				pc.setValue(pan);
 				}
 			}
@@ -453,7 +470,6 @@ public class DavidSFXModule implements ISound{
 
 							while (nBytesRead != -1) {
 								nBytesRead = currentSoundSync.ais.read(abData, 0, abData.length);
-								//System.out.printf("Channel %d Offset: %d Interrupted: %b\n",id,offset,force);
 								if (nBytesRead >= 0){ 
 									auline.write(abData, 0, nBytesRead);
 								}
