@@ -64,8 +64,8 @@ public class AbstractDoomAudio implements IDoomSound{
 		this.DS = DS;
 		this.numChannels=numChannels;
 		this.channels=new channel_t[numChannels];
-		this.ISND=DS.ISND;
 		this.IMUS=DS.IMUS;
+		this.ISND=DS.ISND;
 	}
 
 
@@ -98,7 +98,7 @@ public class AbstractDoomAudio implements IDoomSound{
 		this.snd_MusicVolume=musicVolume;
 		// Whatever these did with DMX, these are rather dummies now.
 		// MAES: any implementation-dependant channel setup should start here.
-		ISND.SetChannels();
+		ISND.SetChannels(numChannels);
 
 		SetSfxVolume(sfxVolume);
 		// No music with Linux - another dummy.
@@ -331,9 +331,7 @@ public class AbstractDoomAudio implements IDoomSound{
 		// become hard (pun intended).
 		// TODO: which channel? How do we know how the actual hardware 
 		// ones map with the "soft" ones?
-		// Essentially we're begging to get an actual channel.
-		
-		
+		// Essentially we're begging to get an actual channel.		
 		
 		channels[cnum].handle = ISND.StartSound(sfx_id,
 				/*sfx->data,*/

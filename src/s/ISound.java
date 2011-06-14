@@ -6,7 +6,7 @@ import data.sounds.sfxenum_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.1 2011/06/12 20:55:12 velktron Exp $
+// $Id: ISound.java,v 1.2 2011/06/14 20:58:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -60,7 +60,7 @@ public interface ISound {
 	//
 
 	// Initialize channels?
-	void SetChannels();
+	void SetChannels(int numChannels);
 
 	// Get raw data lump index for sound descriptor.
 	int GetSfxLumpNum (sfxinfo_t sfxinfo );
@@ -96,6 +96,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.2  2011/06/14 20:58:10  velktron
+// Modified so channel settings are now deferred (after start)
+//
 // Revision 1.1  2011/06/12 20:55:12  velktron
 // Separated SFX playback into a stand-alone concern. This is roughly equivalent to i_sound.h & i_sound.c, for what regards the sfx part.
 //
