@@ -39,7 +39,7 @@ public enum Settings {
    joyb_speed(2),
    screenblocks(10),
    detaillevel(0),
-   snd_channels(3),
+   snd_channels(6),
    usegamma(0),
    mb_used(2),
    chatmacro0(HUSTR_CHATMACRO0 ),
@@ -160,7 +160,7 @@ public void applySetting(DoomStatus DS){
        break;   
    case snd_channels:
        // Defined in sound.c, originally.
-       // TODO DS.numChannels=val;
+       DS.numChannels=val;
        break;
    case mb_used:
        // Memory used. Any practical use?
