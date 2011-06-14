@@ -82,7 +82,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.70 2011/06/14 10:06:37 velktron Exp $
+// $Id: DoomMain.java,v 1.71 2011/06/14 20:59:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -108,7 +108,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.70 2011/06/14 10:06:37 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.71 2011/06/14 20:59:47 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1115,10 +1115,29 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         CheckNetGame ();
 
         System.out.print ("S_Init: Setting up sound.\n");
+        
+      // Sound "drivers" before the game sound controller.
+        
+        if (CM.CheckParmBool("-nomusic"))
+            this.IMUS=new DummyMusic();
+        else
+            this.IMUS=new DavidMusicModule();
+        
+        if (CM.CheckParmBool("-nosound"))
+            this.ISND=new DummySFX();
+        else 
+            this.ISND=new DavidSFXModule(this);
+        
+        // Obviously, nomusic && nosfx = nosound.
+        this.S=new AbstractDoomAudio(this,numChannels);
+        
         ISND.InitSound();
         IMUS.InitMusic();
         S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
 
+        // Hook audio to users.
+        this.updateStatusHolders(this);
+        
         System.out.print ("HU_Init: Setting up heads up display.\n");
         HU.Init();
 
@@ -3031,22 +3050,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         // Random number generator, but we can have others too.
         this.RND=new DoomRandom();
+        
+        // Sound can be left until later, in Start
 
-        // Sound "drivers" before the game sound controller.
-        
-        if (CM.CheckParmBool("-nomusic"))
-            this.IMUS=new DummyMusic();
-        else
-            this.IMUS=new DavidMusicModule();
-        
-        if (CM.CheckParmBool("-nosound"))
-            this.ISND=new DummySFX();
-        else 
-            this.ISND=new DavidSFXModule(this,8);
-        
-        // Obviously, nomusic && nosfx = nosound.
-        this.S=new AbstractDoomAudio(this,8);
-        
         this.W=new WadLoader(this.I); // The wadloader is a "weak" status holder.
         status_holders.add(this.WIPE=new Wiper(this));   
 
@@ -4045,6 +4051,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.71  2011/06/14 20:59:47  velktron
+//Channel settings now read from default.cfg. Changes in sound creation order.
+//
 //Revision 1.70  2011/06/14 10:06:37  velktron
 //-nosound -> - nomusic
 //

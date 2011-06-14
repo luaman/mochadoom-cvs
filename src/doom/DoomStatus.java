@@ -183,6 +183,9 @@ public class DoomStatus extends DoomContext {
     /** maximum volume for music */
     public int snd_MusicVolume;
 
+    /** Maximum number of sound channels */
+    public int numChannels;
+
     // Current music/sfx card - index useless
     // w/o a reference LUT in a sound module.
     // Ideally, this would use indices found
@@ -500,8 +503,7 @@ public class DoomStatus extends DoomContext {
      */
     
     public boolean use_mouse;
-
-
+    
     public DoomStatus(){
     	players = new player_t[MAXPLAYERS];
     	C2JUtils.initArrayOfObjects(players);
@@ -514,6 +516,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.27  2011/06/14 20:59:47  velktron
+// Channel settings now read from default.cfg. Changes in sound creation order.
+//
 // Revision 1.26  2011/06/04 11:04:25  velktron
 // Fixed registered/ultimate identification.
 //
