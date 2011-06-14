@@ -82,7 +82,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.69 2011/06/14 10:01:13 velktron Exp $
+// $Id: DoomMain.java,v 1.70 2011/06/14 10:06:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -108,7 +108,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.69 2011/06/14 10:01:13 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.70 2011/06/14 10:06:37 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3034,7 +3034,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // Sound "drivers" before the game sound controller.
         
-        if (CM.CheckParmBool("-nosound"))
+        if (CM.CheckParmBool("-nomusic"))
             this.IMUS=new DummyMusic();
         else
             this.IMUS=new DavidMusicModule();
@@ -4045,6 +4045,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.70  2011/06/14 10:06:37  velktron
+//-nosound -> - nomusic
+//
 //Revision 1.69  2011/06/14 10:01:13  velktron
 //Removed use of DummySoundDriver, used SFX/Music dummies for nosound.
 //
