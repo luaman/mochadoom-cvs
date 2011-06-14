@@ -267,21 +267,22 @@ public class SimpleTextureManager
             // Start looking in second texture file.
             maptex = maptex2;
             maxoff = maxoff2;
-            directory = 0; // offset "1" inside maptex buffer
+            directory = 1; // offset "1" inside maptex buffer
+            //System.err.print("Starting looking into TEXTURE2\n");
         }
         //System.out.print("Directory "+directory);
         offset = maptex.getInt(directory*4);
         if (offset > maxoff)
             I.Error("R_InitTextures: bad texture directory");
-       // System.out.print("offset "+offset+" \n");
+       // System.err.printf("offset %d\n",offset);
         
         maptex.position(offset);
         // Read "maptexture", which is the on-disk form.
         mtexture.unpack(maptex);
-        //System.out.println(mtexture.name+ " @"+offset);
+        //System.err.println(mtexture.name+ " @"+offset);
 
         // MAES: the HashTable only needs to know the correct names.
-        TextureCache.put(mtexture.name, new Integer(i));
+        TextureCache.put(mtexture.name.toUpperCase(), new Integer(i));
         
         // We don't need to manually copy trivial fields.
         textures[i]=new texture_t();
