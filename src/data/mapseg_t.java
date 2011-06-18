@@ -18,12 +18,12 @@ public class mapseg_t implements CacheableDoomObject{
         
     }
 
-   public short     v1;
-   public short     v2;
-   public short     angle;      
-   public short     linedef;
-   public short     side;
-   public short     offset;
+   public char     v1;
+   public char     v2;
+   public char     angle;      
+   public char     linedef;
+   public char     side;
+   public char     offset;
    
    public static int sizeOf(){
        return 12;
@@ -33,12 +33,12 @@ public class mapseg_t implements CacheableDoomObject{
    public void unpack(ByteBuffer buf)
            throws IOException {
        buf.order(ByteOrder.LITTLE_ENDIAN);
-       this.v1 = buf.getShort();
-       this.v2 = buf.getShort();
-       this.angle=buf.getShort();       
-       this.linedef=buf.getShort();
-       this.side=buf.getShort();
-       this.offset=buf.getShort();
+       this.v1 = buf.getChar();
+       this.v2 = buf.getChar();
+       this.angle=buf.getChar();       
+       this.linedef=buf.getChar();
+       this.side=buf.getChar();
+       this.offset=buf.getChar();
       
    }
    

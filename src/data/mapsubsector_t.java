@@ -14,15 +14,15 @@ public class mapsubsector_t implements CacheableDoomObject{
             
         }
         
-      public short     numsegs;
+      public char     numsegs;
       /** Index of first one, segs are stored sequentially. */
-      public short     firstseg;
+      public char     firstseg;
     @Override
     public void unpack(ByteBuffer buf)
             throws IOException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        this.numsegs = buf.getShort();
-        this.firstseg = buf.getShort();
+        this.numsegs = buf.getChar();
+        this.firstseg = buf.getChar();
         
     } 
     
