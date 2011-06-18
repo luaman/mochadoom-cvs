@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.23 2011/05/24 11:31:47 velktron Exp $
+// $Id: LevelLoader.java,v 1.24 2011/06/18 23:18:24 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.24  2011/06/18 23:18:24  velktron
+// Added sanitization for broken two-sided sidedefs, and semi-support for extended blockmaps.
+//
 // Revision 1.23  2011/05/24 11:31:47  velktron
 // Adapted to IDoomStatusBar
 //
@@ -172,7 +175,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.23 2011/05/24 11:31:47 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.24 2011/06/18 23:18:24 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -212,7 +215,7 @@ public class LevelLoader implements DoomStatusAware{
   int     bmapheight; // size in mapblocks
   int[]      blockmap;   // int for larger maps
   // offsets in blockmap are from here
-  short[]      blockmaplump;       
+  char[]      blockmaplump;       
   /** (fixed_t) origin of block map */
   public int     bmaporgx;
 public int bmaporgy;
@@ -314,10 +317,19 @@ public int bmaporgy;
       side = ml.side;
       li.sidedef = sides[ldef.sidenum[side]];
       li.frontsector = sides[ldef.sidenum[side]].sector;
-      if ((ldef. flags & ML_TWOSIDED)!=0)
+      if (flags(ldef.flags,ML_TWOSIDED)){
+    	  // MAES: Fix double sided without back side. E.g. Linedef 16103 in Europe.wad
+    	  if (ldef.sidenum[side^1]!=-1)
           li.backsector = sides[ldef.sidenum[side^1]].sector;
-      else
+          // Fix two-sided with no back side.
+    	  //else {
+    	  //li.backsector=null;
+    	  //ldef.flags^=ML_TWOSIDED;
+    	  //}
+      	}
+      else {
           li.backsector = null;
+      		}
       }
       
   }
@@ -522,7 +534,7 @@ public int bmaporgy;
           mld = data[i];
           ld = lines[i];
     
-          
+      ld.id=i;
       ld.flags = mld.flags;
       ld.special = mld.special;
       ld.tag = mld.tag;
@@ -569,18 +581,41 @@ public int bmaporgy;
 
       ld.sidenum[0] = mld.sidenum[0];
       ld.sidenum[1] = mld.sidenum[1];
+      
+      if (flags(ld.flags,ML_TWOSIDED)) {
+    	  if ((ld.sidenum[0] == -1) || (ld.sidenum[1] == -1)){
+    		  System.err.printf("Two sided line %d with a missing side!\n",ld.id);
+    	  // Well, dat ain't so tu-sided now, ey esse?
+    	  System.err.printf("Before %x\n",lines[i].flags);
+    	  ld.flags^=ML_TWOSIDED; 
+    	  System.err.printf("After %x\n",lines[i].flags);
+    	  }
+      }
 
-      if (ld.sidenum[0] != -1)
+      if (ld.sidenum[0] != -1){
           ld.frontsector = sides[ld.sidenum[0]].sector;
+          if (ld.frontsector==null){ // // Still null? Bad map. Map to dummy.
+        	  System.err.println("Visible sidedef mapped to dummy sector!");
+        	  ld.frontsector=dummy_sector;
+          }
+          
+      }
       else
           ld.frontsector = null;
 
-      if (ld.sidenum[1] != -1)
+      if (ld.sidenum[1] != -1){
           ld.backsector = sides[ld.sidenum[1]].sector;
+          if (ld.backsector==null){ // Still null? Bad map. Map to dummy.
+        	  System.err.println("Visible sidedef mapped to dummy sector!");
+        	  ld.backsector=dummy_sector;
+          }
+      }
       else
           ld.backsector = null;
       }
-  }
+      
+
+   }
 
 
   /**
@@ -636,11 +671,11 @@ public int bmaporgy;
       
       DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
       count=W.LumpLength(lump)/2;
-      blockmaplump=new short[count];
+      blockmaplump=new char[count];
 
       data.setOrder(ByteOrder.LITTLE_ENDIAN);
       data.rewind();
-      data.readShortArray(blockmaplump, count);
+      data.readCharArray(blockmaplump, count);
       
       // Maes: first four shorts are header data.
           
@@ -652,10 +687,10 @@ public int bmaporgy;
       
       blockmap=new int[count];
       
-      // Expanding to int, can't use arraycopy.
+      // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
       for (i=0;i<count;i++){
-    	  blockmap[i]=blockmaplump[i+4];
-      }
+    	  blockmap[i]=0xFFFF&blockmaplump[i+4];//Math.min(blockmaplump[i+4],Short.MAX_VALUE);
+      	}
       // clear out mobj chains
       
       blocklinks = new mobj_t[count];
@@ -960,6 +995,7 @@ public int bmaporgy;
       this.LoadSubsectors (lumpnum+ML_SSECTORS);
       this.LoadNodes (lumpnum+ML_NODES);
       this.LoadSegs (lumpnum+ML_SEGS);
+      this.SanitizeBlockmap();
       
     //_D_: uncommented the rejectmatrix variable, this permitted changing level to work
       DoomBuffer db = (DoomBuffer)W.CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL, null);
@@ -1006,8 +1042,42 @@ public int bmaporgy;
       }
   }
 
+// 
+  
+  /** Lame-ass attempt at fixing blockmaps > 128K in size.
+   * In such blockmaps, blocks will at some point contain
+   * pointers beyong 64K shorts (128 KB), which can't be coded
+   * in just two bytes. A pretty lame solution is to add 64K
+   * to any pointer that is clearly smaller than the blockmap
+   * offset table itself. This allows europe.wad to become playable,
+   * but where is this "extended blockmap format" define?
+   * FIXME lookup Boom
+   */
+  private void SanitizeBlockmap() {
+      int errors=0;
+    if (blockmaplump.length>0x10000){
+	for (int i=0;i<blockmap.length;i++){
+		if (blockmap[i]<blockmap.length){
+			// Well, obviously there's a problem. How can we address stuff
+			// BEYOND the end of the blockmap offsets themselves with just 16 bits?
+			// Guesstimate: such offsets will be considered relative to the
+			// end of the blockmap (or of 64K?) So we add accordingly.
+			blockmap[i]+=0x10000;
+			errors++;
+			}
+		}
+    }
+	//	  if (blockmaplump[i]>=lines.length-1){ 
+	//		  blockmaplump[i]=(char) (lines.length-1);
+	//		  errors++;
+	//	  	}
+	//  	}
+	System.err.printf("%d blockmap errors encountered!\n",errors);
+}
 
-  public LevelLoader(DoomStatus DC){
+
+
+public LevelLoader(DoomStatus DC){
 	  this.updateStatus(DC);
   }
   
