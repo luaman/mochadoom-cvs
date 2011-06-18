@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.24 2011/06/18 23:18:24 velktron Exp $
+// $Id: LevelLoader.java,v 1.25 2011/06/18 23:21:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.25  2011/06/18 23:21:26  velktron
+// -id
+//
 // Revision 1.24  2011/06/18 23:18:24  velktron
 // Added sanitization for broken two-sided sidedefs, and semi-support for extended blockmaps.
 //
@@ -175,7 +178,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.24 2011/06/18 23:18:24 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.25 2011/06/18 23:21:26 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -534,7 +537,6 @@ public int bmaporgy;
           mld = data[i];
           ld = lines[i];
     
-      ld.id=i;
       ld.flags = mld.flags;
       ld.special = mld.special;
       ld.tag = mld.tag;
