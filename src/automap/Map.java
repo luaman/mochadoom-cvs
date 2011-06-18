@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.26 2011/05/30 15:45:44 velktron Exp $
+// $Id: Map.java,v 1.27 2011/06/18 23:16:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.27  2011/06/18 23:16:34  velktron
+// Added extreme scale safeguarding (e.g. for Europe.wad).
+//
 // Revision 1.26  2011/05/30 15:45:44  velktron
 // AbstractAutoMap and IAutoMap
 //
@@ -151,7 +154,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.26 2011/05/30 15:45:44 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.27 2011/06/18 23:16:34 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -275,6 +278,12 @@ private final int CYMTOF(int y) {return (f_y + (f_h - MTOF((y)-m_y)));}
 
 // the following is crap
 public static final short LINE_NEVERSEE =ML_DONTDRAW;
+
+// This seems to be the minimum viable scale before things start breaking up.
+private static final int MINIMUM_SCALE = (int) (0.7*FRACUNIT);
+
+// This seems to be the limit for some maps like europe.wad
+private static final int MINIMUM_VIABLE_SCALE = FRACUNIT>>5;
 
 //
 // The vector graphics for the automap.
@@ -564,6 +573,11 @@ public final  void findMinMaxBoundaries()
     b = FixedDiv(f_h<<FRACBITS, max_h);
   
     min_scale_mtof = a < b ? a : b;
+    if (min_scale_mtof<0){
+    	// MAES: safeguard against negative scaling e.g. in Europe.wad
+    	// This seems to be the limit.
+    	min_scale_mtof=MINIMUM_VIABLE_SCALE;
+    }
     max_scale_mtof = FixedDiv(f_h<<FRACBITS, 2*PLAYERRADIUS);
 
 }
@@ -688,7 +702,7 @@ public final  void LevelInit()
     this.clearMarks();
 
     this.findMinMaxBoundaries();
-    scale_mtof = FixedDiv(min_scale_mtof, (int) (0.7*FRACUNIT));
+    scale_mtof = FixedDiv(min_scale_mtof, MINIMUM_SCALE);
     if (scale_mtof > max_scale_mtof)
     scale_mtof = min_scale_mtof;
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
@@ -915,6 +929,7 @@ private final void changeWindowScale()
         this.maxOutWindowScale();
     else
         this.activateNewScale();
+
 }
 
 
