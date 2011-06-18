@@ -7347,18 +7347,17 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      return true;
      }
      
-     // This gives us the index to look up
+     // This gives us the index to look up (in blockmap)
      
      offset = y*LL.bmapwidth+x;
      
      // The index contains yet another offset, but this time 
-     // in "shorts".
      offset = LL.blockmap[offset];
 
-     // for ( int list = blockmaplump[offset] ; *list != -1 ; list++)
+     // MAES: blockmap terminating marker is always 0xFFFF with signed/unsigned.
      
-     for (int list=offset;(lineinblock=LL.blockmaplump[list])!=-1;list++){
-         ld = LL.lines[lineinblock];
+     for (int list=offset;(lineinblock=LL.blockmaplump[list])!=0xFFFF;list++){
+    	 ld = LL.lines[lineinblock];
          //System.out.println(ld);
          if (ld.validcount == R.validcount)
              continue;   // line has already been checked
