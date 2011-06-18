@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.25 2011/06/18 23:21:26 velktron Exp $
+// $Id: LevelLoader.java,v 1.26 2011/06/18 23:25:33 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.26  2011/06/18 23:25:33  velktron
+// Removed debugginess
+//
 // Revision 1.25  2011/06/18 23:21:26  velktron
 // -id
 //
@@ -178,7 +181,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.25 2011/06/18 23:21:26 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26 2011/06/18 23:25:33 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -586,18 +589,14 @@ public int bmaporgy;
       
       if (flags(ld.flags,ML_TWOSIDED)) {
     	  if ((ld.sidenum[0] == -1) || (ld.sidenum[1] == -1)){
-    		  System.err.printf("Two sided line %d with a missing side!\n",ld.id);
     	  // Well, dat ain't so tu-sided now, ey esse?
-    	  System.err.printf("Before %x\n",lines[i].flags);
     	  ld.flags^=ML_TWOSIDED; 
-    	  System.err.printf("After %x\n",lines[i].flags);
     	  }
       }
 
       if (ld.sidenum[0] != -1){
           ld.frontsector = sides[ld.sidenum[0]].sector;
           if (ld.frontsector==null){ // // Still null? Bad map. Map to dummy.
-        	  System.err.println("Visible sidedef mapped to dummy sector!");
         	  ld.frontsector=dummy_sector;
           }
           
@@ -608,7 +607,6 @@ public int bmaporgy;
       if (ld.sidenum[1] != -1){
           ld.backsector = sides[ld.sidenum[1]].sector;
           if (ld.backsector==null){ // Still null? Bad map. Map to dummy.
-        	  System.err.println("Visible sidedef mapped to dummy sector!");
         	  ld.backsector=dummy_sector;
           }
       }
@@ -1056,7 +1054,7 @@ public int bmaporgy;
    * FIXME lookup Boom
    */
   private void SanitizeBlockmap() {
-      int errors=0;
+    //  int errors=0;
     if (blockmaplump.length>0x10000){
 	for (int i=0;i<blockmap.length;i++){
 		if (blockmap[i]<blockmap.length){
@@ -1065,7 +1063,7 @@ public int bmaporgy;
 			// Guesstimate: such offsets will be considered relative to the
 			// end of the blockmap (or of 64K?) So we add accordingly.
 			blockmap[i]+=0x10000;
-			errors++;
+			//errors++;
 			}
 		}
     }
@@ -1074,7 +1072,7 @@ public int bmaporgy;
 	//		  errors++;
 	//	  	}
 	//  	}
-	System.err.printf("%d blockmap errors encountered!\n",errors);
+	//System.err.printf("%d blockmap errors encountered!\n",errors);
 }
 
 
