@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.40 2011/06/13 21:03:48 velktron Exp $
+// $Id: StatusBar.java,v 1.41 2011/06/23 17:17:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.40 2011/06/13 21:03:48 velktron Exp $";
+        "$Id: StatusBar.java,v 1.41 2011/06/23 17:17:04 velktron Exp $";
 
    
     
@@ -543,7 +543,7 @@ public class StatusBar extends AbstractStatusBar   {
         // MAES: screen(4) of the Video Renderer is actually reserved for the status bar.
         // The "clean" status bar is cached in there, and redrawn only as required.
         
-        this.V.setScreen(4,ST_WIDTH,ST_HEIGHT);
+        this.V.setScreen(this.BG,ST_WIDTH,ST_HEIGHT);
     }
 
     protected boolean st_stopped = true;
@@ -1926,6 +1926,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.41  2011/06/23 17:17:04  velktron
+//Using BG constant.
+//
 //Revision 1.40  2011/06/13 21:03:48  velktron
 //Fixed Ultimate Doom clev bug
 //
