@@ -4968,7 +4968,7 @@ validcount++;
           // calculate unclipped screen coordinates
           //  for post
           topscreen = sprtopscreen + spryscale*topdelta;
-          length=C2JUtils.toUnsignedByte(column[pointer+1]);
+          length=0xff&column[pointer+1];
           bottomscreen = topscreen + spryscale*length;
 
           dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
