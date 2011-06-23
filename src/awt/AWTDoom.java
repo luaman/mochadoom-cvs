@@ -119,9 +119,6 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
         
         Point center;
         Rectangle rect;
-        public void setPalette(int pal){
-            this.palette=pal;            
-        }
         
         /** Modified update method: no context needs to passed.
          *  Will render only internal screens.
@@ -156,17 +153,6 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
         										 InputEvent.WINDOW_EVENT_MASK+
         										 InputEvent.WINDOW_FOCUS_EVENT_MASK);
 
-        
-        
-
-        
-
-
-  
-
-	
-
-
 	/**
 	 * I_SetPalette
 	 * 
@@ -185,14 +171,13 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	 *  for display (the raster data is shared, which allows
 	 *  this hack to work with minimal overhead).
 	 *  
-	 *  TODO: implement GAMMA in this way?
 	 *  
 	 */
 	
 	@Override
 	public void SetPalette (int palette)
 	{
-		   this.palette=palette;      
+		   this.palette=palette%maxpalettes;      
 	}
 	
 	
@@ -342,6 +327,10 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	  
 	}
 
+	/** Internal method for setting up palettes (and gamma tables)
+	 * 
+	 */
+	
     protected void createPalettes() {
         if (cmap!=null|| cmap.length<768) {
         	  // As many as are likely contained
@@ -382,7 +371,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 
         	  
           } else {
-        	  // Allow it to pull from some default location?
+        	  // TODO: Allow it to pull from some default location?
         	  System.err.println("Palette and colormaps could not be set up. Bye");
         	  System.exit(-1);
           }
@@ -397,7 +386,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 
 	@Override
 	public void StartFrame() {
-		// TODO Auto-generated method stub
+		// Dummy. Nothing special to do...yet.
 		
 	}
 
@@ -466,7 +455,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 
     @Override
     public void UpdateNoBlit() {
-        //this.update(null);
+        // Quite pointless, no?
         
     }
 
@@ -485,6 +474,9 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.9  2011/06/23 15:42:38  velktron
+//Added modular palette rotation to handle sub-14 cases.
+//
 //Revision 1.8  2011/06/14 09:54:20  velktron
 //Separated palette generation/fixed OldAWTDoom
 //
