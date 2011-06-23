@@ -82,7 +82,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.71 2011/06/14 20:59:47 velktron Exp $
+// $Id: DoomMain.java,v 1.72 2011/06/23 15:43:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -108,7 +108,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.71 2011/06/14 20:59:47 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72 2011/06/23 15:43:01 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1017,17 +1017,22 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         //
         System.out.print ("VI_Init: set colormaps.\n");
-        byte[] pal=W.CacheLumpName("PLAYPAL", PU_STATIC).getBuffer().array();
+        byte[] tmppal=W.CacheLumpNameAsRawBytes("PLAYPAL", PU_STATIC);
         // set it, create it, but don't make it visible yet.
+        
+        // MAES: FIX for incomplete palette lumps such as those in EGADOOM.
+        // If PLAYPAL lump is too short, some palettes will be all-black.
+        //byte[] pal=new byte[14*768];
+        //System.arraycopy(tmppal, 0, pal, 0, tmppal.length);
         
         p = CM.CheckParm ("-oldawtevents");
         if (!eval(p)) {
         	// This is the "mochaevents" interface, now default.
-        	VI=new AWTDoom(this,(BufferedRenderer) V,pal);
+        	VI=new AWTDoom(this,(BufferedRenderer) V,tmppal);
         }
         else {
         	System.out.print("Using OLDER AWT inteface. Some stuff may be broken!\n");
-        	VI=new OldAWTDoom(this,(BufferedRenderer) V,pal);
+        	VI=new OldAWTDoom(this,(BufferedRenderer) V,tmppal);
         }
         
         VI.InitGraphics();
@@ -4051,6 +4056,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.72  2011/06/23 15:43:01  velktron
+//Palette defaulting mechanism in place.
+//
 //Revision 1.71  2011/06/14 20:59:47  velktron
 //Channel settings now read from default.cfg. Changes in sound creation order.
 //
