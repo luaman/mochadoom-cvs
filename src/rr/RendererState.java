@@ -4963,7 +4963,7 @@ validcount++;
           int pointer=0;
           
           // for each post...
-          while((topdelta=C2JUtils.toUnsignedByte(column[pointer]))!=0xFF)
+          while((topdelta=0xFF&column[pointer])!=0xFF)
           {
           // calculate unclipped screen coordinates
           //  for post

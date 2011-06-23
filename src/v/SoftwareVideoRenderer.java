@@ -598,7 +598,7 @@ public abstract class SoftwareVideoRenderer
              // Get pointer to post offset.
              int ptr=column.postofs[i];
              // Get post delta
-             int delta=C2JUtils.toUnsignedByte(column.data[ptr]);
+             int delta=0xFF&column.data[ptr];
              // We skip delta, len and padding.
              //ptr+=3;
              if (delta==0xFF) break;

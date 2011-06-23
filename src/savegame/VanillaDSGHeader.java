@@ -123,16 +123,16 @@ public boolean wrongversion;
            throws IOException {
        name= f.readNullTerminatedString(SAVESTRINGSIZE);
        vcheck=f.readNullTerminatedString(VERSIONSIZE);
-       gameskill=skill_t.values()[C2JUtils.toUnsignedByte(f.readByte())]; 
+       gameskill=skill_t.values()[f.readUnsignedByte()]; 
        gameepisode=f.readByte();
        gamemap=f.readByte();
        for (int i=0 ; i<MAXPLAYERS ; i++) 
            playeringame[i]=f.readBoolean(); 
     
        // get the times 
-       int a = C2JUtils.toUnsignedByte(f.readByte()); 
-       int b = C2JUtils.toUnsignedByte(f.readByte());
-       int c =  C2JUtils.toUnsignedByte(f.readByte());
+       int a = f.readUnsignedByte(); 
+       int b = f.readUnsignedByte();
+       int c = f.readUnsignedByte();
        // Quite anomalous, leveltime is stored as a BIG ENDIAN, 24-bit unsigned integer :-S
        leveltime = (a<<16) | (b<<8) | c; 
            
