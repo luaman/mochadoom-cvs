@@ -15,7 +15,7 @@ import w.IReadableDoomObject;
  * 
  */
 
-public class column_t implements CacheableDoomObject, IReadableDoomObject{
+public class column_t implements CacheableDoomObject{
     
     /** Static buffers used during I/O. 
      *  There's ABSO-FUCKING-LUTELY no reason to manipulate them externally!!!
@@ -84,46 +84,6 @@ public class column_t implements CacheableDoomObject, IReadableDoomObject{
 	    }
 
 
-
-    @Override
-    public void read(DoomFile f)
-            throws IOException {
-        // Mark current position.
-        long mark1=f.getFilePointer();
-        int skipped=0;
-        short postlen;
-        int colheight=0;            
-        int len=0; // How long is the WHOLE column, until the final FF?
-        int postno=0; // Actual number of posts.
-        int topdelta=0;
-        
-        
-        // Did we read an FF?
-        while((topdelta=(short)f.readUnsignedByte())!=0xFF){
-
-            //if (postno==0){
-                guesspostdeltas[postno]=(short)topdelta;
-            //}
-                // This is where this posts starts.
-        guesspostofs[postno]=skipped+3; // Pre-add 3.        
-        postlen=(short)f.readUnsignedByte();
-        guesspostlens[postno++]=postlen;
-        // So, we already read 2 bytes (topdelta + length)
-        // Two further bytes are padding so we can safely skip 2+length bytes.
-        skipped+=2+f.skipBytes(this.length+2);
-        colheight+=postlen;
-        }
-        
-        skipped++;
-        
-        // That's the length.
-        len=this.finalizeStatus(skipped, colheight, postno);
-                
-        // Go back...
-        f.seek(mark1);
-        f.read(data, 0, len);
-    }
-  
     /** This -almost- completes reading, by filling in the header information
      *  before the raw column data is read in.
      *  
@@ -165,16 +125,18 @@ public class column_t implements CacheableDoomObject, IReadableDoomObject{
         return C2JUtils.toUnsignedByte(data[1]);
     }
 
-    public void setFromData(){
-        this.topdelta=(short) this.getTopDelta();
-        this.length=(short) this.getLength();
-        //this.posts=this.posts;
-    }
+    public void setData(){
+        this.data[0]=(byte) this.topdelta;
+        this.data[1]=(byte) this.length;
+    	}
     
 }
 
 
 // $Log: column_t.java,v $
+// Revision 1.15  2011/06/23 17:01:24  velktron
+// column_t no longer needs to support IReadableDoomObject, since patch_t doesn't. If you really need it back, it can be done through buffering and using unpack(), without duplicate code. Also added setData() method for synthesized columns.
+//
 // Revision 1.14  2011/06/08 16:11:13  velktron
 // IMPORTANT: postofs now skip delta,height and padding ENTIRELY (added +3). This eliminates the need to add +3 before accessing the data, saving some CPU cycles for each column. Of course, anything using column_t must take this into account.
 //
