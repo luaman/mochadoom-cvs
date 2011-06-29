@@ -82,7 +82,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72 2011/06/23 15:43:01 velktron Exp $
+// $Id: DoomMain.java,v 1.72.2.1 2011/06/29 15:21:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -108,7 +108,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72 2011/06/23 15:43:01 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.1 2011/06/29 15:21:17 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -759,7 +759,17 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         // Sets unbuffered output in C. Not needed here. setbuf (stdout, NULL);
         modifiedgame = false;
-
+        angle=eval(CM.CheckParm ("-angle"));
+        if (angle){
+        	int ap=CM.CheckParm ("-angle");
+        	try{
+        		this.anglespread=Integer.parseInt(CM.getArgv(ap+1));
+        	} catch (Exception e){
+        		System.err.println("Sorry Joddo, couldn't parse angle!");
+        	}
+        	 
+        }
+        
         nomonsters = eval(CM.CheckParm ("-nomonsters"));
         respawnparm = eval(CM.CheckParm ("-respawn"));
         fastparm = eval(CM.CheckParm ("-fast"));
@@ -4056,6 +4066,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.72.2.1  2011/06/29 15:21:17  velktron
+//Modifications for -angle parameter.
+//
 //Revision 1.72  2011/06/23 15:43:01  velktron
 //Palette defaulting mechanism in place.
 //

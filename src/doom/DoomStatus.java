@@ -39,6 +39,9 @@ public class DoomStatus extends DoomContext {
 
     public boolean devparm; // DEBUG: launched with -devparm
 
+    public boolean angle=false; // Special thingy just for Joddo <3
+    public int anglespread=0; 
+    
  // MAES: declared as "extern", shared with Menu.java
     public  boolean	inhelpscreens;
 
@@ -516,6 +519,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.27.2.1  2011/06/29 15:21:17  velktron
+// Modifications for -angle parameter.
+//
 // Revision 1.27  2011/06/14 20:59:47  velktron
 // Channel settings now read from default.cfg. Changes in sound creation order.
 //

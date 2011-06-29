@@ -55,11 +55,11 @@ public class DavidMusicModule implements IMusic {
 		    	 MidiDevice mdev=MidiSystem.getMidiDevice(info[i]);
 		    	 if (mdev instanceof Sequencer) x=i;
 		    	 if (mdev instanceof Synthesizer) y=i;
-		        //  System.out.println(info[i].getName()+"\t\t\t"+ mdev.isOpen()+"\t"+mdev.hashCode());
+		         System.out.println(info[i].getName()+"\t\t\t"+ mdev.isOpen()+"\t"+mdev.hashCode());
 		          
 		     }
 		
-		     //System.out.printf("x %d y %d \n",x,y);
+		     System.out.printf("x %d y %d \n",x,y);
 		     //--This sets the Sequencer and Synthesizer  
 		     //--The indices x and y correspond to the correct entries for the  
 		     //--default Sequencer and Synthesizer, as determined above  	       
@@ -94,6 +94,8 @@ public class DavidMusicModule implements IMusic {
 			}
 			});
 			
+			System.err.printf("Sequencer %s %d\n",sequencer.getDeviceInfo().getName(), sequencer.hashCode());
+			
 		    //synthesizer = MidiSystem.getSynthesizer(); 
 			if (y!=-1)
 				synthesizer = (Synthesizer) MidiSystem.getMidiDevice(info[y]);
@@ -101,7 +103,7 @@ public class DavidMusicModule implements IMusic {
 				synthesizer = MidiSystem.getSynthesizer(); 
 			
 			synthesizer.open();
-			System.out.println("Synth "+synthesizer.hashCode());
+			System.err.printf("Synthesizer %s %d\n",synthesizer.getDeviceInfo().getName(), synthesizer.hashCode());
 			
 		    receiver = synthesizer.getReceiver();
 		    transmitter = sequencer.getTransmitter();

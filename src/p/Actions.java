@@ -1519,7 +1519,9 @@ public class Actions extends UnifiedGameMap {
         	  A_Light1((player_t)a,(pspdef_t) b);
         	  break;
           case  A_FireShotgun:
-        	  A_FireShotgun((player_t)a,(pspdef_t) b);
+        	  //A_FireShotgun((player_t)a,(pspdef_t) b);
+        	  A_FireSlug((player_t)a,(pspdef_t) b);
+        	  //A_FireBirdshot((player_t)a,(pspdef_t) b);
         	  break;
           case  A_Light2:
         	  A_Light2((player_t)a,(pspdef_t) b);
@@ -2136,7 +2138,27 @@ public class Actions extends UnifiedGameMap {
       LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
   }
 
+  //
+  // P_GunShot
+  //
+  void
+  P_AirGunShot
+  ( mobj_t   mo,
+    boolean   accurate )
+  {
+      long angle;
+      int     damage;
+      
+      damage = (RND.P_Random ()%2+1);
+      angle = mo.angle;
 
+      if (!accurate)
+      angle += (RND.P_Random()-RND.P_Random())<<18;
+
+      LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
+  }
+  
+  
   //
   // A_FirePistol
   //
@@ -2184,7 +2206,48 @@ public class Actions extends UnifiedGameMap {
       P_GunShot (player.mo, false);
   }
 
+  void A_FireSlug
+  ( player_t player,
+    pspdef_t psp ) 
+  {
+      int     i;
+      
+      S.StartSound(player.mo, sfxenum_t.sfx_shotgn);
+      player.mo.SetMobjState ( statenum_t.S_PLAY_ATK2);
 
+      player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
+
+      player.SetPsprite (
+            ps_flash,
+            weaponinfo[player.readyweapon.ordinal()].flashstate);
+
+      P_BulletSlope (player.mo);
+      
+      for (i=0 ; i<7 ; i++)	 
+      P_GunShot (player.mo, true);
+      
+  }
+  
+  void A_FireBirdshot
+  ( player_t player,
+    pspdef_t psp ) 
+  {
+      int     i;
+      
+      S.StartSound(player.mo, sfxenum_t.sfx_shotgn);
+      player.mo.SetMobjState ( statenum_t.S_PLAY_ATK2);
+
+      player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()]--;
+
+      player.SetPsprite (
+            ps_flash,
+            weaponinfo[player.readyweapon.ordinal()].flashstate);
+
+      P_BulletSlope (player.mo);
+      
+      for (i=0 ; i<50 ; i++)
+      P_AirGunShot (player.mo, false);
+  }
 
   /**
    * A_FireShotgun2
@@ -4507,6 +4570,11 @@ an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y)&BITS32;
 // fuzzy player
 if (flags(dest.flags , MF_SHADOW))
 an += (RND.P_Random()-RND.P_Random())<<20; 
+
+// Special hack just for Joddo ;-)
+if (this.DM.angle){
+	an += DM.anglespread*(RND.P_Random()-128)*0x16c16;
+}
 
 th.angle = an&BITS32;
 //an >>= ANGLETOFINESHIFT;
