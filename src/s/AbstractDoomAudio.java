@@ -34,6 +34,7 @@ public class AbstractDoomAudio implements IDoomSound{
 
 	protected final int numChannels;
 
+	protected final static boolean D=false;
 
 	/** the set of channels available. These are "soft" descriptor
 	   channels,  not to be confused with actual hardware audio 
@@ -340,7 +341,7 @@ public class AbstractDoomAudio implements IDoomSound{
 				pitch,
 				priority);
 		
-		System.err.printf("Handle %d for channel %d for sound %s vol %d\n",channels[cnum].handle,
+		if (D) System.err.printf("Handle %d for channel %d for sound %s vol %d\n",channels[cnum].handle,
 				cnum,sfx.name,volume);
 	}	
 
