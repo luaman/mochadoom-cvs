@@ -1,0 +1,10 @@
+In upcoming 1.5 release:
+
+F Fixed an issue with TEXTURE2 lump loading which skipped the last entry.
+F Fixed a severe memory leak in P_InitThinkers.
++ Fixed Quicksave string issue.
++ Added Gamma level settings.
++ Added patch_t load-time safeguard vs. broken columns.
++ Added MIDI soundsystem, based on _D_'s work and extended.
++ Added Game Sound interface for channel/position/volume management.
+ 

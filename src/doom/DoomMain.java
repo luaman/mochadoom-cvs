@@ -82,7 +82,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72.2.1 2011/06/29 15:21:17 velktron Exp $
+// $Id: DoomMain.java,v 1.72.2.2 2011/06/30 17:48:30 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -108,7 +108,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.1 2011/06/29 15:21:17 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.2 2011/06/30 17:48:30 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1143,11 +1143,18 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         else 
             this.ISND=new DavidSFXModule(this);
         
-        // Obviously, nomusic && nosfx = nosound.
-        this.S=new AbstractDoomAudio(this,numChannels);
         
         ISND.InitSound();
-        IMUS.InitMusic();
+        boolean music=IMUS.InitMusic();
+        
+        if (!music) {
+        	IMUS=new DummyMusic();
+        	IMUS.InitMusic();
+        }
+
+        // Obviously, nomusic && nosfx = nosound.
+        this.S=new AbstractDoomAudio(this,numChannels);
+
         S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
 
         // Hook audio to users.
@@ -4066,6 +4073,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.72.2.2  2011/06/30 17:48:30  velktron
+//Some fixes for the music part. Will merge in main later.
+//
 //Revision 1.72.2.1  2011/06/29 15:21:17  velktron
 //Modifications for -angle parameter.
 //

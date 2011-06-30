@@ -44,7 +44,7 @@ public class DavidMusicModule implements IMusic {
 	}
 
 	@Override
-	public void InitMusic() {
+	public boolean InitMusic() {
 		try {
 			
 			// MEGA HACK: if we don't "peg" to devices found in this list, and
@@ -100,8 +100,8 @@ public class DavidMusicModule implements IMusic {
 			if (y!=-1)
 				synthesizer = (Synthesizer) MidiSystem.getMidiDevice(info[y]);
 			else
-				synthesizer = MidiSystem.getSynthesizer(); 
-			
+				synthesizer = MidiSystem.getSynthesizer();
+		
 			synthesizer.open();
 			System.err.printf("Synthesizer %s %d\n",synthesizer.getDeviceInfo().getName(), synthesizer.hashCode());
 			
@@ -109,8 +109,9 @@ public class DavidMusicModule implements IMusic {
 		    transmitter = sequencer.getTransmitter();
 		    transmitter.setReceiver(receiver);
 		} catch (MidiUnavailableException e) {
-			e.printStackTrace();
+			return false;
 		}
+		return true;
 	}
 
 	@Override
