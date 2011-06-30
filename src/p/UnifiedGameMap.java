@@ -1709,6 +1709,24 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     //
     @Override
     public void InitThinkers() {
+    	
+    	thinker_t next=thinkercap.next;
+    	thinker_t prev=thinkercap.prev;
+    	
+    	// Unlink the "dangling" thinkers that may still be attached
+    	// to the thinkercap. When loading a new level, they DO NOT get unloaded,
+    	// wtf...
+    	if (next!=null && next!=thinkercap) {
+    		System.err.println("Next link to thinkercap nulled");
+    		next.prev=null;
+    	}
+
+    	if (prev!=null && prev!=thinkercap) {
+    		System.err.println("Prev link to thinkercap nulled");
+    		prev.next=null;
+    	}
+
+    	
         thinkercap.next = thinkercap;
         thinkercap.prev = thinkercap;
     }
@@ -1723,7 +1741,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         thinker.prev = thinkercap.prev;
         thinkercap.prev = thinker;
     }
-
+   
     public void ClearPlatsBeforeLoading(){
         for (int i = 0; i < MAXPLATS; i++) {
                 PEV.activeplats[i] = null;
