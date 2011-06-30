@@ -21,6 +21,7 @@ import data.Tables;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
+import data.sounds.sfxenum_t;
 import data.spritenum_t;
 import data.state_t;
 import defines.*;
@@ -283,6 +284,24 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     public static int MF_TRANSSHIFT = 26;
     
     
+    //////////// SPECIAL DANMAKU STUFF ///////////////
+    
+    public static final int angles[]=new int[]{0,5,10,15,20,25,
+    											30, 25,20,15,10,5,
+    											0,-5,-10,-15,-20,-25,
+    											-30,-25,-15,-20,-5,0};
+    
+    public static final int timing[]=new int[]{	3,3,3,3,3,3,
+    											3,3,3,3,3,3,
+    											3,3,3,3,3,3,
+    											3,3,3,3,3,3};
+    
+    public boolean danmaku=false;		// danmaku state
+    public statenum_t danmaku_frame=null;  // danmaku frame (force repeat)
+    public int d_count=-1;				// danmaku engaged if >=0
+    public static final int d_limit=angles.length; // limit at which we stop danmaku.
+    
+    
     /* The following methods were for the most part "contextless" and instance-specific,
      * so they were implemented here rather that being scattered all over
      * the package.
@@ -297,8 +316,19 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     SetMobjState
     (statenum_t    state )
     {
-        state_t st;
-
+        state_t st=null;
+        int dtics;        
+        
+        // Are we danmaku?
+        if (danmaku){
+        	// Have we hit the danmaku frame?
+        	if (state==this.danmaku_frame) {
+        		// Increase the counter, setting it to 0 if it was -1.
+        			d_count++;
+        			//System.err.println("Danmaku "+d_count);
+        	}
+        } 
+        
         do
         {
         if (state == statenum_t.S_NULL)
@@ -309,21 +339,46 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             return false;
         }
 
-        st = states[state.ordinal()];
+        if (d_count>-1) 
+        	st = states[danmaku_frame.ordinal()];
+        else
+        	st = states[state.ordinal()];
         this.state = st;
-        tics = st.tics;
+        
+        if (danmaku && d_count>-1)
+        	tics=timing[d_count];
+        else
+        	tics = st.tics;
         sprite = st.sprite;
         frame = (int) st.frame;
 
         // Modified handling.
         // Call action functions when the state is set
-        //_D_: changed this, causing a LOT of action to work
-        // MAES: workaround not needed since types
-        // are now set correctly.
+
         if (st.action!=null && st.action.getType()==acp1)       
             {A.dispatch(st.action, this, null);} 
-        
-        state = st.nextstate;
+
+        // special handling of danmaku state:
+        if (danmaku && d_count>-1){
+        	if (this.d_count<d_limit-1){
+        		// If we are danmaku, force repetition of this frame.
+        		state=this.danmaku_frame;
+        	//System.err.printf("Danmaku %d %d  %d  %s !\n",d_count,tics,this.hashCode(), state.name());
+        	//if (danmaku) System.err.printf("Next state %s\n",st.nextstate.name());
+        	d_count++;
+        	}
+        	else // danmaku end reached. Stop spamming!
+        		{
+        		d_count=-1; 
+        		//System.err.print("Danmaku disengaged\n");
+        		state = st.nextstate;
+        		}
+        } else {
+        	
+         state = st.nextstate;
+         
+        }
+        // Will only continue if tics ==0, otherwise it exits.
         } while (tics==0);
                     
         return true;
@@ -395,7 +450,7 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             // after hitting the ground (hard),
             // and utter appropriate sound.
             player.deltaviewheight = momz>>3;
-           // TODO:  S_StartSound (mo, sfx_oof);
+            this.A.S.StartSound (this, sfxenum_t.sfx_oof);
             }
             momz = 0;
         }

@@ -4245,6 +4245,14 @@ mobj.z = z;
 
 mobj.function=think_t.P_MobjThinker;
 
+
+//DANMAKU STUFF
+if (mobj.type==mobjtype_t.MT_TROOP){
+	mobj.danmaku=true;
+	mobj.danmaku_frame=statenum_t.S_TROO_ATK3;	
+}
+
+
 AddThinker (mobj);
 
 return mobj;
@@ -4574,6 +4582,12 @@ an += (RND.P_Random()-RND.P_Random())<<20;
 // Special hack just for Joddo ;-)
 if (this.DM.angle){
 	an += DM.anglespread*(RND.P_Random()-128)*0x16c16;
+}
+
+// Even MORE special hack ;-)
+
+if (source.danmaku){
+	an+=mobj_t.angles[source.d_count]*0xB60B60;
 }
 
 th.angle = an&BITS32;
