@@ -445,6 +445,17 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     public int stateid;
     public int playerid;
     public int p_tracer;
+    
+    public void clear(){
+    	fastclear.rewind();
+    	try {
+			this.unpack(mobj_t.fastclear);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}    	
+    }
+    
 
     //_D_: to permit this object to save/load
     public void read(DoomFile f) throws IOException {
@@ -553,7 +564,17 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
      }
     
     private static ByteBuffer buffer=ByteBuffer.allocate(154);
+    private static ByteBuffer fastclear=ByteBuffer.allocate(154);
+    
 
+/*    @Override
+    protected void finalize(){
+    	count++;
+    	if (count%100==0)
+    	System.err.printf("Total %d Mobj %s@%d finalized free memory: %d\n",count,this.type.name(),this.hashCode(),Runtime.getRuntime().freeMemory());
+    }
+    */
+    protected static int count=0;
     // TODO: a linked list of sectors where this object appears
     // public msecnode_t touching_sectorlist;
     }
