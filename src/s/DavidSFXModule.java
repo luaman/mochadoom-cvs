@@ -41,7 +41,8 @@ import doom.DoomStatus;
 
 public class DavidSFXModule implements ISound{
 
-	
+	protected final static boolean D=false;
+
 	public static final int IDLE_HANDLE = -1;
 	public static final int BUSY_HANDLE = -2;
 	
@@ -285,7 +286,7 @@ public class DavidSFXModule implements ISound{
         // The handle is the current game time.
         int handle=DS.gametic;
         
-        System.err.printf("Playing %d vol %d on channel %d\n",handle,vol,c);
+        if (D) System.err.printf("Playing %d vol %d on channel %d\n",handle,vol,c);
 		channels[c].setVolume(vol);
 		channels[c].setPanning(sep);
 		channels[c].addSound(sound, handle);
@@ -416,7 +417,7 @@ public class DavidSFXModule implements ISound{
 			
 			public void addSound(DoomSound ds, int handle) {
 				
-				System.out.printf("Added handle %d to channel %d\n",handle,id);
+				if (D) System.out.printf("Added handle %d to channel %d\n",handle,id);
 				this.handle=handle;
 				this.currentSound=ds;
 				this.auline.stop();
