@@ -1,5 +1,7 @@
 package s;
 
+import static data.sounds.S_sfx;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -47,13 +49,15 @@ public class DavidSFXModule implements ISound{
 	public static final int BUSY_HANDLE = -2;
 	
 	HashMap<String,DoomSound> cachedSounds = new HashMap<String,DoomSound>();
-	HashMap<Integer,Integer> channelhandles = new HashMap<Integer,Integer>();
+	int[] channelhandles;
+	public int[] channelids;
 	
 	public final float[] linear2db;
 	
 	
 	private SoundWorker[] channels;
 	private Thread[] soundThread;
+	private int[] channelstart;
 	private int numChannels;
 	private final DoomStatus DS;
 	
@@ -150,6 +154,10 @@ public class DavidSFXModule implements ISound{
 		this.numChannels=numChannels;
 		channels= new SoundWorker[numChannels];
 		soundThread= new Thread[numChannels];
+		channelids=new int[numChannels];
+		channelstart=new int[numChannels];
+		channelhandles=new int[numChannels];
+		
 		
 		// This is actually called from IDoomSound.
 		for (int i = 0; i < numChannels; i++) {
@@ -217,24 +225,18 @@ public class DavidSFXModule implements ISound{
         	e.printStackTrace();
         }
         
-        // PROBLEM: at this point we have no idea about the actual
-        // status of the hardware channels. The channel manager should,
-        // in theory, prevent clashes etc. but how do they two communicate
-        // back and forth?
-
-        // Find the first free channel. In theory, this method shouldn't
-        // have been called if there were no free channels, riiiiight?
-        int c;
-        for (c=0;c<numChannels;c++)
-        	if (!channels[c].isPlaying()) break;
-
-        // Shouldn't happen, but no _actual_ channels were free. Tough cookie.
-        if (c>=numChannels) 
-        	return BUSY_HANDLE;
+        // Find a free channel and get a timestamp/handle for the new sound.
+        int handle=this.addsfx(id, vol, 0, sep,sound); 
+         
+   //     int handle=DS.gametic;
         
-       // System.out.println("Picked "+c);
-        // Create a dataline for the "lucky" channel.
-        if (channels[c].auline == null) {
+
+        return handle;
+		
+	}
+
+	private final void  createDataLineForChannel(int c, DoomSound sound){
+		if (channels[c].auline == null) {
         	AudioFormat format = sound.ais.getFormat();
         	DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
         	try {
@@ -282,31 +284,154 @@ public class DavidSFXModule implements ISound{
 
         			channels[c].auline.start();
         		}
-
-        // The handle is the current game time.
-        int handle=DS.gametic;
-        
-        if (D) System.err.printf("Playing %d vol %d on channel %d\n",handle,vol,c);
-		channels[c].setVolume(vol);
-		channels[c].setPanning(sep);
-		channels[c].addSound(sound, handle);
-		channels[c].setPitch(pitch);
-		this.channelhandles.put(handle,c);
-        return handle;
-		
 	}
+	
+	//
+	// This function adds a sound to the
+	//  list of currently active sounds,
+	//  which is maintained as a given number
+	//  (eight, usually) of internal channels.
+	// Returns a handle.
+	//
+	protected short	handlenums = 0;
 
+	private int addsfx
+	( int		sfxid,
+			int		volume,
+			int		pitch,
+			int		seperation,
+			DoomSound sound)
+	{
+		int		i;
+		int		rc = -1;
+
+		int		oldest = DS.gametic;
+		int		oldestnum = 0;
+		int		slot;
+
+		int		rightvol;
+		int		leftvol;
+
+		// Chainsaw troubles.
+		// Play these sound effects only one at a time.
+		if ( sfxid == sfxenum_t.sfx_sawup.ordinal()
+				|| sfxid == sfxenum_t.sfx_sawidl.ordinal()
+				|| sfxid == sfxenum_t.sfx_sawful.ordinal()
+				|| sfxid == sfxenum_t.sfx_sawhit.ordinal()
+				|| sfxid == sfxenum_t.sfx_stnmov.ordinal()
+				|| sfxid == sfxenum_t.sfx_pistol.ordinal()	 )
+		{
+			// Loop all channels, check.
+			for (i=0 ; i<numChannels ; i++)
+			{
+				// Active, and using the same SFX?
+				if ( (channels[i].isPlaying())
+						&& (channelids[i] == sfxid) )
+				{
+					// Reset.
+					channels[i].stopSound();
+					// We are sure that iff,
+					//  there will only be one.
+					break;
+				}
+			}
+		}
+
+		// Loop all channels to find oldest SFX.
+		for (i=0; (i<numChannels) && (channels[i]!=null); i++)
+		{
+			if (channelstart[i] < oldest)
+			{
+				oldestnum = i;
+				oldest = channelstart[i];
+			}
+		}
+
+		// Tales from the cryptic.
+		// If we found a channel, fine.
+		// If not, we simply overwrite the first one, 0.
+		// Probably only happens at startup.
+		if (i == numChannels)
+			slot = oldestnum;
+		else
+			slot = i;
+
+		// Okay, in the less recent channel,
+		//  we will handle the new SFX.
+		// Set pointer to raw data.
+	      
+        // Create a dataline for the "lucky" channel.
+        createDataLineForChannel(slot,sound);
+
+		// Reset current handle number, limited to 0..100.
+		if (handlenums==0) // was !handlenums, so it's actually 1...100?
+			handlenums = MAXHANDLES;
+
+		// Assign current handle number.
+		// Preserved so sounds could be stopped (unused).
+		channelhandles[slot]= rc = handlenums--;
+
+		// Set stepping???
+		// Kinda getting the impression this is never used.
+		
+		//channelstep[slot] = step;
+		// ???
+		//channelstepremainder[slot] = 0;
+		// Should be gametic, I presume.
+		channelstart[slot] = DS.gametic;
+
+		// Separation, that is, orientation/stereo.
+		//  range is: 1 - 256
+		seperation += 1;
+
+		// Per left/right channel.
+		//  x^2 seperation,
+		//  adjust volume properly.
+		leftvol =
+			volume - ((volume*seperation*seperation) >> 16); ///(256*256);
+		seperation = seperation - 257;
+		rightvol =
+			volume - ((volume*seperation*seperation) >> 16);	
+
+
+		// Sanity check, clamp volume.
+
+		if (rightvol < 0 || rightvol > 127)
+			DS.I.Error("rightvol out of bounds");
+
+		if (leftvol < 0 || leftvol > 127)
+			DS.I.Error("leftvol out of bounds"); 
+
+		// Get the proper lookup table piece
+		//  for this volume level???
+		//channelleftvol_lookup[slot] = vol_lookup[leftvol];
+		//channelrightvol_lookup[slot] = vol_lookup[rightvol];
+
+		// Preserve sound SFX id,
+		//  e.g. for avoiding duplicates of chainsaw.
+		channelids[slot] = sfxid;
+
+		channels[slot].setVolume(volume);
+		channels[slot].setPanning(seperation);
+		channels[slot].addSound(sound, handlenums);
+		channels[slot].setPitch(pitch);
+        if(D) System.err.printf("Playing %d vol %d on channel %d\n",rc,volume,slot);
+		// You tell me.
+		return rc;
+	}
+	
 	@Override
 	public void StopSound(int handle) {
 		// Which channel has it?
-		Integer hnd=this.channelhandles.get(handle);
-		if (hnd!=null) 
+		int  hnd=getChannelFromHandle(handle);
+		if (hnd>=0) 
 			channels[hnd].stopSound();
 	}
 
 	@Override
 	public boolean SoundIsPlaying(int handle) {
-		return this.channelhandles.containsKey(handle);
+		
+		return getChannelFromHandle(handle)!=BUSY_HANDLE;
 		}
 
 	
@@ -336,10 +461,11 @@ public class DavidSFXModule implements ISound{
 	 */
 	private int getChannelFromHandle(int handle){
 		// Which channel has it?
-		Integer hnd=this.channelhandles.get(handle);
-		if (hnd!=null) 
-			return hnd;
-		else return BUSY_HANDLE;
+		for (int i=0;i<numChannels;i++){
+			if (channelhandles[i]==handle) return i;
+		}
+		
+		return BUSY_HANDLE;
 	}
 	
 	/** Get data for a particular lump, if not cached already */
@@ -493,7 +619,8 @@ public class DavidSFXModule implements ISound{
 						// Remove its handle.
 						
 						//System.out.printf("Channel  %d with handle %d done. Marking as free\n",id,handle);
-						channelhandles.remove(handle);
+						if (handle>0)
+						channelhandles[this.id]=IDLE_HANDLE;
 						this.handle=IDLE_HANDLE;
 					}
 
@@ -514,7 +641,7 @@ public class DavidSFXModule implements ISound{
 					auline.stop();
 					auline.flush();
 					//System.out.printf("Channel %d with handle %d interrupted. Marking as free\n",id,handle);
-					channelhandles.remove(handle);
+					channelhandles[this.id]=IDLE_HANDLE;
 					this.handle=IDLE_HANDLE;
 					currentSound = null;
 					auline.start();

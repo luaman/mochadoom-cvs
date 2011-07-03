@@ -6,32 +6,29 @@ import static m.fixed_t.FRACBITS;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.Line;
 import javax.sound.sampled.SourceDataLine;
-
-import p.mobj_t;
 
 import w.DoomBuffer;
 
-import com.sun.corba.se.impl.ior.ByteBuffer;
-
 import data.sfxinfo_t;
 import data.sounds;
-import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 
-/** A close recreation of the classic linux doom sound driver.
+/** A close recreation of the classic linux doom sound mixer.
  * 
- * @author Kaptain Zyklon
+ * @author velktron
  *
  */
 
-public class ClassicDoomSoundDriver extends AbstractDoomAudio{
+public class ClassicDoomSoundDriver implements ISound {
+	
+	private final DoomStatus DS;
+	private int numChannels;
 
 	public ClassicDoomSoundDriver(DoomStatus DS, int numChannels){
-		super(DS,numChannels);
+		this.DS=DS;
+		this.numChannels=numChannels;
 		channelstart=new int[numChannels];
 		channelids=new int[numChannels];
 		channelleftvol_lookup=new int[numChannels][];
@@ -125,9 +122,9 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 	 *  where to place the boundary between the two.
 	 *  
 	 *  */
-	byte[][]	dchannels= new byte[NUM_CHANNELS][];
+	byte[][]	channels= new byte[NUM_CHANNELS][];
 	// MAES: we'll have to use this for actual pointing. channels[] holds just the data.
-	int[] dchannels_ptr=new int[NUM_CHANNELS];
+	int[] p_channels=new int[NUM_CHANNELS];
 	// The second one is supposed to point at "the end", so I'll make it an int.
 	int[]	dchannelsend= new int[NUM_CHANNELS];
 
@@ -207,13 +204,13 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 			{
 				// Check channel, if active.
 				// MAES: this means that we must point to raw data here.
-				if (dchannels[ chan ]!=null)
+				if (channels[ chan ]!=null)
 				{
 
-					int channel_pointer=	dchannels_ptr[chan];
+					int channel_pointer=	p_channels[chan];
 					// Get the raw data from the channel.
 					// Maes: this is supposed to be an 8-bit unsigned value.
-					sample = 0x00FF&dchannels[ chan ][channel_pointer];
+					sample = 0x00FF&channels[ chan ][channel_pointer];
 					// Add left and right part  for this channel (sound)
 					//  to the current data. Adjust volume accordingly.
 					// TODO: where are those set?
@@ -240,7 +237,7 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 
 			// Write pointer back, so we know where a certain channel
 			// is the next time UpdateSounds is called.
-			dchannels_ptr[chan]=channel_pointer;
+			p_channels[chan]=channel_pointer;
 
 				}
 			} // for all channels.
@@ -324,7 +321,7 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 	// Retrieve the raw data lump index
 	//  for a given SFX name.
 	//
-	int GetSfxLumpNum(sfxinfo_t sfx)
+	public int GetSfxLumpNum(sfxinfo_t sfx)
 	{
 		String namebuf;
 		namebuf=String.format("ds%s", sfx.name);
@@ -334,7 +331,8 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 	MixServer S0UNDSRV;
 	Thread SOUNDTHREAD;
 
-	protected void
+	@Override
+	public void
 	InitSound()
 	{ 
 
@@ -540,7 +538,7 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 		// Okay, in the less recent channel,
 		//  we will handle the new SFX.
 		// Set pointer to raw data.
-		dchannels[slot] = S_sfx[sfxid].data;
+		channels[slot] = S_sfx[sfxid].data;
 
 		// Reset current handle number, limited to 0..100.
 		if (handlenums==0) // was !handlenums, so it's actually 1...100?
@@ -593,225 +591,8 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 		return rc;
 	}
 
-	public void
-	StartSoundAtVolume
-	( mobj_t		origin,
-			int		sfx_id,
-			int		volume )
-	{
-
-		boolean		rc;
-		//int		sep;
-		//int		pitch;
-		int		priority;
-		sfxinfo_t	sfx;
-		int		cnum;
-
-
-		// check for bogus sound #
-		if (sfx_id < 1 || sfx_id > sfxenum_t.NUMSFX.ordinal())
-			DS.I.Error("Bad sfx #: %d", sfx_id);
-
-		sfx = sounds.S_sfx[sfx_id];
-
-		// Initialize sound parameters
-		if (sfx.link != null)
-		{
-			spars.pitch = sfx.pitch;
-			priority = sfx.priority;
-			spars.volume += sfx.volume;
-
-			if (volume < 1)
-				return;
-
-			if (volume > DS.snd_SfxVolume)
-				volume = DS.snd_SfxVolume;
-		}	
-		else
-		{
-			spars.pitch = NORM_PITCH;
-			priority = NORM_PRIORITY;
-		}
-
-		// Check to see if it is audible,
-		//  and if not, modify the params
-		if (origin!=null && origin != DS.players[DS.consoleplayer].mo)
-		{
-			rc = AdjustSoundParams(DS.players[DS.consoleplayer].mo,
-					origin,
-					spars);
-
-			if ( origin.x == DS.players[DS.consoleplayer].mo.x
-					&& origin.y == DS.players[DS.consoleplayer].mo.y)
-			{	
-				spars.sep 	= NORM_SEP;
-			}
-
-			if (!rc)
-				return;
-		}	
-		else
-		{
-			spars.sep = NORM_SEP;
-		}
-
-		// hacks to vary the sfx pitches
-		if (sfx_id >= sfxenum_t.sfx_sawup.ordinal()
-				&& sfx_id <= sfxenum_t.sfx_sawhit.ordinal())
-		{	
-			spars.pitch += 8 - (DS.RND.M_Random()&15);
-
-			if (spars.pitch<0)
-				spars.pitch = 0;
-			else if (spars.pitch>255)
-				spars.pitch = 255;
-		}
-		else if (sfx_id != sfxenum_t.sfx_itemup.ordinal()
-				&& sfx_id != sfxenum_t.sfx_tink.ordinal())
-		{
-			spars.pitch += 16 - (DS.RND.M_Random()&31);
-
-			if (spars.pitch<0)
-				spars.pitch = 0;
-			else if (spars.pitch>255)
-				spars.pitch = 255;
-		}
-
-		// kill old sound
-		StopSound(origin);
-
-		// try to find a channel
-		cnum = getChannel(origin, sfx);
-
-		if (cnum<0)
-			return;
-
-		//
-		// This is supposed to handle the loading/caching.
-		// For some odd reason, the caching is done nearly
-		//  each time the sound is needed?
-		//
-
-		// get lumpnum if necessary
-		if (sfx.lumpnum < 0)
-			sfx.lumpnum = GetSfxLumpNum(sfx);
-
-		// increase the usefulness
-		if (sfx.usefulness++ < 0)
-			sfx.usefulness = 1;
-
-		// Assigns the handle to one of the channels in the
-		//  mix/output buffer.
-		//  channels[cnum].handle = StartSound(sfx_id,
-		//				       spars,
-		//				       priority);
-	}
-
-	@Override
-	public void Init(int sfxVolume, int musicVolume) {
-		this.InitSound();
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void Start() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void StartSound(mobj_t origin, int sound_id) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void StartSound(mobj_t origin, sfxenum_t sound_id) {
-		// TODO Auto-generated method stub
-
-	}
-	
-	@Override
-	public void StopSound(mobj_t origin)
-	{
-
-	    int cnum;
-
-	    for (cnum=0 ; cnum<numChannels ; cnum++)
-	    {
-		if (dchannels[cnum]!=null && channels[cnum].origin == origin)
-		{
-		    StopChannel(cnum);
-		    break;
-		}
-	    }
-	}
-	
-	
-
-	@Override
-	public void StartMusic(musicenum_t musicid) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void ChangeMusic(musicenum_t musicid, boolean looping) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void ChangeMusic(int musicid, boolean looping) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void StopMusic() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void PauseSound() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void ResumeSound() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void SetMusicVolume(int volume) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void SetSfxVolume(int volume) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void StartMusic(int music_id) {
-		// TODO Auto-generated method stub
-
-	}
-
 	@Override
 	public void ShutdownSound() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void ShutdownMusic() {
 		// TODO Auto-generated method stub
 
 	}
@@ -840,7 +621,7 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 					} catch (InterruptedException e) {
 					} 
 					for (int i=0;i<numChannels;i++)
-						if (dchannels[i]!=null) active++;
+						if (channels[i]!=null) active++;
 				} while (active==0);
 
 
@@ -854,12 +635,45 @@ public class ClassicDoomSoundDriver extends AbstractDoomAudio{
 					// However this one waits until the data has been
 					// consumed, Interruptions/signals won't reach  here,
 					// so it's pointless trying to interrupt the actual filling.
-					//long a=System.nanoTime();
 					auline.drain();
-					//long b=System.nanoTime();
-					//System.out.printf("Channel %d completed in %f.\n",id,(float)(b-a)/1000000000f);
 				}
 			}
 		}
+	}
+
+	@Override
+	public void SetChannels(int numChannels) {
+		// Dummy, since the number of channels is set by the constructor.
+		
+	}
+
+	@Override
+	public boolean SoundIsPlaying(int handle) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public int StartSound(int id, int vol, int sep, int pitch, int priority) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void StopSound(int handle) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void SubmitSound() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {
+		// TODO Auto-generated method stub
+		
 	}
 }
