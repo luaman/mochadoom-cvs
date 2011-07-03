@@ -29,12 +29,6 @@ public class DummySFX implements ISound {
 	}
 
 	@Override
-	public void SetChannels() {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	public int GetSfxLumpNum(sfxinfo_t sfxinfo) {
 		// TODO Auto-generated method stub
 		return 0;
@@ -62,6 +56,12 @@ public class DummySFX implements ISound {
 	public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public void SetChannels(int numChannels) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

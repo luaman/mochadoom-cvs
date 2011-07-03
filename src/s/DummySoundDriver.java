@@ -104,4 +104,10 @@ public class DummySoundDriver implements IDoomSound{
 		
 	}
 
+	@Override
+	public void ChangeMusic(musicenum_t musicnum, boolean looping) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

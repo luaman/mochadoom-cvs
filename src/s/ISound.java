@@ -6,7 +6,7 @@ import data.sounds.sfxenum_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.2 2011/06/14 20:58:10 velktron Exp $
+// $Id: ISound.java,v 1.3 2011/07/03 20:10:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -43,7 +43,9 @@ public interface ISound {
 	public static final int SAMPLERATE	=	11025;	// Hz
 	public static final int SAMPLESIZE	=	16 ;  	// 16bit
 	public static final int NUMSFX	=	sfxenum_t.NUMSFX.ordinal() ; 
-
+	public static final int MAXHANDLES = 100;
+	
+	
 	// Init at program start...
 	void InitSound();
 
@@ -78,13 +80,14 @@ public interface ISound {
 	// Stops a sound channel.
 	void StopSound(int handle);
 
-	// Called by S_*() functions
-	//  to see if a channel is still playing.
-	// Returns false if no longer playing, true if playing.
+	/** Called by S_*() functions to see if a channel is still playing.
+	    Returns false if no longer playing, true if playing. This is 
+	    a relatively "high level" function, so its accuracy relies on
+	    what the "system specific" sound code reports back */
 	boolean SoundIsPlaying(int handle);
 
-	// Updates the volume, separation,
-	//  and pitch of a sound channel.
+	/* Updates the volume, separation,
+	   and pitch of a sound channel. */
 	void UpdateSoundParams
 	( int		handle,
 	  int		vol,
@@ -96,6 +99,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.3  2011/07/03 20:10:42  velktron
+// Proper dummy implementation, interface javadocs.
+//
 // Revision 1.2  2011/06/14 20:58:10  velktron
 // Modified so channel settings are now deferred (after start)
 //
