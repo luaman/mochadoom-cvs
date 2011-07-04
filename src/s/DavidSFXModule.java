@@ -44,9 +44,6 @@ import doom.DoomStatus;
 public class DavidSFXModule implements ISound{
 
 	protected final static boolean D=false;
-
-	public static final int IDLE_HANDLE = -1;
-	public static final int BUSY_HANDLE = -2;
 	
 	HashMap<String,DoomSound> cachedSounds = new HashMap<String,DoomSound>();
 	int[] channelhandles;
@@ -415,6 +412,8 @@ public class DavidSFXModule implements ISound{
 		channels[slot].setPanning(seperation);
 		channels[slot].addSound(sound, handlenums);
 		channels[slot].setPitch(pitch);
+		
+		System.err.println(channelStatus());
         if(D) System.err.printf("Playing %d vol %d on channel %d\n",rc,volume,slot);
 		// You tell me.
 		return rc;
@@ -654,6 +653,20 @@ public class DavidSFXModule implements ISound{
 
 		}
 
-
+		StringBuilder sb=new StringBuilder();
+	
+		public String channelStatus(){
+			sb.setLength(0);
+			for (int i=0;i<numChannels;i++){
+				if (channels[i].isPlaying())
+				sb.append(i);
+				else sb.append('-');
+			}
+			
+			return sb.toString();
+			
+			
+		}
+	
 }
 
