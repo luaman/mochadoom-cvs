@@ -4,7 +4,9 @@ import static data.sounds.S_sfx;
 import static m.fixed_t.FRACBITS;
 
 import java.io.ByteArrayInputStream;
+import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,11 +18,14 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
 
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
+
+import com.sun.media.sound.WaveFileWriter;
 
 import w.DoomBuffer;
 
@@ -37,16 +42,19 @@ import doom.DoomStatus;
 
 public class ClassicDoomSoundDriver implements ISound {
 	
-	private final byte[] MASTER_BUFFER;
-	private final int BUFFER_CHUNKS=50;
+	private final byte[][] MASTER_BUFFER;
+	private final int[] timing;
+		private final int BUFFER_CHUNKS=3; // For 200 ms, we need at least 5 
 	
 	protected final static boolean D=true;
 	
 	private final DoomStatus DS;
 	private final int numChannels;
-	private volatile int active=0;
 	private int chunk=0;
-
+	
+	//WaveFileWriter writer = new WaveFileWriter();
+	//DataOutputStream dao;
+	
 	// The one and only line
 	private SourceDataLine line = null;
 	
@@ -66,7 +74,9 @@ public class ClassicDoomSoundDriver implements ISound {
 		channelsend=new int[numChannels];
 		channelhandles=new int[numChannels];
 		//chunk=Future.new Future<Integer>();
-		MASTER_BUFFER=new byte[mixbuffer.length*BUFFER_CHUNKS];
+		MASTER_BUFFER=new byte[2][mixbuffer.length*BUFFER_CHUNKS];
+		//audiobarrier=new CyclicBarrier(2);
+		timing=new int[2];
 	}
 
 	/** The actual lengths of all sound effects. */
@@ -191,7 +201,7 @@ public class ClassicDoomSoundDriver implements ISound {
 		// MAES: this implies that the buffer will only mix 
 		// that many samples at a time, and that the size is just right.
 		// Thus, it must be flushed (p_mixbuffer=0) before reusing it.
-		leftend =SAMPLECOUNT*step;
+		leftend =SAMPLECOUNT*step*2;
 
 		// Mix sounds into the mixing buffer.
 		// Loop over step*SAMPLECOUNT,
@@ -205,8 +215,6 @@ public class ClassicDoomSoundDriver implements ISound {
 			// Love thy L2 chache - made this a loop.
 			// Now more channels could be set at compile time
 			//  as well. Thus loop those  channels.
-			
-			active=0;
 			
 			for ( chan = 0; chan < numChannels; chan++ )
 			{
@@ -252,7 +260,7 @@ public class ClassicDoomSoundDriver implements ISound {
 			if (channel_pointer >= channelsend[ chan ]){
 				// Reset pointer for a channel.
 				//channels[chan] = channel_pointer0;
-				//System.err.printf("Channel %d done, stopping\n",chan);
+				System.err.printf("Channel %d done, stopping\n",chan);
 				channels[chan]=null;
 				channel_pointer=0;
 			}
@@ -299,7 +307,7 @@ public class ClassicDoomSoundDriver implements ISound {
 			leftout += 4;
 			rightout += 4;
 		} // End leftend/leftout while
-
+		
 		// TODO how do we know whether the mixbuffer isn't entirely used 
 		// and instead it has residual garbage samples in it?
 		// ANSWER: DOOM kind of padded samples in memory, so presumably
@@ -382,15 +390,14 @@ public class ClassicDoomSoundDriver implements ISound {
 		// We only need a single data line.
 		// PCM, signed, 16-bit, stereo, 11025 KHz, 2048 bytes per "frame", maximum of 44100/2048 "fps"
 		AudioFormat format = new AudioFormat(SAMPLERATE,16,2,true,true);
-
-
+	
 		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
 		
 
 		if (AudioSystem.isLineSupported(info))
 			try {
 				line=  (SourceDataLine) AudioSystem.getSourceDataLine(format);
-				line.open(format,mixbuffer.length);
+				line.open(format,mixbuffer.length*BUFFER_CHUNKS);
 			} catch (Exception e){
 				e.printStackTrace();
 				System.err.print( "Could not play signed 16 data\n");
@@ -526,7 +533,7 @@ public class ClassicDoomSoundDriver implements ISound {
 		int		rc = -1;
 
 		int		oldest = DS.gametic;
-		int		oldestnum = 0;
+		int		oldestnum = -1;
 		int		slot;
 
 		int		rightvol;
@@ -664,70 +671,63 @@ public class ClassicDoomSoundDriver implements ISound {
 		private SourceDataLine auline;
 		
 
-		private ArrayBlockingQueue<Integer> audiochunks=new ArrayBlockingQueue<Integer>(BUFFER_CHUNKS);
+		private ArrayBlockingQueue<AudioChunk> audiochunks=new ArrayBlockingQueue<AudioChunk>(BUFFER_CHUNKS);
 		
-		public void addChunk(int chunk){
+		public void addChunk(AudioChunk chunk){
 			audiochunks.offer(chunk);
 		}
 		
+		public volatile int currstate=0;
+		
 		public void run() {
 
-			line.start();
 			while (!terminate) {
+			    
+			    //while (timing[mixstate]<=mytime){
+		             
+			    while (!enough && currstate==mixstate){
+			        
+	                try {
+	                    Thread.sleep(10);
+	                } catch (InterruptedException e1) {
+	                    // TODO Auto-generated catch block
+	                    e1.printStackTrace();
+	                }
+			    }
+	            
+			    System.err.println("Now on state "+currstate);
+	                auline.write(MASTER_BUFFER[currstate],0, mixbuffer.length*BUFFER_CHUNKS);
+			    
+			    /*mytime=timing[mixstate];
+                
+			    currstate=mixstate^1;
+                
+                
+                
+                // Play back all chunks present in a buffer ASAP
+				for (int chunk=0;chunk<BUFFER_CHUNKS;chunk++){
 
-				// Wait for a new sound chunk to be available.
-				// Otherwise wait a bit.
-				
-				while (!audiochunks.isEmpty()){
-
-				
-				int chunk=0;
-				try {
-					chunk = audiochunks.take();
-					
-				} catch (InterruptedException e1) {
-					// Should never happen.
-				}
-				
-				int shit=0;
-				try{
-					//shit+=line.write(MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
+				    try{
+				    //auline.write(MASTER_BUFFER[currstate], chunk*mixbuffer.length, mixbuffer.length);
+					//dao.write(MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
 					//System.err.print("..done writing\n");
-				} catch (Exception e) { 
-					System.err.println("Ehm...problem :-(");
-					return;
-				} finally {
-					// The previous steps are actually VERY fast.
-					// However this one waits until the data has been
-					// consumed, Interruptions/signals won't reach  here,
-					// so it's pointless trying to interrupt the actual filling.
-					//System.err.print("Waiting on drain...");
-					//long a=System.nanoTime();
-					//auline.drain();					
-					System.err.printf("Consumed audio chunk %d\n",chunk);
-					//long b=System.nanoTime();
-					//double ms=(b-a)/1e6;
-					//System.err.printf("Time: %f ms to play back %d bytes rate: %f\n",ms,shit,(1000.0*shit/ms));
-					//System.err.printf(" %d bytes written",shit);
-				}
-			}
-				
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+	                } catch (Exception e) {
+	                    System.err.println("Ehm...problem :-(");
+	                    continue;
+	                } finally {
+	                }
+
+				    } */
+			    }
 				
 			}
-		}
 	}
 
 	@Override
 	public boolean SoundIsPlaying(int handle) {
 		
 		int c=getChannelFromHandle(handle);
-		return (channels[c]==null);
+		return (c!=-2 && channels[c]==null);
 		
 		
 		}
@@ -809,20 +809,43 @@ public class ClassicDoomSoundDriver implements ISound {
 			channels[hnd]=null;
 	}
 
+	
+	/** This is either 0 or 1. If we're writing to buffer 1, then 
+	 *  the sound thread is playing back buffer 0, and viceversa.
+	 *  Remember to swap as appropriate.
+	 *  
+	 */
+	private int mixstate=0;
+	
 	@Override
 	public void SubmitSound() {
-		/*if (mixed){
-		System.arraycopy(mixbuffer, 0,MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
-		this.SOUNDSRV.addChunk(chunk);
-		System.err.printf("Submitted sound chunk %d\n",chunk);
-		chunk++;		
-		chunk%=BUFFER_CHUNKS;		
-		}
-		*/
-		line.write(mixbuffer, 0, mixbuffer.length);
+		
+		System.arraycopy(mixbuffer, 0,MASTER_BUFFER[mixstate], chunk*mixbuffer.length, mixbuffer.length);
+		
+		//AudioChunk gunk=new AudioChunk(chunk,DS.gametic);
+		//this.SOUNDSRV.addChunk(gunk);
+		//System.err.printf("Submitted sound chunk %d\n",chunk);
+		
+		System.err.println(chunk++);
+		if (chunk>1) enough=false;
+		
+		if (chunk==BUFFER_CHUNKS){
+		    System.err.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIRE!!!!   " +mixstate);
+		    chunk=0;
+		    // We switch mixstate.
+		    // The playback thread can now play buffer 1.
+		    this.SOUNDSRV.currstate=mixstate;
+		    mixstate=mixstate^1;
+		    //timing[mixstate]=DS.gametic;    
+		    enough=true;
+		    }
+		
+		//line.write(mixbuffer, 0, mixbuffer.length);
 		
 	}
 
+	private boolean enough=false;
+	
 	@Override
 	public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {
 		
@@ -869,6 +892,17 @@ public class ClassicDoomSoundDriver implements ISound {
 		return sb.toString();
 		
 		
+	}
+	
+	private class AudioChunk{
+	    public AudioChunk(int chunk, int time) {
+            this.chunk = chunk;
+            this.time = time;
+        }
+        public int chunk;
+	    public int time;
+	    
+
 	}
 	
 }
