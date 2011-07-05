@@ -219,5 +219,9 @@ public interface IWadLoader {
 
 	/** Set a zoning mechanism other than the dummy one */
 	public abstract void setZone(DoomStatus DS);
+
+	/** A way to cleanly close open file handles still pointed at by lumps.
+	 *  Is also called upon finalize */
+	public void CloseAllHandles();
 	
 }

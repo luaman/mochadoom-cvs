@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.36 2011/06/12 21:52:11 velktron Exp $
+// $Id: WadLoader.java,v 1.37 2011/07/05 13:26:30 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.37  2011/07/05 13:26:30  velktron
+// Added handle closing functionality.
+//
 // Revision 1.36  2011/06/12 21:52:11  velktron
 // Made CheckNumForName uppercase-proof, at last.
 //
@@ -161,6 +164,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
 import doom.DoomStatus;
@@ -1105,6 +1109,36 @@ public class WadLoader implements IWadLoader {
 	public void setZone(DoomStatus DS) {
 		Z=DS.Z=new LumpZone();
 		
+	}
+	
+	@Override
+	public void CloseAllHandles(){
+		ArrayList<DoomFile> d=new ArrayList<DoomFile>();
+		
+		for (int i=0;i<this.lumpinfo.length;i++){
+			if (!d.contains(lumpinfo[i].handle)) d.add(lumpinfo[i].handle);
+		}
+		
+		int count=0;
+		
+		for (DoomFile e:d){
+			try {
+				e.close();
+				//System.err.printf("%s file handle closed",e.toString());
+				count++;
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
+		//System.err.printf("%d file handles closed",count);
+				
+	}
+	
+	@Override
+	public void finalize(){
+		CloseAllHandles();
 	}
 
 }
