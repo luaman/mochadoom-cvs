@@ -9,6 +9,7 @@ import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.pointer;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -502,7 +503,7 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     public int p_tracer;
 
     //_D_: to permit this object to save/load
-    public void read(DoomFile f) throws IOException {
+    public void read(InputStream f) throws IOException {
         // More efficient, avoids duplicating code and
         // handles little endian better.
     	buffer.position(0);
