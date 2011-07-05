@@ -47,6 +47,7 @@ import rr.SimpleTextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
+import s.ClassicDoomSoundDriver;
 import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
@@ -82,7 +83,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72 2011/06/23 15:43:01 velktron Exp $
+// $Id: DoomMain.java,v 1.73 2011/07/05 13:27:58 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -108,7 +109,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72 2011/06/23 15:43:01 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.73 2011/07/05 13:27:58 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -393,7 +394,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 	// Synchronous sound output is explicitly called.
 //#ifndef SNDINTR
 	// Update sound output.
-	//I_SubmitSound();
+	ISND.SubmitSound();
 //#endif
              
         }
@@ -567,7 +568,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * should be executed (notably loading PWAD's).
      */
 
-    public void IdentifyVersion ()
+    public String IdentifyVersion ()
     {
 
         String home;
@@ -594,10 +595,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             doomwaddir=test.substring(0, 1+test.lastIndexOf(separator));
             String iwad=test.substring( 1+test.lastIndexOf(separator));
             GameMode_t attempt=vcheck.tryOnlyOne(iwad,doomwaddir);
+            // Note: at this point we can't distinguish between "doom" retail
+            // and "doom" ultimate yet.
             if (attempt!=null) {
             	AddFile(doomwaddir+iwad);
             	this.setGameMode(attempt);
-            	return;
+            	return (doomwaddir+iwad);
             }
         } else {
         // Unix-like checking. Might come in handy sometimes.   
@@ -631,7 +634,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
             AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
             basedefault=dstrings.DEVDATA+"default.cfg";
-            return;
+            return (dstrings.DEVDATA+"doom1.wad");
         }
 
         if (eval(CM.CheckParm ("-regdev")))
@@ -643,7 +646,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             AddFile (dstrings.DEVMAPS+"data_se/texture2.lmp");
             AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
             basedefault=dstrings.DEVDATA+"default.cfg";
-            return;
+            return (dstrings.DEVDATA+"doom.wad");
         }
 
         if (eval(CM.CheckParm ("-comdev")))
@@ -661,7 +664,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             AddFile (dstrings.DEVMAPS+"cdata/texture1.lmp");
             AddFile (dstrings.DEVMAPS+"cdata/pnames.lmp");
             basedefault=dstrings.DEVDATA+"default.cfg";
-            return;
+            return (dstrings.DEVDATA+"doom2.wad");
         }
 
 
@@ -673,7 +676,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             language = Language_t.french;
             System.out.println("French version\n");
             AddFile (vcheck.doom2fwad);
-            return;
+            return vcheck.doom2fwad;
         }
 
 
@@ -681,28 +684,28 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         {
             setGameMode(GameMode_t.commercial);
             AddFile (vcheck.doom2wad);
-            return;
+            return vcheck.doom2wad;
         }
 
         if ( testAccess (vcheck.plutoniawad, "r" ) )
         {
             setGameMode(GameMode_t.pack_plut);
             AddFile (vcheck.plutoniawad);
-            return;
+            return vcheck.plutoniawad;
         }
 
         if ( testAccess ( vcheck.tntwad, "r" ) )
         {
             setGameMode(GameMode_t.pack_tnt);
             AddFile (vcheck.tntwad);
-            return;
+            return vcheck.tntwad;
         }
         
         if ( testAccess ( vcheck.tntwad, "r" ) )
         {
             setGameMode(GameMode_t.pack_xbla);
             AddFile (vcheck.xblawad);
-            return;
+            return vcheck.xblawad;
         }
 
         if ( testAccess (vcheck.doomuwad,"r") )
@@ -711,21 +714,21 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         	// Maes: this is done later on.
             setGameMode(GameMode_t.retail);
             AddFile (vcheck.doomuwad);
-            return;
+            return vcheck.doomuwad;
         }
 
         if ( testAccess (vcheck.doomwad,"r") )
         {
             setGameMode(GameMode_t.registered);
             AddFile (vcheck.doomwad);
-            return;
+            return vcheck.doomwad;
         }
 
         if ( testAccess (vcheck.doom1wad,"r") )
         {
             setGameMode(GameMode_t.shareware);
             AddFile (vcheck.doom1wad);
-            return;
+            return vcheck.doom1wad;
         }
 
         // MAES: Maybe we should add FreeDoom here later.
@@ -733,6 +736,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         System.out.println("Game mode indeterminate.\n");
         setGameMode(GameMode_t.indetermined);
 
+        return null;
         // We don't abort. Let's see what the PWAD contains.
         //exit(1);
         //I_Error ("Game mode indeterminate\n");
@@ -755,7 +759,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // maybe it should be outside of Start() and into i.Main ?
         CM.FindResponseFile ();
 
-        IdentifyVersion ();
+        String iwadfilename=IdentifyVersion ();
         
         // Sets unbuffered output in C. Not needed here. setbuf (stdout, NULL);
         modifiedgame = false;
@@ -770,6 +774,17 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         else if (eval(CM.CheckParm ("-deathmatch")))
             deathmatch = true;
 
+        // MAES: Check for Ultimate Doom in "doom.wad" filename.
+        WadLoader tmpwad=new WadLoader();
+        try {
+			tmpwad.InitFile(iwadfilename);
+		} catch (Exception e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		// Check using a reloadable hack.
+        CheckForUltimateDoom(tmpwad);    
+       
         // MAES: better extract a method for this.
         GenerateTitle();
 
@@ -1051,11 +1066,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         this.updateStatusHolders(this);
 
-        // MAES: Check for Ultimate Doom in "doom.wad" filename.
-        CheckForUltimateDoom();
-
         // Check for -file in shareware
         CheckForPWADSInShareware();
+        
 
         // Iff additonal PWAD files are used, print modified banner
         if (modifiedgame)
@@ -1131,8 +1144,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (CM.CheckParmBool("-nosound"))
             this.ISND=new DummySFX();
         else 
-            this.ISND=new DavidSFXModule(this);
-        
+            this.ISND=//new DavidSFXModule(this);
+            			new ClassicDoomSoundDriver(this,numChannels);
         // Obviously, nomusic && nosfx = nosound.
         this.S=new AbstractDoomAudio(this,numChannels);
         
@@ -1328,7 +1341,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      *  e4m1 - e4m9.
      * 
      */
-    protected void CheckForUltimateDoom() {
+    protected void CheckForUltimateDoom(WadLoader W) {
         if (isRegistered())
         {
             // These are the lumps that will be checked in IWAD,
@@ -1340,7 +1353,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
             // Check for fake IWAD with right name,
             // but w/o all the lumps of the registered version. 
-            if (!CheckForLumps(lumps)) return;
+            if (!CheckForLumps(lumps,W)) return;
             // Checks passed, so we can set the mode to Ultimate
             setGameMode(GameMode_t.retail);
         }
@@ -1353,7 +1366,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * @param name
      * @return
      */
-    protected boolean CheckForLumps(String[] name) {
+    protected boolean CheckForLumps(String[] name, WadLoader W) {
         for (int i = 0;i < name.length; i++)
             if (W.CheckNumForName(name[i].toUpperCase())<0) {
                 // Even one is missing? Not OK.
@@ -4056,6 +4069,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.73  2011/07/05 13:27:58  velktron
+//Added more solid Ultimate Doom detection.
+//
 //Revision 1.72  2011/06/23 15:43:01  velktron
 //Palette defaulting mechanism in place.
 //
