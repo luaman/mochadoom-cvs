@@ -2982,10 +2982,139 @@ public class Actions extends UnifiedGameMap {
 
         
         // launch a missile
-        SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
+       SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
+        
+        /*float t=this.QuadraticFireSolution(missile, actor.target);
+        
+        // It's possible to lead ahead, so do it. 
+        if (t>0) {
+        
+          //  System.err.printf("Intercept in "+t%f tics ",t);
+        // Future position of intercept
+           
+      //      t/=35.0f;
+        float fx=(actor.target.x+t*actor.target.momx);
+        float fy=(actor.target.y+t*actor.target.momy);
+        float fz=(actor.target.z+t*actor.target.momz);
+        
+        //System.err.printf("at %f %f %f\n",fx,fy,fz);
+        
+        // Vpr=(X_int - X_actor)/t.
+        fx-=actor.x;
+        fy-=actor.y;
+        fz-=actor.z;
+        
+        // Force missile heading to intercept course
+        //System.err.printf("Missile course to %f %f %f\n",missile.momx,missile.momy,missile.momz);
+        missile.momx=(int) (35*fx/t);
+        missile.momy=(int) (35*fy/t);
+        missile.momz=(int) (35*fz/t);
+        //System.err.printf("Missile corrected course to %f %d %d\n",missile.momx,missile.momy,missile.momz);
+        }
+//        int speed=actor.target.momx*/
     }
 
-
+    int[] vector=new int[3];
+    
+    private static class V3{
+        public float x,y,z;
+        
+        public V3(){
+            
+        }
+        
+        public V3(int scale){
+            this.set(scale,scale,scale);
+            }
+        
+        public V3(float x,float y, float z){
+            this.set(x,y,z);
+            }
+        
+        public void set(float x,float y, float z){
+            this.x=x;
+            this.y=y;
+            this.z=z;
+            }
+        
+        public float dot(V3 v){
+            float tmp=this.x*v.x+this.y*v.y+this.z*v.z;
+            return tmp;
+        }
+        
+        public static V3 subtract(V3 a, V3 b){
+            V3 tmp=new V3();
+            tmp.x=a.x-b.x;
+            tmp.y=a.y-b.y;
+            tmp.z=a.z-b.z;
+            return tmp;
+        }
+        
+        public static V3 multiply (V3 a, V3 b){
+            V3 tmp=new V3();
+            tmp.x=a.x*b.x;
+            tmp.y=a.y*b.y;
+            tmp.z=a.z*b.z;
+            return tmp;
+        }
+        
+        public static V3 subtract(int ax, int ay, int az, int bx, int by, int bz){
+            V3 tmp=new V3();
+            tmp.x=ax-bx;
+            tmp.y=ay-by;
+            tmp.z=az-bz;
+            return tmp;
+        }
+        
+        public String toString(){
+            return String.format("%f %f %f", x,y,z);
+        }
+        
+    }
+    
+    private float QuadraticFireSolution( mobj_t missile, mobj_t target ){
+        // Primitive method to provide basic calculation of how much we need to lead a target.
+        // Uses quadratic equation to solve for smallest possible square root.
+        //
+        // Returns the amount of time in seconds we need to wait to hit our target.
+        // 
+        // Returns -1 if there is no fire solution (i.e. target is moving away from us and
+        // our bullet is too slow to catch up).
+      
+      V3 missilep=new V3(missile.x/FRACUNIT,missile.y/FRACUNIT,missile.z/FRACUNIT);
+      V3 targetp=new V3(target.x/FRACUNIT,target.y/FRACUNIT,target.z/FRACUNIT);
+      V3 targetVelocityVector = new V3(target.momx/FRACUNIT,target.momy/FRACUNIT,target.momz/FRACUNIT);
+      V3 interceptVelocityVector = new V3(missile.momx/FRACUNIT,missile.momy/FRACUNIT,missile.momz/FRACUNIT);
+      
+     // Speeds are in map units per TIC
+      float aBulletSpeed=missile.info.speed;
+      
+      V3 tDelta = V3.subtract(targetp,missilep);
+      System.err.printf("Positions target %s missile %s intercept tDelta: %s\n",targetp,missilep,tDelta);
+      
+      V3 Vr = V3.subtract(targetVelocityVector,interceptVelocityVector);
+      System.err.printf("Vtarget %s Vintercept: %s",targetVelocityVector,Vr);
+      float a = Vr.dot( Vr ) - aBulletSpeed * aBulletSpeed;
+      float b = 2 * Vr.dot( tDelta );
+      float c = tDelta.dot ( tDelta );
+      
+      float deter = b * b - 4 * ( a * c );
+      
+      if (deter < 0) {
+          System.err.print("(Unable to generate quadratic fire solution.)\n");
+          return -1;
+      }
+      else {
+        float det= (float) Math.sqrt(deter);
+        //float s1 = (-b+det)/(2*a);
+        //float s2 = (b+det)/(2*a);
+        //System.err.printf("Solutions %f %f\n",s1,s2);
+        //if (s1<0) return s2;
+        //else return Math.max(s1,s2);
+        return 2 * ( c / det - b );
+      }
+    }
+    
     void A_SargAttack (mobj_t  actor)
     {
         int     damage;
