@@ -38,7 +38,7 @@ import doom.DoomStatus;
 public class ClassicDoomSoundDriver implements ISound {
 	
 	private final byte[] MASTER_BUFFER;
-	private final int BUFFER_CHUNKS=1;
+	private final int BUFFER_CHUNKS=50;
 	
 	protected final static boolean D=true;
 	
@@ -133,6 +133,9 @@ public class ClassicDoomSoundDriver implements ISound {
 	/** Hardware left and right channel volume lookup. */
 	protected final int[][]	channelleftvol_lookup,channelrightvol_lookup;
 
+	
+	private volatile boolean mixed=false;
+	
 	/**
 	 * This function loops all active (internal) sound
 	 *  channels, retrieves a given number of samples
@@ -155,13 +158,14 @@ public class ClassicDoomSoundDriver implements ISound {
 	  static int misses = 0;
 	#endif*/
 
-
+		mixed=false;
+		
 		// Mix current sound data.
 		// Data, from raw sound, for right and left.
 		int	sample = 0;
 		int		dl;
 		int		dr;
-		boolean mixed=false;
+		
 
 		// Pointers in global mixbuffer, left, right, end.
 		// Maes: those were explicitly signed short pointers...
@@ -303,12 +307,13 @@ public class ClassicDoomSoundDriver implements ISound {
 		// TODO: what's the purpose of channelremainder etc?
 		// ANSWER: pitch variations were done with fractional pointers 16.16
 		// style.
+		/*
 		if (mixed) {
 		System.arraycopy(mixbuffer, 0,MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
 		this.SOUNDSRV.addChunk(chunk);
 		chunk++;
 		chunk%=BUFFER_CHUNKS;
-		}
+		} */
 		
 	}
 
@@ -376,13 +381,7 @@ public class ClassicDoomSoundDriver implements ISound {
 
 		// We only need a single data line.
 		// PCM, signed, 16-bit, stereo, 11025 KHz, 2048 bytes per "frame", maximum of 44100/2048 "fps"
-		AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-				SAMPLERATE,
-				SAMPLESIZE,
-				2,
-				4,
-				SAMPLERATE,
-				true);
+		AudioFormat format = new AudioFormat(SAMPLERATE,16,2,true,true);
 
 
 		DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
@@ -391,13 +390,14 @@ public class ClassicDoomSoundDriver implements ISound {
 		if (AudioSystem.isLineSupported(info))
 			try {
 				line=  (SourceDataLine) AudioSystem.getSourceDataLine(format);
-				line.open(format,this.MIXBUFFERSIZE);
+				line.open(format,mixbuffer.length);
 			} catch (Exception e){
 				e.printStackTrace();
 				System.err.print( "Could not play signed 16 data\n");
 			}
 
 			if (line!=null) System.err.print(" configured audio device\n" );
+			line.start();
 			
 			SOUNDSRV=new MixServer(line);
 			SOUNDTHREAD=new Thread(SOUNDSRV);			
@@ -680,16 +680,18 @@ public class ClassicDoomSoundDriver implements ISound {
 				
 				while (!audiochunks.isEmpty()){
 
+				
 				int chunk=0;
 				try {
 					chunk = audiochunks.take();
+					
 				} catch (InterruptedException e1) {
 					// Should never happen.
 				}
+				
 				int shit=0;
 				try{
-					//System.err.print("Writing audio out...");
-					shit=line.write(MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
+					//shit+=line.write(MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
 					//System.err.print("..done writing\n");
 				} catch (Exception e) { 
 					System.err.println("Ehm...problem :-(");
@@ -702,6 +704,7 @@ public class ClassicDoomSoundDriver implements ISound {
 					//System.err.print("Waiting on drain...");
 					//long a=System.nanoTime();
 					//auline.drain();					
+					System.err.printf("Consumed audio chunk %d\n",chunk);
 					//long b=System.nanoTime();
 					//double ms=(b-a)/1e6;
 					//System.err.printf("Time: %f ms to play back %d bytes rate: %f\n",ms,shit,(1000.0*shit/ms));
@@ -808,7 +811,16 @@ public class ClassicDoomSoundDriver implements ISound {
 
 	@Override
 	public void SubmitSound() {
-
+		/*if (mixed){
+		System.arraycopy(mixbuffer, 0,MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
+		this.SOUNDSRV.addChunk(chunk);
+		System.err.printf("Submitted sound chunk %d\n",chunk);
+		chunk++;		
+		chunk%=BUFFER_CHUNKS;		
+		}
+		*/
+		line.write(mixbuffer, 0, mixbuffer.length);
+		
 	}
 
 	@Override
