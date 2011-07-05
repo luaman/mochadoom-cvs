@@ -6,7 +6,7 @@ import data.sounds.sfxenum_t;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.3 2011/07/03 20:10:42 velktron Exp $
+// $Id: ISound.java,v 1.4 2011/07/05 13:45:33 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -33,6 +33,7 @@ public interface ISound {
 	public static final int VOLUME_STEPS = 128;
 	public static final int PANNING_STEPS = 256;
 	public static final int IDLE_HANDLE = -1;
+	public static final int BUSY_HANDLE = -2;
 	// Needed for calling the actual sound output.
 	public static final int SAMPLECOUNT		=512;
 	public static final int NUM_CHANNELS	=	8;
@@ -99,6 +100,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.4  2011/07/05 13:45:33  velktron
+// BUSY_HANDLE
+//
 // Revision 1.3  2011/07/03 20:10:42  velktron
 // Proper dummy implementation, interface javadocs.
 //
