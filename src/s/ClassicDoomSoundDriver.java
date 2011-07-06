@@ -16,6 +16,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -42,9 +43,9 @@ import doom.DoomStatus;
 
 public class ClassicDoomSoundDriver implements ISound {
 	
-	private final byte[][] MASTER_BUFFER;
-	private final int[] timing;
-		private final int BUFFER_CHUNKS=3; // For 200 ms, we need at least 5 
+	private final Semaphore produce;
+	private final Semaphore consume;
+	private final int BUFFER_CHUNKS=3; 
 	
 	protected final static boolean D=true;
 	
@@ -52,8 +53,8 @@ public class ClassicDoomSoundDriver implements ISound {
 	private final int numChannels;
 	private int chunk=0;
 	
-	//WaveFileWriter writer = new WaveFileWriter();
-	//DataOutputStream dao;
+	FileOutputStream fos;
+	DataOutputStream dao;
 	
 	// The one and only line
 	private SourceDataLine line = null;
@@ -74,9 +75,11 @@ public class ClassicDoomSoundDriver implements ISound {
 		channelsend=new int[numChannels];
 		channelhandles=new int[numChannels];
 		//chunk=Future.new Future<Integer>();
-		MASTER_BUFFER=new byte[2][mixbuffer.length*BUFFER_CHUNKS];
+		//MASTER_BUFFER=new byte[2][mixbuffer.length*BUFFER_CHUNKS];
 		//audiobarrier=new CyclicBarrier(2);
-		timing=new int[2];
+		produce=new Semaphore(1);
+		consume=new Semaphore(1);
+		produce.drainPermits();
 	}
 
 	/** The actual lengths of all sound effects. */
@@ -201,12 +204,12 @@ public class ClassicDoomSoundDriver implements ISound {
 		// MAES: this implies that the buffer will only mix 
 		// that many samples at a time, and that the size is just right.
 		// Thus, it must be flushed (p_mixbuffer=0) before reusing it.
-		leftend =SAMPLECOUNT*step*2;
+		leftend =SAMPLECOUNT*step;
 
 		// Mix sounds into the mixing buffer.
 		// Loop over step*SAMPLECOUNT,
-		//  that is 512 values for two channels.
-		while (leftout != leftend)
+		// that is SAMPLECOUNT values for two channels.
+		while (leftout < leftend)
 		{
 			// Reset left/right value. 
 			dl = 0;
@@ -224,11 +227,10 @@ public class ClassicDoomSoundDriver implements ISound {
 				// MAES: this means that we must point to raw data here.
 				if (channels[ chan ]!=null)
 				{
-
+					// SOME mixing has taken place.
 					mixed=true;
 					int channel_pointer=	p_channels[chan];
 					
-					//if (D && leftout%1024 ==0 ) System.err.printf("Mixing channel %d %d %d\n",chan,leftout,channel_pointer);
 					// Get the raw data from the channel.
 					// Maes: this is supposed to be an 8-bit unsigned value.
 					try {
@@ -270,8 +272,12 @@ public class ClassicDoomSoundDriver implements ISound {
 			p_channels[chan]=channel_pointer;
 
 				}
+				
+				
 			} // for all channels.
 
+
+			
 			// MAES: at this point, the actual values for a single sample
 			// (YIKES!) are in d1 and d2. We must use the leftout/rightout 
 			// pointers to write them back into the mixbuffer.
@@ -307,6 +313,10 @@ public class ClassicDoomSoundDriver implements ISound {
 			leftout += 4;
 			rightout += 4;
 		} // End leftend/leftout while
+		
+		//for (int i=0;i<numChannels;i++){
+		//if (channels[i]!=null) if (D && leftout%SAMPLECOUNT ==0 ) System.err.printf("Mixed channel%d until %d\n",i,p_channels[i]);
+		//
 		
 		// TODO how do we know whether the mixbuffer isn't entirely used 
 		// and instead it has residual garbage samples in it?
@@ -405,6 +415,15 @@ public class ClassicDoomSoundDriver implements ISound {
 
 			if (line!=null) System.err.print(" configured audio device\n" );
 			line.start();
+		
+			try {
+				fos=new FileOutputStream("test.raw");
+				dao=new DataOutputStream(fos);
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 			
 			SOUNDSRV=new MixServer(line);
 			SOUNDTHREAD=new Thread(SOUNDSRV);			
@@ -433,10 +452,10 @@ public class ClassicDoomSoundDriver implements ISound {
 
 			// Now initialize mixbuffer with zero.
 			for ( i = 0; i< MIXBUFFERSIZE; i+=4 ){
-				mixbuffer[i] = (byte)(((int)( 0x8FFF*Math.sin((800*i)/MIXBUFFERSIZE))&0xff00)>>>8);
-				mixbuffer[i+1] = (byte)((int)( 0x8FFF*Math.sin((800*i)/MIXBUFFERSIZE))&0xff);
-				mixbuffer[i+2] = (byte)(((int)( 0x8FFF*Math.sin((800*i)/MIXBUFFERSIZE))&0xff00)>>>8);
-				mixbuffer[i+3] = (byte)((int)( 0x8FFF*Math.sin((800*i)/MIXBUFFERSIZE))&0xff);
+				mixbuffer[i] = (byte)(((int)( 0x7FFF*Math.sin(1.5*Math.PI*(double)i/MIXBUFFERSIZE))&0xff00)>>>8);
+				mixbuffer[i+1] = (byte)((int)( 0x7FFF*Math.sin(1.5*Math.PI*(double)i/MIXBUFFERSIZE))&0xff);
+				mixbuffer[i+2] = (byte)(((int)( 0x7FFF*Math.sin(1.5*Math.PI*(double)i/MIXBUFFERSIZE))&0xff00)>>>8);
+				mixbuffer[i+3] = (byte)((int)( 0x7FFF*Math.sin(1.5*Math.PI*(double)i/MIXBUFFERSIZE))&0xff);
 
 			}
 			
@@ -479,27 +498,22 @@ public class ClassicDoomSoundDriver implements ISound {
 
 		size = DS.W.LumpLength( sfxlump );
 
-		// Debug.
-		// fprintf( stderr, "." );
-		//fprintf( stderr, " -loading  %s (lump %d, %d bytes)\n",
-		//	     sfxname, sfxlump, size );
-		//fflush( stderr );
-
 		sfx = DS.W.CacheLumpNumAsRawBytes( sfxlump ,0);
 
 		// MAES: A-ha! So that's how they do it.
-		// Pads the sound effect out to the mixing buffer size.
-		// The original realloc would interfere with zone memory.
+		// SOund effects are padded to the highest multiple integer of 
+		// the mixing buffer's size (with silence)
+
 		paddedsize = ((size-8 + (SAMPLECOUNT-1)) / SAMPLECOUNT) * SAMPLECOUNT;
 
 		// Allocate from zone memory.
 		paddedsfx = new byte[paddedsize];
 
-		// Now copy and pad.
-		System.arraycopy(sfx,8, paddedsfx, 8,size-8 );
+		// Now copy and pad. The first 8 bytes are header info, so we discard them.
+		System.arraycopy(sfx,8, paddedsfx, 0,size-8 );
 		// Hmm....silence?
-		for (i=size ; i<paddedsize ; i++)
-			paddedsfx[i] = (byte) 128;
+		for (i=size-8 ; i<paddedsize ; i++)
+			paddedsfx[i] = (byte) 127;
 
 		// Remove the cached lump.
 		DS.Z.Free( DS.W.CacheLumpNum (sfxlump,0,DoomBuffer.class) );
@@ -533,7 +547,7 @@ public class ClassicDoomSoundDriver implements ISound {
 		int		rc = -1;
 
 		int		oldest = DS.gametic;
-		int		oldestnum = -1;
+		int		oldestnum = 0;
 		int		slot;
 
 		int		rightvol;
@@ -557,6 +571,7 @@ public class ClassicDoomSoundDriver implements ISound {
 				{
 					// Reset.
 					channels[i] = null;
+					this.p_channels[i] = 0;
 					// We are sure that iff,
 					//  there will only be one.
 					break;
@@ -651,6 +666,9 @@ public class ClassicDoomSoundDriver implements ISound {
 	public void ShutdownSound() {
 		SOUNDSRV.terminate=true;
 		
+		// Unlock sound thread if it's waiting.
+		produce.release();
+		
 		try {
 			SOUNDTHREAD.join();
 		} catch (InterruptedException e) {
@@ -660,7 +678,7 @@ public class ClassicDoomSoundDriver implements ISound {
 
 	}
 
-	private class MixServer implements Runnable {			
+	private class MixServer implements Runnable {	
 
 		public boolean terminate=false;
 
@@ -671,7 +689,7 @@ public class ClassicDoomSoundDriver implements ISound {
 		private SourceDataLine auline;
 		
 
-		private ArrayBlockingQueue<AudioChunk> audiochunks=new ArrayBlockingQueue<AudioChunk>(BUFFER_CHUNKS);
+		private ArrayBlockingQueue<AudioChunk> audiochunks=new ArrayBlockingQueue<AudioChunk>(BUFFER_CHUNKS*2);
 		
 		public void addChunk(AudioChunk chunk){
 			audiochunks.offer(chunk);
@@ -684,43 +702,52 @@ public class ClassicDoomSoundDriver implements ISound {
 			while (!terminate) {
 			    
 			    //while (timing[mixstate]<=mytime){
-		             
-			    while (!enough && currstate==mixstate){
-			        
-	                try {
-	                    Thread.sleep(10);
-	                } catch (InterruptedException e1) {
-	                    // TODO Auto-generated catch block
-	                    e1.printStackTrace();
-	                }
-			    }
-	            
-			    System.err.println("Now on state "+currstate);
-	                auline.write(MASTER_BUFFER[currstate],0, mixbuffer.length*BUFFER_CHUNKS);
+
+				// Try acquiring a produce permit before going on.
 			    
-			    /*mytime=timing[mixstate];
-                
-			    currstate=mixstate^1;
-                
-                
-                
-                // Play back all chunks present in a buffer ASAP
-				for (int chunk=0;chunk<BUFFER_CHUNKS;chunk++){
+			      try {
+			    	//System.err.println("Waiting for a permit...");
+					produce.acquire();
+					//System.err.println("Got a permit");
+				} catch (InterruptedException e) {
+					// Well, ouch.
+					e.printStackTrace();
+				}
+				
+				int chunks=0;
+				
+				//System.err.printf("Audio queue has %d chunks\n",audiochunks.size());
+				
+				// Try to empty a queue of audiochunks once you reach this spot.
+	            while(!audiochunks.isEmpty()){
+	            	
+	            	AudioChunk chunk=null;
+					try {
+						chunk = audiochunks.take();
+					} catch (InterruptedException e1) {
+						// Should not block
+					}
+					// 	Play back all chunks present in a buffer ASAP
+	                //auline.write(MASTER_BUFFER[currstate],0,MIXBUFFERSIZE*BUFFER_CHUNKS);
+	            	auline.write(chunk.buffer,0,MIXBUFFERSIZE);
+	            	chunks++;
+	            	//System.err.printf("Played back %d chunks without interruption\n",chunks);
+	               try {
+					//dao.write(MASTEchunksR_BUFFER[currstate],0, mixbuffer.length*BUFFER_CHUNKS);
+	            dao.write(chunk.buffer,0,MIXBUFFERSIZE);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+	            }
+	                
+	                // Signal that we consumed a whole buffer and we are ready for another one.
+	                consume.release();
+	                //auline.drain();
 
-				    try{
-				    //auline.write(MASTER_BUFFER[currstate], chunk*mixbuffer.length, mixbuffer.length);
-					//dao.write(MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
-					//System.err.print("..done writing\n");
-	                } catch (Exception e) {
-	                    System.err.println("Ehm...problem :-(");
-	                    continue;
-	                } finally {
-	                }
-
-				    } */
-			    }
 				
 			}
+		}
 	}
 
 	@Override
@@ -805,8 +832,10 @@ public class ClassicDoomSoundDriver implements ISound {
 	public void StopSound(int handle) {
 		// Which channel has it?
 		int  hnd=getChannelFromHandle(handle);
-		if (hnd>=0) 
+		if (hnd>=0) {
 			channels[hnd]=null;
+			p_channels[hnd]=0;
+		}
 	}
 
 	
@@ -820,26 +849,31 @@ public class ClassicDoomSoundDriver implements ISound {
 	@Override
 	public void SubmitSound() {
 		
-		System.arraycopy(mixbuffer, 0,MASTER_BUFFER[mixstate], chunk*mixbuffer.length, mixbuffer.length);
+		// It's possible for us to stay silent and give the audio
+		// queue a chance to get drained.
+		if (mixed){
+
+			AudioChunk gunk=new AudioChunk(chunk,DS.gametic);
+			
+			//System.err.printf("Submitted sound chunk %d to buffer %d \n",chunk,mixstate);
+			
+		// Copy the currently mixed chunk into its position inside the master buffer.
+		System.arraycopy(mixbuffer, 0,gunk.buffer, 0, MIXBUFFERSIZE);
 		
-		//AudioChunk gunk=new AudioChunk(chunk,DS.gametic);
-		//this.SOUNDSRV.addChunk(gunk);
-		//System.err.printf("Submitted sound chunk %d\n",chunk);
+		this.SOUNDSRV.addChunk(gunk);
 		
-		System.err.println(chunk++);
-		if (chunk>1) enough=false;
+		//System.err.println(chunk++);
+
+		chunk++;
+		//System.err.println(chunk);
 		
-		if (chunk==BUFFER_CHUNKS){
-		    System.err.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FIRE!!!!   " +mixstate);
-		    chunk=0;
-		    // We switch mixstate.
-		    // The playback thread can now play buffer 1.
-		    this.SOUNDSRV.currstate=mixstate;
-		    mixstate=mixstate^1;
-		    //timing[mixstate]=DS.gametic;    
-		    enough=true;
-		    }
+		if (consume.tryAcquire())
+			produce.release();
 		
+			} else {
+			//System.err.println("SILENT_CHUNK");
+			//this.SOUNDSRV.addChunk(SILENT_CHUNK);
+		}
 		//line.write(mixbuffer, 0, mixbuffer.length);
 		
 	}
@@ -894,13 +928,18 @@ public class ClassicDoomSoundDriver implements ISound {
 		
 	}
 	
+	private final AudioChunk SILENT_CHUNK=new AudioChunk(0,0);
+	
 	private class AudioChunk{
 	    public AudioChunk(int chunk, int time) {
             this.chunk = chunk;
             this.time = time;
+            buffer=new byte[MIXBUFFERSIZE];
         }
         public int chunk;
 	    public int time;
+	    public byte[] buffer;
+	    
 	    
 
 	}
