@@ -18,23 +18,25 @@ public class TestClassicSound {
 	
 	DS.W=W;
 	DS.RND=RND;
-	W.InitMultipleFiles(new String[]{"c:\\iwads\\doom1.wad"});
+	W.InitMultipleFiles(new String[]{"/home/vepitrop/iwads/doom1.wad"});
 	
-	ClassicDoomSoundDriver sound=new ClassicDoomSoundDriver(DS,3);
+	ClassicDoomSoundDriver sound=new ClassicDoomSoundDriver(DS,4);
 	
 	sound.InitSound();
-	sound.SetChannels(1);
+	sound.SetChannels(3);
 	
 	Thread.sleep(1000);
 	//sound.StartSound(1, 127, 127, 127, 0);
-	for (int i=0;i<350;i++){
+	for (int i=0;i<1000;i++){
 	    
 	    Thread.sleep(1000/35);
 
-	    if (i%35==0) sound.StartSound(sfxenum_t.sfx_plpain.ordinal(), 127, 127, 127-6*i/35, 0);
-	    if (DS.gametic%5!=2){
+	    if (i%50==0) sound.StartSound(sfxenum_t.sfx_pistol.ordinal(), 127, 127, 127, 0);
+	    //if (i%50==0) sound.StartSound(sfxenum_t.sfx_barexp.ordinal(), 127, 0, 127, 0);
+	    //if (i%35==0) sound.StartSound(sfxenum_t.sfx_plpain.ordinal(), 127, 255, 127, 0);
+	    //if (i%71==0) sound.StartSound(sfxenum_t.sfx_oof.ordinal(), 127, 192, 127, 0);
 	    sound.UpdateSound();
-	    }
+	    
 	    sound.SubmitSound();
 	    
 	       DS.gametic++;
