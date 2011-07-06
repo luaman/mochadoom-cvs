@@ -2,11 +2,12 @@ package s;
 
 import data.sfxinfo_t;
 import data.sounds.sfxenum_t;
+import static data.Defines.TICRATE;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.5 2011/07/05 18:38:51 velktron Exp $
+// $Id: ISound.java,v 1.6 2011/07/06 16:03:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -37,13 +38,14 @@ public interface ISound {
 	// Needed for calling the actual sound output
 	// We mix 1024 samples each time, but we only call UpdateSound()
 	// 1 time out of three.
-	public static final int SAMPLECOUNT		=1024;
+	
 	public static final int NUM_CHANNELS	=	8;
 	// It is 2 for 16bit, and 2 for two channels.
 	public static final int BUFMUL            =      4;
-	public static final int MIXBUFFERSIZE		=(SAMPLECOUNT*BUFMUL);
 
 	public static final int SAMPLERATE	=	11025;	// Hz
+	public static final int SAMPLECOUNT		=512;//SAMPLERATE/TICRATE;
+	public static final int MIXBUFFERSIZE		=(SAMPLECOUNT*BUFMUL);
 	public static final int SAMPLESIZE	=	16 ;  	// 16bit
 	public static final int NUMSFX	=	sfxenum_t.NUMSFX.ordinal() ; 
 	public static final int MAXHANDLES = 100;
@@ -102,6 +104,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.6  2011/07/06 16:03:56  velktron
+// Version used for testing.
+//
 // Revision 1.5  2011/07/05 18:38:51  velktron
 // BUSY_HANDLE part of interface.
 //
