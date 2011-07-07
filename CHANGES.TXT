@@ -1,10 +1,14 @@
 In upcoming 1.5 release:
 
 F Fixed an issue with TEXTURE2 lump loading which skipped the last entry.
-F Fixed a severe memory leak in P_InitThinkers.
+F Fixed a potential memory leak in P_InitThinkers.
+F Definitively fixed the retail/registered distinction
++ Added an efficient object pooling system.
++ Added a recreation of Doom's original mixer
++ Added a multithreaded audioline sfx engine
 + Fixed Quicksave string issue.
 + Added Gamma level settings.
 + Added patch_t load-time safeguard vs. broken columns.
 + Added MIDI soundsystem, based on _D_'s work and extended.
 + Added Game Sound interface for channel/position/volume management.
- 
++ Added graceful closing of open file handles.
