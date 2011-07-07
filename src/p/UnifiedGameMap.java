@@ -30,6 +30,7 @@ import static data.info.mobjinfo;
 import static data.info.sprnames;
 import static data.info.states;
 import static doom.englsh.*;
+import pooling.MobjPool;
 import automap.AbstractAutoMap;
 
 import static doom.items.weaponinfo;
@@ -1682,10 +1683,10 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
         // unlink from sector and block lists
         UnsetThingPosition(mobj);
-
+        
         // stop any playing sound
         S.StopSound (mobj);
-
+        
         // free block
         RemoveThinker((thinker_t) mobj);
     }
@@ -1758,7 +1759,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             }
         I.Error("P_AddActivePlat: no more plats!");
     }
-    
+        
+    MobjPool mobjpool;
+        
     //
     // P_RemoveThinker
     // Deallocation is lazy -- it will not actually be freed
@@ -1766,7 +1769,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     //
     public void RemoveThinker(thinker_t thinker) {
         // FIXME: NOP.
-        thinker.function = null;
+        thinker.function = think_t.NOP;
     }
 
     //

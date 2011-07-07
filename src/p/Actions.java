@@ -8068,7 +8068,12 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
               
               // Problem: freeing was done explicitly on think_t's, not mobj_t's.
               try {
-            	  if (currentthinker instanceof mobj_t)
+            	  
+            // According to certian gurus, this method is faster than instanceof
+            // and almost on par with id checking. 
+            // 
+            // http://stackoverflow.com/questions/103564/the-performance-impact-of-using-instanceof-in-java
+            	  if (currentthinker.getClass()==mobj_t.class)
               
               mobjpool.checkIn((mobj_t)currentthinker);
               } catch (ClassCastException e){
