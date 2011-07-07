@@ -25,7 +25,7 @@ actionf_p2	acp2;
 */
 
 public enum think_t {
-	
+	NOP, // Special.
 	A_Light0(2),
     A_WeaponReady(2),
     A_Lower(2),
