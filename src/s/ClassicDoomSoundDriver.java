@@ -26,6 +26,8 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import pooling.AudioChunkPool;
+
 import com.sun.media.sound.WaveFileWriter;
 
 import w.DoomBuffer;
@@ -735,9 +737,13 @@ public class ClassicDoomSoundDriver implements ISound {
 	               try {
 					//dao.write(MASTEchunksR_BUFFER[currstate],0, mixbuffer.length*BUFFER_CHUNKS);
 	            dao.write(chunk.buffer,0,MIXBUFFERSIZE);
+	            
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
+				} finally {
+					// No matter what, give the chunk back!
+					chunk.free=true;
+					audiochunkpool.checkIn(chunk);
 				}
 	            }
 	                
@@ -853,7 +859,9 @@ public class ClassicDoomSoundDriver implements ISound {
 		// queue a chance to get drained.
 		if (mixed){
 
-			AudioChunk gunk=new AudioChunk(chunk,DS.gametic);
+			AudioChunk gunk=audiochunkpool.checkOut();
+			// Ha ha you're ass is mine!
+			gunk.free=false;
 			
 			//System.err.printf("Submitted sound chunk %d to buffer %d \n",chunk,mixstate);
 			
@@ -928,20 +936,6 @@ public class ClassicDoomSoundDriver implements ISound {
 		
 	}
 	
-	private final AudioChunk SILENT_CHUNK=new AudioChunk(0,0);
-	
-	private class AudioChunk{
-	    public AudioChunk(int chunk, int time) {
-            this.chunk = chunk;
-            this.time = time;
-            buffer=new byte[MIXBUFFERSIZE];
-        }
-        public int chunk;
-	    public int time;
-	    public byte[] buffer;
-	    
-	    
-
-	}
-	
+	private final AudioChunk SILENT_CHUNK=new AudioChunk();
+	private final AudioChunkPool audiochunkpool=new AudioChunkPool();
 }
