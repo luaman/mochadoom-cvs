@@ -1,5 +1,6 @@
 package p;
 
+import pooling.MobjPool;
 import defines.*;
 import static p.ChaseDirections.*;
 import static p.DoorDefines.*;
@@ -701,7 +702,7 @@ public class Actions extends UnifiedGameMap {
               && (getActiveceilings()[i].direction != 0))
           {
               getActiveceilings()[i].olddirection = getActiveceilings()[i].direction;
-              getActiveceilings()[i].function = null;
+              getActiveceilings()[i].function = think_t.NOP;
               getActiveceilings()[i].direction = 0;       // in-stasis
               rtn = 1;
           }
@@ -1490,7 +1491,6 @@ public class Actions extends UnifiedGameMap {
   public void dispatch(think_t action, Object a, Object b){
       //System.out.println("Dispatching: "+action);
       switch (action){
-      
           case P_MobjThinker:
         	  P_MobjThinker((mobj_t)a);
         	  break;
@@ -4007,64 +4007,58 @@ public class Actions extends UnifiedGameMap {
  * @param mobj
  */
       
-      
-public void P_MobjThinker (mobj_t mobj) {
-// momentum movement
-if (mobj.momx!=0
-|| mobj.momy!=0
-|| (flags(mobj.flags,MF_SKULLFLY)) )
-{
-XYMovement(mobj);
 
-// FIXME: decent NOP/NULL/Nil function pointer please.
-if (mobj.function == null)
-return;     // mobj was removed
-}
-if ( (mobj.z != mobj.floorz)
-|| mobj.momz!=0 )
-{
-mobj.ZMovement ();
+	public void P_MobjThinker(mobj_t mobj) {
+		// momentum movement
+		if (mobj.momx != 0 || mobj.momy != 0
+				|| (flags(mobj.flags, MF_SKULLFLY))) {
+			XYMovement(mobj);
 
-// FIXME: decent NOP/NULL/Nil function pointer please.
-if (mobj.function == null)
-return;     // mobj was removed
-}
+			// FIXME: decent NOP/NULL/Nil function pointer please.
+			if (mobj.function == think_t.NOP){
+				return; // mobj was removed
+			}
+		}
+		if ((mobj.z != mobj.floorz) || mobj.momz != 0) {
+			mobj.ZMovement();
 
+			// FIXME: decent NOP/NULL/Nil function pointer please.
+			if (mobj.function == think_t.NOP){
+				return; // mobj was removed
+			}	
+		}
 
-// cycle through states,
-// calling action functions at transitions
-if (mobj.tics != -1)
-{
-mobj.tics--;
+		// cycle through states,
+		// calling action functions at transitions
+		if (mobj.tics != -1) {
+			mobj.tics--;
 
-// you can cycle through multiple states in a tic
-if (!eval(mobj.tics))
-if (!mobj.SetMobjState (mobj.state.nextstate) )
-return;     // freed itself
-}
-else
-{
-// check for nightmare respawn
-if (! flags(mobj.flags ,MF_COUNTKILL) )
-return;
+			// you can cycle through multiple states in a tic
+			if (!eval(mobj.tics))
+				if (!mobj.SetMobjState(mobj.state.nextstate))
+					return; // freed itself
+		} else {
+			// check for nightmare respawn
+			if (!flags(mobj.flags, MF_COUNTKILL))
+				return;
 
-if (!DM.respawnmonsters)
-return;
+			if (!DM.respawnmonsters)
+				return;
 
-mobj.movecount++;
+			mobj.movecount++;
 
-if (mobj.movecount < 12*35)
-return;
+			if (mobj.movecount < 12 * 35)
+				return;
 
-if ( flags(DM.leveltime,31 ))
-return;
+			if (flags(DM.leveltime, 31))
+				return;
 
-if (RND.P_Random () > 4)
-return;
+			if (RND.P_Random() > 4)
+				return;
 
-NightmareRespawn (mobj);
-}
-}
+			NightmareRespawn(mobj);
+		}
+	}
 
 /**
  * P_NightmareRespawn
@@ -4142,7 +4136,8 @@ mobj_t mobj;
 state_t    st;
 mobjinfo_t info;
 
-mobj = new mobj_t(this);
+mobj = mobjpool.checkOut();
+//new mobj_t(this);
 info = mobjinfo[type.ordinal()];
 
 mobj.type = type;
@@ -8054,6 +8049,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
   public Actions(DoomStatus DC){
       super(DC);
       this.A=this;
+      mobjpool=new MobjPool(this);
 	  
   }
 
@@ -8065,14 +8061,24 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
       currentthinker = thinkercap.next;
       while (currentthinker != thinkercap) {
-          if (currentthinker.function == null) {
+          if (currentthinker.function == think_t.NOP) {
               // time to remove it
               currentthinker.next.prev = currentthinker.prev;
               currentthinker.prev.next = currentthinker.next;
+              
+              // Problem: freeing was done explicitly on think_t's, not mobj_t's.
+              try {
+            	  if (currentthinker instanceof mobj_t)
+              
+              mobjpool.checkIn((mobj_t)currentthinker);
+              } catch (ClassCastException e){
+            	  // Object will simply be destroyed without reuse, in this case.
+              }
+              // Z_Free (currentthinker);
           } else {
-              if (currentthinker.function.getType() == acp1)
+              if (currentthinker.function.getType()==acp1)
                   // Execute thinker's function.
-                  dispatch(currentthinker.function, currentthinker, null);
+                  dispatch(currentthinker.function,currentthinker,null);
           }
           currentthinker = currentthinker.next;
       }
