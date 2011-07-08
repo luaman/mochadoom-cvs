@@ -39,8 +39,8 @@ public class ClassicDoomSoundDriver implements ISound {
 	protected final int numChannels;
 	protected int chunk=0;
 	
-	protected FileOutputStream fos;
-	protected DataOutputStream dao;
+	//protected FileOutputStream fos;
+	//protected DataOutputStream dao;
 	
 	// The one and only line
 	protected SourceDataLine line = null;
@@ -389,13 +389,14 @@ public class ClassicDoomSoundDriver implements ISound {
 			if (line!=null) System.err.print(" configured audio device\n" );
 			line.start();
 		
-			try {
+			// This was here only for debugging purposes
+			/*try {
 				fos=new FileOutputStream("test.raw");
 				dao=new DataOutputStream(fos);
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
+			}*/
 			
 			
 			SOUNDSRV=new MixServer(line);
@@ -713,22 +714,12 @@ public class ClassicDoomSoundDriver implements ISound {
 						// Should not block
 					}
 					// 	Play back all chunks present in a buffer ASAP
-	                //auline.write(MASTER_BUFFER[currstate],0,MIXBUFFERSIZE*BUFFER_CHUNKS);
 	            	auline.write(chunk.buffer,0,MIXBUFFERSIZE);
 	            	chunks++;
-	            	//System.err.printf("Played back %d chunks without interruption\n",chunks);
-	               try {
-					//dao.write(MASTEchunksR_BUFFER[currstate],0, mixbuffer.length*BUFFER_CHUNKS);
-	            dao.write(chunk.buffer,0,MIXBUFFERSIZE);
-	            
-				} catch (IOException e) {
-					e.printStackTrace();
-				} finally {
 					// No matter what, give the chunk back!
 					chunk.free=true;
 					audiochunkpool.checkIn(chunk);
-				}
-	            }
+	                }
 	                
 	                // Signal that we consumed a whole buffer and we are ready for another one.
 	                consume.release();
@@ -827,6 +818,7 @@ public class ClassicDoomSoundDriver implements ISound {
 		}
 	}
 
+
 	@Override
 	public void SubmitSound() {
 		
@@ -860,6 +852,8 @@ public class ClassicDoomSoundDriver implements ISound {
 		//line.write(mixbuffer, 0, mixbuffer.length);
 		
 	}
+
+	private boolean enough=false;
 	
 	@Override
 	public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {
@@ -896,7 +890,7 @@ public class ClassicDoomSoundDriver implements ISound {
 	
 	protected StringBuilder sb=new StringBuilder();
 	
-	protected String channelStatus(){
+	public String channelStatus(){
 		sb.setLength(0);
 		for (int i=0;i<numChannels;i++){
 			if (channels[i]!=null)
