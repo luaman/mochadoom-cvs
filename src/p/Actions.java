@@ -4136,8 +4136,12 @@ mobj_t mobj;
 state_t    st;
 mobjinfo_t info;
 
-mobj = mobjpool.checkOut();
-//new mobj_t(this);
+// MAES: I tried this approach but it's not really worth it.
+// Testing with NUTS.WAD yielded pretty much identical results,
+// and that was without using locking. Just let the GC do its
+// job.
+// mobj = mobjpool.checkOut();
+mobj=new mobj_t(this);
 info = mobjinfo[type.ordinal()];
 
 mobj.type = type;
@@ -8049,11 +8053,19 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
   public Actions(DoomStatus DC){
       super(DC);
       this.A=this;
-      mobjpool=new MobjPool(this);
+      //mobjpool=new MobjPool(this);
 	  
   }
 
-  //
+  public Actions() {
+      this(new DoomStatus());
+    // Dummy used only for special testing
+  }
+
+
+
+
+//
   // P_RunThinkers
   //
   public void RunThinkers() {
@@ -8067,7 +8079,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
               currentthinker.prev.next = currentthinker.next;
               
               // Problem: freeing was done explicitly on think_t's, not mobj_t's.
-              try {
+            /*try {
             	  
             // According to certian gurus, this method is faster than instanceof
             // and almost on par with id checking. 
@@ -8078,7 +8090,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
               mobjpool.checkIn((mobj_t)currentthinker);
               } catch (ClassCastException e){
             	  // Object will simply be destroyed without reuse, in this case.
-              }
+              }  */
               // Z_Free (currentthinker);
           } else {
               if (currentthinker.function.getType()==acp1)

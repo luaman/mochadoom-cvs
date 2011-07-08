@@ -1711,6 +1711,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     @Override
     public void InitThinkers() {
     	
+        // mobjpool.drain();
+        
     	thinker_t next=thinkercap.next;
     	thinker_t prev=thinkercap.prev;
     	
@@ -1760,7 +1762,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         I.Error("P_AddActivePlat: no more plats!");
     }
         
-    MobjPool mobjpool;
+    // MAES: works, but not worth it.
+    // MobjPool mobjpool;
         
     //
     // P_RemoveThinker
