@@ -18,7 +18,7 @@ public class TestClassicSound {
 	
 	DS.W=W;
 	DS.RND=RND;
-	W.InitMultipleFiles(new String[]{"/home/vepitrop/iwads/doom1.wad"});
+	W.InitMultipleFiles(new String[]{"C:\\iwads\\doom1.wad"});
 	
 	ClassicDoomSoundDriver sound=new ClassicDoomSoundDriver(DS,4);
 	
@@ -31,7 +31,7 @@ public class TestClassicSound {
 	    
 	    Thread.sleep(1000/35);
 
-	    if (i%50==0) sound.StartSound(sfxenum_t.sfx_pistol.ordinal(), 127, 127, 127, 0);
+	    if (i%10==0) sound.StartSound(sfxenum_t.sfx_plpain.ordinal(), 127, 127, 127, 0);
 	    //if (i%50==0) sound.StartSound(sfxenum_t.sfx_barexp.ordinal(), 127, 0, 127, 0);
 	    //if (i%35==0) sound.StartSound(sfxenum_t.sfx_plpain.ordinal(), 127, 255, 127, 0);
 	    //if (i%71==0) sound.StartSound(sfxenum_t.sfx_oof.ordinal(), 127, 192, 127, 0);
