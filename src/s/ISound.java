@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.7 2011/07/08 13:05:40 velktron Exp $
+// $Id: ISound.java,v 1.8 2011/07/08 17:03:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -44,12 +44,17 @@ public interface ISound {
 	public static final int BUFMUL            =      4;
 
 	public static final int SAMPLERATE	=	11025;	// Hz
-	public static final int SAMPLECOUNT		=512;//SAMPLERATE/TICRATE;
+	// Was 512, but if you mix that many samples per tic you will
+	// eventually outrun the buffer :-/ I fail to see the mathematical
+	// justification behind this, unless they simply wanted the buffer to 
+	// be a nice round number in size.
+	public static final int SAMPLECOUNT		=1+SAMPLERATE/TICRATE;
 	public static final int MIXBUFFERSIZE		=(SAMPLECOUNT*BUFMUL);
 	public static final int SAMPLESIZE	=	16 ;  	// 16bit
 	public static final int NUMSFX	=	sfxenum_t.NUMSFX.ordinal() ; 
 	public static final int MAXHANDLES = 100;
-	public static final int BUFFER_CHUNKS=36;
+	// 1 chunk buffers 1 tic of events.
+	public static final int BUFFER_CHUNKS=3;
 	
 	// Init at program start...
 	void InitSound();
@@ -104,6 +109,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.8  2011/07/08 17:03:57  velktron
+// Set SAMPLECOUNT to SAMPLERATE/TICRATE+1
+//
 // Revision 1.7  2011/07/08 13:05:40  velktron
 // BUFFER_CHUNKS now in ISound.
 //
