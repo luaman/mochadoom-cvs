@@ -30,23 +30,22 @@ import doom.DoomStatus;
 
 public class ClassicDoomSoundDriver implements ISound {
 	
-	private final Semaphore produce;
-	private final Semaphore consume;
-	private final int BUFFER_CHUNKS=3; 
+	protected final Semaphore produce;
+	protected final Semaphore consume;	 
 	
 	protected final static boolean D=false;
 	
-	private final DoomStatus DS;
-	private final int numChannels;
-	private int chunk=0;
+	protected final DoomStatus DS;
+	protected final int numChannels;
+	protected int chunk=0;
 	
-	FileOutputStream fos;
-	DataOutputStream dao;
+	protected FileOutputStream fos;
+	protected DataOutputStream dao;
 	
 	// The one and only line
-	private SourceDataLine line = null;
+	protected SourceDataLine line = null;
 	
-	HashMap<Integer,byte[]> cachedSounds=new HashMap<Integer,byte[]> ();
+	protected HashMap<Integer,byte[]> cachedSounds=new HashMap<Integer,byte[]> ();
 	
 	public ClassicDoomSoundDriver(DoomStatus DS, int numChannels){
 		this.DS=DS;
@@ -70,7 +69,7 @@ public class ClassicDoomSoundDriver implements ISound {
 	}
 
 	/** The actual lengths of all sound effects. */
-	private final int[] lengths=new int[NUMSFX];
+	protected final int[] lengths=new int[NUMSFX];
 
 	/** The global mixing buffer.
 	 * Basically, samples from all active internal channels
@@ -82,34 +81,34 @@ public class ClassicDoomSoundDriver implements ISound {
 	 *  
 	 */
 
-	private final byte[]	mixbuffer=new byte[MIXBUFFERSIZE*2];
+	protected final byte[]	mixbuffer=new byte[MIXBUFFERSIZE*2];
 
 	/** Current pointer into mixbuffer */
-	private int p_mixbuffer;
+	protected int p_mixbuffer;
 
 	/** The channel step amount... */
-	private final int[]	channelstep;
+	protected final int[]	channelstep;
 
 	/** ... and a 0.16 bit remainder of last step. */
-	private final int[]	channelstepremainder;
+	protected final int[]	channelstepremainder;
 
 	/** Time/gametic that the channel started playing,
     used to determine oldest, which automatically
     has lowest priority. In case number of active sounds exceeds
     available channels. */  
-	private final int[]		channelstart;
+	protected final int[]		channelstart;
 
 	/** The sound in channel handles, determined on registration,
 	    might be used to unregister/stop/modify, currently unused. */
 	
-	private final int[] channelhandles;
+	protected final int[] channelhandles;
 
 	// SFX id of the playing sound effect.
 	// Used to catch duplicates (like chainsaw).
-	private final int[]	channelids;			
+	protected final int[]	channelids;			
 
 	// Pitch to stepping lookup, unused.
-	private final int[]		steptable=new int[256];
+	protected final int[]		steptable=new int[256];
 
 	/** The channel data pointers, start and end.
 	 *  These were referred to as "channels" in two different source
@@ -119,13 +118,13 @@ public class ClassicDoomSoundDriver implements ISound {
 	 *  where to place the boundary between the two.
 	 *  
 	 *  */
-	byte[][]	channels;
+	protected byte[][]	channels;
 	
 	/** MAES: we'll have to use this for actual pointing. channels[] holds just the data. */
-	int[] p_channels;
+	protected int[] p_channels;
 	
 	/** The second one is supposed to point at "the end", so I'll make it an int. */
-	int[]	channelsend;
+	protected int[]	channelsend;
 
 	/** Volume lookups. 128 levels*/
 	protected final int[][]	vol_lookup=new int[128][256];
@@ -134,7 +133,7 @@ public class ClassicDoomSoundDriver implements ISound {
 	protected final int[][]	channelleftvol_lookup,channelrightvol_lookup;
 
 	
-	private volatile boolean mixed=false;
+	protected volatile boolean mixed=false;
 	
 	/**
 	 * This function loops all active (internal) sound
@@ -224,7 +223,7 @@ public class ClassicDoomSoundDriver implements ISound {
 					sample = 0x00FF&channels[ chan ][channel_pointer];
 
 					} catch (Exception e){
-						System.err.println(channel_pointer +" vs "+channels[ chan].length);
+						System.err.printf(" >>>>>>>>>>>>>> Overflow at channel %d handle %d sfx %d: %d vs %d\n",chan,this.channelhandles[chan],channelids[chan],channel_pointer,channelsend[ chan]);
 					}
 					// Add left and right part  for this channel (sound)
 					//  to the current data. Adjust volume accordingly.
@@ -249,28 +248,27 @@ public class ClassicDoomSoundDriver implements ISound {
 			if (channel_pointer >= channelsend[ chan ]){
 				// Reset pointer for a channel.
 				//channels[chan] = channel_pointer0;
-				if (D) System.err.printf("Channel %d done, stopping\n",chan);
+				if (D) System.err.printf("Channel %d handle %d pointer %d thus done, stopping\n",chan,this.channelhandles[chan],channel_pointer);
 				channels[chan]=null;
 				channel_pointer=0;
 			}
 
 			// Write pointer back, so we know where a certain channel
 			// is the next time UpdateSounds is called.
+			
 			p_channels[chan]=channel_pointer;
-
 				}
 				
 				
 			} // for all channels.
 
-
-			
 			// MAES: at this point, the actual values for a single sample
 			// (YIKES!) are in d1 and d2. We must use the leftout/rightout 
 			// pointers to write them back into the mixbuffer.
 
 			// Clamp to range. Left hardware channel.
-			// Has been char instead of short.
+			// Remnant of 8-bit mixing code? That must have raped ears
+			// and made them bleed.
 			// if (dl > 127) *leftout = 127;
 			// else if (dl < -128) *leftout = -128;
 			// else *leftout = dl;
@@ -279,10 +277,8 @@ public class ClassicDoomSoundDriver implements ISound {
 				dl = 0x7fff;
 			else if (dl < -0x8000)
 				dl = -0x8000;
-
 			
-			
-			// Shouldn't this be always executed?
+			// Write left channel
 			mixbuffer[leftout] = (byte) ((dl&0xFF00)>>>8);
 			mixbuffer[leftout+1] = (byte) (dl&0x00FF);
 
@@ -292,7 +288,7 @@ public class ClassicDoomSoundDriver implements ISound {
 			else if (dr < -0x8000)
 				dr = -0x8000;
 
-			// Shouldn't this be always executed?
+			// Write right channel.
 			mixbuffer[rightout] = (byte) ((dr&0xFF00)>>>8);
 			mixbuffer[rightout+1] = (byte) (dr&0x00FF);
 			
@@ -301,9 +297,6 @@ public class ClassicDoomSoundDriver implements ISound {
 			rightout += 4;
 		} // End leftend/leftout while
 		
-		//for (int i=0;i<numChannels;i++){
-		//if (channels[i]!=null) if (D && leftout%SAMPLECOUNT ==0 ) System.err.printf("Mixed channel%d until %d\n",i,p_channels[i]);
-		//
 		
 		// TODO how do we know whether the mixbuffer isn't entirely used 
 		// and instead it has residual garbage samples in it?
@@ -312,13 +305,6 @@ public class ClassicDoomSoundDriver implements ISound {
 		// TODO: what's the purpose of channelremainder etc?
 		// ANSWER: pitch variations were done with fractional pointers 16.16
 		// style.
-		/*
-		if (mixed) {
-		System.arraycopy(mixbuffer, 0,MASTER_BUFFER, chunk*mixbuffer.length, mixbuffer.length);
-		this.SOUNDSRV.addChunk(chunk);
-		chunk++;
-		chunk%=BUFFER_CHUNKS;
-		} */
 		
 	}
 
@@ -371,8 +357,8 @@ public class ClassicDoomSoundDriver implements ISound {
 		return DS.W.GetNumForName(namebuf);
 	}
 	
-	MixServer SOUNDSRV;
-	Thread SOUNDTHREAD;
+	protected MixServer SOUNDSRV;
+	protected Thread SOUNDTHREAD;
 
 	@Override
 	public void
@@ -451,7 +437,7 @@ public class ClassicDoomSoundDriver implements ISound {
 
 	}
 
-	private byte[] getsfx
+	protected byte[] getsfx
 	( String         sfxname,
 			int[]          len, int index )
 	{
@@ -464,6 +450,8 @@ public class ClassicDoomSoundDriver implements ISound {
 		int                 sfxlump;
 
 
+		float f=SpeakerSound.f[0];
+		
 		// Get the sound data from the WAD, allocate lump
 		//  in zone memory.
 		name=String.format("ds%s", sfxname).toUpperCase();
@@ -498,6 +486,12 @@ public class ClassicDoomSoundDriver implements ISound {
 
 		// Now copy and pad. The first 8 bytes are header info, so we discard them.
 		System.arraycopy(sfx,8, paddedsfx, 0,size-8 );
+		
+		for (i=size-8 ; i<paddedsize ; i++)
+            paddedsfx[i] = (byte) 127;
+
+		
+		
 		// Hmm....silence?
 		for (i=size-8 ; i<paddedsize ; i++)
 			paddedsfx[i] = (byte) 127;
@@ -523,7 +517,7 @@ public class ClassicDoomSoundDriver implements ISound {
 	//
 	protected short	handlenums = 0;
 
-	int
+	protected int
 	addsfx
 	( int		sfxid,
 			int		volume,
@@ -589,6 +583,10 @@ public class ClassicDoomSoundDriver implements ISound {
 		//  we will handle the new SFX.
 		// Set pointer to raw data.
 		channels[slot] = S_sfx[sfxid].data;
+		
+		// MAES: if you don't zero-out the channel pointer here, it gets ugly
+		p_channels[slot]=0;
+		
 	    // Set pointer to end of raw data.
 	    channelsend[slot] = lengths[sfxid];
 		
@@ -665,7 +663,7 @@ public class ClassicDoomSoundDriver implements ISound {
 
 	}
 
-	private class MixServer implements Runnable {	
+	protected class MixServer implements Runnable {	
 
 		public boolean terminate=false;
 
@@ -755,7 +753,7 @@ public class ClassicDoomSoundDriver implements ISound {
 	 * @param handle
 	 * @return the channel that has the handle, or -2 if none has it.
 	 */
-	private int getChannelFromHandle(int handle){
+	protected int getChannelFromHandle(int handle){
 		// Which channel has it?
 		for (int i=0;i<numChannels;i++){
 			if (channelhandles[i]==handle) return i;
@@ -788,7 +786,7 @@ public class ClassicDoomSoundDriver implements ISound {
 	 * 
 	 */
 	
-	private byte[] retrieveSoundData(int id) {
+	protected byte[] retrieveSoundData(int id) {
 			
 			byte[] sound = cachedSounds.get(id);
 			
@@ -825,18 +823,10 @@ public class ClassicDoomSoundDriver implements ISound {
 		int  hnd=getChannelFromHandle(handle);
 		if (hnd>=0) {
 			channels[hnd]=null;
-			p_channels[hnd]=0;
+			//p_channels[hnd]=0;
 		}
 	}
 
-	
-	/** This is either 0 or 1. If we're writing to buffer 1, then 
-	 *  the sound thread is playing back buffer 0, and viceversa.
-	 *  Remember to swap as appropriate.
-	 *  
-	 */
-	private int mixstate=0;
-	
 	@Override
 	public void SubmitSound() {
 		
@@ -870,8 +860,6 @@ public class ClassicDoomSoundDriver implements ISound {
 		//line.write(mixbuffer, 0, mixbuffer.length);
 		
 	}
-
-	private boolean enough=false;
 	
 	@Override
 	public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {
@@ -906,9 +894,9 @@ public class ClassicDoomSoundDriver implements ISound {
 		
 	}
 	
-	StringBuilder sb=new StringBuilder();
+	protected StringBuilder sb=new StringBuilder();
 	
-	public String channelStatus(){
+	protected String channelStatus(){
 		sb.setLength(0);
 		for (int i=0;i<numChannels;i++){
 			if (channels[i]!=null)
@@ -921,6 +909,6 @@ public class ClassicDoomSoundDriver implements ISound {
 		
 	}
 	
-	private final AudioChunk SILENT_CHUNK=new AudioChunk();
-	private final AudioChunkPool audiochunkpool=new AudioChunkPool();
+	protected final AudioChunk SILENT_CHUNK=new AudioChunk();
+	protected final AudioChunkPool audiochunkpool=new AudioChunkPool();
 }
