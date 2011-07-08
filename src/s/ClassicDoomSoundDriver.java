@@ -1,34 +1,19 @@
 package s;
 
 import static data.sounds.S_sfx;
-import static m.fixed_t.FRACBITS;
-
-import java.io.ByteArrayInputStream;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
-import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.UnsupportedAudioFileException;
-
 import pooling.AudioChunkPool;
-
-import com.sun.media.sound.WaveFileWriter;
 
 import w.DoomBuffer;
 
@@ -49,7 +34,7 @@ public class ClassicDoomSoundDriver implements ISound {
 	private final Semaphore consume;
 	private final int BUFFER_CHUNKS=3; 
 	
-	protected final static boolean D=true;
+	protected final static boolean D=false;
 	
 	private final DoomStatus DS;
 	private final int numChannels;
@@ -264,7 +249,7 @@ public class ClassicDoomSoundDriver implements ISound {
 			if (channel_pointer >= channelsend[ chan ]){
 				// Reset pointer for a channel.
 				//channels[chan] = channel_pointer0;
-				System.err.printf("Channel %d done, stopping\n",chan);
+				if (D) System.err.printf("Channel %d done, stopping\n",chan);
 				channels[chan]=null;
 				channel_pointer=0;
 			}
@@ -657,7 +642,7 @@ public class ClassicDoomSoundDriver implements ISound {
 		//  e.g. for avoiding duplicates of chainsaw.
 		channelids[slot] = sfxid;
 
-		System.err.println(channelStatus());
+		if (D)System.err.println(channelStatus());
         if (D) System.err.printf("Playing sfxid %d handle %d length %d vol %d on channel %d\n",sfxid,rc,S_sfx[sfxid].data.length,volume,slot);
 		
 		// You tell me.
