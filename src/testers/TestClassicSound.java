@@ -3,6 +3,7 @@ package testers;
 import m.DoomRandom;
 import m.IRandom;
 import s.ClassicDoomSoundDriver;
+import s.SpeakerDoomSoundDriver;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 import w.WadLoader;
@@ -20,7 +21,7 @@ public class TestClassicSound {
 	DS.RND=RND;
 	W.InitMultipleFiles(new String[]{"C:\\iwads\\doom1.wad"});
 	
-	ClassicDoomSoundDriver sound=new ClassicDoomSoundDriver(DS,4);
+	SpeakerDoomSoundDriver sound=new SpeakerDoomSoundDriver(DS,4);
 	
 	sound.InitSound();
 	sound.SetChannels(3);
