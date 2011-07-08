@@ -9,7 +9,7 @@ import s.AudioChunk;
  * doesn't work out so well, with everything "freezing" after 
  * a while */
 
-public class MobjPool extends ObjectPool<mobj_t>
+public class MobjPool extends ObjectQueuePool<mobj_t>
 {
 
 	Actions A;
