@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.6 2011/07/06 16:03:56 velktron Exp $
+// $Id: ISound.java,v 1.7 2011/07/08 13:05:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -49,7 +49,7 @@ public interface ISound {
 	public static final int SAMPLESIZE	=	16 ;  	// 16bit
 	public static final int NUMSFX	=	sfxenum_t.NUMSFX.ordinal() ; 
 	public static final int MAXHANDLES = 100;
-	
+	public static final int BUFFER_CHUNKS=36;
 	
 	// Init at program start...
 	void InitSound();
@@ -104,6 +104,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.7  2011/07/08 13:05:40  velktron
+// BUFFER_CHUNKS now in ISound.
+//
 // Revision 1.6  2011/07/06 16:03:56  velktron
 // Version used for testing.
 //
