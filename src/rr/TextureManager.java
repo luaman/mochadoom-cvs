@@ -73,5 +73,8 @@ public interface TextureManager {
             throws IOException;
     
     int getFlatLumpNum(int flatnum);
+
+
+	byte[] getRogueColumn(int lump, int column);
     
     }
