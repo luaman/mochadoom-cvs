@@ -207,7 +207,7 @@ public class UnifiedRenderer extends RendererState{
                   angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                   dc_x = x;
                   // Optimized: texheight is going to be the same during normal skies drawing...right? 
-                  dc_source = GetColumn(skytexture,angle);
+                  dc_source = GetCachedColumn(skytexture,angle);
                   colfunc.invoke();
               }
               }
