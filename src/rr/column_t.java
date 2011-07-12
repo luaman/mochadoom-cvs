@@ -98,9 +98,7 @@ public class column_t implements CacheableDoomObject{
         // That's the TOTAL length including all padding.
         // This means we redundantly read some data
         len=(int) (skipped);
-        // For the same reason that the texman allows extra memory, we
-        // spare 4 extra bytes per column.
-        this.data=new byte[len+4];
+        this.data=new byte[len];
         
         this.postofs=new int[postno];
         this.postlen=new short[postno];
@@ -134,6 +132,9 @@ public class column_t implements CacheableDoomObject{
 
 
 // $Log: column_t.java,v $
+// Revision 1.16  2011/07/12 16:32:05  velktron
+// 4 extra padding bytes uneeded.
+//
 // Revision 1.15  2011/06/23 17:01:24  velktron
 // column_t no longer needs to support IReadableDoomObject, since patch_t doesn't. If you really need it back, it can be done through buffering and using unpack(), without duplicate code. Also added setData() method for synthesized columns.
 //
