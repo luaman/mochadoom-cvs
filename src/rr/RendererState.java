@@ -1399,7 +1399,7 @@ validcount++;
             unsorted.next = vissprites[0];
             // ...and at the end.
             vissprites[vissprite_p-1].next = unsorted;
-            unsorted.prev = vissprites[vissprite_p-1];
+            unsted.prev = vissprites[vissprite_p-1];
             
             // pull the vissprites out by scale
             best = null;     // shut up the compiler warning
@@ -2471,8 +2471,6 @@ validcount++;
                 
                 // draw the texture
                 byte[] data = GetColumn(texnum,maskedtexturecol[pmaskedtexturecol+dc_x]);// -3);
-                //col.setFromData();
-                    
                 DrawMaskedColumn (data);
                 maskedtexturecol[pmaskedtexturecol+dc_x] = Short.MAX_VALUE;
             }
@@ -3024,7 +3022,7 @@ validcount++;
                 dc_yh = yh;
                 dc_texheight = TexMan.getTextureheight(midtexture)>>FRACBITS; // killough
                 dc_texturemid = rw_midtexturemid;              
-                dc_source = GetColumn(midtexture,texturecolumn);
+                dc_source = GetCachedColumn(midtexture,texturecolumn);
                 CompleteColumn();
                 ceilingclip[rw_x] = (short) viewheight;
                 floorclip[rw_x] = -1;
@@ -3047,7 +3045,7 @@ validcount++;
                     dc_yh = mid;
                     dc_texturemid = rw_toptexturemid;
                     dc_texheight=TexMan.getTextureheight(toptexture)>>FRACBITS;
-                    dc_source = GetColumn(toptexture,texturecolumn);
+                    dc_source = GetCachedColumn(toptexture,texturecolumn);
                     //dc_source_ofs=0;
                     CompleteColumn();
                     ceilingclip[rw_x] = (short) mid;
@@ -3078,7 +3076,7 @@ validcount++;
                     dc_yh = yh;
                     dc_texturemid = rw_bottomtexturemid;
                     dc_texheight=TexMan.getTextureheight(bottomtexture)>>FRACBITS;
-                    dc_source = GetColumn(bottomtexture,
+                    dc_source = GetCachedColumn(bottomtexture,
                                 texturecolumn);
                     CompleteColumn();
         
@@ -5364,6 +5362,7 @@ validcount++;
       
       /** Adapted from Killough's Boom code.
        * 
+       * TODO GLOBALLY: optimize away dc_source_ofs.
        * 
        * @author admin
        *
@@ -5429,7 +5428,7 @@ validcount++;
                   
                   // heightmask is the Tutti-Frutti fix -- killough
                   
-                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS))]];
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS))]];
                   dest += SCREENWIDTH; 
                   if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
@@ -5440,6 +5439,7 @@ validcount++;
             {
               while (count>=4)   // texture height is a power of 2 -- killough
                 {
+            	  //System.err.println(dest);
                   screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
                   dest += SCREENWIDTH; 
                   frac += fracstep;
@@ -5694,11 +5694,19 @@ validcount++;
     ////////////////////////////////// TEXTURE MANAGEMENT /////////////////////////
       
       /**
-       * R_GetColumn
+       * R_GetColumn original version: returns raw pointers
+       * to byte-based column data. Works for both masked and
+       * unmasked columns, but is not tutti-frutti-safe.
+       * 
+       * Use GetCachedColumn instead, if rendering non-masked
+       * stuff, which is also faster. 
+       * 
        * @throws IOException 
+       * 
+       * 
        */
       
-      protected final byte[] GetColumn
+      public byte[] GetColumn
       ( int       tex,
         int       col ) 
       {
@@ -5718,17 +5726,64 @@ validcount++;
               patch_t r=W.CachePatchNum(lump,PU_CACHE);
           return r.columns[ofs].data;
       }
-      
-          this.dc_source_ofs=0;
           // Texture should be composite, but it doesn't yet exist. Create it. 
           if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
 
           // This implies that texturecomposite actually stores raw, compressed columns,
           // or else those "ofs" would go in-between.
           // The source offset int this case is 0, else we'll skip over stuff.
+          this.dc_source_ofs=0;
+          
+          // Return a default column with the data thrown in. Literally.
+          return TexMan.getTextureComposite(tex,col);
+      }
+      
+      
+      /**
+       * R_GetColumn variation which is tutti-frutti proof. It only returns
+       * cached columns, and even pre-caches single-patch textures intead of
+       * trashing the WAD manager (should be faster, in theory).
+       * 
+       * Cannot be used for drawing masked textures, use classic GetColumn 
+       * instead.
+       * 
+       * 
+       * @throws IOException 
+       */
+      
+      protected final byte[] GetCachedColumn
+      ( int       tex,
+        int       col ) 
+      {
+    	  int     lump,ofs;
+          
+          col &= TexMan.getTexturewidthmask(tex);
+          lump = TexMan.getTextureColumnLump(tex, col);
+          ofs=TexMan.getTextureColumnOfs(tex, col);
+          
+          // In the case of cached columns, this is always 0.
+          dc_source_ofs=0;
+          
+          // If pointing inside a non-zero, positive lump, then it's not a composite texture.
+          // Read from disk, and safeguard vs tutti frutti.
+          if (lump > 0){
+              // This will actually return a pointer to a patch's columns.
+          return TexMan.getRogueColumn(lump, ofs);
+          }
+      
+          // Texture should be composite, but it doesn't yet exist. Create it. 
+          if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
           
           return TexMan.getTextureComposite(tex,col);
       }
+      
+      
+      /** Special version of GetColumn meant to be called concurrently  by
+       *  different seg rendering threads, identfiex by index. This allows
+       *  to preserve global offsets (in offsets[index]) and avoid the
+       *  phenomenon of getting "jittery" textures on the walls.
+       * 
+       */
 
       @Override
       public byte[] GetColumn( int tex, int col, int index) 
@@ -5741,16 +5796,16 @@ validcount++;
           
           // If pointing inside a non-zero, positive lump, then it's not a composite texture.
           // Read from disk.
+          dc_source_ofs=0;
+          
+          // If pointing inside a non-zero, positive lump, then it's not a composite texture.
+          // Read from disk, and safeguard vs tutti frutti.
           if (lump > 0){
               // This will actually return a pointer to a patch's columns.
-              // That is, to the ONE column exactly.{
-              // If the caller needs access to a raw column, we must point 3 bytes "ahead".
-              offsets[index]=3;
-              patch_t r=W.CachePatchNum(lump,PU_CACHE);
-          return r.columns[ofs].data;
+          return TexMan.getRogueColumn(lump, ofs);
           }
           
-          this.offsets[index]=0;
+          //this.offsets[index]=0;
           // Texture should be composite, but it doesn't yet exist. Create it. 
           if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
 
@@ -5762,57 +5817,15 @@ validcount++;
           return TexMan.getTextureComposite(tex,col);
       }
  
-      
+      /*
       @Override
       public final int getDCSourceOffset(int index){
     	  return offsets[index];
-      }
+      } */
       
-      int[] offsets;
+      //int[] offsets;
       
-      /**
-       * R_GetColumn variation: returns a pointer to a column_t
-       * rather than raw data.
-       * 
-       * 
-       * @throws IOException 
-       * 
-       * 
-       */
-      public column_t GetActualColumn
-      ( int       tex,
-        int       col ) 
-      {
-          int     lump,ofs;
-          
-          col &= TexMan.getTexturewidthmask(tex);
-          lump = TexMan.getTextureColumnLump(tex, col);
-          ofs=TexMan.getTextureColumnOfs(tex, col);
-          
-          // If pointing inside a non-zero, positive lump, then it's not a composite texture.
-          // Read from disk.
-          if (lump > 0){
-              // This will actually return a pointer to a patch's columns.
-              // That is, to the ONE column exactly.{
-              // If the caller needs access to a raw column, we must point 3 bytes "ahead".
-              dc_source_ofs=3;
-              patch_t r=W.CachePatchNum(lump,PU_CACHE);
-          return r.columns[ofs];
-      }
-          // Texture should be composite, but it doesn't yet exist. Create it. 
-          if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
-
-          // This implies that texturecomposite actually stores raw, compressed columns,
-          // or else those "ofs" would go in-between.
-          // The source offset int this case is 0, else we'll skip over stuff.
-          this.dc_source_ofs=0;
-          shitty.data=TexMan.getTextureComposite(tex,col);
-          
-          // Return a default column with the data thrown in. Literally.
-          return shitty;
-      }
       
-      protected column_t shitty;
       
       /**
        * R_InitSpriteLumps
