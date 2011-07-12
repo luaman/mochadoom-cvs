@@ -351,7 +351,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                 dc_yh = yh;
                 dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
                 dc_texturemid = rsi.rw_midtexturemid;    
-                dc_source = GC.GetColumn(rsi.midtexture,texturecolumn,this.id);
+                dc_source = GC.GetCachedColumn(rsi.midtexture,texturecolumn);
                 dc_source_ofs=0;
                 CompleteColumn();
                 ceilingclip[rw_x] = (short) rsi.viewheight;
@@ -375,7 +375,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                     dc_yh = mid;
                     dc_texturemid = rsi.rw_toptexturemid;
                     dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
-                    dc_source = GC.GetColumn(rsi.toptexture,texturecolumn,id);
+                    dc_source = GC.GetCachedColumn(rsi.toptexture,texturecolumn);
                     dc_source_ofs=0;
                     CompleteColumn();
     				ceilingclip[rw_x] = (short) mid;
@@ -406,7 +406,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                     dc_yh = yh;
                     dc_texturemid = rsi.rw_bottomtexturemid;
                     dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
-                    dc_source = GC.GetColumn(rsi.bottomtexture,texturecolumn,id);
+                    dc_source = GC.GetCachedColumn(rsi.bottomtexture,texturecolumn);
                     dc_source_ofs=0;
                     CompleteColumn();
 					floorclip[rw_x] = (short) mid;
@@ -453,6 +453,9 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.9  2011/07/12 16:29:35  velktron
+// Now using GetCachedColumn
+//
 // Revision 1.8  2011/07/12 16:25:02  velktron
 // Removed dependency on per-thread column pointers.
 //
