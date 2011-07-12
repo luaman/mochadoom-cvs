@@ -5750,8 +5750,9 @@ validcount++;
        * 
        * @throws IOException 
        */
-      
-      protected final byte[] GetCachedColumn
+      @Override
+	public
+      final byte[] GetCachedColumn
       ( int       tex,
         int       col ) 
       {
@@ -5785,7 +5786,7 @@ validcount++;
        * 
        */
 
-      @Override
+
       public byte[] GetColumn( int tex, int col, int index) 
       {
           int     lump,ofs;
