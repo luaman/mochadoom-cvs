@@ -658,7 +658,20 @@ public class SimpleTextureManager
         if (extendedflatstart>-1){
        	// If extended ones are present, then Advance slowly.
         lump=extendedflatstart;
-
+        
+        // Safeguard: FF_START without corresponding F_END (e.g. in helltest.wad)
+        boolean sane=false;
+        for (int i=lump;i<W.NumLumps();i++){
+            String name2=W.GetNameForNum(i);
+            if (name2.equalsIgnoreCase(LUMPEND)) 
+            {   sane=true;
+                break;
+            }            
+        }
+        
+        // Break out of here if FF_START was spurious.        
+        if (sane)  
+            
         // The end of those extended flats is also marked by F_END, as noted above.
         while (!(name=W.GetNameForNum(lump)).equalsIgnoreCase(LUMPEND)){
             if (!W.isLumpMarker(lump)){
