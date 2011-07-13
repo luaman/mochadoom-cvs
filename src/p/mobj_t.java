@@ -21,6 +21,7 @@ import data.Tables;
 import data.mapthing_t;
 import data.mobjinfo_t;
 import data.mobjtype_t;
+import data.sounds.sfxenum_t;
 import data.spritenum_t;
 import data.state_t;
 import defines.*;
@@ -395,7 +396,7 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             // after hitting the ground (hard),
             // and utter appropriate sound.
             player.deltaviewheight = momz>>3;
-           // TODO:  S_StartSound (mo, sfx_oof);
+            A.S.StartSound (this, sfxenum_t.sfx_oof);
             }
             momz = 0;
         }
