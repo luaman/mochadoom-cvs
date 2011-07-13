@@ -101,7 +101,7 @@ public class DavidSFXModule implements ISound{
 	@Override
 	public void ShutdownSound() {
 		 // Wait till all pending sounds are finished.
-		  int done = 0;
+		  boolean done = false;
 		  int i;
 		  
 
@@ -109,12 +109,11 @@ public class DavidSFXModule implements ISound{
 		  //fprintf( stderr, "I_ShutdownSound: NOT finishing pending sounds\n");
 		  //fflush( stderr );
 		  
-		  while ( done==0 )
+		  while ( !done)
 		  {
 		    for( i=0 ; i<numChannels && !(channels[i].isPlaying()) ; i++);
 		    // FIXME. No proper channel output.
-		    //if (i==8)
-		    done=1;
+		    if (i==numChannels)  done=true;
 		  }
 		  
 		  for( i=0 ; i<numChannels; i++){
