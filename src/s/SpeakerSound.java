@@ -53,8 +53,6 @@ public class SpeakerSound implements CacheableDoomObject{
     public static float[] f=new float[256];
     
     static {
-        
-        System.err.println("STHI");
         f[0]=0;
         
         for (int x=1;x<f.length;x++){
@@ -105,8 +103,6 @@ public class SpeakerSound implements CacheableDoomObject{
         return phonemes.get(phoneme);
         
     }
-    
-    
     
     @Override
     public void unpack(ByteBuffer buf)
