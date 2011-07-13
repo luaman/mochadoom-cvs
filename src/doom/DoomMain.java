@@ -52,6 +52,7 @@ import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
+//import s.SpeakerDoomSoundDriver;
 
 import savegame.IDoomSaveGame;
 import savegame.IDoomSaveGameHeader;
@@ -66,7 +67,7 @@ import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
-import v.VideoScaleInfo;
+//import v.VideoScaleInfo;
 import v.VisualSettings;
 import w.DoomFile;
 import w.WadLoader;
@@ -83,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.73 2011/07/05 13:27:58 velktron Exp $
+// $Id: DoomMain.java,v 1.74 2011/07/13 16:38:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -109,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.73 2011/07/05 13:27:58 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74 2011/07/13 16:38:42 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -321,9 +322,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             wipestart = nowtime;
             done = WIPE.ScreenWipe(Wiper.wipe.Melt.ordinal()
                 , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
+            ISND.UpdateSound();
+            ISND.SubmitSound();             // update sounds after one wipe tic.
             VI.UpdateNoBlit ();
-            M.Drawer ();                            // menu is drawn even on top of wipes
-            VI.FinishUpdate ();                      // page flip or blit buffer
+            M.Drawer ();                    // menu is drawn even on top of wipes
+            VI.FinishUpdate ();             // page flip or blit buffer
         } while (!done);
 
     }
@@ -2079,6 +2082,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      *@param player
      */
 
+    @Override
     public void PlayerReborn (int player) 
     { 
         player_t   p; 
@@ -4069,6 +4073,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74  2011/07/13 16:38:42  velktron
+//Sound updates through wipe fixed.
+//
 //Revision 1.73  2011/07/05 13:27:58  velktron
 //Added more solid Ultimate Doom detection.
 //
