@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.37 2011/07/05 13:26:30 velktron Exp $
+// $Id: WadLoader.java,v 1.38 2011/07/13 16:34:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.38  2011/07/13 16:34:18  velktron
+// Started adding some BOOM wad handling stuff. Still WIP though.
+//
 // Revision 1.37  2011/07/05 13:26:30  velktron
 // Added handle closing functionality.
 //
@@ -1141,4 +1144,77 @@ public class WadLoader implements IWadLoader {
 		CloseAllHandles();
 	}
 
+	// killough 4/17/98: add namespace tags
+	// TODO: this is WIP, may bring in other changes too.
+
+	/*
+	public int CoalesceMarkedResource(String start_marker,
+	                                     String end_marker, int li_namespace)
+	{
+	  int result = 0;
+	  lumpinfo_t[] marked = new lumpinfo_t[numlumps];
+	  int i=0,
+	  num_marked = 0, num_unmarked = 0;
+	  boolean is_marked = false, mark_end = false;
+	  int p_lump = 0; // index into lumpinfo
+	  lumpinfo_t lump;
+
+	  for (i=numlumps; i-->0; p_lump++, lump=lumpinfo[p_lump])
+	    if (IsMarker(start_marker, lump.name))       // start marker found
+	      { // If this is the first start marker, add start marker to marked lumps
+	        if (num_marked==0)
+	          {
+	            marked.name=new String(start_marker);
+	            marked.size = 0;  // killough 3/20/98: force size to be 0
+	            marked.li_namespace = ns_global;        // killough 4/17/98
+	            marked.wadfile = NULL;
+	            num_marked = 1;
+	          }
+	        is_marked = 1;                            // start marking lumps
+	      }
+	    else
+	      if (IsMarker(end_marker, lump.name))       // end marker found
+	        {
+	          mark_end = true;                           // add end marker below
+	          is_marked = false;                          // stop marking lumps
+	        }
+	      else
+	        if (is_marked || lump.li_namespace == li_namespace)
+	          {
+	            // if we are marking lumps,
+	            // move lump to marked list
+	            // sf: check for namespace already set
+
+	            // sf 26/10/99:
+	            // ignore sprite lumps smaller than 8 bytes (the smallest possible)
+	            // in size -- this was used by some dmadds wads
+	            // as an 'empty' graphics resource
+	            if(li_namespace != ns_sprites || lump->size > 8)
+	            {
+	              marked[num_marked] = *lump;
+	              marked[num_marked++].li_namespace = li_namespace;  // killough 4/17/98
+	              result++;
+	            }
+	          }
+	        else
+	          lumpinfo[num_unmarked++] = *lump;       // else move down THIS list
+
+	  // Append marked list to end of unmarked list
+	  memcpy(lumpinfo + num_unmarked, marked, num_marked * sizeof(*marked));
+
+	  free(marked);                                   // free marked list
+
+	  numlumps = num_unmarked + num_marked;           // new total number of lumps
+
+	  if (mark_end)                                   // add end marker
+	    {
+	      lumpinfo[numlumps].size = 0;  // killough 3/20/98: force size to be 0
+	      lumpinfo[numlumps].wadfile = NULL;
+	      lumpinfo[numlumps].li_namespace = ns_global;   // killough 4/17/98
+	      strncpy(lumpinfo[numlumps++].name, end_marker, 8);
+	    }
+
+	  return result;
+	} */
+	
 }

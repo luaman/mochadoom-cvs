@@ -1,5 +1,30 @@
 package w;
 
+/*
+typedef struct
+{
+  // WARNING: order of some fields important (see info.c).
+
+  char  name[9];
+  int   size;
+
+    // killough 4/17/98: namespace tags, to prevent conflicts between resources
+  enum {
+    ns_global=0,
+    ns_sprites,
+    ns_flats,
+    ns_colormaps,
+    ns_prboom,
+    ns_demos,
+    ns_hires //e6y
+  } li_namespace; // haleyjd 05/21/02: renamed from "namespace"
+
+  wadfile_info_t *wadfile;
+  int position;
+  wad_source_t source;
+  int flags; //e6y
+} lumpinfo_t; */
+
 public class lumpinfo_t {
         public String    name;
         public DoomFile     handle;
@@ -14,6 +39,9 @@ public class lumpinfo_t {
         public int intname; 
         // public int next;
         //public int index;
+        
+        // For BOOM compatibility
+        public int li_namespace;
         
         public int hashCode(){
             return hash;
