@@ -84,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.74.2.1 2011/07/14 11:31:23 finnw Exp $
+// $Id: DoomMain.java,v 1.74.2.2 2011/07/14 18:28:10 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.1 2011/07/14 11:31:23 finnw Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.2 2011/07/14 18:28:10 finnw Exp $";
 
     //
     // EVENT HANDLING
@@ -1725,7 +1725,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //Z_CheckHeap ();
 
         // clear cmd building stuff
-        Arrays.fill(gamekeydown, false); 
+        Arrays.fill(gamekeydown, false);
+        keysCleared = true;
         joyxmove = joyymove = 0; 
         mousex = mousey = 0; 
         sendpause = sendsave = paused = false; 
@@ -1823,7 +1824,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         {
         case ev_clear:
         	// PAINFULLY and FORCEFULLY clear the buttons.
-            Arrays.fill(gamekeydown, false); 
+            Arrays.fill(gamekeydown, false);
             return false; // Nothing more to do here. 
         case ev_keydown: 
             if (ev.data1 == KEY_PAUSE) 
@@ -4051,7 +4052,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     protected int SAFE_SCALE;
     protected IVideoScale vs;
 
-
     @Override
     public void setVideoScale(IVideoScale vs) {
         this.vs=vs;
@@ -4070,9 +4070,33 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     }
 
+
+    public boolean shouldPollLockingKeys() {
+        if (keysCleared) {
+            keysCleared = false;
+            return true;
+        }
+        return false;
+    }
+
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74.2.2  2011/07/14 18:28:10  finnw
+//#1. Bug fix: moving floors stopped with line special #89 would cause NPE
+//because function was set to null not NOP.
+//However setting to NOP would cause the thinker to be removed from the list
+//so the plat could never be restarted.
+//So split NOP into HALT (which cannot be restarted) and WAIT (which can.)
+//
+//This can be seen in E2M2 by circling the square pillar in sector 43,
+//starting & stopping the three circular lifts to the SouthEast.
+//
+//#2. If a locking key (caps lock/num lock/scroll lock) is assigned to a
+//movement command then its toggle state is used (i.e. on if its light on
+//the keyboard is on) instead of its physical position. Likely to be useful
+//useful only for run & strafe.  Chocolate Doom has a very similar function.
+//
 //Revision 1.74.2.1  2011/07/14 11:31:23  finnw
 //Added FinnwMusicModule & made it the default
 //

@@ -25,7 +25,8 @@ actionf_p2	acp2;
 */
 
 public enum think_t {
-	NOP, // Special.
+	HALT, // All actions completed - can be removed from the list
+	WAIT, // Temporarily doing nothing, but can be re-activated
 	A_Light0(2),
     A_WeaponReady(2),
     A_Lower(2),

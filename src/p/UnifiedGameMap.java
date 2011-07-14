@@ -953,7 +953,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                         && (activeplats[j].tag == line.tag)) {
                     (activeplats[j]).oldstatus = (activeplats[j]).status;
                     (activeplats[j]).status = plat_e.in_stasis;
-                    (activeplats[j]).function = null;
+                    (activeplats[j]).function = think_t.WAIT;
                 }
         }
 
@@ -1771,8 +1771,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // until its thinking turn comes up.
     //
     public void RemoveThinker(thinker_t thinker) {
-        // FIXME: NOP.
-        thinker.function = think_t.NOP;
+        thinker.function = think_t.HALT;
     }
 
     //

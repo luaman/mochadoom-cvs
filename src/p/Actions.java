@@ -702,7 +702,7 @@ public class Actions extends UnifiedGameMap {
               && (getActiveceilings()[i].direction != 0))
           {
               getActiveceilings()[i].olddirection = getActiveceilings()[i].direction;
-              getActiveceilings()[i].function = think_t.NOP;
+              getActiveceilings()[i].function = think_t.WAIT;
               getActiveceilings()[i].direction = 0;       // in-stasis
               rtn = 1;
           }
@@ -4015,7 +4015,7 @@ public class Actions extends UnifiedGameMap {
 			XYMovement(mobj);
 
 			// FIXME: decent NOP/NULL/Nil function pointer please.
-			if (mobj.function == think_t.NOP){
+			if (mobj.function == think_t.HALT){
 				return; // mobj was removed
 			}
 		}
@@ -4023,7 +4023,7 @@ public class Actions extends UnifiedGameMap {
 			mobj.ZMovement();
 
 			// FIXME: decent NOP/NULL/Nil function pointer please.
-			if (mobj.function == think_t.NOP){
+			if (mobj.function == think_t.HALT){
 				return; // mobj was removed
 			}	
 		}
@@ -8073,7 +8073,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
       currentthinker = thinkercap.next;
       while (currentthinker != thinkercap) {
-          if (currentthinker.function == think_t.NOP) {
+          if (currentthinker.function == think_t.HALT) {
               // time to remove it
               currentthinker.next.prev = currentthinker.prev;
               currentthinker.prev.next = currentthinker.next;
