@@ -48,10 +48,10 @@ import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
 import s.ClassicDoomSoundDriver;
-import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
+import s.FinnwMusicModule;
 //import s.SpeakerDoomSoundDriver;
 
 import savegame.IDoomSaveGame;
@@ -84,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.74 2011/07/13 16:38:42 velktron Exp $
+// $Id: DoomMain.java,v 1.74.2.1 2011/07/14 11:31:23 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.74 2011/07/13 16:38:42 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.1 2011/07/14 11:31:23 finnw Exp $";
 
     //
     // EVENT HANDLING
@@ -1142,7 +1142,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (CM.CheckParmBool("-nomusic"))
             this.IMUS=new DummyMusic();
         else
-            this.IMUS=new DavidMusicModule();
+            this.IMUS=new FinnwMusicModule();
         
         if (CM.CheckParmBool("-nosound"))
             this.ISND=new DummySFX();
@@ -4073,6 +4073,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74.2.1  2011/07/14 11:31:23  finnw
+//Added FinnwMusicModule & made it the default
+//
 //Revision 1.74  2011/07/13 16:38:42  velktron
 //Sound updates through wipe fixed.
 //
