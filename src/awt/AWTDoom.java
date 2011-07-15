@@ -471,9 +471,17 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 		
 	}
 
+    @Override
+    public void ReadScreen(byte[] scr) {
+        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
+        }
+
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.10  2011/07/15 13:57:54  velktron
+//Implement VI.ReadScreen as a future good practice.
+//
 //Revision 1.9  2011/06/23 15:42:38  velktron
 //Added modular palette rotation to handle sub-14 cases.
 //

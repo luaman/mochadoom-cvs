@@ -470,6 +470,23 @@ public class AWTDoom2 extends JFrame implements DoomVideoInterface{
         
     }
     
+    @Override
+    public void ReadScreen(byte[] scr) {
+        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
+        }
+
+    @Override
+    public void ShutdownGraphics() {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void setGamma(int usegamma) {
+        // TODO Auto-generated method stub
+        
+    }
+    
     /*
     @Override
     public void SetMap(byte[] cmap) {
