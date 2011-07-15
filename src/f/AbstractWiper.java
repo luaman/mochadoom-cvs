@@ -6,6 +6,7 @@ import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
 import i.DoomStatusAware;
+import i.DoomVideoInterface;
 
 public abstract class AbstractWiper implements IWiper, DoomStatusAware, IVideoScaleAware{
     
@@ -62,10 +63,12 @@ public abstract class AbstractWiper implements IWiper, DoomStatusAware, IVideoSc
     public void updateStatus(DoomStatus DS){
     this.RND=DS.RND;
     this.V=DS.V;
+    this.VI=DS.VI;
     }
     
     IRandom RND;
     DoomVideoRenderer V;
+    DoomVideoInterface VI;
 
     
 }
