@@ -48,10 +48,10 @@ import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
 import s.ClassicDoomSoundDriver;
+import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
-import s.FinnwMusicModule;
 //import s.SpeakerDoomSoundDriver;
 
 import savegame.IDoomSaveGame;
@@ -84,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.74.2.2 2011/07/14 18:28:10 finnw Exp $
+// $Id: DoomMain.java,v 1.74.2.3 2011/07/15 23:59:36 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.2 2011/07/14 18:28:10 finnw Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.3 2011/07/15 23:59:36 finnw Exp $";
 
     //
     // EVENT HANDLING
@@ -1142,7 +1142,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (CM.CheckParmBool("-nomusic"))
             this.IMUS=new DummyMusic();
         else
-            this.IMUS=new FinnwMusicModule();
+            this.IMUS=new DavidMusicModule();
         
         if (CM.CheckParmBool("-nosound"))
             this.ISND=new DummySFX();
@@ -2414,6 +2414,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         wminfo.maxfrags = 0; 
         if ( isCommercial() )
             wminfo.partime = 35*cpars[gamemap-1]; 
+        else if (gameepisode >= pars.length)
+            wminfo.partime = 0;
         else
             wminfo.partime = 35*pars[gameepisode][gamemap]; 
         wminfo.pnum = consoleplayer; 
@@ -4082,6 +4084,19 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74.2.3  2011/07/15 23:59:36  finnw
+//FinnwMusicModule and DavidMusicModule can now load MIDI lumps.
+//
+//DavidMusicModule now uses the same volume control strategy as
+//FinnwMusicModule, also the volume control is factored into a new class.
+//
+//Bug fix: array bounds exception when looking up par time for E4Mx
+//
+//Specialized int=>byte[][] map for SimpleTextureManager.roguePatches
+//(the millions of boxed Integers made heap profiling impractical.
+//Eliminated them by doing a binary search for the (primitive) int key
+//instead.
+//
 //Revision 1.74.2.2  2011/07/14 18:28:10  finnw
 //#1. Bug fix: moving floors stopped with line special #89 would cause NPE
 //because function was set to null not NOP.

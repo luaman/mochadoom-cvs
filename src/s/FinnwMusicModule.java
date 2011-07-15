@@ -1,9 +1,15 @@
 package s;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.Channels;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -21,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import javax.management.RuntimeErrorException;
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
@@ -30,6 +38,7 @@ import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Synthesizer;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 import javax.sound.midi.Transmitter;
@@ -44,9 +53,10 @@ import javax.sound.midi.Transmitter;
  *  is running.
  *  
  *  Disadvantages of this driver:
- *  <ul><li>Supports MUS lumps only (no MID, OGG etc.)</li>
+ *  <ul><li>Supports MID & MUS lumps only (no MOD, OGG etc.)</li>
  *      <li>Creates its own thread</li>
- *      <li>Pausing is not implemented yet</li></ul>
+ *      <li>Pausing is not implemented yet</li>
+ *      <li>It's too complicated</li></ul>
  *
  * @author finnw
  *
@@ -55,14 +65,17 @@ public class FinnwMusicModule implements IMusic {
 
     public FinnwMusicModule() {
         this.lock = new ReentrantLock();
-        this.channels = new ArrayList<Channel>(15);
+        this.midiChannels = new ArrayList<Channel>(16);
+        this.musChannels = new ArrayList<Channel>(16);
         this.songs = new ArrayList<Song>(1);
         for (int midiChan = 0; midiChan < 16; ++ midiChan) {
+            Channel chan = new Channel(midiChan);
+            midiChannels.add(chan);
             if (midiChan != 9) {
-                channels.add(new Channel(midiChan));
+                musChannels.add(chan);
             }
         }
-        channels.add(new Channel(9));
+        musChannels.add(new Channel(9));
     }
 
     @Override
@@ -97,7 +110,7 @@ public class FinnwMusicModule implements IMusic {
                 prepare(receiver);
                 Song song = songs.get(handle);
                 currentTransmitter =
-                    new ScheduledTransmitter(song.getScoreBuffer(), looping);
+                    new ScheduledTransmitter(song.newEventStream(looping));
                 currentTransmitter.setReceiver(receiver);
             }
         } finally {
@@ -111,7 +124,32 @@ public class FinnwMusicModule implements IMusic {
     }
 
     public int RegisterSong(ByteBuffer data) {
-        Song song = new Song(data);
+        Song song = new NullSong();
+        if (hasMusMagic(data)) {
+            song = new MusSong(data);
+        } else {
+            try {
+                final InputStream midiIS;
+                if (data.hasArray()) {
+                    midiIS =
+                        new ByteArrayInputStream(data.array(),
+                                                 data.arrayOffset() + data.position(),
+                                                 data.remaining());
+                } else {
+                    ByteArrayOutputStream copy =
+                        new ByteArrayOutputStream(data.asReadOnlyBuffer().remaining());
+                    Channels.newChannel(copy).write(data.asReadOnlyBuffer());
+                    midiIS = new ByteArrayInputStream(copy.toByteArray());
+                }
+                try {
+                    song = new MidiSong(MidiSystem.getSequence(midiIS));
+                } catch (InvalidMidiDataException ex) {
+                    System.err.println(ex);
+                }
+            } catch (IOException ex) {
+                System.err.println(ex);
+            }
+        }
         lock.lock();
         try {
             int result = songs.indexOf(null);
@@ -127,6 +165,7 @@ public class FinnwMusicModule implements IMusic {
         }
     }
 
+    /** Not yet implemented */
     @Override
     public void ResumeSong(int handle) {
     }
@@ -183,132 +222,244 @@ public class FinnwMusicModule implements IMusic {
                magicBuf.get(3) == 0x1a;
     }
 
-    EventGroup nextEventGroup(ByteBuffer scoreBuffer, boolean looping)  {
-        EventGroup result = new EventGroup(volume);
-        boolean last;
-        do {
-            if (! scoreBuffer.hasRemaining()) {
-                if (looping) {
-                    scoreBuffer.flip();
-                } else {
-                    return result.emptyToNull();
-                }
+    static abstract class EventStream {
+        abstract EventGroup nextEventGroup();
+    }
+
+    Channel getVolumeChangeChannel(MidiMessage message) {
+        assert ((ReentrantLock) lock).isHeldByCurrentThread();
+        if (message.getLength() >= 3) {
+            byte[] mBytes = message.getMessage();
+            if ((byte) 0xb0 <= mBytes[0] && mBytes[0] < (byte) 0xc0 &&
+                mBytes[1] == 7) {
+                return midiChannels.get(mBytes[0] & 15);
             }
-            int descriptor = scoreBuffer.get() & 0xff;
-            last = (descriptor & 0x80) != 0;
-            int eventType = (descriptor >> 4) & 7;
-            int chanIndex = descriptor & 15;
-            Channel channel = channels.get(chanIndex);
-            switch (eventType) {
-            case 0:
-                {
-                    int note = scoreBuffer.get() & 0xff;
-                    if ((note & 0x80) != 0) {
-                        throw new IllegalArgumentException("Invalid note byte");
-                    }
-                    checkChannelExists("note off", channel).noteOff(note, result);
-                }
-                break;
-            case 1:
-                {
-                    int note = scoreBuffer.get() & 0xff;
-                    boolean hasVelocity = (note & 0x80) != 0;
-                    if (hasVelocity) {
-                        int velocity = scoreBuffer.get() & 0xff;
-                        if ((velocity & 0x80) != 0) {
-                            throw new IllegalArgumentException("Invalid velocity byte");
-                        }
-                        checkChannelExists("note on", channel).noteOn(note & 127, velocity, result);
+        }
+        return null;
+    }
+
+    boolean isControllerReset(MidiMessage message) {
+        assert ((ReentrantLock) lock).isHeldByCurrentThread();
+        if (message.getLength() >= 2) {
+            byte[] mBytes = message.getMessage();
+            if ((byte) 0xb0 <= mBytes[0] && mBytes[0] < (byte) 0xc0 &&
+                mBytes[1] == 121) {
+                System.err.println("RESET");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private class SequenceEventStream extends EventStream {
+
+        SequenceEventStream(Track track, long nanosPerTick, boolean looping) {
+            this.eventGroup = new EventGroup(volume);
+            this.looping = looping;
+            this.nanosPerTick = nanosPerTick;
+            this.track = track;
+        }
+
+        @Override
+        EventGroup nextEventGroup() {
+            if (track == null) return null;
+            EventGroup result = eventGroup;
+            for (;;) {
+                if (pos >= track.size()) {
+                    if (looping) {
+                        pos = 0;
+                        prevTick = 0L;
                     } else {
-                        checkChannelExists("note on", channel).noteOn(note, result);
+                        return result.emptyToNull();
                     }
                 }
-                break;
-            case 2:
-                {
-                    int wheelVal = scoreBuffer.get() & 0xff;
-                    checkChannelExists("pitch bend", channel).pitchBend(wheelVal, result);
+                MidiEvent event = track.get(pos++);
+                if (event.getTick() > prevTick) {
+                    long ticks = event.getTick() - prevTick;
+                    prevTick = event.getTick();
+                    result.addDelay(ticks * nanosPerTick);
+                    eventGroup = new EventGroup(volume);
+                    addMessageTo(eventGroup, event.getMessage());
+                    return result;
                 }
-                break;
-            case 3:
-                {
-                    int sysEvt = scoreBuffer.get() & 0xff;
-                    switch (sysEvt) {
-                    case 10:
-                        checkChannelExists("all sounds off", channel).allSoundsOff(result);
-                        break;
-                    case 11:
-                        checkChannelExists("all notes off", channel).allNotesOff(result);
-                        break;
-                    case 14:
-                        checkChannelExists("reset all controllers", channel).resetAll(result);
-                        break;
-                    default:
-                        String msg = String.format("Invalid system event (%d)", sysEvt);
-                        throw new IllegalArgumentException(msg);
+                addMessageTo(result, event.getMessage());
+            }
+        }
+
+        void addMessageTo(EventGroup eventGroup, MidiMessage message) {
+            /*
+            for (Channel channel: midiChannels) {
+                channel.volume(127, eventGroup);
+            }
+            */
+            Channel vcChan = getVolumeChangeChannel(message);
+            if (vcChan == null) {
+                eventGroup.addMessage(message);
+                if (0x80 >= message.getStatus() || message.getStatus() > 0xa0) {
+                    System.err.println(message.getStatus() + ": " + Arrays.toString(message.getMessage()));
+                }
+                if (isControllerReset(message)) {
+                    System.err.println("reset");
+                }
+            } else {
+                vcChan.volume(message.getMessage()[2] & 0xff, eventGroup);
+            }
+        }
+
+        private EventGroup eventGroup;
+
+        private final boolean looping;
+
+        private long nanosPerTick;
+
+        private int pos;
+
+        private long prevTick;
+
+        private final Track track;
+
+    }
+
+    private class MusEventStream extends EventStream {
+
+        MusEventStream(ByteBuffer scoreBuffer, boolean looping) {
+            this.looping = looping;
+            this.scoreBuffer = scoreBuffer.asReadOnlyBuffer();
+        }
+
+        @Override
+        EventGroup nextEventGroup() {
+            EventGroup result = new EventGroup(volume);
+            boolean last;
+            do {
+                if (! scoreBuffer.hasRemaining()) {
+                    if (looping) {
+                        scoreBuffer.flip();
+                    } else {
+                        return result.emptyToNull();
                     }
                 }
-                break;
-            case 4:
-                int cNum = scoreBuffer.get() & 0xff;
-                if ((cNum & 0x80) != 0) {
-                    throw new IllegalArgumentException("Invalid controller number ");
-                }
-                int cVal = scoreBuffer.get() & 0xff;
-                if (cNum == 3 && 133 <= cVal && cVal <= 135) {
-                    // workaround for some TNT.WAD tracks
-                    cVal = 127;
-                }
-                if ((cVal & 0x80) != 0) {
-                    String msg = String.format("Invalid controller value (%d; cNum=%d)", cVal, cNum);
-                    throw new IllegalArgumentException(msg);
-                }
-                switch (cNum) {
+                int descriptor = scoreBuffer.get() & 0xff;
+                last = (descriptor & 0x80) != 0;
+                int eventType = (descriptor >> 4) & 7;
+                int chanIndex = descriptor & 15;
+                Channel channel = musChannels.get(chanIndex);
+                switch (eventType) {
                 case 0:
-                    checkChannelExists("patch change", channel).patchChange(cVal, result);
+                    {
+                        int note = scoreBuffer.get() & 0xff;
+                        if ((note & 0x80) != 0) {
+                            throw new IllegalArgumentException("Invalid note byte");
+                        }
+                        checkChannelExists("note off", channel).noteOff(note, result);
+                    }
                     break;
                 case 1:
-                    // Don't forward this to the MIDI device.  Some devices
-                    // react badly to banks that are undefined in GM Level 1
-                    checkChannelExists("bank switch", channel);
+                    {
+                        int note = scoreBuffer.get() & 0xff;
+                        boolean hasVelocity = (note & 0x80) != 0;
+                        if (hasVelocity) {
+                            int velocity = scoreBuffer.get() & 0xff;
+                            if ((velocity & 0x80) != 0) {
+                                throw new IllegalArgumentException("Invalid velocity byte");
+                            }
+                            checkChannelExists("note on", channel).noteOn(note & 127, velocity, result);
+                        } else {
+                            checkChannelExists("note on", channel).noteOn(note, result);
+                        }
+                    }
                     break;
                 case 2:
-                    checkChannelExists("vibrato change", channel).vibratoChange(cVal, result);
+                    {
+                        int wheelVal = scoreBuffer.get() & 0xff;
+                        checkChannelExists("pitch bend", channel).pitchBend(wheelVal, result);
+                    }
                     break;
                 case 3:
-                    checkChannelExists("volume", channel).volume(cVal, result);
+                    {
+                        int sysEvt = scoreBuffer.get() & 0xff;
+                        switch (sysEvt) {
+                        case 10:
+                            checkChannelExists("all sounds off", channel).allSoundsOff(result);
+                            break;
+                        case 11:
+                            checkChannelExists("all notes off", channel).allNotesOff(result);
+                            break;
+                        case 14:
+                            checkChannelExists("reset all controllers", channel).resetAll(result);
+                            break;
+                        default:
+                            String msg = String.format("Invalid system event (%d)", sysEvt);
+                            throw new IllegalArgumentException(msg);
+                        }
+                    }
                     break;
                 case 4:
-                    checkChannelExists("pan", channel).pan(cVal, result);
-                    break;
-                case 5:
-                    checkChannelExists("expression", channel).expression(cVal, result);
+                    int cNum = scoreBuffer.get() & 0xff;
+                    if ((cNum & 0x80) != 0) {
+                        throw new IllegalArgumentException("Invalid controller number ");
+                    }
+                    int cVal = scoreBuffer.get() & 0xff;
+                    if (cNum == 3 && 133 <= cVal && cVal <= 135) {
+                        // workaround for some TNT.WAD tracks
+                        cVal = 127;
+                    }
+                    if ((cVal & 0x80) != 0) {
+                        String msg = String.format("Invalid controller value (%d; cNum=%d)", cVal, cNum);
+                        throw new IllegalArgumentException(msg);
+                    }
+                    switch (cNum) {
+                    case 0:
+                        checkChannelExists("patch change", channel).patchChange(cVal, result);
+                        break;
+                    case 1:
+                        // Don't forward this to the MIDI device.  Some devices
+                        // react badly to banks that are undefined in GM Level 1
+                        checkChannelExists("bank switch", channel);
+                        break;
+                    case 2:
+                        checkChannelExists("vibrato change", channel).vibratoChange(cVal, result);
+                        break;
+                    case 3:
+                        checkChannelExists("volume", channel).volume(cVal, result);
+                        break;
+                    case 4:
+                        checkChannelExists("pan", channel).pan(cVal, result);
+                        break;
+                    case 5:
+                        checkChannelExists("expression", channel).expression(cVal, result);
+                        break;
+                    case 6:
+                        checkChannelExists("reverb depth", channel).reverbDepth(cVal, result);
+                        break;
+                    case 7:
+                        checkChannelExists("chorus depth", channel).chorusDepth(cVal, result);
+                        break;
+                    default:
+                        throw new AssertionError("Controller number " + cNum + ": not yet implemented");
+                    }
                     break;
                 case 6:
-                    checkChannelExists("reverb depth", channel).reverbDepth(cVal, result);
-                    break;
-                case 7:
-                    checkChannelExists("chorus depth", channel).chorusDepth(cVal, result);
+                    if (looping) {
+                        scoreBuffer.flip();
+                    } else {
+                        return result.emptyToNull();
+                    }
                     break;
                 default:
-                    throw new AssertionError("Controller number " + cNum + ": not yet implemented");
+                    String msg = String.format("Unknown event type: last=%5s eventType=%d chanIndex=%d%n", last, eventType, chanIndex);
+                    throw new IllegalArgumentException(msg);
                 }
-                break;
-            case 6:
-                if (looping) {
-                    scoreBuffer.flip();
-                } else {
-                    return result.emptyToNull();
-                }
-                break;
-            default:
-                String msg = String.format("Unknown event type: last=%5s eventType=%d chanIndex=%d%n", last, eventType, chanIndex);
-                throw new IllegalArgumentException(msg);
-            }
-        } while (! last);
-        int qTics = readTime(scoreBuffer);
-        result.addDelay(qTics);
-        return result;
+            } while (! last);
+            int qTics = readVLV(scoreBuffer);
+            result.addDelay(qTics * NANOS_PER_MUS_TICK);
+            return result;
+        }
+
+        private final boolean looping;
+
+        private final ByteBuffer scoreBuffer;
+
     }
 
     static class EventGroup {
@@ -316,20 +467,12 @@ public class FinnwMusicModule implements IMusic {
             this.messages = new ArrayList<MidiMessage>();
             this.volScale = volScale;
         }
-        void addDelay(int tics) {
-            delay += tics;
+        public void addMessage(MidiMessage message) {
+            messages.add(message);
         }
-        private static final int CHM_ALL_NOTES_OFF = 123;
-        private static final int CHM_ALL_SOUND_OFF = 120;
-        private static final int CTRL_CHORUS_DEPTH = 93;
-        private static final int CTRL_EXPRESSION_POT = 11;
-        private static final int CTRL_PAN = 10;
-        private static final int RPM_PITCH_BEND_SENSITIVITY = 0;
-        private static final int RPL_PITCH_BEND_SENSITIVITY = 0;
-        private static final int CHM_RESET_ALL = 121;
-        private static final int CTRL_REVERB_DEPTH = 91;
-        private static final int CTRL_MODULATION_POT = 1;
-        private static final int CTRL_VOLUME = 7;
+        void addDelay(long nanos) {
+            delay += nanos;
+        }
         void allNotesOff(int midiChan) {
             addControlChange(midiChan, CHM_ALL_NOTES_OFF, 0);
         }
@@ -365,7 +508,7 @@ public class FinnwMusicModule implements IMusic {
         void expression(int midiChan, int expr) {
             addControlChange(midiChan, CTRL_EXPRESSION_POT, expr);
         }
-        int getDelay() {
+        long getDelay() {
             return delay;
         }
         void noteOn(int midiChan, int note, int velocity) {
@@ -387,7 +530,7 @@ public class FinnwMusicModule implements IMusic {
         void pitchBendSensitivity(int midiChan, int semitones) {
             addRegParamChange(midiChan, RPM_PITCH_BEND_SENSITIVITY, RPL_PITCH_BEND_SENSITIVITY, semitones);
         }
-        void resetAllControllern(int midiChan) {
+        void resetAllControllers(int midiChan) {
             addControlChange(midiChan, CHM_RESET_ALL, 0);
         }
         void reverbDepth(int midiChan, int depth) {
@@ -402,8 +545,8 @@ public class FinnwMusicModule implements IMusic {
             addControlChange(midiChan, CTRL_MODULATION_POT, depth);
         }
         void volume(int midiChan, int vol) {
-            vol = (int) Math.round(vol * volScale);
-            addControlChange(midiChan, CTRL_VOLUME, vol);
+            int adjVol = Math.max(0, Math.min((int) Math.round(vol * volScale), 127));
+            addControlChange(midiChan, CTRL_VOLUME, adjVol);
         }
         private void addControlChange(int midiChan, int ctrlId, int ctrlVal) {
             addShortMessage(midiChan, ShortMessage.CONTROL_CHANGE, ctrlId, ctrlVal);
@@ -431,47 +574,22 @@ public class FinnwMusicModule implements IMusic {
                 throw new RuntimeException(ex);
             }
         }
-        private int delay;
+
+        private static final int CHM_ALL_NOTES_OFF = 123;
+        private static final int CHM_ALL_SOUND_OFF = 120;
+        private static final int CTRL_CHORUS_DEPTH = 93;
+        private static final int CTRL_EXPRESSION_POT = 11;
+        private static final int CTRL_PAN = 10;
+        private static final int RPM_PITCH_BEND_SENSITIVITY = 0;
+        private static final int RPL_PITCH_BEND_SENSITIVITY = 0;
+        private static final int CHM_RESET_ALL = 121;
+        private static final int CTRL_REVERB_DEPTH = 91;
+        private static final int CTRL_MODULATION_POT = 1;
+        private static final int CTRL_VOLUME = 7;
+
+        private long delay;
         private final List<MidiMessage> messages;
         private final float volScale;
-    }
-
-    /** A collection of kludges to pick a MIDI output device until cvars are implemented */
-    static class MidiDeviceComparator implements Comparator<MidiDevice.Info> {
-        @Override
-        public int compare(MidiDevice.Info o1, MidiDevice.Info o2) {
-            float score1 = score(o1), score2 = score(o2);
-            if (score1 < score2) {
-                return 1;
-            } else if (score1 > score2) {
-                return -1;
-            } else {
-                return 0;
-            }
-        }
-        private float score(MidiDevice.Info info) {
-            String lcName = info.getName().toLowerCase(Locale.ENGLISH);
-            float result = 0f;
-            if (lcName.contains("mapper")) {
-                // "Midi Mapper" is ideal, because the user can select the default output device in the control panel
-                result += 100;
-            } else {
-                if (lcName.contains("synth")) {
-                    // A synthesizer is usually better than a sequencer or USB MIDI port
-                    result += 50;
-                    if (lcName.contains("java")) {
-                        // "Java Sound Synthesizer" has a low sample rate; Prefer another software synth
-                        result -= 20;
-                    }
-                    if (lcName.contains("microsoft")) {
-                        // "Microsoft GS Wavetable Synth" is notoriously unpopular, but sometimes it's the only one
-                        // with a decent sample rate.
-                        result -= 7;
-                    }
-                }
-            }
-            return result;
-        }
     }
 
     static class ThreadFactoryImpl implements ThreadFactory {
@@ -486,12 +604,15 @@ public class FinnwMusicModule implements IMusic {
             new AtomicInteger(1);
     }
 
-    final Lock lock;
+    final ReentrantLock lock;
 
-    static final long nanosPerTick = 1000000000 / 140;
+    static final long NANOS_PER_MUS_TICK = 1000000000 / 140;
+
+    /** Channels in standard MIDI order (0-8 and 10-15 = instruments, 9 = percussion) */
+    final List<Channel> midiChannels;
 
     /** Channels in MUS order (0-14 = instruments, 15 = percussion) */
-    final List<Channel> channels;
+    final List<Channel> musChannels;
 
     ScheduledExecutorService exec;
 
@@ -511,7 +632,7 @@ public class FinnwMusicModule implements IMusic {
             }
         }
         if (dInfos.isEmpty()) return null;
-        Collections.sort(dInfos, new MidiDeviceComparator());
+        Collections.sort(dInfos, new VolumeScalingReceiver.MidiDeviceComparator());
         MidiDevice.Info dInfo = dInfos.get(0);
         MidiDevice dev = MidiSystem.getMidiDevice((MidiDevice.Info) dInfo);
         dev.open();
@@ -520,7 +641,7 @@ public class FinnwMusicModule implements IMusic {
 
     private void prepare(Receiver receiver) {
         EventGroup setupEG = new EventGroup(volume);
-        for (Channel chan: channels) {
+        for (Channel chan: musChannels) {
             chan.allSoundsOff(setupEG);
             chan.resetAll(setupEG);
             chan.pitchBendSensitivity(2, setupEG);
@@ -547,7 +668,7 @@ public class FinnwMusicModule implements IMusic {
             Thread.currentThread().interrupt();
         }
     }
-    private static Channel checkChannelExists(String type, Channel channel)
+    static Channel checkChannelExists(String type, Channel channel)
             throws IllegalArgumentException {
         if (channel == null) {
             String msg = String.format("Invalid channel for %s message", type);
@@ -557,7 +678,7 @@ public class FinnwMusicModule implements IMusic {
         }
     }
 
-    private int readTime(ByteBuffer scoreBuffer) {
+    int readVLV(ByteBuffer scoreBuffer) {
         int result = 0;
         boolean last;
         do {
@@ -608,7 +729,7 @@ public class FinnwMusicModule implements IMusic {
             eventGroup.pitchBendSensitivity(midiChan, semitones);
         }
         void resetAll(EventGroup eventGroup) {
-            eventGroup.resetAllControllern(midiChan);
+            eventGroup.resetAllControllers(midiChan);
         }
         void reverbDepth(int depth, EventGroup eventGroup) {
             eventGroup.reverbDepth(midiChan, depth);
@@ -632,16 +753,7 @@ public class FinnwMusicModule implements IMusic {
 
         @Override
         public void close() {
-            lock.lock();
-            try {
-                if (autoShutdown && exec != null) {
-                    exec.shutdown();
-                }
-                autoShutdown = false;
-                exec = null;
-            } finally {
-                lock.unlock();
-            }
+            stop();
         }
 
         @Override
@@ -668,24 +780,22 @@ public class FinnwMusicModule implements IMusic {
             }
         }
 
-        ScheduledTransmitter(ByteBuffer scoreBuffer, boolean looping) {
-            this.exec = FinnwMusicModule.this.exec;
-            this.looping = looping;
-            this.scoreBuffer = scoreBuffer;
+        ScheduledTransmitter(EventStream eventStream) {
+            this.eventStream = eventStream;
         }
 
         void scheduleIfRequired(Receiver receiver,
                                 EventGroup currentGroup) {
-            assert (((ReentrantLock) lock).isHeldByCurrentThread());
+            assert lock.isHeldByCurrentThread();
             if (currentGroup == null) {
                 try {
-                    currentGroup = nextEventGroup(scoreBuffer, looping);
+                    currentGroup = eventStream.nextEventGroup();
                     if (currentGroup != null) {
                         triggerTask = new TriggerTask(currentGroup, receiver);
                         long delay = Math.max(0, nextGroupTime - System.nanoTime());
                         future =
                             exec.schedule(triggerTask, delay, TimeUnit.NANOSECONDS);
-                        nextGroupTime += currentGroup.getDelay() * nanosPerTick;
+                        nextGroupTime += currentGroup.getDelay();
                     } else {
                         triggerTask = null;
                         future = null;
@@ -699,7 +809,7 @@ public class FinnwMusicModule implements IMusic {
         }
 
         void stop() {
-            assert (((ReentrantLock) lock).isHeldByCurrentThread());
+            assert lock.isHeldByCurrentThread();
             if (future != null) {
                 future.cancel(false);
                 try {
@@ -711,16 +821,16 @@ public class FinnwMusicModule implements IMusic {
                 future = null;
             }
             EventGroup cleanup = new EventGroup(0f);
-            for (Channel chan: channels) {
+            for (Channel chan: musChannels) {
                 chan.allNotesOff(cleanup);
             }
             cleanup.sendTo(receiver);
         }
 
         void volumeChanged() {
-            assert (((ReentrantLock) lock).isHeldByCurrentThread());
+            assert lock.isHeldByCurrentThread();
             EventGroup adjust = new EventGroup(volume);
-            for (Channel chan: channels) {
+            for (Channel chan: musChannels) {
                 chan.volumeChanged(adjust);
             }
             adjust.sendTo(receiver);
@@ -753,24 +863,122 @@ public class FinnwMusicModule implements IMusic {
             final Receiver receiver;
         }
 
-        private boolean autoShutdown;
-
-        private ScheduledExecutorService exec;
+        private final EventStream eventStream;
 
         private ScheduledFuture<?> future;
-
-        private final boolean looping;
 
         private long nextGroupTime;
 
         private Receiver receiver;
-
-        private final ByteBuffer scoreBuffer;
     }
 
-    /** Contains unfiltered MUS data */
-    private class Song {
-        Song(ByteBuffer data) {
+    private static abstract class Song {
+        Song() {}
+        abstract EventStream newEventStream(boolean looping);
+    }
+
+    /** Null song (for when we cannot decode the music lump) */
+    private class NullSong extends Song {
+
+        NullSong() {
+        }
+
+        /** Create an empty, non-looping MUS stream */
+        @Override
+        EventStream newEventStream(boolean looping) {
+            ByteBuffer buf = ByteBuffer.allocate(0);
+            return new MusEventStream(buf, false);
+        }
+
+    }
+
+    /** Extracts MIDI events from a Sequence, without using a Sequencer. */
+    private class MidiSong extends Song {
+
+        private static final double DEFAULT_BPM = 120.0;
+
+        MidiSong(Sequence sequence) {
+            float framesPerSec = sequence.getDivisionType();
+            if (framesPerSec == Sequence.PPQ) {
+                framesPerSec = (float) (DEFAULT_BPM / 60.0);
+                smpteRes = sequence.getResolution();
+            } else {
+                smpteRes = 0;
+            }
+            this.nanosPerTick =
+                Math.round(1000000000.0 / (framesPerSec * sequence.getResolution()));
+            Track[] tracks = sequence.getTracks();
+            System.err.println(Arrays.asList(tracks));
+            if (tracks.length > 0) {
+                Track mergedTrack = mergeTracks(sequence);
+                this.track = mergedTrack;
+            } else {
+                this.track = null;
+            }
+        }
+
+        @Override
+        EventStream newEventStream(boolean looping) {
+            return new SequenceEventStream(track, nanosPerTick, looping);
+        }
+
+        private Track mergeTracks(Sequence sequence) {
+            ByteBuffer tBuf = ByteBuffer.allocate(4);
+            Track[] tracks = sequence.getTracks();
+            Track mergedTrack = sequence.createTrack();
+            for (Track sourceTrack: tracks) {
+                for (int i = 0; i < sourceTrack.size(); ++ i) {
+                    MidiEvent event = sourceTrack.get(i);
+                    MidiMessage msg = event.getMessage();
+                    if (msg.getStatus() == 255) {
+                        byte[] mBytes = msg.getMessage();
+                        if (mBytes.length <= 1) continue;
+                        int data1 = 0xff & mBytes[1];
+                        switch (data1) {
+                        case 81:
+                            if (mBytes.length <= 2) continue;
+                            if (mBytes[2] == 3) {
+                                tBuf.clear();
+                                tBuf.put((byte) 0);
+                                tBuf.put(mBytes, 3, 3);
+                                tBuf.flip();
+                                setTempo(tBuf.getInt());
+                            }
+                            break;
+                        }
+                    } else {
+                        mergedTrack.add(event);
+                    }
+                }
+                sequence.deleteTrack(sourceTrack);
+            }
+            MetaMessage endOfSong = new MetaMessage();
+            try {
+                endOfSong.setMessage(47, new byte[] {0}, 1);
+            } catch (InvalidMidiDataException ex) {
+                ex.printStackTrace();
+            }
+            return mergedTrack;
+        }
+
+        void setTempo(int tempo) {
+            if (smpteRes > 0) {
+                nanosPerTick = Math.round((1000.0) * (tempo / smpteRes));
+;           }
+        }
+
+        private long nanosPerTick;
+
+        private final int smpteRes;
+
+        private final Track track;
+
+    }
+
+    /** Contains unfiltered MUS data, decoded on-the-fly. */
+    private class MusSong extends Song {
+
+        MusSong(ByteBuffer data) {
             this.data = data.asReadOnlyBuffer();
             this.data.order(ByteOrder.LITTLE_ENDIAN);
             byte[] magic = new byte[4];
@@ -784,16 +992,19 @@ public class FinnwMusicModule implements IMusic {
         }
 
         /** Get only the score part of the data (skipping the header) */
-        ByteBuffer getScoreBuffer() {
+        @Override
+        EventStream newEventStream(boolean looping) {
             ByteBuffer scoreBuffer = this.data.duplicate();
             scoreBuffer.position(scoreStart);
             scoreBuffer.limit(scoreStart + scoreLen);
             ByteBuffer slice = scoreBuffer.slice();
-            return slice;
+            return new MusEventStream(slice, looping);
         }
+
         private final ByteBuffer data;
         private final int scoreLen;
         private final int scoreStart;
+
     }
 
     private ScheduledTransmitter currentTransmitter;
