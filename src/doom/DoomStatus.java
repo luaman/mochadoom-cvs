@@ -441,6 +441,8 @@ public class DoomStatus extends DoomContext {
 
     protected boolean[] gamekeydown = new boolean[NUMKEYS];
 
+    protected boolean keysCleared;
+
     protected int turnheld; // for accelerative turning
 
     protected boolean[] mousearray = new boolean[4];
@@ -516,6 +518,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.28  2011/07/16 10:57:50  velktron
+// Merged finnw's changes for enabling polling of ?_LOCK keys.
+//
 // Revision 1.27  2011/06/14 20:59:47  velktron
 // Channel settings now read from default.cfg. Changes in sound creation order.
 //
