@@ -16,6 +16,7 @@ import javax.sound.midi.Transmitter;
  *  
  * @author David Martel
  * @author velktron
+ * @author finnw
  *
  */
 
@@ -98,22 +99,14 @@ public class DavidMusicModule implements IMusic {
 	public int RegisterSong(byte[] data) {
 		try {
             Sequence sequence;
-	        ByteArrayInputStream bis = new ByteArrayInputStream(data);
+	        ByteArrayInputStream bis;
 	        try {
 	            // If data is a midi file, load it directly
+	            bis = new ByteArrayInputStream(data);
 	            sequence = MidiSystem.getSequence(bis);
 	        } catch (InvalidMidiDataException ex) {
-    	        QMusToMid q = new QMusToMid();
-    	        //OutputStream fos = new FileOutputStream("C:\\Users\\David\\Documents\\test.mid");
-    
-    	        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    	        
-    	        q.convert(bis, baos, true, 0, 0, true, new QMusToMid.Ptr<Integer>(0));
-    	        	  
-    	        bis.close();
-    	        bis = new ByteArrayInputStream(baos.toByteArray());
-    	        
-    	        sequence = MidiSystem.getSequence(bis);
+                bis = new ByteArrayInputStream(data);
+	            sequence = MusReader.getSequence(bis);
 	        }
             sequencer.stop(); // stops current music if any
             sequencer.setSequence(sequence); // Create a sequencer for the sequence

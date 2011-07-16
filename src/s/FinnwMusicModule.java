@@ -58,9 +58,13 @@ import javax.sound.midi.Transmitter;
  *      <li>Pausing is not implemented yet</li>
  *      <li>It's too complicated</li></ul>
  *
- * @author finnw
+ * @deprecated The most important functions (mus decoding & volume controls)
+ *             are now in separate classes.  Use this only if we need our own
+ *             sequencing thread for some reason.
  *
+ * @author finnw
  */
+@Deprecated
 public class FinnwMusicModule implements IMusic {
 
     public FinnwMusicModule() {
@@ -244,7 +248,6 @@ public class FinnwMusicModule implements IMusic {
             byte[] mBytes = message.getMessage();
             if ((byte) 0xb0 <= mBytes[0] && mBytes[0] < (byte) 0xc0 &&
                 mBytes[1] == 121) {
-                System.err.println("RESET");
                 return true;
             }
         }
