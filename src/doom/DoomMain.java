@@ -84,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.74.2.3 2011/07/15 23:59:36 finnw Exp $
+// $Id: DoomMain.java,v 1.74.2.4 2011/07/16 11:50:10 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.3 2011/07/15 23:59:36 finnw Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.4 2011/07/16 11:50:10 finnw Exp $";
 
     //
     // EVENT HANDLING
@@ -2264,11 +2264,54 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         } 
     } 
 
+/**
+ *  M_Screenshot
+ *  
+ *  Currently saves PCX screenshots, and only in devparm.
+ *  Very oldschool ;-)
+ *  
+ *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
+ *  messages, option to save as either PCX or PNG. Also, request
+ *  current palette from VI (otherwise gamma settings and palette effects
+ *  don't show up).
+ *  
+ */
 
-    public void ScreenShot () 
-    { 
-        gameaction = gameaction_t.ga_screenshot; 
-    } 
+public void ScreenShot ()
+{
+    int     i;
+    byte[]  linear;
+    String format=new String("DOOM%c%c%c%c.pcx");
+    String lbmname = null;
+    
+    // munge planar buffer to linear
+    linear = V.getScreen(2);
+    VI.ReadScreen (linear);
+
+    // find a file name to save it to
+    
+    char[] digit=new char[4];
+    
+    for (i=0 ; i<=9999 ; i++)
+    {
+    digit[0] = (char) (i/1000 + '0');
+    digit[1] = (char) (i/100 + '0');
+    digit[2] = (char) (i/10 + '0');
+    digit[3] =  (char) (i%10 + '0');
+    lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
+    if (!C2JUtils.testAccess(lbmname,"r"))
+        break;  // file doesn't exist
+    }
+    if (i==10000)
+    I.Error ("M_ScreenShot: Couldn't create a PCX");
+
+    // save the pcx file
+    MenuMisc.WritePCXfile (lbmname, linear,
+          SCREENWIDTH, SCREENHEIGHT,
+          W.CacheLumpNameAsRawBytes ("PLAYPAL",PU_CACHE));
+
+    players[consoleplayer].message = "screen shot";
+}
 
 
 
@@ -4084,6 +4127,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74.2.4  2011/07/16 11:50:10  finnw
+//Merge screenshot code from trunk
+//
 //Revision 1.74.2.3  2011/07/15 23:59:36  finnw
 //FinnwMusicModule and DavidMusicModule can now load MIDI lumps.
 //

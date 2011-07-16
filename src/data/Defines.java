@@ -1,7 +1,8 @@
 package data;
 
 //import m.define;
-import static data.Limits.*;
+import static data.Limits.MAXINT;
+import static data.Limits.MININT;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 
@@ -10,14 +11,11 @@ import java.awt.event.KeyEvent;
 import defines.ammotype_t;
 import defines.card_t;
 import doom.weapontype_t;
-import f.anim_t;
-import f.point_t;
-import w.animenum_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.40.4.1 2011/07/14 18:28:10 finnw Exp $
+// $Id: Defines.java,v 1.40.4.2 2011/07/16 11:50:10 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -464,6 +462,6 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int acp2=2;
  
 static final String
-rcsid = "$Id: Defines.java,v 1.40.4.1 2011/07/14 18:28:10 finnw Exp $";
+rcsid = "$Id: Defines.java,v 1.40.4.2 2011/07/16 11:50:10 finnw Exp $";
 }
 
