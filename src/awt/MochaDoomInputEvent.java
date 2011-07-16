@@ -29,6 +29,8 @@ public class MochaDoomInputEvent {
 		static final int WindowMoving=12;
 		static final int FocusGained=13;
 		static final int FocusLost=14;
+		static final int LockOn=15;
+		static final int LockOff=16;
 		static final int KEY_MASK=0X100; // Extract info from lower bits for this
 		
 		int type;

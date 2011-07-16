@@ -1,6 +1,7 @@
 package awt;
 
 import static data.Defines.KEY_BACKSPACE;
+import static data.Defines.KEY_CAPSLOCK;
 import static data.Defines.KEY_DOWNARROW;
 import static data.Defines.KEY_ENTER;
 import static data.Defines.KEY_EQUALS;
@@ -19,11 +20,13 @@ import static data.Defines.KEY_F8;
 import static data.Defines.KEY_F9;
 import static data.Defines.KEY_LEFTARROW;
 import static data.Defines.KEY_MINUS;
+import static data.Defines.KEY_NUMLOCK;
 import static data.Defines.KEY_PAUSE;
 import static data.Defines.KEY_RALT;
 import static data.Defines.KEY_RCTRL;
 import static data.Defines.KEY_RIGHTARROW;
 import static data.Defines.KEY_RSHIFT;
+import static data.Defines.KEY_SCRLCK;
 import static data.Defines.KEY_TAB;
 import static data.Defines.KEY_UPARROW;
 import i.DoomEventInterface;
@@ -50,7 +53,10 @@ import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
 import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.Map;
 
 import doom.DoomMain;
 import doom.event_t;
@@ -68,6 +74,8 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
     // modifications of eventQueue must be thread safe!
     private LinkedList<MochaDoomInputEvent> eventQueue = new LinkedList<MochaDoomInputEvent>();
+
+    private HashMap<Integer, Boolean> lockingKeyStates = new HashMap<Integer, Boolean>();
 
     //// STATUS STUFF ///////////
     public final DoomMain DM;
@@ -104,7 +112,10 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         } catch (Exception e){
             System.out.println("AWT Robot could not be created, mouse input focus will be loose!");
         }
-        
+
+        lockingKeyStates.put(KeyEvent.VK_CAPS_LOCK, null);
+        lockingKeyStates.put(KeyEvent.VK_NUM_LOCK, null);
+        lockingKeyStates.put(KeyEvent.VK_SCROLL_LOCK, null);
     }
 
     
@@ -140,6 +151,15 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         MochaDoomInputEvent X_event;
         MouseEvent MEV;
         Point tmp;
+        // Unlike most keys, caps lock etc. can be polled, so no need to worry
+        // about them getting stuck.  So they are re-polled after all other
+        // key states have beeen cleared.
+        if (DM.shouldPollLockingKeys()) {
+            for (Map.Entry<Integer, Boolean> e: lockingKeyStates.entrySet()) {
+                e.setValue(null);
+            }
+            updateLockingKeys();
+        }
         // put event-grabbing stuff in here
         if (eventQueue.isEmpty()) return;   
         X_event=nextEvent();
@@ -152,7 +172,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             {
             case MochaDoomInputEvent.KeyPress: {
                 event.type=evtype_t.ev_keydown;
-                event.data1=xlatekey((KeyEvent)X_event.ev);
+                event.data1=xlatekey((KeyEvent)X_event.ev, -1);
                 DM.PostEvent(event);
                 if (prevmousebuttons!=0){
                     
@@ -167,7 +187,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             
             case MochaDoomInputEvent.KeyRelease:
                 event.type=evtype_t.ev_keyup;
-                event.data1=xlatekey((KeyEvent)X_event.ev);
+                event.data1=xlatekey((KeyEvent)X_event.ev, -1);
                 DM.PostEvent(event);
                 
                 if (prevmousebuttons!=0){
@@ -180,21 +200,54 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 //System.err.println( "ku");
                 break;
             
-        case MochaDoomInputEvent.KeyType:
-            event.type=evtype_t.ev_keyup;
-            event.data1=xlatekey((KeyEvent)X_event.ev);
-            DM.PostEvent(event);
-            
-            if (prevmousebuttons!=0){
-                
-                // Allow combined mouse/keyboard events.
-                event.data1=prevmousebuttons;
-                event.type=evtype_t.ev_mouse;
+            case MochaDoomInputEvent.KeyType:
+                event.type=evtype_t.ev_keyup;
+                event.data1=xlatekey((KeyEvent)X_event.ev, -1);
                 DM.PostEvent(event);
+                
+                if (prevmousebuttons!=0){
+                    
+                    // Allow combined mouse/keyboard events.
+                    event.data1=prevmousebuttons;
+                    event.type=evtype_t.ev_mouse;
+                    DM.PostEvent(event);
+                    }
+                //System.err.println( "ku");
+                break;
+            
+            case MochaDoomInputEvent.LockOn: {
+                event.type=evtype_t.ev_keydown;
+                event.data1=xlatekey(null, X_event.value);
+                DM.PostEvent(event);
+                if (prevmousebuttons!=0){
+                        
+                    // Allow combined mouse/keyboard events.
+                    event.data1=prevmousebuttons;
+                    event.type=evtype_t.ev_mouse;
+                    DM.PostEvent(event);
                 }
-            //System.err.println( "ku");
-            break;
-        }
+                //System.err.println("l1");
+                break;
+            }
+
+            case MochaDoomInputEvent.LockOff: {
+                event.type=evtype_t.ev_keyup;
+                event.data1=xlatekey(null, X_event.value);
+                DM.PostEvent(event);
+                
+                if (prevmousebuttons!=0){
+                    
+                    // Allow combined mouse/keyboard events.
+                    event.data1=prevmousebuttons;
+                    event.type=evtype_t.ev_mouse;
+                    DM.PostEvent(event);
+                    }
+                //System.err.println( "l0");
+                break;
+            }
+
+            }
+
         }
 
         // Ignore ALL mouse events if we are moving the window.
@@ -441,15 +494,15 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
      *  else a lot of things just don't work. 
      * 
      * @param e
+     * @param rc 
      * @return
      */
 
-    public int xlatekey(KeyEvent e)
+    public int xlatekey(KeyEvent e, int rc)
     {
 
-        int rc;
-
-        switch(rc =     e.getKeyCode())
+        if (e != null) rc = e.getKeyCode();
+        switch(rc)
 
         //Event.XKeycodeToKeysym(X_display, X_event.xkey.keycode, 0))
 
@@ -481,9 +534,12 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
         case KeyEvent.VK_PAUSE:   rc = KEY_PAUSE;     break;
 
-        case KeyEvent.KEY_RELEASED:
         case KeyEvent.VK_TAB: rc = KEY_TAB;       break;
-
+        case KeyEvent.VK_CAPS_LOCK: rc = KEY_CAPSLOCK; break;
+        case KeyEvent.VK_NUM_LOCK: rc = KEY_NUMLOCK; break;
+        case KeyEvent.VK_SCROLL_LOCK: rc = KEY_SCRLCK; break;
+        /*
+        case KeyEvent.KEY_RELEASED:
         case KeyEvent.KEY_PRESSED:
             switch(e.getKeyCode()){
 
@@ -515,6 +571,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 break;
 
             }
+            */
 
         default:
 
@@ -546,21 +603,52 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
     ///////////////////////// KEYBOARD EVENTS ///////////////////////////////////
 
 
-    public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode()<=KeyEvent.VK_F12) {  
-            addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyPress,e));            
+    private void updateLockingKeys() {
+        Toolkit toolkit = canvas.getToolkit();
+        for (Iterator<Map.Entry<Integer, Boolean>> it =
+                 lockingKeyStates.entrySet().iterator();
+             it.hasNext();
+             ) {
+            Map.Entry<Integer, Boolean> entry = it.next(); 
+            Integer keyCode = entry.getKey();
+            Boolean oldState = entry.getValue();
+            try {
+                boolean newState = toolkit.getLockingKeyState(keyCode);
+                if (! Boolean.valueOf(newState).equals(oldState)) {
+                    int eventType =
+                        newState ? MochaDoomInputEvent.LockOn
+                                 : MochaDoomInputEvent.LockOff;
+                    addEvent(new MochaDoomInputEvent(eventType,keyCode));
+                    entry.setValue(newState);
+                }
+            } catch (UnsupportedOperationException ex) {
+                // Key not present
+                it.remove();
+            }
         }
+    }
 
-        e.consume();
+    public void keyPressed(KeyEvent e) {
+        updateLockingKeys();
+        if (! lockingKeyStates.containsKey(e.getKeyCode())) {
+            if (e.getKeyCode()<=KeyEvent.VK_F12) {  
+                addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyPress,e));            
+            }
+    
+            e.consume();
+        }
     }
 
     public void keyReleased(KeyEvent e) {
-
-        //if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
-        if (e.getKeyCode()<=KeyEvent.VK_F12) {
-        	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyRelease,e));
+        updateLockingKeys();
+        if (! lockingKeyStates.containsKey(e.getKeyCode())) {
+    
+            //if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
+            if (e.getKeyCode()<=KeyEvent.VK_F12) {
+            	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyRelease,e));
+            }
+            e.consume();
         }
-        e.consume();
     }
 
     public void keyTyped(KeyEvent e) {
