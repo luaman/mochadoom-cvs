@@ -25,8 +25,7 @@ actionf_p2	acp2;
 */
 
 public enum think_t {
-	HALT, // All actions completed - can be removed from the list
-	WAIT, // Temporarily doing nothing, but can be re-activated
+	NOP,
 	A_Light0(2),
     A_WeaponReady(2),
     A_Lower(2),
@@ -129,5 +128,9 @@ public enum think_t {
     public String ToString(){
         return this.name()+" Type: "+type;
     }
+    
+    public static final int acpv=0;
+    public static final int acp1=1;
+    public static final int acp2=2;
 	
 }

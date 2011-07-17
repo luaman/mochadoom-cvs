@@ -28,6 +28,11 @@ public class ceiling_t extends SectorAction implements CacheableDoomObject,IRead
         public int     tag;                   
         public int     olddirection;
         
+        public ceiling_t(){
+        	// Set to the smallest ordinal type.
+        	this.type=ceiling_e.lowerToFloor;
+        }
+        
         // HACK for speed.
         public static final ceiling_e[] values=ceiling_e.values();
         
@@ -59,9 +64,7 @@ public class ceiling_t extends SectorAction implements CacheableDoomObject,IRead
 		public void unpack(ByteBuffer b) throws IOException {
 			b.order(ByteOrder.LITTLE_ENDIAN);
 			super.unpack(b); // Call thinker reader first
-			//b.order(ByteOrder.BIG_ENDIAN);
-			//type=values[b.getInt()];
-			System.out.println("LOADED Ceiling_t type: "+Integer.toHexString(b.getInt()));
+			type=values[b.getInt()];
             super.sectorid=b.getInt(); // sector pointer.
             bottomheight=b.getInt();
             topheight=b.getInt();

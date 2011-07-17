@@ -15,7 +15,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.40.4.2 2011/07/16 11:50:10 finnw Exp $
+// $Id: Defines.java,v 1.40.4.3 2011/07/17 23:33:48 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -457,11 +457,9 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int  FF_FULLBRIGHT =  0x8000;  // flag in thing->frame
     public static final int  FF_FRAMEMASK =   0x7fff;
 
-    public static final int acpv=0;
-    public static final int acp1=1;
-    public static final int acp2=2;
+
  
 static final String
-rcsid = "$Id: Defines.java,v 1.40.4.2 2011/07/16 11:50:10 finnw Exp $";
+rcsid = "$Id: Defines.java,v 1.40.4.3 2011/07/17 23:33:48 finnw Exp $";
 }
 

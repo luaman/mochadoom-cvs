@@ -84,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.74.2.4 2011/07/16 11:50:10 finnw Exp $
+// $Id: DoomMain.java,v 1.74.2.5 2011/07/17 23:33:48 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.4 2011/07/16 11:50:10 finnw Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.5 2011/07/17 23:33:48 finnw Exp $";
 
     //
     // EVENT HANDLING
@@ -4127,6 +4127,10 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74.2.5  2011/07/17 23:33:48  finnw
+//Merge new ActionFunctions & RoguePatchMap from trunk, removed WAIT/HALT
+//actions as no longer necessary.
+//
 //Revision 1.74.2.4  2011/07/16 11:50:10  finnw
 //Merge screenshot code from trunk
 //
