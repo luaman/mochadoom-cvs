@@ -745,6 +745,8 @@ protected void UnArchiveSpecials () throws IOException
  //List<thinker_t> A=new ArrayList<thinker_t>();
  
  A.ClearPlatsBeforeLoading();
+ A.ClearCeilingsBeforeLoading();
+ 
  // read in saved thinkers
  while (true)
  {
@@ -763,7 +765,7 @@ protected void UnArchiveSpecials () throws IOException
      ceiling.sector = LL.sectors[ceiling.sectorid];
      ceiling.sector.specialdata = ceiling;
 
-     if (ceiling.function!=null)
+     if (ceiling.functionid!=0)
      ceiling.function = think_t.T_MoveCeiling;
 
      A.AddThinker (ceiling);
