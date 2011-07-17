@@ -1,14 +1,16 @@
 package s;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiDevice;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Transmitter;
 
 /** Concern separated from David Martel's MIDI & MUS player
@@ -59,6 +61,8 @@ public class DavidMusicModule implements IMusic {
 			sequencer.open();
 			
 		    receiver = VolumeScalingReceiver.getInstance();
+		    // Configure General MIDI level 1
+		    sendSysexMessage(receiver, (byte)0xf0, (byte)0x7e, (byte)0x7f, (byte)9, (byte)1, (byte)0xf7);
 		    transmitter = sequencer.getTransmitter();
 		    transmitter.setReceiver(receiver);
 		} catch (MidiUnavailableException e) {
@@ -66,7 +70,27 @@ public class DavidMusicModule implements IMusic {
 		}
 	}
 
-	@Override
+    private static void sendControlChange(Receiver receiver, int midiChan, int ctrlId, int value) {
+        ShortMessage msg = new ShortMessage();
+        try {
+            msg.setMessage(ShortMessage.CONTROL_CHANGE, midiChan, ctrlId, value);
+        } catch (InvalidMidiDataException ex) {
+            throw new RuntimeException(ex);
+        }
+        receiver.send(msg, -1);
+    }
+
+	private static void sendSysexMessage(Receiver receiver, byte... message) {
+	    SysexMessage msg = new SysexMessage();
+	    try {
+            msg.setMessage(message, message.length);
+        } catch (InvalidMidiDataException ex) {
+            throw new RuntimeException(ex);
+        }
+        receiver.send(msg, -1);
+    }
+
+    @Override
 	public void ShutdownMusic() {
 		sequencer.stop();
 		sequencer.close();
@@ -122,6 +146,9 @@ public class DavidMusicModule implements IMusic {
 	@Override
 	public void PlaySong(int handle, boolean looping) {
 		if (songloaded){
+	        for (int midiChan = 0; midiChan < 16; ++ midiChan) {
+	            setPitchBendSensitivity(receiver, midiChan, 2);
+	        }
             if (looping)
             	sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
             else
@@ -130,7 +157,17 @@ public class DavidMusicModule implements IMusic {
 		}
 	}
 
-	@Override
+	private void setPitchBendSensitivity(Receiver receiver, int midiChan, int semitones) {
+	    sendRegParamChange(receiver, midiChan, 0, 0, 2);
+    }
+
+    private void sendRegParamChange(Receiver receiver, int midiChan, int paramMsb, int paramLsb, int valMsb) {
+        sendControlChange(receiver, midiChan, 101, paramMsb);
+        sendControlChange(receiver, midiChan, 100, paramLsb);
+        sendControlChange(receiver, midiChan, 6, valMsb);
+    }
+
+    @Override
 	public void StopSong(int handle) {
 		sequencer.stop();
 

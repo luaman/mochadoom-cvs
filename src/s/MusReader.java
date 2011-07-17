@@ -8,12 +8,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
-import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 
 import m.Swap;
@@ -43,12 +43,6 @@ public class MusReader {
         dis.skip(scoreStart - 8);
         Sequence sequence = new Sequence(Sequence.SMPTE_30, 14, 1);
         Track track = sequence.getTracks()[0];
-        EventGroup setup = new EventGroup();
-        setup.generalMidi(1);
-        for (int midiChan = 0; midiChan < 16; ++ midiChan) {
-            setup.pitchBendSensitivity(midiChan, 2);
-        }
-        setup.appendTo(track, 0);
         int[] chanVelocity = new int[16];
         Arrays.fill(chanVelocity, 100);
         EventGroup eg;
@@ -56,6 +50,9 @@ public class MusReader {
         while ((eg = nextEventGroup(dis, chanVelocity)) != null) {
             tick = eg.appendTo(track, tick);
         }
+        MetaMessage endOfSequence = new MetaMessage();
+        endOfSequence.setMessage(47, new byte[] {0}, 1);
+        track.add(new MidiEvent(endOfSequence, tick));
         return sequence;
     }
 
@@ -236,9 +233,6 @@ public class MusReader {
         void expression(int midiChan, int expr) {
             addControlChange(midiChan, CTRL_EXPRESSION_POT, expr);
         }
-        void generalMidi(int mode) {
-            addSysExMessage(0xf0, (byte)0x7e, (byte)0x7f, (byte)9, (byte)mode, (byte)0xf7);
-       }
         void noteOn(int midiChan, int note, int velocity) {
             addShortMessage(midiChan, ShortMessage.NOTE_ON, note, velocity);
         }
@@ -254,9 +248,6 @@ public class MusReader {
         void pitchBend(int midiChan, int wheelVal) {
             int pb14 = wheelVal * 64;
             addShortMessage(midiChan, ShortMessage.PITCH_BEND, pb14 % 128, pb14 / 128);
-        }
-        void pitchBendSensitivity(int midiChan, int semitones) {
-            addRegParamChange(midiChan, RPM_PITCH_BEND_SENSITIVITY, RPL_PITCH_BEND_SENSITIVITY, semitones);
         }
         void resetAllControllers(int midiChan) {
             addControlChange(midiChan, CHM_RESET_ALL, 0);
@@ -276,24 +267,10 @@ public class MusReader {
         private void addControlChange(int midiChan, int ctrlId, int ctrlVal) {
             addShortMessage(midiChan, ShortMessage.CONTROL_CHANGE, ctrlId, ctrlVal);
         }
-        private void addRegParamChange(int midiChan, int paramMsb, int paramLsb, int valMsb) {
-            addControlChange(midiChan, 101, paramMsb);
-            addControlChange(midiChan, 100, paramLsb);
-            addControlChange(midiChan, 6, valMsb);
-        }
         private void addShortMessage(int midiChan, int cmd, int data1, int data2) {
             try {
                 ShortMessage msg = new ShortMessage();
                 msg.setMessage(cmd, midiChan, data1, data2);
-                messages.add(msg);
-            } catch (InvalidMidiDataException ex) {
-                throw new RuntimeException(ex);
-            }
-        }
-        private void addSysExMessage(int status, byte... data) {
-            try {
-                SysexMessage msg = new SysexMessage();
-                msg.setMessage(status, data, data.length);
                 messages.add(msg);
             } catch (InvalidMidiDataException ex) {
                 throw new RuntimeException(ex);
@@ -306,8 +283,6 @@ public class MusReader {
         private static final int CTRL_EXPRESSION_POT = 11;
         private static final int CTRL_PAN = 10;
         private static final int CTRL_SUSTAIN = 64;
-        private static final int RPM_PITCH_BEND_SENSITIVITY = 0;
-        private static final int RPL_PITCH_BEND_SENSITIVITY = 0;
         private static final int CHM_RESET_ALL = 121;
         private static final int CTRL_REVERB_DEPTH = 91;
         private static final int CTRL_MODULATION_POT = 1;
