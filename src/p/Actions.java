@@ -120,7 +120,16 @@ public class Actions extends UnifiedGameMap {
 
       private ceiling_t[]  activeceilings=new ceiling_t[MAXCEILINGS];
 
-
+      /** This needs to be called before loading, otherwise
+       *  crushers won't be able to be restarted. 
+       */
+      public void ClearCeilingsBeforeLoading(){
+          for (int i = 0; i < MAXPLATS; i++) {
+                  this.activeceilings[i] = null;
+              }
+      }
+      
+      
       /**
        * T_MoveCeiling
        */
@@ -702,7 +711,9 @@ public class Actions extends UnifiedGameMap {
               && (getActiveceilings()[i].direction != 0))
           {
               getActiveceilings()[i].olddirection = getActiveceilings()[i].direction;
-              getActiveceilings()[i].function = think_t.NOP;
+              // MAES: don't set it to NOP here, otherwise its thinker will be
+              // removed and it won't be possible to restart it.
+              getActiveceilings()[i].function = null;
               getActiveceilings()[i].direction = 0;       // in-stasis
               rtn = 1;
           }
