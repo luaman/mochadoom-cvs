@@ -274,10 +274,8 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
          this.special = 0;
 
          flick = new fireflicker_t(RND);
-
-         TL.AddThinker(flick);
-
          flick.function = think_t.T_FireFlicker;
+         TL.AddThinker(flick);
          flick.sector = this;
          flick.maxlight = this.lightlevel;
          flick.minlight =
@@ -298,12 +296,12 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
         
          door = new vldoor_t();
          
-         TL.AddThinker (door);
+         
 
          this.specialdata = door;
          this.special = 0;
-
          door.function = think_t.T_VerticalDoor;
+         TL.AddThinker (door);
          door.sector = this;
          door.direction = 2;
          door.type = vldoor_e.raiseIn5Mins;
@@ -323,12 +321,13 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
         
          door = new vldoor_t();
 
-         TL.AddThinker (door);
+        
 
          this.specialdata = door;
          this.special = 0;
 
          door.function = think_t.T_VerticalDoor;
+         TL.AddThinker (door);
          door.sector = this;
          door.direction = 0;
          door.type = vldoor_e.normal;
@@ -345,13 +344,11 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
          strobe_t flash;
 
          flash = new strobe_t();
-
-         TL.AddThinker(flash);
-
          flash.sector = this;
          flash.darktime = fastOrSlow;
          flash.brighttime = STROBEBRIGHT;
          flash.function = think_t.T_StrobeFlash;
+         TL.AddThinker(flash);
          flash.maxlight = this.lightlevel;
          flash.minlight = this.FindMinSurroundingLight(this.lightlevel);
 
@@ -380,10 +377,8 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
          special = 0;
 
          flash = new lightflash_t(RND);
-
-         TL.AddThinker((thinker_t)flash);
-
          flash.function = think_t.T_LightFlash;
+         TL.AddThinker((thinker_t)flash);
          flash.sector = this;
          flash.maxlight = lightlevel;
 
@@ -397,13 +392,11 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
          glow_t g;
 
          g = new glow_t();
-
-         TL.AddThinker(g);
-
          g.sector = this;
          g.minlight = FindMinSurroundingLight(this.lightlevel);
          g.maxlight = lightlevel;
          g.function = think_t.T_Glow;
+         TL.AddThinker(g);
          g.direction = -1;
 
          this.special = 0;
