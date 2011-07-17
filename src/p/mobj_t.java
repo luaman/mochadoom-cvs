@@ -1,6 +1,5 @@
 package p;
 
-import static data.Defines.acp1;
 import static data.Defines.FLOATSPEED;
 import static data.Defines.GRAVITY;
 import static data.Defines.VIEWHEIGHT;
@@ -26,6 +25,7 @@ import data.spritenum_t;
 import data.state_t;
 import defines.*;
 import doom.player_t;
+import doom.think_t;
 import doom.thinker_t;
 
 /**
@@ -318,11 +318,9 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
 
         // Modified handling.
         // Call action functions when the state is set
-        //_D_: changed this, causing a LOT of action to work
-        // MAES: workaround not needed since types
-        // are now set correctly.
-        if (st.action!=null && st.action.getType()==acp1)       
-            {A.dispatch(st.action, this, null);} 
+
+        if (st.acp1!=null)       
+            {st.acp1.invoke(this);} 
         
         state = st.nextstate;
         } while (tics==0);
