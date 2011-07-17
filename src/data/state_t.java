@@ -1,5 +1,8 @@
 package data;
 
+import p.ActionType1;
+import p.ActionType2;
+import p.ActionTypeSS;
 import doom.think_t;
 import defines.statenum_t;
 
@@ -40,10 +43,15 @@ public class state_t {
          *  
          */
         public think_t         action;
+        public ActionType1 acp1;
+        public ActionType2 acp2;
+        public ActionTypeSS acpss;
+        
         public statenum_t            nextstate;
         public int misc1, misc2;
         /** relative index in state array. Needed sometimes. */
         public int id;
+		
         
         public String toString(){
             sb.setLength(0);
