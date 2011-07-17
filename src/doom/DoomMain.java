@@ -84,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.75 2011/07/15 13:56:55 velktron Exp $
+// $Id: DoomMain.java,v 1.76 2011/07/17 12:43:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.75 2011/07/15 13:56:55 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.76 2011/07/17 12:43:18 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1725,7 +1725,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //Z_CheckHeap ();
 
         // clear cmd building stuff
-        Arrays.fill(gamekeydown, false); 
+        Arrays.fill(gamekeydown, false);
+        keysCleared = true;
         joyxmove = joyymove = 0; 
         mousex = mousey = 0; 
         sendpause = sendsave = paused = false; 
@@ -2456,6 +2457,8 @@ public void ScreenShot ()
         wminfo.maxfrags = 0; 
         if ( isCommercial() )
             wminfo.partime = 35*cpars[gamemap-1]; 
+        else if (gameepisode >= pars.length)
+            wminfo.partime = 0;
         else
             wminfo.partime = 35*pars[gameepisode][gamemap]; 
         wminfo.pnum = consoleplayer; 
@@ -4094,7 +4097,6 @@ public void ScreenShot ()
     protected int SAFE_SCALE;
     protected IVideoScale vs;
 
-
     @Override
     public void setVideoScale(IVideoScale vs) {
         this.vs=vs;
@@ -4113,9 +4115,21 @@ public void ScreenShot ()
 
     }
 
+
+    public boolean shouldPollLockingKeys() {
+        if (keysCleared) {
+            keysCleared = false;
+            return true;
+        }
+        return false;
+    }
+
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.76  2011/07/17 12:43:18  velktron
+//Merged in finnw's Ultimate Doom par times fixes, locking keys method.
+//
 //Revision 1.75  2011/07/15 13:56:55  velktron
 //Screenshots functional (with devparm, in PCX format).
 //
