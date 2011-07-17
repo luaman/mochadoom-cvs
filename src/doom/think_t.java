@@ -128,5 +128,9 @@ public enum think_t {
     public String ToString(){
         return this.name()+" Type: "+type;
     }
+    
+    public static final int acpv=0;
+    public static final int acp1=1;
+    public static final int acp2=2;
 	
 }
