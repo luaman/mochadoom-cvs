@@ -9,7 +9,6 @@ import static data.Defines.ML_TWOSIDED;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMAMMO;
 import static data.Defines.RANGECHECK;
-import static data.Defines.acp1;
 import static data.Defines.pw_allmap;
 import static data.Defines.pw_infrared;
 import static data.Defines.pw_invisibility;
@@ -30,6 +29,7 @@ import static data.info.mobjinfo;
 import static data.info.sprnames;
 import static data.info.states;
 import static doom.englsh.*;
+import p.BlockMapIterators.PIT_MobjFunction;
 import pooling.MobjPool;
 import automap.AbstractAutoMap;
 
@@ -40,6 +40,7 @@ import static m.fixed_t.FixedMul;
 import static p.MapUtils.AproxDistance;
 import static p.MapUtils.InterceptVector;
 import static utils.C2JUtils.*;
+import static p.mobj_t.MF_CORPSE;
 import static p.mobj_t.MF_COUNTITEM;
 import static p.mobj_t.MF_DROPPED;
 import static p.mobj_t.MF_NOBLOCKMAP;
@@ -90,11 +91,21 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         this.See=new Sight(); // Didn't initialize that.
         this.EN=new Enemies();
         this.thinkercap=new thinker_t();
+        
+        
         intercepts = new intercept_t[MAXINTERCEPTS];
         C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
 
         this.updateStatus(DS);
+        
+        this.FUNS=new ActionFunctions(DS,EN);
+        
+        // "Wire" all states to the proper functions.
+        for (int i=0;i<states.length;i++){
+        	FUNS.doWireState(states[i]);
+        }
 
+        
     }
     
     /////////////////// STATUS ///////////////////
@@ -141,6 +152,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             this.HU=DC.HU;
             this.TM=DC.TM;
             this.SM=DC.SM;
+            if (FUNS!=null)
+            FUNS.updateStatus(DC);
+            
             }
       
     
@@ -159,6 +173,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     protected Sight See;
 
     protected Enemies EN;
+    
+    protected ActionFunctions FUNS;
 
     // ////////////////////////////////////////////
 
@@ -167,6 +183,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     public int bottomslope; // slopes to top and bottom of target
 
     int attackrange;
+    
+    
 
     //
     // UTILITIES
@@ -325,120 +343,6 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     boolean earlyout;
 
     int ptflags;
-
-    //
-    // PIT_AddLineIntercepts.
-    // Looks for lines in the given block
-    // that intercept the given trace
-    // to add to the intercepts list.
-    //
-    // A line is crossed if its endpoints
-    // are on opposite sides of the trace.
-    // Returns true if earlyout and a solid line hit.
-    //
-    
-    divline_t dl = new divline_t();
-    
-    boolean AddLineIntercepts(line_t ld) {
-        boolean s1;
-        boolean s2;
-        int frac;
-        // avoid precision problems with two routines
-        if (trace.dx > FRACUNIT * 16 || trace.dy > FRACUNIT * 16
-                || trace.dx < -FRACUNIT * 16 || trace.dy < -FRACUNIT * 16) {
-            s1 = trace.PointOnDivlineSide(ld.v1x, ld.v1.y);
-            s2 = trace.PointOnDivlineSide(ld.v2x, ld.v2y);
-            //s1 = trace.DivlineSide(ld.v1x, ld.v1.y);
-            //s2 = trace.DivlineSide(ld.v2x, ld.v2y);
-        } else {
-            s1 = ld.PointOnLineSide(trace.x, trace.y);
-            s2 = ld.PointOnLineSide(trace.x + trace.dx, trace.y + trace.dy);
-            //s1 = new divline_t(ld).DivlineSide(trace.x, trace.y);
-            //s2 = new divline_t(ld).DivlineSide(trace.x + trace.dx, trace.y + trace.dy);
-        }
-
-        if (s1 == s2)
-            return true; // line isn't crossed
-
-        // hit the line
-        dl.MakeDivline(ld);
-        frac = InterceptVector(trace, dl);
-
-        if (frac < 0)
-            return true; // behind source
-
-        // try to early out the check
-        if (earlyout && frac < FRACUNIT && ld.backsector == null) {
-            return false; // stop checking
-        }
-
-        // "create" a new intercept in the static intercept pool.
-        intercepts[intercept_p].frac = frac;
-        intercepts[intercept_p].isaline = true;
-        intercepts[intercept_p].line = ld;
-        intercept_p++;
-
-        return true; // continue
-    }
-
-    //
-    // PIT_AddThingIntercepts
-    //
-    boolean AddThingIntercepts(mobj_t thing) {
-        int x1, y1, x2, y2; // fixed_t
-
-        boolean s1, s2;
-
-        boolean tracepositive;
-
-        // maybe make this a shared instance variable?
-        divline_t dl = new divline_t();
-
-        int frac; // fixed_t
-
-        tracepositive = (trace.dx ^ trace.dy) > 0;
-
-        // check a corner to corner crossection for hit
-        if (tracepositive) {
-            x1 = thing.x - thing.radius;
-            y1 = thing.y + thing.radius;
-
-            x2 = thing.x + thing.radius;
-            y2 = thing.y - thing.radius;
-        } else {
-            x1 = thing.x - thing.radius;
-            y1 = thing.y - thing.radius;
-
-            x2 = thing.x + thing.radius;
-            y2 = thing.y + thing.radius;
-        }
-
-        s1 = trace.PointOnDivlineSide(x1, y1);
-        s2 = trace.PointOnDivlineSide(x2, y2);
-
-        if (s1 == s2)
-            return true; // line isn't crossed
-
-        dl.x = x1;
-        dl.y = y1;
-        dl.dx = x2 - x1;
-        dl.dy = y2 - y1;
-
-        frac = InterceptVector(trace, dl);
-
-        if (frac < 0)
-            return true; // behind source
-
-        // "create" a new intercept in the static intercept pool.
-        intercepts[intercept_p].frac = frac;
-        intercepts[intercept_p].isaline = false;
-        intercepts[intercept_p].thing = thing;
-        intercept_p++;
-
-        return true; // keep going
-    }
-
-    // end class
 
     class Lights {
 
@@ -851,12 +755,13 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 // Find lowest & highest floors around sector
                 rtn = true;
                 plat = new plat_t();
-                AddThinker(plat);
+
 
                 plat.type = type;
                 plat.sector = sec;
                 plat.sector.specialdata = plat;
                 plat.function = think_t.T_PlatRaise;
+                AddThinker(plat);
                 plat.crush = false;
                 plat.tag = line.tag;
 
@@ -941,6 +846,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                         && (activeplats[i].status == plat_e.in_stasis)) {
                     (activeplats[i]).status = (activeplats[i]).oldstatus;
                     (activeplats[i]).function = think_t.T_PlatRaise;
+                    FUNS.doWireThinker(activeplats[i]);
                 }
         }
 
@@ -954,6 +860,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     (activeplats[j]).oldstatus = (activeplats[j]).status;
                     (activeplats[j]).status = plat_e.in_stasis;
                     (activeplats[j]).function = null;
+                    FUNS.doWireThinker(activeplats[j]);
                 }
         }
 
@@ -1580,26 +1487,144 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     interface PIT_MobjFunction {
         public boolean invoke(mobj_t thing);
     }
-
-    enum PIT {
-        AddLineIntercepts,
-        AddThingIntercepts,
-        ChangeSector,
-        CheckLine,
-        CheckThing,
-        StompThing,
-        RadiusAttack,
-        VileCheck
+    
+    interface PTR_InterceptFunc {
+    	public boolean invoke(intercept_t in);
     }
 
-    enum PTR {
+   /* enum PTR {
         SlideTraverse,
         AimTraverse,
         ShootTraverse,
         UseTraverse
-    }
+    } */
 
-    // ///////////////// BEGIN MAP OBJECT CODE, USE AS BASIC
+    //////////////// PIT FUNCTION OBJECTS ///////////////////
+    
+    //
+ // PIT_AddLineIntercepts.
+ // Looks for lines in the given block
+ // that intercept the given trace
+ // to add to the intercepts list.
+ //
+ // A line is crossed if its endpoints
+ // are on opposite sides of the trace.
+ // Returns true if earlyout and a solid line hit.
+ //
+
+ protected class PIT_AddLineIntercepts implements PIT_LineFunction{
+
+ divline_t dl = new divline_t();
+
+ public boolean invoke(line_t ld) {
+     boolean s1;
+     boolean s2;
+     int frac;
+     // avoid precision problems with two routines
+     if (trace.dx > FRACUNIT * 16 || trace.dy > FRACUNIT * 16
+             || trace.dx < -FRACUNIT * 16 || trace.dy < -FRACUNIT * 16) {
+         s1 = trace.PointOnDivlineSide(ld.v1x, ld.v1.y);
+         s2 = trace.PointOnDivlineSide(ld.v2x, ld.v2y);
+         //s1 = trace.DivlineSide(ld.v1x, ld.v1.y);
+         //s2 = trace.DivlineSide(ld.v2x, ld.v2y);
+     } else {
+         s1 = ld.PointOnLineSide(trace.x, trace.y);
+         s2 = ld.PointOnLineSide(trace.x + trace.dx, trace.y + trace.dy);
+         //s1 = new divline_t(ld).DivlineSide(trace.x, trace.y);
+         //s2 = new divline_t(ld).DivlineSide(trace.x + trace.dx, trace.y + trace.dy);
+     }
+
+     if (s1 == s2)
+         return true; // line isn't crossed
+
+     // hit the line
+     dl.MakeDivline(ld);
+     frac = InterceptVector(trace, dl);
+
+     if (frac < 0)
+         return true; // behind source
+
+     // try to early out the check
+     if (earlyout && frac < FRACUNIT && ld.backsector == null) {
+         return false; // stop checking
+     }
+
+     // "create" a new intercept in the static intercept pool.
+     intercepts[intercept_p].frac = frac;
+     intercepts[intercept_p].isaline = true;
+     intercepts[intercept_p].line = ld;
+     intercept_p++;
+
+     return true; // continue
+ 	}
+
+ }
+
+
+ //
+ // PIT_AddThingIntercepts
+ //
+
+ protected class PIT_AddThingIntercepts implements PIT_MobjFunction{
+ public boolean invoke(mobj_t thing) {
+     int x1, y1, x2, y2; // fixed_t
+
+     boolean s1, s2;
+
+     boolean tracepositive;
+
+     // maybe make this a shared instance variable?
+     divline_t dl = new divline_t();
+
+     int frac; // fixed_t
+
+     tracepositive = (trace.dx ^ trace.dy) > 0;
+
+     // check a corner to corner crossection for hit
+     if (tracepositive) {
+         x1 = thing.x - thing.radius;
+         y1 = thing.y + thing.radius;
+
+         x2 = thing.x + thing.radius;
+         y2 = thing.y - thing.radius;
+     } else {
+         x1 = thing.x - thing.radius;
+         y1 = thing.y - thing.radius;
+
+         x2 = thing.x + thing.radius;
+         y2 = thing.y + thing.radius;
+     }
+
+     s1 = trace.PointOnDivlineSide(x1, y1);
+     s2 = trace.PointOnDivlineSide(x2, y2);
+
+     if (s1 == s2)
+         return true; // line isn't crossed
+
+     dl.x = x1;
+     dl.y = y1;
+     dl.dx = x2 - x1;
+     dl.dy = y2 - y1;
+
+     frac = InterceptVector(trace, dl);
+
+     if (frac < 0)
+         return true; // behind source
+
+     // "create" a new intercept in the static intercept pool.
+     intercepts[intercept_p].frac = frac;
+     intercepts[intercept_p].isaline = false;
+     intercepts[intercept_p].thing = thing;
+     intercept_p++;
+
+     return true; // keep going
+ 	}
+ }
+
+   
+    
+    
+   /////////// BEGIN MAP OBJECT CODE, USE AS BASIC
     // ///////////////////////
 
     int test;
@@ -1627,8 +1652,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             // Modified handling.
             // Call action functions when the state is set
-            if (st.action!=null && st.action.getType() == acp1)
-                A.dispatch(st.action, mobj, null);
+            if (st.action!=null && st.action.getType() == think_t.acp1)
+                st.acp1.invoke(mobj);
 
             state = st.nextstate;
         } while (mobj.tics == 0);
@@ -1739,6 +1764,13 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      */
 
     public void AddThinker(thinker_t thinker) {
+    	
+    	// If something was too weird to be wired before, it will
+    	// be wired here for sure, so don't worry about searching 
+    	// all of the code.
+    	if (thinker.function!=null && (thinker.acp1==null && thinker.acp2==null))
+    		FUNS.doWireThinker(thinker);
+    	
         thinkercap.prev.next = thinker;
         thinker.next = thinkercap;
         thinker.prev = thinkercap.prev;
