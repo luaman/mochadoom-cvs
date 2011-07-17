@@ -9,12 +9,21 @@ import w.CacheableDoomObject;
 import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
+import p.ActionType1;
+import p.ActionType2;
+import p.ActionTypeSS;
 
 public class thinker_t implements CacheableDoomObject,IReadableDoomObject,IPackableDoomObject{
    
    public thinker_t prev;
    public thinker_t next;
    public think_t     function;
+   // Thinkers can either have one parameter of type (mobj_t),
+   // Or otherwise be sector specials, flickering lights etc.
+   // Those are atypical and need special handling.
+   public ActionType1     acp1;
+   public ActionType2     acp2;
+   public ActionTypeSS     acpss;
    
    /** extra fields, to use when archiving/unarchiving for
     * identification. Also in blocklinks, etc.
