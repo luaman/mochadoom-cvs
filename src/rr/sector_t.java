@@ -61,7 +61,8 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
      /** mapblock bounding box for height changes */
      public int[]  blockbox;
 
-     /** origin for any sounds played by the sector */
+     /** origin for any sounds played by the sector. Used to be degenmobj_t,
+      *  but that's really a futile distinction.                             */
      public mobj_t soundorg;
 
      /** if == validcount, already checked */

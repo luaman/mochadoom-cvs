@@ -1840,6 +1840,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // until its thinking turn comes up.
     //
     public void RemoveThinker(thinker_t thinker) {
+        // FIXME: NOP.
         thinker.function = think_t.NOP;
     }
 
