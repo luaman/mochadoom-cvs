@@ -2,6 +2,7 @@ package s;
 
 import static data.sounds.S_sfx;
 
+import java.util.Collection;
 import java.util.HashMap;
 
 import javax.sound.sampled.AudioFormat;
@@ -10,8 +11,10 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.Control;
 import javax.sound.sampled.DataLine;
+import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.AudioFormat.Encoding;
+import javax.sound.sampled.FloatControl.Type;
 
 import w.DoomBuffer;
 import data.sfxinfo_t;
@@ -215,14 +218,22 @@ public class ClipSFXModule implements ISound{
 		  
 		  while ( !done)
 		  {
-		    for( i=0 ; i<numChannels && !(channels[i].isActive()) ; i++);
+		    for( i=0 ; i<numChannels && ((channels[i]==null)||(!channels[i].isActive())) ; i++);
 		    // FIXME. No proper channel output.
 		    if (i==numChannels)  done=true;
 		  }
 		  
 		  for( i=0 ; i<numChannels; i++){
+			  if (channels[i]!=null)
 			channels[i].close();			
 		  	}
+		  
+		  // Free up resources taken up by cached clips.
+		  Collection<Clip> clips=this.cachedSounds.values();
+		  for (Clip c:clips){
+			  c.close();
+		  }
+		  
 		  // Done.
 		  return;
 		
@@ -281,12 +292,12 @@ public class ClipSFXModule implements ISound{
             return BUSY_HANDLE;
 
         // Find a free channel and get a timestamp/handle for the new sound.
-        long a=System.nanoTime();
+        //long a=System.nanoTime();
 
         int handle = this.addsfx(id, vol, sep);
 
-        long b=System.nanoTime();
-		System.err.printf("Handle obtained in %d\n",(b-a));
+        //long b=System.nanoTime();
+		//System.err.printf(" obtained in %d\n",(b-a));
         return handle;
 	}
 
@@ -358,9 +369,6 @@ public class ClipSFXModule implements ISound{
 		int		oldestnum = 0;
 		int		slot;
 
-		int		rightvol;
-		int		leftvol;
-
 		// Chainsaw troubles.
 		// Play these sound effects only one at a time.
 		if ( sfxid == sfxenum_t.sfx_sawup.ordinal()
@@ -426,28 +434,6 @@ public class ClipSFXModule implements ISound{
 		// Should be gametic, I presume.
 		channelstart[slot] = DS.gametic;
 
-		// Separation, that is, orientation/stereo.
-		//  range is: 1 - 256
-		seperation += 1;
-
-		// Per left/right channel.
-		//  x^2 seperation,
-		//  adjust volume properly.
-		leftvol =
-			volume - ((volume*seperation*seperation) >> 16); ///(256*256);
-		seperation = seperation - 257;
-		rightvol =
-			volume - ((volume*seperation*seperation) >> 16);	
-
-
-		// Sanity check, clamp volume.
-
-		if (rightvol < 0 || rightvol > 127)
-			DS.I.Error("rightvol out of bounds");
-
-		if (leftvol < 0 || leftvol > 127)
-			DS.I.Error("leftvol out of bounds"); 
-
 		// Get the proper lookup table piece
 		//  for this volume level???
 		//channelleftvol_lookup[slot] = vol_lookup[leftvol];
@@ -457,8 +443,8 @@ public class ClipSFXModule implements ISound{
 		//  e.g. for avoiding duplicates of chainsaw.
 		channelids[slot] = sfxid;
 
-		//channels[slot].setVolume(volume);
-		//channels[slot].setPanning(seperation);
+		setVolume(slot,volume);
+		setPanning(slot,seperation);
 		//channels[slot].addSound(sound, handlenums);
 		//channels[slot].setPitch(pitch);
 		
@@ -479,12 +465,45 @@ public class ClipSFXModule implements ISound{
 	}
 	
 	
+	/** Accepts volume in "Doom" format (0-127).
+	 * 
+	 * @param volume
+	 */
+	public void setVolume(int chan,int volume){
+		Clip c=channels[chan];
+		
+		if (c.isControlSupported(Type.MASTER_GAIN)){
+			FloatControl vc=(FloatControl) c.getControl(Type.MASTER_GAIN);
+				float vol = linear2db[volume];
+				vc.setValue(vol);
+				}
+			else if (c.isControlSupported(Type.VOLUME)){
+				FloatControl vc=(FloatControl) c.getControl(Type.VOLUME);
+				float vol = vc.getMinimum()+(vc.getMaximum()-vc.getMinimum())*(float)volume/127f;
+				vc.setValue(vol);
+			}
+		}
+	
+	public void setPanning(int chan,int sep){
+		Clip c=channels[chan];
+		
+		if (c.isControlSupported(Type.PAN)){
+			FloatControl bc=(FloatControl) c.getControl(Type.PAN);
+			// Q: how does Doom's sep map to stereo panning?
+			// A: Apparently it's 0-255 L-R.
+			float pan= bc.getMinimum()+(bc.getMaximum()-bc.getMinimum())*(float)sep/ISound.PANNING_STEPS;
+			bc.setValue(pan);
+			}
+		}
+	
 	@Override
 	public void StopSound(int handle) {
 		// Which channel has it?
 		int  hnd=getChannelFromHandle(handle);
-		if (hnd>=0) 
+		if (hnd>=0) {
 			channels[hnd].stop();
+			channels[hnd]=null;
+		}
 	}
 
 	@Override
@@ -506,8 +525,8 @@ public class ClipSFXModule implements ISound{
 		// None has it?
 		if (i!=BUSY_HANDLE){
 			//System.err.printf("Updating sound with handle %d in channel %d\n",handle,i);
-			//channels[i].setVolume(vol);
-			//channels[i].setPanning(sep);
+			setVolume(i,vol);
+			setPanning(i,sep);
 			//channels[i].setPanning(sep);
 			}
 		
