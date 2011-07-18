@@ -84,7 +84,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.74.2.5 2011/07/17 23:33:48 finnw Exp $
+// $Id: DoomMain.java,v 1.74.2.6 2011/07/18 05:40:21 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.5 2011/07/17 23:33:48 finnw Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.6 2011/07/18 05:40:21 finnw Exp $";
 
     //
     // EVENT HANDLING
@@ -1825,6 +1825,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         case ev_clear:
         	// PAINFULLY and FORCEFULLY clear the buttons.
             Arrays.fill(gamekeydown, false);
+            keysCleared = true;
             return false; // Nothing more to do here. 
         case ev_keydown: 
             if (ev.data1 == KEY_PAUSE) 
@@ -4127,6 +4128,13 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74.2.6  2011/07/18 05:40:21  finnw
+//Re-poll capslock/numlock when window gains focus.
+//Removed degenmobj_t: Its x,y,z fields were shadowing the ones in mobj_t;
+//Only the degenmobj_t versions were initialised, but the mobj_t versions
+//were used for sound sources.  Since they were uninitialised all sector
+//sounds had an origin of (0,0).
+//
 //Revision 1.74.2.5  2011/07/17 23:33:48  finnw
 //Merge new ActionFunctions & RoguePatchMap from trunk, removed WAIT/HALT
 //actions as no longer necessary.
