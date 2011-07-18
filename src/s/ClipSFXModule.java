@@ -1,94 +1,211 @@
 package s;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import static data.sounds.S_sfx;
+
 import java.util.HashMap;
 
-import javax.sound.midi.MidiDevice;
-import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Receiver;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.Sequencer;
-import javax.sound.midi.Synthesizer;
 import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.sound.sampled.Control;
 import javax.sound.sampled.DataLine;
-import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.sound.sampled.AudioFormat.Encoding;
 
-import p.mobj_t;
-import s.IDoomSound.channel_t;
 import w.DoomBuffer;
-
 import data.sfxinfo_t;
 import data.sounds;
-import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 
-/** David Martel's sound driver for Mocha Doom. Excellent work!
+/** Experimental Clip based driver. Very rough around the edges.
+ * WIP. Full of TODOs.
  * 
- * Now sound effects are a separate concern from music.
+ * Namely: needs an efficient way of reusing multiple instances of the 
+ * same clip, a way to efficiently access and set individual clip controls
+ * on-the-fly, and a lot of other stuff. Dunno if, in the end, it's anymore
+ * efficient than using a custom mixer. It sure is a lot less flexible.
  * 
- * @author David
+ * KNOWN ISSUES:
+ * 
+ * a) Sounds are forcibly blown to be stereo, 16-bit otherwise
+ *    I don't think we even get panning controls.
+ * b) Sounds need to be converted to AudioInputStreams in order to pass
+ *    them to clips.
+ * c) While sounds can be cached within a HashMap, it's pointless
+ *    to do the same with Clips, because if an instance of a clip
+ *    is already playing, it can't be played "in parallel". So we need
+ *    to keep a pool of same-data clips.
+ * 
+ * @author Velktron
  *
  */
 
 public class ClipSFXModule implements ISound{
+
+	protected final static boolean D=false;
 	
+	HashMap<Integer,Clip> cachedSounds = new HashMap<Integer,Clip>();
+	int[] channelhandles;
+	int[] channelids;
+	int[] channelstart;
 	
-	HashMap<String,DoomSound> cachedSounds = new HashMap<String,DoomSound>();
-	HashMap<Integer,Integer> channelhandles = new HashMap<Integer,Integer>();
+	// Either it's null (no clip is playing) or non-null (some clip is playing).
+	Clip[] channels;
 	
+    /** Volume lookups. 128 levels */
+    protected final int[][] vol_lookup = new int[128][256];
+	
+	public final float[] linear2db;
+
 	private final int numChannels;
 	private final DoomStatus DS;
 	
 	public ClipSFXModule(DoomStatus DS, int numChannels) {
 		this.DS=DS;
+		linear2db=computeLinear2DB();
 		this.numChannels=numChannels;
-		
-		
 		
 		}
 	
-	
-    enum Position { 
-        LEFT, RIGHT, NORMAL
-    }
+    private float[] computeLinear2DB() {
+    	
+    	// Maximum volume is 0 db, minimum is ... -96 db.
+    	// We rig this so that half-scale actually gives quarter power,
+    	// and so is -6 dB.
+    	float[] tmp=new float[VOLUME_STEPS];
+    	
+    	for (int i=0;i<VOLUME_STEPS;i++){
+    		float linear=(float)(20*Math.log10((float)i/(float)VOLUME_STEPS));
+    		// Hack. The minimum allowed value as of now is -80 db.
+    		if (linear<-36.0) linear=-36.0f;
+    		tmp[i]= linear;
+    		
+    	}
+    		
+    		
+    		
+		return tmp;
+	}
+
+
 
 	@Override
 	public void InitSound() {
+		int i;
 
-		
-		//SetSfxVolume(sfxVolume);
-		//SetMusicVolume(musicVolume);
-		
-	}
+        // Secure and configure sound device first.
+        System.err.println("I_InitSound: ");
+
+        // We don't actually do this here (will happen only when we
+        // create the first audio clip).
+
+        // Initialize external data (all sounds) at start, keep static.
+
+        for (i = 1; i < NUMSFX; i++) {
+            // Alias? Example is the chaingun sound linked to pistol.
+            if (sounds.S_sfx[i].link == null) {
+                // Load data from WAD file.
+                S_sfx[i].data = getsfx(S_sfx[i].name, i);
+            } else {
+                // Previously loaded already?
+                S_sfx[i].data = S_sfx[i].link.data;
+            }
+        }
+
+        System.err.print(" pre-cached all sound data\n");
+        // Finished initialization.
+        System.err.print("I_InitSound: sound module ready\n");
+
+    }
+
+
+/** Modified getsfx. The individual length of each sfx is not of interest.
+ * However, they must be transformed into 16-bit, signed, stereo samples
+ * beforehand, before being "fed" to the audio clips.
+ * 
+ * @param sfxname
+ * @param index
+ * @return
+ */
+	 protected byte[] getsfx(String sfxname,int index) {
+	        byte[] sfx;
+	        byte[] paddedsfx;
+	        int i;
+	        int size;
+	        int paddedsize;
+	        String name;
+	        int sfxlump;
+
+	        // Get the sound data from the WAD, allocate lump
+	        // in zone memory.
+	        name = String.format("ds%s", sfxname).toUpperCase();
+
+	        // Now, there is a severe problem with the
+	        // sound handling, in it is not (yet/anymore)
+	        // gamemode aware. That means, sounds from
+	        // DOOM II will be requested even with DOOM
+	        // shareware.
+	        // The sound list is wired into sounds.c,
+	        // which sets the external variable.
+	        // I do not do runtime patches to that
+	        // variable. Instead, we will use a
+	        // default sound for replacement.
+	        if (DS.W.CheckNumForName(name) == -1)
+	            sfxlump = DS.W.GetNumForName("dspistol");
+	        else
+	            sfxlump = DS.W.GetNumForName(name);
+
+	        size = DS.W.LumpLength(sfxlump);
+
+	        sfx = DS.W.CacheLumpNumAsRawBytes(sfxlump, 0);
+
+	        // Size blown up to accommodate two channels and 16 bits.
+	        // Sampling rate stays the same.
+	        
+	        paddedsize = (size-8)*2*2;
+	        // Allocate from zone memory.
+	        paddedsfx = new byte[paddedsize];
+
+	        // Skip first 8 bytes (header), blow up the data
+	        // to stereo, BIG ENDIAN, SIGNED, 16 bit. Don't expect any fancy DSP here!
+
+	        int sample=0;
+	        for (i = 8; i < size; i++){
+	        	// final short sam=(short) vol_lookup[127][0xFF&sfx[i]];
+	        	final short sam=(short) ((0xFF&sfx[i]-128)<<8);
+	            paddedsfx[sample++] = (byte) (0xFF&(sam>>8));
+	            paddedsfx[sample++]=(byte) (0xFF&sam);
+	            paddedsfx[sample++]=(byte) (0xFF&(sam>>8));
+	            paddedsfx[sample++]=(byte) (0xFF&sam);
+	        }
+	        
+	        // Remove the cached lump.
+	        DS.Z.Free(DS.W.CacheLumpNum(sfxlump, 0, DoomBuffer.class));
+
+	        // Return allocated padded data.
+	        // So the first 8 bytes are useless?
+	        return paddedsfx;
+	    }
 
 	@Override
 	public void UpdateSound() {
-		// In theory, we should update volume + panning for each active channel.
-		// Ouch. Ouch Ouch.
+		// We do nothing here, since the mixing is delegated to the OS
+		// Just hope that it's more efficient that our own...
 		
 	}
 
 	@Override
 	public void SubmitSound() {
-		// Sound should be submitted to the sound threads, which they pretty much
-		// do themselves.
+		// Dummy. Nothing actual to do here.
 		
 	}
 
 	@Override
 	public void ShutdownSound() {
 		 // Wait till all pending sounds are finished.
-		  int done = 0;
+		  boolean done = false;
 		  int i;
 		  
 
@@ -96,38 +213,35 @@ public class ClipSFXModule implements ISound{
 		  //fprintf( stderr, "I_ShutdownSound: NOT finishing pending sounds\n");
 		  //fflush( stderr );
 		  
-		  while ( done==0 )
+		  while ( !done)
 		  {
-		    for( i=0 ; i<numChannels && !(channels[i].isPlaying()) ; i++);
+		    for( i=0 ; i<numChannels && !(channels[i].isActive()) ; i++);
 		    // FIXME. No proper channel output.
-		    //if (i==8)
-		    done=1;
+		    if (i==numChannels)  done=true;
 		  }
 		  
 		  for( i=0 ; i<numChannels; i++){
-			channels[i].terminate=true;  
-			try {
-				this.soundThread[i].join();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		  }
+			channels[i].close();			
+		  	}
 		  // Done.
 		  return;
 		
 	}
 
 	@Override
-	public void SetChannels() {
+	public void SetChannels(int numChannels) {
+		channels= new Clip[numChannels];
+		channelids=new int[numChannels];
+		channelhandles=new int[numChannels];
+		channelstart=new int[numChannels];
 		
-		// This is actually called from IDoomSound.
-		for (int i = 0; i < numChannels; i++) {
-			channels[i]=new SoundWorker(i);
-			soundThread[i] = new Thread(channels[i]);
-			soundThread[i].start();
-		}
-		
+        // Generates volume lookup tables
+        // which also turn the unsigned samples
+        // into signed samples.
+        for (int i = 0; i < 128; i++)
+            for (int j = 0; j < 256; j++)
+                vol_lookup[i][j] = (i * (j - 128) * 256) / 127;
+
 	}
 
 	@Override
@@ -163,98 +277,221 @@ public class ClipSFXModule implements ISound{
      */
 	@Override
 	public int StartSound(int id, int vol, int sep, int pitch, int priority) {
-		
-		String sid = "DS"+sounds.S_sfx[id].name.toUpperCase();
-		if (sid.equals("DSNONE"))
-			return IDLE_HANDLE;
-		
-		// MAES: apparently, we need not worry about finding available channels here,
-		// just assign it to something.
+        if (id < 1 || id > S_sfx.length - 1)
+            return BUSY_HANDLE;
 
-		DoomSound sound = retrieveSoundData(sid);
-		if (sound == null)
-			return IDLE_HANDLE;
-		
-		try {
-			//sound.ais.reset();
-			sound.ais = AudioSystem.getAudioInputStream(new ByteArrayInputStream(sound.bytes));
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-        catch (UnsupportedAudioFileException e) {
-        	// TODO Auto-generated catch block
-        	e.printStackTrace();
-        }
-        
-        // PROBLEM: at this point we have no idea about the actual
-        // status of the hardware channels. The channel manager should,
-        // in theory, prevent clashes etc. but how do they two communicate
-        // back and forth?
+        // Find a free channel and get a timestamp/handle for the new sound.
+        long a=System.nanoTime();
 
-        // Find the first free channel. In theory, this method shouldn't
-        // have been called if there were no free channels, riiiiight?
-        int c;
-        for (c=0;c<numChannels;c++)
-        	if (!channels[c].isPlaying()) break;
+        int handle = this.addsfx(id, vol, sep);
 
-        // Shouldn't happen, but no _actual_ channels were free. Tough cookie.
-        if (c>=numChannels) return IDLE_HANDLE;
-        
-        System.out.println("Picked "+c);
-        // Create a dataline for the "lucky" channel.
-        if (channels[c].auline == null) {
-        	AudioFormat format = sound.ais.getFormat();
-        	DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
-        	try {
-				channels[c].auline = (SourceDataLine) AudioSystem.getLine(info);
-				channels[c].auline.open(format);
-			} catch (LineUnavailableException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-        			// Add individual volume control.
-        			if (channels[c].auline.isControlSupported(FloatControl.Type.VOLUME)){
-        				channels[c].vc=(FloatControl) channels[c].auline
-        				.getControl(FloatControl.Type.VOLUME);
-        			}
-        			// else 
-        			//	if(channels[i].auline.isControlSupported(FloatControl.Type.MASTER_GAIN)){
-            		//		channels[i].vc=(FloatControl) channels[i].auline
-            		//		.getControl(FloatControl.Type.MASTER_GAIN);
-        			//}
-        			
-        			// Add individual pan control (TODO: proper positioning).
-        			if (channels[c].auline.isControlSupported(FloatControl.Type.PAN)){
-        				channels[c].pc=(FloatControl) channels[c].auline
-        				.getControl(FloatControl.Type.PAN);
-        			}
-
-        			channels[c].auline.start();
-        		}
-
-        // The handle is the current game time.
-        int handle=DS.gametic;
-		channels[c].setVolume(vol);
-		channels[c].setPanning(sep);
-		channels[c].addSound(sound, handle);
-		this.channelhandles.put(handle,c);
+        long b=System.nanoTime();
+		System.err.printf("Handle obtained in %d\n",(b-a));
         return handle;
-		
 	}
 
+	private final static AudioFormat format=new AudioFormat(Encoding.PCM_SIGNED, ISound.SAMPLERATE, 16, 2, 4, ISound.SAMPLERATE, true);
+	private final static DataLine.Info info = new DataLine.Info(Clip.class, format);
+	
+	private final void  getClipForChannel(int c, int sfxid){
+		
+		// Try to see if we already have such a clip.
+		Clip clip=this.cachedSounds.get(sfxid);
+		
+		boolean exists=false;
+		
+		// Does it exist?
+		if (clip!=null){
+			
+			// Well, it does, but we are not done yet.
+			exists=true;
+			// Is it NOT playing already?
+			if (!clip.isActive()){
+				// Assign it to the channel.
+				channels[c]=clip;
+				return;
+			}
+		}
+		
+		// Sorry, Charlie. Gotta make a new one.
+	    try {
+			clip = (Clip) AudioSystem.getLine(info);
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    try {
+			clip.open(format, S_sfx[sfxid].data, 0, S_sfx[sfxid].data.length);
+		} catch (LineUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		if (!exists)
+		this.cachedSounds.put(sfxid,clip);
+		
+	    channels[c]=clip;
+	    
+		
+	   // Control[] cs=clip.getControls();
+	   // 
+	   // for (Control cc:cs){
+	   // 	System.out.println("Control "+cc.getType().toString());
+       // 		}
+	}
+	
+	//
+	// This function adds a sound to the
+	//  list of currently active sounds,
+	//  which is maintained as a given number
+	//  (eight, usually) of internal channels.
+	// Returns a handle.
+	//
+	protected short	handlenums = 0;
+
+	private int addsfx 	( int sfxid,int		volume,int		seperation)
+	{
+		int		i;
+		int		rc = -1;
+
+		int		oldest = DS.gametic;
+		int		oldestnum = 0;
+		int		slot;
+
+		int		rightvol;
+		int		leftvol;
+
+		// Chainsaw troubles.
+		// Play these sound effects only one at a time.
+		if ( sfxid == sfxenum_t.sfx_sawup.ordinal()
+				|| sfxid == sfxenum_t.sfx_sawidl.ordinal()
+				|| sfxid == sfxenum_t.sfx_sawful.ordinal()
+				|| sfxid == sfxenum_t.sfx_sawhit.ordinal()
+				|| sfxid == sfxenum_t.sfx_stnmov.ordinal()
+				|| sfxid == sfxenum_t.sfx_pistol.ordinal()	 )
+		{
+			// Loop all channels, check.
+			for (i=0 ; i<numChannels ; i++)
+			{
+				// Active, and using the same SFX?
+				if (channels[i]!=null && channels[i].isRunning()
+						&& channelids[i] == sfxid)
+				{
+					// Reset.
+					channels[i].stop();
+					// We are sure that iff,
+					//  there will only be one.
+					break;
+				}
+			}
+		}
+
+		// Loop all channels to find oldest SFX.
+		for (i=0; (i<numChannels) && (channels[i]!=null); i++)
+		{
+			if (channelstart[i] < oldest)
+			{
+				oldestnum = i;
+				oldest = channelstart[i];
+			}
+		}
+
+		// Tales from the cryptic.
+		// If we found a channel, fine.
+		// If not, we simply overwrite the first one, 0.
+		// Probably only happens at startup.
+		if (i == numChannels)
+			slot = oldestnum;
+		else
+			slot = i;
+
+		// Okay, in the less recent channel,
+		//  we will handle the new SFX.
+		
+		// We need to decide whether we can reuse an existing clip
+		// or create a new one. In any case, when this method return 
+		// we should have a valid clip assigned to channel "slot".
+
+        getClipForChannel(slot,sfxid);
+
+        
+		// Reset current handle number, limited to 0..100.
+		if (handlenums==0) // was !handlenums, so it's actually 1...100?
+			handlenums = MAXHANDLES;
+
+		// Assign current handle number.
+		// Preserved so sounds could be stopped (unused).
+		channelhandles[slot]= rc = handlenums--;
+
+		// Should be gametic, I presume.
+		channelstart[slot] = DS.gametic;
+
+		// Separation, that is, orientation/stereo.
+		//  range is: 1 - 256
+		seperation += 1;
+
+		// Per left/right channel.
+		//  x^2 seperation,
+		//  adjust volume properly.
+		leftvol =
+			volume - ((volume*seperation*seperation) >> 16); ///(256*256);
+		seperation = seperation - 257;
+		rightvol =
+			volume - ((volume*seperation*seperation) >> 16);	
+
+
+		// Sanity check, clamp volume.
+
+		if (rightvol < 0 || rightvol > 127)
+			DS.I.Error("rightvol out of bounds");
+
+		if (leftvol < 0 || leftvol > 127)
+			DS.I.Error("leftvol out of bounds"); 
+
+		// Get the proper lookup table piece
+		//  for this volume level???
+		//channelleftvol_lookup[slot] = vol_lookup[leftvol];
+		//channelrightvol_lookup[slot] = vol_lookup[rightvol];
+
+		// Preserve sound SFX id,
+		//  e.g. for avoiding duplicates of chainsaw.
+		channelids[slot] = sfxid;
+
+		//channels[slot].setVolume(volume);
+		//channels[slot].setPanning(seperation);
+		//channels[slot].addSound(sound, handlenums);
+		//channels[slot].setPitch(pitch);
+		
+		System.err.println(channelStatus());
+        if(D) System.err.printf("Playing %d vol %d on channel %d\n",rc,volume,slot);
+		// Well...play it.
+      
+        // FIXME VERY BIG PROBLEM: stop() is blocking!!!! WTF ?!
+        //channels[slot].stop();
+        //long  a=System.nanoTime();
+        channels[slot].setFramePosition(0);
+		channels[slot].start();
+		// b=System.nanoTime();
+		//System.err.printf("Sound playback completed in %d\n",(b-a));
+        
+        // You tell me.
+		return rc;
+	}
+	
+	
 	@Override
 	public void StopSound(int handle) {
 		// Which channel has it?
-		Integer hnd=this.channelhandles.get(handle);
-		if (hnd!=null) 
-			channels[hnd].stopSound();
+		int  hnd=getChannelFromHandle(handle);
+		if (hnd>=0) 
+			channels[hnd].stop();
 	}
 
 	@Override
 	public boolean SoundIsPlaying(int handle) {
-		return this.channelhandles.containsKey(handle);
-	}
+		
+		return getChannelFromHandle(handle)!=BUSY_HANDLE;
+		}
 
 	
 	@Override
@@ -267,103 +504,44 @@ public class ClipSFXModule implements ISound{
 		
 		int i=getChannelFromHandle(handle);
 		// None has it?
-		if (i!=IDLE_HANDLE){
+		if (i!=BUSY_HANDLE){
 			//System.err.printf("Updating sound with handle %d in channel %d\n",handle,i);
-			channels[i].setVolume(vol);
+			//channels[i].setVolume(vol);
 			//channels[i].setPanning(sep);
-			channels[i].setPanning(sep);
+			//channels[i].setPanning(sep);
 			}
 		
 	}
 	
+	
 	/** Internal use. 
 	 * 
 	 * @param handle
-	 * @return the channel that has the handle, or -1 if none has it.
+	 * @return the channel that has the handle, or -2 if none has it.
 	 */
 	private int getChannelFromHandle(int handle){
 		// Which channel has it?
-		Integer hnd=this.channelhandles.get(handle);
-		if (hnd!=null) 
-			return hnd;
-		else return IDLE_HANDLE;
+		for (int i=0;i<numChannels;i++){
+			if (channelhandles[i]==handle) return i;
+		}
+		
+		return BUSY_HANDLE;
 	}
+
+		StringBuilder sb=new StringBuilder();
 	
-	/** Get data for a particular lump, if not cached already */
+		public String channelStatus(){
+			sb.setLength(0);
+			for (int i=0;i<numChannels;i++){
+				if (channels[i]!=null && channels[i].isActive())
+				sb.append(i);
+				else sb.append('-');
+			}
+			
+			return sb.toString();
+			
+			
+		}
 	
-	private final DoomSound retrieveSoundData(String id){
-		
-		DoomSound sound = cachedSounds.get(id);
-		
-		if (sound==null){
-		// OK, so we load the sound...
-		// If it's vanilla, we obviously need to handle only its
-		// own sample format with DoomToWave.
-		int lump=DS.W.CheckNumForName(id);
-		byte[] bytes = this.DS.W.CacheLumpNumAsRawBytes(lump, data.Defines.PU_MUSIC);
-		
-        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-        
-        try {
-   //     	ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        	
-        	
-        	// TODO: a cleaner way of handling this?
-        	DoomToWave dtw = new DoomToWave();
-        	byte[] baos= dtw.DMX2Wave(bytes);
-	        sound = new DoomSound(baos);
-	        cachedSounds.put(id, sound);
-        	
-        	// TODO: a cleaner way of handling this?
-        	
-        	//DoomToWave dtw = new DoomToWave();
-	        //dtw.SNDsaveSound(bis, baos);
-	        //sound = new DoomSound(baos.toByteArray());
-	        //cachedSounds.put(id, sound);
-	        //bis.close();
-	        //bis = new ByteInputStream(baos.toByteArray(), baos.size());
-		} catch (FileNotFoundException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	return sound;
-		
-	}
-	
-	/** A Thread for playing digital sound effects.
-	 * 
-	 *  Obviously you need as many as channels?
-	 *   
-	 *  In order not to end up in a hell of effects,
-	 *  certain types of sounds must be limited to 1 per object.
-	 *
-	 */
-
-
-	class soundClipChannel extends channel_t{
-		Clip clip;
-		sfxinfo_t sfx;
-		
-		@Override
-		public void addSound(sfxinfo_t sfx) {
-			clip.stop();			
-		}
-		
-		@Override
-		public void stopSound() {
-			clip.stop();			
-		}
-		
-		public boolean isPlaying(){
-			return (!clip.isActive())
-		}
-		
-	}
-
-
 }
 
