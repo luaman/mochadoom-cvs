@@ -48,10 +48,13 @@ import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
 import s.ClassicDoomSoundDriver;
+import s.ClipSFXModule;
 import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
+import s.DummySoundDriver;
+import s.IDoomSound;
 //import s.SpeakerDoomSoundDriver;
 
 import savegame.IDoomSaveGame;
@@ -84,7 +87,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.74.2.6 2011/07/18 05:40:21 finnw Exp $
+// $Id: DoomMain.java,v 1.74.2.7 2011/07/19 11:06:01 finnw Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -110,7 +113,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.6 2011/07/18 05:40:21 finnw Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.74.2.7 2011/07/19 11:06:01 finnw Exp $";
 
     //
     // EVENT HANDLING
@@ -1138,19 +1141,24 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         System.out.print ("S_Init: Setting up sound.\n");
         
       // Sound "drivers" before the game sound controller.
+
         
-        if (CM.CheckParmBool("-nomusic"))
+        
+        if (CM.CheckParmBool("-nomusic") || CM.CheckParmBool("-nosound"))
             this.IMUS=new DummyMusic();
         else
             this.IMUS=new DavidMusicModule();
         
-        if (CM.CheckParmBool("-nosound"))
+        if (CM.CheckParmBool("-nosfx") ||  CM.CheckParmBool("-nosound"))
             this.ISND=new DummySFX();
         else 
-            this.ISND=//new DavidSFXModule(this);
-            			new ClassicDoomSoundDriver(this,numChannels);
-        // Obviously, nomusic && nosfx = nosound.
-        this.S=new AbstractDoomAudio(this,numChannels);
+            this.ISND=	new ClassicDoomSoundDriver(this,numChannels);
+        if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
+        	this.S=new AbstractDoomAudio(this,numChannels);
+        else
+        	// Saves a lot of distance calculations, if we're not to output
+        	// any sound at all.
+        	this.S=new DummySoundDriver();
         
         ISND.InitSound();
         IMUS.InitMusic();
@@ -4128,6 +4136,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.74.2.7  2011/07/19 11:06:01  finnw
+//Merge ClipSFXModule updates from trunk
+//
 //Revision 1.74.2.6  2011/07/18 05:40:21  finnw
 //Re-poll capslock/numlock when window gains focus.
 //Removed degenmobj_t: Its x,y,z fields were shadowing the ones in mobj_t;
