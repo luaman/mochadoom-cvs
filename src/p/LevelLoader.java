@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.26 2011/06/18 23:25:33 velktron Exp $
+// $Id: LevelLoader.java,v 1.27 2011/07/20 16:14:45 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.27  2011/07/20 16:14:45  velktron
+// Bullet-proofing vs missing or corrupt REJECT table. TODO: built-in system to re-compute it.
+//
 // Revision 1.26  2011/06/18 23:25:33  velktron
 // Removed debugginess
 //
@@ -181,7 +184,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26 2011/06/18 23:25:33 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.27 2011/07/20 16:14:45 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -997,9 +1000,30 @@ public int bmaporgy;
       this.LoadSegs (lumpnum+ML_SEGS);
       this.SanitizeBlockmap();
       
+      byte[] tmpreject=new byte[0];
+      
     //_D_: uncommented the rejectmatrix variable, this permitted changing level to work
+      try{
       DoomBuffer db = (DoomBuffer)W.CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL, null);
-      rejectmatrix = db.getBuffer().array();//W.CacheLumpNum (lumpnum+ML_REJECT,PU_L
+      tmpreject=db.getBuffer().array();
+      } catch (Exception e){
+          // Any exception at this point means missing REJECT lump. Fuck that, and move on.
+          // If everything goes OK, tmpreject will contain the REJECT lump's data
+          // BUT, alas, we're not done yet.
+      }
+      
+      // Sanity check on matrix.
+      // E.g. a 5-sector map will result in ceil(25/8)=4 bytes.
+      // If the reject table is broken/corrupt, too bad. It will all be zeroes.
+      // Much better than overflowing.
+      // TODO: build-in a REJECT-matrix rebuilder?
+      rejectmatrix = new byte[(int) (Math.ceil(this.numsectors*this.numsectors)/8)]; 
+      System.arraycopy(tmpreject, 0, rejectmatrix, 0, Math.min(tmpreject.length,rejectmatrix.length));
+
+     // if (tmpreject.length<rejectmatrix.length) 
+     // System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",tmpreject.length,rejectmatrix.length);
+      
+      
       this.GroupLines ();
 
       DM.bodyqueslot = 0;
