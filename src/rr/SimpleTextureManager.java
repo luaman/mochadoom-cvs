@@ -654,7 +654,7 @@ public class SimpleTextureManager
         }
 
         
-        extendedflatstart=W.CheckNumForName(DEUTEX); // This is the start of DEUTEX flats.
+        extendedflatstart=W.CheckNumForName(DEUTEX_START); // This is the start of DEUTEX flats.
         if (extendedflatstart>-1){
        	// If extended ones are present, then Advance slowly.
         lump=extendedflatstart;
@@ -663,17 +663,18 @@ public class SimpleTextureManager
         boolean sane=false;
         for (int i=lump;i<W.NumLumps();i++){
             String name2=W.GetNameForNum(i);
-            if (name2.equalsIgnoreCase(LUMPEND)) 
+            if (name2.equalsIgnoreCase(LUMPEND)||name2.equalsIgnoreCase(DEUTEX_END)) 
             {   sane=true;
                 break;
-            }            
+            }
         }
         
         // Break out of here if FF_START was spurious.        
-        if (sane)  
+        if (sane) {
+            name=W.GetNameForNum(lump);
             
-        // The end of those extended flats is also marked by F_END, as noted above.
-        while (!(name=W.GetNameForNum(lump)).equalsIgnoreCase(LUMPEND)){
+        // The end of those extended flats is also marked by F_END or FF_END, as noted above.
+        while (!(name.equalsIgnoreCase(LUMPEND)||name.equalsIgnoreCase(DEUTEX_END))){
             if (!W.isLumpMarker(lump)){
                 // Not a marker. Check if it's supposed to replace something.
                 if (FlatNames.containsKey(name)){
@@ -694,6 +695,8 @@ public class SimpleTextureManager
                     }
             }
             lump++; // Advance lump.
+            name=W.GetNameForNum(lump);
+        }
         }
         }
         // So now we have a lump -> sequence number mapping.
@@ -723,7 +726,8 @@ public class SimpleTextureManager
     
     private final static String LUMPSTART="F_START";
     private final static String LUMPEND="F_END";
-    private final static String DEUTEX="FF_START";
+    private final static String DEUTEX_END="FF_END";
+    private final static String DEUTEX_START="FF_START";
     
     /**
      * R_PrecacheLevel
@@ -870,8 +874,9 @@ public class SimpleTextureManager
         if (i == -1) {
             I.Error("R_FlatNumForName: %s not found", name);
         }
-        
+
         return FlatCache.get(i);
+
     }
 
     @Override
