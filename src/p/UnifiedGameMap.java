@@ -992,8 +992,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             int opentop; // fixed_t
             int openbottom;
             divline_t divl = new divline_t();
-            vertex_t v1;
-            vertex_t v2;
+            //vertex_t v1;
+            //vertex_t v2;
             int frac; // fixed_t
             int slope;
 
@@ -1018,19 +1018,19 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                 line.validcount = R.validcount;
 
-                v1 = line.v1;
-                v2 = line.v2;
-                s1 = strace.DivlineSide(v1.x, v1.y);
-                s2 = strace.DivlineSide(v2.x, v2.y);
+                //v1 = line.v1;
+                //v2 = line.v2;
+                s1 = strace.DivlineSide(line.v1x, line.v1y);
+                s2 = strace.DivlineSide(line.v2x, line.v2y);
 
                 // line isn't crossed?
                 if (s1 == s2)
                     continue;
 
-                divl.x = v1.x;
-                divl.y = v1.y;
-                divl.dx = v2.x - v1.x;
-                divl.dy = v2.y - v1.y;
+                divl.x = line.v1x;
+                divl.y = line.v1y;
+                divl.dx = line.v2x - line.v1x;
+                divl.dy = line.v2y - line.v1y;
                 s1 = divl.DivlineSide(strace.x, strace.y);
                 s2 = divl.DivlineSide(t2x, t2y);
 
@@ -1560,7 +1560,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      // avoid precision problems with two routines
      if (trace.dx > FRACUNIT * 16 || trace.dy > FRACUNIT * 16
              || trace.dx < -FRACUNIT * 16 || trace.dy < -FRACUNIT * 16) {
-         s1 = trace.PointOnDivlineSide(ld.v1x, ld.v1.y);
+         s1 = trace.PointOnDivlineSide(ld.v1x, ld.v1y);
          s2 = trace.PointOnDivlineSide(ld.v2x, ld.v2y);
          //s1 = trace.DivlineSide(ld.v1x, ld.v1.y);
          //s2 = trace.DivlineSide(ld.v2x, ld.v2y);
