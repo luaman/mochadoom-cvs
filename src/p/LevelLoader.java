@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.27 2011/07/20 16:14:45 velktron Exp $
+// $Id: LevelLoader.java,v 1.28 2011/07/22 15:37:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.28  2011/07/22 15:37:52  velktron
+// Began blockmap autogen code...still WIP
+//
 // Revision 1.27  2011/07/20 16:14:45  velktron
 // Bullet-proofing vs missing or corrupt REJECT table. TODO: built-in system to re-compute it.
 //
@@ -184,7 +187,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.27 2011/07/20 16:14:45 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.28 2011/07/22 15:37:52 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -211,6 +214,8 @@ public class LevelLoader implements DoomStatusAware{
   public int     numsides;
   public side_t[]     sides;
 
+  private boolean[] used_lines;
+  
 
   // BLOCKMAP
   // Created from axis aligned bounding box
@@ -531,6 +536,8 @@ public int bmaporgy;
       
       numlines = W.LumpLength (lump) / maplinedef_t.sizeOf();
       lines = new line_t[numlines];
+   // Check those actually used in sectors, later on.
+      used_lines=new boolean[numlines]; 
       C2JUtils.initArrayOfObjects(lines, line_t.class);
       data = new maplinedef_t[numlines];
       C2JUtils.initArrayOfObjects(data, maplinedef_t.class);
@@ -590,6 +597,7 @@ public int bmaporgy;
       ld.sidenum[0] = mld.sidenum[0];
       ld.sidenum[1] = mld.sidenum[1];
       
+      // Sanity check for two-sided without two valid sides.      
       if (flags(ld.flags,ML_TWOSIDED)) {
     	  if ((ld.sidenum[0] == -1) || (ld.sidenum[1] == -1)){
     	  // Well, dat ain't so tu-sided now, ey esse?
@@ -597,6 +605,7 @@ public int bmaporgy;
     	  }
       }
 
+      // Front side defined without a valid frontsector.
       if (ld.sidenum[0] != -1){
           ld.frontsector = sides[ld.sidenum[0]].sector;
           if (ld.frontsector==null){ // // Still null? Bad map. Map to dummy.
@@ -607,6 +616,7 @@ public int bmaporgy;
       else
           ld.frontsector = null;
 
+      // back side defined without a valid backsector.
       if (ld.sidenum[1] != -1){
           ld.backsector = sides[ld.sidenum[1]].sector;
           if (ld.backsector==null){ // Still null? Bad map. Map to dummy.
@@ -615,6 +625,12 @@ public int bmaporgy;
       }
       else
           ld.backsector = null;
+      
+      // If at least one valid sector is defined, then it's not null.
+      if (ld.frontsector!=null || ld.backsector!=null) {
+          this.used_lines[i]=true;
+          }
+      
       }
       
 
@@ -687,6 +703,8 @@ public int bmaporgy;
       bmapwidth = blockmaplump[2];
       bmapheight = blockmaplump[3];
       count = bmapwidth*bmapheight;
+      
+      System.err.printf("%d %d %d %d \n",(short)blockmaplump[0],(short)blockmaplump[1],(short)blockmaplump[2],(short)blockmaplump[3]);
       
       blockmap=new int[count];
       
@@ -999,6 +1017,7 @@ public int bmaporgy;
       this.LoadNodes (lumpnum+ML_NODES);
       this.LoadSegs (lumpnum+ML_SEGS);
       this.SanitizeBlockmap();
+      this.getMapBoundingBox();
       
       byte[] tmpreject=new byte[0];
       
@@ -1070,11 +1089,11 @@ public int bmaporgy;
   
   /** Lame-ass attempt at fixing blockmaps > 128K in size.
    * In such blockmaps, blocks will at some point contain
-   * pointers beyong 64K shorts (128 KB), which can't be coded
+   * pointers beyond 64K shorts (128 KB), which can't be coded
    * in just two bytes. A pretty lame solution is to add 64K
    * to any pointer that is clearly smaller than the blockmap
    * offset table itself. This allows europe.wad to become playable,
-   * but where is this "extended blockmap format" define?
+   * but where is this "extended blockmap format" defined?
    * FIXME lookup Boom
    */
   private void SanitizeBlockmap() {
@@ -1099,7 +1118,49 @@ public int bmaporgy;
 	//System.err.printf("%d blockmap errors encountered!\n",errors);
 }
 
+/** Returns an int[] array with orgx, orgy, and number of blocks.
+ *   
+ * @return
+ */
 
+private int[] getMapBoundingBox(){    
+        
+    int minx=Integer.MAX_VALUE;
+    int miny=Integer.MAX_VALUE;
+    int maxx=Integer.MIN_VALUE;
+    int maxy=Integer.MIN_VALUE;
+    
+    // Scan linedefs to detect extremes    
+    
+    for (int i=0;i<this.lines.length;i++){
+        
+        if (used_lines[i]){
+        if (lines[i].v1x>maxx) maxx=lines[i].v1x;
+        if (lines[i].v1x<minx) minx=lines[i].v1x;
+        if (lines[i].v1y>maxy) maxy=lines[i].v1y;
+        if (lines[i].v1y<miny) miny=lines[i].v1y;
+        if (lines[i].v2x>maxx) maxx=lines[i].v2x;
+        if (lines[i].v2x<minx) minx=lines[i].v2x;
+        if (lines[i].v2y>maxy) maxy=lines[i].v2y;
+        if (lines[i].v2y<miny) miny=lines[i].v2y;
+        }
+    }
+    
+    System.err.printf("Map bounding %d %d %d %d\n",
+        minx>>FRACBITS,miny>>FRACBITS,maxx>>FRACBITS,maxy>>FRACBITS);
+    
+    // Blow up bounding to the closest 128-sized block, adding 8 units as padding.
+    // This seems to be the "official" formula.
+    int orgx=-BLOCKMAPPADDING+MAPBLOCKUNITS*(minx/MAPBLOCKUNITS);
+    int orgy=-BLOCKMAPPADDING+MAPBLOCKUNITS*(miny/MAPBLOCKUNITS);
+    int bckx=((BLOCKMAPPADDING+maxx)-orgx);
+    int bcky=((BLOCKMAPPADDING+maxy)-orgy);
+    
+    System.err.printf("%d %d %d %d\n",orgx>>FRACBITS,orgy>>FRACBITS,1+(bckx>>MAPBLOCKSHIFT),1+(bcky>>MAPBLOCKSHIFT));
+    
+    
+    return new int[]{orgx,orgy,bckx,bcky};
+}
 
 public LevelLoader(DoomStatus DC){
 	  this.updateStatus(DC);
