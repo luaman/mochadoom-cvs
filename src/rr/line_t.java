@@ -118,10 +118,11 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
       /**
        * P_BoxOnLineSide
        * Considers the line to be infinite
-       *Returns side 0 or 1, -1 if box crosses the line.
+       * Returns side 0 or 1, -1 if box crosses the line.
+       * Doubles as a convenient check for whether a bounding
+       * box crosses a line at all 
        *
        *@param tmbox fixed_t[]
-       *@param line_t
        */
       public int
       BoxOnLineSide
@@ -131,7 +132,8 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
        boolean     p2=false;
        
        switch (this.slopetype)
-       {
+       { 
+       // Line perfectly horizontal, box floating "north" of line
          case ST_HORIZONTAL:
        p1 = tmbox[BOXTOP] > v1.y;
        p2 = tmbox[BOXBOTTOM] > v1.y;
@@ -142,7 +144,9 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
        }
        break;
        
+       // Line perfectly vertical, box floating "west" of line
          case ST_VERTICAL:
+             
        p1 = tmbox[BOXRIGHT] < v1.x;
        p2 = tmbox[BOXLEFT] < v1.x;
        if (dy < 0)
@@ -153,11 +157,13 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
        break;
        
          case ST_POSITIVE:
+       // Positive slope, both points on one side.
        p1 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXTOP]);
        p2 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
        break;
        
          case ST_NEGATIVE:
+       // Negative slope,  both points (mirrored horizontally) on one side.
        p1 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXTOP]);
        p2 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
        break;
@@ -165,9 +171,69 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
 
        if (p1 == p2)
        return p1?1:0;
+       // Any other result means non-inclusive crossing.
        return -1;
       }
+      
+      /**
+       * Variant of P_BoxOnLineSide. Uses inclusive checks,
+       * so that even lines on the border of a box will be
+       * considered crossing. This is more useful for building 
+       * blockmaps.
+       *
+       *@param tmbox fixed_t[]
+       */
+      public int
+      BoxOnLineSideInclusive
+      ( int[]  tmbox)
+      {
+       boolean     p1=false;
+       boolean     p2=false;
+       
+       switch (this.slopetype)
+       { 
+       // Line perfectly horizontal, box floating "north" of line
+         case ST_HORIZONTAL:
+       p1 = tmbox[BOXTOP] >= v1.y;
+       p2 = tmbox[BOXBOTTOM] >= v1.y;
+       if (dx < 0)
+       {
+           p1 ^= true;
+           p2 ^= true;
+       }
+       break;
+       
+       // Line perfectly vertical, box floating "west" of line
+         case ST_VERTICAL:
+             
+       p1 = tmbox[BOXRIGHT] <= v1.x;
+       p2 = tmbox[BOXLEFT] <= v1.x;
+       if (dy < 0)
+       {
+           p1 ^= true;
+           p2 ^= true;
+       }
+       break;
+       
+         case ST_POSITIVE:
+       // Positive slope, both points on one side.
+       p1 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXTOP]);
+       p2 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
+       break;
+       
+         case ST_NEGATIVE:
+       // Negative slope,  both points (mirrored horizontally) on one side.
+       p1 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXTOP]);
+       p2 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
+       break;
+       }
 
+       if (p1 == p2)
+       return p1?1:0;
+       // Any other result means non-inclusive crossing.
+       return -1;
+      }
+      
       /**
        * getNextSector()
        * Return sector_t * of sector next to current.
