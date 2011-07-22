@@ -12,7 +12,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.42 2011/07/17 19:37:16 velktron Exp $
+// $Id: Defines.java,v 1.43 2011/07/22 15:38:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -324,7 +324,7 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int MAPBLOCKSHIFT =(FRACBITS+7);
     public static final int MAPBMASK      =(MAPBLOCKSIZE-1);
     public static final int MAPBTOFRAC=       (MAPBLOCKSHIFT-FRACBITS);
-
+    public static final int BLOCKMAPPADDING=       8*FRACUNIT;
 
     // player radius for movement checking
     public static final int PLAYERRADIUS  =16*FRACUNIT;
@@ -457,6 +457,6 @@ public static final int SAVESTRINGSIZE = 24;
 
  
 static final String
-rcsid = "$Id: Defines.java,v 1.42 2011/07/17 19:37:16 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.43 2011/07/22 15:38:27 velktron Exp $";
 }
 
