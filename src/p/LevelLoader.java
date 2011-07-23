@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.26.2.1 2011/07/23 12:41:40 velktron Exp $
+// $Id: LevelLoader.java,v 1.26.2.2 2011/07/23 16:53:11 jodwin Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.26.2.2  2011/07/23 16:53:11  jodwin
+// I'M AWESOME AND YOU ARE NOT
+//
 // Revision 1.26.2.1  2011/07/23 12:41:40  velktron
 // Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
 //
@@ -190,7 +193,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26.2.1 2011/07/23 12:41:40 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26.2.2 2011/07/23 16:53:11 jodwin Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -1039,7 +1042,7 @@ public int bmaporgy;
       // If the reject table is broken/corrupt, too bad. It will all be zeroes.
       // Much better than overflowing.
       // TODO: build-in a REJECT-matrix rebuilder?
-      rejectmatrix = new byte[(int) (Math.ceil(this.numsectors*this.numsectors)/8)]; 
+      rejectmatrix = new byte[(int) (Math.ceil((this.numsectors*this.numsectors)/8.0))];
       System.arraycopy(tmpreject, 0, rejectmatrix, 0, Math.min(tmpreject.length,rejectmatrix.length));
 
      // if (tmpreject.length<rejectmatrix.length) 
