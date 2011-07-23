@@ -3,9 +3,8 @@ package s;
 public class DummyMusic implements IMusic {
 
 	@Override
-	public boolean InitMusic() {		
-		// Unsurprisingly, we can guarantee NOT having music
-		return true;
+	public void InitMusic() {
+		// TODO Auto-generated method stub
 
 	}
 

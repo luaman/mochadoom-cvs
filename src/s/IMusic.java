@@ -6,7 +6,7 @@ package s;
 
 public interface IMusic {
 
-	boolean InitMusic();
+	void InitMusic();
 	void ShutdownMusic();
 	// Volume.
 	void SetMusicVolume(int volume);
