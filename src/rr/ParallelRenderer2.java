@@ -185,7 +185,7 @@ public class ParallelRenderer2 extends RendererState  {
 				if (midtexture!=0)
 				{
 					
-					dc_source = GetColumn(midtexture,texturecolumn);
+					dc_source = GetCachedColumn(midtexture,texturecolumn);
 					dc_m=dc_source_ofs;
 					// single sided line
 					ceilingclip[rw_x] = (short) viewheight;
@@ -205,7 +205,7 @@ public class ParallelRenderer2 extends RendererState  {
 
 						if (mid >= yl)
 						{
-			                dc_source = GetColumn(toptexture,texturecolumn);
+			                dc_source = GetCachedColumn(toptexture,texturecolumn);
 			                dc_t=dc_source_ofs;
 			                ceilingclip[rw_x] = (short) mid;
 						}
@@ -231,7 +231,7 @@ public class ParallelRenderer2 extends RendererState  {
 
 						if (mid <= yh)
 						{
-		                    dc_source = GetColumn(bottomtexture,texturecolumn);
+		                    dc_source = GetCachedColumn(bottomtexture,texturecolumn);
 		                    dc_b=dc_source_ofs;
 							floorclip[rw_x] = (short) mid;
 						}
@@ -441,8 +441,8 @@ public class ParallelRenderer2 extends RendererState  {
 				{
 					angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
 					dc_x = x;
-					dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
-					dc_source = GetColumn(TexMan.getSkyTexture(), angle);
+					dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;					
+					dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
 					colfunc.invoke();
 				}
 			}
@@ -713,7 +713,7 @@ public class ParallelRenderer2 extends RendererState  {
 		// AFTER we initialize the RWI themselves,
 		// before V is set (right?) 
 		
-		offsets=new int[NUMWALLTHREADS];
+		//offsets=new int[NUMWALLTHREADS];
 		for (int i=0;i<NUMWALLTHREADS;i++){
 			RSIExec[i]=new RenderSegExecutor(i,screen,
 					this, TexMan, RSI,this.BLANKCEILINGCLIP,this.BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, 

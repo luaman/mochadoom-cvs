@@ -27,8 +27,8 @@ public class mapsector_t implements CacheableDoomObject {
         buf.order(ByteOrder.LITTLE_ENDIAN);
         this.floorheight = buf.getShort();
         this.ceilingheight = buf.getShort();
-        this.floorpic=DoomBuffer.getNullTerminatedString(buf,8);
-        this.ceilingpic=DoomBuffer.getNullTerminatedString(buf,8);
+        this.floorpic=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
+        this.ceilingpic=DoomBuffer.getNullTerminatedString(buf,8).toUpperCase();
         this.lightlevel= buf.getShort();
         this.special= buf.getShort();
         this.tag= buf.getShort();

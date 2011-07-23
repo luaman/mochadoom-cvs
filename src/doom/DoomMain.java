@@ -47,10 +47,15 @@ import rr.SimpleTextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
+import s.ClassicDoomSoundDriver;
+import s.ClipSFXModule;
 import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
+import s.DummySoundDriver;
+import s.IDoomSound;
+//import s.SpeakerDoomSoundDriver;
 
 import savegame.IDoomSaveGame;
 import savegame.IDoomSaveGameHeader;
@@ -65,7 +70,7 @@ import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
-import v.VideoScaleInfo;
+//import v.VideoScaleInfo;
 import v.VisualSettings;
 import w.DoomFile;
 import w.WadLoader;
@@ -82,7 +87,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72.2.2 2011/06/30 17:48:30 velktron Exp $
+// $Id: DoomMain.java,v 1.72.2.3 2011/07/23 12:41:41 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -108,7 +113,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.2 2011/06/30 17:48:30 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.3 2011/07/23 12:41:41 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -320,9 +325,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             wipestart = nowtime;
             done = WIPE.ScreenWipe(Wiper.wipe.Melt.ordinal()
                 , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
+            ISND.UpdateSound();
+            ISND.SubmitSound();             // update sounds after one wipe tic.
             VI.UpdateNoBlit ();
-            M.Drawer ();                            // menu is drawn even on top of wipes
-            VI.FinishUpdate ();                      // page flip or blit buffer
+            M.Drawer ();                    // menu is drawn even on top of wipes
+            VI.FinishUpdate ();             // page flip or blit buffer
         } while (!done);
 
     }
@@ -393,7 +400,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 	// Synchronous sound output is explicitly called.
 //#ifndef SNDINTR
 	// Update sound output.
-	//I_SubmitSound();
+	ISND.SubmitSound();
 //#endif
              
         }
@@ -567,7 +574,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * should be executed (notably loading PWAD's).
      */
 
-    public void IdentifyVersion ()
+    public String IdentifyVersion ()
     {
 
         String home;
@@ -594,10 +601,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             doomwaddir=test.substring(0, 1+test.lastIndexOf(separator));
             String iwad=test.substring( 1+test.lastIndexOf(separator));
             GameMode_t attempt=vcheck.tryOnlyOne(iwad,doomwaddir);
+            // Note: at this point we can't distinguish between "doom" retail
+            // and "doom" ultimate yet.
             if (attempt!=null) {
             	AddFile(doomwaddir+iwad);
             	this.setGameMode(attempt);
-            	return;
+            	return (doomwaddir+iwad);
             }
         } else {
         // Unix-like checking. Might come in handy sometimes.   
@@ -631,7 +640,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
             AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
             basedefault=dstrings.DEVDATA+"default.cfg";
-            return;
+            return (dstrings.DEVDATA+"doom1.wad");
         }
 
         if (eval(CM.CheckParm ("-regdev")))
@@ -643,7 +652,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             AddFile (dstrings.DEVMAPS+"data_se/texture2.lmp");
             AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
             basedefault=dstrings.DEVDATA+"default.cfg";
-            return;
+            return (dstrings.DEVDATA+"doom.wad");
         }
 
         if (eval(CM.CheckParm ("-comdev")))
@@ -661,7 +670,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             AddFile (dstrings.DEVMAPS+"cdata/texture1.lmp");
             AddFile (dstrings.DEVMAPS+"cdata/pnames.lmp");
             basedefault=dstrings.DEVDATA+"default.cfg";
-            return;
+            return (dstrings.DEVDATA+"doom2.wad");
         }
 
 
@@ -673,7 +682,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             language = Language_t.french;
             System.out.println("French version\n");
             AddFile (vcheck.doom2fwad);
-            return;
+            return vcheck.doom2fwad;
         }
 
 
@@ -681,28 +690,28 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         {
             setGameMode(GameMode_t.commercial);
             AddFile (vcheck.doom2wad);
-            return;
+            return vcheck.doom2wad;
         }
 
         if ( testAccess (vcheck.plutoniawad, "r" ) )
         {
             setGameMode(GameMode_t.pack_plut);
             AddFile (vcheck.plutoniawad);
-            return;
+            return vcheck.plutoniawad;
         }
 
         if ( testAccess ( vcheck.tntwad, "r" ) )
         {
             setGameMode(GameMode_t.pack_tnt);
             AddFile (vcheck.tntwad);
-            return;
+            return vcheck.tntwad;
         }
         
         if ( testAccess ( vcheck.tntwad, "r" ) )
         {
             setGameMode(GameMode_t.pack_xbla);
             AddFile (vcheck.xblawad);
-            return;
+            return vcheck.xblawad;
         }
 
         if ( testAccess (vcheck.doomuwad,"r") )
@@ -711,21 +720,21 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         	// Maes: this is done later on.
             setGameMode(GameMode_t.retail);
             AddFile (vcheck.doomuwad);
-            return;
+            return vcheck.doomuwad;
         }
 
         if ( testAccess (vcheck.doomwad,"r") )
         {
             setGameMode(GameMode_t.registered);
             AddFile (vcheck.doomwad);
-            return;
+            return vcheck.doomwad;
         }
 
         if ( testAccess (vcheck.doom1wad,"r") )
         {
             setGameMode(GameMode_t.shareware);
             AddFile (vcheck.doom1wad);
-            return;
+            return vcheck.doom1wad;
         }
 
         // MAES: Maybe we should add FreeDoom here later.
@@ -733,6 +742,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         System.out.println("Game mode indeterminate.\n");
         setGameMode(GameMode_t.indetermined);
 
+        return null;
         // We don't abort. Let's see what the PWAD contains.
         //exit(1);
         //I_Error ("Game mode indeterminate\n");
@@ -755,7 +765,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // maybe it should be outside of Start() and into i.Main ?
         CM.FindResponseFile ();
 
-        IdentifyVersion ();
+        String iwadfilename=IdentifyVersion ();
         
         // Sets unbuffered output in C. Not needed here. setbuf (stdout, NULL);
         modifiedgame = false;
@@ -780,6 +790,17 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         else if (eval(CM.CheckParm ("-deathmatch")))
             deathmatch = true;
 
+        // MAES: Check for Ultimate Doom in "doom.wad" filename.
+        WadLoader tmpwad=new WadLoader();
+        try {
+			tmpwad.InitFile(iwadfilename);
+		} catch (Exception e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		// Check using a reloadable hack.
+        CheckForUltimateDoom(tmpwad);    
+       
         // MAES: better extract a method for this.
         GenerateTitle();
 
@@ -1061,11 +1082,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         this.updateStatusHolders(this);
 
-        // MAES: Check for Ultimate Doom in "doom.wad" filename.
-        CheckForUltimateDoom();
-
         // Check for -file in shareware
         CheckForPWADSInShareware();
+        
 
         // Iff additonal PWAD files are used, print modified banner
         if (modifiedgame)
@@ -1132,29 +1151,27 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         System.out.print ("S_Init: Setting up sound.\n");
         
       // Sound "drivers" before the game sound controller.
+
         
-        if (CM.CheckParmBool("-nomusic"))
+        
+        if (CM.CheckParmBool("-nomusic") || CM.CheckParmBool("-nosound"))
             this.IMUS=new DummyMusic();
         else
             this.IMUS=new DavidMusicModule();
         
-        if (CM.CheckParmBool("-nosound"))
+        if (CM.CheckParmBool("-nosfx") ||  CM.CheckParmBool("-nosound"))
             this.ISND=new DummySFX();
         else 
-            this.ISND=new DavidSFXModule(this);
-        
+            this.ISND=	new ClassicDoomSoundDriver(this,numChannels);
+        if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
+        	this.S=new AbstractDoomAudio(this,numChannels);
+        else
+        	// Saves a lot of distance calculations, if we're not to output
+        	// any sound at all.
+        	this.S=new DummySoundDriver();
         
         ISND.InitSound();
-        boolean music=IMUS.InitMusic();
-        
-        if (!music) {
-        	IMUS=new DummyMusic();
-        	IMUS.InitMusic();
-        }
-
-        // Obviously, nomusic && nosfx = nosound.
-        this.S=new AbstractDoomAudio(this,numChannels);
-
+        IMUS.InitMusic();
         S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
 
         // Hook audio to users.
@@ -1345,7 +1362,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      *  e4m1 - e4m9.
      * 
      */
-    protected void CheckForUltimateDoom() {
+    protected void CheckForUltimateDoom(WadLoader W) {
         if (isRegistered())
         {
             // These are the lumps that will be checked in IWAD,
@@ -1357,7 +1374,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
             // Check for fake IWAD with right name,
             // but w/o all the lumps of the registered version. 
-            if (!CheckForLumps(lumps)) return;
+            if (!CheckForLumps(lumps,W)) return;
             // Checks passed, so we can set the mode to Ultimate
             setGameMode(GameMode_t.retail);
         }
@@ -1370,7 +1387,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * @param name
      * @return
      */
-    protected boolean CheckForLumps(String[] name) {
+    protected boolean CheckForLumps(String[] name, WadLoader W) {
         for (int i = 0;i < name.length; i++)
             if (W.CheckNumForName(name[i].toUpperCase())<0) {
                 // Even one is missing? Not OK.
@@ -1726,7 +1743,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //Z_CheckHeap ();
 
         // clear cmd building stuff
-        Arrays.fill(gamekeydown, false); 
+        Arrays.fill(gamekeydown, false);
+        keysCleared = true;
         joyxmove = joyymove = 0; 
         mousex = mousey = 0; 
         sendpause = sendsave = paused = false; 
@@ -2083,6 +2101,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      *@param player
      */
 
+    @Override
     public void PlayerReborn (int player) 
     { 
         player_t   p; 
@@ -2263,11 +2282,54 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         } 
     } 
 
+/**
+ *  M_Screenshot
+ *  
+ *  Currently saves PCX screenshots, and only in devparm.
+ *  Very oldschool ;-)
+ *  
+ *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
+ *  messages, option to save as either PCX or PNG. Also, request
+ *  current palette from VI (otherwise gamma settings and palette effects
+ *  don't show up).
+ *  
+ */
 
-    public void ScreenShot () 
-    { 
-        gameaction = gameaction_t.ga_screenshot; 
-    } 
+public void ScreenShot ()
+{
+    int     i;
+    byte[]  linear;
+    String format=new String("DOOM%c%c%c%c.pcx");
+    String lbmname = null;
+    
+    // munge planar buffer to linear
+    linear = V.getScreen(2);
+    VI.ReadScreen (linear);
+
+    // find a file name to save it to
+    
+    char[] digit=new char[4];
+    
+    for (i=0 ; i<=9999 ; i++)
+    {
+    digit[0] = (char) (i/1000 + '0');
+    digit[1] = (char) (i/100 + '0');
+    digit[2] = (char) (i/10 + '0');
+    digit[3] =  (char) (i%10 + '0');
+    lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
+    if (!C2JUtils.testAccess(lbmname,"r"))
+        break;  // file doesn't exist
+    }
+    if (i==10000)
+    I.Error ("M_ScreenShot: Couldn't create a PCX");
+
+    // save the pcx file
+    MenuMisc.WritePCXfile (lbmname, linear,
+          SCREENWIDTH, SCREENHEIGHT,
+          W.CacheLumpNameAsRawBytes ("PLAYPAL",PU_CACHE));
+
+    players[consoleplayer].message = "screen shot";
+}
 
 
 
@@ -2413,6 +2475,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         wminfo.maxfrags = 0; 
         if ( isCommercial() )
             wminfo.partime = 35*cpars[gamemap-1]; 
+        else if (gameepisode >= pars.length)
+            wminfo.partime = 0;
         else
             wminfo.partime = 35*pars[gameepisode][gamemap]; 
         wminfo.pnum = consoleplayer; 
@@ -4051,7 +4115,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     protected int SAFE_SCALE;
     protected IVideoScale vs;
 
-
     @Override
     public void setVideoScale(IVideoScale vs) {
         this.vs=vs;
@@ -4070,14 +4133,35 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
     }
 
+
+    public boolean shouldPollLockingKeys() {
+        if (keysCleared) {
+            keysCleared = false;
+            return true;
+        }
+        return false;
+    }
+
 }
 
 //$Log: DoomMain.java,v $
-//Revision 1.72.2.2  2011/06/30 17:48:30  velktron
-//Some fixes for the music part. Will merge in main later.
+//Revision 1.72.2.3  2011/07/23 12:41:41  velktron
+//Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
 //
-//Revision 1.72.2.1  2011/06/29 15:21:17  velktron
-//Modifications for -angle parameter.
+//Revision 1.77  2011/07/18 21:45:00  velktron
+//Sound driver changes. -nosound loads Dummy instead of Abstract (saves CPU cycles).
+//
+//Revision 1.76  2011/07/17 12:43:18  velktron
+//Merged in finnw's Ultimate Doom par times fixes, locking keys method.
+//
+//Revision 1.75  2011/07/15 13:56:55  velktron
+//Screenshots functional (with devparm, in PCX format).
+//
+//Revision 1.74  2011/07/13 16:38:42  velktron
+//Sound updates through wipe fixed.
+//
+//Revision 1.73  2011/07/05 13:27:58  velktron
+//Added more solid Ultimate Doom detection.
 //
 //Revision 1.72  2011/06/23 15:43:01  velktron
 //Palette defaulting mechanism in place.

@@ -14,6 +14,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -456,10 +457,13 @@ public class SimpleTextureManager
 
     /**
      * R_GenerateComposite
-     * Using the texture definition,
-     *  the composite texture is created from the patches,
-     *  and each column is cached.
-     * @throws IOException 
+     * Using the texture definition, the composite texture is created 
+     * from the patches and each column is cached. This method is "lazy"
+     * aka it's only called when a cached/composite texture is needed.
+     * 
+     * TODO: support masked textures. This should NOT be required, but
+     * will result in crashes in Java, unless we're safeguarded.
+     * 
      */
     
     public void GenerateComposite (int texnum) 
@@ -478,20 +482,16 @@ public class SimpleTextureManager
         
         texture = textures[texnum];
 
-        // Allocate both the composite and assign it to block.
+        // BOth allocate the composite texture, and assign it to block.
         // texturecompositesize indicates a size in BYTES. We need a number of columns, though.
-        // Z_Malloc (texturecompositesize[texnum], PU_STATIC, &texturecomposite[texnum]);
-        block = texturecomposite[texnum]=new byte[texture.width][];
-     
         // Now block is divided into columns. We need to allocate enough data for each column
-        for (int i=0;i<texture.width;i++)
-        	// NASTY hack: apparently the renderer is supposed to overflow.
-        	// I'd rather waste some extra memory than try to fix 20 years worth
-        	// of rendering functions.
-            block[i]=new byte[texture.height];
+     
+        block = texturecomposite[texnum]=new byte[texture.width][texture.height];
         
-
+        // Lump where a certain column will be read from (actually, a patch)
         collump = texturecolumnlump[texnum];
+        
+        // Offset of said column into the patch.
         colofs = texturecolumnofs[texnum];
         
        // colidxs = texturecolumnindexes[texnum];
@@ -504,9 +504,6 @@ public class SimpleTextureManager
         {
 
         realpatch = W.CachePatchNum(patch[i].patch, PU_CACHE);
-       //     if (realpatch.name=="SKY1"){
-       //         System.out.println("Sky found!");
-       //     }
         x1 = patch[i].originx;
         x2 = x1 + realpatch.width;
 
@@ -554,7 +551,7 @@ public class SimpleTextureManager
      *  
      *  @param patch Actually it's a single column to be drawn. May overdraw existing ones or void space.
      *  @param cache the column cache itself. Actually it's the third level [texture][column]->data.
-     *  @param offset an offset inside the column cache.
+     *  @param offset an offset inside the column cache (UNUSED)
      *  @param originy vertical offset. Caution with masked stuff!
      *  @param cacheheight the maximum height it's supposed to reach when drawing?
      *  
@@ -571,21 +568,20 @@ public class SimpleTextureManager
         int     count;
         int     position;
         int  source=0; // treat as pointers
-        int   dest=3; // Inside raw data cache
         
          /* Iterate inside column. This is starkly different from the C code,
-          * because posts positions are already precomputed at load time
+          * because post positions AND offsets are already precomputed at load time
           */
         
         for (int i=0;i<patch.posts;i++){
-
-            source += 3; // Relative to patch's data.
+            
+            // This should position us at the beginning of the next post
+            source=patch.postofs[i];
+            
             count = patch.postlen[i]; // length of this particular post
             position = originy + patch.postdeltas[i]; // Position to draw inside cache.
 
-        // Post would be drawn outside of screen. Fuck it.
-        // FIXME: this could very well end up "between" posts.
-        // Probably the cause of fucked up tiling in vanilla.
+        // Post starts outside of texture's bounds. Adjust offset.
             
         if (position < 0)
         {
@@ -598,12 +594,9 @@ public class SimpleTextureManager
             count = cacheheight - position;
 
         if (count > 0) // Draw this post. Won't draw posts that start "outside"
-
             // Will start at post's start, but will only draw enough pixels not to overdraw.
             System.arraycopy( patch.data, source, cache, position,count);
-            
-            // This should position us at the beginning of the next post
-            source=patch.postofs[i]+patch.postlen[i]+1;
+
         }
     }
 
@@ -661,13 +654,27 @@ public class SimpleTextureManager
         }
 
         
-        extendedflatstart=W.CheckNumForName(DEUTEX); // This is the start of DEUTEX flats.
+        extendedflatstart=W.CheckNumForName(DEUTEX_START); // This is the start of DEUTEX flats.
         if (extendedflatstart>-1){
        	// If extended ones are present, then Advance slowly.
         lump=extendedflatstart;
-
-        // The end of those extended flats is also marked by F_END, as noted above.
-        while (!(name=W.GetNameForNum(lump)).equalsIgnoreCase(LUMPEND)){
+        
+        // Safeguard: FF_START without corresponding F_END (e.g. in helltest.wad)
+        boolean sane=false;
+        for (int i=lump;i<W.NumLumps();i++){
+            String name2=W.GetNameForNum(i);
+            if (name2.equalsIgnoreCase(LUMPEND)||name2.equalsIgnoreCase(DEUTEX_END)) 
+            {   sane=true;
+                break;
+            }
+        }
+        
+        // Break out of here if FF_START was spurious.        
+        if (sane) {
+            name=W.GetNameForNum(lump);
+            
+        // The end of those extended flats is also marked by F_END or FF_END, as noted above.
+        while (!(name.equalsIgnoreCase(LUMPEND)||name.equalsIgnoreCase(DEUTEX_END))){
             if (!W.isLumpMarker(lump)){
                 // Not a marker. Check if it's supposed to replace something.
                 if (FlatNames.containsKey(name)){
@@ -688,6 +695,8 @@ public class SimpleTextureManager
                     }
             }
             lump++; // Advance lump.
+            name=W.GetNameForNum(lump);
+        }
         }
         }
         // So now we have a lump -> sequence number mapping.
@@ -717,7 +726,8 @@ public class SimpleTextureManager
     
     private final static String LUMPSTART="F_START";
     private final static String LUMPEND="F_END";
-    private final static String DEUTEX="FF_START";
+    private final static String DEUTEX_END="FF_END";
+    private final static String DEUTEX_START="FF_START";
     
     /**
      * R_PrecacheLevel
@@ -864,8 +874,9 @@ public class SimpleTextureManager
         if (i == -1) {
             I.Error("R_FlatNumForName: %s not found", name);
         }
-        
+
         return FlatCache.get(i);
+
     }
 
     @Override
@@ -984,5 +995,58 @@ public class SimpleTextureManager
         // TODO Auto-generated method stub
         return 0;
     }
+    
+    /** Generates a "cached" masked column against a black background.
+     *  Synchronized so concurrency issues won't cause random glitching and
+     *  errors.
+     * 
+     * @param lump
+     * @param column
+     * @return raw, 0-pointed column data.
+     */    
+    public byte[] getRogueColumn(int lump, int column) {
+		
+		// If previously requested, speed up gathering.
+		//if (lastrogue==lump)
+//			return rogue[column];
+		
+		// Not contained? Generate.
+		if (!roguePatches.containsKey(lump))
+			roguePatches.put(lump,generateRoguePatch(lump));
+		
+		lastrogue=lump;		
+		rogue=roguePatches.get(lump);
+		
+		return rogue[column];
+	}
+	
+	
+	/** Actually generates a tutti-frutti-safe cached patch out of
+	 * a masked or unmasked single-patch lump.
+	 * 
+	 * @param lump
+	 * @return
+	 */
+	
+	private byte[][] generateRoguePatch(int lump) {
+		// Get the patch from disk...
+		patch_t p = W.CachePatchNum(lump,PU_CACHE);
+
+		// Allocate space for a cached block.
+		byte[][] block=new byte[p.width][p.height];
+		
+		
+		for (int i=0;i<p.width;i++)
+			DrawColumnInCache(p.columns[i], block[i], i, 0, p.height);
+		
+		// Don't keep this twice in memory.
+		DM.Z.Free(p);
+		return block;
+	}
+
+	int lastrogue=-1;
+	byte[][] rogue;
+	
+	HashMap<Integer,byte[][]> roguePatches= new HashMap<Integer,byte[][]> ();
     
 }

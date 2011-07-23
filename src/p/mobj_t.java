@@ -1,6 +1,5 @@
 package p;
 
-import static data.Defines.acp1;
 import static data.Defines.FLOATSPEED;
 import static data.Defines.GRAVITY;
 import static data.Defines.VIEWHEIGHT;
@@ -9,7 +8,6 @@ import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.pointer;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -27,6 +25,7 @@ import data.spritenum_t;
 import data.state_t;
 import defines.*;
 import doom.player_t;
+import doom.think_t;
 import doom.thinker_t;
 
 /**
@@ -393,8 +392,7 @@ public static final int timing[]=new int[]{	1,7,
     SetMobjState
     (statenum_t    state )
     {
-        state_t st=null;
-        int dtics;        
+        state_t st=null; 
         
         // Are we danmaku?
         if (danmaku){
@@ -432,8 +430,8 @@ public static final int timing[]=new int[]{	1,7,
         // Modified handling.
         // Call action functions when the state is set
 
-        if (st.action!=null && st.action.getType()==acp1)       
-            {A.dispatch(st.action, this, null);} 
+        if (st.acp1!=null)       
+            {st.acp1.invoke(this);} 
 
         // special handling of danmaku state:
         if (danmaku && d_count>-1){
@@ -527,7 +525,7 @@ public static final int timing[]=new int[]{	1,7,
             // after hitting the ground (hard),
             // and utter appropriate sound.
             player.deltaviewheight = momz>>3;
-            this.A.S.StartSound (this, sfxenum_t.sfx_oof);
+            A.S.StartSound (this, sfxenum_t.sfx_oof);
             }
             momz = 0;
         }
@@ -577,9 +575,20 @@ public static final int timing[]=new int[]{	1,7,
     public int stateid;
     public int playerid;
     public int p_tracer;
+    
+    public void clear(){
+    	fastclear.rewind();
+    	try {
+			this.unpack(mobj_t.fastclear);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}    	
+    }
+    
 
     //_D_: to permit this object to save/load
-    public void read(InputStream f) throws IOException {
+    public void read(DoomFile f) throws IOException {
         // More efficient, avoids duplicating code and
         // handles little endian better.
     	buffer.position(0);
@@ -678,14 +687,24 @@ public static final int timing[]=new int[]{	1,7,
         this.p_target=b.getInt();
         this.reactiontime=b.getInt();        
         this.threshold=b.getInt();
-        this.playerid=b.getInt(); // TODO: player. Non null should mean that it IS a player.
+        this.playerid=b.getInt(); // Non null should mean that it IS a player.
         this.lastlook=b.getInt();
         spawnpoint.unpack(b);
-        this.p_tracer=b.getInt(); // TODO: tracer
+        this.p_tracer=b.getInt(); // tracer
      }
     
     private static ByteBuffer buffer=ByteBuffer.allocate(154);
+    private static ByteBuffer fastclear=ByteBuffer.allocate(154);
+    
 
+/*    @Override
+    protected void finalize(){
+    	count++;
+    	if (count%100==0)
+    	System.err.printf("Total %d Mobj %s@%d finalized free memory: %d\n",count,this.type.name(),this.hashCode(),Runtime.getRuntime().freeMemory());
+    }
+    */
+    protected static int count=0;
     // TODO: a linked list of sectors where this object appears
     // public msecnode_t touching_sectorlist;
     }

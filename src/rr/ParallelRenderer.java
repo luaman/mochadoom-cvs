@@ -293,7 +293,7 @@ public class ParallelRenderer extends RendererState  {
                  angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                  dc_x = x;
                  dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
-                 dc_source = GetColumn(TexMan.getSkyTexture(), angle);
+                 dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
                  colfunc.invoke();
              }
              }

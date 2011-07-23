@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.41 2011/06/23 17:17:04 velktron Exp $
+// $Id: StatusBar.java,v 1.41.2.1 2011/07/23 12:41:41 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.41 2011/06/23 17:17:04 velktron Exp $";
+        "$Id: StatusBar.java,v 1.41.2.1 2011/07/23 12:41:41 velktron Exp $";
 
    
     
@@ -432,6 +432,9 @@ public class StatusBar extends AbstractStatusBar   {
 
     // a random number per tick
     private int st_randomnumber;
+    
+    // idmypos toggle mode
+    private boolean st_idmypos=false;
 
     // Massive bunches of cheat shit
     // to keep it from being easy to figure them out.
@@ -708,16 +711,8 @@ public class StatusBar extends AbstractStatusBar   {
                 }
                 // 'mypos' for player position
                 else if (cheat_mypos.CheckCheat((char) ev.data1)) {
-                    /*
-                     * (static char buf[ST_MSGWIDTH]; sprintf(buf,
-                     * "ang=0x%x;x,y=(0x%x,0x%x)",
-                     * players[consoleplayer].mo.angle,
-                     * players[consoleplayer].mo.x,
-                     * players[consoleplayer].mo.y);
-                     */
-                    mobj_t mo = DM.players[DM.consoleplayer].mo;
-                    plyr.message = String.format("ang= 0x%x; x,y= (0x%s, 0x%x)",
-                                mo.angle,mo.x,mo.y);
+                    // MAES: made into a toggleable cheat.
+                   this.st_idmypos=!st_idmypos;
                 }
             }
 
@@ -766,7 +761,6 @@ public class StatusBar extends AbstractStatusBar   {
 
                 // So be it.
                 plyr.message = STSTR_CLEV;
-                // TODO: split this into DG interface
                 DM.DeferedInitNew(DM.gameskill, epsd, map);
             }
         }
@@ -953,6 +947,18 @@ public class StatusBar extends AbstractStatusBar   {
 
         int i;
 
+        // MAES: sticky idmypos cheat that is actually useful
+        // TODO: this spams the player message queue at every tic.
+        // A direct overlay with a widget would be more useful.
+        
+        if (this.st_idmypos){
+            mobj_t mo = DM.players[DM.consoleplayer].mo;
+            plyr.message = String.format("ang= 0x%x; x,y= (%x, %x)",
+                        (int)mo.angle,mo.x,mo.y);
+
+        }
+        
+
         // must redirect the pointer if the ready weapon has changed.
         // if (w_ready.data != plyr.readyweapon)
         // {
@@ -1057,8 +1063,6 @@ public class StatusBar extends AbstractStatusBar   {
 
         if (palette != st_palette) {
             st_palette = palette;
-            // TODO: pal = (byte *) W_CacheLumpNum (lu_palette,
-            // PU_CACHE)+palette*768;
             VI.SetPalette (palette);
         }
 
@@ -1926,6 +1930,12 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.41.2.1  2011/07/23 12:41:41  velktron
+//Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+//
+//Revision 1.42  2011/07/22 15:37:16  velktron
+//Sticky idmypos cheat
+//
 //Revision 1.41  2011/06/23 17:17:04  velktron
 //Using BG constant.
 //

@@ -1,20 +1,18 @@
 package data;
 
 //import m.define;
-import static data.Limits.*;
+import static data.Limits.MAXINT;
+import static data.Limits.MININT;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import defines.ammotype_t;
 import defines.card_t;
 import doom.weapontype_t;
-import f.anim_t;
-import f.point_t;
-import w.animenum_t;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.40 2011/06/02 14:52:48 velktron Exp $
+// $Id: Defines.java,v 1.40.2.1 2011/07/23 12:41:41 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -163,7 +161,9 @@ public final static char KEY_RCTRL  = (0x80+0x1d);
 public final static char KEY_RALT   = (0x80+0x38);
 
 public final static char KEY_LALT  =  KEY_RALT;
-
+public final static char KEY_CAPSLOCK =(0x80+0x3a);
+public final static char KEY_NUMLOCK =(0x80+0x45);
+public final static char KEY_SCRLCK = (0x80+0x46);
 // from r_defs.h:
 
 //Silhouette, needed for clipping Segs (mainly)
@@ -324,7 +324,7 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int MAPBLOCKSHIFT =(FRACBITS+7);
     public static final int MAPBMASK      =(MAPBLOCKSIZE-1);
     public static final int MAPBTOFRAC=       (MAPBLOCKSHIFT-FRACBITS);
-
+    public static final int BLOCKMAPPADDING=       8*FRACUNIT;
 
     // player radius for movement checking
     public static final int PLAYERRADIUS  =16*FRACUNIT;
@@ -454,11 +454,9 @@ public static final int SAVESTRINGSIZE = 24;
     public static final int  FF_FULLBRIGHT =  0x8000;  // flag in thing->frame
     public static final int  FF_FRAMEMASK =   0x7fff;
 
-    public static final int acpv=0;
-    public static final int acp1=1;
-    public static final int acp2=2;
+
  
 static final String
-rcsid = "$Id: Defines.java,v 1.40 2011/06/02 14:52:48 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.40.2.1 2011/07/23 12:41:41 velktron Exp $";
 }
 

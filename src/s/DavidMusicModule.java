@@ -1,21 +1,16 @@
 package s;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import javax.sound.midi.ControllerEventListener;
+
 import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MetaEventListener;
-import javax.sound.midi.MetaMessage;
-import javax.sound.midi.MidiChannel;
 import javax.sound.midi.MidiDevice;
-import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Receiver;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
-import javax.sound.midi.Synthesizer;
+import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Transmitter;
 
 /** Concern separated from David Martel's MIDI & MUS player
@@ -23,6 +18,7 @@ import javax.sound.midi.Transmitter;
  *  
  * @author David Martel
  * @author velktron
+ * @author finnw
  *
  */
 
@@ -31,35 +27,29 @@ public class DavidMusicModule implements IMusic {
 	public static final int CHANGE_VOLUME=7;
 	public static final int CHANGE_VOLUME_FINE=9;
 	
-	Synthesizer synthesizer;
 	Sequencer sequencer;
-	Receiver receiver;
+	VolumeScalingReceiver receiver;
 	Transmitter transmitter;
 	boolean songloaded;
-	private int volume;
-	private boolean looping;
 	
 	public DavidMusicModule(){
 
 	}
 
 	@Override
-	public boolean InitMusic() {
+	public void InitMusic() {
 		try {
 			
-			// MEGA HACK: if we don't "peg" to devices found in this list, and
-			// just get the defaults, volume controls won't function properly.
-			 int x=-1,y=-1;
+			 int x=-1;
 			MidiDevice.Info[] info = MidiSystem.getMidiDeviceInfo();   
 		     for (int i = 0; i < info.length; i++)  {
 		    	 MidiDevice mdev=MidiSystem.getMidiDevice(info[i]);
 		    	 if (mdev instanceof Sequencer) x=i;
-		    	 if (mdev instanceof Synthesizer) y=i;
-		         System.out.println(info[i].getName()+"\t\t\t"+ mdev.isOpen()+"\t"+mdev.hashCode());
+		        //  System.out.println(info[i].getName()+"\t\t\t"+ mdev.isOpen()+"\t"+mdev.hashCode());
 		          
 		     }
 		
-		     System.out.printf("x %d y %d \n",x,y);
+		     //System.out.printf("x %d y %d \n",x,y);
 		     //--This sets the Sequencer and Synthesizer  
 		     //--The indices x and y correspond to the correct entries for the  
 		     //--default Sequencer and Synthesizer, as determined above  	       
@@ -67,54 +57,40 @@ public class DavidMusicModule implements IMusic {
 		    if (x!=-1)
 		    	sequencer = (Sequencer) MidiSystem.getMidiDevice(info[x]);
 		    else
-		    	sequencer = (Sequencer) MidiSystem.getSequencer(true);
+		    	sequencer = (Sequencer) MidiSystem.getSequencer(false);
 			sequencer.open();
-
-			// Add looping controller for volume
 			
-			sequencer.addMetaEventListener(new MetaEventListener(){
-				@Override
-				public void meta(MetaMessage metamessage) {
-				if ( metamessage.getType() == 47 ) { // end of stream			
-					if (songloaded && looping){
-					 System.out.println("Looping song");
-				     //sequencer.stop();
-				     sequencer.setTickPosition(0);
-				     
-				     sequencer.start();
-				     try {
-						Thread.sleep(10);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				     SetMusicVolume(volume);
-					}
-				}
-			}
-			});
-			
-			System.err.printf("Sequencer %s %d\n",sequencer.getDeviceInfo().getName(), sequencer.hashCode());
-			
-		    //synthesizer = MidiSystem.getSynthesizer(); 
-			if (y!=-1)
-				synthesizer = (Synthesizer) MidiSystem.getMidiDevice(info[y]);
-			else
-				synthesizer = MidiSystem.getSynthesizer();
-		
-			synthesizer.open();
-			System.err.printf("Synthesizer %s %d\n",synthesizer.getDeviceInfo().getName(), synthesizer.hashCode());
-			
-		    receiver = synthesizer.getReceiver();
+		    receiver = VolumeScalingReceiver.getInstance();
+		    // Configure General MIDI level 1
+		    sendSysexMessage(receiver, (byte)0xf0, (byte)0x7e, (byte)0x7f, (byte)9, (byte)1, (byte)0xf7);
 		    transmitter = sequencer.getTransmitter();
 		    transmitter.setReceiver(receiver);
 		} catch (MidiUnavailableException e) {
-			return false;
+			e.printStackTrace();
 		}
-		return true;
 	}
 
-	@Override
+    private static void sendControlChange(Receiver receiver, int midiChan, int ctrlId, int value) {
+        ShortMessage msg = new ShortMessage();
+        try {
+            msg.setMessage(ShortMessage.CONTROL_CHANGE, midiChan, ctrlId, value);
+        } catch (InvalidMidiDataException ex) {
+            throw new RuntimeException(ex);
+        }
+        receiver.send(msg, -1);
+    }
+
+	private static void sendSysexMessage(Receiver receiver, byte... message) {
+	    SysexMessage msg = new SysexMessage();
+	    try {
+            msg.setMessage(message, message.length);
+        } catch (InvalidMidiDataException ex) {
+            throw new RuntimeException(ex);
+        }
+        receiver.send(msg, -1);
+    }
+
+    @Override
 	public void ShutdownMusic() {
 		sequencer.stop();
 		sequencer.close();
@@ -124,42 +100,7 @@ public class DavidMusicModule implements IMusic {
 	public void SetMusicVolume(int volume) {
 		
 		System.out.println("Midi volume set to "+volume);
-		
-		this.volume=volume;
-		 // NOTE: variable 'midiVolume' is an int between 0 and 127
-        if( synthesizer.getDefaultSoundbank() == null )
-        {
-            // HARDWARE SYNTHESIZER
-            try
-            {
-                ShortMessage volumeMessage = new ShortMessage();
-                for( int i = 0; i < synthesizer.getChannels().length; i++ )
-                {
-                    volumeMessage.setMessage( ShortMessage.CONTROL_CHANGE,
-                        i, CHANGE_VOLUME, volume );
-                    MidiSystem.getReceiver().send( volumeMessage, -1 );
-                }
-            }
-            catch( InvalidMidiDataException imde )
-            {
-                System.err.println( "Invalid MIDI data." );
-                return;
-            }
-            catch( MidiUnavailableException mue )
-            {
-                System.err.println( "MIDI unavailable." );
-                return;
-            }
-        }
-        else
-        {
-            // SOFTWARE SYNTHESIZER:
-            MidiChannel[] channels = synthesizer.getChannels();
-            for( int c = 0; channels != null && c < channels.length; c++ )
-            {
-                channels[c].controlChange( CHANGE_VOLUME, volume );
-            }
-        }
+		receiver.setGlobalVolume(volume / 127f);
 
 	}
 
@@ -181,24 +122,19 @@ public class DavidMusicModule implements IMusic {
 	@Override
 	public int RegisterSong(byte[] data) {
 		try {
-		
-	        ByteArrayInputStream bis = new ByteArrayInputStream(data);
-	        
-	        QMusToMid q = new QMusToMid();
-	        //OutputStream fos = new FileOutputStream("C:\\Users\\David\\Documents\\test.mid");
-
-	        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	        
-	        q.convert(bis, baos, true, 0, 0, true, new QMusToMid.Ptr<Integer>(0));
-	        	  
-	        bis.close();
-	        bis = new ByteArrayInputStream(baos.toByteArray());
-	        
-	        Sequence sequence = MidiSystem.getSequence(bis);
-	        
-	        sequencer.stop(); // stops current music if any
-	        sequencer.setSequence(sequence); // Create a sequencer for the sequence
-	        songloaded=true;
+            Sequence sequence;
+	        ByteArrayInputStream bis;
+	        try {
+	            // If data is a midi file, load it directly
+	            bis = new ByteArrayInputStream(data);
+	            sequence = MidiSystem.getSequence(bis);
+	        } catch (InvalidMidiDataException ex) {
+                bis = new ByteArrayInputStream(data);
+	            sequence = MusReader.getSequence(bis);
+	        }
+            sequencer.stop(); // stops current music if any
+            sequencer.setSequence(sequence); // Create a sequencer for the sequence
+            songloaded=true;
 	    } catch (Exception e) {
 	    	e.printStackTrace();
 	    	return -1;
@@ -210,27 +146,28 @@ public class DavidMusicModule implements IMusic {
 	@Override
 	public void PlaySong(int handle, boolean looping) {
 		if (songloaded){
-			this.looping=looping;
-       // if (looping)
-       // 	sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
-       // else
-       // 	sequencer.setLoopCount(0);
-        sequencer.start(); // Start playing
-        
-        // HACK Nasty hack to allow volume setting to actually work.
-        // Calling SetMusicVolume immediately after looping or starting didn't
-        // work as intended.
-        try {
-			Thread.sleep(10);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        this.SetMusicVolume(volume);
+	        for (int midiChan = 0; midiChan < 16; ++ midiChan) {
+	            setPitchBendSensitivity(receiver, midiChan, 2);
+	        }
+            if (looping)
+            	sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
+            else
+            	sequencer.setLoopCount(0);
+            sequencer.start(); // Start playing
 		}
 	}
 
-	@Override
+	private void setPitchBendSensitivity(Receiver receiver, int midiChan, int semitones) {
+	    sendRegParamChange(receiver, midiChan, 0, 0, 2);
+    }
+
+    private void sendRegParamChange(Receiver receiver, int midiChan, int paramMsb, int paramLsb, int valMsb) {
+        sendControlChange(receiver, midiChan, 101, paramMsb);
+        sendControlChange(receiver, midiChan, 100, paramLsb);
+        sendControlChange(receiver, midiChan, 6, valMsb);
+    }
+
+    @Override
 	public void StopSong(int handle) {
 		sequencer.stop();
 

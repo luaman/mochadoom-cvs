@@ -780,7 +780,47 @@ public class AbstractDoomAudio implements IDoomSound{
 			// So snd_SfxVolume should be 0-127.
 			
 		}
+		
+		// MAES: pitch calculation for doppler effects. Nothing to write
+		// home about.
+		
+		/*
+		
+		// calculate the relative speed between source and sound origin.
+		//  and clip it if necessary
+		adx = Math.abs(listener.momx - source.momx);
+		ady = Math.abs(listener.momy - source.momy);
+			
+		// From _GG1_ p.428. Appox. eucledian distance fast.
+		// Here used for "approximate speed"
+		approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
+		
+		// The idea is that for low speeds, no doppler effect occurs.
+		// For higher ones however, a shift occurs. We don't want this
+		// to be annoying, so we'll only apply it for large speed differences
+		// Then again, Doomguy can sprint like Carl Lewis...
+			
+		if (approx_dist>0x100000){
+		
+		// Quickly decide sign of pitch based on speed vectors
+			
+			// angle of source (speed) to listener (speed)
+			angle = rr.RendererState.PointToAngle(listener.momx,
+					listener.momy,
+					source.momx,
+					source.momy);
+			
+			if ((0<=angle && angle<=Tables.ANG90)||
+				(180<=angle && angle<=Tables.ANG270))
+		vps.pitch+=(approx_dist>>16);
+			else
+		vps.pitch-=(approx_dist>>16);
+		}
 
+		if (vps.pitch<0) vps.pitch=0;
+		if (vps.pitch>255) vps.pitch=255;
+		*/
+		
 		return (vps.volume > 0);
 	}
 

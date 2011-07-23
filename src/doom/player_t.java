@@ -803,9 +803,9 @@ SetPsprite
     
     // Call action routine.
     // Modified handling.
-    if (state.action!=null && state.action.getType()==acp2)
+    if (state.acp2!=null)
     {
-        P.A.dispatch(state.action,this, psp);
+        state.acp2.invoke(this, psp);
         if (psp.state==null)
         break;
     }

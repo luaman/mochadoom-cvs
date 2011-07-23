@@ -483,9 +483,20 @@ public class OldAWTDoom extends JFrame implements DoomVideoInterface{
 	        RAWSCREEN=V.getScreen(0);
 	    }
 	
+	    @Override
+	    public void ReadScreen(byte[] scr) {
+	        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
+	        }
+	    
 }
 
 //$Log: OldAWTDoom.java,v $
+//Revision 1.2.2.1  2011/07/23 12:41:41  velktron
+//Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+//
+//Revision 1.3  2011/07/15 13:57:54  velktron
+//Implement VI.ReadScreen as a future good practice.
+//
 //Revision 1.2  2011/06/14 09:54:20  velktron
 //Separated palette generation/fixed OldAWTDoom
 //

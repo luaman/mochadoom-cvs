@@ -11,7 +11,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.StringTokenizer;
+
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
 
 import doom.DoomStatus;
 import doom.IDoomGame;
@@ -27,7 +30,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.24 2011/06/03 16:37:09 velktron Exp $
+// $Id: MenuMisc.java,v 1.24.2.1 2011/07/23 12:41:41 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -51,7 +54,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.24 2011/06/03 16:37:09 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.24.2.1 2011/07/23 12:41:41 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -237,147 +240,11 @@ public abstract class MenuMisc{
     //
     // SCREEN SHOTS
     //
-
-    /*
-typedef struct
-{
-    char		manufacturer;
-    char		version;
-    char		encoding;
-    char		bits_per_pixel;
-
-    unsigned short	xmin;
-    unsigned short	ymin;
-    unsigned short	xmax;
-    unsigned short	ymax;
-
-    unsigned short	hres;
-    unsigned short	vres;
-
-    unsigned char	palette[48];
-
-    char		reserved;
-    char		color_planes;
-    unsigned short	bytes_per_line;
-    unsigned short	palette_type;
-
-    char		filler[58];
-    unsigned char	data;		// unbounded
-} pcx_t;
-     */
-
-    //
-    // WritePCXfile
-    //
-
-    /*
-public void
-WritePCXfile
-( String		filename,
-  byte[]		data,
-  int		width,
-  int		height,
-  byte[]		palette )
-{
-    int		i;
-    int		length;
-    pcx_t	pcx;
-    byte[]	pack=new byte[width*height*2];
-    int packlen;
-
-//    pcx = new byteZ_Malloc (width*height*2+1000, PU_STATIC, NULL);
-
-    pcx.manufacturer = 0x0a;		// PCX id
-    pcx.version = 5;			// 256 color
-    pcx.encoding = 1;			// uncompressed
-    pcx.bits_per_pixel = 8;		// 256 color
-    pcx.xmin = 0;
-    pcx.ymin = 0;
-    pcx.xmax = (char) (width-1);
-    pcx.ymax = (char) (height-1);
-    pcx.hres = (char) width;
-    pcx.vres = (char) height;
-    Arrays.fill(pcx.palette, (char)0);
-    //memset (pcx.palette,0,sizeof(pcx->palette));
-    pcx.color_planes = 1;		// chunky image
-    pcx.bytes_per_line = (char) width;
-    pcx.palette_type = 2;	// not a grey scale
-    Arrays.fill(pcx.filler,(char) 0);
-    //memset (pcx.filler,0,sizeof(pcx->filler));
-
-
-    // pack the image
-
-
-    for (i=0 ; i<width*height ; i++)
-    {
-	if ( (data[i] & 0xc0) != 0xc0)
-	    pack[packlen++] = data[i];
-	else
-	{
-	    pack[packlen++] = (byte) 0xc1;
-	    pack[packlen++] = data[i];
-	}
-    }
-
-    // write the palette
-    pack[packlen++] = 0x0c;	// palette ID byte
-    for (i=0 ; i<768 ; i++)
-        pack[packlen++] = palette[i];
-
-    // write output file
-    length = packlen;
-    WriteFile (filename, pcx, length);
-
-    //Z_Free (pcx);
-}
-     */
-
-    //
-    // M_ScreenShot
-    //
-    /*
-
-public void ScreenShot ()
-{
-    int		i;
-    byte[]	linear;
-    String	lbmname;
-
-    // munge planar buffer to linear
-    linear = V.screens[2];
-    I_ReadScreen (linear);
-
-    // find a file name to save it to
-    strcpy(lbmname,"DOOM00.pcx");
-
-    for (i=0 ; i<=99 ; i++)
-    {
-	lbmname[4] = i/10 + '0';
-	lbmname[5] = i%10 + '0';
-	if (access(lbmname,0) == -1)
-	    break;	// file doesn't exist
-    }
-    if (i==100)
-	I_Error ("M_ScreenShot: Couldn't create a PCX");
-
-    // save the pcx file
-    WritePCXfile (lbmname, linear,
-		  SCREENWIDTH, SCREENHEIGHT,
-		  W_CacheLumpName ("PLAYPAL",PU_CACHE));
-
-    players[consoleplayer].message = "screen shot";
-}
-     */
-
+  
     public static boolean WriteFile(String name, byte[] source, int length) {
         DoomFile handle;
         try {
             handle = new DoomFile(name, "rw");
-
-            if (handle == null)
-                return false;
-
             handle.write(source, 0, length);
             handle.close();
         } catch (Exception e) {
@@ -452,6 +319,86 @@ public void ScreenShot ()
         return length;
     }
 
+    //
+ // WritePCXfile
+ //
+ public static void
+ WritePCXfile
+ ( String        filename,
+   byte[]     data,
+   int       width,
+   int       height,
+   byte[]     palette )
+ {
+     int     i;
+     int     length;
+     pcx_t  pcx;
+     byte[]   pack;
+     
+     pcx = new pcx_t();
+     pack=new byte[width*height*2]; // allocate that much data, just in case.
+
+     pcx.manufacturer = 0x0a;       // PCX id
+     pcx.version = 5;           // 256 color
+     pcx.encoding = 1;          // uncompressed
+     pcx.bits_per_pixel = 8;        // 256 color
+     pcx.xmin = 0;
+     pcx.ymin = 0;
+     pcx.xmax = (char) (width-1);
+     pcx.ymax = (char) (height-1);
+     pcx.hres = (char) width;
+     pcx.vres = (char) height;
+     // memset (pcx->palette,0,sizeof(pcx->palette));
+     pcx.color_planes = 1;      // chunky image
+     pcx.bytes_per_line = (char) width;
+     pcx.palette_type = 2;   // not a grey scale
+     //memset (pcx->filler,0,sizeof(pcx->filler));
+
+
+     // pack the image
+     //pack = &pcx->data;
+     int p_pack=0;
+     int p_data=0;
+     
+     for (i=0 ; i<width*height ; i++)
+     {
+     if ( (data[i] & 0xc0) != 0xc0)
+         pack[p_pack++] = data[i];
+     else
+     {
+         pack[p_pack++] = (byte) 0xc1;
+         pack[p_pack++] = data[i];
+     }
+     }
+     
+     // write the palette
+     pack[p_pack++] = 0x0c; // palette ID byte
+     for (i=0 ; i<768 ; i++)
+         pack[p_pack++] = palette[i];
+     
+     // write output file
+     length = p_pack;
+     pcx.data=Arrays.copyOf(pack, length);
+     
+     DoomFile f=null;
+    try {
+        f = new DoomFile(filename,"rw");
+        
+    } catch (FileNotFoundException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+    }
+     
+    try {
+        f.setLength(0);
+        pcx.write(f);
+    } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+    }
+    
+     }
+    
     public abstract boolean getShowMessages();
 
     public abstract void setShowMessages(boolean val);
@@ -459,6 +406,12 @@ public void ScreenShot ()
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.24.2.1  2011/07/23 12:41:41  velktron
+// Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+//
+// Revision 1.25  2011/07/15 13:53:52  velktron
+// Implemented WritePCXFile, at last.
+//
 // Revision 1.24  2011/06/03 16:37:09  velktron
 // Readfile will only read at most as much as the buffer allows.
 //

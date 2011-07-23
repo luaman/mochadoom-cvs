@@ -444,6 +444,8 @@ public class DoomStatus extends DoomContext {
 
     protected boolean[] gamekeydown = new boolean[NUMKEYS];
 
+    protected boolean keysCleared;
+
     protected int turnheld; // for accelerative turning
 
     protected boolean[] mousearray = new boolean[4];
@@ -519,8 +521,11 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
-// Revision 1.27.2.1  2011/06/29 15:21:17  velktron
-// Modifications for -angle parameter.
+// Revision 1.27.2.2  2011/07/23 12:41:41  velktron
+// Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+//
+// Revision 1.28  2011/07/16 10:57:50  velktron
+// Merged finnw's changes for enabling polling of ?_LOCK keys.
 //
 // Revision 1.27  2011/06/14 20:59:47  velktron
 // Channel settings now read from default.cfg. Changes in sound creation order.
