@@ -286,96 +286,14 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     
     //////////// SPECIAL DANMAKU STUFF ///////////////
     
-    public static final int angles[]=new int[]{0,0,
-		6,-6,
-		12,-12,
-		18,-18,
-		24,-24,
-		30,-30,
-		36,-36,
-		42,-42,
-		48,-48,
-		54,-54,
-		60,-60,177,-177,
-		66,-66,171,-171,
-		72,-72,165,-165,
-		78,-78,159,-159,
-		84,-84,153,-153,
-		90,-90,147,-147,
-		96,-96,141,-141,
-		102,-102,141,-141,
-		108,-108,135,-135,
-		114,-114,129,-129,
-		120,-120,123,-123,
-		126,-126,117,-117,
-		132,-132,111,-111,
-		138,-138,105,-105,
-		144,-144,99,-99,
-		150,-150,93,-93,
-		156,-156,87,-87,
-		162,-162,81,-81,
-		168,-168,75,-75,
-		174,-174,69,-69,
-		180,-180,63,-63,
-		57,-57,
-		51,-51,
-		45,-45,
-		39,-39,
-		33,-33,
-		27,-27,
-		21,-21,
-		15,-15,
-		9,-9,
-		3,-3};
-
-public static final int timing[]=new int[]{	1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,1,1,5,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7,
-			1,7};
+    
     
     public boolean danmaku=false;		// danmaku state
     public int danmakuX;
     public int danmakuY;
     public statenum_t danmaku_frame=null;  // danmaku frame (force repeat)
     public int d_count=-1;				// danmaku engaged if >=0
-    public static final int d_limit=angles.length; // limit at which we stop danmaku.
+    public static final int d_limit=DanmakuPatterns.angles.length; // limit at which we stop danmaku.
     
     
     /* The following methods were for the most part "contextless" and instance-specific,
@@ -421,7 +339,7 @@ public static final int timing[]=new int[]{	1,7,
         this.state = st;
         
         if (danmaku && d_count>-1)
-        	tics=timing[d_count];
+        	tics=DanmakuPatterns.timing[d_count];
         else
         	tics = st.tics;
         sprite = st.sprite;

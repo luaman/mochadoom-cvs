@@ -2228,18 +2228,34 @@ if (this.DM.angle){
 }
 
 // Even MORE special hack ;-)
+// NO IT'S DANMAKU CODING -JODDO
 
+int projectileVelocity = th.info.speed;
 if (source.danmaku){
-	an+=mobj_t.angles[source.d_count]*0xB60B60;
+	an+=DanmakuPatterns.angles[source.d_count]*0xB60B60;
+	
+	//Check if we need to add variation to the angle
+	if(DanmakuPatterns.variation.length > 1 ){
+		an += DanmakuPatterns.variation[source.d_count]*(RND.P_Random()-128)*0x16c16;
+	}else if(DanmakuPatterns.variation.length == 1 && DanmakuPatterns.variation[0] != 0){
+		an += DanmakuPatterns.variation[0]*(RND.P_Random()-128)*0x16c16;
+	}
+	
+	//Check if we need to replace the projectile velocity
+	if(DanmakuPatterns.velocity.length > 1){
+		projectileVelocity = DanmakuPatterns.velocity[source.d_count];
+	}else if (DanmakuPatterns.variation.length == 1 && DanmakuPatterns.variation[0] != 0){
+		projectileVelocity = DanmakuPatterns.velocity[0];
+	}
 }
 
 th.angle = an&BITS32;
 //an >>= ANGLETOFINESHIFT;
-th.momx = FixedMul (th.info.speed, finecosine(an));
-th.momy = FixedMul (th.info.speed, finesine(an));
+th.momx = FixedMul (projectileVelocity, finecosine(an));
+th.momy = FixedMul (projectileVelocity, finesine(an));
 
 dist = AproxDistance (dest.x - source.x, dest.y - source.y);
-dist = dist / th.info.speed;
+dist = dist / projectileVelocity;
 
 if (dist < 1)
 dist = 1;
