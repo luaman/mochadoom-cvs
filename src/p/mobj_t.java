@@ -293,6 +293,7 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     public int danmakuY;
     public statenum_t danmaku_frame=null;  // danmaku frame (force repeat)
     public int d_count=-1;				// danmaku engaged if >=0
+    public int d_tic = 0;
     public static final int d_limit=DanmakuPatterns.angles.length; // limit at which we stop danmaku.
     
     
@@ -338,8 +339,17 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         	st = states[state.ordinal()];
         this.state = st;
         
-        if (danmaku && d_count>-1)
+        //Get danmaku tics
+        if (danmaku && d_count>-1){
         	tics=DanmakuPatterns.timing[d_count];
+        	//If tics == 0 -> Get next non-zero tics -JODDO
+        	//Note that we DO NOT increment d_count yet because we need to go through the
+        	//zero ticks in projectile spawning too!
+        	if(tics == 0){
+        		int counter = 0;
+            	while(tics == 0) tics = DanmakuPatterns.timing[d_count + ++counter];
+        	}
+        }
         else
         	tics = st.tics;
         sprite = st.sprite;
@@ -356,9 +366,13 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         	if (this.d_count<d_limit-1){
         		// If we are danmaku, force repetition of this frame.
         		state=this.danmaku_frame;
-        	//System.err.printf("Danmaku %d %d  %d  %s !\n",d_count,tics,this.hashCode(), state.name());
-        	//if (danmaku) System.err.printf("Next state %s\n",st.nextstate.name());
-        	d_count++;
+        		
+        		//If we have ticks of 0 duration, increment d_count for those too -JODDO
+        		int tempTicks = DanmakuPatterns.timing[d_count];
+        		if(tempTicks == 0){
+                	while(tempTicks == 0) tempTicks = DanmakuPatterns.timing[++d_count];
+            	}
+        		else d_count++;
         	}
         	else // danmaku end reached. Stop spamming!
         		{
