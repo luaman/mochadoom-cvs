@@ -2232,20 +2232,20 @@ if (this.DM.angle){
 
 int projectileVelocity = th.info.speed;
 if (source.danmaku){
-	an+=DanmakuPatterns.angles[source.d_tic]*0xB60B60;
+	an+=DanmakuPatterns.patterns[source.d_pattern].angles[source.d_tic]*0xB60B60;
 	
 	//Check if we need to add variation to the angle
-	if(DanmakuPatterns.variation.length > 1 ){
-		an += DanmakuPatterns.variation[source.d_tic]*(RND.P_Random()-128)*0x16c16;
-	}else if(DanmakuPatterns.variation.length == 1 && DanmakuPatterns.variation[0] != 0){
-		an += DanmakuPatterns.variation[0]*(RND.P_Random()-128)*0x16c16;
+	if(DanmakuPatterns.patterns[source.d_pattern].variation.length > 1 ){
+		an += DanmakuPatterns.patterns[source.d_pattern].variation[source.d_tic]*(RND.P_Random()-128)*0x16c16;
+	}else if(DanmakuPatterns.patterns[source.d_pattern].variation.length == 1 && DanmakuPatterns.patterns[source.d_pattern].variation[0] != 0){
+		an += DanmakuPatterns.patterns[source.d_pattern].variation[0]*(RND.P_Random()-128)*0x16c16;
 	}
 	
 	//Check if we need to replace the projectile velocity
-	if(DanmakuPatterns.velocity.length > 1){
-		projectileVelocity = DanmakuPatterns.velocity[source.d_tic];
-	}else if (DanmakuPatterns.variation.length == 1 && DanmakuPatterns.variation[0] != 0){
-		projectileVelocity = DanmakuPatterns.velocity[0];
+	if(DanmakuPatterns.patterns[source.d_pattern].velocity.length > 1){
+		projectileVelocity = DanmakuPatterns.patterns[source.d_pattern].velocity[source.d_tic];
+	}else if (DanmakuPatterns.patterns[source.d_pattern].variation.length == 1 && DanmakuPatterns.patterns[source.d_pattern].variation[0] != 0){
+		projectileVelocity = DanmakuPatterns.patterns[source.d_pattern].velocity[0];
 	}
 }
 

@@ -1112,11 +1112,11 @@ public class ActionFunctions implements DoomStatusAware{
             	A.SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
             	
             	//In case we're in danmaku mode we'll do a hack for 0-ticks -JODDO
-            	int tempTicks = DanmakuPatterns.timing[actor.d_count];
+            	int tempTicks = DanmakuPatterns.patterns[actor.d_pattern].timing[actor.d_count];
             	int counter = 1;
             	while(tempTicks == 0){
             		A.SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
-            		tempTicks = DanmakuPatterns.timing[actor.d_count + counter];
+            		tempTicks = DanmakuPatterns.patterns[actor.d_pattern].timing[actor.d_count + counter];
             		counter++;
             		actor.d_tic++;
             	}

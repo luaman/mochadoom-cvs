@@ -294,7 +294,8 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     public statenum_t danmaku_frame=null;  // danmaku frame (force repeat)
     public int d_count=-1;				// danmaku engaged if >=0
     public int d_tic = 0;
-    public static final int d_limit=DanmakuPatterns.angles.length; // limit at which we stop danmaku.
+    public int d_pattern = -1;
+    public int d_limit=-1; // limit at which we stop danmaku.
     
     
     /* The following methods were for the most part "contextless" and instance-specific,
@@ -318,8 +319,10 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         	// Have we hit the danmaku frame?
         	if (state==this.danmaku_frame) {
         		// Increase the counter, setting it to 0 if it was -1.
-        			d_count++;
-        			//System.err.println("Danmaku "+d_count);
+        		d_count++;
+        		//Pick ourselves a danmaku pattern to use, and set the d_limit
+        		d_pattern = (int)(Math.random() * DanmakuPatterns.patterns.length);
+        		d_limit = DanmakuPatterns.patterns[d_pattern].angles.length;
         	}
         } 
         
@@ -341,13 +344,13 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         
         //Get danmaku tics
         if (danmaku && d_count>-1){
-        	tics=DanmakuPatterns.timing[d_count];
+        	tics=DanmakuPatterns.patterns[d_pattern].timing[d_count];
         	//If tics == 0 -> Get next non-zero tics -JODDO
         	//Note that we DO NOT increment d_count yet because we need to go through the
         	//zero ticks in projectile spawning too!
         	if(tics == 0){
         		int counter = 0;
-            	while(tics == 0) tics = DanmakuPatterns.timing[d_count + ++counter];
+            	while(tics == 0) tics = DanmakuPatterns.patterns[d_pattern].timing[d_count + ++counter];
         	}
         }
         else
@@ -368,9 +371,9 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         		state=this.danmaku_frame;
         		
         		//If we have ticks of 0 duration, increment d_count for those too -JODDO
-        		int tempTicks = DanmakuPatterns.timing[d_count];
+        		int tempTicks = DanmakuPatterns.patterns[d_pattern].timing[d_count];
         		if(tempTicks == 0){
-                	while(tempTicks == 0) tempTicks = DanmakuPatterns.timing[++d_count];
+                	while(tempTicks == 0) tempTicks = DanmakuPatterns.patterns[d_pattern].timing[++d_count];
             	}
         		else d_count++;
         	}

@@ -8,7 +8,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.9 2011/06/01 00:08:35 velktron Exp $
+//$Id: Main.java,v 1.9.2.1 2011/07/23 18:50:28 jodwin Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import doom.ICommandLineManager;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.9.2.1  2011/07/23 18:50:28  jodwin
+//I'M AWESOME AND YOU ARE NOT
+//
 //Revision 1.9  2011/06/01 00:08:35  velktron
 //Downsized to essentiality.
 //
@@ -65,10 +68,10 @@ import doom.ICommandLineManager;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.9 2011/06/01 00:08:35 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.9.2.1 2011/07/23 18:50:28 jodwin Exp $";
 
     public static void main(String[] argv){
-
+    		
     	
     	  // These are the most essential
           DoomMain D=new DoomMain();

@@ -10,6 +10,7 @@ import java.util.List;
 import n.DummyNetworkDriver;
 import static data.dstrings.*;
 import p.Actions;
+import p.DanmakuPatterns;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
@@ -87,7 +88,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72.2.3 2011/07/23 12:41:41 velktron Exp $
+// $Id: DoomMain.java,v 1.72.2.4 2011/07/23 18:50:28 jodwin Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -113,7 +114,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.3 2011/07/23 12:41:41 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.4 2011/07/23 18:50:28 jodwin Exp $";
 
     //
     // EVENT HANDLING
@@ -3177,7 +3178,7 @@ public void ScreenShot ()
         status_holders.add((DoomStatusAware) this.V);
         updateStatusHolders(this);
 
-
+        DanmakuPatterns.InitPatterns();
     }
     
     private void updateStatusHolders(DoomStatus DS){
@@ -4145,6 +4146,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.72.2.4  2011/07/23 18:50:28  jodwin
+//I'M AWESOME AND YOU ARE NOT
+//
 //Revision 1.72.2.3  2011/07/23 12:41:41  velktron
 //Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
 //
