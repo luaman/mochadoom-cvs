@@ -23,7 +23,7 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
     private final int[] ylookup;
     private final byte[] screen;
     private final int[] columnofs;
-    private int start, end,numthreads=1;
+    private int start, end;
     
     public RenderWallExecutor(int[] columnofs,int[] ylookup, byte[] screen, RenderWallInstruction[] RWI, CyclicBarrier barrier){
     	this.columnofs=columnofs;
@@ -37,18 +37,12 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
         this.end=end;
         this.start=start;
     }
-    
-    public void setRange(int start, int end,int numthreads){
-        this.end=end;
-        this.start=start;
-        this.numthreads=numthreads;
-    }
-    
+
     public void run(){
 
         int centery;
         int dc_iscale;
-        int dc_source_ofs;
+        //int dc_source_ofs;
         int dc_texturemid;
         int dc_x;
         int dc_yh;
@@ -64,7 +58,7 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
         // Copy shit over from current RWIs...     
         centery=RWI[i].centery;
         dc_iscale=RWI[i].dc_iscale;
-        dc_source_ofs=RWI[i].dc_source_ofs;
+        //dc_source_ofs=RWI[i].dc_source_ofs;
         dc_texturemid=RWI[i].dc_texturemid;
         dc_x=RWI[i].dc_x;
         dc_yh=RWI[i].dc_yh;
@@ -122,7 +116,7 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
                   
                   // heightmask is the Tutti-Frutti fix -- killough
                   
-                  screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS))]];
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS))]];
                   dest += SCREENWIDTH; 
                   if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
@@ -132,23 +126,23 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
          else
         	 while (count>=4)   // texture height is a power of 2 -- killough
              {
-               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;
-               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;
-               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;
-               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;
                count-=4;
              }
            
            	while (count>0){
-               screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+               screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;
                count--;

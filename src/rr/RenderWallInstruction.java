@@ -10,7 +10,7 @@ package rr;
 public class RenderWallInstruction {    
     int centery;
     int dc_iscale;
-    int dc_source_ofs;
+    //int dc_source_ofs;
     int dc_texturemid;
     int dc_texheight; // Boom enhancement
     int dc_x;
