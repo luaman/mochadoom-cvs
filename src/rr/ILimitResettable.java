@@ -9,7 +9,5 @@ package rr;
  */
 
 public interface ILimitResettable {
-    public void resetLimits();
-    
-    
+    public void resetLimits();   
 }
