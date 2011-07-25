@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.28 2011/07/22 15:37:52 velktron Exp $
+// $Id: LevelLoader.java,v 1.29 2011/07/25 19:56:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.29  2011/07/25 19:56:53  velktron
+// reject matrix size bugfix, fron danmaku branch.
+//
 // Revision 1.28  2011/07/22 15:37:52  velktron
 // Began blockmap autogen code...still WIP
 //
@@ -187,7 +190,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.28 2011/07/22 15:37:52 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.29 2011/07/25 19:56:53 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -1036,7 +1039,7 @@ public int bmaporgy;
       // If the reject table is broken/corrupt, too bad. It will all be zeroes.
       // Much better than overflowing.
       // TODO: build-in a REJECT-matrix rebuilder?
-      rejectmatrix = new byte[(int) (Math.ceil(this.numsectors*this.numsectors)/8)]; 
+      rejectmatrix = new byte[(int) (Math.ceil((this.numsectors*this.numsectors)/8.0))];
       System.arraycopy(tmpreject, 0, rejectmatrix, 0, Math.min(tmpreject.length,rejectmatrix.length));
 
      // if (tmpreject.length<rejectmatrix.length) 
