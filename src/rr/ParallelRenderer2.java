@@ -12,6 +12,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import p.mobj_t;
+import rr.RendererState.R_DrawColumnBoom;
+import rr.RendererState.R_DrawColumnBoomOpt;
+import rr.RendererState.R_DrawFuzzColumn;
+import rr.RendererState.R_DrawTLColumn;
 import utils.C2JUtils;
 import data.Tables;
 import doom.DoomMain;
@@ -67,11 +71,12 @@ public class ParallelRenderer2 extends RendererState  {
 		DrawSpan=new R_DrawSpanUnrolled();
 		DrawSpanLow=new R_DrawSpanLow();
 		DrawTranslatedColumn=new R_DrawTranslatedColumn();
-		DrawTLColumn=new R_DrawTLColumn();
-		DrawFuzzColumn=new R_DrawFuzzColumn();
-		DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
-		DrawColumnPlayer=DrawColumn;
-		DrawColumnLow=DrawColumn;
+	      DrawTLColumn=new R_DrawTLColumn();
+	      DrawFuzzColumn=new R_DrawFuzzColumn();
+	      DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
+	      DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
+	      DrawColumnPlayer=DrawColumnMasked;
+	      DrawColumnLow=DrawColumnMasked;
 		this.NUMWALLTHREADS=wallthread;
 		this.NUMFLOORTHREADS=floorthreads;
 

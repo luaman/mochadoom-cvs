@@ -937,7 +937,6 @@ validcount++;
             // At this point, the view angle (and patch) has already been chosen. Go back.
             patch = W.CachePatchNum (vis.patch+firstspritelump,PU_CACHE);
             
-            
             dc_colormap = vis.colormap;
             //colfunc=glasscolfunc;
             if (dc_colormap==null)
@@ -967,13 +966,10 @@ validcount++;
                 I.Error ("R_DrawSpriteRange: bad texturecolumn");
         }
             column = patch.columns[texturecolumn];
-            //System.out.println(">>>>>>>>>>>>>>>>>>   Drawing column "+texturecolumn+" of  "+W.lumpinfo[vis.patch+firstspritelump].name +" at scale "+Integer.toHexString(vis.xiscale));
-              
-            //colfunc.invoke();
             DrawMaskedColumn(column);
             }
 
-            colfunc = basecolfunc;
+            colfunc = maskedcolfunc;
          }
        
 
@@ -1670,6 +1666,8 @@ validcount++;
             }*/
             
            // After using in-place sorts, sprites can be drawn as simply as that.
+           
+           colfunc=maskedcolfunc; // Sprites use fully-masked capable function.
            
            for (int i=0;i<vissprite_p;i++){
                DrawSprite (vissprites[i]);
@@ -4354,8 +4352,9 @@ validcount++;
      
      // Fuck that shit. Amma gonna do it the fastest way possible.
      
-     protected colfunc_t colfunc;
+     protected colfunc_t colfunc;   
      protected colfunc_t basecolfunc;
+     protected colfunc_t maskedcolfunc;
      protected colfunc_t fuzzcolfunc;
      protected colfunc_t transcolfunc;
      protected colfunc_t glasscolfunc;
@@ -4367,6 +4366,7 @@ validcount++;
      protected colfunc_t DrawFuzzColumn;
      protected colfunc_t DrawColumnLow;
      protected colfunc_t DrawColumn;
+     protected colfunc_t DrawColumnMasked;
      protected colfunc_t DrawTLColumn;
      
      /** to be set in UnifiedRenderer */
@@ -4479,7 +4479,8 @@ validcount++;
           if (detailshift==0)
           {
               
-          colfunc = basecolfunc =DrawColumn;
+          colfunc = basecolfunc= DrawColumn;
+          maskedcolfunc=DrawColumnMasked;
           fuzzcolfunc = DrawFuzzColumn;
           transcolfunc = DrawTranslatedColumn;
           glasscolfunc=DrawTLColumn;
@@ -4990,7 +4991,7 @@ validcount++;
               //  or (SHADOW) R_DrawFuzzColumn.
               dc_texheight=0; // Killough
                   
-              colfunc.invoke();
+              basecolfunc.invoke();
           }
           pointer+=length + 4;
           }
@@ -5050,14 +5051,9 @@ validcount++;
               dc_texturemid = basetexturemid - (column.postdeltas[i]<<FRACBITS);
               
               // Drawn by either R_DrawColumn
-              //  or (SHADOW) R_DrawFuzzColumn.
-              //dc_source_ofs+=3; // This makes us point into the first valid pixel of a post. I hope.
-               // killough. Sprites and masked textures get no tiling safeguard, obviously.
-              
-               colfunc.invoke();
-          }
-          //column = (column_t *)(  (byte *)column + column.length + 4);
-          
+              //  or (SHADOW) R_DrawFuzzColumn.              
+              colfunc.invoke();
+          }          
           }
           
           dc_texturemid = basetexturemid;
@@ -5466,6 +5462,112 @@ validcount++;
       }
       }
       
+      /** Adapted from Killough's Boom code.
+       *  Specially optimized version assuming that dc_source_ofs 
+       *  is always 0. 
+       * 
+       * @author admin
+       *
+       */
+      
+      protected final class R_DrawColumnBoomOpt implements colfunc_t{
+          
+      public void invoke() 
+      { 
+        int              count; 
+        int dest;            // killough
+        int  frac;            // killough
+        int fracstep;     
+        
+        count = dc_yh - dc_yl + 1; 
+
+        if (count <= 0)    // Zero length, column does not exceed a pixel.
+          return; 
+                                       
+      if (RANGECHECK) {
+        if (dc_x >= SCREENWIDTH
+            || dc_yl < 0
+            || dc_yh >= SCREENHEIGHT) 
+          I.Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
+      } 
+
+        // Framebuffer destination address.
+        // Use ylookup LUT to avoid multiply with ScreenWidth.
+        // Use columnofs LUT for subwindows? 
+
+        dest = ylookup[dc_yl] + columnofs[dc_x];  
+
+        // Determine scaling, which is the only mapping to be done.
+
+        fracstep = dc_iscale; 
+        frac = dc_texturemid + (dc_yl-centery)*fracstep; 
+
+        // Inner loop that does the actual texture mapping,
+        //  e.g. a DDA-lile scaling.
+        // This is as fast as it gets.       (Yeah, right!!! -- killough)
+        //
+        // killough 2/1/98: more performance tuning
+
+        {
+          final byte[] source = dc_source;       
+           final byte[] colormap = dc_colormap; 
+          int heightmask = dc_texheight-1;
+          if ((dc_texheight & heightmask)!=0)   // not a power of 2 -- killough
+            {
+              heightmask++;
+              heightmask <<= FRACBITS;
+                
+              if (frac < 0)
+                while ((frac += heightmask) <  0);
+              else
+                while (frac >= heightmask)
+                  frac -= heightmask;
+                
+              do
+                {
+                  // Re-map color indices from wall texture column
+                  //  using a lighting/special effects LUT.
+                  
+                  // heightmask is the Tutti-Frutti fix -- killough
+                  
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS))]];
+                  dest += SCREENWIDTH; 
+                  if ((frac += fracstep) >= heightmask)
+                    frac -= heightmask;
+                } 
+              while (--count>0);
+            }
+         else
+            {
+              while (count>=4)   // texture height is a power of 2 -- killough
+                {
+                  //System.err.println(dest);
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  count-=4;
+                }
+              
+                while (count>0){
+                  screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
+                  dest += SCREENWIDTH; 
+                  frac += fracstep;
+                  count--;
+                }
+            } 
+        }
+      }
+      }
+      
       /** An unrolled (4x) rendering loop with full quality */
      // public final int dumb=63 * 64;
       
@@ -5716,28 +5818,34 @@ validcount++;
           lump = TexMan.getTextureColumnLump(tex, col);
           ofs=TexMan.getTextureColumnOfs(tex, col);
           
+          // It's always 0 for this kind of access.
+          // TODO: optimize away?
+          dc_source_ofs=0;
+          
+          // Speed-increasing trick: speed up repeated accesses to the same texture
+          // or patch.
+          
+          if (tex==lasttex) {              
+              return lastpatch.columns[ofs].data;
+          }
+          
           // If pointing inside a non-zero, positive lump, then it's not a composite texture.
           // Read from disk.
           if (lump > 0){
               // This will actually return a pointer to a patch's columns.
               // That is, to the ONE column exactly.{
               // If the caller needs access to a raw column, we must point 3 bytes "ahead".
-              dc_source_ofs=3;
-              patch_t r=W.CachePatchNum(lump,PU_CACHE);
-          return r.columns[ofs].data;
+              lastpatch =W.CachePatchNum(lump,PU_CACHE);
+              lasttex=tex;
+          return lastpatch.columns[ofs].data;
       }
           // Texture should be composite, but it doesn't yet exist. Create it. 
           if (TexMan.getTextureComposite(tex)==null) TexMan.GenerateComposite (tex);
-
-          // This implies that texturecomposite actually stores raw, compressed columns,
-          // or else those "ofs" would go in-between.
-          // The source offset int this case is 0, else we'll skip over stuff.
-          this.dc_source_ofs=0;
-          
-          // Return a default column with the data thrown in. Literally.
           return TexMan.getTextureComposite(tex,col);
       }
       
+      private int lasttex=-1;
+      private patch_t lastpatch=null;
       
       /**
        * R_GetColumn variation which is tutti-frutti proof. It only returns

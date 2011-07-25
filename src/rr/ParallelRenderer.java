@@ -11,6 +11,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import p.mobj_t;
+import rr.RendererState.R_DrawColumnBoom;
+import rr.RendererState.R_DrawColumnBoomOpt;
 import utils.C2JUtils;
 import doom.DoomMain;
 import doom.player_t;
@@ -90,9 +92,10 @@ public class ParallelRenderer extends RendererState  {
         DrawTranslatedColumn=new R_DrawTranslatedColumn();
         DrawTLColumn=new R_DrawTLColumn();
         DrawFuzzColumn=new R_DrawFuzzColumn();
-        DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
-        DrawColumnPlayer=DrawColumn;
-        DrawColumnLow=DrawColumn;
+        DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
+        DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
+        DrawColumnPlayer=DrawColumnMasked;
+        DrawColumnLow=DrawColumnMasked;
         this.NUMWALLTHREADS=wallthread;
         this.NUMFLOORTHREADS=floorthreads;
         
@@ -151,7 +154,7 @@ public class ParallelRenderer extends RendererState  {
           //RWI[RWIcount].columnofs=columnofs;
           RWI[RWIcount].dc_colormap=dc_colormap;
           RWI[RWIcount].dc_source=dc_source;
-          RWI[RWIcount].dc_source_ofs=dc_source_ofs;
+          // RWI[RWIcount].dc_source_ofs=dc_source_ofs; It's always 0 for solid walls.
           RWI[RWIcount].dc_texturemid=dc_texturemid;
           RWI[RWIcount].dc_texheight=dc_texheight;
           RWIcount++;

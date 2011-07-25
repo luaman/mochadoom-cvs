@@ -26,9 +26,10 @@ public class UnifiedRenderer extends RendererState{
       DrawTranslatedColumn=new R_DrawTranslatedColumn();
       DrawTLColumn=new R_DrawTLColumn();
       DrawFuzzColumn=new R_DrawFuzzColumn();
-      DrawColumn=new R_DrawColumnBoom();//new R_DrawColumnBoom();
-      DrawColumnPlayer=DrawColumn;//new R_DrawColumn();
-      DrawColumnLow=DrawColumn;
+      DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
+      DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
+      DrawColumnPlayer=DrawColumnMasked;
+      DrawColumnLow=DrawColumnMasked;
   }
   
   private final class Segs extends SegDrawer{

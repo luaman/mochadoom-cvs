@@ -61,7 +61,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	private int dc_x,dc_yl,dc_yh,dc_iscale;
 	private byte[] dc_source;
 	private byte[] dc_colormap;
-	private volatile int dc_source_ofs;
+	//private volatile int dc_source_ofs;
 	private volatile int dc_texheight, dc_texturemid;
 	private int centery;
 
@@ -107,7 +107,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	}
 
 	
-	/** How many instruction TOTAL are there to wade through.
+	/** How many instructions TOTAL are there to wade through.
 	 *  Not all will be executed on one thread, except in some rare
 	 *  circumstances. 
 	 *  
@@ -223,7 +223,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 
 					// heightmask is the Tutti-Frutti fix -- killough
 
-					screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS))]];
+					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS))]];
 					dest += SCREENWIDTH; 
 					if ((frac += fracstep) >= heightmask)
 						frac -= heightmask;
@@ -233,23 +233,23 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 			else
 				while (count>=4)   // texture height is a power of 2 -- killough
 				{
-					screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
 					dest += SCREENWIDTH; 
 					frac += fracstep;
-					screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
 					dest += SCREENWIDTH; 
 					frac += fracstep;
-					screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
 					dest += SCREENWIDTH; 
 					frac += fracstep;
-					screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
 					dest += SCREENWIDTH; 
 					frac += fracstep;
 					count-=4;
 				}
 
 			while (count>0){
-				screen[dest] = colormap[0x00FF&source[dc_source_ofs+((frac>>FRACBITS) & heightmask)]];
+				screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
 				dest += SCREENWIDTH; 
 				frac += fracstep;
 				count--;
@@ -352,7 +352,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                 dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
                 dc_texturemid = rsi.rw_midtexturemid;    
                 dc_source = GC.GetCachedColumn(rsi.midtexture,texturecolumn);
-                dc_source_ofs=0;
+                //dc_source_ofs=0;
                 CompleteColumn();
                 ceilingclip[rw_x] = (short) rsi.viewheight;
                 floorclip[rw_x] = -1;
@@ -376,7 +376,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                     dc_texturemid = rsi.rw_toptexturemid;
                     dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
                     dc_source = GC.GetCachedColumn(rsi.toptexture,texturecolumn);
-                    dc_source_ofs=0;
+                    //dc_source_ofs=0;
                     CompleteColumn();
     				ceilingclip[rw_x] = (short) mid;
 				}
@@ -407,7 +407,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                     dc_texturemid = rsi.rw_bottomtexturemid;
                     dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
                     dc_source = GC.GetCachedColumn(rsi.bottomtexture,texturecolumn);
-                    dc_source_ofs=0;
+                    // dc_source_ofs=0;
                     CompleteColumn();
 					floorclip[rw_x] = (short) mid;
 				}
@@ -453,8 +453,11 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 }
 
 // $Log: RenderSegExecutor.java,v $
-// Revision 1.7.2.1  2011/07/23 12:41:40  velktron
-// Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+// Revision 1.7.2.2  2011/07/25 11:48:25  velktron
+// Sync'd with latest HEAD dc_source_ofs=0 optimization.
+//
+// Revision 1.10  2011/07/25 11:39:10  velktron
+// Optimized to work without dc_source_ofs (uses only cached, solid textures)
 //
 // Revision 1.9  2011/07/12 16:29:35  velktron
 // Now using GetCachedColumn

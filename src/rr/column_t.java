@@ -132,8 +132,8 @@ public class column_t implements CacheableDoomObject{
 
 
 // $Log: column_t.java,v $
-// Revision 1.15.2.1  2011/07/23 12:41:40  velktron
-// Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+// Revision 1.15.2.2  2011/07/25 11:48:25  velktron
+// Sync'd with latest HEAD dc_source_ofs=0 optimization.
 //
 // Revision 1.16  2011/07/12 16:32:05  velktron
 // 4 extra padding bytes uneeded.
