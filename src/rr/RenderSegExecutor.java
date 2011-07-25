@@ -453,8 +453,8 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 }
 
 // $Log: RenderSegExecutor.java,v $
-// Revision 1.7.2.2  2011/07/25 11:48:25  velktron
-// Sync'd with latest HEAD dc_source_ofs=0 optimization.
+// Revision 1.7.2.3  2011/07/25 20:24:16  velktron
+// More rendering fixes + support for DeePSea tall patches.
 //
 // Revision 1.10  2011/07/25 11:39:10  velktron
 // Optimized to work without dc_source_ofs (uses only cached, solid textures)

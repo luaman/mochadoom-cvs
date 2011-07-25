@@ -1686,7 +1686,7 @@ validcount++;
             
             colfunc=playercolfunc;            
             DrawPlayerSprites ();
-            colfunc=basecolfunc;
+            colfunc=maskedcolfunc;
     }
         
     }
@@ -4991,7 +4991,7 @@ validcount++;
               //  or (SHADOW) R_DrawFuzzColumn.
               dc_texheight=0; // Killough
                   
-              basecolfunc.invoke();
+              maskedcolfunc.invoke();
           }
           pointer+=length + 4;
           }

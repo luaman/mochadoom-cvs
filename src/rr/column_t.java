@@ -5,8 +5,6 @@ import java.nio.ByteBuffer;
 
 import utils.C2JUtils;
 import w.CacheableDoomObject;
-import w.DoomFile;
-import w.IReadableDoomObject;
 
 /** column_t is a list of 0 or more post_t, (byte)-1 terminated
  * typedef post_t  column_t;
@@ -51,12 +49,29 @@ public class column_t implements CacheableDoomObject{
 	        int len=0; // How long is the WHOLE column, until the final FF?
 	        int postno=0; // Actual number of posts.
 	        int topdelta=0;
+	        int prevdelta=-1; // HACK for DeepSea tall patches.
 	        
 	        // Scan every byte until we encounter an 0xFF which definitively marks the end of a column.
 	        while((topdelta=C2JUtils.toUnsignedByte(buf.get()))!=0xFF){
 	        
+	        // From the wiki:
+	        // A column's topdelta is compared to the previous column's topdelta 
+	        // (or to -1 if there is no previous column in this row). If the new 
+	        //  topdelta is lesser than the previous, it is interpreted as a tall
+	        // patch and the two values are added together, the sum serving as the 
+	        // current column's actual offset.
+	            
+	         int tmp=topdelta;    
+	            
+	        if (topdelta<prevdelta) {	            
+	            topdelta+=prevdelta;
+	            }
+
+            prevdelta=tmp;
+	        
 	        // First byte of a post should be its "topdelta"
             guesspostdeltas[postno]=(short)topdelta;
+            
 	        guesspostofs[postno]=skipped+3; // 0 for first post
 
 	        // Read one more byte...this should be the post length.
@@ -132,8 +147,11 @@ public class column_t implements CacheableDoomObject{
 
 
 // $Log: column_t.java,v $
-// Revision 1.15.2.2  2011/07/25 11:48:25  velktron
-// Sync'd with latest HEAD dc_source_ofs=0 optimization.
+// Revision 1.15.2.3  2011/07/25 20:24:16  velktron
+// More rendering fixes + support for DeePSea tall patches.
+//
+// Revision 1.17  2011/07/25 14:37:20  velktron
+// Added support for DeePSea tall patches.
 //
 // Revision 1.16  2011/07/12 16:32:05  velktron
 // 4 extra padding bytes uneeded.
