@@ -317,10 +317,10 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         state_t st=null; 
         
         //Kill danmaku monsters
-        if(danmaku && state == info.deathstate) d_engaged = false;
+        if(danmaku && (state == info.deathstate || state == info.xdeathstate)) d_engaged = false;
         
         // Are we danmaku?
-        if (danmaku && state != info.deathstate){
+        if (danmaku && (state != info.deathstate && state != info.xdeathstate)){
         	// Have we hit the danmaku frame?
         	if (state==this.danmaku_frame) {
         		d_engaged = true;
@@ -343,21 +343,20 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             return false;
         }
 
-        if (d_engaged && state != info.deathstate) 
+        if (d_engaged && (state != info.deathstate && state != info.xdeathstate)) 
         	st = states[danmaku_frame.ordinal()];
         else
         	st = states[state.ordinal()];
         this.state = st;
         
         //Get danmaku tics
-        if (danmaku && d_engaged && state != info.deathstate){
+        if (danmaku && d_engaged && (state != info.deathstate && state != info.xdeathstate)){
         	//With the Pattern->Shape system we only need to know the pattern's total tics
         	tics = DanmakuPatterns.patterns[d_pattern].GetLength();
         	
         	//FIXME: This doesn't currently happen
-        	if(tics < 0){
-        		//If tics are negative we're going to repeat the pattern (infinite spam ;-)) -JODDO
-        		tics *= -1;
+        	if(DanmakuPatterns.patterns[d_pattern].repeat){
+        		//Repeat the pattern (infinite spam ;-)) -JODDO
         		d_repeat = true;
         	}
         }
@@ -373,12 +372,13 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             {st.acp1.invoke(this);} 
 
         // special handling of danmaku state:
-        if (danmaku && d_engaged && state != info.deathstate){
+        if (danmaku && d_engaged && (state != info.deathstate && state != info.xdeathstate)){
         	//Check if the pattern has been finished
         	if(DanmakuPatterns.patterns[d_pattern].IsPatternFinished(this)){
         		if(d_repeat){
         			//Should we repeat the pattern? -> reset the pattern and the tics
         			DanmakuPatterns.patterns[d_pattern].BeginPattern(this);
+        			d_facingStored = false;
         			tics = DanmakuPatterns.patterns[d_pattern].GetLength();
         			d_repeat = false;
         		}else{

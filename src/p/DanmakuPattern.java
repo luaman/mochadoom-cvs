@@ -11,6 +11,7 @@ public class DanmakuPattern {
 	//public int patternTic = 0;
 	private int patternLastTic = -1;
 	public DanmakuShape[] shapes;
+	public boolean repeat = false;
 	
 	public ArrayList<DanmakuBullet> Tic(mobj_t source){
 		ArrayList<DanmakuBullet> bullets = new ArrayList<DanmakuBullet>();

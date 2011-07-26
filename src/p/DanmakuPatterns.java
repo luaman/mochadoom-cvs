@@ -35,6 +35,7 @@ public class DanmakuPatterns {
 		pattern.shapes[3] = DanmakuShape.GetShape(1,  30, 10, 0, 12);
 		pattern.shapes[4] = DanmakuShape.GetShape(1, -30, 10, 0, 16);
 		
+//		pattern.repeat = true;
 		patterns[0] = pattern;
 		
 		/////////////////////////////////////////////////////////////////////
