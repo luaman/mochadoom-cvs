@@ -9,12 +9,38 @@ public class DanmakuPatterns {
 	
 	public static void InitPatterns(){
 		
-		patterns = new DanmakuPattern[4];
+		patterns = new DanmakuPattern[1];
+		
+		DanmakuPattern pattern = new DanmakuPattern();
+		pattern.shapes = new DanmakuShape[7];
+		
+		pattern.shapes[0] = DanmakuShape.GetShape(0, 0, 4, 2, 0);
+		pattern.shapes[1] = DanmakuShape.GetShape(0, 0, 8, 3, 8);
+		pattern.shapes[2] = DanmakuShape.GetShape(0, 0, 12, 4, 16);
+		pattern.shapes[3] = DanmakuShape.GetShape(0, 0, 16, 4, 24);
+		pattern.shapes[4] = DanmakuShape.GetShape(0, 0, 16, 5, 32);
+		pattern.shapes[5] = DanmakuShape.GetShape(0, 0, 16, 5, 40);
+		pattern.shapes[6] = DanmakuShape.GetShape(0, 0, 16, 6, 48);
+		
+		patterns[0] = pattern;
+		
+		
+		
+		pattern = new DanmakuPattern();
+		pattern.shapes = new DanmakuShape[5];
+		
+		pattern.shapes[0] = DanmakuShape.GetShape(1,   0, 10, 0, 0);
+		pattern.shapes[1] = DanmakuShape.GetShape(1,  15, 10, 0, 4);
+		pattern.shapes[2] = DanmakuShape.GetShape(1, -15, 10, 0, 8);
+		pattern.shapes[3] = DanmakuShape.GetShape(1,  30, 10, 0, 12);
+		pattern.shapes[4] = DanmakuShape.GetShape(1, -30, 10, 0, 16);
+		
+		patterns[0] = pattern;
 		
 		/////////////////////////////////////////////////////////////////////
 		//Add 0-tic circle pattern //////////////////////////////////////////
 		/////////////////////////////////////////////////////////////////////
-		
+		/*
 		DanmakuPattern pattern = new DanmakuPattern();
 		pattern.angles = new int[]{0, 180, 90, -90, 45, -135, 135, -45,
 				15, -165, -15, 165, 30, -150, -30, 150,0, 180, 90, -90, 45, -135, 135, -45,
@@ -146,6 +172,7 @@ public class DanmakuPatterns {
 				12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU,12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU};
 		
 		patterns[3] = pattern;
+		*/
 	}
 }
 //Imp default velocity = 10*FRACUNIT

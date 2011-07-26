@@ -289,13 +289,14 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     
     
     public boolean danmaku=false;		// danmaku state
+    public boolean d_facingStored = false;
     public int danmakuX;
     public int danmakuY;
     public statenum_t danmaku_frame=null;  // danmaku frame (force repeat)
-    public int d_count=-1;				// danmaku engaged if >=0
     public int d_tic = 0;
     public int d_pattern = -1;
     public int d_limit=-1; // limit at which we stop danmaku.
+    public boolean d_engaged = false;
     public boolean d_repeat = false;
     
     
@@ -316,17 +317,19 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         state_t st=null; 
         
         //Kill danmaku monsters
-        if(danmaku && state == info.deathstate) d_count = -1;
+        if(danmaku && state == info.deathstate) d_engaged = false;
         
         // Are we danmaku?
         if (danmaku && state != info.deathstate){
         	// Have we hit the danmaku frame?
         	if (state==this.danmaku_frame) {
-        		// Increase the counter, setting it to 0 if it was -1.
-        		d_count++;
-        		//Pick ourselves a danmaku pattern to use, and set the d_limit
+        		d_engaged = true;
+        		d_facingStored = false;
+        		//Pick ourselves a danmaku pattern to use
         		d_pattern = (int)(Math.random() * DanmakuPatterns.patterns.length);
-        		d_limit = DanmakuPatterns.patterns[d_pattern].angles.length;
+        		//Begin the chosen pattern, and set the d_limit
+        		DanmakuPatterns.patterns[d_pattern].BeginPattern(this);
+        		d_limit = DanmakuPatterns.patterns[d_pattern].GetLength();
         	}
         } 
         
@@ -340,22 +343,19 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             return false;
         }
 
-        if (d_count>-1 && state != info.deathstate) 
+        if (d_engaged && state != info.deathstate) 
         	st = states[danmaku_frame.ordinal()];
         else
         	st = states[state.ordinal()];
         this.state = st;
         
         //Get danmaku tics
-        if (danmaku && d_count>-1 && state != info.deathstate){
-        	tics=DanmakuPatterns.patterns[d_pattern].timing[d_count];
-        	//If tics == 0 -> Get next non-zero tics -JODDO
-        	//Note that we DO NOT increment d_count yet because we need to go through the
-        	//zero ticks in projectile spawning too!
-        	if(tics == 0){
-        		int counter = 0;
-            	while(tics == 0) tics = DanmakuPatterns.patterns[d_pattern].timing[d_count + ++counter];
-        	}else if(tics < 0){
+        if (danmaku && d_engaged && state != info.deathstate){
+        	//With the Pattern->Shape system we only need to know the pattern's total tics
+        	tics = DanmakuPatterns.patterns[d_pattern].GetLength();
+        	
+        	//FIXME: This doesn't currently happen
+        	if(tics < 0){
         		//If tics are negative we're going to repeat the pattern (infinite spam ;-)) -JODDO
         		tics *= -1;
         		d_repeat = true;
@@ -373,27 +373,16 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             {st.acp1.invoke(this);} 
 
         // special handling of danmaku state:
-        if (danmaku && d_count>-1 && state != info.deathstate){
-        	if (this.d_count<d_limit-1){
-        		// If we are danmaku, force repetition of this frame.
-        		state=this.danmaku_frame;
-        		
-        		//If we have ticks of 0 duration, increment d_count for those too -JODDO
-        		int tempTicks = DanmakuPatterns.patterns[d_pattern].timing[d_count];
-        		if(tempTicks == 0){
-                	while(tempTicks == 0) tempTicks = DanmakuPatterns.patterns[d_pattern].timing[++d_count];
-            	}
-        		else d_count++;
-        	}
-        	else // danmaku end reached. Stop spamming!
-        	{
+        if (danmaku && d_engaged && state != info.deathstate){
+        	//Check if the pattern has been finished
+        	if(DanmakuPatterns.patterns[d_pattern].IsPatternFinished(this)){
         		if(d_repeat){
-        			//Should we repeat the pattern?
-        			d_count = 0;
+        			//Should we repeat the pattern? -> reset the pattern and the tics
+        			DanmakuPatterns.patterns[d_pattern].BeginPattern(this);
+        			tics = DanmakuPatterns.patterns[d_pattern].GetLength();
         			d_repeat = false;
         		}else{
-        			d_count=-1; 
-        			//System.err.print("Danmaku disengaged\n");
+        			d_engaged = false;
         			state = st.nextstate;
         		}
         	}

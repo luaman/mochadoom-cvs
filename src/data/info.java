@@ -9,7 +9,7 @@ import doom.think_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: info.java,v 1.11 2011/06/08 18:26:42 velktron Exp $
+// $Id: info.java,v 1.11.2.1 2011/07/26 17:53:34 jodwin Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,6 +24,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: info.java,v $
+// Revision 1.11.2.1  2011/07/26 17:53:34  jodwin
+// MAJOR AWESOME DANMAKU UPDATE
+//
 // Revision 1.11  2011/06/08 18:26:42  velktron
 // Actually, the death state was fine. The problem was in Actions.
 //
@@ -77,7 +80,7 @@ import doom.think_t;
 
 public class info{
 
-//static const char rcsid[] = "$Id: info.java,v 1.11 2011/06/08 18:26:42 velktron Exp $";
+//static const char rcsid[] = "$Id: info.java,v 1.11.2.1 2011/07/26 17:53:34 jodwin Exp $";
 
 // Data.
 //#include "sounds.h"
@@ -648,7 +651,7 @@ public static final state_t[]	states = {
     new state_t(spritenum_t.SPR_TROO,3,3,think_t.A_Chase,statenum_t.S_TROO_RUN1,0,0),	// S_TROO_RUN8
     new state_t(spritenum_t.SPR_TROO,4,8,think_t.A_FaceTarget,statenum_t.S_TROO_ATK2,0,0),	// S_TROO_ATK1
     new state_t(spritenum_t.SPR_TROO,5,8,think_t.A_FaceTarget,statenum_t.S_TROO_ATK3,0,0),	// S_TROO_ATK2
-    new state_t(spritenum_t.SPR_TROO,6,6,think_t.A_TroopAttack,statenum_t.S_TROO_RUN1,0,0),	// S_TROO_ATK3
+    new state_t(spritenum_t.SPR_TROO,6,6,think_t.A_FaceTarget/*think_t.A_TroopAttack*/,statenum_t.S_TROO_RUN1,0,0),	// S_TROO_ATK3
     new state_t(spritenum_t.SPR_TROO,7,2,null,statenum_t.S_TROO_PAIN2,0,0),	// S_TROO_PAIN
     new state_t(spritenum_t.SPR_TROO,7,2,think_t.A_Pain,statenum_t.S_TROO_RUN1,0,0),	// S_TROO_PAIN2
     new state_t(spritenum_t.SPR_TROO,8,8,null,statenum_t.S_TROO_DIE2,0,0),	// S_TROO_DIE1

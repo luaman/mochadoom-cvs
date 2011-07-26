@@ -43,6 +43,9 @@ import static p.mobj_t.MF_SKULLFLY;
 import static p.mobj_t.MF_SOLID;
 import static utils.C2JUtils.eval;
 import static utils.C2JUtils.flags;
+
+import java.util.ArrayList;
+
 import i.DoomStatusAware;
 import p.UnifiedGameMap.Enemies;
 import m.IRandom;
@@ -832,6 +835,14 @@ public class ActionFunctions implements DoomStatusAware{
 			// calling action functions at transitions
 			if (mobj.tics != -1) {
 				mobj.tics--;
+				
+				//Tic Danmaku -JODDO
+				if(mobj.danmaku && mobj.d_engaged){
+					ArrayList<DanmakuBullet> bullets = DanmakuPatterns.patterns[mobj.d_pattern].Tic(mobj);
+					for(int i = 0; i < bullets.size(); i++){
+						A.SpawnDanmakuBullet(mobj, mobj.target, mobjtype_t.MT_TROOPSHOT, bullets.get(i));
+					}
+				}
 
 				// you can cycle through multiple states in a tic
 				if (!eval(mobj.tics))
@@ -1091,9 +1102,7 @@ public class ActionFunctions implements DoomStatusAware{
             if (actor.target==null)
             return;
                 
-            if (!actor.danmaku || actor.d_count == 1){
-            	A_FaceTarget (actor);
-            }
+            A_FaceTarget (actor);
             
             if (EN.CheckMeleeRange (actor))
             {
@@ -1105,24 +1114,7 @@ public class ActionFunctions implements DoomStatusAware{
 
             
             // launch a missile
-            
-            if(actor.danmaku){
-            	//Set the danmake tic
-            	actor.d_tic = actor.d_count;
-            	A.SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
-            	
-            	//In case we're in danmaku mode we'll do a hack for 0-ticks -JODDO
-            	int tempTicks = DanmakuPatterns.patterns[actor.d_pattern].timing[actor.d_count];
-            	int counter = 1;
-            	while(tempTicks == 0){
-            		A.SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
-            		tempTicks = DanmakuPatterns.patterns[actor.d_pattern].timing[actor.d_count + counter];
-            		counter++;
-            		actor.d_tic++;
-            	}
-            }else{
-            	A.SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
-            }
+            A.SpawnMissile (actor, actor.target, mobjtype_t.MT_TROOPSHOT);
         }
 	}
 

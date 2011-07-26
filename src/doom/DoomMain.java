@@ -11,6 +11,7 @@ import n.DummyNetworkDriver;
 import static data.dstrings.*;
 import p.Actions;
 import p.DanmakuPatterns;
+import p.DanmakuShape;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
@@ -88,7 +89,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72.2.4 2011/07/23 18:50:28 jodwin Exp $
+// $Id: DoomMain.java,v 1.72.2.5 2011/07/26 17:53:34 jodwin Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -114,7 +115,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.4 2011/07/23 18:50:28 jodwin Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.5 2011/07/26 17:53:34 jodwin Exp $";
 
     //
     // EVENT HANDLING
@@ -3178,6 +3179,7 @@ public void ScreenShot ()
         status_holders.add((DoomStatusAware) this.V);
         updateStatusHolders(this);
 
+        DanmakuShape.InitShapes();
         DanmakuPatterns.InitPatterns();
     }
     
@@ -4146,6 +4148,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.72.2.5  2011/07/26 17:53:34  jodwin
+//MAJOR AWESOME DANMAKU UPDATE
+//
 //Revision 1.72.2.4  2011/07/23 18:50:28  jodwin
 //I'M AWESOME AND YOU ARE NOT
 //

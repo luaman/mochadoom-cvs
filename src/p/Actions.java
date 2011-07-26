@@ -2205,18 +2205,7 @@ if (th.info.seesound!=null)
 
 th.target = source;    // where it came from
 
-//J: If we're in danmaku -> Whole pattern needs to face the same spot
-if (source.danmaku){
-	if(source.d_count == 0){
-		//Store the original target position
-		source.danmakuX = dest.x;
-		source.danmakuY = dest.y;
-	}
-	an = R.PointToAngle2 (source.x, source.y, source.danmakuX, source.danmakuY)&BITS32;
-}
-else{
-	an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y)&BITS32;  
-}
+an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y)&BITS32;  
 
 // fuzzy player
 if (flags(dest.flags , MF_SHADOW))
@@ -2227,27 +2216,7 @@ if (this.DM.angle){
 	an += DM.anglespread*(RND.P_Random()-128)*0x16c16;
 }
 
-// Even MORE special hack ;-)
-// NO IT'S DANMAKU CODING -JODDO
-
 int projectileVelocity = th.info.speed;
-if (source.danmaku){
-	an+=DanmakuPatterns.patterns[source.d_pattern].angles[source.d_tic]*0xB60B60;
-	
-	//Check if we need to add variation to the angle
-	if(DanmakuPatterns.patterns[source.d_pattern].variation.length > 1 ){
-		an += DanmakuPatterns.patterns[source.d_pattern].variation[source.d_tic]*(RND.P_Random()-128)*0x16c16;
-	}else if(DanmakuPatterns.patterns[source.d_pattern].variation.length == 1 && DanmakuPatterns.patterns[source.d_pattern].variation[0] != 0){
-		an += DanmakuPatterns.patterns[source.d_pattern].variation[0]*(RND.P_Random()-128)*0x16c16;
-	}
-	
-	//Check if we need to replace the projectile velocity
-	if(DanmakuPatterns.patterns[source.d_pattern].velocity.length > 1){
-		projectileVelocity = DanmakuPatterns.patterns[source.d_pattern].velocity[source.d_tic];
-	}else if (DanmakuPatterns.patterns[source.d_pattern].variation.length == 1 && DanmakuPatterns.patterns[source.d_pattern].variation[0] != 0){
-		projectileVelocity = DanmakuPatterns.patterns[source.d_pattern].velocity[0];
-	}
-}
 
 th.angle = an&BITS32;
 //an >>= ANGLETOFINESHIFT;
@@ -2266,6 +2235,54 @@ CheckMissileSpawn (th);
 return th;
 }
 
+
+
+protected mobj_t SpawnDanmakuBullet (mobj_t source, mobj_t dest,
+									 mobjtype_t type, DanmakuBullet bullet ){
+	mobj_t th;
+	long an; // angle_t
+	int     dist;
+	
+	th = SpawnMobj (source.x, source.y, source.z + 4*8*FRACUNIT, type);
+	
+	if (th.info.seesound!=null)S.StartSound(th, th.info.seesound);
+	th.target = source;    // where it came from
+	
+	//J: Whole pattern needs to face the same spot
+	if(source.d_engaged && !source.d_facingStored){
+		//Store the original target position
+		source.danmakuX = dest.x;
+		source.danmakuY = dest.y;
+		source.d_facingStored = true;
+	}
+	an = R.PointToAngle2 (source.x, source.y, source.danmakuX, source.danmakuY)&BITS32;
+	
+	// fuzzy player
+	if (flags(dest.flags , MF_SHADOW)) an += (RND.P_Random()-RND.P_Random())<<20; 
+	
+	// Even MORE special hack ;-)
+	// NO IT'S DANMAKU CODING -JODDO
+	int projectileVelocity = bullet.velocity;
+	an += bullet.angle*0xB60B60;
+		
+	//Add variation to the angle
+	an += bullet.variation * (RND.P_Random()-128)*0x16c16;
+	
+	th.angle = an&BITS32;
+	//an >>= ANGLETOFINESHIFT;
+	th.momx = FixedMul (projectileVelocity, finecosine(an));
+	th.momy = FixedMul (projectileVelocity, finesine(an));
+	
+	dist = AproxDistance (dest.x - source.x, dest.y - source.y);
+	dist = dist / projectileVelocity;
+	
+	if (dist < 1) dist = 1;
+	
+	th.momz = (dest.z - source.z) / dist;
+	CheckMissileSpawn (th);
+	
+	return th;
+}
 
 
 /**
