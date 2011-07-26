@@ -296,6 +296,7 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     public int d_tic = 0;
     public int d_pattern = -1;
     public int d_limit=-1; // limit at which we stop danmaku.
+    public boolean d_repeat = false;
     
     
     /* The following methods were for the most part "contextless" and instance-specific,
@@ -314,8 +315,11 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
     {
         state_t st=null; 
         
+        //Kill danmaku monsters
+        if(danmaku && state == info.deathstate) d_count = -1;
+        
         // Are we danmaku?
-        if (danmaku){
+        if (danmaku && state != info.deathstate){
         	// Have we hit the danmaku frame?
         	if (state==this.danmaku_frame) {
         		// Increase the counter, setting it to 0 if it was -1.
@@ -336,14 +340,14 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             return false;
         }
 
-        if (d_count>-1) 
+        if (d_count>-1 && state != info.deathstate) 
         	st = states[danmaku_frame.ordinal()];
         else
         	st = states[state.ordinal()];
         this.state = st;
         
         //Get danmaku tics
-        if (danmaku && d_count>-1){
+        if (danmaku && d_count>-1 && state != info.deathstate){
         	tics=DanmakuPatterns.patterns[d_pattern].timing[d_count];
         	//If tics == 0 -> Get next non-zero tics -JODDO
         	//Note that we DO NOT increment d_count yet because we need to go through the
@@ -351,6 +355,10 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         	if(tics == 0){
         		int counter = 0;
             	while(tics == 0) tics = DanmakuPatterns.patterns[d_pattern].timing[d_count + ++counter];
+        	}else if(tics < 0){
+        		//If tics are negative we're going to repeat the pattern (infinite spam ;-)) -JODDO
+        		tics *= -1;
+        		d_repeat = true;
         	}
         }
         else
@@ -365,7 +373,7 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
             {st.acp1.invoke(this);} 
 
         // special handling of danmaku state:
-        if (danmaku && d_count>-1){
+        if (danmaku && d_count>-1 && state != info.deathstate){
         	if (this.d_count<d_limit-1){
         		// If we are danmaku, force repetition of this frame.
         		state=this.danmaku_frame;
@@ -378,11 +386,17 @@ public class mobj_t extends thinker_t implements Interceptable, IWritableDoomObj
         		else d_count++;
         	}
         	else // danmaku end reached. Stop spamming!
-        		{
-        		d_count=-1; 
-        		//System.err.print("Danmaku disengaged\n");
-        		state = st.nextstate;
+        	{
+        		if(d_repeat){
+        			//Should we repeat the pattern?
+        			d_count = 0;
+        			d_repeat = false;
+        		}else{
+        			d_count=-1; 
+        			//System.err.print("Danmaku disengaged\n");
+        			state = st.nextstate;
         		}
+        	}
         } else {
         	
          state = st.nextstate;

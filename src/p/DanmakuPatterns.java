@@ -9,7 +9,7 @@ public class DanmakuPatterns {
 	
 	public static void InitPatterns(){
 		
-		patterns = new DanmakuPattern[3];
+		patterns = new DanmakuPattern[4];
 		
 		/////////////////////////////////////////////////////////////////////
 		//Add 0-tic circle pattern //////////////////////////////////////////
@@ -126,6 +126,26 @@ public class DanmakuPatterns {
 		pattern.velocity = new int[]{0};
 		
 		patterns[2] = pattern;
+		
+		/////////////////////////////////////////////////////////////////////
+		//Add infinite circle pattern ///////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////
+		
+		pattern = new DanmakuPattern();
+		
+		pattern.angles=new int[]{0, 180, 90, -90, 45, -135, 135, -45,
+		15, -165, -15, 165, 30, -150, -30, 150,60, -120, 120, -60, 75, -105, 105, -75};
+		
+		pattern.timing=new int[]{1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1,1, 1, 1, 1, 1, 1, 1, -1};
+		
+		pattern.variation = new int[]{4, 4, 4, 4, 4, 4, 4, 4,
+				4, 4, 4, 4, 4, 4, 4, 4,4, 4, 4, 4, 4, 4, 4, 4};
+		
+		pattern.velocity = new int[]{12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU,
+				12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU,12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU, 12*FU};
+		
+		patterns[3] = pattern;
 	}
 }
 //Imp default velocity = 10*FRACUNIT
