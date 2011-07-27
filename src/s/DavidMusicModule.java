@@ -14,7 +14,8 @@ import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Transmitter;
 
 /** Concern separated from David Martel's MIDI & MUS player
- *  for Mocha Doom
+ *  for Mocha Doom. Greatly improved upon by finnw, perfecting volume changes
+ *  and MIDI device detection.
  *  
  * @author David Martel
  * @author velktron
@@ -129,6 +130,7 @@ public class DavidMusicModule implements IMusic {
 	            bis = new ByteArrayInputStream(data);
 	            sequence = MidiSystem.getSequence(bis);
 	        } catch (InvalidMidiDataException ex) {
+	        	// Well, it wasn't. Dude.
                 bis = new ByteArrayInputStream(data);
 	            sequence = MusReader.getSequence(bis);
 	        }
@@ -139,7 +141,7 @@ public class DavidMusicModule implements IMusic {
 	    	e.printStackTrace();
 	    	return -1;
 	    } 
-		// TODO Auto-generated method stub
+		// In good old C style, we return 0 upon success?
 		return 0;
 	}
 
