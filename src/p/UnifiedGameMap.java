@@ -1781,12 +1781,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     	// to the thinkercap. When loading a new level, they DO NOT get unloaded,
     	// wtf...
     	if (next!=null && next!=thinkercap) {
-    		System.err.println("Next link to thinkercap nulled");
+    		//System.err.println("Next link to thinkercap nulled");
     		next.prev=null;
     	}
 
     	if (prev!=null && prev!=thinkercap) {
-    		System.err.println("Prev link to thinkercap nulled");
+    		//System.err.println("Prev link to thinkercap nulled");
     		prev.next=null;
     	}
 
