@@ -165,17 +165,19 @@ public class DavidSFXModule extends AbstractSoundDriver{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+					boolean errors=false;
         			// Add individual volume control.
         			if (channels[c].auline.isControlSupported(Type.MASTER_GAIN))
         				channels[c].vc=(FloatControl) channels[c].auline
         				.getControl(Type.MASTER_GAIN);
         			else {
-        			System.err.printf("MASTER_GAIN for channel %d NOT supported!\n",c);
+        			System.err.print("MASTER_GAIN, ");
+        			errors=true;
         			if (channels[c].auline.isControlSupported(Type.VOLUME))
             				channels[c].vc=(FloatControl) channels[c].auline
             				.getControl(Type.VOLUME);
         			else 
-        				System.err.printf("VOLUME for channel %d NOT supported!\n",c);
+        				System.err.print("VOLUME, ");
         			} 
         			
 
@@ -184,7 +186,8 @@ public class DavidSFXModule extends AbstractSoundDriver{
         				channels[c].pc=(FloatControl) channels[c].auline
         				.getControl(Type.SAMPLE_RATE);
         			} else {
-        				System.err.printf("SAMPLE_RATE for channel %d NOT supported!\n",c);
+        				errors=true;
+        				System.err.print("SAMPLE_RATE, ");
         			} 
         			
         			// Add individual pan control
@@ -192,15 +195,18 @@ public class DavidSFXModule extends AbstractSoundDriver{
         				channels[c].bc=(FloatControl) channels[c].auline
         				.getControl(FloatControl.Type.BALANCE);
         			} else {
-        				System.err.printf("BALANCE for channel %d NOT supported!\n",c);
+        				System.err.print("BALANCE, ");
+        				errors=true;
         				if (channels[c].auline.isControlSupported(Type.PAN)){        					
         				channels[c].bc=(FloatControl) channels[c].auline
         				.getControl(FloatControl.Type.PAN);
         			} else {
-        				System.err.printf("PAN for channel %d NOT supported!\n",c);
-        			}
+        				System.err.print("PANNING ");
+        				}
         			}
 
+        			if (errors) System.err.printf("for channel %d NOT supported!\n",c);
+        			
         			channels[c].auline.start();
         		}
 	}
