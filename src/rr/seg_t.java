@@ -3,18 +3,13 @@ package rr;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import w.CacheableDoomObject;
-import m.fixed_t;
-
 /**The LineSeg. Must be built from on-disk mapsegs_t, which are much 
  * simpler.
  *  
- * @author admin
+ * @author Maes
  *
  */
+
 public class seg_t{
 
    /** To be used as references */

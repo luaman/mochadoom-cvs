@@ -1,12 +1,17 @@
 package m;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 
 import w.DoomFile;
 import w.IWritableDoomObject;
+
+/** Yeah, this is actually a PCX header implementation, and Mocha Doom
+ *  saved PCX screenshots. Implemented it back just to shot that it can be
+ *  done (will switch to PNG ASAP though). 
+ *  
+ *  @author Maes
+ * 
+ */
 
 public class pcx_t implements IWritableDoomObject{
 

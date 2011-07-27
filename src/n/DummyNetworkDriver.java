@@ -1,16 +1,12 @@
 package n;
 
-import java.net.DatagramPacket;
-
-import doom.DoomContext;
-import doom.DoomStatus;
-import doom.IDoomGameNetworking;
-import doom.DoomMain;
-import doom.NetConsts;
-import doom.doomcom_t;
-import doom.doomdata_t;
 import i.DoomStatusAware;
 import i.IDoomSystem;
+import doom.DoomMain;
+import doom.DoomStatus;
+import doom.IDoomGameNetworking;
+import doom.NetConsts;
+import doom.doomcom_t;
 
 /** Does nothing.
  *  Allows running single-player games without an actual network.

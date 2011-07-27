@@ -4,11 +4,10 @@ import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
 import utils.C2JUtils;
 import m.BBox;
-import m.fixed_t;
 
 /** BSP node.
  * 
- * @author admin
+ * @author Maes
  *
  */
 public class node_t {

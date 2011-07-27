@@ -1,9 +1,7 @@
 package rr;
 import java.util.Arrays;
-
-import utils.C2JUtils;
 import v.IVideoScale;
-import v.IVideoScaleAware;
+
 /** Now what is a visplane, anyway?
  *  Basically, it's a big buffer representing
  *  a top and a bottom boundary of a region to be filled with a
