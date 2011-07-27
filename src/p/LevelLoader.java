@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.29 2011/07/25 19:56:53 velktron Exp $
+// $Id: LevelLoader.java,v 1.30 2011/07/27 21:26:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.30  2011/07/27 21:26:19  velktron
+// Quieted down debugging for v1.5 release
+//
 // Revision 1.29  2011/07/25 19:56:53  velktron
 // reject matrix size bugfix, fron danmaku branch.
 //
@@ -190,7 +193,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.29 2011/07/25 19:56:53 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.30 2011/07/27 21:26:19 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -707,7 +710,7 @@ public int bmaporgy;
       bmapheight = blockmaplump[3];
       count = bmapwidth*bmapheight;
       
-      System.err.printf("%d %d %d %d \n",(short)blockmaplump[0],(short)blockmaplump[1],(short)blockmaplump[2],(short)blockmaplump[3]);
+     // System.err.printf("%d %d %d %d \n",(short)blockmaplump[0],(short)blockmaplump[1],(short)blockmaplump[2],(short)blockmaplump[3]);
       
       blockmap=new int[count];
       
@@ -1020,7 +1023,7 @@ public int bmaporgy;
       this.LoadNodes (lumpnum+ML_NODES);
       this.LoadSegs (lumpnum+ML_SEGS);
       this.SanitizeBlockmap();
-      this.getMapBoundingBox();
+      //this.getMapBoundingBox();
       
       byte[] tmpreject=new byte[0];
       
@@ -1042,8 +1045,10 @@ public int bmaporgy;
       rejectmatrix = new byte[(int) (Math.ceil((this.numsectors*this.numsectors)/8.0))];
       System.arraycopy(tmpreject, 0, rejectmatrix, 0, Math.min(tmpreject.length,rejectmatrix.length));
 
-     // if (tmpreject.length<rejectmatrix.length) 
-     // System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",tmpreject.length,rejectmatrix.length);
+      // Do warn on atypical reject map lengths, but use either default all-zeroes one,
+      // or whatever you happened to read anyway.
+      if (tmpreject.length<rejectmatrix.length) 
+      System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",tmpreject.length,rejectmatrix.length);
       
       
       this.GroupLines ();
