@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.27 2011/06/18 23:16:34 velktron Exp $
+// $Id: Map.java,v 1.28 2011/07/28 16:35:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.28  2011/07/28 16:35:03  velktron
+// Well, we don't need to know that anymore.
+//
 // Revision 1.27  2011/06/18 23:16:34  velktron
 // Added extreme scale safeguarding (e.g. for Europe.wad).
 //
@@ -154,7 +157,7 @@ DoomVideoRenderer V;
 LevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.27 2011/06/18 23:16:34 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.28 2011/07/28 16:35:03 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -799,7 +802,6 @@ public final  boolean Responder ( event_t  ev )
     if ((ev.data1 == AM_STARTKEY)&&(ev.type == evtype_t.ev_keyup))
     {
         this.Start ();
-        System.out.println("Automap started");
         DM.viewactive = false;
         rc = true;
     }
