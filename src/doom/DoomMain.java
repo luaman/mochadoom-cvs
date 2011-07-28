@@ -88,7 +88,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.78 2011/07/28 13:48:33 velktron Exp $
+// $Id: DoomMain.java,v 1.79 2011/07/28 17:07:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -114,7 +114,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.78 2011/07/28 13:48:33 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.79 2011/07/28 17:07:04 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1506,7 +1506,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         strafe = gamekeydown[key_strafe] || mousebuttons(mousebstrafe) 
         || joybuttons(joybstrafe); 
-        speed = (gamekeydown[key_speed] || joybuttons(joybspeed))?1:0;
+        speed = ((gamekeydown[key_speed]^alwaysrun) || joybuttons(joybspeed))?1:0;
 
         forward = side = 0;
 
@@ -1774,6 +1774,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     } 
 
     protected boolean first=true;
+    
+    // Maes: needed because a caps lock down signal is issued
+    // as soon as the app gains focus. This causes lock keys to respond.
+    // With this hack, they are ignored (?) the first time this happens.
+    public boolean justfocused=true;
 
     /**
      * G_Responder  
@@ -1837,24 +1842,49 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 return true;    // finale ate the event 
         } 
 
-        
         switch (ev.type) 
         {
         case ev_clear:
         	// PAINFULLY and FORCEFULLY clear the buttons.
-            Arrays.fill(gamekeydown, false); 
+            Arrays.fill(gamekeydown, false);
+            keysCleared = true;
             return false; // Nothing more to do here. 
         case ev_keydown: 
             if (ev.data1 == KEY_PAUSE) 
             { 
                 sendpause = true; 
                 return true; 
+            }
+            
+            if (ev.data1 == KEY_CAPSLOCK) 
+            { 
+                if (justfocused) justfocused=false;
+                    else
+                // If caps are turned on, turn autorun on anyway.
+                if (!alwaysrun) {
+                    alwaysrun=true;
+                    players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
+                    }
+                return true; 
             } 
+            
             if (ev.data1 <NUMKEYS) 
                 gamekeydown[ev.data1] = true;
             return true;    // eat key down events 
 
-        case ev_keyup: 
+        case ev_keyup:
+            if (ev.data1 == KEY_CAPSLOCK) 
+            { 
+                if (justfocused) justfocused=false;
+                    else
+               // If caps are turned OFF, turn autorun off.
+                if (alwaysrun) {
+                    alwaysrun=false;
+                    players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
+                    }
+
+            }
+            
             if (ev.data1 <NUMKEYS) 
                 gamekeydown[ev.data1] = false; 
             return false;   // always let key up events filter down 
@@ -4145,6 +4175,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.79  2011/07/28 17:07:04  velktron
+//Added always run hack.
+//
 //Revision 1.78  2011/07/28 13:48:33  velktron
 //Added proper sound driver command line selectors.
 //

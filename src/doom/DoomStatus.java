@@ -442,6 +442,8 @@ public class DoomStatus extends DoomContext {
     protected boolean[] gamekeydown = new boolean[NUMKEYS];
 
     protected boolean keysCleared;
+    
+    public boolean alwaysrun;
 
     protected int turnheld; // for accelerative turning
 
@@ -518,6 +520,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.29  2011/07/28 17:07:04  velktron
+// Added always run hack.
+//
 // Revision 1.28  2011/07/16 10:57:50  velktron
 // Merged finnw's changes for enabling polling of ?_LOCK keys.
 //
