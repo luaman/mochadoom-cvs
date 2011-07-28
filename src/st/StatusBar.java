@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.42 2011/07/22 15:37:16 velktron Exp $
+// $Id: StatusBar.java,v 1.43 2011/07/28 10:29:46 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.42 2011/07/22 15:37:16 velktron Exp $";
+        "$Id: StatusBar.java,v 1.43 2011/07/28 10:29:46 velktron Exp $";
 
    
     
@@ -306,8 +306,13 @@ public class StatusBar extends AbstractStatusBar   {
     // main player in game
     private player_t plyr;
 
-    // ST_Start() has just been called
+    // ST_Start() has just been called, OR we want to force an redraw anyway.
     private boolean st_firsttime;
+    
+    @Override
+    public void forceRefresh(){
+        st_firsttime=true;
+    }
 
     // used to execute ST_Init() only once
     private int veryfirsttime = 1;
@@ -1930,6 +1935,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.43  2011/07/28 10:29:46  velktron
+//Added hack for forcing full redraw of status bar after help screen drawing.
+//
 //Revision 1.42  2011/07/22 15:37:16  velktron
 //Sticky idmypos cheat
 //
