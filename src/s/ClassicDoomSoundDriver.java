@@ -578,9 +578,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
                 // Signal that we consumed a whole buffer and we are ready for
                 // another one.
+                
                 consume.release();
-                // auline.drain();
-
             }
         }
     }
@@ -626,7 +625,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // It's possible for us to stay silent and give the audio
         // queue a chance to get drained.
         if (mixed) {
-
+            silence=0;
             AudioChunk gunk = audiochunkpool.checkOut();
             // Ha ha you're ass is mine!
             gunk.free = false;
@@ -648,12 +647,20 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
                 produce.release();
 
         } else {
+            silence++;
+            // MAES: attempt to fix lingering noise error
+            if (silence >ISound.BUFFER_CHUNKS*5){
+                line.flush();
+                silence=0;
+                }
             // System.err.println("SILENT_CHUNK");
             // this.SOUNDSRV.addChunk(SILENT_CHUNK);
         }
         // line.write(mixbuffer, 0, mixbuffer.length);
 
     }
+    
+    private int silence=0; 
 
     @Override
     public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {
