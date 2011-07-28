@@ -7,7 +7,7 @@ import doom.DoomStatus;
  *  instead of the DS. A better way would be to build-in an 
  *  automatic "WAV to SPEAKER" conversion, but that can wait...
  * 
- * @author velktron
+ * @author Maes
  *
  */
 
@@ -20,6 +20,7 @@ public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
 	
     /** Rigged so it gets SPEAKER sounds instead of regular ones */
     
+    @Override
     protected byte[] getsfx
     ( String         sfxname,
             int[]          len, int index )
@@ -32,9 +33,6 @@ public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
         String                name;
         int                 sfxlump;
 
-
-        float f=SpeakerSound.f[0];
-        
         // Get the sound data from the WAD, allocate lump
         //  in zone memory.
         name=String.format("dp%s", sfxname).toUpperCase();

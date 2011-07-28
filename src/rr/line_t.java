@@ -2,10 +2,7 @@ package rr;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
 import p.Interceptable;
-import p.divline_t;
 import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;

@@ -4,6 +4,13 @@ import v.IVideoScale;
 import doom.DoomStatus;
 import doom.event_t;
 
+/** A dummy menu, useful for testers that do need a defined
+ *  menu object.
+ * 
+ * @author Maes
+ *
+ */
+
 public class DummyMenu
         extends AbstractDoomMenu {
 

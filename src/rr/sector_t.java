@@ -8,9 +8,6 @@ import static p.DoorDefines.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
-import m.DoomRandom;
 import m.IRandom;
 import doom.think_t;
 import doom.thinker_t;
@@ -30,7 +27,8 @@ import w.IReadableDoomObject;
  * The SECTORS record, at runtime.
  * Stores things/mobjs. Can be archived/unarchived during
  * savegames.
- * @author admin
+ * 
+ * @author Maes
  *
  */
 public class sector_t implements IReadableDoomObject, IPackableDoomObject{

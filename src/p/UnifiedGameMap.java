@@ -94,7 +94,6 @@ import rr.node_t;
 import rr.sector_t;
 import rr.side_t;
 import rr.subsector_t;
-import rr.vertex_t;
 import s.IDoomSound;
 import st.StatusBar;
 import utils.C2JUtils;
@@ -1271,7 +1270,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                             break;
                         }
                         S.StartSound(SW.buttonlist[i].soundorg,sfxenum_t.sfx_swtchn);
-                        // TODO: memset(buttonlist[i],0,sizeof(button_t));
+                        SW.buttonlist[i].reset();
                     }
                 }
         }
@@ -1391,7 +1390,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             episode = 1;
 
             // MAES: if this isn't changed Ultimate Doom's switches
-            // won't work visually. TODO: are there any episode 4-only switches?
+            // won't work visually.
             if (DM.isRegistered())
                 episode = 2;
             else if (DM.isCommercial())
@@ -1782,12 +1781,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     	// to the thinkercap. When loading a new level, they DO NOT get unloaded,
     	// wtf...
     	if (next!=null && next!=thinkercap) {
-    		System.err.println("Next link to thinkercap nulled");
+    		//System.err.println("Next link to thinkercap nulled");
     		next.prev=null;
     	}
 
     	if (prev!=null && prev!=thinkercap) {
-    		System.err.println("Prev link to thinkercap nulled");
+    		//System.err.println("Prev link to thinkercap nulled");
     		prev.next=null;
     	}
 
@@ -1840,7 +1839,6 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // until its thinking turn comes up.
     //
     public void RemoveThinker(thinker_t thinker) {
-        // FIXME: NOP.
         thinker.function = think_t.NOP;
     }
 
@@ -1873,7 +1871,6 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // P_Init
     //
     public void Init() {
-        // TODO:
         SW.InitSwitchList();
         SPECS.InitPicAnims();
         SM.InitSprites(sprnames);

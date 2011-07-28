@@ -4,12 +4,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import m.Swap;
-
 import w.CacheableDoomObject;
 import w.DoomFile;
 import w.IPackableDoomObject;
-import w.IReadableDoomObject;
 import w.IWritableDoomObject;
 
 /** mapthing_t ... same on disk AND in memory, wow?! */

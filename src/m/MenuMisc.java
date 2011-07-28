@@ -30,7 +30,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.24.2.1 2011/07/23 12:41:41 velktron Exp $
+// $Id: MenuMisc.java,v 1.24.2.2 2011/07/28 08:18:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -54,7 +54,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.24.2.1 2011/07/23 12:41:41 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.24.2.2 2011/07/28 08:18:47 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -406,8 +406,8 @@ public abstract class MenuMisc{
 }
 
 // $Log: MenuMisc.java,v $
-// Revision 1.24.2.1  2011/07/23 12:41:41  velktron
-// Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+// Revision 1.24.2.2  2011/07/28 08:18:47  velktron
+// Merged in v1.5 release cleanups and some last-minute fixes.
 //
 // Revision 1.25  2011/07/15 13:53:52  velktron
 // Implemented WritePCXFile, at last.

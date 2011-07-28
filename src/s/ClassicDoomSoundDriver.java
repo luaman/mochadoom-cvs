@@ -1,10 +1,7 @@
 package s;
 
 import static data.sounds.S_sfx;
-import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+
 import java.util.HashMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Semaphore;
@@ -13,33 +10,25 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.SourceDataLine;
+
 import pooling.AudioChunkPool;
-
-import w.DoomBuffer;
-
-import data.sfxinfo_t;
-import data.sounds;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 
 /**
  * A close recreation of the classic linux doom sound mixer.
  * 
- * @author velktron
+ * @author Maes
  */
 
-public class ClassicDoomSoundDriver
-        implements ISound {
+public class ClassicDoomSoundDriver extends AbstractSoundDriver
+         {
 
     protected final Semaphore produce;
 
     protected final Semaphore consume;
 
     protected final static boolean D = false;
-
-    protected final DoomStatus DS;
-
-    protected final int numChannels;
 
     protected int chunk = 0;
 
@@ -53,10 +42,8 @@ public class ClassicDoomSoundDriver
         new HashMap<Integer, byte[]>();
 
     public ClassicDoomSoundDriver(DoomStatus DS, int numChannels) {
-        this.DS = DS;
-        this.numChannels = numChannels;
+    	super(DS,numChannels);
         channelstart = new int[numChannels];
-        channelids = new int[numChannels];
         channelleftvol_lookup = new int[numChannels][];
         channelrightvol_lookup = new int[numChannels][];
         channelstep = new int[numChannels];
@@ -65,16 +52,12 @@ public class ClassicDoomSoundDriver
         p_channels = new int[numChannels];
         channelsend = new int[numChannels];
         channelhandles = new int[numChannels];
-        // chunk=Future.new Future<Integer>();
-        // MASTER_BUFFER=new byte[2][mixbuffer.length*BUFFER_CHUNKS];
-        // audiobarrier=new CyclicBarrier(2);
         produce = new Semaphore(1);
         consume = new Semaphore(1);
         produce.drainPermits();
     }
 
-    /** The actual lengths of all sound effects. */
-    protected final int[] lengths = new int[NUMSFX];
+
 
     /**
      * The global mixing buffer. Basically, samples from all active internal
@@ -104,13 +87,6 @@ public class ClassicDoomSoundDriver
      */
 
     protected final int[] channelhandles;
-
-    // SFX id of the playing sound effect.
-    // Used to catch duplicates (like chainsaw).
-    protected final int[] channelids;
-
-    // Pitch to stepping lookup, unused.
-    protected final int[] steptable = new int[256];
 
     /**
      * The channel data pointers, start and end. These were referred to as
@@ -213,19 +189,14 @@ public class ClassicDoomSoundDriver
 
                     // Get the raw data from the channel.
                     // Maes: this is supposed to be an 8-bit unsigned value.
-                    try {
                         sample = 0x00FF & channels[chan][channel_pointer];
-
-                    } catch (Exception e) {
-                        System.err
-                                .printf(
-                                    " >>>>>>>>>>>>>> Overflow at channel %d handle %d sfx %d: %d vs %d\n",
-                                    chan, this.channelhandles[chan],
-                                    channelids[chan], channel_pointer,
-                                    channelsend[chan]);
-                    }
+                        
                     // Add left and right part for this channel (sound)
-                    // to the current data. Adjust volume accordingly.
+                    // to the current data. Adjust volume accordingly.                        
+                    // Q: could this be optimized by converting samples to 16-bit
+                    // at load time, while also allowing for stereo samples?
+                    // A: Only for the stereo part. You would still look a lookup
+                    // for the CURRENT volume level.
 
                     dl += channelleftvol_lookup[chan][sample];
                     dr += channelrightvol_lookup[chan][sample];
@@ -348,16 +319,6 @@ public class ClassicDoomSoundDriver
                 vol_lookup[i][j] = (i * (j - 128) * 256) / 127;
     }
 
-    //
-    // Retrieve the raw data lump index
-    // for a given SFX name.
-    //
-    public int GetSfxLumpNum(sfxinfo_t sfx) {
-        String namebuf;
-        namebuf = String.format("ds%s", sfx.name);
-        return DS.W.GetNumForName(namebuf);
-    }
-
     protected MixServer SOUNDSRV;
 
     protected Thread SOUNDTHREAD;
@@ -404,17 +365,7 @@ public class ClassicDoomSoundDriver
         // Initialize external data (all sounds) at start, keep static.
         System.err.print("I_InitSound: ");
 
-        for (i = 1; i < NUMSFX; i++) {
-            // Alias? Example is the chaingun sound linked to pistol.
-            if (sounds.S_sfx[i].link == null) {
-                // Load data from WAD file.
-                S_sfx[i].data = getsfx(S_sfx[i].name, lengths, i);
-            } else {
-                // Previously loaded already?
-                S_sfx[i].data = S_sfx[i].link.data;
-                lengths[i] = lengths[S_sfx[i].link.identify(S_sfx)];
-            }
-        }
+        super.initSound8();
 
         System.err.print(" pre-cached all sound data\n");
 
@@ -440,81 +391,7 @@ public class ClassicDoomSoundDriver
 
     }
 
-    protected byte[] getsfx(String sfxname, int[] len, int index) {
-        byte[] sfx;
-        byte[] paddedsfx;
-        int i;
-        int size;
-        int paddedsize;
-        String name;
-        int sfxlump;
-
-        // Get the sound data from the WAD, allocate lump
-        // in zone memory.
-        name = String.format("ds%s", sfxname).toUpperCase();
-
-        // Now, there is a severe problem with the
-        // sound handling, in it is not (yet/anymore)
-        // gamemode aware. That means, sounds from
-        // DOOM II will be requested even with DOOM
-        // shareware.
-        // The sound list is wired into sounds.c,
-        // which sets the external variable.
-        // I do not do runtime patches to that
-        // variable. Instead, we will use a
-        // default sound for replacement.
-        if (DS.W.CheckNumForName(name) == -1)
-            sfxlump = DS.W.GetNumForName("dspistol");
-        else
-            sfxlump = DS.W.GetNumForName(name);
-
-        size = DS.W.LumpLength(sfxlump);
-
-        sfx = DS.W.CacheLumpNumAsRawBytes(sfxlump, 0);
-
-        // MAES: A-ha! So that's how they do it.
-        // SOund effects are padded to the highest multiple integer of
-        // the mixing buffer's size (with silence)
-
-        paddedsize =
-            ((size - 8 + (SAMPLECOUNT - 1)) / SAMPLECOUNT) * SAMPLECOUNT;
-
-        // Allocate from zone memory.
-        paddedsfx = new byte[paddedsize];
-
-        // Now copy and pad. The first 8 bytes are header info, so we discard
-        // them.
-        System.arraycopy(sfx, 8, paddedsfx, 0, size - 8);
-
-        for (i = size - 8; i < paddedsize; i++)
-            paddedsfx[i] = (byte) 127;
-
-        // Hmm....silence?
-        for (i = size - 8; i < paddedsize; i++)
-            paddedsfx[i] = (byte) 127;
-
-        // Remove the cached lump.
-        DS.Z.Free(DS.W.CacheLumpNum(sfxlump, 0, DoomBuffer.class));
-
-        System.out.printf("SFX %d size %d padded to %d\n", index, size,
-            paddedsize);
-        // Preserve padded length.
-        len[index] = paddedsize;
-
-        // Return allocated padded data.
-        // So the first 8 bytes are useless?
-        return paddedsfx;
-    }
-
-    //
-    // This function adds a sound to the
-    // list of currently active sounds,
-    // which is maintained as a given number
-    // (eight, usually) of internal channels.
-    // Returns a handle.
-    //
-    protected short handlenums = 0;
-
+    @Override
     protected int addsfx(int sfxid, int volume, int step, int seperation) {
         int i;
         int rc = -1;
@@ -624,10 +501,8 @@ public class ClassicDoomSoundDriver
         // e.g. for avoiding duplicates of chainsaw.
         channelids[slot] = sfxid;
 
-        if (D)
-            System.err.println(channelStatus());
-        if (D)
-            System.err.printf(
+        if (D) System.err.println(channelStatus());
+        if (D) System.err.printf(
                 "Playing sfxid %d handle %d length %d vol %d on channel %d\n",
                 sfxid, rc, S_sfx[sfxid].data.length, volume, slot);
 
@@ -664,8 +539,7 @@ public class ClassicDoomSoundDriver
         try {
             SOUNDTHREAD.join();
         } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        	// Well, I don't care.
         }
         line.close();
 

@@ -501,7 +501,7 @@ public class Menu extends AbstractDoomMenu {
 
             saveSlot = choice;
             C2JUtils.strcpy(saveOldString, savegamestrings[choice]);
-            if (!C2JUtils.strcmp(savegamestrings[choice], EMPTYSTRING))
+            if (C2JUtils.strcmp(savegamestrings[choice], EMPTYSTRING))
                 savegamestrings[choice][0] = 0;
             saveCharIndex = C2JUtils.strlen(savegamestrings[choice]);
         }

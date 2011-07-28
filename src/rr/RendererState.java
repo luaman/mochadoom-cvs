@@ -597,7 +597,7 @@ validcount++;
             // Now, that was quite a haircut!.
             vissprites=tmp;   
           
-            System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
+           // System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
         }
         
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
@@ -2374,7 +2374,7 @@ validcount++;
             // Now, that was quite a haircut!.
             drawsegs=tmp;   
           
-            System.out.println("Drawseg buffer cut back to original limit of "+MAXDRAWSEGS);
+           // System.out.println("Drawseg buffer cut back to original limit of "+MAXDRAWSEGS);
         }
         
         /** R_RenderMaskedSegRange

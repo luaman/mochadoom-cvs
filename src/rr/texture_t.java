@@ -1,10 +1,5 @@
 package rr;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
-import w.DoomBuffer;
 
 /** A maptexturedef_t describes a rectangular texture,
  *  which is composed of one or more mappatch_t structures
@@ -12,7 +7,7 @@ import w.DoomBuffer;
  *  
  *  This is the in-memory format, which is similar to maptexture_t (which is on-disk).
  *  
- * @author MAES
+ * @author Maes
  *
  */
 

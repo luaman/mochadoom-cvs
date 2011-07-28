@@ -7,7 +7,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import w.CacheableDoomObject;
-import static m.fixed_t.FRACBITS;
 
 /** This is the vertex structure used IN MEMORY with fixed-point arithmetic.
  *  It's DIFFERENT than the one used on disk, which has 16-bit signed shorts.

@@ -8,8 +8,6 @@ import java.util.Hashtable;
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
-import w.DoomFile;
-import w.IReadableDoomObject;
 
 //Patches.
 //A patch holds one or more columns.

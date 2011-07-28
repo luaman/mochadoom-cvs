@@ -147,8 +147,8 @@ public class column_t implements CacheableDoomObject{
 
 
 // $Log: column_t.java,v $
-// Revision 1.15.2.3  2011/07/25 20:24:16  velktron
-// More rendering fixes + support for DeePSea tall patches.
+// Revision 1.15.2.4  2011/07/28 08:18:47  velktron
+// Merged in v1.5 release cleanups and some last-minute fixes.
 //
 // Revision 1.17  2011/07/25 14:37:20  velktron
 // Added support for DeePSea tall patches.

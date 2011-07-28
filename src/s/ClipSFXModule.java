@@ -5,20 +5,14 @@ import static data.sounds.S_sfx;
 import java.util.Collection;
 import java.util.HashMap;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
-import javax.sound.sampled.Control;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.AudioFormat.Encoding;
 import javax.sound.sampled.FloatControl.Type;
 
 import w.DoomBuffer;
-import data.sfxinfo_t;
-import data.sounds;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 
@@ -45,7 +39,7 @@ import doom.DoomStatus;
  *
  */
 
-public class ClipSFXModule implements ISound{
+public class ClipSFXModule extends AbstractSoundDriver{
 
 	protected final static boolean D=false;
 	
@@ -56,20 +50,13 @@ public class ClipSFXModule implements ISound{
 	
 	// Either it's null (no clip is playing) or non-null (some clip is playing).
 	Clip[] channels;
-	
-    /** Volume lookups. 128 levels */
-    protected final int[][] vol_lookup = new int[128][256];
+
 	
 	public final float[] linear2db;
-
-	private final int numChannels;
-	private final DoomStatus DS;
 	
 	public ClipSFXModule(DoomStatus DS, int numChannels) {
-		this.DS=DS;
-		linear2db=computeLinear2DB();
-		this.numChannels=numChannels;
-		
+		super(DS,numChannels);
+		linear2db=computeLinear2DB();		
 		}
 	
     private float[] computeLinear2DB() {
@@ -96,8 +83,6 @@ public class ClipSFXModule implements ISound{
 
 	@Override
 	public void InitSound() {
-		int i;
-
         // Secure and configure sound device first.
         System.err.println("I_InitSound: ");
 
@@ -106,16 +91,7 @@ public class ClipSFXModule implements ISound{
 
         // Initialize external data (all sounds) at start, keep static.
 
-        for (i = 1; i < NUMSFX; i++) {
-            // Alias? Example is the chaingun sound linked to pistol.
-            if (sounds.S_sfx[i].link == null) {
-                // Load data from WAD file.
-                S_sfx[i].data = getsfx(S_sfx[i].name, i);
-            } else {
-                // Previously loaded already?
-                S_sfx[i].data = S_sfx[i].link.data;
-            }
-        }
+        initSound16();
 
         System.err.print(" pre-cached all sound data\n");
         // Finished initialization.
@@ -255,25 +231,6 @@ public class ClipSFXModule implements ISound{
 
 	}
 
-	@Override
-	public int GetSfxLumpNum(sfxinfo_t sfxinfo) {
-		
-		String id = "DS"+sfxinfo.name.toUpperCase();
-		if (id.equals("DSNONE"))
-			return -1;
-
-		
-		int lump;
-		try {
-		lump = DS.W.GetNumForName(id);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			return -1;
-		}
-		return lump;
-	}
-
 	/**
 	 *  Starting a sound means adding it
      * to the current list of active sounds
@@ -294,15 +251,12 @@ public class ClipSFXModule implements ISound{
         // Find a free channel and get a timestamp/handle for the new sound.
         //long a=System.nanoTime();
 
-        int handle = this.addsfx(id, vol, sep);
+        int handle = this.addsfx(id, vol, pitch,sep);
 
         //long b=System.nanoTime();
 		//System.err.printf(" obtained in %d\n",(b-a));
         return handle;
 	}
-
-	private final static AudioFormat format=new AudioFormat(Encoding.PCM_SIGNED, ISound.SAMPLERATE, 16, 2, 4, ISound.SAMPLERATE, true);
-	private final static DataLine.Info info = new DataLine.Info(Clip.class, format);
 	
 	private final void  getClipForChannel(int c, int sfxid){
 		
@@ -325,14 +279,16 @@ public class ClipSFXModule implements ISound{
 		}
 		
 		// Sorry, Charlie. Gotta make a new one.
-	    try {
+		DataLine.Info info = new DataLine.Info(Clip.class, DoomSound.DEFAULT_SAMPLES_FORMAT);
+		
+		try {
 			clip = (Clip) AudioSystem.getLine(info);
 		} catch (LineUnavailableException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	    try {
-			clip.open(format, S_sfx[sfxid].data, 0, S_sfx[sfxid].data.length);
+			clip.open( DoomSound.DEFAULT_SAMPLES_FORMAT, S_sfx[sfxid].data, 0, S_sfx[sfxid].data.length);
 		} catch (LineUnavailableException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -360,7 +316,7 @@ public class ClipSFXModule implements ISound{
 	//
 	protected short	handlenums = 0;
 
-	private int addsfx 	( int sfxid,int		volume,int		seperation)
+	protected int addsfx 	( int sfxid,int		volume,int pitch,int		seperation)
 	{
 		int		i;
 		int		rc = -1;

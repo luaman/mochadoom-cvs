@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.2.2.2 2011/07/23 16:32:45 velktron Exp $
+// $Id: ISound.java,v 1.2.2.3 2011/07/28 08:18:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -109,8 +109,8 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
-// Revision 1.2.2.2  2011/07/23 16:32:45  velktron
-// Fixed missed sync with HEAD
+// Revision 1.2.2.3  2011/07/28 08:18:47  velktron
+// Merged in v1.5 release cleanups and some last-minute fixes.
 //
 // Revision 1.8  2011/07/08 17:03:57  velktron
 // Set SAMPLECOUNT to SAMPLERATE/TICRATE+1

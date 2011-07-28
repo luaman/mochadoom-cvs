@@ -2,7 +2,7 @@ package m;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.12 2010/12/11 15:08:59 velktron Exp $
+// $Id: fixed_t.java,v 1.12.6.1 2011/07/28 08:18:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,53 +16,6 @@ package m;
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: fixed_t.java,v $
-// Revision 1.12  2010/12/11 15:08:59  velktron
-// Techdemo release.
-//
-// Revision 1.11  2010/12/10 17:38:57  velktron
-// pspritescale fixed, weapon actions won't crash (but not work either).
-//
-// Revision 1.10  2010/11/11 23:39:53  velktron
-// Fixed texture alignment bug
-//
-// Revision 1.9  2010/11/03 16:48:04  velktron
-// "Bling" view angles fixed (perhaps related to the "bleeding line bug"?)
-//
-// Revision 1.8  2010/08/26 16:43:42  velktron
-// Automap functional, biatch.
-//
-// Revision 1.7  2010/07/22 15:37:53  velktron
-// MAJOR changes in Menu system.
-//
-// Revision 1.6  2010/07/07 16:17:37  velktron
-// *** empty log message ***
-//
-// Revision 1.5  2010/07/06 12:54:50  velktron
-// A lot of work thrown in the renderer, but don't get too excited...
-//
-// Revision 1.4  2010/07/05 16:18:40  velktron
-// YOU DON'T WANNA KNOW
-//
-// Revision 1.3  2010/07/03 23:24:13  velktron
-// Added a LOT of stuff, like Status bar code & objects. Now we're cooking with gas!
-//
-// Revision 1.2  2010/07/01 18:38:09  velktron
-// Video "rendering" completed, columns_t parsing completed. Play around with testers :-p
-//
-// Revision 1.1  2010/06/30 08:58:50  velktron
-// Let's see if this stuff will finally commit....
-//
-//
-// Most stuff is still  being worked on. For a good place to start and get an idea of what is being done, I suggest checking out the "testers" package.
-//
-// Revision 1.1  2010/06/29 11:07:34  velktron
-// Release often, release early they say...
-//
-// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete, and there's still mixed C code in there. I suggest you load everything up in Eclpise and see what gives from there.
-//
-// A good place to start is the testers/ directory, where you  can get an idea of how a few of the implemented stuff works.
-//
 //
 // DESCRIPTION:
 //	Fixed point implementation.
@@ -72,10 +25,12 @@ package m;
 //
 // Fixed point, 32bit as 16.16.
 //
-
-//#include "doomtype.h"
-//#include "i_system.h"
-
+// Most functionality of C-based ports is preserved, EXCEPT that there's
+// no typedef of ints into fixed_t, and that there's no actual object fixed_t
+// type that is actually instantiated in the current codebase, for performance reasons.
+// There are still remnants of a full OO implementation that still do work, 
+// and the usual FixedMul/FixedDiv etc. methods are still used throughout the codebase,
+// but operate on int operants (signed, 32-bit integers).
 
 public class fixed_t implements Comparable<fixed_t>{
 
@@ -116,7 +71,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.12 2010/12/11 15:08:59 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.12.6.1 2011/07/28 08:18:47 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 

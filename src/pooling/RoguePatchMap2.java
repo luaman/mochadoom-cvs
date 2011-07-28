@@ -2,23 +2,16 @@ package pooling;
 
 import java.util.Arrays;
 
-public abstract class GenericIntMap<K> {
-    protected static final int DEFAULT_CAPACITY = 16;
-    
-    /** Concrete implementations must allocate patches
-     *  
-     */
-    GenericIntMap() {
-    
-    	lumps = new int[DEFAULT_CAPACITY];
-        // patches = new K[DEFAULT_CAPACITY];
+public class RoguePatchMap2 {
+    private static final int DEFAULT_CAPACITY = 16;
+    public RoguePatchMap2() {
+        lumps = new int[DEFAULT_CAPACITY];
+        patches = new byte[DEFAULT_CAPACITY][][];
     }
-    
-    public boolean containsKey(int lump) {
+    boolean containsKey(int lump) {
         return indexOf(lump) >= 0;
     }
-    
-    public K get(int lump) {
+    public byte[][] get(int lump) {
         int index = indexOf(lump);
         if (index >= 0) {
             return patches[index];
@@ -26,8 +19,7 @@ public abstract class GenericIntMap<K> {
             return null;
         }
     }
-    
-    public void put(int lump, K patch) {
+    public void put(int lump, byte[][] patch) {
         int index = indexOf(lump);
         if (index >= 0) {
             patches[index] = patch;
@@ -44,8 +36,7 @@ public abstract class GenericIntMap<K> {
             ++ numEntries;
         }
     }
-    
-    protected void ensureCapacity(int cap) {
+    private void ensureCapacity(int cap) {
         while (lumps.length <= cap) {
             lumps =
                 Arrays.copyOf(lumps, Math.max(lumps.length * 2, DEFAULT_CAPACITY));
@@ -55,17 +46,10 @@ public abstract class GenericIntMap<K> {
                 Arrays.copyOf(patches, Math.max(patches.length * 2, DEFAULT_CAPACITY));
         }
     }
-    protected int indexOf(int lump) {
-         return Arrays.binarySearch(lumps, 0, numEntries, lump);
-    	//for (int i=0;i<numEntries;i++)
-    	//	if (lumps[i]==lump) return i;
-    	//
-    	//return -1;
-    	
+    private int indexOf(int lump) {
+        return Arrays.binarySearch(lumps, 0, numEntries, lump);
     }
-    
-    
-    protected int[] lumps;
-    protected int numEntries;
-    protected K[] patches;
+    private int[] lumps;
+    private int numEntries;
+    private byte[][][] patches;
 }

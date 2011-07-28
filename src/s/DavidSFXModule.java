@@ -1,20 +1,15 @@
 package s;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
-import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.FloatControl.Type;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
-import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.sound.sampled.FloatControl.Type;
 
-import data.sfxinfo_t;
 import data.sounds;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
@@ -27,25 +22,21 @@ import doom.DoomStatus;
  *
  */
 
-public class DavidSFXModule implements ISound{
+public class DavidSFXModule extends AbstractSoundDriver{
 
 	protected final static boolean D=false;
 	
-	HashMap<String,DoomSound> cachedSounds = new HashMap<String,DoomSound>();
+	ArrayList<DoomSound> cachedSounds=new ArrayList<DoomSound>();
 	int[] channelhandles;
-	public int[] channelids;
 	
-	public final float[] linear2db;
-	
+	public final float[] linear2db;	
 	
 	private SoundWorker[] channels;
 	private Thread[] soundThread;
 	private int[] channelstart;
-	private int numChannels;
-	private final DoomStatus DS;
 	
-	public DavidSFXModule(DoomStatus DS) {
-		this.DS=DS;
+	public DavidSFXModule(DoomStatus DS,int numChannels) {
+		super(DS,numChannels);
 		linear2db=computeLinear2DB();
 		
 		}
@@ -58,7 +49,7 @@ public class DavidSFXModule implements ISound{
     	float[] tmp=new float[VOLUME_STEPS];
     	
     	for (int i=0;i<VOLUME_STEPS;i++){
-    		float linear=(float)(20*Math.log10((float)i/(float)VOLUME_STEPS));
+    		float linear=(float)(10*Math.log10((float)i/(float)VOLUME_STEPS));
     		// Hack. The minimum allowed value as of now is -80 db.
     		if (linear<-36.0) linear=-36.0f;
     		tmp[i]= linear;
@@ -70,17 +61,27 @@ public class DavidSFXModule implements ISound{
 		return tmp;
 	}
 
-
-	enum Position { 
-        LEFT, RIGHT, NORMAL
-    }
-
 	@Override
 	public void InitSound() {
+        // Secure and configure sound device first.
+        System.err.println("I_InitSound: ");
 
-		
-		//SetSfxVolume(sfxVolume);
-		//SetMusicVolume(musicVolume);
+        // Initialize external data (all sounds) at start, keep static.
+
+        initSound16();
+
+        // Cache sounds internally so they can be "fed" to AudioLine threads later.
+        // These can be more than the usual built-in sounds.
+        
+        
+        for (int i=0;i<sounds.S_sfx.length;i++){
+        	DoomSound tmp=new DoomSound(sounds.S_sfx[i],DoomSound.DEFAULT_SAMPLES_FORMAT);
+        	cachedSounds.add(tmp);	
+        	}
+        
+        System.err.print(" pre-cached all sound data\n");
+        // Finished initialization.
+        System.err.print("I_InitSound: sound module ready\n");
 		
 	}
 
@@ -104,20 +105,15 @@ public class DavidSFXModule implements ISound{
 		  boolean done = false;
 		  int i;
 		  
-
-		  // FIXME (below).
-		  //fprintf( stderr, "I_ShutdownSound: NOT finishing pending sounds\n");
-		  //fflush( stderr );
-		  
 		  while ( !done)
 		  {
 		    for( i=0 ; i<numChannels && !(channels[i].isPlaying()) ; i++);
-		    // FIXME. No proper channel output.
 		    if (i==numChannels)  done=true;
 		  }
 		  
 		  for( i=0 ; i<numChannels; i++){
 			channels[i].terminate=true;  
+			channels[i].wait.release();
 			try {
 				this.soundThread[i].join();
 			} catch (InterruptedException e) {
@@ -132,11 +128,9 @@ public class DavidSFXModule implements ISound{
 
 	@Override
 	public void SetChannels(int numChannels) {
-		
-		this.numChannels=numChannels;
+
 		channels= new SoundWorker[numChannels];
 		soundThread= new Thread[numChannels];
-		channelids=new int[numChannels];
 		channelstart=new int[numChannels];
 		channelhandles=new int[numChannels];
 		
@@ -149,75 +143,78 @@ public class DavidSFXModule implements ISound{
 		}
 		
 	}
-
-	@Override
-	public int GetSfxLumpNum(sfxinfo_t sfxinfo) {
+	
+	/** This one will only create datalines for common clip/audioline samples
+	 *  directly.
+	 * 
+	 * @param c
+	 * @param sfxid
+	 */
+	private final void  createDataLineForChannel(int c, int sfxid){
 		
-		String id = "DS"+sfxinfo.name.toUpperCase();
-		if (id.equals("DSNONE"))
-			return -1;
-
+		// None? Make a new one.
 		
-		int lump;
-		try {
-		lump = DS.W.GetNumForName(id);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			return -1;
-		}
-		return lump;
+		if (channels[c].auline == null) {
+        	try {
+        		DoomSound tmp=cachedSounds.get(sfxid);
+        		// Sorry, Charlie. Gotta make a new one.
+        		DataLine.Info info = new DataLine.Info(SourceDataLine.class, DoomSound.DEFAULT_SAMPLES_FORMAT);
+				channels[c].auline = (SourceDataLine) AudioSystem.getLine(info);
+				channels[c].auline.open(tmp.format);
+			} catch (LineUnavailableException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+					boolean errors=false;
+        			// Add individual volume control.
+        			if (channels[c].auline.isControlSupported(Type.MASTER_GAIN))
+        				channels[c].vc=(FloatControl) channels[c].auline
+        				.getControl(Type.MASTER_GAIN);
+        			else {
+        			System.err.print("MASTER_GAIN, ");
+        			errors=true;
+        			if (channels[c].auline.isControlSupported(Type.VOLUME))
+            				channels[c].vc=(FloatControl) channels[c].auline
+            				.getControl(Type.VOLUME);
+        			else 
+        				System.err.print("VOLUME, ");
+        			} 
+        			
+
+        			// Add individual pitch control.
+        			if (channels[c].auline.isControlSupported(Type.SAMPLE_RATE)){
+        				channels[c].pc=(FloatControl) channels[c].auline
+        				.getControl(Type.SAMPLE_RATE);
+        			} else {
+        				errors=true;
+        				System.err.print("SAMPLE_RATE, ");
+        			} 
+        			
+        			// Add individual pan control
+        			if (channels[c].auline.isControlSupported(Type.BALANCE)){
+        				channels[c].bc=(FloatControl) channels[c].auline
+        				.getControl(FloatControl.Type.BALANCE);
+        			} else {
+        				System.err.print("BALANCE, ");
+        				errors=true;
+        				if (channels[c].auline.isControlSupported(Type.PAN)){        					
+        				channels[c].bc=(FloatControl) channels[c].auline
+        				.getControl(FloatControl.Type.PAN);
+        			} else {
+        				System.err.print("PANNING ");
+        				}
+        			}
+
+        			if (errors) System.err.printf("for channel %d NOT supported!\n",c);
+        			
+        			channels[c].auline.start();
+        		}
 	}
 
-	/**
-	 *  Starting a sound means adding it
-     * to the current list of active sounds
-     * in the internal channels.
-     *  As the SFX info struct contains
-     *  e.g. a pointer to the raw data,
-     *  it is ignored.
-     *  As our sound handling does not handle
-     *  priority, it is ignored.
-     *  Pitching (that is, increased speed of playback)
-     *   is set, but currently not used by mixing.
-     */
-	@Override
-	public int StartSound(int id, int vol, int sep, int pitch, int priority) {
-		
-		String sid = "DS"+sounds.S_sfx[id].name.toUpperCase();
-		if (sid.equals("DSNONE"))
-			return BUSY_HANDLE;
-		
-		// MAES: apparently, we need not worry about finding available channels here,
-		// just assign it to something.
-
-		DoomSound sound = retrieveSoundData(sid);
-		if (sound == null)
-			return BUSY_HANDLE;
-		
-		try {
-			//sound.ais.reset();
-			sound.ais = AudioSystem.getAudioInputStream(new ByteArrayInputStream(sound.bytes));
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-        catch (UnsupportedAudioFileException e) {
-        	// TODO Auto-generated catch block
-        	e.printStackTrace();
-        }
-        
-        // Find a free channel and get a timestamp/handle for the new sound.
-        int handle=this.addsfx(id, vol, 0, sep,sound); 
-         
-   //     int handle=DS.gametic;
-        
-
-        return handle;
-		
-	}
-
-	private final void  createDataLineForChannel(int c, DoomSound sound){
+	/* UNUSED version, designed to work on any type of sample (in theory).
+	   Requires a DoomSound container for separate format information.
+	  
+	 private final void  createDataLineForChannel(int c, DoomSound sound){
 		if (channels[c].auline == null) {
         	AudioFormat format = sound.ais.getFormat();
         	DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
@@ -267,22 +264,10 @@ public class DavidSFXModule implements ISound{
         			channels[c].auline.start();
         		}
 	}
+	*/
 	
-	//
-	// This function adds a sound to the
-	//  list of currently active sounds,
-	//  which is maintained as a given number
-	//  (eight, usually) of internal channels.
-	// Returns a handle.
-	//
-	protected short	handlenums = 0;
-
-	private int addsfx
-	( int		sfxid,
-			int		volume,
-			int		pitch,
-			int		seperation,
-			DoomSound sound)
+	@Override
+	protected int addsfx( int sfxid,int volume,int pitch, int seperation)
 	{
 		int		i;
 		int		rc = -1;
@@ -342,8 +327,9 @@ public class DavidSFXModule implements ISound{
 		//  we will handle the new SFX.
 		// Set pointer to raw data.
 	      
-        // Create a dataline for the "lucky" channel.
-        createDataLineForChannel(slot,sound);
+        // Create a dataline for the "lucky" channel,
+		// or reuse an existing one if it exists.
+        createDataLineForChannel(slot,sfxid);
 
 		// Reset current handle number, limited to 0..100.
 		if (handlenums==0) // was !handlenums, so it's actually 1...100?
@@ -384,22 +370,17 @@ public class DavidSFXModule implements ISound{
 		if (leftvol < 0 || leftvol > 127)
 			DS.I.Error("leftvol out of bounds"); 
 
-		// Get the proper lookup table piece
-		//  for this volume level???
-		//channelleftvol_lookup[slot] = vol_lookup[leftvol];
-		//channelrightvol_lookup[slot] = vol_lookup[rightvol];
-
 		// Preserve sound SFX id,
 		//  e.g. for avoiding duplicates of chainsaw.
 		channelids[slot] = sfxid;
 
 		channels[slot].setVolume(volume);
 		channels[slot].setPanning(seperation);
-		channels[slot].addSound(sound, handlenums);
+		channels[slot].addSound(cachedSounds.get(sfxid).data, handlenums);
 		channels[slot].setPitch(pitch);
 		
-		System.err.println(channelStatus());
-        if(D) System.err.printf("Playing %d vol %d on channel %d\n",rc,volume,slot);
+		if (D) System.err.println(channelStatus());
+        if (D) System.err.printf("Playing %d vol %d on channel %d\n",rc,volume,slot);
 		// You tell me.
 		return rc;
 	}
@@ -452,39 +433,6 @@ public class DavidSFXModule implements ISound{
 		return BUSY_HANDLE;
 	}
 	
-	/** Get data for a particular lump, if not cached already */
-	
-	private final DoomSound retrieveSoundData(String id){
-		
-		DoomSound sound = cachedSounds.get(id);
-		
-		if (sound==null){
-		// OK, so we load the sound...
-		// If it's vanilla, we obviously need to handle only its
-		// own sample format with DoomToWave.
-		int lump=DS.W.CheckNumForName(id);
-		byte[] bytes = this.DS.W.CacheLumpNumAsRawBytes(lump, data.Defines.PU_MUSIC);
-		
-        try {
-  
-        	// TODO: a cleaner way of handling this?
-        	DoomToWave dtw = new DoomToWave();
-        	byte[] baos= dtw.DMX2Wave(bytes);
-	        sound = new DoomSound(baos);
-	        cachedSounds.put(id, sound);
-
-		} catch (FileNotFoundException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	return sound;
-		
-	}
-	
 	/** A Thread for playing digital sound effects.
 	 * 
 	 *  Obviously you need as many as channels?
@@ -496,20 +444,17 @@ public class DavidSFXModule implements ISound{
 
 
 	private class SoundWorker implements Runnable {
-			private static final int EXTERNAL_BUFFER_SIZE = 256*1024; 
-			private static final int CHUNK = 1024; 
-			
-			byte[] abData = new byte[EXTERNAL_BUFFER_SIZE];
-
+			public Semaphore wait; // Holds the worker still until there's a new sound
 			FloatControl vc; // linear volume control
 			FloatControl bc; // balance/panning control
-			FloatControl pc; // pitcj control
-			DoomSound currentSoundSync;
-			DoomSound currentSound;
+			FloatControl pc; // pitch control
+			byte[] currentSoundSync;
+			byte[] currentSound;
 			
 			public SoundWorker(int id){
 				this.id=id;
-				this.handle=IDLE_HANDLE;;
+				this.handle=IDLE_HANDLE;
+				wait=new Semaphore(1);
 			}
 			
 
@@ -525,13 +470,15 @@ public class DavidSFXModule implements ISound{
 			/** This is how you tell the thread to play a sound,
 			 * I suppose.  */
 			
-			public void addSound(DoomSound ds, int handle) {
+			public void addSound(byte[] ds, int handle) {
 				
 				if (D) System.out.printf("Added handle %d to channel %d\n",handle,id);
 				this.handle=handle;
 				this.currentSound=ds;
 				this.auline.stop();
 				this.auline.start();
+				this.wait.release();
+				
 			}
 
 			/** Accepts volume in "Doom" format (0-127).
@@ -575,16 +522,9 @@ public class DavidSFXModule implements ISound{
 				while (!terminate) {
 					currentSoundSync = currentSound;
 					if (currentSoundSync != null) {
-						int nBytesRead = 0;
 
 						try {
-
-							while (nBytesRead != -1) {
-								nBytesRead = currentSoundSync.ais.read(abData, 0, abData.length);
-								if (nBytesRead >= 0){ 
-									auline.write(abData, 0, nBytesRead);
-								}
-							}
+							auline.write(currentSoundSync, 0, currentSoundSync.length);
 						} catch (Exception e) { 
 							e.printStackTrace();
 							return;
@@ -609,13 +549,11 @@ public class DavidSFXModule implements ISound{
 					}
 
 					// If we don't sleep at least a bit here, busy waiting becomes
-					// way too taxing. 
-					// TODO: in theory the threads should only output "a bit" of each sound each time
-					// and wait/sleep until they are called again or something, probably by updatesound,
-					// instead of waiting an arbitrary amount of time.
+					// way too taxing. Waiting on a semaphore (triggered by adding a new sound)
+					// seems like a better method.
 
 					try {
-						Thread.sleep(10);
+						wait.acquire();
 					} catch (InterruptedException e) {
 					} 
 				}
