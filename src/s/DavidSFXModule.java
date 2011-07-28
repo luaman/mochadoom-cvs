@@ -16,24 +16,32 @@ import doom.DoomStatus;
 
 /** David Martel's sound driver for Mocha Doom. Excellent work!
  * 
- * Now sound effects are a separate concern from music.
+ *  However, it's based on Java Audiolines, and as such has a number
+ *  of drawbacks:
+ *  
+ * a) Sounds are forcibly blown to be stereo, 16-bit otherwise it's 
+ *    impossible to get panning controls.
+ * b) Volume, master gain, panning, pitch etc. controls are NOT guaranteed
+ *    to be granted across different OSes , and your mileage may vary. It's
+ *    fairly OK under Windows and OS X, but Linux is very clunky. The only
+ *    control that is -somewhat- guaranteed is the volume one.
+ * c) Spawns as many threads as channels. Even if semaphore waiting it used,
+ *    that can be taxing for slower systems.
+
  * 
  * @author David
+ * @author Velktron
  *
  */
 
 public class DavidSFXModule extends AbstractSoundDriver{
-
-	protected final static boolean D=false;
 	
 	ArrayList<DoomSound> cachedSounds=new ArrayList<DoomSound>();
-	int[] channelhandles;
 	
 	public final float[] linear2db;	
 	
 	private SoundWorker[] channels;
 	private Thread[] soundThread;
-	private int[] channelstart;
 	
 	public DavidSFXModule(DoomStatus DS,int numChannels) {
 		super(DS,numChannels);
@@ -130,10 +138,7 @@ public class DavidSFXModule extends AbstractSoundDriver{
 	public void SetChannels(int numChannels) {
 
 		channels= new SoundWorker[numChannels];
-		soundThread= new Thread[numChannels];
-		channelstart=new int[numChannels];
-		channelhandles=new int[numChannels];
-		
+		soundThread= new Thread[numChannels];	
 		
 		// This is actually called from IDoomSound.
 		for (int i = 0; i < numChannels; i++) {
@@ -338,14 +343,6 @@ public class DavidSFXModule extends AbstractSoundDriver{
 		// Assign current handle number.
 		// Preserved so sounds could be stopped (unused).
 		channelhandles[slot]= rc = handlenums--;
-
-		// Set stepping???
-		// Kinda getting the impression this is never used.
-		
-		//channelstep[slot] = step;
-		// ???
-		//channelstepremainder[slot] = 0;
-		// Should be gametic, I presume.
 		channelstart[slot] = DS.gametic;
 
 		// Separation, that is, orientation/stereo.
@@ -375,7 +372,7 @@ public class DavidSFXModule extends AbstractSoundDriver{
 		channelids[slot] = sfxid;
 
 		channels[slot].setVolume(volume);
-		channels[slot].setPanning(seperation);
+		channels[slot].setPanning(seperation+256);
 		channels[slot].addSound(cachedSounds.get(sfxid).data, handlenums);
 		channels[slot].setPitch(pitch);
 		
@@ -413,7 +410,7 @@ public class DavidSFXModule extends AbstractSoundDriver{
 		if (i!=BUSY_HANDLE){
 			//System.err.printf("Updating sound with handle %d in channel %d\n",handle,i);
 			channels[i].setVolume(vol);
-			//channels[i].setPanning(sep);
+			channels[i].setPitch(pitch);
 			channels[i].setPanning(sep);
 			}
 		
@@ -502,17 +499,20 @@ public class DavidSFXModule extends AbstractSoundDriver{
 				// Q: how does Doom's sep map to stereo panning?
 				// A: Apparently it's 0-255 L-R.
 				if (bc!=null){
-				float pan= bc.getMinimum()+(bc.getMaximum()-bc.getMinimum())*(float)sep/ISound.PANNING_STEPS;
+				float pan= bc.getMinimum()+(bc.getMaximum()-bc.getMinimum())*(float)(sep)/ISound.PANNING_STEPS;
+				//System.err.printf("Panning %d %f %f %f\n",sep,bc.getMinimum(),bc.getMaximum(),pan);
 				bc.setValue(pan);
 				}
 			}
 			
-			
+			/** Expects a steptable value between 16K and 256K, with
+			 *  64K being the middle.
+			 * 
+			 * @param pitch
+			 */
 			public void setPitch(int pitch){
-				// Q: how does Doom map pitch numbers to actual variations?
-				// A: Apparently it's 128 for normal pitch, so 0-255 is -/+ something...maybe 12.5%?
 				if (pc!=null){
-				float pan= pc.getValue()*(float)(1+(float)(pitch-128)/512);
+				float pan= (float) (pc.getValue()*((float)pitch/65536.0));
 				pc.setValue(pan);
 				}
 			}

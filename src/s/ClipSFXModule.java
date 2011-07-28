@@ -16,37 +16,30 @@ import w.DoomBuffer;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 
-/** Experimental Clip based driver. Very rough around the edges.
- * WIP. Full of TODOs.
- * 
- * Namely: needs an efficient way of reusing multiple instances of the 
- * same clip, a way to efficiently access and set individual clip controls
- * on-the-fly, and a lot of other stuff. Dunno if, in the end, it's anymore
- * efficient than using a custom mixer. It sure is a lot less flexible.
+/** Experimental Clip based driver. It does work, but it has no
+ *  tangible advantages over the Audioline or Classic one. If the
+ *  Audioline can be used, there's no reason to fall back to this 
+ *  one.
  * 
  * KNOWN ISSUES:
  * 
- * a) Sounds are forcibly blown to be stereo, 16-bit otherwise
- *    I don't think we even get panning controls.
- * b) Sounds need to be converted to AudioInputStreams in order to pass
- *    them to clips.
- * c) While sounds can be cached within a HashMap, it's pointless
- *    to do the same with Clips, because if an instance of a clip
- *    is already playing, it can't be played "in parallel". So we need
- *    to keep a pool of same-data clips.
+ * a) Same general restrictions as audiolines (in fact, Clips ARE Audioline 
+ *    in disguise)
+ * b) Multiple instances of the same sound require multiple clips, so
+ *    even caching them is a half-baked solution, and if you have e.g. 40 imps
+ *    sound in a room.... 
+ *    
+ *    
+ *  Currently unused.
  * 
  * @author Velktron
  *
  */
 
 public class ClipSFXModule extends AbstractSoundDriver{
-
-	protected final static boolean D=false;
 	
 	HashMap<Integer,Clip> cachedSounds = new HashMap<Integer,Clip>();
-	int[] channelhandles;
-	int[] channelids;
-	int[] channelstart;
+
 	
 	// Either it's null (no clip is playing) or non-null (some clip is playing).
 	Clip[] channels;
@@ -218,44 +211,6 @@ public class ClipSFXModule extends AbstractSoundDriver{
 	@Override
 	public void SetChannels(int numChannels) {
 		channels= new Clip[numChannels];
-		channelids=new int[numChannels];
-		channelhandles=new int[numChannels];
-		channelstart=new int[numChannels];
-		
-        // Generates volume lookup tables
-        // which also turn the unsigned samples
-        // into signed samples.
-        for (int i = 0; i < 128; i++)
-            for (int j = 0; j < 256; j++)
-                vol_lookup[i][j] = (i * (j - 128) * 256) / 127;
-
-	}
-
-	/**
-	 *  Starting a sound means adding it
-     * to the current list of active sounds
-     * in the internal channels.
-     *  As the SFX info struct contains
-     *  e.g. a pointer to the raw data,
-     *  it is ignored.
-     *  As our sound handling does not handle
-     *  priority, it is ignored.
-     *  Pitching (that is, increased speed of playback)
-     *   is set, but currently not used by mixing.
-     */
-	@Override
-	public int StartSound(int id, int vol, int sep, int pitch, int priority) {
-        if (id < 1 || id > S_sfx.length - 1)
-            return BUSY_HANDLE;
-
-        // Find a free channel and get a timestamp/handle for the new sound.
-        //long a=System.nanoTime();
-
-        int handle = this.addsfx(id, vol, pitch,sep);
-
-        //long b=System.nanoTime();
-		//System.err.printf(" obtained in %d\n",(b-a));
-        return handle;
 	}
 	
 	private final void  getClipForChannel(int c, int sfxid){
