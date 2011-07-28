@@ -193,7 +193,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 event.type=evtype_t.ev_mouse;
                 DM.PostEvent(event);
                 }
-                System.err.println("k");
+                //System.err.println("k");
                 break;
             }
             
@@ -215,8 +215,9 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                     event.type=evtype_t.ev_mouse;
                     DM.PostEvent(event);
                     }
-                System.err.println( "ku");
+                //System.err.println( "ku");
                 break;
+              /* UNUSED, see caps lock problems
             case MochaDoomInputEvent.LockOn: {
                 event.type=evtype_t.ev_keydown;
                 event.data1=xlatekey(null, X_event.value);
@@ -247,6 +248,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 //System.err.println( "l0");
                 break;
             }
+            */
             
             case MochaDoomInputEvent.KeyType:
                 event.type=evtype_t.ev_keyup;
