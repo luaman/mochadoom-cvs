@@ -88,7 +88,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.79 2011/07/28 17:07:04 velktron Exp $
+// $Id: DoomMain.java,v 1.80 2011/07/28 18:53:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -114,7 +114,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.79 2011/07/28 17:07:04 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.80 2011/07/28 18:53:43 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1856,6 +1856,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 return true; 
             }
             
+            /* CAPS lock will only go through as a keyup event
             if (ev.data1 == KEY_CAPSLOCK) 
             { 
                 if (justfocused) justfocused=false;
@@ -1866,7 +1867,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                     players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
                     }
                 return true; 
-            } 
+            } */
             
             if (ev.data1 <NUMKEYS) 
                 gamekeydown[ev.data1] = true;
@@ -1877,12 +1878,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             { 
                 if (justfocused) justfocused=false;
                     else
-               // If caps are turned OFF, turn autorun off.
-                if (alwaysrun) {
-                    alwaysrun=false;
+                    {
+                    // Just toggle it. It's too hard to read the state.
+                    alwaysrun=!alwaysrun;
                     players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
                     }
-
             }
             
             if (ev.data1 <NUMKEYS) 
@@ -4175,6 +4175,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.80  2011/07/28 18:53:43  velktron
+//Dumbed down CAPS_LOCK interception due to problems in getting a reliable cross-platform, reasonably simple way of polling the state. Will have to do with toggle detection.
+//
 //Revision 1.79  2011/07/28 17:07:04  velktron
 //Added always run hack.
 //
