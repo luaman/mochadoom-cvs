@@ -359,13 +359,14 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         case MochaDoomInputEvent.MouseEntered:
         case MochaDoomInputEvent.FocusGained:
         	we_are_moving=false;
-        	reposition();
+        	//reposition();
         case MochaDoomInputEvent.ConfigureNotify:
         case MochaDoomInputEvent.CreateNotify:
             // All events that have to do with the window being changed,
         	// moved etc. should go here. The most often result
         	// in focus being lost and position being changed, so we
         	// need to take charge.
+            DM.justfocused=true;
             canvas.requestFocus();
             reposition();            			
         	ignorebutton=false;
