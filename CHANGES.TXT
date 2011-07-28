@@ -1,14 +1,22 @@
-In upcoming 1.5 release:
+Changes since 1.4a
 
 F Fixed an issue with TEXTURE2 lump loading which skipped the last entry.
-F Fixed a potential memory leak in P_InitThinkers.
 F Definitively fixed the retail/registered distinction
+F Fixed Ultimate Doom par times crash (finnw)
+F Fixed status bar "dirtying" by help screen
+F Fixed savegame name nulling
+F Fixed Quicksave string issue.
+F Fixed negative index objects crash
++ Added MIDI/MUS compatible sound system ( by _D_, finnw).
++ Added PC speaker sound emulation (-speakersound)
++ Added Classic sound mixer (default)
++ Added Audioline-based sound mixer (-audiolines) (by _D_, Velktron)
++ Added missing reject table safeguard
++ Added anti-tutti frutti safeguard
++ Added safeguards against certain mapping errors
 + Added an efficient object pooling system.
-+ Added a recreation of Doom's original mixer
-+ Added a multithreaded audioline sfx engine
-+ Fixed Quicksave string issue.
 + Added Gamma level settings.
 + Added patch_t load-time safeguard vs. broken columns.
-+ Added MIDI soundsystem, based on _D_'s work and extended.
 + Added Game Sound interface for channel/position/volume management.
 + Added graceful closing of open file handles.
++ Added always run option
