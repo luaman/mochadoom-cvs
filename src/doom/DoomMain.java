@@ -55,6 +55,7 @@ import s.DummyMusic;
 import s.DummySFX;
 import s.DummySoundDriver;
 import s.IDoomSound;
+import s.SpeakerDoomSoundDriver;
 //import s.SpeakerDoomSoundDriver;
 
 import savegame.IDoomSaveGame;
@@ -87,7 +88,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.77 2011/07/18 21:45:00 velktron Exp $
+// $Id: DoomMain.java,v 1.78 2011/07/28 13:48:33 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -113,7 +114,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.77 2011/07/18 21:45:00 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.78 2011/07/28 13:48:33 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1141,8 +1142,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         System.out.print ("S_Init: Setting up sound.\n");
         
       // Sound "drivers" before the game sound controller.
-
-        
         
         if (CM.CheckParmBool("-nomusic") || CM.CheckParmBool("-nosound"))
             this.IMUS=new DummyMusic();
@@ -1151,13 +1150,24 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         if (CM.CheckParmBool("-nosfx") ||  CM.CheckParmBool("-nosound"))
             this.ISND=new DummySFX();
-        else 
-            this.ISND=	new ClassicDoomSoundDriver(this,numChannels);
+        else {
+            // Switch between possible sound drivers.
+            // Crudish.
+            if (CM.CheckParmBool("-audiolines"))
+                this.ISND=	new DavidSFXModule(this,numChannels);
+            else // PC Speaker emulation 
+            if (CM.CheckParmBool("-speakersound"))
+                this.ISND=  new SpeakerDoomSoundDriver(this,numChannels);
+            else  // This is the default
+                this.ISND=  new ClassicDoomSoundDriver(this,numChannels);
+            }
+        
         if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
         	this.S=new AbstractDoomAudio(this,numChannels);
         else
         	// Saves a lot of distance calculations, if we're not to output
         	// any sound at all.
+            // TODO: create a Dummy that can handle music alone.
         	this.S=new DummySoundDriver();
         
         ISND.InitSound();
@@ -4135,6 +4145,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.78  2011/07/28 13:48:33  velktron
+//Added proper sound driver command line selectors.
+//
 //Revision 1.77  2011/07/18 21:45:00  velktron
 //Sound driver changes. -nosound loads Dummy instead of Abstract (saves CPU cycles).
 //
