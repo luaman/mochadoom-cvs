@@ -6,7 +6,6 @@ import java.nio.ByteBuffer;
 import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
-import w.statenum_t;
 import data.state_t;
 
 public class pspdef_t implements IReadableDoomObject,IPackableDoomObject{
@@ -25,7 +24,6 @@ public class pspdef_t implements IReadableDoomObject,IPackableDoomObject{
     
     @Override
     public void read(DoomFile f) throws IOException {
-        // TODO: where/when is state set?
         //state=data.info.states[f.readLEInt()];
         readstate=f.readLEInt();
         tics=f.readLEInt();
@@ -35,7 +33,6 @@ public class pspdef_t implements IReadableDoomObject,IPackableDoomObject{
     
     @Override
     public void pack(ByteBuffer f) throws IOException {
-        // TODO: where/when is state set?
         if (state==null) f.putInt(0);
         else f.putInt(state.id);
         f.putInt(tics);
