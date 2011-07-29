@@ -4816,57 +4816,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      return true;    // everything was checked
     }
 
-    //
-    //P_TraverseIntercepts
-    //Returns true if the traverser function returns true
-    //for all lines.
-    //
-    boolean
-    TraverseIntercepts
-    ( PTR_InterceptFunc   func,
-    int   maxfrac )
-    {
-     int         count;
-     int     dist; //fixed_t
-     intercept_t    in=null;  // shut up compiler warning
-     
-     count = intercept_p;
-
-     while (count-->0)
-     {
-     dist = MAXINT;
-     for (int scan = 0 ; scan<intercept_p ; scan++)
-     {
-         if (intercepts[scan].frac < dist)
-         {
-         dist = intercepts[scan].frac;
-         in = intercepts[scan];
-         }
-     }
-     
-     if (dist > maxfrac)
-         return true;    // checked everything in range      
-
-    /*  // UNUSED
-     {
-     // don't check these yet, there may be others inserted
-     in = scan = intercepts;
-     for ( scan = intercepts ; scan<intercept_p ; scan++)
-         if (scan.frac > maxfrac)
-         *in++ = *scan;
-     intercept_p = in;
-     return false;
-     }
-    */
-
-         if ( !func.invoke(in) )
-         return false;   // don't bother going farther
-
-     in.frac = MAXINT;
-     }
-     
-     return true;        // everything was traversed
-    }
+    
     
     /**
      * P_PathTraverse
