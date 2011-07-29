@@ -681,14 +681,14 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
     }
 
     public void keyTyped(KeyEvent e) {
-    	updateLockingKeys();
-    	if (! lockingKeyStates.containsKey(e.getKeyCode())) {
+    	//updateLockingKeys();
+    	//if (! lockingKeyStates.containsKey(e.getKeyCode())) {
         if (e.getKeyCode()<=KeyEvent.VK_F12) {
         	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyType,e));
        }
 
         e.consume();
-    	}
+    	//}
     }
 
     //////////////////////////// MOUSE EVENTS   ////////////////////////////
