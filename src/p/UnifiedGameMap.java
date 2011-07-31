@@ -17,6 +17,7 @@ import static data.Defines.pw_strength;
 import static data.Limits.BUTTONTIME;
 import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
+import static data.Limits.MAXINT;
 import static data.Limits.MAXINTERCEPTS;
 import static data.Limits.MAXPLATS;
 import static data.Limits.MAXSPECIALCROSS;
@@ -379,6 +380,70 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     boolean earlyout;
 
     int ptflags;
+    
+    //
+    //P_TraverseIntercepts
+    //Returns true if the traverser function returns true
+    //for all lines.
+    //
+    boolean
+    TraverseIntercepts
+    ( PTR_InterceptFunc   func,
+    int   maxfrac )
+    {
+     int         count;
+     int     dist; //fixed_t
+     intercept_t    in=null;  // shut up compiler warning
+     
+     count = intercept_p;
+
+     while (count-->0)
+     {
+     dist = MAXINT;
+     for (int scan = 0 ; scan<intercept_p ; scan++)
+     {
+         if (intercepts[scan].frac < dist)
+         {
+         dist = intercepts[scan].frac;
+         in = intercepts[scan];
+         }
+     }
+     
+     if (dist > maxfrac)
+         return true;    // checked everything in range      
+
+    /*  // UNUSED
+     {
+     // don't check these yet, there may be others inserted
+     in = scan = intercepts;
+     for ( scan = intercepts ; scan<intercept_p ; scan++)
+         if (scan.frac > maxfrac)
+         *in++ = *scan;
+     intercept_p = in;
+     return false;
+     }
+    */
+
+         if ( !func.invoke(in) )
+         return false;   // don't bother going farther
+
+     in.frac = MAXINT;
+     }
+     
+     return true;        // everything was traversed
+    }
+    
+    protected final void ResizeIntercepts() {
+        intercept_t[] tmp=new intercept_t[intercepts.length*2];
+        System.arraycopy(intercepts, 0, tmp, 0, intercepts.length);
+        
+        C2JUtils.initArrayOfObjects(tmp,intercepts.length,tmp.length);
+        
+        // Bye bye, old intercepts.
+        intercepts=tmp;   
+       
+        System.err.println("Intercepts capacity resized. Actual capacity "+intercepts.length);
+    }    
 
     class Lights {
 
@@ -1586,6 +1651,10 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      }
 
      // "create" a new intercept in the static intercept pool.
+     if (intercept_p>=intercepts.length){
+         ResizeIntercepts();
+     }
+     
      intercepts[intercept_p].frac = frac;
      intercepts[intercept_p].isaline = true;
      intercepts[intercept_p].line = ld;
@@ -1648,6 +1717,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
          return true; // behind source
 
      // "create" a new intercept in the static intercept pool.
+     if (intercept_p>=intercepts.length){
+         ResizeIntercepts();
+     }
      intercepts[intercept_p].frac = frac;
      intercepts[intercept_p].isaline = false;
      intercepts[intercept_p].thing = thing;
@@ -1847,6 +1919,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // Allocates memory and adds a new thinker at the end of the list.
     //
     public void AllocateThinker(thinker_t thinker) {
+        // UNUSED
     }
 
 
@@ -2199,7 +2272,5 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     public thinker_t getThinkerCap() {
         return thinkercap;
     }
-
-  
     
 } // End unified map
