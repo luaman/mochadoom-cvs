@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: IDoomStatusBar.java,v 1.2 2011/05/24 13:42:22 velktron Exp $
+// $Id: IDoomStatusBar.java,v 1.2.4.1 2011/07/31 11:59:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -63,7 +63,14 @@ public interface IDoomStatusBar extends IVideoScaleAware{
      */
     public int getHeight();
     
-/** HACK: replicates status update here for stupid reasons */
-public void updateStatus(DoomStatus DS);
+    /** HACK: replicates status update here for stupid reasons */
+    public void updateStatus(DoomStatus DS);
+
+    /** Forces a full refresh for reasons not handled otherwise, e.g. after full-page
+     *  draws of help screens, which normally don't trigger a complete redraw even if
+     *  they should, really.
+     */
+    
+    void forceRefresh();
 
 }

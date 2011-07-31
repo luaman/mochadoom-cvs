@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.41.2.1 2011/07/23 12:41:41 velktron Exp $
+// $Id: StatusBar.java,v 1.41.2.2 2011/07/31 11:59:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.41.2.1 2011/07/23 12:41:41 velktron Exp $";
+        "$Id: StatusBar.java,v 1.41.2.2 2011/07/31 11:59:09 velktron Exp $";
 
    
     
@@ -306,8 +306,13 @@ public class StatusBar extends AbstractStatusBar   {
     // main player in game
     private player_t plyr;
 
-    // ST_Start() has just been called
+    // ST_Start() has just been called, OR we want to force an redraw anyway.
     private boolean st_firsttime;
+    
+    @Override
+    public void forceRefresh(){
+        st_firsttime=true;
+    }
 
     // used to execute ST_Init() only once
     private int veryfirsttime = 1;
@@ -1930,6 +1935,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.41.2.2  2011/07/31 11:59:09  velktron
+//Added forced refresh method.
+//
 //Revision 1.41.2.1  2011/07/23 12:41:41  velktron
 //Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
 //
