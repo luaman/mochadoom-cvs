@@ -479,8 +479,8 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom.java,v $
-//Revision 1.9.2.1  2011/07/23 12:41:41  velktron
-//Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+//Revision 1.9.2.2  2011/07/31 11:43:57  velktron
+//Added new autorun/capslock sensing.
 //
 //Revision 1.10  2011/07/15 13:57:54  velktron
 //Implement VI.ReadScreen as a future good practice.

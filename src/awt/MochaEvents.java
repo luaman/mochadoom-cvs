@@ -145,6 +145,11 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
     final event_t cancelkey=new event_t(evtype_t.ev_clear,0xFF,0,0);
     final event_t cancelmouse=new event_t(evtype_t.ev_mouse,0,0,0);
     int prevmousebuttons;
+    // Nasty hack for CAPS LOCK. Apparently, there's no RELIABLE way
+    // to get the caps lock state programmatically, so we have to make 
+    // do with simply toggling
+    boolean capstoggle=false;
+    
     
     @Override
     public void GetEvent() {
@@ -154,12 +159,12 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         // Unlike most keys, caps lock etc. can be polled, so no need to worry
         // about them getting stuck.  So they are re-polled after all other
         // key states have beeen cleared.
-        if (DM.shouldPollLockingKeys()) {
+      /*  if (DM.shouldPollLockingKeys()) {
             for (Map.Entry<Integer, Boolean> e: lockingKeyStates.entrySet()) {
                 e.setValue(null);
             }
             updateLockingKeys();
-        }
+        } */
         // put event-grabbing stuff in here
         if (eventQueue.isEmpty()) return;   
         X_event=nextEvent();
@@ -173,7 +178,14 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             case MochaDoomInputEvent.KeyPress: {
                 event.type=evtype_t.ev_keydown;
                 event.data1=xlatekey((KeyEvent)X_event.ev, -1);
-                DM.PostEvent(event);
+                
+                // Toggle, but don't it go through.
+                if (event.data1==KEY_CAPSLOCK)
+                	 capstoggle=true;
+                
+                if (event.data1!=KEY_CAPSLOCK)
+                	DM.PostEvent(event);
+                
                 if (prevmousebuttons!=0){
                     
                 // Allow combined mouse/keyboard events.
@@ -188,7 +200,13 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             case MochaDoomInputEvent.KeyRelease:
                 event.type=evtype_t.ev_keyup;
                 event.data1=xlatekey((KeyEvent)X_event.ev, -1);
-                DM.PostEvent(event);
+
+                if ((event.data1!=KEY_CAPSLOCK) ||
+                	((event.data1==KEY_CAPSLOCK)&&capstoggle)) {
+                	DM.PostEvent(event);
+                }
+                
+                capstoggle=false;
                 
                 if (prevmousebuttons!=0){
                     
@@ -199,22 +217,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                     }
                 //System.err.println( "ku");
                 break;
-            
-            case MochaDoomInputEvent.KeyType:
-                event.type=evtype_t.ev_keyup;
-                event.data1=xlatekey((KeyEvent)X_event.ev, -1);
-                DM.PostEvent(event);
-                
-                if (prevmousebuttons!=0){
-                    
-                    // Allow combined mouse/keyboard events.
-                    event.data1=prevmousebuttons;
-                    event.type=evtype_t.ev_mouse;
-                    DM.PostEvent(event);
-                    }
-                //System.err.println( "ku");
-                break;
-            
+              /* UNUSED, see caps lock problems
             case MochaDoomInputEvent.LockOn: {
                 event.type=evtype_t.ev_keydown;
                 event.data1=xlatekey(null, X_event.value);
@@ -245,7 +248,22 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
                 //System.err.println( "l0");
                 break;
             }
-
+            */
+            
+            case MochaDoomInputEvent.KeyType:
+                event.type=evtype_t.ev_keyup;
+                event.data1=xlatekey((KeyEvent)X_event.ev, -1);
+                DM.PostEvent(event);
+                
+                if (prevmousebuttons!=0){
+                    
+                    // Allow combined mouse/keyboard events.
+                    event.data1=prevmousebuttons;
+                    event.type=evtype_t.ev_mouse;
+                    DM.PostEvent(event);
+                    }
+                //System.err.println( "ku");
+                break;
             }
 
         }
@@ -359,13 +377,14 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         case MochaDoomInputEvent.MouseEntered:
         case MochaDoomInputEvent.FocusGained:
         	we_are_moving=false;
-        	reposition();
+        	//reposition();
         case MochaDoomInputEvent.ConfigureNotify:
         case MochaDoomInputEvent.CreateNotify:
             // All events that have to do with the window being changed,
         	// moved etc. should go here. The most often result
         	// in focus being lost and position being changed, so we
         	// need to take charge.
+            DM.justfocused=true;
             canvas.requestFocus();
             reposition();            			
         	ignorebutton=false;
@@ -603,6 +622,14 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
     ///////////////////////// KEYBOARD EVENTS ///////////////////////////////////
 
 
+    // UNUSED used commented out because it doesn't appear to work
+    // I think that there is no bulletproof method to poll the state of
+    // the CAPS LOCK key, and forcing a call to getLockingKeyState()
+    // results in an UnsupportedOperationException
+    // For now, the best course of action seems to be intercepting toggling only,
+    // rather than state. It also looks like a compicated thing to
+    // run at every key update.
+    
     private void updateLockingKeys() {
         Toolkit toolkit = canvas.getToolkit();
         for (Iterator<Map.Entry<Integer, Boolean>> it =
@@ -613,8 +640,10 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             Integer keyCode = entry.getKey();
             Boolean oldState = entry.getValue();
             try {
+            	System.out.println("Trying");
                 boolean newState = toolkit.getLockingKeyState(keyCode);
                 if (! Boolean.valueOf(newState).equals(oldState)) {
+                	System.out.println("New event");
                     int eventType =
                         newState ? MochaDoomInputEvent.LockOn
                                  : MochaDoomInputEvent.LockOff;
@@ -629,34 +658,37 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
     }
 
     public void keyPressed(KeyEvent e) {
-        updateLockingKeys();
-        if (! lockingKeyStates.containsKey(e.getKeyCode())) {
+     // //  updateLockingKeys();
+       // if (! lockingKeyStates.containsKey(e.getKeyCode())) {
             if (e.getKeyCode()<=KeyEvent.VK_F12) {  
                 addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyPress,e));            
             }
     
             e.consume();
-        }
+       // }
     }
 
     public void keyReleased(KeyEvent e) {
-        updateLockingKeys();
-        if (! lockingKeyStates.containsKey(e.getKeyCode())) {
+       // updateLockingKeys();
+       // if (! lockingKeyStates.containsKey(e.getKeyCode())) {
     
             //if ((e.getModifiersEx() & UNACCEPTABLE_MODIFIERS) ==0) {
             if (e.getKeyCode()<=KeyEvent.VK_F12) {
             	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyRelease,e));
             }
             e.consume();
-        }
+       // }
     }
 
     public void keyTyped(KeyEvent e) {
+    	//updateLockingKeys();
+    	//if (! lockingKeyStates.containsKey(e.getKeyCode())) {
         if (e.getKeyCode()<=KeyEvent.VK_F12) {
         	addEvent(new MochaDoomInputEvent(MochaDoomInputEvent.KeyType,e));
        }
 
-        e.consume();        
+        e.consume();
+    	//}
     }
 
     //////////////////////////// MOUSE EVENTS   ////////////////////////////

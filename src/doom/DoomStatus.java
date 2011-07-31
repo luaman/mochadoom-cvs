@@ -445,6 +445,8 @@ public class DoomStatus extends DoomContext {
     protected boolean[] gamekeydown = new boolean[NUMKEYS];
 
     protected boolean keysCleared;
+    
+    public boolean alwaysrun;
 
     protected int turnheld; // for accelerative turning
 
@@ -521,6 +523,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.27.2.3  2011/07/31 11:44:09  velktron
+// Added new autorun/capslock sensing.
+//
 // Revision 1.27.2.2  2011/07/23 12:41:41  velktron
 // Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
 //
