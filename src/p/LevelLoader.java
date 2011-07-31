@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.26.2.2 2011/07/23 16:53:11 jodwin Exp $
+// $Id: LevelLoader.java,v 1.26.2.3 2011/07/31 11:55:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.26.2.3  2011/07/31 11:55:54  velktron
+// Reject table warning.
+//
 // Revision 1.26.2.2  2011/07/23 16:53:11  jodwin
 // I'M AWESOME AND YOU ARE NOT
 //
@@ -193,7 +196,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26.2.2 2011/07/23 16:53:11 jodwin Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26.2.3 2011/07/31 11:55:54 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -1045,8 +1048,10 @@ public int bmaporgy;
       rejectmatrix = new byte[(int) (Math.ceil((this.numsectors*this.numsectors)/8.0))];
       System.arraycopy(tmpreject, 0, rejectmatrix, 0, Math.min(tmpreject.length,rejectmatrix.length));
 
-     // if (tmpreject.length<rejectmatrix.length) 
-     // System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",tmpreject.length,rejectmatrix.length);
+      // Do warn on atypical reject map lengths, but use either default all-zeroes one,
+      // or whatever you happened to read anyway.
+      if (tmpreject.length<rejectmatrix.length) 
+      System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",tmpreject.length,rejectmatrix.length);
       
       
       this.GroupLines ();
