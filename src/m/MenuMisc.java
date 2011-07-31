@@ -1,6 +1,7 @@
 package m;
 
 import i.DoomSystem;
+
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,17 +11,15 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
-
-import doom.DoomStatus;
 import utils.C2JUtils;
 import w.DoomFile;
 import w.IWritableDoomObject;
+import doom.DoomStatus;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.24.2.3 2011/07/31 11:54:07 velktron Exp $
+// $Id: MenuMisc.java,v 1.24.2.4 2011/07/31 11:55:12 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -44,7 +43,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.24.2.3 2011/07/31 11:54:07 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.24.2.4 2011/07/31 11:55:12 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -396,6 +395,9 @@ public abstract class MenuMisc{
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.24.2.4  2011/07/31 11:55:12  velktron
+// Removed rogue import.
+//
 // Revision 1.24.2.3  2011/07/31 11:54:07  velktron
 // Added HELP screen stbar cleanup, alwaysrun var, removed unused exports.
 //
