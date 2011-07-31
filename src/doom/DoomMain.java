@@ -1,64 +1,91 @@
 package doom;
 
+import static data.Defines.BACKUPTICS;
+import static data.Defines.BTS_PAUSE;
+import static data.Defines.BTS_SAVEGAME;
+import static data.Defines.BTS_SAVEMASK;
+import static data.Defines.BTS_SAVESHIFT;
+import static data.Defines.BT_ATTACK;
+import static data.Defines.BT_CHANGE;
+import static data.Defines.BT_SPECIAL;
+import static data.Defines.BT_SPECIALMASK;
+import static data.Defines.BT_USE;
+import static data.Defines.BT_WEAPONSHIFT;
+import static data.Defines.KEY_CAPSLOCK;
+import static data.Defines.KEY_ESCAPE;
+import static data.Defines.KEY_F12;
+import static data.Defines.KEY_PAUSE;
+import static data.Defines.NORMALUNIX;
+import static data.Defines.NUMAMMO;
+import static data.Defines.NUMWEAPONS;
+import static data.Defines.PST_DEAD;
+import static data.Defines.PST_LIVE;
+import static data.Defines.PST_REBORN;
+import static data.Defines.PU_CACHE;
+import static data.Defines.PU_STATIC;
+import static data.Defines.SKYFLATNAME;
+import static data.Defines.TICRATE;
+import static data.Defines.VERSION;
+import static data.Limits.MAXEVENTS;
+import static data.Limits.MAXHEALTH;
+import static data.Limits.MAXINT;
+import static data.Limits.MAXNETNODES;
+import static data.Limits.MAXPLAYERS;
+import static data.Tables.ANG45;
+import static data.Tables.ANGLETOFINESHIFT;
+import static data.Tables.finecosine;
+import static data.Tables.finesine;
+import static data.dstrings.DEVMAPS;
+import static data.dstrings.SAVEGAMENAME;
+import static data.info.mobjinfo;
+import static data.info.states;
+import static doom.NetConsts.CMD_GET;
+import static doom.NetConsts.CMD_SEND;
+import static doom.NetConsts.DOOMCOM_ID;
+import static doom.NetConsts.NCMD_CHECKSUM;
+import static doom.NetConsts.NCMD_EXIT;
+import static doom.NetConsts.NCMD_KILL;
+import static doom.NetConsts.NCMD_RETRANSMIT;
+import static doom.NetConsts.NCMD_SETUP;
+import static doom.englsh.D_CDROM;
+import static doom.englsh.D_DEVSTR;
+import static doom.englsh.GGSAVED;
+import static m.fixed_t.FRACBITS;
+import static m.fixed_t.FRACUNIT;
+import static utils.C2JUtils.eval;
+import static utils.C2JUtils.flags;
+import static utils.C2JUtils.testAccess;
+import hu.HU;
 import i.DoomStatusAware;
 import i.DoomSystem;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import m.DoomRandom;
+import m.Menu;
+import m.MenuMisc;
 import n.DummyNetworkDriver;
-import static data.dstrings.*;
 import p.Actions;
 import p.DanmakuPatterns;
 import p.DanmakuShape;
 import p.LevelLoader;
 import p.mobj_t;
-import automap.Map;
-import awt.OldAWTDoom;
-import awt.AWTDoom;
-import f.EndLevel;
-import f.Finale;
-import f.Wiper;
-import g.DoomSaveGame;
-import hu.HU;
-import m.JavaRandom;
-import m.Menu;
-import m.MenuMisc;
-import m.DoomRandom;
-import static doom.NetConsts.*;
-import static doom.englsh.*;
-import data.Tables;
-import data.dstrings;
-import data.mapthing_t;
-import data.mobjtype_t;
-import defines.*;
-import demo.IDemoTicCmd;
-import demo.IDoomDemo;
-import demo.VanillaDoomDemo;
-import demo.VanillaTiccmd;
-import data.sounds.musicenum_t;
-import data.sounds.sfxenum_t;
-import static data.Defines.BACKUPTICS;
-import static data.Defines.KEY_ESCAPE;
-import static data.Defines.NORMALUNIX;
-import static data.Defines.PU_STATIC;
-import static data.Defines.VERSION;
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
 import s.ClassicDoomSoundDriver;
-import s.ClipSFXModule;
 import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
 import s.DummySoundDriver;
-import s.IDoomSound;
-//import s.SpeakerDoomSoundDriver;
-
+import s.SpeakerDoomSoundDriver;
 import savegame.IDoomSaveGame;
 import savegame.IDoomSaveGameHeader;
 import savegame.VanillaDSG;
@@ -72,24 +99,37 @@ import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
-//import v.VideoScaleInfo;
 import v.VisualSettings;
 import w.DoomFile;
 import w.WadLoader;
-import static data.Defines.*;
-import static data.Limits.*;
-import static data.Tables.*;
-import static data.dstrings.SAVEGAMENAME;
-import static data.info.mobjinfo;
-import static data.info.states;
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FRACUNIT;
-import static utils.C2JUtils.*;
+import automap.Map;
+import awt.AWTDoom;
+import awt.OldAWTDoom;
+import data.Tables;
+import data.dstrings;
+import data.mapthing_t;
+import data.mobjtype_t;
+import data.sounds.musicenum_t;
+import data.sounds.sfxenum_t;
+import defines.GameMission_t;
+import defines.GameMode_t;
+import defines.Language_t;
+import defines.ammotype_t;
+import defines.gamestate_t;
+import defines.skill_t;
+import defines.statenum_t;
+import demo.IDemoTicCmd;
+import demo.IDoomDemo;
+import demo.VanillaDoomDemo;
+import demo.VanillaTiccmd;
+import f.EndLevel;
+import f.Finale;
+import f.Wiper;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72.2.5 2011/07/26 17:53:34 jodwin Exp $
+// $Id: DoomMain.java,v 1.72.2.6 2011/07/31 11:46:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -115,7 +155,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.5 2011/07/26 17:53:34 jodwin Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.6 2011/07/31 11:46:32 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1153,8 +1193,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         System.out.print ("S_Init: Setting up sound.\n");
         
       // Sound "drivers" before the game sound controller.
-
-        
         
         if (CM.CheckParmBool("-nomusic") || CM.CheckParmBool("-nosound"))
             this.IMUS=new DummyMusic();
@@ -1163,13 +1201,24 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         if (CM.CheckParmBool("-nosfx") ||  CM.CheckParmBool("-nosound"))
             this.ISND=new DummySFX();
-        else 
-            this.ISND=	new ClassicDoomSoundDriver(this,numChannels);
+        else {
+            // Switch between possible sound drivers.
+            // Crudish.
+            if (CM.CheckParmBool("-audiolines"))
+                this.ISND=	new DavidSFXModule(this,numChannels);
+            else // PC Speaker emulation 
+            if (CM.CheckParmBool("-speakersound"))
+                this.ISND=  new SpeakerDoomSoundDriver(this,numChannels);
+            else  // This is the default
+                this.ISND=  new ClassicDoomSoundDriver(this,numChannels);
+            }
+        
         if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
         	this.S=new AbstractDoomAudio(this,numChannels);
         else
         	// Saves a lot of distance calculations, if we're not to output
         	// any sound at all.
+            // TODO: create a Dummy that can handle music alone.
         	this.S=new DummySoundDriver();
         
         ISND.InitSound();
@@ -1508,7 +1557,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         strafe = gamekeydown[key_strafe] || mousebuttons(mousebstrafe) 
         || joybuttons(joybstrafe); 
-        speed = (gamekeydown[key_speed] || joybuttons(joybspeed))?1:0;
+        speed = ((gamekeydown[key_speed]^alwaysrun) || joybuttons(joybspeed))?1:0;
 
         forward = side = 0;
 
@@ -1776,6 +1825,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     } 
 
     protected boolean first=true;
+    
+    // Maes: needed because a caps lock down signal is issued
+    // as soon as the app gains focus. This causes lock keys to respond.
+    // With this hack, they are ignored (?) the first time this happens.
+    public boolean justfocused=true;
 
     /**
      * G_Responder  
@@ -1839,24 +1893,49 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 return true;    // finale ate the event 
         } 
 
-        
         switch (ev.type) 
         {
         case ev_clear:
         	// PAINFULLY and FORCEFULLY clear the buttons.
-            Arrays.fill(gamekeydown, false); 
+            Arrays.fill(gamekeydown, false);
+            keysCleared = true;
             return false; // Nothing more to do here. 
         case ev_keydown: 
             if (ev.data1 == KEY_PAUSE) 
             { 
                 sendpause = true; 
                 return true; 
-            } 
+            }
+            
+            /* CAPS lock will only go through as a keyup event
+            if (ev.data1 == KEY_CAPSLOCK) 
+            { 
+                if (justfocused) justfocused=false;
+                    else
+                // If caps are turned on, turn autorun on anyway.
+                if (!alwaysrun) {
+                    alwaysrun=true;
+                    players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
+                    }
+                return true; 
+            } */
+            
             if (ev.data1 <NUMKEYS) 
                 gamekeydown[ev.data1] = true;
             return true;    // eat key down events 
 
-        case ev_keyup: 
+        case ev_keyup:
+            if (ev.data1 == KEY_CAPSLOCK) 
+            { 
+                if (justfocused) justfocused=false;
+                    else
+                    {
+                    // Just toggle it. It's too hard to read the state.
+                    alwaysrun=!alwaysrun;
+                    players[consoleplayer].message=String.format("Always run: %s",alwaysrun);
+                    }
+            }
+            
             if (ev.data1 <NUMKEYS) 
                 gamekeydown[ev.data1] = false; 
             return false;   // always let key up events filter down 
@@ -4148,6 +4227,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.72.2.6  2011/07/31 11:46:32  velktron
+//Added new autorun checks and sound driver params.
+//
 //Revision 1.72.2.5  2011/07/26 17:53:34  jodwin
 //MAJOR AWESOME DANMAKU UPDATE
 //
