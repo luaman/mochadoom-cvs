@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.4 2011/06/02 14:56:48 velktron Exp $
+// $Id: EndLevel.java,v 1.5 2011/07/31 21:49:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.5  2011/07/31 21:49:38  velktron
+// Changed endlevel drawer's behavior to be closer to prBoom+'s. Allows using 1994TU.WAD while backwards compatible.
+//
 // Revision 1.4  2011/06/02 14:56:48  velktron
 // imports
 //
@@ -314,20 +317,20 @@ public boolean Responder(event_t ev)
 }
 
 
-/** Draws "<Levelname> Finished!" */
+/** Draws "<Levelname> Finished!" */	
 protected void drawLF()
 {
     int y = WI_TITLEY;
 
     // draw <LevelName> 
-    V.DrawScaledPatch((SCREENWIDTH - lnames[wbs.last].width*BEST_X_SCALE)/2,
-        y, V_NOSCALESTART|FB,vs, lnames[wbs.last]);
+    V.DrawScaledPatch((320 - lnames[wbs.last].width)/2,
+        y, FB,vs, lnames[wbs.last]);
 
     // draw "Finished!"
-    y += (5*lnames[wbs.last].height*BEST_Y_SCALE)/4;
+    y += (5*lnames[wbs.last].height)/4;
     
-    V.DrawScaledPatch((SCREENWIDTH - finished.width*BEST_X_SCALE)/2,
-        y, V_NOSCALESTART|FB,vs, finished);
+    V.DrawScaledPatch((320 - finished.width)/2,
+        y, FB,vs, finished);
 }
 
 
@@ -335,20 +338,25 @@ protected void drawLF()
 /** Draws "Entering <LevelName>" */
 protected void drawEL()
 {
-    int y = WI_TITLEY;
+    int y = WI_TITLEY; // This is in 320 x 200 coords!
 
     // draw "Entering"
-    V./*DrawPatchDirect*/DrawScaledPatch((SCREENWIDTH - entering.width*BEST_X_SCALE)/2,
-        y, V_NOSCALESTART|FB,vs, entering);
+    V.DrawScaledPatch((320 - entering.width)/2, y, FB,vs, entering);
+    
+    // HACK: if lnames[wbs.next] DOES have a defined nonzero topoffset, use it.
+    // implicitly in DrawScaledPatch, and trump the normal behavior.
+    // FIXME: this is only useful in a handful of prBoom+ maps, which use
+    // a modified endlevel screen. The reason it works there is the behavior of the 
+    // unified patch drawing function, which is approximated with this hack.
     
     
-    // draw level
-    y += (5*lnames[wbs.next].height*BEST_Y_SCALE)/4;
-
-
-    V./*DrawPatchDirect*/DrawScaledPatch((SCREENWIDTH - lnames[wbs.next].width*BEST_X_SCALE)/2,
-        y, V_NOSCALESTART|FB,vs, lnames[wbs.next]);
-
+    	if (lnames[wbs.next].topoffset==0) 
+    	y += (5*lnames[wbs.next].height)/4;
+    // draw level.
+        
+    V.DrawScaledPatch((320 - lnames[wbs.next].width)/2,
+        y, FB,vs, lnames[wbs.next]);
+ 
 }
 
 /** For whatever fucked-up reason, it expects c to be an array of patches, 
