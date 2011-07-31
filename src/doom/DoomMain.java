@@ -2,6 +2,8 @@ package doom;
 
 import i.DoomStatusAware;
 import i.DoomSystem;
+import i.Strings;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,6 +15,7 @@ import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
+import awt.MsgBox;
 import awt.OldAWTDoom;
 import awt.AWTDoom;
 import f.EndLevel;
@@ -88,7 +91,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.80 2011/07/28 18:53:43 velktron Exp $
+// $Id: DoomMain.java,v 1.81 2011/07/31 21:50:17 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -114,7 +117,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.80 2011/07/28 18:53:43 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.81 2011/07/31 21:50:17 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1078,23 +1081,25 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
 
         // Iff additonal PWAD files are used, print modified banner
+        
         if (modifiedgame)
-        {
+        /*{
 
-            System.out.print ("===========================================================================\n");
-            System.out.print ("ATTENTION:  This version of DOOM has been modified.  If you would like to\n");
-            System.out.print ("get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n");
-            System.out.print ("        You will not receive technical support for modified games.\n");
-            System.out.print ("                      press enter to continue\n");
-            System.out.print ("===========================================================================\n");
+            System.out.print (Strings.MODIFIED_GAME);
             try {
                 System.in.read();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } */
+
+        { MsgBox modified=new MsgBox(null, "Alert", Strings.MODIFIED_GAME_DIALOG, true);
+          if (!modified.isOk()) {
+        	  W.CloseAllHandles();
+        	  System.exit(-2);
+          }
         }
-
-
+        
         // Check and print which version is executed.
         switch ( getGameMode() )
         {
@@ -1158,6 +1163,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             else // PC Speaker emulation 
             if (CM.CheckParmBool("-speakersound"))
                 this.ISND=  new SpeakerDoomSoundDriver(this,numChannels);
+            if (CM.CheckParmBool("-clipsound"))
+                this.ISND=  new ClipSFXModule(this,numChannels);
             else  // This is the default
                 this.ISND=  new ClassicDoomSoundDriver(this,numChannels);
             }
@@ -4175,6 +4182,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.81  2011/07/31 21:50:17  velktron
+//Added modified game popup.
+//
 //Revision 1.80  2011/07/28 18:53:43  velktron
 //Dumbed down CAPS_LOCK interception due to problems in getting a reliable cross-platform, reasonably simple way of polling the state. Will have to do with toggle detection.
 //
