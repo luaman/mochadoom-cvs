@@ -94,7 +94,7 @@ public class SpeakerSound implements CacheableDoomObject{
 
             float frequency=f[phoneme];
             for (int i=0;i<samples;i++){                
-                tmp[i]=(byte) (127+127*Math.sin(frequency*Math.PI*2*(i/11025f)));
+                tmp[i]=(byte) (127+127*Math.signum(Math.sin(frequency*Math.PI*2*(i/11025f))));
             }
             
             phonemes.put(phoneme, tmp);

@@ -18,6 +18,15 @@ import doom.DoomStatus;
 /**
  * A close recreation of the classic linux doom sound mixer.
  * 
+ * PROS:
+ * a) Very faithful to pitch and stereo effects, and original
+ *    volume ramping.
+ * b) Uses only one audioline and one playback thread
+ * 
+ * CONS:
+ * a) May sound a bit off if production/consumption rates don't match
+ * b) Sounds awful when mixing too many sounds together, just like the original.
+ * 
  * @author Maes
  */
 
@@ -27,8 +36,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     protected final Semaphore produce;
 
     protected final Semaphore consume;
-
-    protected final static boolean D = false;
 
     protected int chunk = 0;
 
@@ -43,7 +50,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
     public ClassicDoomSoundDriver(DoomStatus DS, int numChannels) {
     	super(DS,numChannels);
-        channelstart = new int[numChannels];
         channelleftvol_lookup = new int[numChannels][];
         channelrightvol_lookup = new int[numChannels][];
         channelstep = new int[numChannels];
@@ -51,7 +57,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         channels = new byte[numChannels][];
         p_channels = new int[numChannels];
         channelsend = new int[numChannels];
-        channelhandles = new int[numChannels];
         produce = new Semaphore(1);
         consume = new Semaphore(1);
         produce.drainPermits();
@@ -75,20 +80,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     protected final int[] channelstepremainder;
 
     /**
-     * Time/gametic that the channel started playing, used to determine oldest,
-     * which automatically has lowest priority. In case number of active sounds
-     * exceeds available channels.
-     */
-    protected final int[] channelstart;
-
-    /**
-     * The sound in channel handles, determined on registration, might be used
-     * to unregister/stop/modify, currently unused.
-     */
-
-    protected final int[] channelhandles;
-
-    /**
      * The channel data pointers, start and end. These were referred to as
      * "channels" in two different source files: s_sound.c and i_sound.c. In
      * s_sound.c they are actually channel_t (they are only informational). In
@@ -106,9 +97,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
      * The second one is supposed to point at "the end", so I'll make it an int.
      */
     protected int[] channelsend;
-
-    /** Volume lookups. 128 levels */
-    protected final int[][] vol_lookup = new int[128][256];
 
     /** Hardware left and right channel volume lookup. */
     protected final int[][] channelleftvol_lookup, channelrightvol_lookup;
@@ -291,34 +279,19 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // Init internal lookups (raw data, mixing buffer, channels).
         // This function sets up internal lookups used during
         // the mixing process.
-        int i;
-        int j;
 
         int steptablemid = 128;
 
         // Okay, reset internal mixing channels to zero.
-        for (i = 0; i < this.numChannels; i++) {
+        for (int i = 0; i < this.numChannels; i++) {
             channels[i] = null;
         }
+        
+        generateStepTable(steptablemid);
 
-        // This table provides step widths for pitch parameters.
-        // Values go from 16K to 256K roughly, with the middle of the table
-        // being
-        // 64K, and presumably representing unitary pitch.
-        // So the pitch variation can be quite extreme, allowing -/+ 400%
-        // stepping :-S
-        for (i = -128; i < 128; i++)
-            steptable[steptablemid + i] =
-                (int) (Math.pow(2.0, (i / 64.0)) * 65536.0);
-
-        // Generates volume lookup tables
-        // which also turn the unsigned samples
-        // into signed samples.
-        for (i = 0; i < 128; i++)
-            for (j = 0; j < 256; j++)
-                vol_lookup[i][j] = (i * (j - 128) * 256) / 127;
+        generateVolumeLUT();
     }
-
+    
     protected MixServer SOUNDSRV;
 
     protected Thread SOUNDTHREAD;
@@ -605,9 +578,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
                 // Signal that we consumed a whole buffer and we are ready for
                 // another one.
+                
                 consume.release();
-                // auline.drain();
-
             }
         }
     }
@@ -637,18 +609,6 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     }
 
     @Override
-    public int StartSound(int id, int vol, int sep, int pitch, int priority) {
-
-        if (id < 1 || id > S_sfx.length - 1)
-            return BUSY_HANDLE;
-
-        // Find a free channel and get a timestamp/handle for the new sound.
-        int handle = this.addsfx(id, vol, steptable[pitch], sep);
-
-        return handle;
-    }
-
-    @Override
     public void StopSound(int handle) {
         // Which channel has it?
         int hnd = getChannelFromHandle(handle);
@@ -665,7 +625,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // It's possible for us to stay silent and give the audio
         // queue a chance to get drained.
         if (mixed) {
-
+            silence=0;
             AudioChunk gunk = audiochunkpool.checkOut();
             // Ha ha you're ass is mine!
             gunk.free = false;
@@ -687,12 +647,20 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
                 produce.release();
 
         } else {
+            silence++;
+            // MAES: attempt to fix lingering noise error
+            if (silence >ISound.BUFFER_CHUNKS*5){
+                line.flush();
+                silence=0;
+                }
             // System.err.println("SILENT_CHUNK");
             // this.SOUNDSRV.addChunk(SILENT_CHUNK);
         }
         // line.write(mixbuffer, 0, mixbuffer.length);
 
     }
+    
+    private int silence=0; 
 
     @Override
     public void UpdateSoundParams(int handle, int vol, int sep, int pitch) {

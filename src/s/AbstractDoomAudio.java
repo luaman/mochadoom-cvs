@@ -341,8 +341,8 @@ public class AbstractDoomAudio implements IDoomSound{
 				pitch,
 				priority);
 		
-		if (D) System.err.printf("Handle %d for channel %d for sound %s vol %d\n",channels[cnum].handle,
-				cnum,sfx.name,volume);
+		if (D) System.err.printf("Handle %d for channel %d for sound %s vol %d sep %d\n",channels[cnum].handle,
+				cnum,sfx.name,volume,sep);
 	}	
 
 
