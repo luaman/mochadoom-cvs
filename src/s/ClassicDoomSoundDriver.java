@@ -376,6 +376,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         int rightvol;
         int leftvol;
 
+        int broken=-1;
+        
         // Chainsaw troubles.
         // Play these sound effects only one at a time.
         if (sfxid == sfxenum_t.sfx_sawup.ordinal()
@@ -389,24 +391,30 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
                 // Active, and using the same SFX?
                 if ((channels[i] != null) && (channelids[i] == sfxid)) {
                     // Reset.
-                    channels[i] = null;
                     this.p_channels[i] = 0;
-                    this.channelhandles[i] = IDLE_HANDLE;
+                    this.channels[i]=null;
                     // We are sure that iff,
                     // there will only be one.
+                    broken=i;
                     break;
                 }
             }
         }
 
         // Loop all channels to find oldest SFX.
+        if (broken>=0) {
+        	i=broken;
+        	oldestnum=broken;
+        }
+        else
         for (i = 0; (i < numChannels) && (channels[i] != null); i++) {
             if (channelstart[i] < oldest) {
                 oldestnum = i;
-                oldest = channelstart[i];
             }
         }
 
+        oldest = channelstart[oldestnum];
+        
         // Tales from the cryptic.
         // If we found a channel, fine.
         // If not, we simply overwrite the first one, 0.

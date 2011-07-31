@@ -359,7 +359,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
 		//channels[slot].addSound(sound, handlenums);
 		//channels[slot].setPitch(pitch);
 		
-		System.err.println(channelStatus());
+		if(D) System.err.println(channelStatus());
         if(D) System.err.printf("Playing %d vol %d on channel %d\n",rc,volume,slot);
 		// Well...play it.
       
