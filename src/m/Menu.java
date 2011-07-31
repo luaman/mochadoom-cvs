@@ -425,6 +425,15 @@ public class Menu extends AbstractDoomMenu {
         V.DrawScaledPatch(x, y + 7, 0, vs,W.CachePatchName("M_LSRGHT"));
     }
 
+    /** Draws slider rail of a specified width (each notch is 8 base units wide)
+     *  and with a slider selector at position thermDot.
+     * 
+     * @param x
+     * @param y
+     * @param thermWidth
+     * @param thermDot
+     */
+    
     public void DrawThermo(int x, int y, int thermWidth, int thermDot) {
         int xx;
         int i;
@@ -685,7 +694,6 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke(int choice) {
-            //System.out.println("In M_ReadThis");
             choice = 0;
             SetupNextMenu(ReadDef1);
         }
@@ -1069,7 +1077,6 @@ public class Menu extends AbstractDoomMenu {
                         && StringWidth(savegamestrings[saveSlot]) < (SAVESTRINGSIZE - 2) * 8) {
                     savegamestrings[saveSlot][saveCharIndex++] = ch;
                     savegamestrings[saveSlot][saveCharIndex] = 0;
-                    //System.out.println(String.valueOf(savegamestrings[saveSlot]));
                 }
                 break;
             }
@@ -1099,7 +1106,6 @@ public class Menu extends AbstractDoomMenu {
 
         // F-Keys
         if (!DM.menuactive){
-           // System.out.print("Menu NOT active");
             switch (ch) {
             case KEY_MINUS: // Screen size down
                 if (DM.automapactive || HU.chat_on[0])
@@ -1116,7 +1122,6 @@ public class Menu extends AbstractDoomMenu {
                 return true;
 
             case KEY_F1: // Help key
-                //System.out.println("F1 Pressed");
                 StartControlPanel();
 
                 if (DM.isRetail() || currentMenu==ReadDef1)
@@ -1239,9 +1244,6 @@ public class Menu extends AbstractDoomMenu {
             return true;
 
         case KEY_ENTER: {
-            //System.out.println("ENTER pressed on active menu.");
-            //System.out.println(currentMenu.menuitems[itemOn].routine);
-            
             if ((currentMenu.menuitems[itemOn].routine != null)
                     && currentMenu.menuitems[itemOn].status != 0) {
                 currentMenu.lastOn = itemOn;
@@ -1453,7 +1455,7 @@ public class Menu extends AbstractDoomMenu {
 
     /**
      * M_DrawText Returns the final X coordinate HU_Init must have been called
-     * to init the font
+     * to init the font. Unused?
      * 
      * @param x
      * @param y
@@ -1577,7 +1579,6 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            //System.out.println("DrawReadThis1 invoked");
             inhelpscreens = true;
             switch (DM.getGameMode()) {
             case commercial:
@@ -1591,6 +1592,9 @@ public class Menu extends AbstractDoomMenu {
             default:
                 break;
             }
+            
+            // Maes: we need to do this here, otherwide the status bar appears "dirty"
+            DM.ST.forceRefresh();
             return;
         }
     }
@@ -1603,7 +1607,6 @@ public class Menu extends AbstractDoomMenu {
 
         @Override
         public void invoke() {
-            //System.out.println("DrawReadThis2 invoked");
             inhelpscreens = true;
             switch (DM.getGameMode()) {
             case retail:
@@ -1618,6 +1621,9 @@ public class Menu extends AbstractDoomMenu {
             default:
                 break;
             }
+            
+            // Maes: we need to do this here, otherwide the status bar appears "dirty"
+            DM.ST.forceRefresh();
             return;
         }
     }

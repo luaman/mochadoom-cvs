@@ -18,6 +18,7 @@ public enum Settings {
     sfx_volume(8),
    music_volume(8),
    show_messages(1),
+   alwaysrun(1),
    key_right(KEY_RIGHTARROW),
    key_left(KEY_LEFTARROW),
    key_up('w'),
@@ -95,6 +96,9 @@ public void applySetting(DoomStatus DS){
    case show_messages: 
        DS.M.setShowMessages(C2JUtils.eval(val));
        break;
+   case alwaysrun:
+       DS.alwaysrun=C2JUtils.eval(val);
+       break;      
    case key_right:
        DS.key_right=val;
        break;
