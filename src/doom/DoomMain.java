@@ -91,7 +91,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.81 2011/07/31 21:50:17 velktron Exp $
+// $Id: DoomMain.java,v 1.82 2011/08/01 07:35:54 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -117,7 +117,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.81 2011/07/31 21:50:17 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.82 2011/08/01 07:35:54 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1163,6 +1163,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             else // PC Speaker emulation 
             if (CM.CheckParmBool("-speakersound"))
                 this.ISND=  new SpeakerDoomSoundDriver(this,numChannels);
+            else
             if (CM.CheckParmBool("-clipsound"))
                 this.ISND=  new ClipSFXModule(this,numChannels);
             else  // This is the default
@@ -4182,6 +4183,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.82  2011/08/01 07:35:54  velktron
+//Fixed broken -speakersound selector.
+//
 //Revision 1.81  2011/07/31 21:50:17  velktron
 //Added modified game popup.
 //
