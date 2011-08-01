@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.38 2011/07/13 16:34:18 velktron Exp $
+// $Id: WadLoader.java,v 1.39 2011/08/01 21:42:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.39  2011/08/01 21:42:56  velktron
+// Added BOOM CoaleseResources function.
+//
 // Revision 1.38  2011/07/13 16:34:18  velktron
 // Started adding some BOOM wad handling stuff. Still WIP though.
 //
@@ -529,6 +532,9 @@ public class WadLoader implements IWadLoader {
 		if (numlumps == 0)
 			I.Error("W_InitFiles: no files found");
 
+		CoalesceMarkedResource("S_START", "S_END", li_namespace.ns_sprites);
+//		CoalesceMarkedResource("F_START", "F_END", li_namespace.ns_flats);
+		
 		// set up caching
 		size = numlumps;
 		lumpcache = new CacheableDoomObject[size];
@@ -1144,42 +1150,68 @@ public class WadLoader implements IWadLoader {
 		CloseAllHandles();
 	}
 
-	// killough 4/17/98: add namespace tags
-	// TODO: this is WIP, may bring in other changes too.
-
-	/*
+	public static final int ns_global=0;
+	public static final int ns_flats=1;
+	public static final int ns_sprites=2;
+	
+	/** 
+	 * Based on Boom's W_CoalesceMarkedResource
+	 * Sort of mashes similar namespaces together so that they form
+	 * a continuous space (single start and end, e.g. so that multiple
+	 * S_START and S_END as well as special DEUTEX lumps mash together
+	 * under a common S_START/S_END boundary). Also also sort of performs
+	 * a "bubbling down" of marked lumps at the end of the namespace.
+	 * 
+	 * It's convenient for sprites, but can be replaced by alternatives
+	 * for flats.
+	 * 
+	 * killough 4/17/98: add namespace tags
+	 *   
+	 * @param start_marker
+	 * @param end_marker
+	 * @param namespace
+	 * @return
+	 */
 	public int CoalesceMarkedResource(String start_marker,
-	                                     String end_marker, int li_namespace)
+	                                     String end_marker, li_namespace namespace)
 	{
 	  int result = 0;
 	  lumpinfo_t[] marked = new lumpinfo_t[numlumps];
-	  int i=0,
-	  num_marked = 0, num_unmarked = 0;
+	  C2JUtils.initArrayOfObjects(marked, lumpinfo_t.class);
+	  int num_marked = 0, num_unmarked = 0;
 	  boolean is_marked = false, mark_end = false;
-	  int p_lump = 0; // index into lumpinfo
 	  lumpinfo_t lump;
 
-	  for (i=numlumps; i-->0; p_lump++, lump=lumpinfo[p_lump])
-	    if (IsMarker(start_marker, lump.name))       // start marker found
+	  // Scan for specified start mark
+	  for (int i=0;i<numlumps;i++){
+		  lump=lumpinfo[i];
+	    if (IsMarker(start_marker,lump.name)) // start marker found
 	      { // If this is the first start marker, add start marker to marked lumps
+//	    	System.err.printf("%s identified as starter mark for %s index %d\n",lump.name,
+//	    			start_marker,i);
 	        if (num_marked==0)
 	          {
-	            marked.name=new String(start_marker);
-	            marked.size = 0;  // killough 3/20/98: force size to be 0
-	            marked.li_namespace = ns_global;        // killough 4/17/98
-	            marked.wadfile = NULL;
+	            marked[num_marked].name=new String(start_marker);
+	            marked[num_marked].size = 0;  // killough 3/20/98: force size to be 0
+	            marked[num_marked].namespace =li_namespace.ns_global;        // killough 4/17/98
+	            // No real use for this yet
+	            // marked[num_marked].wadfile = null;
 	            num_marked = 1;
+		    	//System.err.printf("%s identified as FIRST starter mark for %s index %d\n",lump.name,
+		    	//		start_marker,i);
 	          }
-	        is_marked = 1;                            // start marking lumps
+	        is_marked = true;                            // start marking lumps
 	      }
 	    else
 	      if (IsMarker(end_marker, lump.name))       // end marker found
 	        {
+		    //	System.err.printf("%s identified as end mark for %s index %d\n",lump.name,
+		    //			end_marker,i);
 	          mark_end = true;                           // add end marker below
 	          is_marked = false;                          // stop marking lumps
 	        }
 	      else
-	        if (is_marked || lump.li_namespace == li_namespace)
+	        if (is_marked || lump.namespace == namespace)
 	          {
 	            // if we are marking lumps,
 	            // move lump to marked list
@@ -1189,32 +1221,43 @@ public class WadLoader implements IWadLoader {
 	            // ignore sprite lumps smaller than 8 bytes (the smallest possible)
 	            // in size -- this was used by some dmadds wads
 	            // as an 'empty' graphics resource
-	            if(li_namespace != ns_sprites || lump->size > 8)
+	            if(namespace != li_namespace.ns_sprites || lump.size > 8)
 	            {
-	              marked[num_marked] = *lump;
-	              marked[num_marked++].li_namespace = li_namespace;  // killough 4/17/98
+	              marked[num_marked] = lump.clone();
+	             // System.err.printf("Marked %s as %d for %s\n",lump.name,num_marked,namespace);
+	              marked[num_marked++].namespace = namespace;  // killough 4/17/98
 	              result++;
 	            }
 	          }
 	        else
-	          lumpinfo[num_unmarked++] = *lump;       // else move down THIS list
-
+	          lumpinfo[num_unmarked++] = lump.clone();       // else move down THIS list
+	  }
+	    
 	  // Append marked list to end of unmarked list
-	  memcpy(lumpinfo + num_unmarked, marked, num_marked * sizeof(*marked));
-
-	  free(marked);                                   // free marked list
+	  System.arraycopy(marked, 0, lumpinfo, num_unmarked, num_marked);
 
 	  numlumps = num_unmarked + num_marked;           // new total number of lumps
 
 	  if (mark_end)                                   // add end marker
 	    {
 	      lumpinfo[numlumps].size = 0;  // killough 3/20/98: force size to be 0
-	      lumpinfo[numlumps].wadfile = NULL;
-	      lumpinfo[numlumps].li_namespace = ns_global;   // killough 4/17/98
-	      strncpy(lumpinfo[numlumps++].name, end_marker, 8);
+	      //lumpinfo[numlumps].wadfile = NULL;
+	      lumpinfo[numlumps].namespace = li_namespace.ns_global;   // killough 4/17/98
+	      lumpinfo[numlumps++].name=end_marker;
 	    }
 
 	  return result;
-	} */
-	
+	}
+	  
+	public final static boolean IsMarker(String marker, String name)
+	{
+	  boolean result= name.equalsIgnoreCase(marker) ||
+	    // doubled first character test for single-character prefixes only
+	    // FF_* is valid alias for F_*, but HI_* should not allow HHI_*
+	    (marker.charAt(1) == '_' && name.charAt(0) == marker.charAt(0) && 
+	    		name.substring(1).equalsIgnoreCase(marker));
+
+	  return result;
+	}
+
 }
