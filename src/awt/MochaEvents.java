@@ -70,6 +70,8 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
     private LinkedList<MochaDoomInputEvent> eventQueue = new LinkedList<MochaDoomInputEvent>();
 
     private HashMap<Integer, Boolean> lockingKeyStates = new HashMap<Integer, Boolean>();
+    
+    private static final boolean D=false;
 
     //// STATUS STUFF ///////////
     public final DoomMain DM;
@@ -104,7 +106,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         try {
             robby=new Robot();
         } catch (Exception e){
-            System.out.println("AWT Robot could not be created, mouse input focus will be loose!");
+           System.err.println("AWT Robot could not be created, mouse input focus will be loose!");
         }
 
         lockingKeyStates.put(KeyEvent.VK_CAPS_LOCK, null);
@@ -423,7 +425,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
         
         canvas.getInputContext().selectInputMethod(java.util.Locale.US);
         canvas.setCursor(hidden);
-		//System.out.printf("Jake 2 method: offset MOVED to %d %d\n", offset.x, offset.y);
+		if (D) System.err.printf("Jake 2 method: offset MOVED to %d %d\n", offset.x, offset.y);
 		
 	}
     
@@ -446,7 +448,7 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
 
     @Override
     public void windowActivated(WindowEvent windowevent) {
-    	System.out.println("Window activated");
+    	if (D) System.err.println("Window activated");
     	eventQueue.add(new MochaDoomInputEvent(MochaDoomInputEvent.ConfigureNotify, null));
     	}
 
@@ -634,10 +636,10 @@ public class MochaEvents implements WindowListener,ComponentListener,KeyEventDis
             Integer keyCode = entry.getKey();
             Boolean oldState = entry.getValue();
             try {
-            	System.out.println("Trying");
+            	if (D) System.err.println("Trying");
                 boolean newState = toolkit.getLockingKeyState(keyCode);
                 if (! Boolean.valueOf(newState).equals(oldState)) {
-                	System.out.println("New event");
+                	if (D) System.out.println("New event");
                     int eventType =
                         newState ? MochaDoomInputEvent.LockOn
                                  : MochaDoomInputEvent.LockOff;
