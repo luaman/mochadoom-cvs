@@ -17,7 +17,7 @@ package rr;
 public class spriteframe_t implements Cloneable{
 
  public spriteframe_t(){
-     lump=new short[8];
+     lump=new int[8];
      flip=new byte[8];
  }
 
@@ -33,7 +33,7 @@ public class spriteframe_t implements Cloneable{
  public int rotate;
 
  /** Lump to use for view angles 0-7. */
- public short[]    lump;
+ public int[]    lump;
 
  /** Flip bit (1 = flip) to use for view angles 0-7. */
  public byte[]    flip;
