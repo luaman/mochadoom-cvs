@@ -23,6 +23,8 @@ import doom.DoomStatus;
 import w.DoomBuffer;
 import w.IWadLoader;
 import w.WadLoader;
+import w.li_namespace;
+import w.lumpinfo_t;
 
 /** An attempt to separate texture mapping functionality from
  *  the rest of the rendering. Seems to work like a charm, and
@@ -381,6 +383,9 @@ public class SimpleTextureManager
         // for each patch in a texture...
         for (int i=0; i<texture.patchcount;i++)
         {
+        lumpinfo_t lump = W.GetLumpInfo(patch[i].patch);
+        // Skip flats on walls, for now.
+        if (lump.namespace==li_namespace.ns_flats) continue;
         realpatch = (patch_t) W.CacheLumpNum (patch[i].patch, PU_CACHE,patch_t.class);
         x1 = patch[i].originx;
         x2 = x1 + realpatch.width;
@@ -695,7 +700,7 @@ public class SimpleTextureManager
             name=W.GetNameForNum(lump);
         }
         }
-        }
+        
         // So now we have a lump -> sequence number mapping.
 
             // Create translation table for global animation.
