@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.22 2011/06/08 17:38:55 velktron Exp $
+// $Id: Finale.java,v 1.23 2011/08/01 00:05:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.22 2011/06/08 17:38:55 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.23 2011/08/01 00:05:14 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -578,7 +578,7 @@ protected void afterstopattack(){
       
       for (int i=0;i<ch.length;i++)
       {
-      c = ch[i++];
+      c = ch[i];
       if (c==0)
           break;
       c = Character.toUpperCase(c) - HU_FONTSTART;
