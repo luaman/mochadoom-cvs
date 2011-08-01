@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.39 2011/08/01 21:42:56 velktron Exp $
+// $Id: WadLoader.java,v 1.40 2011/08/01 22:09:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.40  2011/08/01 22:09:14  velktron
+// Flats coalescing.
+//
 // Revision 1.39  2011/08/01 21:42:56  velktron
 // Added BOOM CoaleseResources function.
 //
@@ -533,7 +536,8 @@ public class WadLoader implements IWadLoader {
 			I.Error("W_InitFiles: no files found");
 
 		CoalesceMarkedResource("S_START", "S_END", li_namespace.ns_sprites);
-//		CoalesceMarkedResource("F_START", "F_END", li_namespace.ns_flats);
+		CoalesceMarkedResource("F_START", "F_END", li_namespace.ns_flats);
+		// CoalesceMarkedResource("P_START", "P_END", li_namespace.ns_flats);
 		
 		// set up caching
 		size = numlumps;
