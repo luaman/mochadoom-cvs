@@ -6287,12 +6287,6 @@ validcount++;
           
           MyThings.InitSpriteDefs2 (namelist);
           
-          try {
-			System.in.read();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		};
       }
 
       /** To be called right after PrecacheLevel from SetupLevel in LevelLoader.
