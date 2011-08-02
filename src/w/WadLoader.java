@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.40 2011/08/01 22:09:14 velktron Exp $
+// $Id: WadLoader.java,v 1.41 2011/08/02 13:49:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.41  2011/08/02 13:49:56  velktron
+// Fixed missing handle on generated lumpinfo_t
+//
 // Revision 1.40  2011/08/01 22:09:14  velktron
 // Flats coalescing.
 //
@@ -1181,7 +1184,7 @@ public class WadLoader implements IWadLoader {
 	{
 	  int result = 0;
 	  lumpinfo_t[] marked = new lumpinfo_t[numlumps];
-	  C2JUtils.initArrayOfObjects(marked, lumpinfo_t.class);
+	 // C2JUtils.initArrayOfObjects(marked, lumpinfo_t.class);
 	  int num_marked = 0, num_unmarked = 0;
 	  boolean is_marked = false, mark_end = false;
 	  lumpinfo_t lump;
@@ -1195,9 +1198,11 @@ public class WadLoader implements IWadLoader {
 //	    			start_marker,i);
 	        if (num_marked==0)
 	          {
+	        	marked[num_marked]=new lumpinfo_t();
 	            marked[num_marked].name=new String(start_marker);
 	            marked[num_marked].size = 0;  // killough 3/20/98: force size to be 0
 	            marked[num_marked].namespace =li_namespace.ns_global;        // killough 4/17/98
+	            marked[num_marked].handle=lump.handle;
 	            // No real use for this yet
 	            // marked[num_marked].wadfile = null;
 	            num_marked = 1;
