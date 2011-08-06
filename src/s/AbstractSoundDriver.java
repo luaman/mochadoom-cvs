@@ -148,7 +148,7 @@ public abstract class AbstractSoundDriver
         // Remove the cached lump.
         DS.Z.Free(DS.W.CacheLumpNum(sfxlump, 0, DoomBuffer.class));
 
-        if (D) System.out.printf("SFX %d size %d padded to %d\n", index, size,paddedsize);
+        if (D) System.out.printf("SFX %d name %s size %d padded to %d\n", index, S_sfx[index].name, size,paddedsize);
         // Preserve padded length.
         len[index] = paddedsize;
 

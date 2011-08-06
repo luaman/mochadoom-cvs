@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.8 2011/07/08 17:03:57 velktron Exp $
+// $Id: ISound.java,v 1.9 2011/08/06 17:45:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -54,7 +54,7 @@ public interface ISound {
 	public static final int NUMSFX	=	sfxenum_t.NUMSFX.ordinal() ; 
 	public static final int MAXHANDLES = 100;
 	// 1 chunk buffers 1 tic of events.
-	public static final int BUFFER_CHUNKS=3;
+	public static final int BUFFER_CHUNKS=4;
 	
 	// Init at program start...
 	void InitSound();
@@ -109,6 +109,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.9  2011/08/06 17:45:38  velktron
+// An improved (asynchronous) variant of ClassicDoomSoundDriver. Mantains proper output even under very bad CPU load.
+//
 // Revision 1.8  2011/07/08 17:03:57  velktron
 // Set SAMPLECOUNT to SAMPLERATE/TICRATE+1
 //
