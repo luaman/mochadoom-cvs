@@ -2,10 +2,6 @@ package s;
 
 import static data.sounds.S_sfx;
 
-import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -30,11 +26,15 @@ import doom.DoomStatus;
  * 
  * PROS:
  * a) All those of ClassicSoundDriver plus
- * b) Continues normal playback even under heavy CPU load.
+ * b) Continues normal playback even under heavy CPU load, works smoother
+ *    even on lower powered CPUs.
  * 
  * CONS:
  * a) All those of ClassicSoundDriver plus
- * b) Sounds a bit glitchy at times
+ * b) Sounds a bit glitchy at times, if the system timing sucks. Ideal update
+ *    period is 28 ms, windoze will probably blow it to something like 30-32
+ *    if you're lucky, which still sounds mostly OK. Shorter intervals sound 
+ *    too high pitched and mechanical, lower ones sound like t3h bug.
  * 
  * @author Maes
  */
@@ -71,7 +71,10 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         update_mixer.drainPermits();
         this.MIXSRV=new MixServer(numChannels);
         mixtimer= new Timer();
-        mixtimer.schedule(new SoundTimer(), 0,17);
+        // Sound tics every 1/35th of a second. Grossly
+        // inaccurate under Windows though, will get rounded
+        // down to the closest multiple of 15 or 16 ms.
+        mixtimer.schedule(new SoundTimer(), 0,1000/35);
         
     }
 
@@ -782,7 +785,6 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 	        			updateChannel(m);
 	        		} else insertChannel(m);			
 	        		}
-	        		System.err.println("Processed messages "+messages);
 	        	}
 	        
 	        private final void stopChannel(int channel){
