@@ -108,7 +108,8 @@ public enum think_t {
 	T_MoveCeiling(1),
 	T_MoveFloor(1),
 	T_VerticalDoor(1),
-	T_PlatRaise(1);
+	T_PlatRaise(1), 
+	T_SlidingDoor(1);
 	
     think_t(){
 	    type=0; // Default, but Doom has no "type 0" functions!
