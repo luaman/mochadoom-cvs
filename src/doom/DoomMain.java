@@ -59,6 +59,7 @@ import s.DummySFX;
 import s.DummySoundDriver;
 import s.IDoomSound;
 import s.SpeakerDoomSoundDriver;
+import s.SuperDoomSoundDriver;
 //import s.SpeakerDoomSoundDriver;
 
 import savegame.IDoomSaveGame;
@@ -91,7 +92,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.82 2011/08/01 07:35:54 velktron Exp $
+// $Id: DoomMain.java,v 1.83 2011/08/22 14:35:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -117,7 +118,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.82 2011/08/01 07:35:54 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.83 2011/08/22 14:35:50 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1167,7 +1168,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             if (CM.CheckParmBool("-clipsound"))
                 this.ISND=  new ClipSFXModule(this,numChannels);
             else  // This is the default
+            if (CM.CheckParmBool("-classicsound"))
                 this.ISND=  new ClassicDoomSoundDriver(this,numChannels);
+            else  // This is the default
+                this.ISND=  new SuperDoomSoundDriver(this,numChannels);
+
             }
         
         if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
@@ -4183,6 +4188,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.83  2011/08/22 14:35:50  velktron
+//Now using "super" sound driver as default.
+//
 //Revision 1.82  2011/08/01 07:35:54  velktron
 //Fixed broken -speakersound selector.
 //
