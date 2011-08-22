@@ -6,15 +6,16 @@ import pooling.RoguePatchMap;
 import pooling.RoguePatchMap2;
 
 public class TestPatchMaps {
-    public static final int TESTS=200000;
+    public static final int TESTS=2000000;
+    public static final int SET=30;
     public static final int REPS=50;
-    static byte[][][] stuff=new byte[TESTS][1][1];
+    static byte[][][] stuff=new byte[SET][1][1];
     static byte[][][] stuff2=new byte[TESTS][][];
 	// A normal hashmap....
 	static HashMap<Integer,byte[][]> map1= new HashMap<Integer,byte[][]> ();
 	
 	// And a NEW and ENHANCED implementation.
-	static RoguePatchMap2 map2=new RoguePatchMap2();
+	static RoguePatchMap map2=new RoguePatchMap();
 	
     public static void main(String[] argv){
     
@@ -42,7 +43,7 @@ public class TestPatchMaps {
     	
     	long a=System.nanoTime();
     	for (int i=0;i<TESTS;i++){
-    		map1.put(i, stuff[i]);
+    		map1.put(i%SET, stuff[i%SET]);
     	}
     	long b=System.nanoTime();
     	
@@ -53,7 +54,7 @@ public class TestPatchMaps {
     	
     	long a=System.nanoTime();
     	for (int i=0;i<TESTS;i++){
-    		stuff2[i]=map1.get(i);
+    		stuff2[i]=map1.get(i%SET);
     	}
     	long b=System.nanoTime();
     	
@@ -64,7 +65,7 @@ public class TestPatchMaps {
     	
     	long a=System.nanoTime();
     	for (int i=0;i<TESTS;i++){
-    		map2.put(i, stuff[i]);
+    		map2.put(i%SET, stuff[i%SET]);
     	}
     	long b=System.nanoTime();
     	
@@ -75,7 +76,7 @@ public class TestPatchMaps {
     	
     	long a=System.nanoTime();
     	for (int i=0;i<TESTS;i++){
-    		stuff2[i]=map2.get(i);
+    		stuff2[i]=map2.get(i%SET);
     	}
     	long b=System.nanoTime();
     	
