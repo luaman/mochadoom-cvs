@@ -1,7 +1,6 @@
 package m;
 
 import i.DoomSystem;
-
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,15 +10,15 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
+import doom.DoomStatus;
 import utils.C2JUtils;
 import w.DoomFile;
 import w.IWritableDoomObject;
-import doom.DoomStatus;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.24.2.4 2011/07/31 11:55:12 velktron Exp $
+// $Id: MenuMisc.java,v 1.24.2.5 2011/08/22 15:30:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -43,7 +42,7 @@ import doom.DoomStatus;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.24.2.4 2011/07/31 11:55:12 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.24.2.5 2011/08/22 15:30:26 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -395,14 +394,11 @@ public abstract class MenuMisc{
 }
 
 // $Log: MenuMisc.java,v $
-// Revision 1.24.2.4  2011/07/31 11:55:12  velktron
-// Removed rogue import.
+// Revision 1.24.2.5  2011/08/22 15:30:26  velktron
+// Errr...just like HEAD.
 //
-// Revision 1.24.2.3  2011/07/31 11:54:07  velktron
-// Added HELP screen stbar cleanup, alwaysrun var, removed unused exports.
-//
-// Revision 1.24.2.2  2011/07/28 08:18:47  velktron
-// Merged in v1.5 release cleanups and some last-minute fixes.
+// Revision 1.26  2011/07/30 22:04:30  velktron
+// Removed unused imports (including one that would cause problems compiling with OpenJDK).
 //
 // Revision 1.25  2011/07/15 13:53:52  velktron
 // Implemented WritePCXFile, at last.
