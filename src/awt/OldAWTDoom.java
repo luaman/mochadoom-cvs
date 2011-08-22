@@ -491,8 +491,8 @@ public class OldAWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: OldAWTDoom.java,v $
-//Revision 1.2.2.2  2011/07/31 11:43:57  velktron
-//Added new autorun/capslock sensing.
+//Revision 1.2.2.3  2011/08/22 15:34:45  velktron
+//All new shitty stuff.
 //
 //Revision 1.3  2011/07/15 13:57:54  velktron
 //Implement VI.ReadScreen as a future good practice.

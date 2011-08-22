@@ -60,6 +60,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 
     private static final long serialVersionUID = 3118508722502652276L;
 
+    private static final boolean D=false;
     
 	
 	// Must be aware of "Doom" so we can pass it event messages inside a crude queue.
@@ -378,7 +379,7 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
     } 
 	
 	public void setGamma(int level){
-		System.out.println("Setting gamma "+level);
+		if (D) System.err.println("Setting gamma "+level);
 		screens=V.getBufferedScreens(0, cmaps[level]);
 		RAWSCREEN=V.getScreen(0);
 	}
@@ -479,8 +480,11 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom.java,v $
-//Revision 1.9.2.2  2011/07/31 11:43:57  velktron
-//Added new autorun/capslock sensing.
+//Revision 1.9.2.3  2011/08/22 15:34:45  velktron
+//All new shitty stuff.
+//
+//Revision 1.11  2011/08/01 00:59:57  velktron
+//Shut up debug messages.
 //
 //Revision 1.10  2011/07/15 13:57:54  velktron
 //Implement VI.ReadScreen as a future good practice.
