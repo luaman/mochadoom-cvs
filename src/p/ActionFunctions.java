@@ -173,7 +173,7 @@ public class ActionFunctions implements DoomStatusAware{
         this.LL=DS.LL;
         this.DS=DS.DM;
         this.DG=DS.DG;
-        this.SL=DS.SL;
+//        this.SL=DS.SL;
 	}
 	
 	protected Actions A;
