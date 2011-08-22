@@ -145,19 +145,30 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
      /**
       * P_FindHighestFloorSurrounding() FIND HIGHEST FLOOR HEIGHT IN SURROUNDING
       * SECTORS
+      *
+      *   Compatibility problem: apparently this is hardcoded for
+      *   vanilla compatibility (instead of Integer.MIN_VALUE), but
+      *   it will cause some "semi-Boom" maps not to work, since
+      *   it won't be able to lower stuff below -500 units. 
+      *   The correct fix here would be to allow for -compatlevel style
+      *   options. Maybe later.
       * 
       * @param sec
       */
-     public int FindHighestFloorSurrounding() {
+     @SuppressWarnings("unused")
+	public int FindHighestFloorSurrounding() {
          int i;
          line_t check;
          sector_t other;
+
          int floor = -500 * FRACUNIT;
 
          for (i = 0; i < this.linecount; i++) {
              check = this.lines[i];
              other = check.getNextSector( this);
-
+ 
+             // The compiler nags about this being unreachable, but
+             // it's not true.
              if (other == null)
                  continue;
 

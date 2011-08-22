@@ -23,6 +23,8 @@ import doom.DoomStatus;
 import w.DoomBuffer;
 import w.IWadLoader;
 import w.WadLoader;
+import w.li_namespace;
+import w.lumpinfo_t;
 
 /** An attempt to separate texture mapping functionality from
  *  the rest of the rendering. Seems to work like a charm, and
@@ -253,9 +255,7 @@ public class SimpleTextureManager
         totalwidth = 0;
         
         //  Really complex printing shit...
-        temp1 = W.GetNumForName ("S_START");  // P_???????
-        temp2 = W.GetNumForName ("S_END") - 1;
-        temp3 = ((temp2-temp1+63)/64) + ((numtextures+63)/64);
+
         System.out.print("[");
         for (int i=0 ; i<numtextures ; i++,directory++)
         {
@@ -383,6 +383,9 @@ public class SimpleTextureManager
         // for each patch in a texture...
         for (int i=0; i<texture.patchcount;i++)
         {
+        lumpinfo_t lump = W.GetLumpInfo(patch[i].patch);
+        // Skip flats on walls, for now.
+        if (lump.namespace==li_namespace.ns_flats) continue;
         realpatch = (patch_t) W.CacheLumpNum (patch[i].patch, PU_CACHE,patch_t.class);
         x1 = patch[i].originx;
         x2 = x1 + realpatch.width;
@@ -606,10 +609,17 @@ public class SimpleTextureManager
      * Scans WADs for F_START/F_END lumps, and also any additional
      * F1_ and F2_ pairs.
      * 
-     * Correct behavior would be to detect F_START/F_END lumps, and skip any marker lumps
-     * sandwiched in between. If F_START and F_END are external, use external override.
-     * Also, in the presence of external FF_START lumps, merge their contents with those previously read.
+     * Correct behavior would be to detect F_START/F_END lumps, 
+     * and skip any marker lumps sandwiched in between. If F_START and F_END are external, 
+     * use external override.
      * 
+     * Also, in the presence of external FF_START lumps, merge their contents 
+     * with those previously read.
+     * 
+     * The method is COMPATIBLE with resource pre-coalesing, however it's not 
+     * trivial to change back to the naive code because of the "translationless"
+     * system used (all flats are assumed to lie in a linear space). This 
+     * speeds up lookups.
      *
      */
     
@@ -619,7 +629,8 @@ public class SimpleTextureManager
         numflats=0;
         int extendedflatstart=-1;
         firstflat=W.GetNumForName(LUMPSTART); // This is the start of normal lumps.
-        if (FlatCache==null) FlatCache=new Hashtable<Integer,Integer>(); else FlatCache.clear();
+        if (FlatCache==null) FlatCache=new Hashtable<Integer,Integer>(); 
+        else FlatCache.clear();
         Hashtable<String,Integer> FlatNames=new Hashtable<String,Integer> (); // Store names here.
         
         // Normally, if we don't use Boom features, we could look for F_END and that's it.
@@ -660,21 +671,12 @@ public class SimpleTextureManager
         lump=extendedflatstart;
         
         // Safeguard: FF_START without corresponding F_END (e.g. in helltest.wad)
-        boolean sane=false;
-        for (int i=lump;i<W.NumLumps();i++){
-            String name2=W.GetNameForNum(i);
-            if (name2.equalsIgnoreCase(LUMPEND)||name2.equalsIgnoreCase(DEUTEX_END)) 
-            {   sane=true;
-                break;
-            }
-        }
-        
-        // Break out of here if FF_START was spurious.        
-        if (sane) {
-            name=W.GetNameForNum(lump);
+    
+        name=W.GetNameForNum(lump);
             
         // The end of those extended flats is also marked by F_END or FF_END, as noted above.
-        while (!(name.equalsIgnoreCase(LUMPEND)||name.equalsIgnoreCase(DEUTEX_END))){
+        // It can also be non-existent in some broken maps like helltest.wad. Jesus.
+        while (!(name==null || name.equalsIgnoreCase(LUMPEND)||name.equalsIgnoreCase(DEUTEX_END))){
             if (!W.isLumpMarker(lump)){
                 // Not a marker. Check if it's supposed to replace something.
                 if (FlatNames.containsKey(name)){
@@ -698,7 +700,7 @@ public class SimpleTextureManager
             name=W.GetNameForNum(lump);
         }
         }
-        }
+        
         // So now we have a lump -> sequence number mapping.
 
             // Create translation table for global animation.
