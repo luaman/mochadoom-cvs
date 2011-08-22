@@ -827,19 +827,6 @@ public class Actions extends UnifiedGameMap {
           return rtn;
       }
       
-      
-      /**
-      //
-      // Sliding door frame information
-      //
-      slidename_t    slideFrameNames[MAXSLIDEDOORS] =
-      {
-          {"GDOORF1","GDOORF2","GDOORF3","GDOORF4",  // front
-           "GDOORB1","GDOORB2","GDOORB3","GDOORB4"}, // back
-          
-          {"\0","\0","\0","\0"}
-      };
-      */
 
 
       //
@@ -1270,219 +1257,8 @@ public class Actions extends UnifiedGameMap {
       }
 
 
-      // UNUSED
-      // Separate into p_slidoor.c?
 
-      /*
-      // ABANDONED TO THE MISTS OF TIME!!!
-      //
-      // EV_SlidingDoor : slide a door horizontally
-      // (animate midtexture, then set noblocking line)
-      //
-
-
-      slideframe_t slideFrames[MAXSLIDEDOORS];
-
-      void P_InitSlidingDoorFrames(void)
-      {
-          int        i;
-          int        f1;
-          int        f2;
-          int        f3;
-          int        f4;
-         
-          // DOOM II ONLY...
-          if ( gamemode != commercial)
-         return;
-         
-          for (i = 0;i < MAXSLIDEDOORS; i++)
-          {
-         if (!slideFrameNames[i].frontFrame1[0])
-             break;
-                 
-         f1 = R_TextureNumForName(slideFrameNames[i].frontFrame1);
-         f2 = R_TextureNumForName(slideFrameNames[i].frontFrame2);
-         f3 = R_TextureNumForName(slideFrameNames[i].frontFrame3);
-         f4 = R_TextureNumForName(slideFrameNames[i].frontFrame4);
-
-         slideFrames[i].frontFrames[0] = f1;
-         slideFrames[i].frontFrames[1] = f2;
-         slideFrames[i].frontFrames[2] = f3;
-         slideFrames[i].frontFrames[3] = f4;
-             
-         f1 = R_TextureNumForName(slideFrameNames[i].backFrame1);
-         f2 = R_TextureNumForName(slideFrameNames[i].backFrame2);
-         f3 = R_TextureNumForName(slideFrameNames[i].backFrame3);
-         f4 = R_TextureNumForName(slideFrameNames[i].backFrame4);
-
-         slideFrames[i].backFrames[0] = f1;
-         slideFrames[i].backFrames[1] = f2;
-         slideFrames[i].backFrames[2] = f3;
-         slideFrames[i].backFrames[3] = f4;
-          }
-      }
-
-
-      //
-      // Return index into "slideFrames" array
-      // for which door type to use
-      //
-      int P_FindSlidingDoorType(line_t*  line)
-      {
-          int        i;
-          int        val;
-         
-          for (i = 0;i < MAXSLIDEDOORS;i++)
-          {
-         val = sides[line.sidenum[0]].midtexture;
-         if (val == slideFrames[i].frontFrames[0])
-             return i;
-          }
-         
-          return -1;
-      }
-
-      void T_SlidingDoor (slidedoor_t*   door)
-      {
-          switch(door.status)
-          {
-            case sd_opening:
-         if (!door.timer--)
-         {
-             if (++door.frame == SNUMFRAMES)
-             {
-             // IF DOOR IS DONE OPENING...
-             sides[door.line.sidenum[0]].midtexture = 0;
-             sides[door.line.sidenum[1]].midtexture = 0;
-             door.line.flags &= ML_BLOCKING^0xff;
-                         
-             if (door.type == sdt_openOnly)
-             {
-                 door.frontsector.specialdata = NULL;
-                 P_RemoveThinker (&door.thinker);
-                 break;
-             }
-                         
-             door.timer = SDOORWAIT;
-             door.status = sd_waiting;
-             }
-             else
-             {
-             // IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
-             door.timer = SWAITTICS;
-                         
-             sides[door.line.sidenum[0]].midtexture =
-                 slideFrames[door.whichDoorIndex].
-                 frontFrames[door.frame];
-             sides[door.line.sidenum[1]].midtexture =
-                 slideFrames[door.whichDoorIndex].
-                 backFrames[door.frame];
-             }
-         }
-         break;
-                 
-            case sd_waiting:
-         // IF DOOR IS DONE WAITING...
-         if (!door.timer--)
-         {
-             // CAN DOOR CLOSE?
-             if (door.frontsector.thinglist != NULL ||
-             door.backsector.thinglist != NULL)
-             {
-             door.timer = SDOORWAIT;
-             break;
-             }
-
-             //door.frame = SNUMFRAMES-1;
-             door.status = sd_closing;
-             door.timer = SWAITTICS;
-         }
-         break;
-                 
-            case sd_closing:
-         if (!door.timer--)
-         {
-             if (--door.frame < 0)
-             {
-             // IF DOOR IS DONE CLOSING...
-             door.line.flags |= ML_BLOCKING;
-             door.frontsector.specialdata = NULL;
-             P_RemoveThinker (&door.thinker);
-             break;
-             }
-             else
-             {
-             // IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
-             door.timer = SWAITTICS;
-                         
-             sides[door.line.sidenum[0]].midtexture =
-                 slideFrames[door.whichDoorIndex].
-                 frontFrames[door.frame];
-             sides[door.line.sidenum[1]].midtexture =
-                 slideFrames[door.whichDoorIndex].
-                 backFrames[door.frame];
-             }
-         }
-         break;
-          }
-      }
-
-
-
-      void
-      EV_SlidingDoor
-      ( line_t*  line,
-        mobj_t*  thing )
-      {
-          sector_t       sec;
-          slidedoor_t*   door;
-         
-          // DOOM II ONLY...
-          if (DM.gamemode != commercial)
-         return;
-          
-          // Make sure door isn't already being animated
-          sec = line.frontsector;
-          door = NULL;
-          if (sec.specialdata)
-          {
-         if (!thing.player)
-             return;
-                 
-         door = sec.specialdata;
-         if (door.type == sdt_openAndClose)
-         {
-             if (door.status == sd_waiting)
-             door.status = sd_closing;
-         }
-         else
-             return;
-          }
-          
-          // Init sliding door vars
-          if (!door)
-          {
-         door = Z_Malloc (sizeof(*door), PU_LEVSPEC, 0);
-         P_AddThinker (&door.thinker);
-         sec.specialdata = door;
-             
-         door.type = sdt_openAndClose;
-         door.status = sd_opening;
-         door.whichDoorIndex = P_FindSlidingDoorType(line);
-
-         if (door.whichDoorIndex < 0)
-             system.Error("EV_SlidingDoor: Can't use texture for sliding door!");
-                 
-         door.frontsector = sec;
-         door.backsector = line.backsector;
-         door.thinker.function = T_SlidingDoor;
-         door.timer = SWAITTICS;
-         door.frame = 0;
-         door.line = line;
-          }
-      }
-      */
-
+      
   //
   // P_BulletSlope
   // Sets a slope so a near miss is at aproximately
@@ -2508,6 +2284,11 @@ CheckMissileSpawn (th);
     {
         mobjtype_t  item;
         mobj_t mo;
+        
+        // Maes: this seems necessary in order for barrel damage
+        // to propagate inflictors. E.g. chained barrel explosions.
+        // Normally, they only propagate through one barrel.
+        // target.target=source;
         
         target.flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 
@@ -4414,9 +4195,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
        break;
        
        //UNUSED - Door Slide Open&Close
-       // case 124:
-       // EV_SlidingDoor (line, thing);
-       // break;
+        case 124:
+         // NOTE: clashes with secret level exit.
+         //SL.EV_SlidingDoor (line, thing);
+         break;
 
        // SWITCHES
           case 7:
@@ -4880,57 +4662,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      return true;    // everything was checked
     }
 
-    //
-    //P_TraverseIntercepts
-    //Returns true if the traverser function returns true
-    //for all lines.
-    //
-    boolean
-    TraverseIntercepts
-    ( PTR_InterceptFunc   func,
-    int   maxfrac )
-    {
-     int         count;
-     int     dist; //fixed_t
-     intercept_t    in=null;  // shut up compiler warning
-     
-     count = intercept_p;
 
-     while (count-->0)
-     {
-     dist = MAXINT;
-     for (int scan = 0 ; scan<intercept_p ; scan++)
-     {
-         if (intercepts[scan].frac < dist)
-         {
-         dist = intercepts[scan].frac;
-         in = intercepts[scan];
-         }
-     }
-     
-     if (dist > maxfrac)
-         return true;    // checked everything in range      
-
-    /*  // UNUSED
-     {
-     // don't check these yet, there may be others inserted
-     in = scan = intercepts;
-     for ( scan = intercepts ; scan<intercept_p ; scan++)
-         if (scan.frac > maxfrac)
-         *in++ = *scan;
-     intercept_p = in;
-     return false;
-     }
-    */
-
-         if ( !func.invoke(in) )
-         return false;   // don't bother going farther
-
-     in.frac = MAXINT;
-     }
-     
-     return true;        // everything was traversed
-    }
     
     /**
      * P_PathTraverse
@@ -5476,7 +5208,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
           SW.buttonlist[i].reset();
 
       // UNUSED: no horizonal sliders.
-      //  P_InitSlidingDoorFrames();
+      // if (SL!=null) {
+      // SL.updateStatus(DM);
+      //  SL.P_InitSlidingDoorFrames();
+      //}
   }
   
   
