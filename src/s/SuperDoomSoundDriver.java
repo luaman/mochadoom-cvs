@@ -18,23 +18,23 @@ import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 
 /**
- * A (quite heavy) modification of the Classic sound driver. Now mixing is
- * entirely asynchronous (runs in its own thread) and even has its own timer.
+ * A spiffy new sound system, based on the Classic sound driver.
+ * It is entirely asynchronous (runs in its own thread) and even has its own timer.
  * This allows it to continue mixing even when the main loop is not responding 
  * (something which, arguably, could be achieved just with a timer calling
- * UpdateSound and SubmitSound).
+ * UpdateSound and SubmitSound). Uses message passing to deliver channel status
+ * info, and mixed audio directly without using an intermediate buffer,
+ * saving memory bandwidth.
  * 
  * PROS:
- * a) All those of ClassicSoundDriver plus
+ * a) All those of ClassicSoundDriver plus:
  * b) Continues normal playback even under heavy CPU load, works smoother
  *    even on lower powered CPUs.
+ * c) More efficient due to less copying of audio blocks.
+ * c) Fewer audio glitches compared to ClassicSoundDriver.
  * 
  * CONS:
- * a) All those of ClassicSoundDriver plus
- * b) Sounds a bit glitchy at times, if the system timing sucks. Ideal update
- *    period is 28 ms, windoze will probably blow it to something like 30-32
- *    if you're lucky, which still sounds mostly OK. Shorter intervals sound 
- *    too high pitched and mechanical, lower ones sound like t3h bug.
+ * a) All those of ClassicSoundDriver plus regarding timing accuracy.
  * 
  * @author Maes
  */
@@ -59,7 +59,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     protected HashMap<Integer, byte[]> cachedSounds =
         new HashMap<Integer, byte[]>();
 
-    protected final Timer mixtimer;
+    protected final Timer MIXTIMER;
         
     public SuperDoomSoundDriver(DoomStatus DS, int numChannels) {
     	super(DS,numChannels);
@@ -70,11 +70,11 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         produce.drainPermits();
         update_mixer.drainPermits();
         this.MIXSRV=new MixServer(numChannels);
-        mixtimer= new Timer();
+        MIXTIMER= new Timer();
         // Sound tics every 1/35th of a second. Grossly
         // inaccurate under Windows though, will get rounded
         // down to the closest multiple of 15 or 16 ms.
-        mixtimer.schedule(new SoundTimer(), 0,1000/35);
+        MIXTIMER.schedule(new SoundTimer(), 0,SOUND_PERIOD);
         
     }
 
@@ -87,7 +87,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
      * mixbuffer. Memory order is LSB (?) and channel order is L-R-L-R...
      */
 
-    protected final byte[] mixbuffer = new byte[MIXBUFFERSIZE];
+    protected byte[] mixbuffer;// = new byte[MIXBUFFERSIZE];
 
 
     /** These are still defined here to decouple them from the mixer's 
@@ -148,8 +148,6 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     @Override
     public void InitSound() {
 
-        int i;
-
         // Secure and configure sound device first.
         System.err.println("I_InitSound: ");
 
@@ -163,7 +161,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         if (AudioSystem.isLineSupported(info))
             try {
                 line = (SourceDataLine) AudioSystem.getSourceDataLine(format);
-                line.open(format, mixbuffer.length * BUFFER_CHUNKS);
+                line.open(format, MIXBUFFERSIZE * BUFFER_CHUNKS);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.print("Could not play signed 16 data\n");
@@ -172,14 +170,6 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         if (line != null)
             System.err.print(" configured audio device\n");
         line.start();
-
-        // This was here only for debugging purposes
-        /*
-         try { fos=new FileOutputStream("test.raw"); dao=new
-         DataOutputStream(fos); } catch (FileNotFoundException e) {
-          // Auto-generated catch block 
-         	 e.printStackTrace(); }
-        */ 
 
         SOUNDSRV = new PlaybackServer(line);
         SOUNDTHREAD = new Thread(SOUNDSRV);
@@ -195,23 +185,6 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         super.initSound8();
 
         System.err.print(" pre-cached all sound data\n");
-
-        // Now initialize mixbuffer with zero.
-        for (i = 0; i < MIXBUFFERSIZE; i += 4) {
-            mixbuffer[i] =
-                (byte) (((int) (0x7FFF * Math.sin(2.0 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
-            mixbuffer[i + 1] =
-                (byte) ((int) (0x7FFF * Math.sin(2.0 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff);
-            mixbuffer[i + 2] =
-                (byte) (((int) (0x7FFF * Math.sin(2.0 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
-            mixbuffer[i + 3] =
-                (byte) ((int) (0x7FFF * Math.sin(2.0 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff);
-
-        }
 
         // Finished initialization.
         System.err.print("I_InitSound: sound module ready\n");
@@ -370,7 +343,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
             }
 
-            // System.err.printf("%d channels died off\n",i);
+            //System.err.printf("%d channels died off\n",i);
 
             UpdateSound();
             SubmitSound();
@@ -577,6 +550,8 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 	        // Mix the next chunk, regardless of what the rest of the game is doing. 
 	        while (!terminate) {
 	        	
+
+				
 	        	update=false;
 		        // POINTERS to Left and right channel
 		        // which are in global mixbuffer, alternating.
@@ -599,8 +574,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 						this.update=true;
 						//System.err.print("...broke free\n");
 					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						// Nothing to do. Suck it down.
 					}
 	        	
 	        	if (update){
@@ -620,7 +594,14 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 	        	}
 	        
 	        
-	        if (mixed) // Avoid mixing entirely if no active channel.
+	        if (mixed) {// Avoid mixing entirely if no active channel.
+			
+				// Get audio chunk NOW
+				gunk= audiochunkpool.checkOut();
+    	        // Ha ha you're ass is mine!
+    	        gunk.free = false;
+				mixbuffer=gunk.buffer;
+			
 	        while (leftout < leftend) {
 	            // Reset left/right value.
 	            dl = 0;
@@ -721,35 +702,38 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 	            leftout += step;
 	            rightout += step;
 	        } // End leftend/leftout while
-	        
+
 	       // for (chan = 0; chan < numChannels; chan++) {
 	       // 	if (channels[chan]!=null){
 	       // 		System.err.printf("Channel %d pointer %d\n",chan,this.p_channels[chan]);
 	       // 	}
 	       // }
 
+		   } // if-mixed
+		   
 	        // After an entire buffer has been mixed, we can apply any updates.
-
+			// This includes silent updates.
 	        submitSound();
+			
 	        
 	        } // terminate loop
     	}	
     	
+		private AudioChunk gunk;
+		
     		private final void submitSound(){
     			// It's possible to stay entirely silent and give the audio
     	        // queue a chance to get drained. without sending any data.
     			// Saves BW and CPU cycles.
     	        if (mixed) {
     	            silence=0;
-    	            AudioChunk gunk = audiochunkpool.checkOut();
-    	            // Ha ha you're ass is mine!
-    	            gunk.free = false;
+
 
     	            // System.err.printf("Submitted sound chunk %d to buffer %d \n",chunk,mixstate);
 
     	            // Copy the currently mixed chunk into its position inside the
     	            // master buffer.
-    	            System.arraycopy(mixbuffer, 0, gunk.buffer, 0, MIXBUFFERSIZE);
+    	            // System.arraycopy(mixbuffer, 0, gunk.buffer, 0, MIXBUFFERSIZE);
 
     	            SOUNDSRV.addChunk(gunk);
 
@@ -773,6 +757,14 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     	        }
     		}
     	
+    		/** Drains message queue and applies to individual channels. 
+    		 *  More recently enqueued messages will trump older ones. This method
+    		 *  only changes the STATUS of channels, and actual message submissions 
+    		 *  can occur at most every sound frame. 
+    		 *  
+    		 * @param messages
+    		 */
+    		
 	        private void drainAndApply(int messages ) {			
 	        	MixMessage m;
 	        	for (int i=0;i<messages;i++){
