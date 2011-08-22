@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.9 2011/08/06 17:45:38 velktron Exp $
+// $Id: ISound.java,v 1.10 2011/08/22 10:09:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -44,17 +44,27 @@ public interface ISound {
 	public static final int BUFMUL            =      4;
 
 	public static final int SAMPLERATE	=	11025;	// Hz
+	
+	// Update all 30 millisecs, approx. 30fps synchronized.
+	// Linux resolution is allegedly 10 millisecs,
+	//  scale is microseconds.
+	public static final int SOUND_INTERVAL =    500;
+	
+	/** Yes, it's possible to select a different sound frame rate */
+	
+	public static final int SND_FRAME_RATE =21;
 	// Was 512, but if you mix that many samples per tic you will
 	// eventually outrun the buffer :-/ I fail to see the mathematical
 	// justification behind this, unless they simply wanted the buffer to 
 	// be a nice round number in size.
-	public static final int SAMPLECOUNT		=1+SAMPLERATE/TICRATE;
+	public static final int SAMPLECOUNT		=SAMPLERATE/SND_FRAME_RATE;
 	public static final int MIXBUFFERSIZE		=(SAMPLECOUNT*BUFMUL);
 	public static final int SAMPLESIZE	=	16 ;  	// 16bit
 	public static final int NUMSFX	=	sfxenum_t.NUMSFX.ordinal() ; 
 	public static final int MAXHANDLES = 100;
 	// 1 chunk buffers 1 tic of events.
-	public static final int BUFFER_CHUNKS=4;
+	public static final int BUFFER_CHUNKS=10;
+	public static final int SOUND_PERIOD = 1000/SND_FRAME_RATE; // in ms
 	
 	// Init at program start...
 	void InitSound();
@@ -109,6 +119,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.10  2011/08/22 10:09:28  velktron
+// Explicit specification of audio frame rate.
+//
 // Revision 1.9  2011/08/06 17:45:38  velktron
 // An improved (asynchronous) variant of ClassicDoomSoundDriver. Mantains proper output even under very bad CPU load.
 //
