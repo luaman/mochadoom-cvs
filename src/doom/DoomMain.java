@@ -58,6 +58,7 @@ import static utils.C2JUtils.testAccess;
 import hu.HU;
 import i.DoomStatusAware;
 import i.DoomSystem;
+import i.Strings;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -80,10 +81,16 @@ import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
 import s.ClassicDoomSoundDriver;
+import s.ClipSFXModule;
 import s.DavidMusicModule;
 import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
+import s.DummySoundDriver;
+import s.IDoomSound;
+import s.SpeakerDoomSoundDriver;
+import s.SuperDoomSoundDriver;
+//import s.SpeakerDoomSoundDriver;
 import s.DummySoundDriver;
 import s.SpeakerDoomSoundDriver;
 import savegame.IDoomSaveGame;
@@ -104,6 +111,7 @@ import w.DoomFile;
 import w.WadLoader;
 import automap.Map;
 import awt.AWTDoom;
+import awt.MsgBox;
 import awt.OldAWTDoom;
 import data.Tables;
 import data.dstrings;
@@ -129,7 +137,7 @@ import f.Wiper;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.72.2.6 2011/07/31 11:46:32 velktron Exp $
+// $Id: DoomMain.java,v 1.72.2.7 2011/08/22 15:34:30 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -155,7 +163,7 @@ import f.Wiper;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.6 2011/07/31 11:46:32 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.72.2.7 2011/08/22 15:34:30 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -843,6 +851,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 		// Check using a reloadable hack.
         CheckForUltimateDoom(tmpwad);    
        
+		// Check using a reloadable hack.
+        CheckForUltimateDoom(tmpwad);    
+       
         // MAES: better extract a method for this.
         GenerateTitle();
 
@@ -1129,23 +1140,25 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
 
         // Iff additonal PWAD files are used, print modified banner
+        
         if (modifiedgame)
-        {
+        /*{
 
-            System.out.print ("===========================================================================\n");
-            System.out.print ("ATTENTION:  This version of DOOM has been modified.  If you would like to\n");
-            System.out.print ("get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n");
-            System.out.print ("        You will not receive technical support for modified games.\n");
-            System.out.print ("                      press enter to continue\n");
-            System.out.print ("===========================================================================\n");
+            System.out.print (Strings.MODIFIED_GAME);
             try {
                 System.in.read();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        } */
+
+        { MsgBox modified=new MsgBox(null, "Alert", Strings.MODIFIED_GAME_DIALOG, true);
+          if (!modified.isOk()) {
+        	  W.CloseAllHandles();
+        	  System.exit(-2);
+          }
         }
-
-
+        
         // Check and print which version is executed.
         switch ( getGameMode() )
         {
@@ -1209,8 +1222,15 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             else // PC Speaker emulation 
             if (CM.CheckParmBool("-speakersound"))
                 this.ISND=  new SpeakerDoomSoundDriver(this,numChannels);
+            else
+            if (CM.CheckParmBool("-clipsound"))
+                this.ISND=  new ClipSFXModule(this,numChannels);
             else  // This is the default
+            if (CM.CheckParmBool("-classicsound"))
                 this.ISND=  new ClassicDoomSoundDriver(this,numChannels);
+            else  // This is the default
+                this.ISND=  new SuperDoomSoundDriver(this,numChannels);
+
             }
         
         if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
@@ -4227,6 +4247,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.72.2.7  2011/08/22 15:34:30  velktron
+//Popup, new sound system and shit.
+//
 //Revision 1.72.2.6  2011/07/31 11:46:32  velktron
 //Added new autorun checks and sound driver params.
 //
