@@ -134,7 +134,10 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
 
         this.updateStatus(DS);
-        
+        // Normally unused. It clashes with line attribute 124, and looks like ass
+        // anyway. However it's fully implemented.
+        //this.SL=new SlideDoor(DS);
+        //DS.SL=SL;        
         this.FUNS=new ActionFunctions(DS,EN);
         
         // "Wire" all states to the proper functions.
