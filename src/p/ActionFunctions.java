@@ -44,9 +44,7 @@ import static p.mobj_t.MF_SKULLFLY;
 import static p.mobj_t.MF_SOLID;
 import static utils.C2JUtils.eval;
 import static utils.C2JUtils.flags;
-
 import java.util.ArrayList;
-
 import i.DoomStatusAware;
 import p.UnifiedGameMap.Enemies;
 import m.IRandom;
