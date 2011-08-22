@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.26.2.3 2011/07/31 11:55:54 velktron Exp $
+// $Id: LevelLoader.java,v 1.26.2.4 2011/08/22 15:19:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,14 +64,14 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
-// Revision 1.26.2.3  2011/07/31 11:55:54  velktron
-// Reject table warning.
+// Revision 1.26.2.4  2011/08/22 15:19:52  velktron
+// Sync'd with main branch.
 //
-// Revision 1.26.2.2  2011/07/23 16:53:11  jodwin
-// I'M AWESOME AND YOU ARE NOT
+// Revision 1.30  2011/07/27 21:26:19  velktron
+// Quieted down debugging for v1.5 release
 //
-// Revision 1.26.2.1  2011/07/23 12:41:40  velktron
-// Brought up-to-date with Callbacks version. Major changes in Actions, look in ActionFunctions.java for A_ stuff. Minor changes in mobj_t. Includes -angle specific stuff
+// Revision 1.29  2011/07/25 19:56:53  velktron
+// reject matrix size bugfix, fron danmaku branch.
 //
 // Revision 1.28  2011/07/22 15:37:52  velktron
 // Began blockmap autogen code...still WIP
@@ -196,7 +196,7 @@ public class LevelLoader implements DoomStatusAware{
     Actions P;
     IDoomSound S;
 
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26.2.3 2011/07/31 11:55:54 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.26.2.4 2011/08/22 15:19:52 velktron Exp $";
 
   //  
   // MAP related Lookup tables.
@@ -713,7 +713,7 @@ public int bmaporgy;
       bmapheight = blockmaplump[3];
       count = bmapwidth*bmapheight;
       
-      System.err.printf("%d %d %d %d \n",(short)blockmaplump[0],(short)blockmaplump[1],(short)blockmaplump[2],(short)blockmaplump[3]);
+     // System.err.printf("%d %d %d %d \n",(short)blockmaplump[0],(short)blockmaplump[1],(short)blockmaplump[2],(short)blockmaplump[3]);
       
       blockmap=new int[count];
       
@@ -1026,7 +1026,7 @@ public int bmaporgy;
       this.LoadNodes (lumpnum+ML_NODES);
       this.LoadSegs (lumpnum+ML_SEGS);
       this.SanitizeBlockmap();
-      this.getMapBoundingBox();
+      //this.getMapBoundingBox();
       
       byte[] tmpreject=new byte[0];
       
