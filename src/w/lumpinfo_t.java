@@ -25,7 +25,7 @@ typedef struct
   int flags; //e6y
 } lumpinfo_t; */
 
-public class lumpinfo_t {
+public class lumpinfo_t implements Cloneable{
         public String    name;
         public DoomFile     handle;
         public int     position;
@@ -41,7 +41,7 @@ public class lumpinfo_t {
         //public int index;
         
         // For BOOM compatibility
-        public int li_namespace;
+        public li_namespace namespace;
         
         public int hashCode(){
             return hash;
@@ -49,6 +49,20 @@ public class lumpinfo_t {
         
         public String toString(){
             return (name +" "+ Integer.toHexString(hash));
+        }
+        
+        public lumpinfo_t clone(){
+        	lumpinfo_t tmp=new lumpinfo_t();
+        	tmp.name=name; // Well... a reference will do.
+        	tmp.handle=handle;
+        	tmp.position=position;
+        	tmp.size=size;
+        	tmp.hash=hash;
+        	tmp.intname=intname;
+        	tmp.namespace=namespace;
+        	
+			return tmp;
+        	
         }
         
     }
