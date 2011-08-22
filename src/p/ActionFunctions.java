@@ -1,5 +1,6 @@
 package p;
 
+import static data.Defines.ML_BLOCKING;
 import static data.Defines.BT_ATTACK;
 import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MELEERANGE;
@@ -184,7 +185,7 @@ public class ActionFunctions implements DoomStatusAware{
 	protected LevelLoader LL;
 	protected DoomStatus DS;
 	protected IDoomGame DG;
-
+	protected SlideDoor SL;
 
 	ActionType2  WeaponReady;
 	ActionType2  Lower;
@@ -269,6 +270,7 @@ public class ActionFunctions implements DoomStatusAware{
 	ActionTypeSS  MoveFloor;
 	ActionTypeSS  VerticalDoor;
 	ActionTypeSS PlatRaise;
+	ActionTypeSS SlidingDoor;
 	
 	/** Wires a state to an actual callback depending on its
 	 *  enum. This eliminates the need to have a giant
@@ -798,6 +800,9 @@ public class ActionFunctions implements DoomStatusAware{
 	          case	T_PlatRaise:
 	        	  st.acpss=PlatRaise;
 	          	break;
+	          case	T_SlidingDoor:
+	        	  st.acpss=SlidingDoor;
+	          	break;
 	      }
 	      
 	  }
@@ -938,6 +943,77 @@ public class ActionFunctions implements DoomStatusAware{
 	
 	}
 
+	class T_SlidingDoor implements ActionTypeSS {
+
+		@Override
+		public void invoke(Object a) {
+
+			slidedoor_t door = (slidedoor_t) a;
+			switch (door.status) {
+			case sd_opening:
+				if (door.timer-- == 0) {
+					if (++door.frame == SlideDoor.SNUMFRAMES) {
+						// IF DOOR IS DONE OPENING...
+						LL.sides[door.line.sidenum[0]].midtexture = 0;
+						LL.sides[door.line.sidenum[1]].midtexture = 0;
+						door.line.flags &= ML_BLOCKING ^ 0xff;
+
+						if (door.type == sdt_e.sdt_openOnly) {
+							door.frontsector.specialdata = null;
+							A.RemoveThinker(door);
+							break;
+						}
+
+						door.timer = SlideDoor.SDOORWAIT;
+						door.status = sd_e.sd_waiting;
+					} else {
+						// IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
+						door.timer = SlideDoor.SWAITTICS;
+
+						LL.sides[door.line.sidenum[0]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
+						LL.sides[door.line.sidenum[1]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
+					}
+				}
+				break;
+
+			case sd_waiting:
+				// IF DOOR IS DONE WAITING...
+				if (door.timer-- == 0) {
+					// CAN DOOR CLOSE?
+					if (door.frontsector.thinglist != null
+							|| door.backsector.thinglist != null) {
+						door.timer = SlideDoor.SDOORWAIT;
+						break;
+					}
+
+					// door.frame = SNUMFRAMES-1;
+					door.status = sd_e.sd_closing;
+					door.timer = SlideDoor.SWAITTICS;
+				}
+				break;
+
+			case sd_closing:
+				if (door.timer-- == 0) {
+					if (--door.frame < 0) {
+						// IF DOOR IS DONE CLOSING...
+						door.line.flags |= ML_BLOCKING;
+						door.frontsector.specialdata = null;
+						A.RemoveThinker(door);
+						break;
+					} else {
+						// IF DOOR NEEDS TO ANIMATE TO NEXT FRAME...
+						door.timer = SlideDoor.SWAITTICS;
+
+						LL.sides[door.line.sidenum[0]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].frontFrames[door.frame];
+						LL.sides[door.line.sidenum[1]].midtexture = (short) SL.slideFrames[door.whichDoorIndex].backFrames[door.frame];
+					}
+				}
+				break;
+			}
+		}
+	}
+	
+	
 	class	T_PlatRaise implements ActionTypeSS{
 
 		@Override
