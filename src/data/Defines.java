@@ -12,7 +12,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.43 2011/07/22 15:38:27 velktron Exp $
+// $Id: Defines.java,v 1.44 2011/08/23 16:18:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -356,51 +356,7 @@ public static final int SAVESTRINGSIZE = 24;
  // Time interval for item respawning.
  public static int ITEMQUESIZE       =128;
  
- ;
-	
-	// From "doomdata.h"
-	
-	   //
-    // Map level types.
-    // The following data structures define the persistent format
-    // used in the lumps of the WAD files.
-    //
-
-    // Lump order in a map WAD: each map needs a couple of lumps
-    // to provide a complete scene geometry description.
-
-    public static final int ML_LABEL = 0;
-
-    /** A separator, name, ExMx or MAPxx */
-    public static final int ML_THINGS = 1;
-
-    /** Monsters, items.. */
-    public static final int ML_LINEDEFS = 2;
-
-    /** LineDefs, from editing */
-    public static final int ML_SIDEDEFS = 3;
-
-    /** SideDefs, from editing */
-    public static final int ML_VERTEXES = 4;
-
-    /** Vertices, edited and BSP splits generated */
-    public static final int ML_SEGS = 5;
-
-    /** LineSegs, from LineDefs split by BSP */
-    public static final int ML_SSECTORS = 6;
-
-    /** SubSectors, list of LineSegs */
-    public static final int ML_NODES = 7;
-
-    /** BSP nodes */
-    public static final int ML_SECTORS = 8;
-
-    /** Sectors, from editing */
-    public static final int ML_REJECT = 9;
-
-    /** LUT, sector-sector visibility */
-    public static final int ML_BLOCKMAP = 10;
-
+ 
     /**
      * LUT, motion clipping, walls/grid element // // LineDef attributes. // /**
      * Solid, is an obstacle.
@@ -457,6 +413,6 @@ public static final int SAVESTRINGSIZE = 24;
 
  
 static final String
-rcsid = "$Id: Defines.java,v 1.43 2011/07/22 15:38:27 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.44 2011/08/23 16:18:27 velktron Exp $";
 }
 
