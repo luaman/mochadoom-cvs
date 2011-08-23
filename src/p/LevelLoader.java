@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.30 2011/07/27 21:26:19 velktron Exp $
+// $Id: LevelLoader.java,v 1.31 2011/08/23 16:17:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.31  2011/08/23 16:17:22  velktron
+// Got rid of Z remnants.
+//
 // Revision 1.30  2011/07/27 21:26:19  velktron
 // Quieted down debugging for v1.5 release
 //
@@ -179,7 +182,7 @@ import doom.DoomStatus;
 //
 //-----------------------------------------------------------------------------
 
-public class LevelLoader implements DoomStatusAware{
+public class LevelLoader implements DoomStatusAware,ILevelLoader{
 
 /////////////////// Status objects ///////////////////
     
@@ -192,9 +195,10 @@ public class LevelLoader implements DoomStatusAware{
     TextureManager TM;
     Actions P;
     IDoomSound S;
-
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.30 2011/07/27 21:26:19 velktron Exp $";
-
+    
+    
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.31 2011/08/23 16:17:22 velktron Exp $";
+  
   //  
   // MAP related Lookup tables.
   // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
@@ -288,7 +292,8 @@ public int bmaporgy;
        W.CacheLumpNumIntoArray(lump,PU_STATIC,vertexes,vertex_t.class);
       
      // Copy and convert vertex coordinates,
-    // MAES: not needed. Intermentidate mapvertex_t struct skipped.
+     // MAES: not needed. Intermediate mapvertex_t struct skipped.
+       
   }
 
 

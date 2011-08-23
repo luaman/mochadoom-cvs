@@ -92,7 +92,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.83 2011/08/22 14:35:50 velktron Exp $
+// $Id: DoomMain.java,v 1.84 2011/08/23 16:19:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -118,7 +118,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.83 2011/08/22 14:35:50 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.84 2011/08/23 16:19:37 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1034,7 +1034,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         System.out.print ("W_Init: Init WADfiles.\n");
         try {
-        	W.setZone(this);
             W.InitMultipleFiles (wadfiles);
         } catch (Exception e1) {
             // TODO Auto-generated catch block
@@ -4188,6 +4187,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.84  2011/08/23 16:19:37  velktron
+//Got rid of Z remnants.
+//
 //Revision 1.83  2011/08/22 14:35:50  velktron
 //Now using "super" sound driver as default.
 //

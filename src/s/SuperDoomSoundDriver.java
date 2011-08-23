@@ -343,7 +343,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
             }
 
-            //System.err.printf("%d channels died off\n",i);
+           // System.err.printf("%d channels died off\n",i);
 
             UpdateSound();
             SubmitSound();

@@ -24,8 +24,6 @@ import st.IDoomStatusBar;
 import timing.ITicker;
 import v.DoomVideoRenderer;
 import w.IWadLoader;
-import z.FakeZone;
-import z.IZone;
 import automap.AbstractAutoMap;
 
 /** Since a lot of stuff requires shared/global access to 
@@ -68,6 +66,5 @@ public class DoomContext {
     public TextureManager TM;
     public SpriteManager SM;
     public ICommandLineManager CM;
-    public ITicker TICK;
-    public IZone Z=new FakeZone(); // Can only be set to something else by wadloader. 
+    public ITicker TICK; 
 }

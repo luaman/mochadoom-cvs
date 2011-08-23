@@ -1042,7 +1042,7 @@ public class SimpleTextureManager
 			DrawColumnInCache(p.columns[i], block[i], i, 0, p.height);
 		
 		// Don't keep this twice in memory.
-		DM.Z.Free(p);
+		W.UnlockLumpNum(lump);
 		return block;
 	}
 

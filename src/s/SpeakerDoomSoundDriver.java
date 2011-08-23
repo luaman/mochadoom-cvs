@@ -82,7 +82,7 @@ public class SpeakerDoomSoundDriver extends ClassicDoomSoundDriver {
             paddedsfx[i] = (byte) 127;
 
         // Remove the cached lump.
-        DS.Z.Free( DS.W.CacheLumpNum (sfxlump,0,DoomBuffer.class) );
+        DS.W.UnlockLumpNum(sfxlump);
 
         if (D) System.out.printf("SFX %d size %d padded to %d\n",index,size,paddedsize);
         // Preserve padded length.

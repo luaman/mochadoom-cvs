@@ -154,7 +154,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
 	        }
 	        
 	        // Remove the cached lump.
-	        DS.Z.Free(DS.W.CacheLumpNum(sfxlump, 0, DoomBuffer.class));
+	        DS.W.UnlockLumpNum(sfxlump);
 
 	        // Return allocated padded data.
 	        // So the first 8 bytes are useless?

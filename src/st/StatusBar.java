@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.43 2011/07/28 10:29:46 velktron Exp $
+// $Id: StatusBar.java,v 1.44 2011/08/23 16:15:30 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -42,12 +42,11 @@ import doom.player_t;
 import doom.weapontype_t;
 import rr.patch_t;
 import v.IVideoScale;
-import z.IZone;
 import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.43 2011/07/28 10:29:46 velktron Exp $";
+        "$Id: StatusBar.java,v 1.44 2011/08/23 16:15:30 velktron Exp $";
 
    
     
@@ -1215,30 +1214,28 @@ public class StatusBar extends AbstractStatusBar   {
     }
 
     public void unloadGraphics() {
-        
-    	 IZone Z=DM.Z;
     	
           int i; // unload the numbers, tall and short 
           for (i=0;i<10;i++) {
-        	  Z.Free(tallnum[i]);
+        	  W.UnlockLumpNum(tallnum[i]);
         	  tallnum[i]=null;
-        	  Z.Free(shortnum[i]);
+        	  W.UnlockLumpNum(shortnum[i]);
         	  shortnum[i]=null;
           }
         
        // unload tall percent
-          Z.Free(tallpercent);
+          W.UnlockLumpNum(tallpercent);
           tallpercent=null;
           	
         	  
          // unload arms background          
-          Z.Free(armsbg);
+          W.UnlockLumpNum(armsbg);
           armsbg=null;
          // unload gray #'s          
           for (i=0;i<6;i++) { 
-        	  Z.Free(arms[i][0]);
+        	  W.UnlockLumpNum(arms[i][0]);
         	  arms[i][0]=null;
-        	  Z.Free(arms[i][1]);
+        	  W.UnlockLumpNum(arms[i][1]);
         	  arms[i][1]=null;
 
           }
@@ -1246,20 +1243,20 @@ public class StatusBar extends AbstractStatusBar   {
           // unload the key cards for (i=0;i<NUMCARDS;i++)
           
           for (i=0;i<6;i++) { 
-        	  Z.Free(keys[i]);
+        	  W.UnlockLumpNum(keys[i]);
         	  keys[i]=null;
           }
           
-          Z.Free(sbar);
+          W.UnlockLumpNum(sbar);
           sbar=null;
           
-          Z.Free(faceback);
+          W.UnlockLumpNum(faceback);
           faceback=null;
           
            for (i=0;i<ST_NUMFACES;i++){
-        	   Z.Free(faces[i]);
+        	   W.UnlockLumpNum(faces[i]);
         	   faces[i]=null;
-           }
+           	}
          
 
         // Note: nobody ain't seen no unloading
@@ -1935,6 +1932,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.44  2011/08/23 16:15:30  velktron
+//Got rid of Z remnants.
+//
 //Revision 1.43  2011/07/28 10:29:46  velktron
 //Added hack for forcing full redraw of status bar after help screen drawing.
 //
