@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.42 2011/08/23 16:08:43 velktron Exp $
+// $Id: WadLoader.java,v 1.43 2011/08/23 16:10:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.43  2011/08/23 16:10:20  velktron
+// Got rid of Z remnants, commenter out Profile (useless as it is)
+//
 // Revision 1.42  2011/08/23 16:08:43  velktron
 // Integrated Zone functionality in WadLoader, Boom-like UnlockLump. Makes things MUCH easier.
 //
@@ -187,10 +190,6 @@ import doom.DoomStatus;
 import rr.patch_t;
 
 import utils.C2JUtils;
-import z.FakeZone;
-import z.IZone;
-import z.LumpZone;
-import z.memblock_t;
 
 import static data.Defines.*;
 import i.*;
@@ -1020,13 +1019,14 @@ public class WadLoader implements IWadLoader {
 	//
 	// W_Profile
 	//
-	char[][] info = new char[2500][10];
+	/* USELESS
+	 char[][] info = new char[2500][10];
 
 	int profilecount;
 
 	void Profile() throws IOException {
 		int i;
-		memblock_t block = null;
+		// memblock_t block = null;
 		Object ptr;
 		char ch;
 		FileWriter f;
@@ -1063,7 +1063,7 @@ public class WadLoader implements IWadLoader {
 			f.write("\n");
 		}
 		f.close();
-	}
+	} */
 	
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#isLumpMarker(int)
