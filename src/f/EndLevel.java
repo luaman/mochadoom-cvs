@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.5 2011/07/31 21:49:38 velktron Exp $
+// $Id: EndLevel.java,v 1.6 2011/08/23 16:13:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.6  2011/08/23 16:13:53  velktron
+// Got rid of Z remnants.
+//
 // Revision 1.5  2011/07/31 21:49:38  velktron
 // Changed endlevel drawer's behavior to be closer to prBoom+'s. Allows using 1994TU.WAD while backwards compatible.
 //
@@ -129,10 +132,8 @@ import v.DoomVideoRenderer;
 import v.IVideoScale;
 import w.IWadLoader;
 import w.animenum_t;
-import z.IZone;
 
 /** This class (stuff.c) seems to implement the endlevel screens.
- *  If we want to go truly OO, it should be made non-.
  * 
  * @author Maes
  *
@@ -652,28 +653,28 @@ protected void unloadData()
 {
   int   i;
   int   j;
-  IZone Z=DS.Z;
-  Z.Free(wiminus); wiminus=null;
+
+  W.UnlockLumpNum(wiminus); wiminus=null;
 
   for (i=0 ; i<10 ; i++) {
-    Z.Free(num[i]); num[i]=null;
+    W.UnlockLumpNum(num[i]); num[i]=null;
   	}
     
   if (DS.isCommercial())
     {
       for (i=0 ; i<NUMCMAPS ; i++){
-        Z.Free(lnames[i]); lnames[i]=null;
+        W.UnlockLumpNum(lnames[i]); lnames[i]=null;
       }
     }
   else
     {
-      Z.Free(yah[0]); yah[0]=null;
-      Z.Free(yah[1]); yah[1]=null;
+      W.UnlockLumpNum(yah[0]); yah[0]=null;
+      W.UnlockLumpNum(yah[1]); yah[1]=null;
 
-      Z.Free(splat); splat=null;
+      W.UnlockLumpNum(splat); splat=null;
 
       for (i=0 ; i<NUMMAPS ; i++) {
-        Z.Free(lnames[i]); lnames[i]=null;
+        W.UnlockLumpNum(lnames[i]); lnames[i]=null;
   
       }
       if (wbs.epsd < 3)
@@ -682,30 +683,30 @@ protected void unloadData()
             {
               if (wbs.epsd != 1 || j != 8)
                 for (i=0;i<anims[wbs.epsd][j].nanims;i++){
-                  Z.Free(anims[wbs.epsd][j].p[i]);
+                  W.UnlockLumpNum(anims[wbs.epsd][j].p[i]);
                   anims[wbs.epsd][j].p[i]=null;
                 }
             }
         }
     }
-  Z.Free(percent); percent=null;
-  Z.Free(colon); colon=null;
-  Z.Free(finished); finished=null;
-  Z.Free(entering); entering=null;
-  Z.Free(kills); kills=null;
-  Z.Free(secret); secret=null;
-  Z.Free(sp_secret); sp_secret=null;
-  Z.Free(items); items=null;
-  Z.Free(frags); frags=null;
-  Z.Free(time); time=null;
-  Z.Free(sucks); sucks=null;
-  Z.Free(par); par=null;
-  Z.Free(victims); victims=null;
-  Z.Free(killers); killers=null;
-  Z.Free(total); total=null;
+  W.UnlockLumpNum(percent); percent=null;
+  W.UnlockLumpNum(colon); colon=null;
+  W.UnlockLumpNum(finished); finished=null;
+  W.UnlockLumpNum(entering); entering=null;
+  W.UnlockLumpNum(kills); kills=null;
+  W.UnlockLumpNum(secret); secret=null;
+  W.UnlockLumpNum(sp_secret); sp_secret=null;
+  W.UnlockLumpNum(items); items=null;
+  W.UnlockLumpNum(frags); frags=null;
+  W.UnlockLumpNum(time); time=null;
+  W.UnlockLumpNum(sucks); sucks=null;
+  W.UnlockLumpNum(par); par=null;
+  W.UnlockLumpNum(victims); victims=null;
+  W.UnlockLumpNum(killers); killers=null;
+  W.UnlockLumpNum(total); total=null;
   for (i=0 ; i<MAXPLAYERS ; i++) {
-    Z.Free(p[i]);
-    Z.Free(bp[i]);
+    W.UnlockLumpNum(p[i]);
+    W.UnlockLumpNum(bp[i]);
     p[i]=null;
     bp[i]=null;
   }
@@ -1716,25 +1717,25 @@ public void WI_unloadData()
     int		i;
     int		j;
 
-    Z.Free(wiminus, PU_CACHE);
+    W.UnlockLumpNum(wiminus, PU_CACHE);
 
     for (i=0 ; i<10 ; i++)
-	Z.Free(num[i], PU_CACHE);
+	W.UnlockLumpNum(num[i], PU_CACHE);
     
     if (gamemode == commercial)
     {
   	for (i=0 ; i<NUMCMAPS ; i++)
-	    Z.Free(lnames[i], PU_CACHE);
+	    W.UnlockLumpNum(lnames[i], PU_CACHE);
     }
     else
     {
-	Z.Free(yah[0], PU_CACHE);
-	Z.Free(yah[1], PU_CACHE);
+	W.UnlockLumpNum(yah[0], PU_CACHE);
+	W.UnlockLumpNum(yah[1], PU_CACHE);
 
-	Z.Free(splat, PU_CACHE);
+	W.UnlockLumpNum(splat, PU_CACHE);
 
 	for (i=0 ; i<NUMMAPS ; i++)
-	    Z.Free(lnames[i], PU_CACHE);
+	    W.UnlockLumpNum(lnames[i], PU_CACHE);
 	
 	if (wbs.epsd < 3)
 	{
@@ -1742,37 +1743,37 @@ public void WI_unloadData()
 	    {
 		if (wbs.epsd != 1 || j != 8)
 		    for (i=0;i<anims[wbs.epsd][j].nanims;i++)
-			Z.Free(anims[wbs.epsd][j].p[i], PU_CACHE);
+			W.UnlockLumpNum(anims[wbs.epsd][j].p[i], PU_CACHE);
 	    }
 	}
     }
     
     Z_Free(lnames);
 
-    Z.Free(percent, PU_CACHE);
-    Z.Free(colon, PU_CACHE);
-    Z.Free(finished, PU_CACHE);
-    Z.Free(entering, PU_CACHE);
-    Z.Free(kills, PU_CACHE);
-    Z.Free(secret, PU_CACHE);
-    Z.Free(sp_secret, PU_CACHE);
-    Z.Free(items, PU_CACHE);
-    Z.Free(frags, PU_CACHE);
-    Z.Free(time, PU_CACHE);
-    Z.Free(sucks, PU_CACHE);
-    Z.Free(par, PU_CACHE);
+    W.UnlockLumpNum(percent, PU_CACHE);
+    W.UnlockLumpNum(colon, PU_CACHE);
+    W.UnlockLumpNum(finished, PU_CACHE);
+    W.UnlockLumpNum(entering, PU_CACHE);
+    W.UnlockLumpNum(kills, PU_CACHE);
+    W.UnlockLumpNum(secret, PU_CACHE);
+    W.UnlockLumpNum(sp_secret, PU_CACHE);
+    W.UnlockLumpNum(items, PU_CACHE);
+    W.UnlockLumpNum(frags, PU_CACHE);
+    W.UnlockLumpNum(time, PU_CACHE);
+    W.UnlockLumpNum(sucks, PU_CACHE);
+    W.UnlockLumpNum(par, PU_CACHE);
 
-    Z.Free(victims, PU_CACHE);
-    Z.Free(killers, PU_CACHE);
-    Z.Free(total, PU_CACHE);
-    //  Z.Free(star, PU_CACHE);
-    //  Z.Free(bstar, PU_CACHE);
+    W.UnlockLumpNum(victims, PU_CACHE);
+    W.UnlockLumpNum(killers, PU_CACHE);
+    W.UnlockLumpNum(total, PU_CACHE);
+    //  W.UnlockLumpNum(star, PU_CACHE);
+    //  W.UnlockLumpNum(bstar, PU_CACHE);
     
     for (i=0 ; i<MAXPLAYERS ; i++)
-	Z.Free(p[i], PU_CACHE);
+	W.UnlockLumpNum(p[i], PU_CACHE);
 
     for (i=0 ; i<MAXPLAYERS ; i++)
-	Z.Free(bp[i], PU_CACHE);
+	W.UnlockLumpNum(bp[i], PU_CACHE);
 }
 */
 
