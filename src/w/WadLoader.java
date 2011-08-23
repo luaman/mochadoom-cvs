@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.41 2011/08/02 13:49:56 velktron Exp $
+// $Id: WadLoader.java,v 1.42 2011/08/23 16:08:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.42  2011/08/23 16:08:43  velktron
+// Integrated Zone functionality in WadLoader, Boom-like UnlockLump. Makes things MUCH easier.
+//
 // Revision 1.41  2011/08/02 13:49:56  velktron
 // Fixed missing handle on generated lumpinfo_t
 //
@@ -195,7 +198,6 @@ import i.*;
 public class WadLoader implements IWadLoader {
 
 	protected IDoomSystem I;
-	protected IZone Z;
 	
 	//
 	// GLOBALS
@@ -210,8 +212,8 @@ public class WadLoader implements IWadLoader {
 	}
 
 	public WadLoader() {
-		// this.I=I;
 		lumpinfo = new lumpinfo_t[0];
+		zone= new Hashtable<CacheableDoomObject, Integer>();
 	}
 
 	public int numlumps;
@@ -545,8 +547,6 @@ public class WadLoader implements IWadLoader {
 		// set up caching
 		size = numlumps;
 		lumpcache = new CacheableDoomObject[size];
-		if (Z==null) Z=new FakeZone();
-		Z.setLumps(lumpcache);
 		preloaded = new boolean[size];
 
 		if (lumpcache == null)
@@ -794,7 +794,10 @@ public class WadLoader implements IWadLoader {
 		}
 
 		// Nothing cached here...
-		if ((lumpcache[lump] == null)) {
+		// SPECIAL case : if no class is specified (null), the lump is re-read anyway
+		// and you get a raw doombuffer. Plus, it won't be cached.
+		
+		if ((lumpcache[lump] == null)||(what==null)) {
 
 			// read the lump in
 
@@ -819,13 +822,19 @@ public class WadLoader implements IWadLoader {
 						thebuffer.rewind();
 						lumpcache[lump] = (CacheableDoomObject) what.newInstance();
 						((CacheableDoomObject) lumpcache[lump]).unpack((ByteBuffer) thebuffer);
-
+						
+						// Track it for freeing
+						Track(lumpcache[lump],lump);
+						
 						if (what == patch_t.class) {
 							((patch_t) lumpcache[lump]).name = this.lumpinfo[lump].name;
 						}
-						// replace lump with parsed object.
 					} else {
+						// replace lump with parsed object.
 						lumpcache[lump] = (CacheableDoomObject) thebuffer;
+						
+						// Track it for freeing
+						Track((CacheableDoomObject)thebuffer,lump);
 					}
 				} catch (Exception e) {
 					System.err.println("Could not auto-instantiate lump "
@@ -835,15 +844,16 @@ public class WadLoader implements IWadLoader {
 
 			} else {
 				// Class not specified? Then gimme a containing DoomBuffer!
-				DoomBuffer db = new DoomBuffer(thebuffer);
+				DoomBuffer db = new DoomBuffer(thebuffer);				
 				lumpcache[lump] = db;
 			}
 		} else {
 			// System.out.println("cache hit on lump " + lump);
 			// Z.ChangeTag (lumpcache[lump],tag);
 		}
-
-		 Z.Track(lumpcache[lump],lump);
+		
+		
+		
 		 
 		return lumpcache[lump];
 	}
@@ -880,6 +890,10 @@ public class WadLoader implements IWadLoader {
 			ReadLump(lump, thebuffer);
 			// Store the buffer anyway (as a DoomBuffer)
 			lumpcache[lump] = new DoomBuffer(thebuffer);
+			
+			// Track it (as ONE lump)
+			Track(lumpcache[lump],lump);
+
 
 		} else {
 			//System.out.println("cache hit on lump " + lump);
@@ -908,12 +922,18 @@ public class WadLoader implements IWadLoader {
 			}
 
 		}
+		
+		
 
-		// We still track ONE lump.
-		Z.Track(lumpcache[lump],lump);
 		return;
 	}
 
+	public CacheableDoomObject CacheLumpNum(int lump)
+	{
+	  return lumpcache[lump];
+	}
+	
+	
 	/** Tells us if a class implements a certain interface.
 	 *  If you know of a better way, be my guest.
 	 * 
@@ -939,7 +959,6 @@ public class WadLoader implements IWadLoader {
 	public byte[] CacheLumpNameAsRawBytes(String name, int tag) {
 		return ((DoomBuffer) this.CacheLumpNum(this.GetNumForName(name), tag,
 				null)).getBuffer().array();
-
 	}
 	
 	 /* (non-Javadoc)
@@ -949,8 +968,7 @@ public class WadLoader implements IWadLoader {
     public byte[] CacheLumpNumAsRawBytes(int num, int tag) {
         return ((DoomBuffer) this.CacheLumpNum(num, tag,
                 null)).getBuffer().array();
-
-    }
+    	}
 	
 
 	/* (non-Javadoc)
@@ -1120,12 +1138,6 @@ public class WadLoader implements IWadLoader {
 	public lumpinfo_t GetLumpInfo(int i) {
 		return this.lumpinfo[i];
 	}
-
-	@Override
-	public void setZone(DoomStatus DS) {
-		Z=DS.Z=new LumpZone();
-		
-	}
 	
 	@Override
 	public void CloseAllHandles(){
@@ -1269,4 +1281,38 @@ public class WadLoader implements IWadLoader {
 	  return result;
 	}
 
+	@Override
+	public void UnlockLumpNum(int lump) {
+		lumpcache[lump]=null;
+	}
+
+	//// Merged remnants from LumpZone here.
+
+	Hashtable<CacheableDoomObject, Integer> zone;
+
+	/** Add a lump to the tracking */
+
+	public void Track(CacheableDoomObject lump, int index){
+		zone.put(lump, index);
+	}
+
+	@Override
+	public void UnlockLumpNum(CacheableDoomObject lump){
+		// Remove it from the reference
+		Integer lumpno=zone.remove(lump);
+		
+
+		// Force nulling. This should trigger garbage collection,
+		// and reclaim some memory, provided you also nulled any other 
+		// reference to a certain lump. Therefore, make sure you null 
+		// stuff right after calling this method, if you want to make sure 
+		// that they won't be referenced anywhere else.
+		
+		if (lumpno!=null) {
+			lumpcache[lumpno]=null;
+			//System.out.printf("Lump %d %d freed\n",lump.hashCode(),lumpno);
+		}
+	}
+
+	
 }

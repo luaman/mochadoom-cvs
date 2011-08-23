@@ -217,11 +217,19 @@ public interface IWadLoader {
 
 	public abstract lumpinfo_t GetLumpInfo(int i);
 
-	/** Set a zoning mechanism other than the dummy one */
-	public abstract void setZone(DoomStatus DS);
-
 	/** A way to cleanly close open file handles still pointed at by lumps.
 	 *  Is also called upon finalize */
 	public void CloseAllHandles();
+
+	/** Null the disk lump associated with a particular object,
+	 *  if any. This will NOT induce a garbage collection, unless
+	 *  you also null any references you have to that object.
+	 *  	  
+	 * @param lump
+	 */
+	
+	void UnlockLumpNum(int lump);
+
+	void UnlockLumpNum(CacheableDoomObject lump);
 	
 }
