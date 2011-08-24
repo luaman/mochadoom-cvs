@@ -1,13 +1,36 @@
 package p;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
+
+import m.BBox;
+import m.fixed_t;
+
+import boom.DeepBSPNodesV4;
+import boom.E6Y;
+import boom.ZNodeSegs;
+import boom.mapnode_v4_t;
+import boom.mapseg_v4_t;
+import boom.mapseg_znod_t;
+import boom.mapsubsector_v4_t;
 
 import i.IDoomSystem;
 import data.Defines;
 import data.Limits;
+import data.maplinedef_t;
+import data.mapnode_t;
+import data.mapsector_t;
+import data.mapseg_t;
+import data.mapsidedef_t;
+import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
+import defines.slopetype_t;
+import doom.DoomStatus;
+import rr.RendererState;
+import rr.TextureManager;
 import rr.line_t;
 import rr.node_t;
 import rr.sector_t;
@@ -15,10 +38,17 @@ import rr.seg_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
+import s.degenmobj_t;
 import utils.C2JUtils;
+import w.CacheableDoomObject;
+import w.IWadLoader;
 import w.WadLoader;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FRACBITS;
+import static data.Defines.*;
+import static utils.C2JUtils.flags;
+import static utils.C2JUtils.unsigned;
+import static boom.E6Y.NO_INDEX;
 
 /* Emacs style mode select   -*- C++ -*-
  *-----------------------------------------------------------------------------
@@ -57,9 +87,11 @@ import static m.fixed_t.FRACBITS;
 
 public class BoomLevelLoader implements ILevelLoader {
 
-	WadLoader W;
+	IWadLoader W;
 	IDoomSystem I;
-	
+	DoomStatus DM;
+	TextureManager TexMan;
+	Actions P;
 	
 	int      numvertexes;
 	vertex_t[] vertexes;
@@ -185,12 +217,12 @@ public class BoomLevelLoader implements ILevelLoader {
 	// e6y: Smart calloc
 	// Used by P_SetupLevel() for smart data loading
 	// Clear the memory without allocation if level is the same
-	private Object[] calloc_IfSameLevel(Object[] p, int numstuff)
+	private<T> T[] calloc_IfSameLevel(T[] p, int numstuff)
 	{
 	  if (!samelevel)
 	  {
 		  Class type=p.getClass().getComponentType();	    
-		  return C2JUtils.createArrayOfObjects(type,numstuff);
+		  return (T[]) C2JUtils.createArrayOfObjects(type,numstuff);
 	  }
 	  else
 	  {
@@ -224,18 +256,16 @@ public class BoomLevelLoader implements ILevelLoader {
 	// http://www.sbsoftware.com/files/DeePBSPV4specs.txt
 	//
 	
-	private static final byte[] DeepBSPHeader={
-		'x','N','d','4',0,0,0,0
-	};
+
 
 	private boolean P_CheckForDeePBSPv4Nodes(int lumpnum, int gl_lumpnum)
 	{
-	  byte[] data;
+	  DeepBSPNodesV4 data;
 	  boolean result = false;
 	  
-	  data = W.CacheLumpNumAsRawBytes(lumpnum + ML_NODES,0);
-	  byte[] compare=Arrays.copyOfRange(data, 0,7);
-	  if (!Arrays.equals(data, compare))
+	  data = (DeepBSPNodesV4) W.CacheLumpNum(lumpnum + ML_NODES,0,DeepBSPNodesV4.class);
+
+	  if (data.formatOK())
 	  {
 		  System.out.println("P_CheckForDeePBSPv4Nodes: DeePBSP v4 Extended nodes are detected\n");
 	    result = true;
@@ -425,13 +455,12 @@ public class BoomLevelLoader implements ILevelLoader {
 	 *            computing  gl nodes      *
 	 *******************************************/
 
-	/*
-	static int checkGLVertex(int num)
+	public int checkGLVertex(int num)
 	{
-	  if (num & 0x8000)
+	  if ((num & 0x8000)!=0)
 	    num = (num&0x7FFF)+firstglvertex;
 	  return num;
-	} */
+	}
 
 
 	public static float GetDistance(int dx, int dy)
@@ -464,31 +493,32 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	// killough 5/3/98: reformatted, cleaned up
 
-	static void P_LoadSegs (int lump)
+	private void P_LoadSegs (int lump)
 	{
 	  int  i;
-	  final mapseg_t *data; // cph - final
+	  final mapseg_t[] data; // cph - final
 
-	  numsegs = W.LumpLength(lump) / sizeof(mapseg_t);
-	  segs = calloc_IfSameLevel(segs, numsegs, sizeof(seg_t));
-	  data = (final mapseg_t *)W.CacheLumpNum(lump); // cph - wad lump handling updated
+	  numsegs = W.LumpLength(lump) / mapseg_t.sizeOf();
+	  segs = (seg_t[]) calloc_IfSameLevel(segs, numsegs);
+	  
+	  data=W.CacheLumpNumIntoArray(lump,numsegs,mapseg_t.class); // cph - wad lump handling updated
 
-	  if ((!data) || (!numsegs))
-	    I_Error("P_LoadSegs: no segs in level");
+	  if ((data==null) || (numsegs==0))
+	    I.Error("P_LoadSegs: no segs in level");
 
 	  for (i=0; i<numsegs; i++)
 	    {
-	      seg_t *li = segs+i;
-	      final mapseg_t *ml = data + i;
-	      unsigned short v1, v2;
+	      seg_t li = segs[i];
+	      final mapseg_t ml = data[i];
+	      char v1, v2;
 
 	      int side, linedef;
-	      line_t *ldef;
+	      line_t ldef;
 
 	      li.iSegID = i; // proff 11/05/2000: needed for OpenGL
 
-	      v1 = (unsigned short)LittleShort(ml.v1);
-	      v2 = (unsigned short)LittleShort(ml.v2);
+	      v1 = (char)ml.v1;
+	      v2 = (char)ml.v2;
 
 	      // e6y
 	      // moved down for additional checks to avoid overflow
@@ -502,36 +532,36 @@ public class BoomLevelLoader implements ILevelLoader {
 	      // e6y: moved down, see below
 	      //li.length  = GetDistance(li.v2.x - li.v1.x, li.v2.y - li.v1.y);
 
-	      li.angle = (LittleShort(ml.angle))<<16;
-	      li.offset =(LittleShort(ml.offset))<<16;
-	      linedef = (unsigned short)LittleShort(ml.linedef);
+	      li.angle = ml.angle<<16;
+	      li.offset =ml.offset<<16;
+	      linedef = (char)ml.linedef;
 
 	      //e6y: check for wrong indexes
-	      if ((unsigned)linedef >= (unsigned)numlines)
+	      if (linedef >= numlines)
 	      {
-	        I_Error("P_LoadSegs: seg %d references a non-existent linedef %d",
-	          i, (unsigned)linedef);
+	        I.Error("P_LoadSegs: seg %d references a non-existent linedef %d",
+	          i, linedef);
 	      }
 
-	      ldef = &lines[linedef];
+	      ldef = lines[linedef];
 	      li.linedef = ldef;
-	      side = LittleShort(ml.side);
+	      side = ml.side;
 
 	      //e6y: fix wrong side index
 	      if (side != 0 && side != 1)
 	      {
-	        lprintf(LO_WARN, "P_LoadSegs: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
+	        System.err.printf("P_LoadSegs: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
 	        side = 1;
 	      }
 
 	      //e6y: check for wrong indexes
-	      if ((unsigned)ldef.sidenum[side] >= (unsigned)numsides)
+	      if ((char)ldef.sidenum[side] >= (char)numsides)
 	      {
-	        I_Error("P_LoadSegs: linedef %d for seg %d references a non-existent sidedef %d",
-	          linedef, i, (unsigned)ldef.sidenum[side]);
+	        I.Error("P_LoadSegs: linedef %d for seg %d references a non-existent sidedef %d",
+	          linedef, i, ldef.sidenum[side]);
 	      }
 
-	      li.sidedef = &sides[ldef.sidenum[side]];
+	      li.sidedef = sides[ldef.sidenum[side]];
 
 	      /* cph 2006/09/30 - our frontsector can be the second side of the
 	       * linedef, so must check for NO_INDEX in case we are incorrectly
@@ -539,14 +569,14 @@ public class BoomLevelLoader implements ILevelLoader {
 	      if (ldef.sidenum[side] != NO_INDEX)
 	        li.frontsector = sides[ldef.sidenum[side]].sector;
 	      else {
-	        li.frontsector = 0;
-	        lprintf(LO_WARN, "P_LoadSegs: front of seg %i has no sidedef\n", i);
+	        li.frontsector = null;
+	        System.err.printf("P_LoadSegs: front of seg %i has no sidedef\n", i);
 	      }
 
-	      if (ldef.flags & ML_TWOSIDED && ldef.sidenum[side^1]!=NO_INDEX)
+	      if (flags(ldef.flags,ML_TWOSIDED) && ldef.sidenum[side^1]!=NO_INDEX)
 	        li.backsector = sides[ldef.sidenum[side^1]].sector;
 	      else
-	        li.backsector = 0;
+	        li.backsector = null;
 
 	      // e6y
 	      // check and fix wrong references to non-existent vertexes
@@ -554,21 +584,21 @@ public class BoomLevelLoader implements ILevelLoader {
 	      // http://www.doomworld.com/idgames/index.php?id=12647
 	      if (v1 >= numvertexes || v2 >= numvertexes)
 	      {
-	        char str[200] = 
+	        String str = 
 	          "P_LoadSegs: compatibility loss - seg %d references a non-existent vertex %d\n";
 	        
-	        if (demorecording)
+	        if (DM.demorecording)
 	        {
-	          I_Error(strcat(str, "Demo recording on levels with invalid nodes is not allowed"),
+	          I.Error(str+ "Demo recording on levels with invalid nodes is not allowed",
 	            i, (v1 >= numvertexes ? v1 : v2));
 	        }
 
 	        if (v1 >= numvertexes)
-	          lprintf(LO_WARN, str, i, v1);
+	          System.err.printf(str, i, v1);
 	        if (v2 >= numvertexes)
-	          lprintf(LO_WARN, str, i, v2);
+	          System.err.printf( str, i, v2);
 
-	        if (li.sidedef == &sides[li.linedef.sidenum[0]])
+	        if (li.sidedef == sides[li.linedef.sidenum[0]])
 	        {
 	          li.v1 = lines[ml.linedef].v1;
 	          li.v2 = lines[ml.linedef].v2;
@@ -581,8 +611,8 @@ public class BoomLevelLoader implements ILevelLoader {
 	      }
 	      else
 	      {
-	        li.v1 = &vertexes[v1];
-	        li.v2 = &vertexes[v2];
+	        li.v1 = vertexes[v1];
+	        li.v2 = vertexes[v2];
 	      }
 
 	      //e6y: now we can calculate it
@@ -591,7 +621,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	      // Recalculate seg offsets that are sometimes incorrect
 	      // with certain nodebuilders. Fixes among others, line 20365
 	      // of DV.wad, map 5
-	      li.offset = GetOffset(li.v1, (ml.side ? ldef.v2 : ldef.v1));
+	      li.offset = GetOffset(li.v1, (ml.side!=0 ? ldef.v2 : ldef.v1));
 	    }
 
 	  W.UnlockLumpNum(lump); // cph - release the data
@@ -602,21 +632,21 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 	  mapseg_v4_t[] data;
 
-	  numsegs = W.LumpLength(lump) / sizeof(mapseg_v4_t);
-	  segs = calloc_IfSameLevel(segs, numsegs, sizeof(seg_t));
-	  data = (final mapseg_v4_t *)W.CacheLumpNum(lump);
+	  numsegs = W.LumpLength(lump) / mapseg_v4_t.sizeOf();
+	  segs = (seg_t[]) calloc_IfSameLevel(segs, numsegs);
+	  data = W.CacheLumpNumIntoArray(lump,numsegs,mapseg_v4_t.class);
 
-	  if ((!data) || (!numsegs))
-	    I_Error("P_LoadSegs_V4: no segs in level");
+	  if ((data==null) || (numsegs==0))
+	    I.Error("P_LoadSegs_V4: no segs in level");
 
 	  for (i = 0; i < numsegs; i++)
 	  {
-	    seg_t *li = segs+i;
-	    final mapseg_v4_t *ml = data + i;
+	    seg_t li = segs[i];
+	    final mapseg_v4_t ml = data[i];
 	    int v1, v2;
 
 	    int side, linedef;
-	    line_t *ldef;
+	    line_t ldef;
 
 	    li.iSegID = i; // proff 11/05/2000: needed for OpenGL
 
@@ -625,36 +655,36 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	    li.miniseg = false; // figgi -- there are no minisegs in classic BSP nodes
 
-	    li.angle = (LittleShort(ml.angle))<<16;
-	    li.offset =(LittleShort(ml.offset))<<16;
-	    linedef = (unsigned short)LittleShort(ml.linedef);
+	    li.angle = ml.angle<<16;
+	    li.offset =ml.offset<<16;
+	    linedef = ml.linedef;
 
 	    //e6y: check for wrong indexes
-	    if ((unsigned)linedef >= (unsigned)numlines)
+	    if (unsigned(linedef) >= unsigned(numlines))
 	    {
-	      I_Error("P_LoadSegs_V4: seg %d references a non-existent linedef %d",
-	        i, (unsigned)linedef);
+	      I.Error("P_LoadSegs_V4: seg %d references a non-existent linedef %d",
+	        i, unsigned(linedef));
 	    }
 
-	    ldef = &lines[linedef];
+	    ldef = lines[linedef];
 	    li.linedef = ldef;
-	    side = LittleShort(ml.side);
+	    side = ml.side;
 
 	    //e6y: fix wrong side index
 	    if (side != 0 && side != 1)
 	    {
-	      lprintf(LO_WARN, "P_LoadSegs_V4: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
+	      System.err.printf( "P_LoadSegs_V4: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
 	      side = 1;
 	    }
 
 	    //e6y: check for wrong indexes
-	    if ((unsigned)ldef.sidenum[side] >= (unsigned)numsides)
+	    if (unsigned(ldef.sidenum[side]) >= unsigned(numsides))
 	    {
-	      I_Error("P_LoadSegs_V4: linedef %d for seg %d references a non-existent sidedef %d",
-	        linedef, i, (unsigned)ldef.sidenum[side]);
+	      I.Error("P_LoadSegs_V4: linedef %d for seg %d references a non-existent sidedef %d",
+	        linedef, i, unsigned(ldef.sidenum[side]));
 	    }
 
-	    li.sidedef = &sides[ldef.sidenum[side]];
+	    li.sidedef = sides[ldef.sidenum[side]];
 
 	    /* cph 2006/09/30 - our frontsector can be the second side of the
 	    * linedef, so must check for NO_INDEX in case we are incorrectly
@@ -665,14 +695,14 @@ public class BoomLevelLoader implements ILevelLoader {
 	    }
 	    else
 	    {
-	      li.frontsector = 0;
-	      lprintf(LO_WARN, "P_LoadSegs_V4: front of seg %i has no sidedef\n", i);
+	      li.frontsector = null;
+	      System.err.printf( "P_LoadSegs_V4: front of seg %i has no sidedef\n", i);
 	    }
 
-	    if (ldef.flags & ML_TWOSIDED && ldef.sidenum[side^1]!=NO_INDEX)
+	    if (flags(ldef.flags,ML_TWOSIDED) && ldef.sidenum[side^1]!=NO_INDEX)
 	      li.backsector = sides[ldef.sidenum[side^1]].sector;
 	    else
-	      li.backsector = 0;
+	      li.backsector = null;
 
 	    // e6y
 	    // check and fix wrong references to non-existent vertexes
@@ -680,21 +710,21 @@ public class BoomLevelLoader implements ILevelLoader {
 	    // http://www.doomworld.com/idgames/index.php?id=12647
 	    if (v1 >= numvertexes || v2 >= numvertexes)
 	    {
-	      char str[200] = 
+	      String str = 
 	        "P_LoadSegs_V4: compatibility loss - seg %d references a non-existent vertex %d\n";
 
-	      if (demorecording)
+	      if (DM.demorecording)
 	      {
-	        I_Error(strcat(str, "Demo recording on levels with invalid nodes is not allowed"),
+	        I.Error((str+ "Demo recording on levels with invalid nodes is not allowed"),
 	          i, (v1 >= numvertexes ? v1 : v2));
 	      }
 
 	      if (v1 >= numvertexes)
-	        lprintf(LO_WARN, str, i, v1);
+	        System.err.printf( str, i, v1);
 	      if (v2 >= numvertexes)
-	        lprintf(LO_WARN, str, i, v2);
+	        System.err.printf( str, i, v2);
 
-	      if (li.sidedef == &sides[li.linedef.sidenum[0]])
+	      if (li.sidedef == sides[li.linedef.sidenum[0]])
 	      {
 	        li.v1 = lines[ml.linedef].v1;
 	        li.v2 = lines[ml.linedef].v2;
@@ -707,8 +737,8 @@ public class BoomLevelLoader implements ILevelLoader {
 	    }
 	    else
 	    {
-	      li.v1 = &vertexes[v1];
-	      li.v2 = &vertexes[v2];
+	      li.v1 = vertexes[v1];
+	      li.v2 = vertexes[v2];
 	    }
 
 	    //e6y: now we can calculate it
@@ -717,7 +747,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	    // Recalculate seg offsets that are sometimes incorrect
 	    // with certain nodebuilders. Fixes among others, line 20365
 	    // of DV.wad, map 5
-	    li.offset = GetOffset(li.v1, (ml.side ? ldef.v2 : ldef.v1));
+	    li.offset = GetOffset(li.v1, (ml.side!=0 ? ldef.v2 : ldef.v1));
 	  }
 
 	  W.UnlockLumpNum(lump); // cph - release the data
@@ -731,11 +761,12 @@ public class BoomLevelLoader implements ILevelLoader {
 	 * author   : figgi              *
 	 * what   : support for gl nodes       *
 	 *******************************************/
-	static void P_LoadGLSegs(int lump)
+	/*
+	private void P_LoadGLSegs(int lump)
 	{
 	  int     i;
-	  final glseg_t   *ml;
-	  line_t    *ldef;
+	  final glseg_t   ml;
+	  line_t    ldef;
 
 	  numsegs = W.LumpLength(lump) / sizeof(glseg_t);
 	  segs = malloc_IfSameLevel(segs, numsegs * sizeof(seg_t));
@@ -785,48 +816,52 @@ public class BoomLevelLoader implements ILevelLoader {
 	    ml++;
 	  }
 	  W.UnlockLumpNum(lump);
+
 	}
+	*/
+
+
 
 	//
 	// P_LoadSubsectors
 	//
 	// killough 5/3/98: reformatted, cleaned up
 
-	static void P_LoadSubsectors (int lump)
+	private void P_LoadSubsectors (int lump)
 	{
 	  /* cph 2006/07/29 - make data a final mapsubsector_t *, so the loop below is simpler & gives no finalness warnings */
-	  final mapsubsector_t *data;
+	  final mapsubsector_t[] data;
 	  int  i;
 
-	  numsubsectors = W.LumpLength (lump) / sizeof(mapsubsector_t);
-	  subsectors = calloc_IfSameLevel(subsectors, numsubsectors, sizeof(subsector_t));
-	  data = (final mapsubsector_t *)W.CacheLumpNum(lump);
+	  numsubsectors = W.LumpLength (lump) / mapsubsector_t.sizeOf();
+	  subsectors = (subsector_t[]) calloc_IfSameLevel(subsectors, numsubsectors);
+	  data = W.CacheLumpNumIntoArray(lump,numsubsectors,mapsubsector_t.class);
 
-	  if ((!data) || (!numsubsectors))
-	    I_Error("P_LoadSubsectors: no subsectors in level");
+	  if ((data==null) || (numsubsectors==0))
+	    I.Error("P_LoadSubsectors: no subsectors in level");
 
 	  for (i=0; i<numsubsectors; i++)
 	  {
 	    // e6y: support for extended nodes
-	    subsectors[i].numlines  = (unsigned short)LittleShort(data[i].numsegs );
-	    subsectors[i].firstline = (unsigned short)LittleShort(data[i].firstseg);
+	    subsectors[i].numlines  = (char)data[i].numsegs;
+	    subsectors[i].firstline = (char)data[i].firstseg;
 	  }
 
 	  W.UnlockLumpNum(lump); // cph - release the data
 	}
 
-	static void P_LoadSubsectors_V4(int lump)
+	private void P_LoadSubsectors_V4(int lump)
 	{
 	  /* cph 2006/07/29 - make data a final mapsubsector_t *, so the loop below is simpler & gives no finalness warnings */
-	  final mapsubsector_v4_t *data;
+	  final mapsubsector_v4_t[] data;
 	  int i;
 
-	  numsubsectors = W.LumpLength (lump) / sizeof(mapsubsector_v4_t);
-	  subsectors = calloc_IfSameLevel(subsectors, numsubsectors, sizeof(subsector_t));
-	  data = (final mapsubsector_v4_t *)W.CacheLumpNum(lump);
+	  numsubsectors = W.LumpLength (lump) / mapsubsector_v4_t.sizeOf();
+	  subsectors = calloc_IfSameLevel(subsectors, numsubsectors);
+	  data = W.CacheLumpNumIntoArray(lump, numsubsectors,mapsubsector_v4_t.class);
 
-	  if ((!data) || (!numsubsectors))
-	    I_Error("P_LoadSubsectors_V4: no subsectors in level");
+	  if ((data==null) || (numsubsectors==0))
+	    I.Error("P_LoadSubsectors_V4: no subsectors in level");
 
 	  for (i = 0; i < numsubsectors; i++)
 	  {
@@ -842,52 +877,52 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	// killough 5/3/98: reformatted, cleaned up
 
-	static void P_LoadSectors (int lump)
+	private void P_LoadSectors (int lump)
 	{
-	  final byte *data; // cph - final*
+	  final mapsector_t[] data; // cph - final*
 	  int  i;
 
-	  numsectors = W.LumpLength (lump) / sizeof(mapsector_t);
-	  sectors = calloc_IfSameLevel(sectors, numsectors, sizeof(sector_t));
-	  data = W.CacheLumpNum (lump); // cph - wad lump handling updated
+	  numsectors = W.LumpLength (lump) / mapsector_t.sizeOf();
+	  sectors = calloc_IfSameLevel(sectors, numsectors);
+	  data = W.CacheLumpNumIntoArray(lump, numsectors,mapsector_t.class); // cph - wad lump handling updated
 
 	  for (i=0; i<numsectors; i++)
 	    {
-	      sector_t *ss = sectors + i;
-	      final mapsector_t *ms = (final mapsector_t *) data + i;
+	      sector_t ss = sectors[i];
+	      final mapsector_t ms = data[i];
 
-	      ss.iSectorID=i; // proff 04/05/2000: needed for OpenGL
-	      ss.floorheight = LittleShort(ms.floorheight)<<FRACBITS;
-	      ss.ceilingheight = LittleShort(ms.ceilingheight)<<FRACBITS;
-	      ss.floorpic = R_FlatNumForName(ms.floorpic);
-	      ss.ceilingpic = R_FlatNumForName(ms.ceilingpic);
-	      ss.lightlevel = LittleShort(ms.lightlevel);
-	      ss.special = LittleShort(ms.special);
-	      ss.oldspecial = LittleShort(ms.special);
-	      ss.tag = LittleShort(ms.tag);
-	      ss.thinglist = NULL;
-	      ss.touching_thinglist = NULL;            // phares 3/14/98
+	      ss.id=i; // proff 04/05/2000: needed for OpenGL
+	      ss.floorheight = ms.floorheight<<FRACBITS;
+	      ss.ceilingheight = ms.ceilingheight<<FRACBITS;
+	      ss.floorpic = (short) TexMan.FlatNumForName(ms.floorpic);
+	      ss.ceilingpic = (short) TexMan.FlatNumForName(ms.ceilingpic);
+	      ss.lightlevel = ms.lightlevel;
+	      ss.special = ms.special;
+	      // ss.oldspecial = ms.special; huh?
+	      ss.tag = ms.tag;
+	      ss.thinglist = null;
+	      //ss.touching_thinglist = null;            // phares 3/14/98
 
-	      ss.nextsec = -1; //jff 2/26/98 add fields to support locking out
-	      ss.prevsec = -1; // stair retriggering until build completes
+	      //ss.nextsec = -1; //jff 2/26/98 add fields to support locking out
+	      //ss.prevsec = -1; // stair retriggering until build completes
 
 	      // killough 3/7/98:
-	      ss.floor_xoffs = 0;
-	      ss.floor_yoffs = 0;      // floor and ceiling flats offsets
-	      ss.ceiling_xoffs = 0;
-	      ss.ceiling_yoffs = 0;
-	      ss.heightsec = -1;       // sector used to get floor and ceiling height
-	      ss.floorlightsec = -1;   // sector used to get floor lighting
+	      //ss.floor_xoffs = 0;
+	      //ss.floor_yoffs = 0;      // floor and ceiling flats offsets
+	      //ss.ceiling_xoffs = 0;
+	      //ss.ceiling_yoffs = 0;
+	      //ss.heightsec = -1;       // sector used to get floor and ceiling height
+	      //ss.floorlightsec = -1;   // sector used to get floor lighting
 	      // killough 3/7/98: end changes
 
 	      // killough 4/11/98 sector used to get ceiling lighting:
-	      ss.ceilinglightsec = -1;
+	      //ss.ceilinglightsec = -1;
 
 	      // killough 4/4/98: colormaps:
-	      ss.bottommap = ss.midmap = ss.topmap = 0;
+	      //ss.bottommap = ss.midmap = ss.topmap = 0;
 
 	      // killough 10/98: sky textures coming from sidedefs:
-	      ss.sky = 0;
+	      //ss.sky = 0;
 	    }
 
 	  W.UnlockLumpNum(lump); // cph - release the data
@@ -899,48 +934,47 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	// killough 5/3/98: reformatted, cleaned up
 
-	static void P_LoadNodes (int lump)
+	private void P_LoadNodes (int lump)
 	{
-	  final byte *data; // cph - final*
+	  final mapnode_t[] data; // cph - final*
 	  int  i;
 
-	  numnodes = W.LumpLength (lump) / sizeof(mapnode_t);
-	  nodes = malloc_IfSameLevel(nodes, numnodes * sizeof(node_t));
-	  data = W.CacheLumpNum (lump); // cph - wad lump handling updated
+	  numnodes = W.LumpLength (lump) / mapnode_t.sizeOf();
+	  nodes = (node_t[]) malloc_IfSameLevel(nodes);
+	  data = W.CacheLumpNumIntoArray(lump, numnodes,mapnode_t.class); // cph - wad lump handling updated
 
-	  if ((!data) || (!numnodes))
+	  if ((data==null) || (numnodes==0))
 	  {
 	    // allow trivial maps
 	    if (numsubsectors == 1)
-	      lprintf(LO_INFO,
-	          "P_LoadNodes: trivial map (no nodes, one subsector)\n");
+	      System.out.print("P_LoadNodes: trivial map (no nodes, one subsector)\n");
 	    else
-	      I_Error("P_LoadNodes: no nodes in level");
+	      I.Error("P_LoadNodes: no nodes in level");
 	  }
 
 	  for (i=0; i<numnodes; i++)
 	    {
-	      node_t *no = nodes + i;
-	      final mapnode_t *mn = (final mapnode_t *) data + i;
+	      node_t no = nodes[i];
+	      final mapnode_t mn = data[i];
 	      int j;
 
-	      no.x = LittleShort(mn.x)<<FRACBITS;
-	      no.y = LittleShort(mn.y)<<FRACBITS;
-	      no.dx = LittleShort(mn.dx)<<FRACBITS;
-	      no.dy = LittleShort(mn.dy)<<FRACBITS;
+	      no.x = mn.x<<FRACBITS;
+	      no.y = mn.y<<FRACBITS;
+	      no.dx =mn.dx<<FRACBITS;
+	      no.dy = mn.dy<<FRACBITS;
 
 	      for (j=0 ; j<2 ; j++)
 	        {
 	          int k;
 	          // e6y: support for extended nodes
-	          no.children[j] = (unsigned short)LittleShort(mn.children[j]);
+	          no.children[j] = (char)mn.children[j];
 
 	          // e6y: support for extended nodes
 	          if (no.children[j] == 0xFFFF)
 	          {
 	            no.children[j] = 0xFFFFFFFF;
 	          }
-	          else if (no.children[j] & 0x8000)
+	          else if (flags(no.children[j],0x8000))
 	          {
 	            // Convert to extended type
 	            no.children[j] &= ~0x8000;
@@ -948,7 +982,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	            // haleyjd 11/06/10: check for invalid subsector reference
 	            if(no.children[j] >= numsubsectors)
 	            {
-	              lprintf(LO_ERROR, "P_LoadNodes: BSP tree references invalid subsector %d.\n", no.children[j]);
+	              System.err.printf("P_LoadNodes: BSP tree references invalid subsector %d.\n", no.children[j]);
 	              no.children[j] = 0;
 	            }
 
@@ -956,52 +990,49 @@ public class BoomLevelLoader implements ILevelLoader {
 	          }
 
 	          for (k=0 ; k<4 ; k++)
-	            no.bbox[j][k] = LittleShort(mn.bbox[j][k])<<FRACBITS;
+	            no.bbox[j].bbox[k] = mn.bbox[j][k]<<FRACBITS;
 	        }
 	    }
 
 	  W.UnlockLumpNum(lump); // cph - release the data
 	}
 
-	static void P_LoadNodes_V4(int lump)
+	private void P_LoadNodes_V4(int lump)
 	{
-	  final byte *data; // cph - final*
+	  final DeepBSPNodesV4 data; // cph - final*
 	  int  i;
 
-	  numnodes = (W.LumpLength (lump) - 8) / sizeof(mapnode_v4_t);
-	  nodes = malloc_IfSameLevel(nodes, numnodes * sizeof(node_t));
-	  data = W.CacheLumpNum (lump); // cph - wad lump handling updated
+	  numnodes = (W.LumpLength (lump) - 8) / mapnode_v4_t.sizeOf();
+	  nodes = (node_t[]) malloc_IfSameLevel(nodes);
+	  data = (DeepBSPNodesV4) W.CacheLumpNum (lump,0,DeepBSPNodesV4.class); // cph - wad lump handling updated
 
-	  // skip header
-	  data = ((unsigned char*)data) + 8;
-
-	  if ((!data) || (!numnodes))
+	  if ((data==null) || (numnodes==0))
 	  {
 	    // allow trivial maps
 	    if (numsubsectors == 1)
-	      lprintf(LO_INFO, "P_LoadNodes_V4: trivial map (no nodes, one subsector)\n");
+	      System.out.print("P_LoadNodes_V4: trivial map (no nodes, one subsector)\n");
 	    else
-	      I_Error("P_LoadNodes_V4: no nodes in level");
+	      I.Error("P_LoadNodes_V4: no nodes in level");
 	  }
 
 	  for (i = 0; i < numnodes; i++)
 	    {
-	      node_t *no = nodes + i;
-	      final mapnode_v4_t *mn = (final mapnode_v4_t *) data + i;
+	      node_t no = nodes[i];
+	      final mapnode_v4_t mn = data.getNodes()[i];
 	      int j;
 
-	      no.x = LittleShort(mn.x)<<FRACBITS;
-	      no.y = LittleShort(mn.y)<<FRACBITS;
-	      no.dx = LittleShort(mn.dx)<<FRACBITS;
-	      no.dy = LittleShort(mn.dy)<<FRACBITS;
+	      no.x = mn.x<<FRACBITS;
+	      no.y = mn.y<<FRACBITS;
+	      no.dx = mn.dx<<FRACBITS;
+	      no.dy = mn.dy<<FRACBITS;
 
 	      for (j=0 ; j<2 ; j++)
 	        {
 	          int k;
-	          no.children[j] = (unsigned int)(mn.children[j]);
+	          no.children[j] = mn.children[j];
 
 	          for (k=0 ; k<4 ; k++)
-	            no.bbox[j][k] = LittleShort(mn.bbox[j][k])<<FRACBITS;
+	            no.bbox[j].bbox[k] = mn.bbox[j][k]<<FRACBITS;
 	        }
 	    }
 
@@ -1018,18 +1049,20 @@ public class BoomLevelLoader implements ILevelLoader {
 	  }
 	}
 
-	private void P_LoadZSegs (byte[] data)
+	private void P_LoadZSegs (ZNodeSegs data)
 	{
 	  int i;
 
+	  final mapseg_znod_t[] nodes=data.getNodes();
+	  
 	  for (i = 0; i < numsegs; i++)
 	  {
-	    line_t *ldef;
-	    unsigned int v1, v2;
-	    unsigned int linedef;
-	    unsigned char side;
-	    seg_t *li = segs+i;
-	    final mapseg_znod_t *ml = (final mapseg_znod_t *) data + i;
+	    line_t ldef;
+	    int v1, v2;
+	    int linedef;
+	    char side;
+	    seg_t li = segs[i];
+	    final mapseg_znod_t ml = nodes[i];
 
 	    v1 = ml.v1;
 	    v2 = ml.v2;
@@ -1037,34 +1070,34 @@ public class BoomLevelLoader implements ILevelLoader {
 	    li.iSegID = i; // proff 11/05/2000: needed for OpenGL
 	    li.miniseg = false;
 
-	    linedef = (unsigned short)LittleShort(ml.linedef);
+	    linedef = (char)ml.linedef;
 
 	    //e6y: check for wrong indexes
-	    if ((unsigned int)linedef >= (unsigned int)numlines)
+	    if (unsigned(linedef) >= unsigned (numlines))
 	    {
-	      I_Error("P_LoadZSegs: seg %d references a non-existent linedef %d",
-	        i, (unsigned)linedef);
+	      I.Error("P_LoadZSegs: seg %d references a non-existent linedef %d",
+	        i, unsigned(linedef));
 	    }
 
-	    ldef = &lines[linedef];
+	    ldef = lines[linedef];
 	    li.linedef = ldef;
-	    side = ml.side;
+	    side = (char) ml.side;
 
 	    //e6y: fix wrong side index
 	    if (side != 0 && side != 1)
 	    {
-	      lprintf(LO_WARN, "P_LoadZSegs: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
+	      System.err.printf( "P_LoadZSegs: seg %d contains wrong side index %d. Replaced with 1.\n", i, side);
 	      side = 1;
 	    }
 
 	    //e6y: check for wrong indexes
-	    if ((unsigned)ldef.sidenum[side] >= (unsigned)numsides)
+	    if (unsigned(ldef.sidenum[side]) >= unsigned(numsides))
 	    {
-	      I_Error("P_LoadZSegs: linedef %d for seg %d references a non-existent sidedef %d",
-	        linedef, i, (unsigned)ldef.sidenum[side]);
+	      I.Error("P_LoadZSegs: linedef %d for seg %d references a non-existent sidedef %d",
+	        linedef, i, unsigned(ldef.sidenum[side]));
 	    }
 
-	    li.sidedef = &sides[ldef.sidenum[side]];
+	    li.sidedef = sides[ldef.sidenum[side]];
 
 	    /* cph 2006/09/30 - our frontsector can be the second side of the
 	    * linedef, so must check for NO_INDEX in case we are incorrectly
@@ -1075,26 +1108,27 @@ public class BoomLevelLoader implements ILevelLoader {
 	    }
 	    else
 	    {
-	      li.frontsector = 0;
-	      lprintf(LO_WARN, "P_LoadZSegs: front of seg %i has no sidedef\n", i);
+	      li.frontsector = null;
+	      System.err.printf( "P_LoadZSegs: front of seg %i has no sidedef\n", i);
 	    }
 
-	    if ((ldef.flags & ML_TWOSIDED) && (ldef.sidenum[side^1] != NO_INDEX))
+	    if (flags(ldef.flags, ML_TWOSIDED) && (ldef.sidenum[side^1] != NO_INDEX))
 	      li.backsector = sides[ldef.sidenum[side^1]].sector;
 	    else
-	      li.backsector = 0;
+	      li.backsector = null;
 
-	    li.v1 = &vertexes[v1];
-	    li.v2 = &vertexes[v2];
+	    li.v1 = vertexes[v1];
+	    li.v2 = vertexes[v2];
 
 	    li.length = GetDistance(li.v2.x - li.v1.x, li.v2.y - li.v1.y);
-	    li.offset = GetOffset(li.v1, (side ? ldef.v2 : ldef.v1));
-	    li.angle = R_PointToAngle2(segs[i].v1.x, segs[i].v1.y, segs[i].v2.x, segs[i].v2.y);
+	    li.offset = GetOffset(li.v1, (side!=0 ? ldef.v2 : ldef.v1));
+	    li.angle = RendererState.PointToAngle(segs[i].v1.x, segs[i].v1.y, segs[i].v2.x, segs[i].v2.y);
 	    //li.angle = (int)((float)atan2(li.v2.y - li.v1.y,li.v2.x - li.v1.x) * (ANG180 / M_PI));
 	  }
 	}
 
-	static void P_LoadZNodes(int lump, int glnodes)
+	/*
+	private void P_LoadZNodes(int lump, int glnodes)
 	{
 	  final byte *data;
 	  unsigned int i, len;
@@ -1241,20 +1275,23 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	  W.UnlockLumpNum(lump); // cph - release the data
 	}
-
-	#ifdef GL_DOOM
-	static int no_overlapped_sprites;
-	#define GETXY(mobj) (mobj.x + (mobj.y >> 16))
-	static int C_DECL dicmp_sprite_by_pos(final void *a, final void *b)
+	 */
+	
+	private boolean no_overlapped_sprites;
+	
+	private final int GETXY(mobj_t mobj){
+		return (mobj.x + (mobj.y >> 16));
+	}
+	
+	private final int dicmp_sprite_by_pos(final Object a, final Object b)
 	{
-	  mobj_t *m1 = (*((mobj_t **)a));
-	  mobj_t *m2 = (*((mobj_t **)b));
+	  mobj_t m1 = (mobj_t)a;
+	  mobj_t m2 = (mobj_t)b;
 	  
 	  int res = GETXY(m2) - GETXY(m1);
-	  no_overlapped_sprites = no_overlapped_sprites && res;
+	  no_overlapped_sprites = no_overlapped_sprites && (res!=0);
 	  return res;
 	}
-	#endif
 
 	/*
 	 * P_LoadThings
@@ -1264,39 +1301,44 @@ public class BoomLevelLoader implements ILevelLoader {
 	 * changes like byte order reversals. Take a copy to edit.
 	 */
 
-	static void P_LoadThings (int lump)
+	private void P_LoadThings (int lump)
 	{
-	  int  i, numthings = W.LumpLength (lump) / sizeof(mapthing_t);
-	  final mapthing_t *data = W.CacheLumpNum (lump);
+	  int  i, numthings = W.LumpLength (lump) / mapthing_t.sizeOf();
+	  final mapthing_t[] data = C2JUtils.createArrayOfObjects(mapthing_t.class, numthings); 
 
-	  mobj_t *mobj;
+	  W.CacheLumpNumIntoArray(lump,0,data,mapthing_t.class);
+
+	  mobj_t mobj;
 	  int mobjcount = 0;
-	  mobj_t **mobjlist = malloc(numthings * sizeof(mobjlist[0]));
+	  mobj_t[] mobjlist =C2JUtils.createArrayOfObjects(mobj_t.class,numthings);
 
-	  if ((!data) || (!numthings))
-	    I_Error("P_LoadThings: no things in level");
+	  if ((data==null) || (numthings==0))
+	    I.Error("P_LoadThings: no things in level");
 
 	  for (i=0; i<numthings; i++)
 	    {
 	      mapthing_t mt = data[i];
 
+	      /* Not needed. Handled during unmarshaling. 
 	      mt.x = LittleShort(mt.x);
 	      mt.y = LittleShort(mt.y);
 	      mt.angle = LittleShort(mt.angle);
 	      mt.type = LittleShort(mt.type);
 	      mt.options = LittleShort(mt.options);
+	      */
+
 
 	      if (!P_IsDoomnumAllowed(mt.type))
 	        continue;
 
 	      // Do spawn all other stuff.
-	      mobj = P_SpawnMapThing(&mt, i);
-	      if (mobj && mobj.info.speed == 0)
+	      mobj = P.SpawnMapThing(mt/*, i*/);
+	      if (mobj!=null && mobj.info.speed == 0)
 	        mobjlist[mobjcount++] = mobj;
 	    }
 
 	  W.UnlockLumpNum(lump); // cph - release the data
-
+	  /*
 	#ifdef GL_DOOM
 	  if (V_GetMode() == VID_MODEGL)
 	  {
@@ -1331,14 +1373,42 @@ public class BoomLevelLoader implements ILevelLoader {
 	    }
 	  }
 	#endif
-
-	  free(mobjlist);
+	*/
+	  
 	}
 
+	/*
+	 * P_IsDoomnumAllowed()
+	 * Based on code taken from P_LoadThings() in src/p_setup.c  Return TRUE
+	 * if the thing in question is expected to be available in the gamemode used.
+	 */
+
+	boolean P_IsDoomnumAllowed(int doomnum)
+	{
+	  // Do not spawn cool, new monsters if !commercial
+	  if (!DM.isCommercial())
+	    switch(doomnum)
+	      {
+	      case 64:  // Archvile
+	      case 65:  // Former Human Commando
+	      case 66:  // Revenant
+	      case 67:  // Mancubus
+	      case 68:  // Arachnotron
+	      case 69:  // Hell Knight
+	      case 71:  // Pain Elemental
+	      case 84:  // Wolf SS
+	      case 88:  // Boss Brain
+	      case 89:  // Boss Shooter
+	        return false;
+	      }
+
+	  return true;
+	}
+	
 	//
 	// P_LoadLineDefs
 	// Also counts secret lines for intermissions.
-//	        ^^^
+	//	        ^^^
 	// ??? killough ???
 	// Does this mean secrets used to be linedef-based, rather than sector-based?
 	//
@@ -1346,71 +1416,77 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	// killough 5/3/98: reformatted, cleaned up
 
-	static void P_LoadLineDefs (int lump)
+	private void P_LoadLineDefs (int lump)
 	{
-	  final byte *data; // cph - final*
+	  final maplinedef_t[] data; // cph - final*
 	  int  i;
 
-	  numlines = W.LumpLength (lump) / sizeof(maplinedef_t);
-	  lines = calloc_IfSameLevel(lines, numlines, sizeof(line_t));
-	  data = W.CacheLumpNum (lump); // cph - wad lump handling updated
+	  numlines = W.LumpLength (lump) / maplinedef_t.sizeOf();
+	  lines = calloc_IfSameLevel(lines, numlines);
+	  data = W.CacheLumpNumIntoArray(lump, numlines, maplinedef_t.class); // cph - wad lump handling updated
 
 	  for (i=0; i<numlines; i++)
 	    {
-	      final maplinedef_t *mld = (final maplinedef_t *) data + i;
-	      line_t *ld = lines+i;
-	      vertex_t *v1, *v2;
+	      final maplinedef_t mld = data[i];
+	      line_t ld = lines[i];
+	      vertex_t v1, v2;
 
-	      ld.flags = (unsigned short)LittleShort(mld.flags);
-	      ld.special = LittleShort(mld.special);
-	      ld.tag = LittleShort(mld.tag);
-	      v1 = ld.v1 = &vertexes[(unsigned short)LittleShort(mld.v1)];
-	      v2 = ld.v2 = &vertexes[(unsigned short)LittleShort(mld.v2)];
+	      ld.flags = mld.flags;
+	      ld.special = mld.special;
+	      ld.tag = mld.tag;
+	      v1 = ld.v1 = vertexes[(char)mld.v1];
+	      v2 = ld.v2 = vertexes[(char)mld.v2];
 	      ld.dx = v2.x - v1.x;
 	      ld.dy = v2.y - v1.y;
-	#ifdef GL_DOOM
+	/*
+	 #ifdef GL_DOOM
+	 
 	      // e6y
 	      // Rounding the wall length to the nearest integer
 	      // when determining length instead of always rounding down
 	      // There is no more glitches on seams between identical textures.
 	      ld.texel_length = GetTexelDistance(ld.dx, ld.dy);
 	#endif
+	*/
 
-	      ld.tranlump = -1;   // killough 4/11/98: no translucency by default
+	      // TODO
+	      // ld.tranlump = -1;   // killough 4/11/98: no translucency by default
 
-	      ld.slopetype = !ld.dx ? ST_VERTICAL : !ld.dy ? ST_HORIZONTAL :
-	        FixedDiv(ld.dy, ld.dx) > 0 ? ST_POSITIVE : ST_NEGATIVE;
+	      ld.slopetype = (ld.dx==0) ? slopetype_t.ST_VERTICAL : 
+	    	  			  (ld.dy==0) ? slopetype_t.ST_HORIZONTAL :
+	    	  				  fixed_t.FixedDiv(ld.dy, ld.dx) > 0 ? slopetype_t.ST_POSITIVE : slopetype_t.ST_NEGATIVE;
 
 	      if (v1.x < v2.x)
 	        {
-	          ld.bbox[BOXLEFT] = v1.x;
-	          ld.bbox[BOXRIGHT] = v2.x;
+	          ld.bbox[BBox.BOXLEFT] = v1.x;
+	          ld.bbox[BBox.BOXRIGHT] = v2.x;
 	        }
 	      else
 	        {
-	          ld.bbox[BOXLEFT] = v2.x;
-	          ld.bbox[BOXRIGHT] = v1.x;
+	          ld.bbox[BBox.BOXLEFT] = v2.x;
+	          ld.bbox[BBox.BOXRIGHT] = v1.x;
 	        }
 	      if (v1.y < v2.y)
 	        {
-	          ld.bbox[BOXBOTTOM] = v1.y;
-	          ld.bbox[BOXTOP] = v2.y;
+	          ld.bbox[BBox.BOXBOTTOM] = v1.y;
+	          ld.bbox[BBox.BOXTOP] = v2.y;
 	        }
 	      else
 	        {
-	          ld.bbox[BOXBOTTOM] = v2.y;
-	          ld.bbox[BOXTOP] = v1.y;
+	          ld.bbox[BBox.BOXBOTTOM] = v2.y;
+	          ld.bbox[BBox.BOXTOP] = v1.y;
 	        }
 
 	      /* calculate sound origin of line to be its midpoint */
 	      //e6y: fix sound origin for large levels
 	      // no need for comp_sound test, these are only used when comp_sound = 0
-	      ld.soundorg.x = ld.bbox[BOXLEFT] / 2 + ld.bbox[BOXRIGHT] / 2;
-	      ld.soundorg.y = ld.bbox[BOXTOP] / 2 + ld.bbox[BOXBOTTOM] / 2;
+	      ld.soundorg=new degenmobj_t(ld.bbox[BBox.BOXLEFT] / 2 + ld.bbox[BBox.BOXRIGHT] / 2,
+	    		  					  ld.bbox[BBox.BOXTOP] / 2 + ld.bbox[BBox.BOXBOTTOM] / 2,0);
 
-	      ld.iLineID=i; // proff 04/05/2000: needed for OpenGL
-	      ld.sidenum[0] = LittleShort(mld.sidenum[0]);
-	      ld.sidenum[1] = LittleShort(mld.sidenum[1]);
+	      // TODO
+	      //ld.iLineID=i; // proff 04/05/2000: needed for OpenGL
+	      ld.sidenum[0] =mld.sidenum[0];
+	      ld.sidenum[1] = mld.sidenum[1];
 
 	      { 
 	        /* cph 2006/09/30 - fix sidedef errors right away.
@@ -1421,8 +1497,8 @@ public class BoomLevelLoader implements ILevelLoader {
 	        for (j=0; j < 2; j++)
 	        {
 	          if (ld.sidenum[j] != NO_INDEX && ld.sidenum[j] >= numsides) {
-	            ld.sidenum[j] = NO_INDEX;
-	            lprintf(LO_WARN, "P_LoadLineDefs: linedef %d has out-of-range sidedef number\n",numlines-i-1);
+	            ld.sidenum[j] = (short) NO_INDEX;
+	            System.err.printf( "P_LoadLineDefs: linedef %d has out-of-range sidedef number\n",numlines-i-1);
 	          }
 	        }
 	        
@@ -1431,30 +1507,33 @@ public class BoomLevelLoader implements ILevelLoader {
 	        if (ld.sidenum[0] == NO_INDEX) {
 	          ld.sidenum[0] = 0;  // Substitute dummy sidedef for missing right side
 	          // cph - print a warning about the bug
-	          lprintf(LO_WARN, "P_LoadLineDefs: linedef %d missing first sidedef\n",numlines-i-1);
+	          System.err.printf( "P_LoadLineDefs: linedef %d missing first sidedef\n",numlines-i-1);
 	        }
 	        
-	        if ((ld.sidenum[1] == NO_INDEX) && (ld.flags & ML_TWOSIDED)) {
+	        if ((ld.sidenum[1] == NO_INDEX) && flags(ld.flags ,ML_TWOSIDED)) {
 	          // e6y
 	          // ML_TWOSIDED flag shouldn't be cleared for compatibility purposes
 	          // see CLNJ-506.LMP at http://doomedsda.us/wad1005.html
-	          if (!demo_compatibility || !overflows[OVERFLOW.MISSEDBACKSIDE].emulate)
-	          {
+	          // TODO: we don't really care, but still...
+	        	//if (!demo_compatibility || !overflows[OVERFLOW.MISSEDBACKSIDE].emulate)
+	          //{
 	            ld.flags &= ~ML_TWOSIDED;  // Clear 2s flag for missing left side
-	          }
+	          //}
 	          // Mark such lines and do not draw them only in demo_compatibility,
 	          // because Boom's behaviour is different
 	          // See OTTAWAU.WAD E1M1, sectors 226 and 300
 	          // http://www.doomworld.com/idgames/index.php?id=1651
-	          ld.r_flags = RF_IGNORE_COMPAT;
+	          // TODO ehhh?
+	          //ld.r_flags = RF_IGNORE_COMPAT;
 	          // cph - print a warning about the bug
-	          lprintf(LO_WARN, "P_LoadLineDefs: linedef %d has two-sided flag set, but no second sidedef\n",numlines-i-1);
+	          System.err.printf( "P_LoadLineDefs: linedef %d has two-sided flag set, but no second sidedef\n",numlines-i-1);
 	        }
 	      }
 
 	      // killough 4/4/98: support special sidedef interpretation below
-	      if (ld.sidenum[0] != NO_INDEX && ld.special)
-	        sides[*ld.sidenum].special = ld.special;
+	      // TODO:
+	      // if (ld.sidenum[0] != NO_INDEX && ld.special!=0)
+	      //  sides[(ld.sidenum[0]<<16)& (0x0000FFFF&ld.sidenum[1])].special = ld.special;
 	    }
 
 	  W.UnlockLumpNum(lump); // cph - release the lump
@@ -1463,28 +1542,28 @@ public class BoomLevelLoader implements ILevelLoader {
 	// killough 4/4/98: delay using sidedefs until they are loaded
 	// killough 5/3/98: reformatted, cleaned up
 
-	static void P_LoadLineDefs2(int lump)
+	private void P_LoadLineDefs2(int lump)
 	{
 	  int i = numlines;
-	  register line_t *ld = lines;
-	  for (;i--;ld++)
+	  line_t ld;
+	  int ld_pointer=0;
+	  for (;i-->0;ld_pointer++)
 	    {
+		  ld=lines[ld_pointer];
 	      ld.frontsector = sides[ld.sidenum[0]].sector; //e6y: Can't be NO_INDEX here
-	      ld.backsector  = ld.sidenum[1]!=NO_INDEX ? sides[ld.sidenum[1]].sector : 0;
+	      ld.backsector  = ld.sidenum[1]!=NO_INDEX ? sides[ld.sidenum[1]].sector : null;
 	      switch (ld.special)
 	        {                       // killough 4/11/98: handle special types
-	          int lump, j;
-
 	        case 260:               // killough 4/11/98: translucent 2s textures
-	            transparentpresent = true;//e6y
-	            lump = sides[*ld.sidenum].special; // translucency from sidedef
-	            if (!ld.tag)                       // if tag==0,
-	              ld.tranlump = lump;              // affect this linedef only
-	            else
-	              for (j=0;j<numlines;j++)          // if tag!=0,
-	                if (lines[j].tag == ld.tag)    // affect all matching linedefs
-	                  lines[j].tranlump = lump;
-	            break;
+	            // TODO: transparentpresent = true;//e6y
+	           // int lmp = sides[ld.getSpecialSidenum()].special; // translucency from sidedef
+	           // if (!ld.tag)                       // if tag==0,
+	           //   ld.tranlump = lmp;              // affect this linedef only
+	           // else
+	           //   for (int j=0;j<numlines;j++)          // if tag!=0,
+	           //     if (lines[j].tag == ld.tag)    // affect all matching linedefs
+	           //       lines[j].tranlump = lump;
+	           // break;
 	        }
 	    }
 	}
@@ -1494,10 +1573,10 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	// killough 4/4/98: split into two functions
 
-	static void P_LoadSideDefs (int lump)
+	private void P_LoadSideDefs (int lump)
 	{
-	  numsides = W.LumpLength(lump) / sizeof(mapsidedef_t);
-	  sides = calloc_IfSameLevel(sides, numsides, sizeof(side_t));
+	  numsides = W.LumpLength(lump) / mapsidedef_t.sizeOf();
+	  sides = calloc_IfSameLevel(sides, numsides);
 	}
 
 	// killough 4/4/98: delay using texture names until
@@ -1521,7 +1600,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	      { /* cph 2006/09/30 - catch out-of-range sector numbers; use sector 0 instead */
 	        unsigned short sector_num = LittleShort(msd.sector);
 	        if (sector_num >= numsectors) {
-	          lprintf(LO_WARN,"P_LoadSideDefs2: sidedef %i has out-of-range sector num %u\n", i, sector_num);
+	          System.err.printf("P_LoadSideDefs2: sidedef %i has out-of-range sector num %u\n", i, sector_num);
 	          sector_num = 0;
 	        }
 	        sd.sector = sec = &sectors[sector_num];
@@ -2331,20 +2410,20 @@ public class BoomLevelLoader implements ILevelLoader {
 	void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 	{
 	  int   i;
-	  char  lumpname[9];
+	  String  lumpname;
 	  int   lumpnum;
 
-	  char  gl_lumpname[9];
+	  String gl_lumpname;
 	  int   gl_lumpnum;
 
 	  //e6y
 	  totallive = 0;
 	  transparentpresent = false;
 
-	  R_StopAllInterpolations();
+	  // R_StopAllInterpolations();
 
-	  totallive = totalkills = totalitems = totalsecret = wminfo.maxfrags = 0;
-	  wminfo.partime = 180;
+	  DM.totallive = DM.totalkills = DM.totalitems = DM.totalsecret = DM.wminfo.maxfrags = 0;
+	  DM.wminfo.partime = 180;
 
 	  for (i=0; i<MAXPLAYERS; i++)
 	  {

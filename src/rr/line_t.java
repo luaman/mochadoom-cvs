@@ -68,6 +68,11 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
         
         public degenmobj_t soundorg;
         
+        /** For Boom stuff, interprets sidenum specially */
+        public int getSpecialSidenum(){
+        	return (sidenum[0]<<16)&(0x0000ffff&sidenum[1]);        	
+        }
+        
         public void assignVertexValues(){
             this.v1x=v1.x;
             this.v1y=v1.y;
