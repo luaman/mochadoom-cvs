@@ -29,6 +29,7 @@ import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
 import s.IDoomSound;
+import s.degenmobj_t;
 import st.IDoomStatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
@@ -49,7 +50,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.32 2011/08/24 15:00:34 velktron Exp $
+// $Id: LevelLoader.java,v 1.33 2011/08/24 15:52:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +65,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.33  2011/08/24 15:52:04  velktron
+// Sets proper ISoundOrigin for sectors (height, too)
+//
 // Revision 1.32  2011/08/24 15:00:34  velktron
 // Improved version, now using createArrayOfObjects. Much better syntax.
 //
@@ -200,7 +204,7 @@ public class LevelLoader implements DoomStatusAware,ILevelLoader{
     IDoomSound S;
     
     
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.32 2011/08/24 15:00:34 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.33 2011/08/24 15:52:04 velktron Exp $";
   
   //  
   // MAP related Lookup tables.
@@ -807,8 +811,8 @@ public int bmaporgy;
     	  I.Error ("P_GroupLines: miscounted");
               
       // set the degenmobj_t to the middle of the bounding box
-      sector.soundorg.x = (bbox[BOXRIGHT]+bbox[BOXLEFT])/2;
-      sector.soundorg.y = (bbox[BOXTOP]+bbox[BOXBOTTOM])/2;
+      sector.soundorg=new degenmobj_t(((bbox[BOXRIGHT]+bbox[BOXLEFT])/2),
+    		  						  ((bbox[BOXTOP]+bbox[BOXBOTTOM])/2),(sector.ceilingheight-sector.floorheight)/2);
           
       // adjust bounding box to map blocks
       block = (bbox[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
