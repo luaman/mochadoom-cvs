@@ -8,7 +8,7 @@ import p.mobj_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: IDoomSound.java,v 1.4 2011/06/13 18:58:10 velktron Exp $
+// $Id: IDoomSound.java,v 1.5 2011/08/24 15:55:12 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -40,7 +40,7 @@ public interface IDoomSound {
 		    sfxinfo_t	sfxinfo;
 
 		    // origin of sound
-		    mobj_t	origin;
+		    ISoundOrigin	origin;
 
 		    // handle of the sound being played
 		    int		handle;
@@ -99,20 +99,20 @@ public interface IDoomSound {
 	/**
 	 * Start sound for thing at <origin> using <sound_id> from sounds.h
 	 */
-	public void StartSound(mobj_t origin, int sound_id);
+	public void StartSound(ISoundOrigin origin, int sound_id);
 
 	/**
 	 * Start sound for thing at <origin> using <sound_id> from sounds.h
 	 * Convenience method using sfxenum_t instead. Delegated to int version.
 	 * 
 	 */
-	public void StartSound(mobj_t origin, sfxenum_t sound_id);
+	public void StartSound(ISoundOrigin origin, sfxenum_t sound_id);
 	
 	/** Will start a sound at a given volume. */
-	public void StartSoundAtVolume(mobj_t origin, int sound_id, int volume);
+	public void StartSoundAtVolume(ISoundOrigin origin, int sound_id, int volume);
 
 	/** Stop sound for thing at <origin> */
-	public void StopSound(mobj_t origin);
+	public void StopSound(ISoundOrigin origin);
 
 	/**
 	 * Start music using <music_id> from sounds.h, and set whether looping

@@ -27,25 +27,25 @@ public class DummySoundDriver implements IDoomSound{
 	}
 
 	@Override
-	public void StartSound(mobj_t origin, int sound_id) {
+	public void StartSound(ISoundOrigin origin, int sound_id) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void StartSound(mobj_t origin, sfxenum_t sound_id) {
+	public void StartSound(ISoundOrigin origin, sfxenum_t sound_id) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void StartSoundAtVolume(mobj_t origin, int sound_id, int volume) {
+	public void StartSoundAtVolume(ISoundOrigin origin, int sound_id, int volume) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void StopSound(mobj_t origin) {
+	public void StopSound(ISoundOrigin origin) {
 		// TODO Auto-generated method stub
 		
 	}

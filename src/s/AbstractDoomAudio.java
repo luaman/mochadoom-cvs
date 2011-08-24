@@ -182,7 +182,7 @@ public class AbstractDoomAudio implements IDoomSound{
 
 	public void
 	StartSoundAtVolume
-	( mobj_t		origin_p,
+	( ISoundOrigin		origin_p,
 			int		sfx_id,
 			int		volume )
 	{
@@ -194,7 +194,7 @@ public class AbstractDoomAudio implements IDoomSound{
 		sfxinfo_t	sfx;
 		int		cnum;
 
-		mobj_t	origin = (mobj_t) origin_p;
+		ISoundOrigin	origin = (ISoundOrigin) origin_p;
 
 
 		// Debug.
@@ -248,8 +248,8 @@ public class AbstractDoomAudio implements IDoomSound{
 			sep=vps.sep;
 
 
-			if ( origin.x == DS.players[DS.consoleplayer].mo.x
-					&& origin.y == DS.players[DS.consoleplayer].mo.y)
+			if ( origin.getX() == DS.players[DS.consoleplayer].mo.x
+					&& origin.getY() == DS.players[DS.consoleplayer].mo.y)
 			{	
 				sep 	= NORM_SEP;
 			}
@@ -348,7 +348,7 @@ public class AbstractDoomAudio implements IDoomSound{
 
 	public void
 	StartSound
-	( mobj_t		origin,
+	( ISoundOrigin		origin,
 			sfxenum_t		sfx_id ){
 		//  MAES: necessary sanity check at this point.
 		if (sfx_id!=null && sfx_id.ordinal()>0)
@@ -357,7 +357,7 @@ public class AbstractDoomAudio implements IDoomSound{
 
 	public void
 	StartSound
-	( mobj_t		origin,
+	( ISoundOrigin		origin,
 			int		sfx_id )
 	{
 		/* #ifdef SAWDEBUG
@@ -427,7 +427,7 @@ public class AbstractDoomAudio implements IDoomSound{
 	}
 
 	// This one is public.
-	public void StopSound(mobj_t origin)
+	public void StopSound(ISoundOrigin origin)
 	{
 
 		int cnum;
@@ -714,7 +714,7 @@ public class AbstractDoomAudio implements IDoomSound{
 	protected boolean 
 	AdjustSoundParams
 	( mobj_t	listener,
-			mobj_t	source,
+			ISoundOrigin	source,
 			vps_t vps)
 	{
 		int	approx_dist;
@@ -724,8 +724,8 @@ public class AbstractDoomAudio implements IDoomSound{
 
 		// calculate the distance to sound origin
 		//  and clip it if necessary
-		adx = Math.abs(listener.x - source.x);
-		ady = Math.abs(listener.y - source.y);
+		adx = Math.abs(listener.x - source.getX());
+		ady = Math.abs(listener.y - source.getY());
 
 		// From _GG1_ p.428. Appox. eucledian distance fast.
 		approx_dist = adx + ady - ((adx < ady ? adx : ady)>>1);
@@ -739,8 +739,8 @@ public class AbstractDoomAudio implements IDoomSound{
 		// angle of source to listener
 		angle = rr.RendererState.PointToAngle(listener.x,
 				listener.y,
-				source.x,
-				source.y);
+				source.getX(),
+				source.getY());
 
 		if (angle > listener.angle)
 			angle = angle - listener.angle;
@@ -831,7 +831,7 @@ public class AbstractDoomAudio implements IDoomSound{
 	// S_getChannel :
 	//   If none available, return -1.  Otherwise channel #.
 	//
-	protected int 	getChannel( mobj_t origin,sfxinfo_t	sfxinfo )
+	protected int 	getChannel( ISoundOrigin origin,sfxinfo_t	sfxinfo )
 	{
 		// channel number to use
 		int		cnum;
