@@ -15,12 +15,12 @@ public class node_t {
     
     public node_t(){
         bbox=new BBox[2];
-        children= new char[2];
+        children= new int[2];
         C2JUtils.initArrayOfObjects(bbox, BBox.class);
     }
     
      public node_t(int x, int y, int dx, int dy, BBox[] bbox,
-            char[] children) {
+            int[] children) {
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -40,8 +40,11 @@ public class node_t {
      public BBox[] bbox;
      
 
-     /** If NF_SUBSECTOR its a subsector. MAES: was unsigned short...so char. */
-     public char[] children;
+     /** If NF_SUBSECTOR its a subsector. 
+      * 
+      * e6y: support for extented nodes
+      */
+     public int[] children;
      
      /**
       * R_PointOnSide

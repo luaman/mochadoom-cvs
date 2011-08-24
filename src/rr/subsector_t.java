@@ -11,10 +11,10 @@ package rr;
 public class subsector_t {
 
 	public subsector_t() {
-		this(null, (char) 0, (char) 0);
-	}
+		this(null,  0,  0);
+	} 
 
-	public subsector_t(sector_t sector, char numlines, char firstline) {
+	public subsector_t(sector_t sector, int numlines, int firstline) {
 		this.sector = sector;
 		this.numlines = numlines;
 		this.firstline = firstline;
@@ -22,8 +22,10 @@ public class subsector_t {
 
 	// Maes: single pointer
 	public sector_t sector;
-	public char numlines;
-	public char firstline;
+	// e6y: support for extended nodes
+	// 'int' instead of 'short'
+	public int numlines;
+	public int firstline;
 	
 	public String toString(){
 		sb.setLength(0);
