@@ -34,6 +34,14 @@ public class seg_t{
     backsector is NULL for one sided lines */
    public sector_t   frontsector,backsector;
    
+   // Boom stuff
+   public boolean miniseg;
+   public float length;
+   
+   /** proff 11/05/2000: needed for OpenGL */
+   public int iSegID;
+
+
    
    /** R_PointOnSegSide
    *  
