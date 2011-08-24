@@ -49,7 +49,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.31 2011/08/23 16:17:22 velktron Exp $
+// $Id: LevelLoader.java,v 1.32 2011/08/24 15:00:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,6 +64,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.32  2011/08/24 15:00:34  velktron
+// Improved version, now using createArrayOfObjects. Much better syntax.
+//
 // Revision 1.31  2011/08/23 16:17:22  velktron
 // Got rid of Z remnants.
 //
@@ -197,7 +200,7 @@ public class LevelLoader implements DoomStatusAware,ILevelLoader{
     IDoomSound S;
     
     
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.31 2011/08/23 16:17:22 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.32 2011/08/24 15:00:34 velktron Exp $";
   
   //  
   // MAP related Lookup tables.
@@ -281,15 +284,10 @@ public int bmaporgy;
       //  total lump length / vertex record length.
       numvertexes = W.LumpLength (lump) / mapvertex_t.sizeOf();
 
-      // Allocate zone memory for buffer.
-      vertexes = new vertex_t[numvertexes];
-      // Init those "vertexes"
-      C2JUtils.initArrayOfObjects(vertexes, vertex_t.class);
-
       // Load data into cache.
       // MAES: we now have a mismatch between memory/disk: in memory, we need an array.
       // On disk, we have a single lump/blob. Thus, we need to find a way to deserialize this...
-       W.CacheLumpNumIntoArray(lump,PU_STATIC,vertexes,vertex_t.class);
+      vertexes=W.CacheLumpNumIntoArray(lump,numvertexes,vertex_t.class);
       
      // Copy and convert vertex coordinates,
      // MAES: not needed. Intermediate mapvertex_t struct skipped.
@@ -314,13 +312,8 @@ public int bmaporgy;
       
       // Another disparity between disk/memory. Treat it the same as VERTEXES.
       numsegs = W.LumpLength (lump) / mapseg_t.sizeOf();
-      segs = new seg_t[numsegs];
-      C2JUtils.initArrayOfObjects(segs, seg_t.class);
-      data = new mapseg_t[numsegs];
-      C2JUtils.initArrayOfObjects(data, mapseg_t.class);
-      
-      // Read "mapsegs". 
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapseg_t.class);
+      segs = C2JUtils.createArrayOfObjects(seg_t.class,numsegs);
+      data = W.CacheLumpNumIntoArray(lump,numsegs,mapseg_t.class);
       
 
       // We're not done yet!
@@ -371,14 +364,10 @@ public int bmaporgy;
       mapsubsector_t[] data;
       
       numsubsectors = W.LumpLength (lump) / mapsubsector_t.sizeOf();      
-      subsectors = new subsector_t[numsubsectors];
-      C2JUtils.initArrayOfObjects(subsectors, subsector_t.class);
-            
-      data= new mapsubsector_t[numsubsectors];
-      C2JUtils.initArrayOfObjects(data, mapsubsector_t.class);
-      
+      subsectors = C2JUtils.createArrayOfObjects(subsector_t.class,numsubsectors);
+
       // Read "mapsubsectors"
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,data, mapsubsector_t.class);
+      data=W.CacheLumpNumIntoArray(lump,numsubsectors, mapsubsector_t.class);
       
       for (int i=0 ; i<numsubsectors ; i++)
       {
@@ -401,15 +390,10 @@ public int bmaporgy;
       sector_t       ss;
       
       numsectors = W.LumpLength (lump) / mapsector_t.sizeOf();
-      sectors = new sector_t[numsectors];
-      C2JUtils.initArrayOfObjects(sectors, sector_t.class);
-      
-      data=new mapsector_t[numsectors];
-      C2JUtils.initArrayOfObjects(data, mapsector_t.class);
-      
+      sectors = C2JUtils.createArrayOfObjects(sector_t.class,numsectors);
+     
       // Read "mapsectors"
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapsector_t.class);
-      
+      data=W.CacheLumpNumIntoArray(lump,numsectors,mapsector_t.class);
 
       for (int i=0 ; i<numsectors ; i++)
       {
@@ -446,13 +430,10 @@ public int bmaporgy;
       node_t no;
       
       numnodes = W.LumpLength (lump) / mapnode_t.sizeOf();
-      nodes = new node_t[numnodes];
-      C2JUtils.initArrayOfObjects(nodes, node_t.class);
-      data = new mapnode_t[numnodes];  
-      C2JUtils.initArrayOfObjects(data, mapnode_t.class);
+      nodes = C2JUtils.createArrayOfObjects(node_t.class,numnodes);
+
       // Read "mapnodes"
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapnode_t.class);
-      
+      data = W.CacheLumpNumIntoArray(lump,numnodes,mapnode_t.class);
       
       for (i=0 ; i<numnodes ; i++)
       {
@@ -485,9 +466,7 @@ public int bmaporgy;
       boolean     spawn;      
       
       numthings = W.LumpLength (lump) / mapthing_t.sizeOf();
-      data=new mapthing_t[numthings];
-      C2JUtils.initArrayOfObjects(data, mapthing_t.class);
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapthing_t.class);
+      data=W.CacheLumpNumIntoArray(lump,numthings,mapthing_t.class);
       
       
       
@@ -546,15 +525,12 @@ public int bmaporgy;
       vertex_t       v2;
       
       numlines = W.LumpLength (lump) / maplinedef_t.sizeOf();
-      lines = new line_t[numlines];
-   // Check those actually used in sectors, later on.
+      lines = C2JUtils.createArrayOfObjects(line_t.class,numlines);
+      // Check those actually used in sectors, later on.
       used_lines=new boolean[numlines]; 
-      C2JUtils.initArrayOfObjects(lines, line_t.class);
-      data = new maplinedef_t[numlines];
-      C2JUtils.initArrayOfObjects(data, maplinedef_t.class);
 
       // read "maplinedefs"
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,maplinedef_t.class);
+      data = W.CacheLumpNumIntoArray(lump,numlines,maplinedef_t.class);
       
       for (int i=0 ; i<numlines ; i++)
       {
@@ -658,11 +634,9 @@ public int bmaporgy;
       side_t     sd;
       
       numsides = W.LumpLength (lump) / mapsidedef_t.sizeOf();
-      sides = new side_t[numsides];  
-      C2JUtils.initArrayOfObjects(sides, side_t.class);
-      data= new mapsidedef_t[numsides];
-      C2JUtils.initArrayOfObjects(data, mapsidedef_t.class);
-      W.CacheLumpNumIntoArray(lump,PU_STATIC,data,mapsidedef_t.class);
+      sides = C2JUtils.createArrayOfObjects(side_t.class,numsides);
+      
+      data= W.CacheLumpNumIntoArray(lump,numsides,mapsidedef_t.class);
       
       for (int i=0 ; i<numsides ; i++)
       {
@@ -725,8 +699,7 @@ public int bmaporgy;
       	}
       // clear out mobj chains
       
-      blocklinks = new mobj_t[count];
-      C2JUtils.initArrayOfObjects(blocklinks, mobj_t.class);
+      blocklinks = C2JUtils.createArrayOfObjects(mobj_t.class,count);
   }
 
 
