@@ -28,10 +28,10 @@ public class WadLoaderTester {
 
     public static void main(String[] argv) {
         try {
-    WadLoader W=new WadLoader();
+    IWadLoader W=new WadLoader();
     W.InitMultipleFiles(new String[] {"doom1.wad"});
     //W.AddFile("bitter.wad");
-    System.out.println("Total lumps read: "+W.numlumps);
+    System.out.println("Total lumps read: "+W.NumLumps());
     System.out.println("NUm for E1M1: "+W.GetNumForName("E1M1"));
     System.out.println("NUm for SECTORS: "+W.GetNumForName("SECTORS"));
     System.out.println("NUm for SSECTORS: "+W.GetNumForName("SSECTORS"));
@@ -55,15 +55,13 @@ public class WadLoaderTester {
     int numvertexes = W.LumpLength (lump) / mapvertex_t.sizeOf();
 
     // Allocate zone memory for buffer.
-    vertex_t[] vertexes = new vertex_t[numvertexes];
-    // Init those "vertexes"
-    C2JUtils.initArrayOfObjects(vertexes, vertex_t.class);
+    vertex_t[] vertexes;
 
     // Load data into cache.
     // MAES: we now have a mismatch between memory/disk: in memory, we need an array.
     // On disk, we have a single lump/blob. Thus, we need to find a way to deserialize this...
-     W.CacheLumpNumIntoArray(lump,PU_STATIC,vertexes,vertex_t.class);
-     W.CacheLumpNumIntoArray(lump,PU_STATIC,vertexes,vertex_t.class);
+    vertexes= W.CacheLumpNumIntoArray(lump,numvertexes,vertex_t.class);
+
    // Copy and convert vertex coordinates,
     // internal representation as fixed.
     for (int i=0 ; i<numvertexes ; i++)
