@@ -118,18 +118,10 @@ public interface IWadLoader {
 	public abstract CacheableDoomObject CacheLumpNum(int lump, int tag,
 			Class what);
 
-	/**
-	 * Read a lump into an object array, if possible. The binary blob lump will
-	 * still be cached as usual, but as a ByteBuffer this time, and
-	 * deserialization will be performed into the given Object[] array.
-	 * 
-	 * Upon a cache hit however, the objects will be deserialized a second time,
-	 * thus there will be some time penalty (this, unless I devise a container
-	 * class for arrays of CacheableDoomObjects).
-	 * 
-	 * Helps keep syntax compact.
-	 * 
-	 */
+	// MAES 24/8/2011: superseded by auto-allocating version with proper 
+	// container-based caching.
+
+	@Deprecated
 	public abstract void CacheLumpNumIntoArray(int lump, int tag,
 			Object[] array, Class what) throws IOException;
 
@@ -231,5 +223,8 @@ public interface IWadLoader {
 	void UnlockLumpNum(int lump);
 
 	void UnlockLumpNum(CacheableDoomObject lump);
+	
+	public <T> T[] CacheLumpNumIntoArray(int lump, int num,
+			Class<T> what) throws IOException;
 	
 }
