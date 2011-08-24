@@ -4025,20 +4025,6 @@ validcount++;
     
    ////////////// SOME UTILITY METHODS /////////////
 
-   public final long
-   PointToAngle2
-   ( fixed_t    x1,
-     fixed_t    y1,
-     fixed_t    x2,
-     fixed_t    y2 )
-   {    
-       // Careful with assignments...
-       viewx=x1.val;
-       viewy=y1.val;
-       
-       return PointToAngle (x2.val, y2.val);
-   }
-
    /** Assigns a point of view before calling PointToAngle 
     * 
     * CAREFUL: this isn't a pure function, as it alters the renderer's
@@ -4059,38 +4045,6 @@ validcount++;
        
        return PointToAngle (x2, y2);
    }
-
-
-
-   protected final int
-   PointToDist
-   ( fixed_t    x,
-     fixed_t    y )
-   {
-       int      angle;
-       int  dx;
-       int  dy;
-       int  temp;
-       int  dist;
-    
-       dx = Math.abs(x.val - viewx);
-       dy = Math.abs(y.val - viewy);
-    
-       if (dy>dx)
-       {
-    temp = dx;
-    dx = dy;
-    dy = temp;
-       }   
-       angle = (int) ((tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT);
-
-       // use as cosine
-       dist = FixedDiv (dx, finesine[angle] );  
-    
-       return dist;
-   }
-
-
 
 
    //
@@ -4115,19 +4069,11 @@ validcount++;
    }
    } */
    
-   /**
-    * R_PointToAngle
-    *  To get a global angle from cartesian coordinates,
-    *  the coordinates are flipped until they are in
-    *  the first octant of the coordinate system, then
-    *  the y (<=x) is scaled and divided by x to get a
-    *  tangent (slope) value which is looked up in the
-    *   tantoangle[] table.
-    *   
-    *   @param xx (fixed_t)
-    *   @param yy (fixed_t)
+   /** Public, static, stateless version of PointToAngle2.
+    *  Call this one when "renderless" use of PointToAngle2 is required.
+    * 
     */
-
+   
    public final static long
    PointToAngle
    ( int viewx, int viewy, int   x,
