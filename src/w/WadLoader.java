@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.43 2011/08/23 16:10:20 velktron Exp $
+// $Id: WadLoader.java,v 1.44 2011/08/24 14:55:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.44  2011/08/24 14:55:42  velktron
+// Deprecated old CacheLumpNumIntoArray method, much cleaner system introduced.
+//
 // Revision 1.43  2011/08/23 16:10:20  velktron
 // Got rid of Z remnants, commenter out Profile (useless as it is)
 //
@@ -397,9 +400,8 @@ public class WadLoader implements IWadLoader {
 			// header.infotableofs = header.infotableofs;
 
 			length = header.numlumps;
-			fileinfo = new filelump_t[(int) length];
 			// Init everything:
-			C2JUtils.initArrayOfObjects(fileinfo, filelump_t.class);
+			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
 
 			handle.seek(header.infotableofs);
 			// MAES: we can't read raw structs here, and even less BLOCKS of
@@ -865,12 +867,17 @@ public class WadLoader implements IWadLoader {
 	 *  
 	 *  It possible to do this in other ways, but it's extremely convenient this way.
 	 *  
+	 *  MAES 24/8/2011: This method is deprecated, Use the much more convenient
+	 *  and slipstreamed generic version, which also handles caching of arrays
+	 *  and auto-allocation.
+	 *  
 	 *  @param lump The lump number to load.
 	 *  @param tag  Caching tag
 	 *  @param array The array with objects to load. Its size implies how many to read.
 	 *  @return
 	 */
 	
+	@Deprecated
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
 			Class what) throws IOException {
 
@@ -927,6 +934,70 @@ public class WadLoader implements IWadLoader {
 		return;
 	}
 
+	/** A very useful method when you need to load a lump which can consist
+	 *  of an arbitrary number of smaller fixed-size objects (assuming that you
+	 *  know their number/size and the size of the lump). Practically used 
+	 *  by the level loader, to handle loading of sectors, segs, things, etc.
+	 *  since their size/lump/number relationship is well-defined.
+	 *  
+	 *  It possible to do this in other (more verbose) ways, but it's 
+	 *  extremely convenient this way, as a lot of common and repetitive code
+	 *  is only written once, and generically, here. Trumps the older
+	 *  method in v 1.43 of WadLoader, which is deprecated.
+	 *  
+	 *  @param lump The lump number to load.
+	 *  @param num number of objects to read	 *  
+	 *  @return a properly sized array of the correct type.
+	 */
+	
+	public <T> T[] CacheLumpNumIntoArray(int lump, int num,
+			Class<T> what) throws IOException {
+
+		if (lump >= numlumps) {
+			I.Error("CacheLumpNumIntoArray: %i >= numlumps", lump);
+		}
+
+		if (!implementsInterface(what, CacheableDoomObject.class)){
+			I.Error("CacheLumpNumIntoArray: %s does not implement CacheableDoomObject", what.getName());
+		}
+	
+		// Nothing cached here...
+		if ((lumpcache[lump] == null)&&(what!=null)) {
+			//System.out.println("cache miss on lump " + lump);
+			// Read as a byte buffer anyway.
+			ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
+			ReadLump(lump, thebuffer);
+
+			CacheableDoomObject[] stuff=(CacheableDoomObject[]) C2JUtils.createArrayOfObjects(what, num);
+			
+			// Store the buffer anyway (as a DoomBuffer)
+			lumpcache[lump] = new CacheableDoomObjectContainer(stuff);
+			
+			// Auto-unpack it, if possible.
+
+			try {
+				thebuffer.rewind();
+				lumpcache[lump].unpack(thebuffer);
+				} catch (Exception e) {
+					System.err.println("Could not auto-unpack lump " + lump
+							+ " into an array of objects of class " + what);
+					e.printStackTrace();
+				}
+			
+			// Track it (as ONE lump)
+			Track(lumpcache[lump],lump);
+
+
+		} else {
+			//System.out.println("cache hit on lump " + lump);
+			// Z.ChangeTag (lumpcache[lump],tag);
+		}
+
+		if (lumpcache[lump]==null) return null;
+		
+		return (T[]) ((CacheableDoomObjectContainer)lumpcache[lump]).getStuff();
+	}
+	
 	public CacheableDoomObject CacheLumpNum(int lump)
 	{
 	  return lumpcache[lump];
