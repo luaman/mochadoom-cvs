@@ -1,5 +1,7 @@
 package utils;
 
+import java.lang.reflect.Array;
+
 import p.Resettable;
 import w.DoomFile;
 
@@ -128,6 +130,7 @@ public class C2JUtils {
             System.exit(-1);
         }
     }
+    
     /** Automatically "initializes" arrays of objects with their
      * default constuctor. It's better than doing it by hand, IMO.
      * If you have a better way, be my guest.
@@ -151,19 +154,39 @@ public class C2JUtils {
         }
     }
     
-    public static final Object[] createArrayOfObjects(Class c,int num) {
-        Object[] os=new Object[num];
+    /** Uses reflection to automatically create and initialize an array of 
+     *  objects of the specified class. Does not require casting on "reception".
+     * 
+     * @param <T>
+     * 
+     * @param c
+     * @param num
+     * @return 
+     * @return
+     */
+    
+    @SuppressWarnings("unchecked")
+	public static <T> T[] createArrayOfObjects(Class<T> c,int num) {
+    	T[] os=null;
+    	
+    	try{
+		os=( T[]) Array.newInstance( c, num);
+    	} catch (Exception e){
+            e.printStackTrace();
+            System.err.println("Failure to allocate "+num+" objects of class " +c.getName()+ "!");
+            System.exit(-1);
+    	}
         
         try {
         for (int i=0;i<os.length;i++){
-            os[i]=c.newInstance();
+            os[i]=(T) c.newInstance();
         }
         } catch (Exception e){
             e.printStackTrace();
-            System.err.println("Failure to allocate "+os.length+" objects of class " +c.getName()+ "!");
-            
+            System.err.println("Failure to instantiate "+os.length+" objects of class " +c.getName()+ "!");            
             System.exit(-1);
         }
+        
         return os;
     }
     
@@ -204,6 +227,15 @@ public class C2JUtils {
         }        
     }
 
+    public static final long unsigned(int num){
+    	return 0xFFFFFFFFL&num;
+    }
+    
+    public static final char unsigned(short num){
+    	return (char)num;
+    }
+
+    
 
     /** Convenient alias for System.arraycopy(src, 0, dest, 0, length); 
      * 
