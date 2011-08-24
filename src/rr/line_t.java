@@ -3,6 +3,7 @@ package rr;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import p.Interceptable;
+import s.degenmobj_t;
 import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
@@ -64,6 +65,8 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
         /** thinker_t for reversable actions MAES: (void*) */
         public thinker_t   specialdata;
         public int specialdataid;
+        
+        degenmobj_t soundorg;
         
         public void assignVertexValues(){
             this.v1x=v1.x;
