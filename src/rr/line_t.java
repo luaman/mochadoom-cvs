@@ -66,7 +66,7 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
         public thinker_t   specialdata;
         public int specialdataid;
         
-        degenmobj_t soundorg;
+        public degenmobj_t soundorg;
         
         public void assignVertexValues(){
             this.v1x=v1.x;
