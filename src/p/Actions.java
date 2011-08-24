@@ -1788,7 +1788,7 @@ HU.Start ();
  * already be in host byte order.
  */
 
-void SpawnMapThing (mapthing_t mthing)
+mobj_t SpawnMapThing (mapthing_t mthing)
 {
 int         i;
 int         bit;
@@ -1806,7 +1806,7 @@ if (DM.deathmatch_p < 10/*DM.deathmatchstarts[10]*/)
     DM.deathmatchstarts[DM.deathmatch_p]=mthing.clone();
   DM.deathmatch_p++;
 }
-return;
+return null;
 }
 
 if (mthing.type <= 0)
@@ -1816,7 +1816,7 @@ if (mthing.type <= 0)
     // For some reason, Vanilla Doom accepts/ignores this.
 	// MAES: no kidding.
 
-    return;
+    return null;
 }
 
 
@@ -1828,12 +1828,12 @@ DM.playerstarts[mthing.type-1] = mthing;
 if (!DM.deathmatch)
   SpawnPlayer (mthing);
 
-return;
+return null;
 }
 
 // check for apropriate skill level
 if (!DM.netgame && flags(mthing.options , 16) )
-return;
+return null;
   
 if (DM.gameskill == skill_t.sk_baby)
 bit = 1;
@@ -1843,7 +1843,7 @@ else
 bit = 1<<(DM.gameskill.ordinal()-1);
 
 if (!flags(mthing.options , bit) )
-return;
+return null;
 
 // find which type to spawn
 for (i=0 ; i< NUMMOBJTYPES ; i++)
@@ -1857,14 +1857,14 @@ I.Error ("P_SpawnMapThing: Unknown type %d at (%d, %d)",
   
 // don't spawn keycards and players in deathmatch
 if (DM.deathmatch && flags(mobjinfo[i].flags , MF_NOTDMATCH))
-return;
+return null;
   
 // don't spawn any monsters if -nomonsters
 if (DM.nomonsters
 && ( i == mobjtype_t.MT_SKULL.ordinal()
    || flags(mobjinfo[i].flags , MF_COUNTKILL)) )
 {
-return;
+return null;
 }
 
 // spawn it
@@ -1889,6 +1889,9 @@ DM.totalitems++;
 mobj.angle = ANG45 * (mthing.angle/45);
 if (flags(mthing.options , MTF_AMBUSH))
 mobj.flags |= MF_AMBUSH;
+
+return mobj;
+
 }
 
 /** P_SpawnBlood
