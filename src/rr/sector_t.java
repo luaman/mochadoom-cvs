@@ -19,6 +19,7 @@ import p.mobj_t;
 import p.strobe_t;
 import p.vldoor_e;
 import p.vldoor_t;
+import s.degenmobj_t;
 import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
@@ -38,7 +39,6 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
     public IRandom RND;
     
     public sector_t(){
-        soundorg =new mobj_t();
         blockbox=new int[4];
     }
     
@@ -61,7 +61,7 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
 
      /** origin for any sounds played by the sector. Used to be degenmobj_t,
       *  but that's really a futile distinction.                             */
-     public mobj_t soundorg;
+     public degenmobj_t soundorg;
 
      /** if == validcount, already checked */
      public int     validcount;
