@@ -567,8 +567,12 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
 
                 // System.err.printf("Audio queue has %d chunks\n",audiochunks.size());
 
-                // Try to empty a queue of audiochunks once you reach this spot.
-                while (!audiochunks.isEmpty()) {
+                // Play back only at most a given number of chunks once you reach
+                // this spot
+                
+                int atMost=Math.min(ISound.BUFFER_CHUNKS,audiochunks.size());
+                
+                while (atMost-->0){
 
                     AudioChunk chunk = null;
                     try {
