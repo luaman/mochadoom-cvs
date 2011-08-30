@@ -3,6 +3,7 @@ package doom;
 import static utils.C2JUtils.eval;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.StringTokenizer;
 
 import w.DoomFile;
@@ -30,10 +31,13 @@ public class CommandLine implements ICommandLineManager {
         // of Doom's code is tailored to reflect that, with 0
         // meaning "not found" with regards to a parameter.
         // It's easier to change this here.
+    	// TODO: this is really bad practice, eliminate once a 
+    	// cvar system is in place.
 
         myargv=new String[argv.length+1];
         System.arraycopy(argv, 0, myargv, 1, argv.length);        
         myargc=argv.length+1;
+        cvars=new HashMap<String, Object>();
     }
     
     /* (non-Javadoc)
@@ -205,6 +209,165 @@ public class CommandLine implements ICommandLineManager {
     public void setArgv(int index, String string) {
         this.myargv[index]=string;
         
+    }
+    
+    private HashMap<String, Object> cvars;
+    
+    public boolean cvarExists(String name){
+    	return cvars.containsKey(name);
+    	}
+    
+    public Object removeCvar(String name){
+    	return cvars.remove(name);
+    	}
+    
+    public void putCvar(String name, int value){
+    	cvars.put(name, value);
+    	}
+
+    public void putCvar(String name, double value){
+    	cvars.put(name, value);
+    	}
+    
+    public void putCvar(String name, String value){
+    	cvars.put(name, value);
+    	}
+
+    public void putCvar(String name, boolean value){
+    	cvars.put(name, value);
+    	}
+
+    public void putCvar(String name, String[] value){
+    	cvars.put(name, value);
+    	}
+    
+    public Integer getInt(String name){
+    	Object stuff=cvars.get(name);
+    	if (stuff !=null){
+    		if (stuff instanceof Integer){
+    			return (Integer) stuff;
+    		}
+    	}    	
+    	return null;
+    }
+    
+    public Double getFloat(String name){
+    	Object stuff=cvars.get(name);
+    	if (stuff !=null){
+    		if (stuff instanceof Double){
+    			return (Double) stuff;
+    		}
+    	}    	
+    	return null;
+    }
+    
+    public String getString(String name){
+    	Object stuff=cvars.get(name);
+    	if (stuff !=null){
+    		if (stuff instanceof String){
+    			return (String) stuff;
+    		}
+    	}    	
+    	return null;
+    }
+    
+    public String[] getStringArray(String name){
+    	Object stuff=cvars.get(name);
+    	if (stuff !=null){
+    		if (stuff instanceof String[]){
+    			return (String[]) stuff;
+    		}
+    	}    	
+    	return null;
+    }
+    
+    public Boolean getBoolean(String name){
+    	Object stuff=cvars.get(name);
+    	if (stuff !=null){
+    		if (stuff instanceof Boolean){
+    			return (Boolean) stuff;
+    		}
+    	}    	
+    	return null;
+    }
+    
+    public <K> void setCvar(String name, K value){
+    	if (cvars.containsKey(name)){
+    		cvars.put(name, value);
+    	}
+    }
+
+    public static String checkParameterCouple(String check, String[] myargv) {
+        int found=-1;
+
+        for (int i = 0; i < myargv.length; i++) {
+            if (check.compareToIgnoreCase(myargv[i]) == 0){
+                found=i; // found. Break on first.
+                break;
+            }
+        }
+        
+        // Found, and there's room to spare for one more?
+        if ((found>=0)&&(found<myargv.length-1)){
+            if (myargv[found+1]!=null){
+                // Not null, not empty and not a parameter switch
+                if ((myargv[found+1].length()>=1) &&
+                    (myargv[found+1].charAt(0)!='-'))                        
+                        return myargv[found+1];
+            }
+        }
+
+        // Well duh.
+        return null;
+    }
+ 
+    /** Is a parameter based on an prefix identifier e.g. '-'
+     * 
+     * @param what
+     * @param identifier
+     * @return
+     */
+    public static boolean isParameter(String what, char identifier){
+        if (what!=null && what.length()>-0){
+        	return (what.charAt(0)!=identifier); 
+        }
+        
+        return false;        
+    }
+    
+    public static int parameterMultipleValues(String check, String[] myargv) {
+        int found=-1;
+
+        // It's not even a valid parameter name
+        if (!isParameter(check,'-')) return -1;
+        
+        // Does it exist?
+        if ((found=checkParm(check,myargv))==-1) return found;
+        
+        // Found, and there are still some to spare
+        int rest=myargv.length-found-1;
+        int count=0;
+        
+        for (int i=found+1;i<myargv.length;i++){
+        	if (isParameter(myargv[i],'-')) break;
+        		else
+        	count++; // not a parameter, count up        	
+        }
+        
+        // Well duh.
+        return count;
+    }
+    
+    
+    public static int checkParm(String check, String[] params) {
+        int i;
+
+        for (i = 0; i < params.length; i++) {
+            if (check.compareToIgnoreCase(params[i]) == 0)
+                return i;
+        }
+
+        return -1;
     }
     
 }
