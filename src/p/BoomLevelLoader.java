@@ -1304,9 +1304,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	private void P_LoadThings (int lump)
 	{
 	  int  i, numthings = W.LumpLength (lump) / mapthing_t.sizeOf();
-	  final mapthing_t[] data = C2JUtils.createArrayOfObjects(mapthing_t.class, numthings); 
-
-	  W.CacheLumpNumIntoArray(lump,0,data,mapthing_t.class);
+	  final mapthing_t[] data = W.CacheLumpNumIntoArray(lump,numthings,mapthing_t.class);
 
 	  mobj_t mobj;
 	  int mobjcount = 0;
@@ -1583,27 +1581,28 @@ public class BoomLevelLoader implements ILevelLoader {
 	// after linedefs are loaded, to allow overloading.
 	// killough 5/3/98: reformatted, cleaned up
 
-	static void P_LoadSideDefs2(int lump)
+	private void P_LoadSideDefs2(int lump)
 	{
-	  final byte *data = W.CacheLumpNum(lump); // cph - final*, wad lump handling updated
+	  // cph - final*, wad lump handling updated
+	  final mapsidedef_t[] data = W.CacheLumpNumIntoArray(lump, numsides, mapsidedef_t.class);
 	  int  i;
 
 	  for (i=0; i<numsides; i++)
 	    {
-	      register final mapsidedef_t *msd = (final mapsidedef_t *) data + i;
-	      register side_t *sd = sides + i;
-	      register sector_t *sec;
+	      final mapsidedef_t msd = data[i];
+	      side_t sd = sides[i];
+	      sector_t sec;
 
-	      sd.textureoffset = LittleShort(msd.textureoffset)<<FRACBITS;
-	      sd.rowoffset = LittleShort(msd.rowoffset)<<FRACBITS;
+	      sd.textureoffset = msd.textureoffset<<FRACBITS;
+	      sd.rowoffset = msd.rowoffset<<FRACBITS;
 
 	      { /* cph 2006/09/30 - catch out-of-range sector numbers; use sector 0 instead */
-	        unsigned short sector_num = LittleShort(msd.sector);
+	        char sector_num = msd.sector;
 	        if (sector_num >= numsectors) {
 	          System.err.printf("P_LoadSideDefs2: sidedef %i has out-of-range sector num %u\n", i, sector_num);
 	          sector_num = 0;
 	        }
-	        sd.sector = sec = &sectors[sector_num];
+	        sd.sector = sec = sectors[sector_num];
 	      }
 
 	      // killough 4/4/98: allow sidedef texture names to be overloaded
@@ -1612,25 +1611,26 @@ public class BoomLevelLoader implements ILevelLoader {
 	      switch (sd.special)
 	        {
 	        case 242:                       // variable colormap via 242 linedef
-	          sd.bottomtexture =
-	            (sec.bottommap =   R_ColormapNumForName(msd.bottomtexture)) < 0 ?
-	            sec.bottommap = 0, R_TextureNumForName(msd.bottomtexture): 0 ;
+	         /* sd.bottomtexture =
+	            (sec.bottommap =   R.ColormapNumForName(msd.bottomtexture)) < 0 ?
+	            sec.bottommap = 0, R.TextureNumForName(msd.bottomtexture): 0 ;
 	          sd.midtexture =
-	            (sec.midmap =   R_ColormapNumForName(msd.midtexture)) < 0 ?
-	            sec.midmap = 0, R_TextureNumForName(msd.midtexture)  : 0 ;
+	            (sec.midmap =   R.ColormapNumForName(msd.midtexture)) < 0 ?
+	            sec.midmap = 0, R.TextureNumForName(msd.midtexture)  : 0 ;
 	          sd.toptexture =
 	            (sec.topmap =   R_ColormapNumForName(msd.toptexture)) < 0 ?
 	            sec.topmap = 0, R_TextureNumForName(msd.toptexture)  : 0 ;
+	            */
 	          break;
 
 	        case 260: // killough 4/11/98: apply translucency to 2s normal texture
-	          sd.midtexture = strncasecmp("TRANMAP", msd.midtexture, 8) ?
+	          sd.midtexture = msd.midtexture.compareToIgnoreCase("TRANMAP") ?
 	            (sd.special = W.CheckNumForName(msd.midtexture)) < 0 ||
 	            W.LumpLength(sd.special) != 65536 ?
-	            sd.special=0, R_TextureNumForName(msd.midtexture) :
+	            (sd.special=0, R_TextureNumForName(msd.midtexture)) :
 	              (sd.special++, 0) : (sd.special=0);
-	          sd.toptexture = R_TextureNumForName(msd.toptexture);
-	          sd.bottomtexture = R_TextureNumForName(msd.bottomtexture);
+	          sd.toptexture = R.TextureNumForName(msd.toptexture);
+	          sd.bottomtexture = R.TextureNumForName(msd.bottomtexture);
 	          break;
 
 	#ifdef GL_DOOM
@@ -2274,40 +2274,45 @@ public class BoomLevelLoader implements ILevelLoader {
 	// Firelines (TM) is a Rezistered Trademark of MBF Productions
 	//
 
-	static void P_RemoveSlimeTrails(void)         // killough 10/98
+	private void P_RemoveSlimeTrails()         // killough 10/98
 	{
-	  byte *hit = calloc(1, numvertexes);         // Hitlist for vertices
+      // Hitlist for vertices
+	  boolean[] hit = new boolean[numvertexes];
+	  
+	  // Searchlist for
+	  
 	  int i;
 	  for (i=0; i<numsegs; i++)                   // Go through each seg
 	  {
-	    final line_t *l;
+	    final line_t l;
 
 	    if (segs[i].miniseg == true)        //figgi -- skip minisegs
 	      return;
 
 	    l = segs[i].linedef;            // The parent linedef
-	    if (l.dx && l.dy)                     // We can ignore orthogonal lines
+	    if (l.dx!=0 && l.dy!=0)                     // We can ignore orthogonal lines
 	    {
-	    vertex_t *v = segs[i].v1;
-	    do
-	      if (!hit[v - vertexes])           // If we haven't processed vertex
+	    vertex_t v = segs[i].v1;
+	    do {
+	    	int index=C2JUtils.indexOf(vertexes,v);
+	      if (!hit[index])           // If we haven't processed vertex
 	        {
-	    hit[v - vertexes] = 1;        // Mark this vertex as processed
+	    hit[index] = true;        // Mark this vertex as processed
 	    if (v != l.v1 && v != l.v2) // Exclude endpoints of linedefs
 	      { // Project the vertex back onto the parent linedef
-	        int_64_t dx2 = (l.dx >> FRACBITS) * (l.dx >> FRACBITS);
-	        int_64_t dy2 = (l.dy >> FRACBITS) * (l.dy >> FRACBITS);
-	        int_64_t dxy = (l.dx >> FRACBITS) * (l.dy >> FRACBITS);
-	        int_64_t s = dx2 + dy2;
+	        long dx2 = (l.dx >> FRACBITS) * (l.dx >> FRACBITS);
+	        long dy2 = (l.dy >> FRACBITS) * (l.dy >> FRACBITS);
+	        long dxy = (l.dx >> FRACBITS) * (l.dy >> FRACBITS);
+	        long s = dx2 + dy2;
 	        int x0 = v.x, y0 = v.y, x1 = l.v1.x, y1 = l.v1.y;
 	        v.x = (int)((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
 	        v.y = (int)((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
 	      }
 	        }  // Obsfucated C contest entry:   :)
-	    while ((v != segs[i].v2) && (v = segs[i].v2));
+	    }
+	    while ((v != segs[i].v2) && ((v = segs[i].v2)!=null));
 	  }
 	    }
-	  free(hit);
 	}
 
 	//
@@ -2655,10 +2660,10 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	// P_Init
 	//
-	void P_Init (void)
+	void P_Init ()
 	{
-	  P_InitSwitchList();
-	  P_InitPicAnims();
-	  R_InitSprites(sprnames);
+	  P.InitSwitchList();
+	  P.InitPicAnims();
+	  TM.InitSprites(sprnames);
 	}
 }
