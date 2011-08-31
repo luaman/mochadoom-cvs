@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.10 2011/08/22 10:09:28 velktron Exp $
+// $Id: ISound.java,v 1.11 2011/08/31 15:23:41 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,8 +62,16 @@ public interface ISound {
 	public static final int SAMPLESIZE	=	16 ;  	// 16bit
 	public static final int NUMSFX	=	sfxenum_t.NUMSFX.ordinal() ; 
 	public static final int MAXHANDLES = 100;
-	// 1 chunk buffers 1 tic of events.
-	public static final int BUFFER_CHUNKS=10;
+	/** How many audio chunks/frames to mix before submitting them to
+	 *  the output.
+	 */
+	public static final int BUFFER_CHUNKS=3;
+	
+	/** Ths audio buffer size of the audioline itself. 
+	 *  Increasing this is the only effective way to combat output stuttering on
+	 *  slower machines.
+	 */
+	public static final int AUDIOLINE_BUFFER=2*BUFFER_CHUNKS*MIXBUFFERSIZE;
 	public static final int SOUND_PERIOD = 1000/SND_FRAME_RATE; // in ms
 	
 	// Init at program start...
@@ -119,6 +127,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.11  2011/08/31 15:23:41  velktron
+// Better sound stopping.
+//
 // Revision 1.10  2011/08/22 10:09:28  velktron
 // Explicit specification of audio frame rate.
 //

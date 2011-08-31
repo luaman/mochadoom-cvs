@@ -314,7 +314,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         if (AudioSystem.isLineSupported(info))
             try {
                 line = (SourceDataLine) AudioSystem.getSourceDataLine(format);
-                line.open(format, mixbuffer.length * BUFFER_CHUNKS);
+                line.open(format,AUDIOLINE_BUFFER);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.print("Could not play signed 16 data\n");

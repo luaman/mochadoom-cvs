@@ -93,7 +93,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     /** These are still defined here to decouple them from the mixer's 
      *  ones, however they serve  more as placeholders/status indicators;
      */
-    protected boolean[] channels;
+    protected volatile boolean[] channels;
 
     protected volatile boolean mixed = false;
 
@@ -161,7 +161,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         if (AudioSystem.isLineSupported(info))
             try {
                 line = (SourceDataLine) AudioSystem.getSourceDataLine(format);
-                line.open(format, MIXBUFFERSIZE * BUFFER_CHUNKS);
+                line.open(format, AUDIOLINE_BUFFER);
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.print("Could not play signed 16 data\n");
@@ -331,27 +331,27 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     @Override
     public void ShutdownSound() {
 
-        boolean done = false;
+        boolean done;
 
         // Unlock sound thread if it's waiting.
         produce.release();
         update_mixer.release();
 
-        int i;
-        while (!done) {
-            for (i = 0; i < numChannels && !channels[i]; i++) {
-
-            }
-
-           // System.err.printf("%d channels died off\n",i);
-
-            UpdateSound();
-            SubmitSound();
-            if (i == numChannels)
-                done = true;
-        }
-
-        this.line.drain();
+        int i=0;
+        do {
+        	done=true;
+            for (i=0; i < numChannels; i++) {
+            	// If even one channel is playing, loop again.
+            	done&=!channels[i];            	
+            	}
+            	//System.out.println(done+" "+this.channelStatus());
+            	
+            } while (!done);
+        
+        
+        this.line.flush();
+        
+        
         SOUNDSRV.terminate = true;
         MIXSRV.terminate = true;
         produce.release();
@@ -362,7 +362,9 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         } catch (InterruptedException e) {
         	// Well, I don't care.
         }
+        System.err.printf("3\n");
         line.close();
+        System.err.printf("4\n");
 
     }
 
@@ -751,12 +753,10 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     	        } else {
     	            silence++;
     	            // MAES: attempt to fix lingering noise error
-    	            if (silence >ISound.BUFFER_CHUNKS*5){
+    	            if (silence >ISound.BUFFER_CHUNKS){
     	                line.flush();
     	                silence=0;
     	                }
-    	            // System.err.println("SILENT_CHUNK");
-    	            // this.SOUNDSRV.addChunk(SILENT_CHUNK);
     	        }
     		}
     	
