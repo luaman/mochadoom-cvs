@@ -51,6 +51,32 @@ public class C2JUtils {
 		}
 		return retour;
 	}
+	
+	/** Finds index of first element of array matching key.
+	 * Useful whenever an "indexOf" property is required or you encounter
+	 * the C-ism [pointer- array_base] used to find array indices in O(1) time.
+	 * However, since this is just a dumb unsorted search, running time is O(n), 
+	 * so use this method only sparingly and in scenarios where it won't occur
+	 * very frequently -once per level is probably OK-, but watch out for nested
+	 * loops, and cache the result whenever possible.
+	 * 
+	 * Consider adding an index or ID type of field to the searched type if you 
+	 * require to use this property too often. 
+	 * 
+	 * @param array
+	 * @param key
+	 * @return
+	 */
+	
+	public static int indexOf(Object[] array, Object key){
+		for (int i=0;i<array.length;i++){
+			if (array[i]==key){
+				return i;
+			}
+		}
+		
+		return -1;
+	}
     
     /** Emulates C-style "string comparison".
      *  "Strings" are considered null-terminated,
