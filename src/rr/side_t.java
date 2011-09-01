@@ -31,6 +31,8 @@ public class side_t implements IReadableDoomObject, IPackableDoomObject{
      public sector_t   sector;
 
      public int sectorid;
+
+    public int special;
      
      public side_t() {
      }
