@@ -1597,7 +1597,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	      sd.rowoffset = msd.rowoffset<<FRACBITS;
 
 	      { /* cph 2006/09/30 - catch out-of-range sector numbers; use sector 0 instead */
-	        char sector_num = msd.sector;
+	        char sector_num = (char) msd.sector;
 	        if (sector_num >= numsectors) {
 	          System.err.printf("P_LoadSideDefs2: sidedef %i has out-of-range sector num %u\n", i, sector_num);
 	          sector_num = 0;
@@ -1611,7 +1611,8 @@ public class BoomLevelLoader implements ILevelLoader {
 	      switch (sd.special)
 	        {
 	        case 242:                       // variable colormap via 242 linedef
-	         /* sd.bottomtexture =
+	         /* TODO:
+	          sd.bottomtexture =
 	            (sec.bottommap =   R.ColormapNumForName(msd.bottomtexture)) < 0 ?
 	            sec.bottommap = 0, R.TextureNumForName(msd.bottomtexture): 0 ;
 	          sd.midtexture =
@@ -1624,28 +1625,33 @@ public class BoomLevelLoader implements ILevelLoader {
 	          break;
 
 	        case 260: // killough 4/11/98: apply translucency to 2s normal texture
-	          sd.midtexture = msd.midtexture.compareToIgnoreCase("TRANMAP") ?
-	            (sd.special = W.CheckNumForName(msd.midtexture)) < 0 ||
-	            W.LumpLength(sd.special) != 65536 ?
-	            (sd.special=0, R_TextureNumForName(msd.midtexture)) :
-	              (sd.special++, 0) : (sd.special=0);
-	          sd.toptexture = R.TextureNumForName(msd.toptexture);
-	          sd.bottomtexture = R.TextureNumForName(msd.bottomtexture);
+	            if (msd.midtexture.compareToIgnoreCase("TRANMAP")==0){
+	            if ((sd.special = W.CheckNumForName(msd.midtexture)) < 0 ||
+	            W.LumpLength(sd.special) != 65536){
+	                sd.special=0;
+	                sd.midtexture=(short) TexMan.TextureNumForName(msd.midtexture);
+	            } else {
+	              sd.special++;
+	              sd.midtexture=0;}
+	            } else 
+	          sd.midtexture=(short) (sd.special=0);
+	          sd.toptexture = (short) TexMan.TextureNumForName(msd.toptexture);
+	          sd.bottomtexture = (short) TexMan.TextureNumForName(msd.bottomtexture);
 	          break;
 
-	#ifdef GL_DOOM
+	/* #ifdef GL_DOOM
 	        case 271:
 	        case 272:
 	          if (R_CheckTextureNumForName(msd.toptexture) == -1)
 	          {
 	            sd.skybox_index = R_BoxSkyboxNumForName(msd.toptexture);
 	          }
-	#endif
+	#endif */
 
 	        default:                        // normal cases
-	          sd.midtexture = R_SafeTextureNumForName(msd.midtexture, i);
-	          sd.toptexture = R_SafeTextureNumForName(msd.toptexture, i);
-	          sd.bottomtexture = R_SafeTextureNumForName(msd.bottomtexture, i);
+	         //TODO sd.midtexture = R_SafeTextureNumForName(msd.midtexture, i);
+	         // sd.toptexture = R_SafeTextureNumForName(msd.toptexture, i);
+	        // sd.bottomtexture = R_SafeTextureNumForName(msd.bottomtexture, i);
 	          break;
 	        }
 	    }
@@ -1659,43 +1665,43 @@ public class BoomLevelLoader implements ILevelLoader {
 	// Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
 	//
 
-	#define blkshift 7               /* places to shift rel position for cell num */
-	#define blkmask ((1<<blkshift)-1)/* mask for rel position within cell */
-	#define blkmargin 0              /* size guardband around map used */
+	private static final int blkshift=7; /* places to shift rel position for cell num */
+	private static final int blkmask= ((1<<blkshift)-1);/* mask for rel position within cell */
+	private static final int blkmargin= 0;           /* size guardband around map used */
 	                                 // jff 10/8/98 use guardband>0
 	                                 // jff 10/12/98 0 ok with + 1 in rows,cols
 
-	typedef struct linelist_t        // type used to list lines in each block
+	private class linelist_t        // type used to list lines in each block
 	{
-	  long num;
-	  struct linelist_t *next;
-	} linelist_t;
+	  public long num;
+	  public linelist_t next;
+	}
 
 	//
 	// Subroutine to add a line number to a block list
 	// It simply returns if the line is already in the block
 	//
 
-	static void AddBlockLine
+	private void AddBlockLine
 	(
-	  linelist_t **lists,
-	  int *count,
-	  int *done,
+	  linelist_t[] lists,
+	  int[] count,
+	  boolean[] done,
 	  int blockno,
 	  long lineno
 	)
 	{
-	  linelist_t *l;
+	  linelist_t l;
 
 	  if (done[blockno])
 	    return;
 
-	  l = malloc(sizeof(linelist_t));
+	  l = new linelist_t();
 	  l.num = lineno;
 	  l.next = lists[blockno];
 	  lists[blockno] = l;
 	  count[blockno]++;
-	  done[blockno] = 1;
+	  done[blockno] = true;
 	}
 
 	//
@@ -1706,26 +1712,25 @@ public class BoomLevelLoader implements ILevelLoader {
 	// adds the line to all block lists touching the intersection.
 	//
 
-	static void P_CreateBlockMap(void)
+	private void P_CreateBlockMap()
 	{
 	  int xorg,yorg;                 // blockmap origin (lower left)
 	  int nrows,ncols;               // blockmap dimensions
-	  linelist_t **blocklists=NULL;  // array of pointers to lists of lines
-	  int *blockcount=NULL;          // array of counters of line lists
-	  int *blockdone=NULL;           // array keeping track of blocks/line
+	  linelist_t[] blocklists=null;  // array of pointers to lists of lines
+	  int[] blockcount=null;          // array of counters of line lists
+	  boolean[] blockdone=null;           // array keeping track of blocks/line
 	  int NBlocks;                   // number of cells = nrows*ncols
 	  long linetotal=0;              // total length of all blocklists
-	  int i,j;
-	  int map_minx=INT_MAX;          // init for map limits search
-	  int map_miny=INT_MAX;
-	  int map_maxx=INT_MIN;
-	  int map_maxy=INT_MIN;
+	  int map_minx=Integer.MAX_VALUE;          // init for map limits search
+	  int map_miny=Integer.MAX_VALUE;
+	  int map_maxx=Integer.MIN_VALUE;
+	  int map_maxy=Integer.MIN_VALUE;
 
 	  // scan for map limits, which the blockmap must enclose
 
-	  for (i=0;i<numvertexes;i++)
+	  for (int i=0;i<numvertexes;i++)
 	  {
-	    fixed_t t;
+	    int t;
 
 	    if ((t=vertexes[i].x) < map_minx)
 	      map_minx = t;
@@ -1754,25 +1759,25 @@ public class BoomLevelLoader implements ILevelLoader {
 	  // finally make an array in which we can mark blocks done per line
 
 	  // CPhipps - calloc's
-	  blocklists = calloc(NBlocks,sizeof(linelist_t *));
-	  blockcount = calloc(NBlocks,sizeof(int));
-	  blockdone = malloc(NBlocks*sizeof(int));
+	  blocklists = new linelist_t[NBlocks];
+	  blockcount = new int[NBlocks];
+	  blockdone = new boolean[NBlocks];
 
 	  // initialize each blocklist, and enter the trailing -1 in all blocklists
 	  // note the linked list of lines grows backwards
 
-	  for (i=0;i<NBlocks;i++)
+	  for (int i=0;i<NBlocks;i++)
 	  {
-	    blocklists[i] = malloc(sizeof(linelist_t));
+	    blocklists[i] = new linelist_t();
 	    blocklists[i].num = -1;
-	    blocklists[i].next = NULL;
+	    blocklists[i].next = null;
 	    blockcount[i]++;
 	  }
 
 	  // For each linedef in the wad, determine all blockmap blocks it touches,
 	  // and add the linedef number to the blocklists for those blocks
 
-	  for (i=0;i<numlines;i++)
+	  for (int i=0;i<numlines;i++)
 	  {
 	    int x1 = lines[i].v1.x>>FRACBITS;         // lines[i] map coords
 	    int y1 = lines[i].v1.y>>FRACBITS;
@@ -1780,10 +1785,10 @@ public class BoomLevelLoader implements ILevelLoader {
 	    int y2 = lines[i].v2.y>>FRACBITS;
 	    int dx = x2-x1;
 	    int dy = y2-y1;
-	    int vert = !dx;                            // lines[i] slopetype
-	    int horiz = !dy;
-	    int spos = (dx^dy) > 0;
-	    int sneg = (dx^dy) < 0;
+	    boolean vert = dx==0;                            // lines[i] slopetype
+	    boolean horiz = dy==0;
+	    boolean spos = (dx^dy) > 0;
+	    boolean sneg = (dx^dy) < 0;
 	    int bx,by;                                 // block cell coords
 	    int minx = x1>x2? x2 : x1;                 // extremal lines[i] coords
 	    int maxx = x1>x2? x1 : x2;
@@ -1792,7 +1797,7 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	    // no blocks done for this linedef yet
 
-	    memset(blockdone,0,NBlocks*sizeof(int));
+	    C2JUtils.memset(blockdone,false,NBlocks);
 
 	    // The line always belongs to the blocks containing its endpoints
 
@@ -1810,7 +1815,7 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	    if (!vert)    // don't interesect vertical lines with columns
 	    {
-	      for (j=0;j<ncols;j++)
+	      for (int j=0;j<ncols;j++)
 	      {
 	        // intersection of Linedef with x=xorg+(j<<blkshift)
 	        // (y-y1)*dx = dy*(x-x1)
@@ -1866,7 +1871,7 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	    if (!horiz)
 	    {
-	      for (j=0;j<nrows;j++)
+	      for (int j=0;j<nrows;j++)
 	      {
 	        // intersection of Linedef with y=yorg+(j<<blkshift)
 	        // (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
@@ -1920,8 +1925,9 @@ public class BoomLevelLoader implements ILevelLoader {
 	  // Add initial 0 to all blocklists
 	  // count the total number of lines (and 0's and -1's)
 
-	  memset(blockdone,0,NBlocks*sizeof(int));
-	  for (i=0,linetotal=0;i<NBlocks;i++)
+	  C2JUtils.memset(blockdone,false,NBlocks);
+	  
+	  for (int i=0,linetotal=0;i<NBlocks;i++)
 	  {
 	    AddBlockLine(blocklists,blockcount,blockdone,i,0);
 	    linetotal += blockcount[i];
@@ -1972,59 +1978,60 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	// haleyjd 03/04/10: do verification on validity of blockmap.
 	//
-	static dboolean P_VerifyBlockMap(int count)
+	private boolean P_VerifyBlockMap(int count)
 	{
 	  int x, y;
-	  int *maxoffs = blockmaplump + count;
+	  int p_maxoffs= count;
 
 	  for(y = 0; y < bmapheight; y++)
 	  {
 	    for(x = 0; x < bmapwidth; x++)
 	    {
 	      int offset;
-	      int *list, *tmplist;
-	      int *blockoffset;
+	      int list;
+	      int tmplist;
+	      int blockoffset;
 
 	      offset = y * bmapwidth + x;
-	      blockoffset = blockmaplump + offset + 4;
+	      blockoffset = offset + 4;
 
 	      // check that block offset is in bounds
-	      if(blockoffset >= maxoffs)
+	      if(blockmaplump[blockoffset] >= p_maxoffs)
 	      {
-	        lprintf(LO_ERROR, "P_VerifyBlockMap: block offset overflow\n");
+	        System.err.printf("P_VerifyBlockMap: block offset overflow\n");
 	        return false;
 	      }
 
-	      offset = *blockoffset;
+	      offset = blockoffset;
 
 	      // check that list offset is in bounds
 	      if(offset < 4 || offset >= count)
 	      {
-	        lprintf(LO_ERROR, "P_VerifyBlockMap: list offset overflow\n");
+	        System.err.printf("P_VerifyBlockMap: list offset overflow\n");
 	        return false;
 	      }
 
-	      list   = blockmaplump + offset;
+	      list   =offset;
 
 	      // scan forward for a -1 terminator before maxoffs
 	      for(tmplist = list; ; tmplist++)
 	      {
 	        // we have overflowed the lump?
-	        if(tmplist >= maxoffs)
+	        if(tmplist >= p_maxoffs)
 	        {
-	          lprintf(LO_ERROR, "P_VerifyBlockMap: open blocklist\n");
+	          System.err.printf("P_VerifyBlockMap: open blocklist\n");
 	          return false;
 	        }
-	        if(*tmplist == -1) // found -1
+	        if(blockmaplump[tmplist] == -1) // found -1
 	          break;
 	      }
 
 	      // scan the list for out-of-range linedef indicies in list
-	      for(tmplist = list; *tmplist != -1; tmplist++)
+	      for(tmplist = list; blockmaplump[tmplist] != -1; tmplist++)
 	      {
-	        if(*tmplist < 0 || *tmplist >= numlines)
+	        if(blockmaplump[tmplist] < 0 || blockmaplump[tmplist] >= numlines)
 	        {
-	          lprintf(LO_ERROR, "P_VerifyBlockMap: index >= numlines\n");
+	          System.err.printf("P_VerifyBlockMap: index >= numlines\n");
 	          return false;
 	        }
 	      }
@@ -2662,8 +2669,8 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 	void P_Init ()
 	{
-	  P.InitSwitchList();
+	  P.SW.InitSwitchList();
 	  P.InitPicAnims();
-	  TM.InitSprites(sprnames);
+	  TexMan.InitSprites(sprnames);
 	}
 }
