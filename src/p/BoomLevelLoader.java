@@ -41,8 +41,10 @@ import rr.vertex_t;
 import s.degenmobj_t;
 import utils.C2JUtils;
 import w.CacheableDoomObject;
+import w.DoomBuffer;
 import w.IWadLoader;
 import w.WadLoader;
+import w.wadfile_info_t;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FRACBITS;
 import static data.Defines.*;
@@ -205,11 +207,12 @@ public class BoomLevelLoader implements ILevelLoader {
 	// e6y: Smart malloc
 	// Used by P_SetupLevel() for smart data loading
 	// Do nothing if level is the same
-	private Object[] malloc_IfSameLevel(Object[] p)
+	private<T> T[] malloc_IfSameLevel(T[] p,int numstuff)
 	{
-	  if (!samelevel || (p!=null))
+	  if (!samelevel || (p==null))
 	  {
-	    return null;
+	    Class type=p.getClass().getComponentType();
+	    return (T[]) C2JUtils.createArrayOfObjects(type,numstuff);
 	  }
 	  return p;
 	}
@@ -366,7 +369,7 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	  // Load data into cache.
 	  // cph 2006/07/29 - cast to mapvertex_t here, making the loop below much neater
-	  //data = W.
+	  data = W.CacheLumpNumIntoArray(lump, 0, mapvertex_t.class);
 
 	  // Copy and convert vertex coordinates,
 	  // internal representation as fixed.
@@ -940,7 +943,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 
 	  numnodes = W.LumpLength (lump) / mapnode_t.sizeOf();
-	  nodes = (node_t[]) malloc_IfSameLevel(nodes);
+	  nodes = (node_t[]) malloc_IfSameLevel(nodes,numnodes);
 	  data = W.CacheLumpNumIntoArray(lump, numnodes,mapnode_t.class); // cph - wad lump handling updated
 
 	  if ((data==null) || (numnodes==0))
@@ -1003,7 +1006,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 
 	  numnodes = (W.LumpLength (lump) - 8) / mapnode_v4_t.sizeOf();
-	  nodes = (node_t[]) malloc_IfSameLevel(nodes);
+	  nodes = (node_t[]) malloc_IfSameLevel(nodes,numnodes);
 	  data = (DeepBSPNodesV4) W.CacheLumpNum (lump,0,DeepBSPNodesV4.class); // cph - wad lump handling updated
 
 	  if ((data==null) || (numnodes==0))
@@ -1673,7 +1676,7 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	private class linelist_t        // type used to list lines in each block
 	{
-	  public long num;
+	  public int num;
 	  public linelist_t next;
 	}
 
@@ -1688,7 +1691,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int[] count,
 	  boolean[] done,
 	  int blockno,
-	  long lineno
+	  int lineno
 	)
 	{
 	  linelist_t l;
@@ -1720,7 +1723,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int[] blockcount=null;          // array of counters of line lists
 	  boolean[] blockdone=null;           // array keeping track of blocks/line
 	  int NBlocks;                   // number of cells = nrows*ncols
-	  long linetotal=0;              // total length of all blocklists
+	  int linetotal=0;              // total length of all blocklists
 	  int map_minx=Integer.MAX_VALUE;          // init for map limits search
 	  int map_miny=Integer.MAX_VALUE;
 	  int map_maxx=Integer.MIN_VALUE;
@@ -1927,7 +1930,9 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	  C2JUtils.memset(blockdone,false,NBlocks);
 	  
-	  for (int i=0,linetotal=0;i<NBlocks;i++)
+	  linetotal=0;
+	  
+	  for (int i=0;i<NBlocks;i++)
 	  {
 	    AddBlockLine(blocklists,blockcount,blockdone,i,0);
 	    linetotal += blockcount[i];
@@ -1935,7 +1940,8 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	  // Create the blockmap lump
 
-	  blockmaplump = malloc_IfSameLevel(blockmaplump, sizeof(*blockmaplump) * (4 + NBlocks + linetotal));
+	  //blockmaplump = malloc_IfSameLevel(blockmaplump, 4 + NBlocks + linetotal);
+	  blockmaplump=new int[(int) (4 + NBlocks + linetotal)];
 	  // blockmap header
 
 	  blockmaplump[0] = bmaporgx = xorg << FRACBITS;
@@ -1945,29 +1951,22 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	  // offsets to lists and block lists
 
-	  for (i=0;i<NBlocks;i++)
+	  for (int i=0;i<NBlocks;i++)
 	  {
-	    linelist_t *bl = blocklists[i];
-	    long offs = blockmaplump[4+i] =   // set offset to block's list
-	      (i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blockcount[i-1] : 0);
+	    linelist_t bl = blocklists[i];
+	    int offs = blockmaplump[4+i] =   // set offset to block's list
+	      (i!=0? blockmaplump[4+i-1] : 4+NBlocks) + (i!=0? blockcount[i-1] : 0);
 
 	    // add the lines in each block's list to the blockmaplump
 	    // delete each list node as we go
 
-	    while (bl)
+	    while (bl!=null)
 	    {
-	      linelist_t *tmp = bl.next;
+	      linelist_t tmp = bl.next;
 	      blockmaplump[offs++] = bl.num;
-	      free(bl);
 	      bl = tmp;
 	    }
 	  }
-
-	  // free all temporary storage
-
-	  free (blocklists);
-	  free (blockcount);
-	  free (blockdone);
 	}
 
 	// jff 10/6/98
@@ -2051,33 +2050,43 @@ public class BoomLevelLoader implements ILevelLoader {
 	// though current algorithm is brute-force and unoptimal.
 	//
 
-	static void P_LoadBlockMap (int lump)
+	private void P_LoadBlockMap (int lump) throws IOException
 	{
-	  long count;
+	  int count=0;
 
-	  if (M_CheckParm("-blockmap") || W.LumpLength(lump)<8 || (count = W.LumpLength(lump)/2) >= 0x10000) //e6y
+	  if (DM.CM.CheckParmBool("-blockmap") || W.LumpLength(lump)<8 || (count = W.LumpLength(lump)/2) >= 0x10000) //e6y
 	    P_CreateBlockMap();
 	  else
 	    {
-	      long i;
+	      int i;
 	      // cph - final*, wad lump handling updated
-	      final short *wadblockmaplump = W.CacheLumpNum(lump);
-	      blockmaplump = malloc_IfSameLevel(blockmaplump, sizeof(*blockmaplump) * count);
+	      final char[] wadblockmaplump;
+	      
+	      DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
+	      count=W.LumpLength(lump)/2;
+	      wadblockmaplump=new char[count];
+
+	      data.setOrder(ByteOrder.LITTLE_ENDIAN);
+	      data.rewind();
+	      data.readCharArray(wadblockmaplump, count);
+	      
+	      if (!samelevel) // Reallocate if required.
+	          blockmaplump = new int[count];
 
 	      // killough 3/1/98: Expand wad blockmap into larger internal one,
 	      // by treating all offsets except -1 as unsigned and zero-extending
 	      // them. This potentially doubles the size of blockmaps allowed,
 	      // because Doom originally considered the offsets as always signed.
 
-	      blockmaplump[0] = LittleShort(wadblockmaplump[0]);
-	      blockmaplump[1] = LittleShort(wadblockmaplump[1]);
-	      blockmaplump[2] = (long)(LittleShort(wadblockmaplump[2])) & 0xffff;
-	      blockmaplump[3] = (long)(LittleShort(wadblockmaplump[3])) & 0xffff;
+	      blockmaplump[0] = wadblockmaplump[0];
+	      blockmaplump[1] = wadblockmaplump[1];
+	      blockmaplump[2] = (int)(wadblockmaplump[2] & 0xffff);
+	      blockmaplump[3] = (int)(wadblockmaplump[3] & 0xffff);
 
 	      for (i=4 ; i<count ; i++)
 	        {
-	          short t = LittleShort(wadblockmaplump[i]);          // killough 3/1/98
-	          blockmaplump[i] = t == -1 ? -1l : (long) t & 0xffff;
+	          short t = (short) wadblockmaplump[i];          // killough 3/1/98
+	          blockmaplump[i] = (int) (t == -1 ? -1l : t & 0xffff);
 	        }
 
 	      W.UnlockLumpNum(lump); // cph - unlock the lump
@@ -2091,30 +2100,38 @@ public class BoomLevelLoader implements ILevelLoader {
 	      // http://www.doomworld.com/idgames/index.php?id=12935
 	      if (!P_VerifyBlockMap(count))
 	      {
-	        lprintf(LO_INFO, "P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
-	        lprintf(LO_INFO, "P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
+	        System.err.printf("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+	        System.err.printf("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
 	      }
 	    }
+	  
+	  // MAES: blockmap was generated, rather than loaded.
+	  if (count==0) count=blockmaplump.length-4;
 
 	  // clear out mobj chains - CPhipps - use calloc
-	  blocklinks = calloc_IfSameLevel(blocklinks, bmapwidth * bmapheight, sizeof(*blocklinks));
-	  blockmap = blockmaplump+4;
+	  blocklinks = calloc_IfSameLevel(blocklinks, bmapwidth * bmapheight);
+	  
+	  
+      // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
+      // blockmap = blockmaplump+4;
+	  System.arraycopy(blockmaplump,4,blockmap,0,count);
+	  
 	}
 
 	//
 	// P_LoadReject - load the reject table
 	//
 
-	static void P_LoadReject(int lumpnum, int totallines)
+	private void P_LoadReject(int lumpnum, int totallines)
 	{
 	  // dump any old cached reject lump, then cache the new one
 	  if (rejectlump != -1)
 	    W.UnlockLumpNum(rejectlump);
 	  rejectlump = lumpnum + ML_REJECT;
-	  rejectmatrix = W.CacheLumpNum(rejectlump);
+	  rejectmatrix = W.CacheLumpNumAsRawBytes(rejectlump,0);
 
 	  //e6y: check for overflow
-	  RejectOverrun(rejectlump, &rejectmatrix, totallines);
+	  RejectOverrun(rejectlump, rejectmatrix, totallines);
 	}
 
 	//
@@ -2128,38 +2145,38 @@ public class BoomLevelLoader implements ILevelLoader {
 	// figgi 09/18/00 -- adapted for gl-nodes
 
 	// cph - convenient sub-function
-	static void P_AddLineToSector(line_t* li, sector_t* sector)
+	private void P_AddLineToSector(line_t li, sector_t sector)
 	{
-	  fixed_t *bbox = (void*)sector.blockbox;
+	  int[] bbox = sector.blockbox;
 
 	  sector.lines[sector.linecount++] = li;
-	  M_AddToBox (bbox, li.v1.x, li.v1.y);
-	  M_AddToBox (bbox, li.v2.x, li.v2.y);
+	  BBox.AddToBox(bbox, li.v1.x, li.v1.y);
+	  BBox.AddToBox(bbox, li.v2.x, li.v2.y);
 	}
 
 	// modified to return totallines (needed by P_LoadReject)
-	static int P_GroupLines (void)
+	private int P_GroupLines ()
 	{
-	  register line_t *li;
-	  register sector_t *sector;
+	  line_t li;
+	  sector_t sector;
 	  int i,j, total = numlines;
 
 	  // figgi
 	  for (i=0 ; i<numsubsectors ; i++)
 	  {
-	    seg_t *seg = &segs[subsectors[i].firstline];
-	    subsectors[i].sector = NULL;
+	    int seg = subsectors[i].firstline;
+	    subsectors[i].sector = null;
 	    for(j=0; j<subsectors[i].numlines; j++)
 	    {
-	      if(seg.sidedef)
+	      if(segs[seg].sidedef!=null)
 	      {
-	        subsectors[i].sector = seg.sidedef.sector;
+	        subsectors[i].sector = segs[seg].sidedef.sector;
 	        break;
 	      }
 	      seg++;
 	    }
-	    if(subsectors[i].sector == NULL)
-	      I_Error("P_GroupLines: Subsector a part of no sector!\n");
+	    if(subsectors[i].sector == null)
+	      I.Error("P_GroupLines: Subsector a part of no sector!\n");
 	  }
 
 	  // count number of lines in each sector
@@ -2328,10 +2345,10 @@ public class BoomLevelLoader implements ILevelLoader {
 	// Are these lumps in the same wad file?
 	//
 
-	dboolean P_CheckLumpsForSameSource(int lump1, int lump2)
+	boolean P_CheckLumpsForSameSource(int lump1, int lump2)
 	{
 	  int wad1_index, wad2_index;
-	  wadfile_info_t *wad1, *wad2;
+	  wadfile_info_t wad1, wad2;
 
 	  if (((unsigned)lump1 >= (unsigned)numlumps) || ((unsigned)lump2 >= (unsigned)numlumps))
 	    return false;
