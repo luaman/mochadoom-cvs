@@ -246,13 +246,34 @@ public class C2JUtils {
     public static final int toUnsignedByte(byte b){
         return (0x000000FF&b);
     }
+    
+    
+    // Optimized array-fill methods designed to operate like C's memset.
 
-    public static final void memset(char[] string, char val, int len) {
-        for (int i=0;i<len;i++){
-            string[i]=val;
-        }        
-    }
-
+    public static void memset(boolean[] array, boolean value,int len) {
+        if (len > 0)
+        array[0] = value;
+         for (int i = 1; i < len; i += i) {
+           System.arraycopy( array, 0, array, i, ((len - i) < i) ? (len - i) : i);
+        }
+     }
+    
+    public static void memset(char[] array, char value,int len) {
+        if (len > 0)
+        array[0] = value;
+         for (int i = 1; i < len; i += i) {
+           System.arraycopy( array, 0, array, i, ((len - i) < i) ? (len - i) : i);
+        }
+     }
+    
+    public static void memset(int[] array, int value,int len) {
+        if (len > 0)
+        array[0] = value;
+         for (int i = 1; i < len; i += i) {
+           System.arraycopy( array, 0, array, i, ((len - i) < i) ? (len - i) : i);
+        }
+     }
+    
     public static final long unsigned(int num){
     	return 0xFFFFFFFFL&num;
     }
