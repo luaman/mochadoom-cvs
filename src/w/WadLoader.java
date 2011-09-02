@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.44 2011/08/24 14:55:42 velktron Exp $
+// $Id: WadLoader.java,v 1.45 2011/09/02 16:29:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.45  2011/09/02 16:29:59  velktron
+// Minor interface change
+//
 // Revision 1.44  2011/08/24 14:55:42  velktron
 // Deprecated old CacheLumpNumIntoArray method, much cleaner system introduced.
 //
@@ -951,7 +954,7 @@ public class WadLoader implements IWadLoader {
 	 */
 	
 	public <T> T[] CacheLumpNumIntoArray(int lump, int num,
-			Class<T> what) throws IOException {
+			Class<T> what){
 
 		if (lump >= numlumps) {
 			I.Error("CacheLumpNumIntoArray: %i >= numlumps", lump);

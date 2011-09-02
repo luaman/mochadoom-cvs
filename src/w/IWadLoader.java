@@ -149,17 +149,6 @@ public interface IWadLoader {
 
 	public abstract byte[] CacheLumpNumAsRawBytes(int num, int tag);
 
-	/**
-	 * Return a cached lump based on its name, and for a specificc class. This
-	 * will autoload it too, and should be the preferred method of loading
-	 * stuff.
-	 * 
-	 * @param name
-	 * @param tag
-	 * @param what
-	 * @return
-	 */
-
 	public abstract DoomBuffer CacheLumpName(String name, int tag);
 
 	/**
@@ -225,6 +214,6 @@ public interface IWadLoader {
 	void UnlockLumpNum(CacheableDoomObject lump);
 	
 	public <T> T[] CacheLumpNumIntoArray(int lump, int num,
-			Class<T> what) throws IOException;
+			Class<T> what);
 	
 }
