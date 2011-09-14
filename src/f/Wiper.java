@@ -4,7 +4,7 @@ import doom.DoomMain;
 
 public class Wiper extends AbstractWiper {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.14 2011/07/15 13:57:35 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.15 2011/09/14 11:22:57 velktron Exp $";
     
     protected wipefun[] wipes;
     
@@ -300,12 +300,10 @@ public class Wiper extends AbstractWiper {
       int   height )
     {
         wipe_scr_start = V.getScreen(2);
-        //
-        
-        byte[] screen_zero=V.getScreen(0);
+        //  byte[] screen_zero=V.getScreen(0);
         VI.ReadScreen(wipe_scr_start);
         
-        System.arraycopy(screen_zero,0,wipe_scr_start, 0, SCREENWIDTH*SCREENHEIGHT);
+        //System.arraycopy(screen_zero,0,wipe_scr_start, 0, SCREENWIDTH*SCREENHEIGHT);
         return false;
     }
 
@@ -319,13 +317,13 @@ public class Wiper extends AbstractWiper {
       int   width,
       int   height )
     {
+        // Set end screen to "screen 3" and copy visible screen to it.
         wipe_scr_end = V.getScreen(3);
         VI.ReadScreen(wipe_scr_end);
-        byte[] screen_zero=V.getScreen(0);
         
-        System.arraycopy(screen_zero,0,wipe_scr_end, 0, SCREENWIDTH*SCREENHEIGHT);
+        // Restore starting screen.
+        byte[] screen_zero=V.getScreen(0);        
         System.arraycopy(wipe_scr_start,0,screen_zero, 0, SCREENWIDTH*SCREENHEIGHT);
-        //V.DrawBlock(x, y, 0, width, height, wipe_scr_start); // restore start scr.
         return false;
     }
     @Override
