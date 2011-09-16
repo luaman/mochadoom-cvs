@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.45 2011/09/02 16:29:59 velktron Exp $
+// $Id: WadLoader.java,v 1.46 2011/09/16 11:17:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.46  2011/09/16 11:17:22  velktron
+// Added verifyLumpName function
+//
 // Revision 1.45  2011/09/02 16:29:59  velktron
 // Minor interface change
 //
@@ -1387,6 +1390,21 @@ public class WadLoader implements IWadLoader {
 			//System.out.printf("Lump %d %d freed\n",lump.hashCode(),lumpno);
 		}
 	}
+
+    @Override
+    public boolean verifyLumpName(int lump, String lumpname) {
+        
+        // Lump number invalid
+        if (lump<0 || lump>numlumps-1) return false;
+        
+        String name=GetNameForLump(lump);
+        
+        // Expected lump name not found
+        if (name==null || lumpname.compareToIgnoreCase(name)!=0) return false;        
+        
+        // Everything should be OK now...
+        return true;
+    }
 
 	
 }

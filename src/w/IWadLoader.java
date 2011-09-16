@@ -216,4 +216,14 @@ public interface IWadLoader {
 	public <T> T[] CacheLumpNumIntoArray(int lump, int num,
 			Class<T> what);
 	
+	/** Verify whether a certain lump number is valid and has
+	 *  the expected name.
+	 *  
+	 * @param lump
+	 * @param lumpname
+	 * @return
+	 */
+
+	boolean verifyLumpName(int lump, String lumpname);
+	
 }
