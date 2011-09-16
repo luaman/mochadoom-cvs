@@ -37,7 +37,10 @@ public interface ILevelLoader {
     /** LUT, sector-sector visibility */
     public static final int ML_BLOCKMAP = 10;
 
-
-	
+    /** Expected lump names for verification */
+    public static final String[] LABELS={"MAPNAME","THINGS","LINEDEFS","SIDEDEFS",
+                                        "VERTEXES","SEGS","SSECTORS","NODES",
+                                        "SECTORS","REJECT","BLOCKMAP"};
+        
 	
 }
