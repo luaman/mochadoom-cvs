@@ -2,7 +2,6 @@ package doom;
 
 import static data.Defines.*;
 import static data.Limits.*;
-import boom.complevel_t;
 import p.mobj_t;
 import utils.C2JUtils;
 import w.DoomFile;
@@ -531,6 +530,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.31  2011/09/27 16:01:41  velktron
+// -complevel_t
+//
 // Revision 1.30  2011/09/27 15:54:51  velktron
 // Added some more prBoom+ stuff.
 //
