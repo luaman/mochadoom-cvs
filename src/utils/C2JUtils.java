@@ -410,5 +410,26 @@ public class C2JUtils {
         if (o==null) return 0;
         else return o.hashCode();
     }
+
+    public static boolean checkForExtension(String filename,String ext) {
+        
+        // Null filenames satisfy null extensions.
+        if ((filename==null || filename.isEmpty()) && 
+             (ext==null || ext.isEmpty())) return true;
+        
+        String realext = null;
+        
+        // Get extension separator. It SHOULD be . on all platforms, right?       
+        int pos = filename.lastIndexOf('.');
+        
+        if (pos>=0) {        // Extension present            
+             realext=filename.substring(pos);        
+            return realext.compareToIgnoreCase(ext) != 0;
+        } else // No extension, and null/empty comparator
+         if (ext==null || ext.isEmpty()) return true;
+        
+        // No extension, and non-null/nonempty comparator.
+        return false;
+    }
     
 }
