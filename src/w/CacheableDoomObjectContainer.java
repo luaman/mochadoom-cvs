@@ -32,5 +32,18 @@ public class CacheableDoomObjectContainer implements CacheableDoomObject {
 				stuff[i].unpack(buf);
 			}
 		}
+	
+	/** Statically usable method
+	 * 
+	 * @param buf
+	 * @param stuff
+	 * @throws IOException
+	 */
+	
+	public static void unpack(ByteBuffer buf, CacheableDoomObject[] stuff) throws IOException{
+	       for (int i = 0; i < stuff.length; i++) {
+               stuff[i].unpack(buf);
+           }
+	}
 
 }
