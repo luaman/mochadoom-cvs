@@ -42,6 +42,7 @@ public class lumpinfo_t implements Cloneable{
         
         // For BOOM compatibility
         public li_namespace namespace;
+        public wadfile_info_t wadfile;
         
         public int hashCode(){
             return hash;
