@@ -50,7 +50,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.34 2011/09/27 16:00:20 velktron Exp $
+// $Id: LevelLoader.java,v 1.35 2011/09/27 18:04:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -65,6 +65,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.35  2011/09/27 18:04:36  velktron
+// Fixed major blockmap bug
+//
 // Revision 1.34  2011/09/27 16:00:20  velktron
 // Minor blockmap stuff.
 //
@@ -207,7 +210,7 @@ public class LevelLoader implements DoomStatusAware,ILevelLoader{
     IDoomSound S;
     
     
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.34 2011/09/27 16:00:20 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.35 2011/09/27 18:04:36 velktron Exp $";
   
   //  
   // MAP related Lookup tables.
@@ -473,9 +476,11 @@ public int bmaporgy;
       boolean     spawn;      
       
       numthings = W.LumpLength (lump) / mapthing_t.sizeOf();
+      // VERY IMPORTANT: since now caching is near-absolute,
+      // the mapthing_t instances must be CLONED rather than just
+      // referenced, otherwise missing mobj bugs start  happening.
+      
       data=W.CacheLumpNumIntoArray(lump,numthings,mapthing_t.class);
-      
-      
       
       for (int i=0 ; i<numthings ; i++)
       {
@@ -512,8 +517,13 @@ public int bmaporgy;
       mt.type = SHORT(mt.type);
       mt.options = SHORT(mt.options);*/
       
+      //System.out.printf("Spawning %d %s\n",i,mt.type);
+      
       P.SpawnMapThing (mt);
       }
+      
+      // Status may have changed. It's better to release the resources anyway
+      //W.UnlockLumpNum(lump);
       
   }
 
@@ -715,12 +725,16 @@ public int bmaporgy;
       	}
       
       // clear out mobj chains
-      if (blocklinks!=null && blocklinks.length==count){
-          for (i=0;i<count;i++){
-              blocklinks[i].clear();
-          }
-      } else
-      blocklinks = C2JUtils.createArrayOfObjects(mobj_t.class,count);
+      // ATTENTION! BUG!!!
+      // If blocklinks are "cleared" to void -but instantiated- objects,
+      // very bad bugs happen, especially the second time a level is re-instantiated.
+      // Probably caused other bugs as well, as an extra object would appear in iterators.
+      
+       if (blocklinks!=null && blocklinks.length==count)
+          for (i=0;i<count;i++)
+              blocklinks[i]=null;
+       else 
+           blocklinks = new mobj_t[count];
   }
 
 
@@ -891,11 +905,11 @@ public int bmaporgy;
    */
 
   public void SetThingPosition(mobj_t thing) {
-      subsector_t ss;
-      sector_t sec;
-      int blockx;
-      int blocky;
-      mobj_t link;
+      final subsector_t ss;
+      final sector_t sec;
+      final int blockx;
+      final int blocky;
+      final mobj_t link;
 
       // link into subsector
       ss = PointInSubsector(thing.x, thing.y);
@@ -920,17 +934,21 @@ public int bmaporgy;
           blockx = (thing.x - bmaporgx) >> MAPBLOCKSHIFT;
           blocky = (thing.y - bmaporgy) >> MAPBLOCKSHIFT;
 
+          // Valid block?
           if (blockx >= 0 && blockx < bmapwidth && blocky >= 0
                   && blocky < bmapheight) {
 
+              // Get said block.
               link = blocklinks[blocky * bmapwidth + blockx];
-              thing.bprev = null;
-              thing.bnext = link; // FIXME: will this work?
-              if (link != null)
+              thing.bprev = null; // Thing is put at head of block...
+              thing.bnext = link;
+              if (link != null) // block links back at thing...
                   // This will work
                   link.bprev = thing;
 
-              // link=thing won't work, assignment should be made directly
+              // "thing" is now effectively the new head
+              // Iterators only follow "bnext", not "bprev".
+              // If link was null, then thing is the first entry.
               blocklinks[blocky * bmapwidth + blockx] = thing;
           } else {
               // thing is off the map
@@ -1035,8 +1053,7 @@ public int bmaporgy;
       
     //_D_: uncommented the rejectmatrix variable, this permitted changing level to work
       try{
-      DoomBuffer db = (DoomBuffer)W.CacheLumpNum (lumpnum+ML_REJECT,PU_LEVEL, null);
-      tmpreject=db.getBuffer().array();
+      tmpreject=W.CacheLumpNumAsRawBytes(lumpnum+ML_REJECT,PU_LEVEL);
       } catch (Exception e){
           // Any exception at this point means missing REJECT lump. Fuck that, and move on.
           // If everything goes OK, tmpreject will contain the REJECT lump's data
