@@ -1803,7 +1803,7 @@ if (mthing.type == 11)
 if (DM.deathmatch_p < 10/*DM.deathmatchstarts[10]*/)
 {
  // memcpy (deathmatch_p, mthing, sizeof(*mthing));
-    DM.deathmatchstarts[DM.deathmatch_p]=mthing.clone();
+    DM.deathmatchstarts[DM.deathmatch_p]=new mapthing_t(mthing);
   DM.deathmatch_p++;
 }
 return null;
@@ -1824,7 +1824,7 @@ if (mthing.type <= 0)
 if (mthing.type <= 4 && mthing.type > 0)  // killough 2/26/98 -- fix crashes
 {
 // save spots for respawning in network games
-DM.playerstarts[mthing.type-1] = mthing;
+DM.playerstarts[mthing.type-1]=new mapthing_t(mthing);
 if (!DM.deathmatch)
   SpawnPlayer (mthing);
 
@@ -1877,7 +1877,7 @@ else
 z = ONFLOORZ;
 
 mobj = SpawnMobj (x,y,z, mobjtype_t.values()[i]);
-mobj.spawnpoint = mthing;
+mobj.spawnpoint.copyFrom(mthing);
 
 if (mobj.tics > 0)
 mobj.tics = 1 + (RND.P_Random () % mobj.tics);
