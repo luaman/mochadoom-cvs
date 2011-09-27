@@ -422,9 +422,9 @@ public class C2JUtils {
         // Get extension separator. It SHOULD be . on all platforms, right?       
         int pos = filename.lastIndexOf('.');
         
-        if (pos>=0) {        // Extension present            
-             realext=filename.substring(pos);        
-            return realext.compareToIgnoreCase(ext) != 0;
+        if (pos>=0 && pos<=filename.length()-2) {        // Extension present            
+             realext=filename.substring(pos+1);        
+            return realext.compareToIgnoreCase(ext) == 0;
         } else // No extension, and null/empty comparator
          if (ext==null || ext.isEmpty()) return true;
         
