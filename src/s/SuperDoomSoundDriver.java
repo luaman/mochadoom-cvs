@@ -519,7 +519,13 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     	/** Adds a channel mixing message to the queue */
     	
     	public void submitMixMessage(MixMessage m){
+    	    try{
     		this.mixmessages.add(m);
+    	    } catch (IllegalStateException  e){
+    	        // Queue full. Force clear (VERY rare).
+    	        mixmessages.clear();
+    	        mixmessages.add(m);
+    	    }
     		}
     	
     	public boolean terminate=false;
