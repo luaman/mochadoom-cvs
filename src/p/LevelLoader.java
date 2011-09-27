@@ -50,7 +50,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.33 2011/08/24 15:52:04 velktron Exp $
+// $Id: LevelLoader.java,v 1.34 2011/09/27 16:00:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -65,6 +65,9 @@ import doom.DoomStatus;
 // GNU General Public License for more details.
 //
 // $Log: LevelLoader.java,v $
+// Revision 1.34  2011/09/27 16:00:20  velktron
+// Minor blockmap stuff.
+//
 // Revision 1.33  2011/08/24 15:52:04  velktron
 // Sets proper ISoundOrigin for sectors (height, too)
 //
@@ -204,7 +207,7 @@ public class LevelLoader implements DoomStatusAware,ILevelLoader{
     IDoomSound S;
     
     
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.33 2011/08/24 15:52:04 velktron Exp $";
+  public static final String  rcsid = "$Id: LevelLoader.java,v 1.34 2011/09/27 16:00:20 velktron Exp $";
   
   //  
   // MAP related Lookup tables.
@@ -693,19 +696,32 @@ public int bmaporgy;
       bmapheight = blockmaplump[3];
       count = bmapwidth*bmapheight;
       
+      if (count<0){
+          int[] shit=this.getMapBoundingBox();
+          bmaporgx=shit[0];
+          bmaporgy=shit[1];
+          bmapwidth=shit[2];
+          bmapheight=shit[3];
+          count=bmapwidth*bmapheight;          
+      }
+      
      // System.err.printf("%d %d %d %d \n",(short)blockmaplump[0],(short)blockmaplump[1],(short)blockmaplump[2],(short)blockmaplump[3]);
       
       blockmap=new int[count];
       
       // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
       for (i=0;i<count;i++){
-    	  blockmap[i]=0xFFFF&blockmaplump[i+4];//Math.min(blockmaplump[i+4],Short.MAX_VALUE);
+    	  blockmap[i]=blockmaplump[i+4];
       	}
-      // clear out mobj chains
       
+      // clear out mobj chains
+      if (blocklinks!=null && blocklinks.length==count){
+          for (i=0;i<count;i++){
+              blocklinks[i].clear();
+          }
+      } else
       blocklinks = C2JUtils.createArrayOfObjects(mobj_t.class,count);
   }
-
 
 
   /**
@@ -995,8 +1011,16 @@ public int bmaporgy;
       
       DM.leveltime = 0;
       
-      // note: most of this ordering is important 
+      if (!W.verifyLumpName(lumpnum+ML_BLOCKMAP, LABELS[ML_BLOCKMAP]))
+          System.err.println("Blockmap missing!");
+      
+      // note: most of this ordering is important
+      
+      try {
       this.LoadBlockMap (lumpnum+ML_BLOCKMAP);
+      } catch (IOException e){
+          // TODO: generate or otherwise sanitize
+      }
       this.LoadVertexes (lumpnum+ML_VERTEXES);
       this.LoadSectors (lumpnum+ML_SECTORS);
       this.LoadSideDefs (lumpnum+ML_SIDEDEFS);
@@ -1109,6 +1133,7 @@ public int bmaporgy;
 }
 
 /** Returns an int[] array with orgx, orgy, and number of blocks.
+ * Order is: orgx,orgy,bckx,bcky
  *   
  * @return
  */
