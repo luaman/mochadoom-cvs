@@ -149,7 +149,22 @@ public interface IWadLoader {
 
 	public abstract byte[] CacheLumpNumAsRawBytes(int num, int tag);
 
+	/** Get a DoomBuffer of the specified lump name
+	 * 
+	 * @param name
+	 * @param tag
+	 * @return
+	 */
+	
 	public abstract DoomBuffer CacheLumpName(String name, int tag);
+
+    /** Get a DoomBuffer of the specified lump num
+     * 
+     * @param lump
+     * @return
+     */
+
+	public abstract DoomBuffer CacheLumpNumAsDoomBuffer(int lump);
 
 	/**
 	 * Specific method for loading cached patches by name, since it's by FAR the
@@ -225,5 +240,19 @@ public interface IWadLoader {
 	 */
 
 	boolean verifyLumpName(int lump, String lumpname);
+	
+	/** The index of a known loaded wadfile
+	 * 
+	 * @param wad1
+	 * @return
+	 */
+
+    public abstract int GetWadfileIndex(wadfile_info_t wad1);
+
+    /** The number of loaded wadfile
+     * 
+     * @return
+     */
+    public abstract int GetNumWadfiles();
 	
 }
