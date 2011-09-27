@@ -2,12 +2,12 @@ package doom;
 
 import static data.Defines.*;
 import static data.Limits.*;
+import boom.complevel_t;
 import p.mobj_t;
 import utils.C2JUtils;
 import w.DoomFile;
 import data.mapthing_t;
 import defines.*;
-import demo.IDemoTicCmd;
 import demo.IDoomDemo;
 /**
  * We need globally shared data structures, for defining the global state
@@ -210,6 +210,9 @@ public class DoomStatus extends DoomContext {
 
     public int totalsecret;
 
+    // Added for prBoom+ code
+    public int totallive;
+    
     // Timer, for scores.
     public int levelstarttic; // gametic at level start
 
@@ -508,6 +511,14 @@ public class DoomStatus extends DoomContext {
     
     public boolean use_mouse;
     
+    
+    /** More prBoom+ stuff. Used mostly for code uhm..reuse, rather
+     *  than to actually change the way stuff works.
+     *   
+     */
+    
+    public static int compatibility_level;
+    
     public DoomStatus(){
     	players = new player_t[MAXPLAYERS];
     	C2JUtils.initArrayOfObjects(players);
@@ -520,6 +531,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.30  2011/09/27 15:54:51  velktron
+// Added some more prBoom+ stuff.
+//
 // Revision 1.29  2011/07/28 17:07:04  velktron
 // Added always run hack.
 //
