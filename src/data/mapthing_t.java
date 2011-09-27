@@ -25,6 +25,10 @@ public class mapthing_t implements CacheableDoomObject,IPackableDoomObject,IWrit
     public mapthing_t() {
     }
 
+    public mapthing_t(mapthing_t source) {
+        this.copyFrom(source);
+    }
+
     public static int sizeOf() {
         return 10;
     }
@@ -41,15 +45,13 @@ public class mapthing_t implements CacheableDoomObject,IPackableDoomObject,IWrit
         
     }
     
-    public mapthing_t clone(){
+    public void copyFrom(mapthing_t source){
 
-    	try {
-			return (mapthing_t)super.clone();
-		} catch (CloneNotSupportedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+        this.x=source.x;
+        this.y=source.y;
+        this.angle=source.angle;
+        this.options=source.options;
+        this.type=source.type;
     }
 
     @Override
