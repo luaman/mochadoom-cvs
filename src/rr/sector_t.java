@@ -155,7 +155,7 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
       * 
       * @param sec
       */
-     @SuppressWarnings("unused")
+
 	public int FindHighestFloorSurrounding() {
          int i;
          line_t check;
@@ -167,8 +167,8 @@ public class sector_t implements IReadableDoomObject, IPackableDoomObject{
              check = this.lines[i];
              other = check.getNextSector( this);
  
-             // The compiler nags about this being unreachable, but
-             // it's not true.
+             // The compiler nagged about this being unreachable, with 
+             // some older 1.6 JDKs, but that's obviously not true.
              if (other == null)
                  continue;
 
