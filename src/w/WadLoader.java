@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.46 2011/09/16 11:17:22 velktron Exp $
+// $Id: WadLoader.java,v 1.47 2011/09/27 15:57:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.47  2011/09/27 15:57:09  velktron
+// Full wadinfo (lump "ownership") system in place, borrowed from prBoom+ with a twist ;-)
+//
 // Revision 1.46  2011/09/16 11:17:22  velktron
 // Added verifyLumpName function
 //
@@ -193,6 +196,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 
 import doom.DoomStatus;
 
@@ -206,23 +210,25 @@ import i.*;
 public class WadLoader implements IWadLoader {
 
 	protected IDoomSystem I;
+
+	///// CONSTRUCTOR
 	
-	//
-	// GLOBALS
-	//
+	   public WadLoader(IDoomSystem I) {
+	        this();
+	        this.I = I;
+	    }
+
+	    public WadLoader() {
+	        lumpinfo = new lumpinfo_t[0];
+	        zone= new Hashtable<CacheableDoomObject, Integer>();
+	        wadfiles=new ArrayList<wadfile_info_t>();
+	    }
+	
+	
+	//// FIELDS
 
 	/** Location of each lump on disk. */
 	public lumpinfo_t[] lumpinfo;
-
-	public WadLoader(IDoomSystem I) {
-		this();
-		this.I = I;
-	}
-
-	public WadLoader() {
-		lumpinfo = new lumpinfo_t[0];
-		zone= new Hashtable<CacheableDoomObject, Integer>();
-	}
 
 	public int numlumps;
 
@@ -241,6 +247,9 @@ public class WadLoader implements IWadLoader {
 
 	private boolean[] preloaded;
 
+	/** Added for Boom compliance */
+	private List<wadfile_info_t> wadfiles;
+	
 	/**
 	 * #define strcmpi strcasecmp MAES: this is just capitalization. However we
 	 * can't manipulate String object in Java directly like this, so this must
@@ -276,13 +285,17 @@ public class WadLoader implements IWadLoader {
 
 	}
 
-	/**
-	 * MAES: same problem here. I'd rather return a new String than doing stupid
-	 * shit like passing an array of Strings as dest and modifying the first
-	 * item.
-	 */
+/** This method is supposed to return the "name" part of a filename. It was
+ *  intended to return length-limited (max 8 chars) strings to use as lump 
+ *  indicators. There's normally no need to enforce this behavior, as there's
+ *  nothing preventing the engine from INTERNALLY using lump names with >8 chars.
+ *  However, just the sure...
+ * 
+ * @param path
+ * @return
+ */
 
-	protected String ExtractFileBase(String path) {
+	protected String ExtractFileBase(String path, boolean nolimit) {
 		int src = path.length() - 1;
 		// Duh???
 
@@ -299,17 +312,15 @@ public class WadLoader implements IWadLoader {
 		src = path.lastIndexOf(separator);
 		// If proper separator is not found? 
 		// Filename is relative, 
-		if (src < 0)
-			src = path.lastIndexOf('/');
+		//if (src < 0)
+		//	src = path.lastIndexOf(separator);
 		if (src < 0)
 			src = 0;
 
-		// copy UP to eight characters.
-		// MAES: no more. Instead, try getting the pathname without
-		// extension, but allowing directories with . in their name
-		// So start from the end.
+		// copy UP to eight characters unless enforced otherwise.
 		
 		int pos = path.lastIndexOf('.');
+		if (nolimit) pos=Math.min(8,pos);
 		return path.substring(0,pos).toUpperCase();
 	}
 
@@ -346,12 +357,11 @@ public class WadLoader implements IWadLoader {
 		DoomFile handle;
 		long length;
 		int startlump;
+		
 		filelump_t[] fileinfo = new filelump_t[1]; // MAES: was *
 		filelump_t singleinfo = new filelump_t();
 		DoomFile storehandle;
-
-		// open the file and add to directory
-
+		
 		// handle reload indicator.
 		if (filename.charAt(0) == '~') {
 			filename = filename.substring(1);
@@ -359,27 +369,48 @@ public class WadLoader implements IWadLoader {
 			reloadlump = numlumps;
 		}
 
+        // open the file and add to directory
+		
 		try {
 			handle = new DoomFile(filename, "r");
 		} catch (Exception e) {
 			I.Error(" couldn't open %s \n", filename);
 			return;
 		}
+		
+        // Create and set wadfile info
+        wadfile_info_t wadinfo=new wadfile_info_t();
+        wadinfo.handle=handle;
+        wadinfo.name=filename;
+
 
 		// System.out.println(" adding " + filename + "\n");
 
 		// We start at the number of lumps. This allows appending stuff.
 		startlump = this.numlumps;
 
-		if (filename.substring(filename.length() - 3)
-				.compareToIgnoreCase("wad") != 0) {
-		    System.out.println("Single lump");
-			// single lump file
-			fileinfo[0] = singleinfo;
+		// If not "WAD" then we check for single lumps.
+		if (!C2JUtils.checkForExtension(filename,"wad")) {
+
+		    fileinfo[0] = singleinfo;
 			singleinfo.filepos = 0;
 			singleinfo.size = (long) (handle.length());
-			singleinfo.name = ExtractFileBase(filename);
-			numlumps++;
+			
+			// Single lumps. Only use 8 characters			
+			singleinfo.name = ExtractFileBase(filename, false);
+			
+			// MAES: check out certain known types of extension
+			if (C2JUtils.checkForExtension(filename,"lmp"))			
+			    wadinfo.src=wad_source_t.source_lmp;
+			else
+            if (C2JUtils.checkForExtension(filename,"deh"))         
+                wadinfo.src=wad_source_t.source_deh;
+            else        
+            if (C2JUtils.checkForExtension(filename,null))         
+                    wadinfo.src=wad_source_t.source_deh;
+                
+			numlumps++;			
+			
 		} else {
 			// MAES: 14/06/10 this is historical, for this is the first time I
 			// implement reading something
@@ -389,16 +420,16 @@ public class WadLoader implements IWadLoader {
 			// read (handle, &header, sizeof(header));
 
 			header.read(handle);
-
+			
 			if (header.identification.compareTo("IWAD") != 0) {
 				// Homebrew levels?
 				if (header.identification.compareTo("PWAD") != 0) {
 					I.Error("Wad file %s doesn't have IWAD or PWAD id\n",
 							filename);
-				}
+				} else wadinfo.src=wad_source_t.source_pwad;
 
 				// modifiedgame = true;
-			}
+			} else wadinfo.src=wad_source_t.source_iwad;
 
 			// MAES: I don't think the following are needed. Casting to long?
 			// :-S
@@ -420,6 +451,11 @@ public class WadLoader implements IWadLoader {
 			 */
 			numlumps += header.numlumps;
 		    } // end loading wad
+		
+		    //  At this point, a WADFILE or LUMPFILE been successfully loaded, 
+		    // and so is added to the list
+		    this.wadfiles.add(wadinfo);
+
 		
 			// Fill in lumpinfo
 			// MAES: this was a realloc(lumpinfo, numlumps*sizeof(lumpinfo_t)),
@@ -452,6 +488,7 @@ public class WadLoader implements IWadLoader {
 			// This iterates through single files.
 			int fileinfo_p = 0;
 
+			
 			for (int i = startlump; i < numlumps; i++, lump_p++, fileinfo_p++) {
 				lumpinfo[lump_p].handle = storehandle;
 				lumpinfo[lump_p].position = fileinfo[fileinfo_p].filepos;
@@ -463,7 +500,9 @@ public class WadLoader implements IWadLoader {
 				// LumpNameHash(lumpinfo[lump_p].name);
 				lumpinfo[lump_p].intname = name8.getIntName(strupr(lumpinfo[lump_p].name));
 				//System.out.println(lumpinfo[lump_p]);
+				lumpinfo[lump_p].wadfile=wadinfo; // MAES: Add Boom provenience info
 			}
+			
 			if (reloadname != null)
 				handle.close();
 	}
@@ -976,7 +1015,7 @@ public class WadLoader implements IWadLoader {
 
 			CacheableDoomObject[] stuff=(CacheableDoomObject[]) C2JUtils.createArrayOfObjects(what, num);
 			
-			// Store the buffer anyway (as a DoomBuffer)
+			// Store the buffer anyway (as a CacheableDoomObjectContainer)
 			lumpcache[lump] = new CacheableDoomObjectContainer(stuff);
 			
 			// Auto-unpack it, if possible.
@@ -1018,8 +1057,8 @@ public class WadLoader implements IWadLoader {
 	 * @return
 	 */
 	
-	protected boolean implementsInterface(Class what, Class which) {
-		Class[] shit = what.getInterfaces();
+	protected boolean implementsInterface(Class<?> what, Class<?> which) {
+		Class<?>[] shit = what.getInterfaces();
 		for (int i = 0; i < shit.length; i++) {
 			if (shit[i].equals(which))
 				return true;
@@ -1056,6 +1095,12 @@ public class WadLoader implements IWadLoader {
 				DoomBuffer.class);
 
 	}
+	
+	   public DoomBuffer CacheLumpNumAsDoomBuffer(int lump) {
+	        return (DoomBuffer) this.CacheLumpNum(lump, 0,
+	                DoomBuffer.class);
+	    }
+	
 
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CachePatchName(java.lang.String)
@@ -1404,6 +1449,16 @@ public class WadLoader implements IWadLoader {
         
         // Everything should be OK now...
         return true;
+    }
+
+    @Override
+    public int GetWadfileIndex(wadfile_info_t wad1) {        
+        return wadfiles.indexOf(wad1);
+    }
+
+    @Override
+    public int GetNumWadfiles() {
+        return wadfiles.size();
     }
 
 	
