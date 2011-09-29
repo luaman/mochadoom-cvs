@@ -59,4 +59,57 @@ public final class Compatibility {
               new prboom_comp_t(0x00000000, 0x02050007, false, "-do_not_use_misc12_frame_parameters_in_a_mushroom")
             };
       
+      public static final int PC_MONSTER_AVOID_HAZARDS=0;
+      public static final int PC_REMOVE_SLIME_TRAILS=1;
+      public static final int PC_NO_DROPOFF=2;
+      public static final int PC_TRUNCATED_SECTOR_SPECIALS=3;
+      public static final int PC_BOOM_BRAINAWAKE=4;
+      public static final int PC_PRBOOM_FRICTION=5;
+      public static final int PC_REJECT_PAD_WITH_FF=6;
+      public static final int PC_FORCE_LXDOOM_DEMO_COMPATIBILITY=7;
+      public static final int PC_ALLOW_SSG_DIRECT=8;
+      public static final int PC_TREAT_NO_CLIPPING_THINGS_AS_NOT_BLOCKING=9;
+      public static final int PC_FORCE_INCORRECT_PROCESSING_OF_RESPAWN_FRAME_ENTRY=10;
+      public static final int PC_FORCE_CORRECT_CODE_FOR_3_KEYS_DOORS_IN_MBF=11;
+      public static final int PC_UNINITIALIZE_CRUSH_FIELD_FOR_STAIRS=12;
+      public static final int PC_FORCE_BOOM_FINDNEXTHIGHESTFLOOR=13;
+      public static final int PC_ALLOW_SKY_TRANSFER_IN_BOOM=14;
+      public static final int PC_APPLY_GREEN_ARMOR_CLASS_TO_ARMOR_BONUSES=15;
+      public static final int PC_APPLY_BLUE_ARMOR_CLASS_TO_MEGASPHERE=16;
+      public static final int PC_WRONG_FIXEDDIV=17;
+      public static final int PC_FORCE_INCORRECT_BOBBING_IN_BOOM=18;
+      public static final int PC_BOOM_DEH_PARSER=19;
+      public static final int PC_MBF_REMOVE_THINKER_IN_KILLMOBJ=20;
+      public static final int PC_DO_NOT_INHERIT_FRIENDLYNESS_FLAG_ON_SPAWN=21;
+      public static final int PC_DO_NOT_USE_MISC12_FRAME_PARAMETERS_IN_A_MUSHROOM=21;
+      public static final int PC_MAX=23;
+      
+      public enum PC
+      {
+        PC_MONSTER_AVOID_HAZARDS,
+        PC_REMOVE_SLIME_TRAILS,
+        PC_NO_DROPOFF,
+        PC_TRUNCATED_SECTOR_SPECIALS,
+        PC_BOOM_BRAINAWAKE,
+        PC_PRBOOM_FRICTION,
+        PC_REJECT_PAD_WITH_FF,
+        PC_FORCE_LXDOOM_DEMO_COMPATIBILITY,
+        PC_ALLOW_SSG_DIRECT,
+        PC_TREAT_NO_CLIPPING_THINGS_AS_NOT_BLOCKING,
+        PC_FORCE_INCORRECT_PROCESSING_OF_RESPAWN_FRAME_ENTRY,
+        PC_FORCE_CORRECT_CODE_FOR_3_KEYS_DOORS_IN_MBF,
+        PC_UNINITIALIZE_CRUSH_FIELD_FOR_STAIRS,
+        PC_FORCE_BOOM_FINDNEXTHIGHESTFLOOR,
+        PC_ALLOW_SKY_TRANSFER_IN_BOOM,
+        PC_APPLY_GREEN_ARMOR_CLASS_TO_ARMOR_BONUSES,
+        PC_APPLY_BLUE_ARMOR_CLASS_TO_MEGASPHERE,
+        PC_WRONG_FIXEDDIV,
+        PC_FORCE_INCORRECT_BOBBING_IN_BOOM,
+        PC_BOOM_DEH_PARSER,
+        PC_MBF_REMOVE_THINKER_IN_KILLMOBJ,
+        PC_DO_NOT_INHERIT_FRIENDLYNESS_FLAG_ON_SPAWN,
+        PC_DO_NOT_USE_MISC12_FRAME_PARAMETERS_IN_A_MUSHROOM,
+        PC_MAX
+      };
+      
     }
