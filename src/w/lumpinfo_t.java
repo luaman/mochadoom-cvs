@@ -61,6 +61,7 @@ public class lumpinfo_t implements Cloneable{
         	tmp.hash=hash;
         	tmp.intname=intname;
         	tmp.namespace=namespace;
+        	tmp.wadfile=wadfile;
         	
 			return tmp;
         	
