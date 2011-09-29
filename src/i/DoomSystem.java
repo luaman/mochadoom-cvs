@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.12 2011/06/12 21:54:31 velktron Exp $
+// $Id: DoomSystem.java,v 1.13 2011/09/29 15:16:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.13  2011/09/29 15:16:04  velktron
+// Modal popup generation moved here.
+//
 // Revision 1.12  2011/06/12 21:54:31  velktron
 // Separate music + sound closing.
 //
@@ -79,6 +82,7 @@
 
 package i;
 
+import awt.MsgBox;
 import m.MenuMisc;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -245,6 +249,14 @@ public static void MiscError(String error, Object ... args) {
 public void updateStatus(DoomStatus DS) {
     this.DM=DS.DM;
     
+}
+
+
+// This particular implementation will generate a popup box.// 
+@Override
+public boolean GenerateAlert(String title,String cause) {
+    MsgBox alert=new MsgBox(null, title, cause, true);
+      return alert.isOk();
 }
 
 }
