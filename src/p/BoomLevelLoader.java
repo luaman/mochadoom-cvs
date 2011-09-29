@@ -32,6 +32,7 @@ import data.mapvertex_t;
 import defines.skill_t;
 import defines.slopetype_t;
 import doom.DoomStatus;
+import rr.Renderer;
 import rr.RendererState;
 import rr.TextureManager;
 import rr.line_t;
@@ -94,36 +95,14 @@ import static boom.Compatibility.*;
  *-----------------------------------------------------------------------------*/
 
 
-public class BoomLevelLoader implements ILevelLoader {
+public class BoomLevelLoader extends AbstractLevelLoader {
 
-	IWadLoader W;
-	IDoomSystem I;
-	DoomStatus DM;
-	TextureManager TexMan;
-	Actions P;
-	IDoomSound S;
-	
-	int      numvertexes;
-	vertex_t[] vertexes;
+	public BoomLevelLoader(DoomStatus DC) {
+		super(DC);
+		// TODO Auto-generated constructor stub
+	}
 
-	int      numsegs;
-	seg_t[]    segs;
-
-	int      numsectors;
-	sector_t[] sectors;
-
-	int      numsubsectors;
-	subsector_t[] subsectors;
-
-	int      numnodes;
-	node_t[]   nodes;
-
-	int      numlines;
-	line_t[]   lines;
-
-	int      numsides;
-	side_t[]   sides;
-
+	// OpenGL related.
 	byte[]     map_subsectors;
 
 	////////////////////////////////////////////////////////////////////////////////////////////
@@ -158,28 +137,6 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 
-
-	// BLOCKMAP
-	// Created from axis aligned bounding box
-	// of the map, a rectangular array of
-	// blocks of size ...
-	// Used to speed up collision detection
-	// by spatial subdivision in 2D.
-	//
-	// Blockmap size.
-
-	int       bmapwidth, bmapheight;  // size in mapblocks
-
-	// killough 3/1/98: remove blockmap limit internally:
-	int[]     blockmap;              // was short -- killough
-
-	// offsets in blockmap are from here
-	int[]      blockmaplump;          // was short -- killough
-
-	int   bmaporgx, bmaporgy;     // origin of block map
-
-	mobj_t[]    blocklinks;           // for thing chains
-
 	//
 	// REJECT
 	// For fast sight rejection.
@@ -190,16 +147,6 @@ public class BoomLevelLoader implements ILevelLoader {
 	//
 
 	private int rejectlump = -1;// cph - store reject lump num if cached
-	byte[] rejectmatrix; // cph - final*
-
-	// Maintain single and multi player starting spots.
-
-	// 1/11/98 killough: Remove limit on deathmatch starts
-	mapthing_t[] deathmatchstarts;      // killough
-	int     num_deathmatchstarts;   // killough
-
-	mapthing_t[] deathmatch_p;
-	mapthing_t[] playerstarts=new mapthing_t[Limits.MAXPLAYERS];
 
 	private int current_episode = -1;
 	private int current_map = -1;
@@ -216,11 +163,10 @@ public class BoomLevelLoader implements ILevelLoader {
      * @param numstuff elements to realloc
 	 */
 	
-	private<T> T[] malloc_IfSameLevel(T[] p,int numstuff)
+	private<T> T[] malloc_IfSameLevel(T[] p,int numstuff, Class<T> type)
 	{
 	  if (!samelevel || (p==null))
 	  {
-	    Class type=p.getClass().getComponentType();
 	    return (T[]) C2JUtils.createArrayOfObjects(type,numstuff);
 	  }
 	  return p;
@@ -229,17 +175,17 @@ public class BoomLevelLoader implements ILevelLoader {
 	// e6y: Smart calloc
 	// Used by P_SetupLevel() for smart data loading
 	// Clear the memory without allocation if level is the same
-	private<T> T[] calloc_IfSameLevel(T[] p, int numstuff)
+	private<T> T[] calloc_IfSameLevel(T[] p, int numstuff,Class<T> type)
 	{
 	  if (!samelevel)
 	  {
-		  Class type=p.getClass().getComponentType();	    
 		  return (T[]) C2JUtils.createArrayOfObjects(type,numstuff);
 	  }
 	  else
 	  {
-	    //memset(p, 0, n1 * n2);
+
 		//TODO: stuff should be resetted!
+	    C2JUtils.resetAll((Resettable[]) p);
 	    return p;
 	  }
 	}
@@ -259,6 +205,10 @@ public class BoomLevelLoader implements ILevelLoader {
 	  data = W.CacheLumpNumAsRawBytes(lumpnum + ML_SSECTORS,0);
 	  if (ByteBuffer.wrap(data).getInt() == ZGLN)
 	    I.Error("P_CheckForZDoomNodes: ZDoom GL nodes not supported yet");
+	  
+	  // Unlock them to force different buffering interpretation.
+	  W.UnlockLumpNum(lumpnum + ML_NODES);
+	  W.UnlockLumpNum(lumpnum + ML_SSECTORS);
 
 	  return false;
 	}
@@ -272,12 +222,13 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	private boolean P_CheckForDeePBSPv4Nodes(int lumpnum, int gl_lumpnum)
 	{
-	  DeepBSPNodesV4 data;
+	  byte[] data;
 	  boolean result = false;
 	  
-	  data = (DeepBSPNodesV4) W.CacheLumpNum(lumpnum + ML_NODES,0,DeepBSPNodesV4.class);
-
-	  if (data.formatOK())
+	  data = W.CacheLumpNumAsRawBytes(lumpnum + ML_NODES,0);
+	  byte[] compare=Arrays.copyOfRange(data,0,7);
+	  
+	  if (Arrays.equals(compare,DeepBSPNodesV4.DeepBSPHeader))
 	  {
 		  System.out.println("P_CheckForDeePBSPv4Nodes: DeePBSP v4 Extended nodes are detected\n");
 	    result = true;
@@ -305,7 +256,8 @@ public class BoomLevelLoader implements ILevelLoader {
 
 	  data = W.CacheLumpNumAsRawBytes(lumpnum + ML_NODES,0);
 	  byte[] compare=Arrays.copyOfRange(data, 0,7);
-	  if (!Arrays.equals(data, compare))
+
+	  if (Arrays.equals(compare,ZDoomUncompressed))
 	  {
 		System.out.println("P_CheckForZDoomUncompressedNodes: ZDoom uncompressed normal nodes are detected\n");
 	    result = true;
@@ -374,11 +326,11 @@ public class BoomLevelLoader implements ILevelLoader {
 	  numvertexes = W.LumpLength(lump) / mapvertex_t.sizeOf();
 
 	  // Allocate zone memory for buffer.
-	  vertexes = (vertex_t[]) calloc_IfSameLevel(vertexes, numvertexes);
+	  vertexes = (vertex_t[]) calloc_IfSameLevel(vertexes, numvertexes,vertex_t.class);
 
 	  // Load data into cache.
 	  // cph 2006/07/29 - cast to mapvertex_t here, making the loop below much neater
-	  data = W.CacheLumpNumIntoArray(lump, 0, mapvertex_t.class);
+	  data = W.CacheLumpNumIntoArray(lump, numvertexes, mapvertex_t.class);
 
 	  // Copy and convert vertex coordinates,
 	  // internal representation as fixed.
@@ -428,7 +380,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	      numvertexes += (W.LumpLength(gllump) - GL_VERT_OFFSET)/mapglvertex_t.sizeOf();
 	      
 	      // Vertexes size accomodates both normal and GL nodes.
-	      vertexes = malloc_IfSameLevel(vertexes, numvertexes);
+	      vertexes = malloc_IfSameLevel(vertexes, numvertexes, vertex_t.class);
 	      
 	      final mapglvertex_t[]  mgl=C2JUtils.createArrayOfObjects(mapglvertex_t.class, numvertexes-firstglvertex);
 	      
@@ -452,7 +404,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	    {
 	      // Vertexes size accomodates both normal and GL nodes.
 	      numvertexes += W.LumpLength(gllump)/mapvertex_t.sizeOf();
-	      vertexes = malloc_IfSameLevel(vertexes, numvertexes);
+	      vertexes = malloc_IfSameLevel(vertexes, numvertexes,vertex_t.class);
 	      
 	       ml=C2JUtils.createArrayOfObjects(mapvertex_t.class, numvertexes-firstglvertex);
 	      
@@ -538,7 +490,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  final mapseg_t[] data; // cph - final
 
 	  numsegs = W.LumpLength(lump) / mapseg_t.sizeOf();
-	  segs = (seg_t[]) calloc_IfSameLevel(segs, numsegs);
+	  segs = (seg_t[]) calloc_IfSameLevel(segs, numsegs,seg_t.class);
 	  
 	  data=W.CacheLumpNumIntoArray(lump,numsegs,mapseg_t.class); // cph - wad lump handling updated
 
@@ -672,7 +624,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  mapseg_v4_t[] data;
 
 	  numsegs = W.LumpLength(lump) / mapseg_v4_t.sizeOf();
-	  segs = (seg_t[]) calloc_IfSameLevel(segs, numsegs);
+	  segs = (seg_t[]) calloc_IfSameLevel(segs, numsegs,seg_t.class);
 	  data = W.CacheLumpNumIntoArray(lump,numsegs,mapseg_v4_t.class);
 
 	  if ((data==null) || (numsegs==0))
@@ -873,7 +825,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 
 	  numsubsectors = W.LumpLength (lump) / mapsubsector_t.sizeOf();
-	  subsectors = (subsector_t[]) calloc_IfSameLevel(subsectors, numsubsectors);
+	  subsectors = (subsector_t[]) calloc_IfSameLevel(subsectors, numsubsectors,subsector_t.class);
 	  data = W.CacheLumpNumIntoArray(lump,numsubsectors,mapsubsector_t.class);
 
 	  if ((data==null) || (numsubsectors==0))
@@ -896,7 +848,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int i;
 
 	  numsubsectors = W.LumpLength (lump) / mapsubsector_v4_t.sizeOf();
-	  subsectors = calloc_IfSameLevel(subsectors, numsubsectors);
+	  subsectors = calloc_IfSameLevel(subsectors, numsubsectors, subsector_t.class);
 	  data = W.CacheLumpNumIntoArray(lump, numsubsectors,mapsubsector_v4_t.class);
 
 	  if ((data==null) || (numsubsectors==0))
@@ -922,7 +874,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 
 	  numsectors = W.LumpLength (lump) / mapsector_t.sizeOf();
-	  sectors = calloc_IfSameLevel(sectors, numsectors);
+	  sectors = calloc_IfSameLevel(sectors, numsectors,sector_t.class);
 	  data = W.CacheLumpNumIntoArray(lump, numsectors,mapsector_t.class); // cph - wad lump handling updated
 
 	  for (i=0; i<numsectors; i++)
@@ -933,8 +885,8 @@ public class BoomLevelLoader implements ILevelLoader {
 	      ss.id=i; // proff 04/05/2000: needed for OpenGL
 	      ss.floorheight = ms.floorheight<<FRACBITS;
 	      ss.ceilingheight = ms.ceilingheight<<FRACBITS;
-	      ss.floorpic = (short) TexMan.FlatNumForName(ms.floorpic);
-	      ss.ceilingpic = (short) TexMan.FlatNumForName(ms.ceilingpic);
+	      ss.floorpic = (short) TM.FlatNumForName(ms.floorpic);
+	      ss.ceilingpic = (short) TM.FlatNumForName(ms.ceilingpic);
 	      ss.lightlevel = ms.lightlevel;
 	      ss.special = ms.special;
 	      // ss.oldspecial = ms.special; huh?
@@ -979,7 +931,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 
 	  numnodes = W.LumpLength (lump) / mapnode_t.sizeOf();
-	  nodes = (node_t[]) malloc_IfSameLevel(nodes,numnodes);
+	  nodes = (node_t[]) malloc_IfSameLevel(nodes,numnodes,node_t.class);
 	  data = W.CacheLumpNumIntoArray(lump, numnodes,mapnode_t.class); // cph - wad lump handling updated
 
 	  if ((data==null) || (numnodes==0))
@@ -1042,7 +994,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 
 	  numnodes = (W.LumpLength (lump) - 8) / mapnode_v4_t.sizeOf();
-	  nodes = (node_t[]) malloc_IfSameLevel(nodes,numnodes);
+	  nodes = (node_t[]) malloc_IfSameLevel(nodes,numnodes,node_t.class);
 	  data = (DeepBSPNodesV4) W.CacheLumpNum (lump,0,DeepBSPNodesV4.class); // cph - wad lump handling updated
 
 	  if ((data==null) || (numnodes==0))
@@ -1459,7 +1411,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  int  i;
 
 	  numlines = W.LumpLength (lump) / maplinedef_t.sizeOf();
-	  lines = calloc_IfSameLevel(lines, numlines);
+	  lines = calloc_IfSameLevel(lines, numlines,line_t.class);
 	  data = W.CacheLumpNumIntoArray(lump, numlines, maplinedef_t.class); // cph - wad lump handling updated
 
 	  for (i=0; i<numlines; i++)
@@ -1613,7 +1565,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	private void P_LoadSideDefs (int lump)
 	{
 	  numsides = W.LumpLength(lump) / mapsidedef_t.sizeOf();
-	  sides = calloc_IfSameLevel(sides, numsides);
+	  sides = calloc_IfSameLevel(sides, numsides,side_t.class);
 	}
 
 	// killough 4/4/98: delay using texture names until
@@ -1668,14 +1620,14 @@ public class BoomLevelLoader implements ILevelLoader {
 	            if ((sd.special = W.CheckNumForName(msd.midtexture)) < 0 ||
 	            W.LumpLength(sd.special) != 65536){
 	                sd.special=0;
-	                sd.midtexture=(short) TexMan.TextureNumForName(msd.midtexture);
+	                sd.midtexture=(short) TM.TextureNumForName(msd.midtexture);
 	            } else {
 	              sd.special++;
 	              sd.midtexture=0;}
 	            } else 
 	          sd.midtexture=(short) (sd.special=0);
-	          sd.toptexture = (short) TexMan.TextureNumForName(msd.toptexture);
-	          sd.bottomtexture = (short) TexMan.TextureNumForName(msd.bottomtexture);
+	          sd.toptexture = (short) TM.TextureNumForName(msd.toptexture);
+	          sd.bottomtexture = (short) TM.TextureNumForName(msd.bottomtexture);
 	          break;
 
 	/* #ifdef GL_DOOM
@@ -2023,21 +1975,21 @@ public class BoomLevelLoader implements ILevelLoader {
 	    for(x = 0; x < bmapwidth; x++)
 	    {
 	      int offset;
-	      int list;
+	      int p_list;
 	      int tmplist;
 	      int blockoffset;
 
 	      offset = y * bmapwidth + x;
-	      blockoffset = offset + 4;
+	      blockoffset = offset + 4; // That's where the shit starts.
 
 	      // check that block offset is in bounds
-	      if(blockmaplump[blockoffset] >= p_maxoffs)
+	      if(blockoffset >= p_maxoffs)
 	      {
 	        System.err.printf("P_VerifyBlockMap: block offset overflow\n");
 	        return false;
 	      }
 
-	      offset = blockoffset;
+	      offset = blockmaplump[blockoffset];
 
 	      // check that list offset is in bounds
 	      if(offset < 4 || offset >= count)
@@ -2046,10 +1998,10 @@ public class BoomLevelLoader implements ILevelLoader {
 	        return false;
 	      }
 
-	      list   =offset;
+	      p_list   =offset;
 
 	      // scan forward for a -1 terminator before maxoffs
-	      for(tmplist = list; ; tmplist++)
+	      for(tmplist = p_list; ; tmplist++)
 	      {
 	        // we have overflowed the lump?
 	        if(tmplist >= p_maxoffs)
@@ -2062,7 +2014,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	      }
 
 	      // scan the list for out-of-range linedef indicies in list
-	      for(tmplist = list; blockmaplump[tmplist] != -1; tmplist++)
+	      for(tmplist = p_list; blockmaplump[tmplist] != -1; tmplist++)
 	      {
 	        if(blockmaplump[tmplist] < 0 || blockmaplump[tmplist] >= numlines)
 	        {
@@ -2145,12 +2097,37 @@ public class BoomLevelLoader implements ILevelLoader {
 	  if (count==0) count=blockmaplump.length-4;
 
 	  // clear out mobj chains - CPhipps - use calloc
-	  blocklinks = calloc_IfSameLevel(blocklinks, bmapwidth * bmapheight);
+	  //blocklinks = calloc_IfSameLevel(blocklinks, bmapwidth * bmapheight.mobj_t.);
+      // clear out mobj chains
+      // ATTENTION! BUG!!!
+      // If blocklinks are "cleared" to void -but instantiated- objects,
+      // very bad bugs happen, especially the second time a level is re-instantiated.
+      // Probably caused other bugs as well, as an extra object would appear in iterators.
+      
+       if (blocklinks!=null && samelevel)
+          for (int i=0;i<bmapwidth * bmapheight;i++)
+              blocklinks[i]=null;
+       else 
+           blocklinks = new mobj_t[bmapwidth * bmapheight];
 	  
+       // IMPORTANT MODIFICATION: no need to have both blockmaplump AND blockmap.
+       // If the offsets in the lump are OK, then we can modify them (remove 4)
+       // and copy the rest of the data in one single data array. This avoids
+       // reserving memory for two arrays (we can't simply alias one in Java)
+        
+        blockmap=new int[blockmaplump.length-4];
+        count=bmapwidth*bmapheight;
+        // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
+        for (int i=0;i<blockmaplump.length-4;i++){
+      	  // Modify indexes so that we don't need two different lumps.
+      	  // Can probably be further optimized if we simply shift everything backwards.
+      	  // and reuse the same memory space.
+      	  if (i<count)
+      		  blockmaplump[i]=blockmaplump[i+4]-4;
+      	  else
+      		  blockmaplump[i]=blockmaplump[i+4];
+        	}
 	  
-      // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
-      // blockmap = blockmaplump+4;
-	  System.arraycopy(blockmaplump,4,blockmap,0,count);
 	  
 	}
 
@@ -2167,7 +2144,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  rejectmatrix = W.CacheLumpNumAsRawBytes(rejectlump,0);
 
 	  //e6y: check for overflow
-	  g.Overflow.RejectOverrun(rejectlump, rejectmatrix, totallines,numsectors);
+	  //TODO: g.Overflow.RejectOverrun(rejectlump, rejectmatrix, totallines,numsectors);
 	}
 
 	//
@@ -2443,12 +2420,12 @@ public class BoomLevelLoader implements ILevelLoader {
 
 
 
-	  if (mapname!=null)
+	  if (mapname==null)
 	  {
 	    I.Error("P_SetupLevel: Wrong map name");
 	  }
 
-	  lumpnum = W.CheckNumForName(mapname);
+	  lumpnum = W.CheckNumForName(mapname.toUpperCase());
 
 	  if (lumpnum < 0)
 	  {
@@ -2459,7 +2436,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  {
 	    if (!P_CheckLumpsForSameSource(lumpnum, lumpnum + i))
 	    {
-	      I.Error("P_SetupLevel: Level wad structure is incomplete. There is no %s lump.", ml_labels[i]);
+	      I.Error("P_SetupLevel: Level wad structure is incomplete. There is no %s lump. (%s)", ml_labels[i],W.GetNameForLump(lumpnum));
 	    }
 	  }
 
@@ -2474,12 +2451,12 @@ public class BoomLevelLoader implements ILevelLoader {
 	  }
 	}
 
-	//
+	 //
 	// P_SetupLevel
 	//
 	// killough 5/3/98: reformatted, cleaned up
-
-	void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
+	
+	public void SetupLevel(int episode, int map, int playermask, skill_t skill) throws IOException
 	{
 	  int   i;
 	  String  lumpname;
@@ -2529,7 +2506,7 @@ public class BoomLevelLoader implements ILevelLoader {
 	  else
 	  {
 	    lumpname=String.format("E%dM%d", episode, map);   // killough 1/24/98: simplify
-	    gl_lumpname=String.format("GL_E%iM%i", episode, map); // figgi
+	    gl_lumpname=String.format("GL_E%dM%d", episode, map); // figgi
 	  }
 
 	  lumpnum = W.GetNumForName(lumpname);
@@ -2645,10 +2622,11 @@ public class BoomLevelLoader implements ILevelLoader {
 	    }
 	  }
 
+	  /*
 	if (GL_DOOM){
 	  map_subsectors = calloc_IfSameLevel(map_subsectors,
 	    numsubsectors);
-	}
+	} */
 
 	  // reject loading and underflow padding separated out into new function
 	  // P_GroupLines modified to return a number the underflow padding needs
@@ -2657,63 +2635,72 @@ public class BoomLevelLoader implements ILevelLoader {
 	  // e6y
 	  // Correction of desync on dv04-423.lmp/dv.wad
 	  // http://www.doomworld.com/vb/showthread.php?s=&postid=627257#post627257
-	  if (DoomStatus.compatibility_level>=lxdoom_1_compatibility || Compatibility.prboom_comp[PC_REMOVE_SLIME_TRAILS].state)
+	  if (DoomStatus.compatibility_level>=lxdoom_1_compatibility || Compatibility.prboom_comp[PC.PC_REMOVE_SLIME_TRAILS.ordinal()].state)
 	    P_RemoveSlimeTrails();    // killough 10/98: remove slime trails from wad
 
 	  // Note: you don't need to clear player queue slots --
 	  // a much simpler fix is in g_game.c -- killough 10/98
 
-	  bodyqueslot = 0;
+	  DM.bodyqueslot = 0;
 
 	  /* cph - reset all multiplayer starts */
-	  memset(playerstarts,0,sizeof(playerstarts));
-	  deathmatch_p = deathmatchstarts;
-	  for (i = 0; i < MAXPLAYERS; i++)
-	    players[i].mo = NULL;
-	  TracerClearStarts();
+	  
+	  for (i=0;i<playerstarts.length;i++){
+		  DM.playerstarts[i]=null;
+	  	}
+	  
+	  deathmatch_p = 0;
+	  
+	  for (i = 0; i < Limits.MAXPLAYERS; i++)
+	    DM.players[i].mo = null;
+	  // TODO: TracerClearStarts();
 
-	  P_MapStart();
+	  // Hmm? P_MapStart();
 
 	  P_LoadThings(lumpnum+ML_THINGS);
 
 	  // if deathmatch, randomly spawn the active players
-	  if (deathmatch)
+	  if (DM.deathmatch)
 	  {
-	    for (i=0; i<MAXPLAYERS; i++)
-	      if (playeringame[i])
+	    for (i=0; i<Limits.MAXPLAYERS; i++)
+	      if (DM.playeringame[i])
 	        {
-	          players[i].mo = NULL; // not needed? - done before P_LoadThings
-	          G_DeathMatchSpawnPlayer(i);
+	          DM.players[i].mo = null; // not needed? - done before P_LoadThings
+	          DM.DG.DeathMatchSpawnPlayer(i);
 	        }
 	  }
 	  else // if !deathmatch, check all necessary player starts actually exist
 	  {
-	    for (i=0; i<MAXPLAYERS; i++)
-	      if (playeringame[i] && !players[i].mo)
-	        I_Error("P_SetupLevel: missing player %d start\n", i+1);
+	    for (i=0; i<Limits.MAXPLAYERS; i++)
+	      if (DM.playeringame[i] && !C2JUtils.eval(DM.players[i].mo))
+	        I.Error("P_SetupLevel: missing player %d start\n", i+1);
 	  }
 
 	  // killough 3/26/98: Spawn icon landings:
-	  if (gamemode==commercial)
-	    P_SpawnBrainTargets();
+	  // TODO: if (DM.isCommercial())
+	  //  P.SpawnBrainTargets();
 
-	  if (gamemode != shareware)
+	  if (!DM.isShareware())
 	  {
-	    S_ParseMusInfo(lumpname);
+	    // TODO: S.ParseMusInfo(lumpname);
 	  }
 
 	  // clear special respawning que
-	  iquehead = iquetail = 0;
+	  P.iquehead = P.iquetail = 0;
 
 	  // set up world state
-	  P_SpawnSpecials();
+	  P.SpawnSpecials();
 
-	  P_MapEnd();
+	  // TODO: P.MapEnd();
 
 	  // preload graphics
-	  if (precache)
-	    R.PrecacheLevel();
+	  if (DM.precache)
+	    TM.PrecacheLevel();
 
+	  
+      // MAES: thinkers are separate than texture management. Maybe split sprite management as well?
+      R.PreCacheThinkers();
+	  
 	  /*
 	if (GL_DOOM){
 	  if (V_GetMode() == VID_MODEGL)
@@ -2734,13 +2721,4 @@ public class BoomLevelLoader implements ILevelLoader {
 	  // TODO R_SmoothPlaying_Reset(NULL);
 	}
 
-	//
-	// P_Init
-	//
-	void P_Init ()
-	{
-	  P.SW.InitSwitchList();
-	  P.InitPicAnims();
-	  TexMan.InitSprites(sprnames);
-	}
 }
