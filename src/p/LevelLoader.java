@@ -50,7 +50,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.36 2011/09/29 13:28:01 velktron Exp $
+// $Id: LevelLoader.java,v 1.37 2011/09/29 15:17:48 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,7 +72,7 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.36 2011/09/29 13:28:01 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.37 2011/09/29 15:17:48 velktron Exp $";
 
 
 public LevelLoader(DoomStatus DC) {
@@ -667,91 +667,6 @@ public LevelLoader(DoomStatus DC) {
       
   }
   
-  @Override
-  public subsector_t
-  PointInSubsector
-  ( int   x,
-    int   y )
-  {
-      node_t  node;
-      int     side;
-      int     nodenum;
-
-      // single subsector is a special case
-      if (numnodes==0)              
-      return subsectors[0];
-          
-      nodenum = numnodes-1;
-
-      while ((nodenum & NF_SUBSECTOR)==0 )
-      {
-      node = nodes[nodenum];
-      side = node.PointOnSide (x, y);
-      nodenum = node.children[side];
-      }
-      
-      return subsectors[nodenum & ~NF_SUBSECTOR];
-  }
-  
-  /**
-   * P_SetThingPosition Links a thing into both a block and a subsector based
-   * on it's x y. Sets thing.subsector properly
-   */
-
-  @Override
-  public void SetThingPosition(mobj_t thing) {
-      final subsector_t ss;
-      final sector_t sec;
-      final int blockx;
-      final int blocky;
-      final mobj_t link;
-
-      // link into subsector
-      ss = PointInSubsector(thing.x, thing.y);
-      thing.subsector = ss;
-
-      if (!flags(thing.flags, MF_NOSECTOR)) {
-          // invisible things don't go into the sector links
-          sec = ss.sector;
-
-          thing.sprev = null;
-          thing.snext = sec.thinglist;
-
-          if (sec.thinglist != null)
-              sec.thinglist.sprev = thing;
-
-          sec.thinglist = thing;
-      }
-
-      // link into blockmap
-      if (!flags(thing.flags, MF_NOBLOCKMAP)) {
-          // inert things don't need to be in blockmap
-          blockx = (thing.x - bmaporgx) >> MAPBLOCKSHIFT;
-          blocky = (thing.y - bmaporgy) >> MAPBLOCKSHIFT;
-
-          // Valid block?
-          if (blockx >= 0 && blockx < bmapwidth && blocky >= 0
-                  && blocky < bmapheight) {
-
-              // Get said block.
-              link = blocklinks[blocky * bmapwidth + blockx];
-              thing.bprev = null; // Thing is put at head of block...
-              thing.bnext = link;
-              if (link != null) // block links back at thing...
-                  // This will work
-                  link.bprev = thing;
-
-              // "thing" is now effectively the new head
-              // Iterators only follow "bnext", not "bprev".
-              // If link was null, then thing is the first entry.
-              blocklinks[blocky * bmapwidth + blockx] = thing;
-          } else {
-              // thing is off the map
-              thing.bnext = thing.bprev = null;
-          }
-      }
-
-  }
   
   @Override
   public void
@@ -989,6 +904,9 @@ private int[] getMapBoundingBox(){
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.37  2011/09/29 15:17:48  velktron
+//SetupLevel can propagate exceptions.
+//
 //Revision 1.36  2011/09/29 13:28:01  velktron
 //Extends AbstractLevelLoader
 //

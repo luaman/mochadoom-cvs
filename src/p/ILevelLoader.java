@@ -1,5 +1,7 @@
 package p;
 
+import java.io.IOException;
+
 import i.DoomStatusAware;
 import rr.subsector_t;
 import defines.skill_t;
@@ -55,8 +57,9 @@ public interface ILevelLoader extends DoomStatusAware {
      * @param map
      * @param playermask
      * @param skill
+     * @throws IOException 
      */
-	void SetupLevel(int episode, int map, int playermask, skill_t skill);
+	void SetupLevel(int episode, int map, int playermask, skill_t skill) throws IOException;
 
 	/**
 	 * P_SetThingPosition Links a thing into both a block and a subsector based
