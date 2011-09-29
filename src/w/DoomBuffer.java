@@ -116,6 +116,16 @@ public class DoomBuffer implements CacheableDoomObject  {
         }
     }
     
+    public void readCharArray(int[] s,int len) throws IOException {
+
+        if ((s==null)||(len==0)) return;
+        
+        for (int i=0;i<Math.min(len,s.length);i++){           
+            s[i]=this.buffer.getChar();
+            
+        }
+    }
+    
     
     /** Reads a length specified string from a buffer. */
     public static String readString(ByteBuffer buf) throws IOException {
