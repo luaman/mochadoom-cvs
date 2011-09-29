@@ -92,7 +92,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.84 2011/08/23 16:19:37 velktron Exp $
+// $Id: DoomMain.java,v 1.85 2011/09/29 13:30:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -118,7 +118,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.84 2011/08/23 16:19:37 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.85 2011/09/29 13:30:38 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -2249,6 +2249,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     // Spawns a player at one of the random death match spots 
     // called at level load and each death 
     //
+    @Override
     public void DeathMatchSpawnPlayer (int playernum) 
     { 
         int             i,j; 
@@ -4187,6 +4188,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.85  2011/09/29 13:30:38  velktron
+//Uses IDoomMenu and AbstractLevelLoader
+//
 //Revision 1.84  2011/08/23 16:19:37  velktron
 //Got rid of Z remnants.
 //
