@@ -50,7 +50,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.37 2011/09/29 15:17:48 velktron Exp $
+// $Id: LevelLoader.java,v 1.38 2011/09/29 17:11:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,7 +72,7 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.37 2011/09/29 15:17:48 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.38 2011/09/29 17:11:32 velktron Exp $";
 
 
 public LevelLoader(DoomStatus DC) {
@@ -518,13 +518,22 @@ public LevelLoader(DoomStatus DC) {
           count=bmapwidth*bmapheight;          
       }
       
-     // System.err.printf("%d %d %d %d \n",(short)blockmaplump[0],(short)blockmaplump[1],(short)blockmaplump[2],(short)blockmaplump[3]);
+     // IMPORTANT MODIFICATION: no need to have both blockmaplump AND blockmap.
+     // If the offsets in the lump are OK, then we can modify them (remove 4)
+     // and copy the rest of the data in one single data array. This avoids
+     // reserving memory for two arrays (we can't simply alias one in Java)
       
-      blockmap=new int[count];
+      blockmap=new int[blockmaplump.length-4];
       
       // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
-      for (i=0;i<count;i++){
-    	  blockmap[i]=blockmaplump[i+4];
+      for (i=0;i<blockmaplump.length-4;i++){
+    	  // Modify indexes so that we don't need two different lumps.
+    	  // Can probably be further optimized if we simply shift everything backwards.
+    	  // and reuse the same memory space.
+    	  if (i<count)
+    		  blockmaplump[i]=blockmaplump[i+4]-4;
+    	  else
+    		  blockmaplump[i]=blockmaplump[i+4];
       	}
       
       // clear out mobj chains
@@ -538,6 +547,9 @@ public LevelLoader(DoomStatus DC) {
               blocklinks[i]=null;
        else 
            blocklinks = new mobj_t[count];
+       
+       // Bye bye. Not needed.
+       blockmap=blockmaplump;
   }
 
 
@@ -753,7 +765,7 @@ public LevelLoader(DoomStatus DC) {
       this.LoadSubsectors (lumpnum+ML_SSECTORS);
       this.LoadNodes (lumpnum+ML_NODES);
       this.LoadSegs (lumpnum+ML_SEGS);
-      this.SanitizeBlockmap();
+      //this.SanitizeBlockmap();
       //this.getMapBoundingBox();
       
       byte[] tmpreject=new byte[0];
@@ -904,6 +916,9 @@ private int[] getMapBoundingBox(){
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.38  2011/09/29 17:11:32  velktron
+//Blockmap optimizations.
+//
 //Revision 1.37  2011/09/29 15:17:48  velktron
 //SetupLevel can propagate exceptions.
 //
