@@ -50,7 +50,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.35 2011/09/27 18:04:36 velktron Exp $
+// $Id: LevelLoader.java,v 1.36 2011/09/29 13:28:01 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,223 +64,26 @@ import doom.DoomStatus;
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// $Log: LevelLoader.java,v $
-// Revision 1.35  2011/09/27 18:04:36  velktron
-// Fixed major blockmap bug
-//
-// Revision 1.34  2011/09/27 16:00:20  velktron
-// Minor blockmap stuff.
-//
-// Revision 1.33  2011/08/24 15:52:04  velktron
-// Sets proper ISoundOrigin for sectors (height, too)
-//
-// Revision 1.32  2011/08/24 15:00:34  velktron
-// Improved version, now using createArrayOfObjects. Much better syntax.
-//
-// Revision 1.31  2011/08/23 16:17:22  velktron
-// Got rid of Z remnants.
-//
-// Revision 1.30  2011/07/27 21:26:19  velktron
-// Quieted down debugging for v1.5 release
-//
-// Revision 1.29  2011/07/25 19:56:53  velktron
-// reject matrix size bugfix, fron danmaku branch.
-//
-// Revision 1.28  2011/07/22 15:37:52  velktron
-// Began blockmap autogen code...still WIP
-//
-// Revision 1.27  2011/07/20 16:14:45  velktron
-// Bullet-proofing vs missing or corrupt REJECT table. TODO: built-in system to re-compute it.
-//
-// Revision 1.26  2011/06/18 23:25:33  velktron
-// Removed debugginess
-//
-// Revision 1.25  2011/06/18 23:21:26  velktron
-// -id
-//
-// Revision 1.24  2011/06/18 23:18:24  velktron
-// Added sanitization for broken two-sided sidedefs, and semi-support for extended blockmaps.
-//
-// Revision 1.23  2011/05/24 11:31:47  velktron
-// Adapted to IDoomStatusBar
-//
-// Revision 1.22  2011/05/22 21:09:34  velktron
-// Added spechit overflow handling, and unused linedefs (with -1 sector) handling.
-//
-// Revision 1.21  2011/05/21 14:53:57  velktron
-// Adapted to use new gamemode system.
-//
-// Revision 1.20  2011/05/20 14:52:23  velktron
-// Moved several function from the Renderer and Action code in here, since it made more sense.
-//
-// Revision 1.19  2011/05/18 16:55:44  velktron
-// TEMPORARY TESTING VERSION, DO NOT USE
-//
-// Revision 1.18  2011/05/17 16:51:20  velktron
-// Switched to DoomStatus
-//
-// Revision 1.17  2011/05/10 10:39:18  velktron
-// Semi-playable Techdemo v1.3 milestone
-//
-// Revision 1.16  2011/05/05 17:24:22  velktron
-// Started merging more of _D_'s changes.
-//
-// Revision 1.15  2010/12/20 17:15:08  velktron
-// Made the renderer more OO -> TextureManager and other changes as well.
-//
-// Revision 1.14  2010/11/22 21:41:22  velktron
-// Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
-//
-// Revision 1.13  2010/11/22 14:54:53  velktron
-// Greater objectification of sectors etc.
-//
-// Revision 1.12  2010/11/22 01:17:16  velktron
-// Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
-//
-// Revision 1.11  2010/11/14 20:00:21  velktron
-// Bleeding floor bug fixed!
-//
-// Revision 1.10  2010/11/03 16:48:04  velktron
-// "Bling" view angles fixed (perhaps related to the "bleeding line bug"?)
-//
-// Revision 1.9  2010/09/27 02:27:29  velktron
-// BEASTLY update
-//
-// Revision 1.8  2010/09/23 20:36:45  velktron
-// *** empty log message ***
-//
-// Revision 1.7  2010/09/23 15:11:57  velktron
-// A bit closer...
-//
-// Revision 1.6  2010/09/22 16:40:02  velktron
-// MASSIVE changes in the status passing model.
-// DoomMain and DoomGame unified.
-// Doomstat merged into DoomMain (now status and game functions are one).
-//
-// Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
-//
-// Revision 1.5  2010/09/21 15:53:37  velktron
-// Split the Map ...somewhat...
-//
-// Revision 1.4  2010/09/14 15:34:01  velktron
-// The enormity of this commit is incredible (pun intended)
-//
-// Revision 1.3  2010/09/08 15:22:18  velktron
-// x,y coords in some structs as value semantics. Possible speed increase?
-//
-// Revision 1.2  2010/09/02 15:56:54  velktron
-// Bulk of unified renderer copyediting done.
-//
-// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
-//
-// Revision 1.1  2010/09/01 15:53:42  velktron
-// Graphics data loader implemented....still need to figure out how column caching works, though.
-//
-// Revision 1.4  2010/08/19 23:14:49  velktron
-// Automap
-//
-// Revision 1.3  2010/08/13 14:06:36  velktron
-// Endlevel screen fully functional!
-//
-// Revision 1.2  2010/08/11 16:31:34  velktron
-// Map loading works! Check out LevelLoaderTester for more.
-//
-// Revision 1.1  2010/08/10 16:41:57  velktron
-// Threw some work into map loading.
-//
-//
 // DESCRIPTION:
 //  Do all the WAD I/O, get map description,
 //  set up initial state and misc. LUTs.
 //
 //-----------------------------------------------------------------------------
 
-public class LevelLoader implements DoomStatusAware,ILevelLoader{
+public class LevelLoader extends AbstractLevelLoader{
 
-/////////////////// Status objects ///////////////////
-    
-    IDoomStatusBar ST;
-    IDoomSystem I;
-    IWadLoader W;
-    DoomStatus DM;
-    DoomVideoRenderer V;
-    RendererState R;
-    TextureManager TM;
-    Actions P;
-    IDoomSound S;
-    
-    
-  public static final String  rcsid = "$Id: LevelLoader.java,v 1.35 2011/09/27 18:04:36 velktron Exp $";
-  
-  //  
-  // MAP related Lookup tables.
-  // Store VERTEXES, LINEDEFS, SIDEDEFS, etc.
-  //
-  public int     numvertexes;
-  public vertex_t[]   vertexes;
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.36 2011/09/29 13:28:01 velktron Exp $";
 
-  public int     numsegs;
-  public seg_t[]      segs;
 
-  public int     numsectors;
-  public sector_t[]   sectors;
-
-  public int     numsubsectors;
-  public subsector_t[]    subsectors;
-
-  public int     numnodes;
-  public node_t[]     nodes;
-
-  public int     numlines;
-  public line_t[]     lines;
-
-  public int     numsides;
-  public side_t[]     sides;
+public LevelLoader(DoomStatus DC) {
+		super(DC);
+		// Traditional loader sets limit.
+		deathmatchstarts=new mapthing_t[MAX_DEATHMATCH_STARTS];
+	}
 
   private boolean[] used_lines;
+
   
-
-  // BLOCKMAP
-  // Created from axis aligned bounding box
-  // of the map, a rectangular array of
-  // blocks of size ...
-  // Used to speed up collision detection
-  // by spatial subdivision in 2D.
-  //
-  // Blockmap size.
-  int     bmapwidth;
-  int     bmapheight; // size in mapblocks
-  int[]      blockmap;   // int for larger maps
-  // offsets in blockmap are from here
-  char[]      blockmaplump;       
-  /** (fixed_t) origin of block map */
-  public int     bmaporgx;
-public int bmaporgy;
-  /** for thing chains */
-  public mobj_t[]    blocklinks;     
-
-
-  // REJECT
-  // For fast sight rejection.
-  // Speeds up enemy AI by skipping detailed
-  //  LineOf Sight calculation.
-  // Without special effect, this could be
-  //  used as a PVS lookup as well.
-  //
-  byte[]       rejectmatrix;
-
-
-  // Maintain single and multi player starting spots.
-  protected static final int MAX_DEATHMATCH_STARTS  = 10;
-
-  mapthing_t[]  deathmatchstarts=new mapthing_t[MAX_DEATHMATCH_STARTS];
-  //mapthing_t* deathmatch_p;
-  int deathmatch_p;
-  mapthing_t[]  playerstarts=new mapthing_t[MAXPLAYERS];
-
-
-
-
 
   /**
   * P_LoadVertexes
@@ -692,7 +495,7 @@ public int bmaporgy;
       
       DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
       count=W.LumpLength(lump)/2;
-      blockmaplump=new char[count];
+      blockmaplump=new int[count];
 
       data.setOrder(ByteOrder.LITTLE_ENDIAN);
       data.rewind();
@@ -863,17 +666,8 @@ public int bmaporgy;
       }
       
   }
-
-  /**
-   * R_PointInSubsector
-   * 
-   * MAES: it makes more sense to have this here.
-   * 
-   * @param x fixed
-   * @param y fixed
-   * 
-   */
   
+  @Override
   public subsector_t
   PointInSubsector
   ( int   x,
@@ -904,6 +698,7 @@ public int bmaporgy;
    * on it's x y. Sets thing.subsector properly
    */
 
+  @Override
   public void SetThingPosition(mobj_t thing) {
       final subsector_t ss;
       final sector_t sec;
@@ -958,10 +753,7 @@ public int bmaporgy;
 
   }
   
-  /**
-   * P_SetupLevel
- * @throws Exception 
-   */
+  @Override
   public void
   SetupLevel
   ( int       episode,
@@ -1194,21 +986,132 @@ private int[] getMapBoundingBox(){
     return new int[]{orgx,orgy,bckx,bcky};
 }
 
-public LevelLoader(DoomStatus DC){
-	  this.updateStatus(DC);
-  }
-  
-  @Override
-  public void updateStatus(DoomStatus DC){
-      this.W=DC.W;
-      this.DM=DC;
-      this.P=DC.P;
-      this.R=DC.R;
-      this.I=DC.I;
-      this.S=DC.S;
-      this.TM=DC.TM;
-	  
-  }
-
-
 }
+
+//$Log: LevelLoader.java,v $
+//Revision 1.36  2011/09/29 13:28:01  velktron
+//Extends AbstractLevelLoader
+//
+//Revision 1.35  2011/09/27 18:04:36  velktron
+//Fixed major blockmap bug
+//
+//Revision 1.34  2011/09/27 16:00:20  velktron
+//Minor blockmap stuff.
+//
+//Revision 1.33  2011/08/24 15:52:04  velktron
+//Sets proper ISoundOrigin for sectors (height, too)
+//
+//Revision 1.32  2011/08/24 15:00:34  velktron
+//Improved version, now using createArrayOfObjects. Much better syntax.
+//
+//Revision 1.31  2011/08/23 16:17:22  velktron
+//Got rid of Z remnants.
+//
+//Revision 1.30  2011/07/27 21:26:19  velktron
+//Quieted down debugging for v1.5 release
+//
+//Revision 1.29  2011/07/25 19:56:53  velktron
+//reject matrix size bugfix, fron danmaku branch.
+//
+//Revision 1.28  2011/07/22 15:37:52  velktron
+//Began blockmap autogen code...still WIP
+//
+//Revision 1.27  2011/07/20 16:14:45  velktron
+//Bullet-proofing vs missing or corrupt REJECT table. TODO: built-in system to re-compute it.
+//
+//Revision 1.26  2011/06/18 23:25:33  velktron
+//Removed debugginess
+//
+//Revision 1.25  2011/06/18 23:21:26  velktron
+//-id
+//
+//Revision 1.24  2011/06/18 23:18:24  velktron
+//Added sanitization for broken two-sided sidedefs, and semi-support for extended blockmaps.
+//
+//Revision 1.23  2011/05/24 11:31:47  velktron
+//Adapted to IDoomStatusBar
+//
+//Revision 1.22  2011/05/22 21:09:34  velktron
+//Added spechit overflow handling, and unused linedefs (with -1 sector) handling.
+//
+//Revision 1.21  2011/05/21 14:53:57  velktron
+//Adapted to use new gamemode system.
+//
+//Revision 1.20  2011/05/20 14:52:23  velktron
+//Moved several function from the Renderer and Action code in here, since it made more sense.
+//
+//Revision 1.19  2011/05/18 16:55:44  velktron
+//TEMPORARY TESTING VERSION, DO NOT USE
+//
+//Revision 1.18  2011/05/17 16:51:20  velktron
+//Switched to DoomStatus
+//
+//Revision 1.17  2011/05/10 10:39:18  velktron
+//Semi-playable Techdemo v1.3 milestone
+//
+//Revision 1.16  2011/05/05 17:24:22  velktron
+//Started merging more of _D_'s changes.
+//
+//Revision 1.15  2010/12/20 17:15:08  velktron
+//Made the renderer more OO -> TextureManager and other changes as well.
+//
+//Revision 1.14  2010/11/22 21:41:22  velktron
+//Parallel rendering...sort of.It works, but either  the barriers are broken or it's simply not worthwhile at this point :-/
+//
+//Revision 1.13  2010/11/22 14:54:53  velktron
+//Greater objectification of sectors etc.
+//
+//Revision 1.12  2010/11/22 01:17:16  velktron
+//Fixed blockmap (for the most part), some actions implemented and functional, ambient animation/lighting functional.
+//
+//Revision 1.11  2010/11/14 20:00:21  velktron
+//Bleeding floor bug fixed!
+//
+//Revision 1.10  2010/11/03 16:48:04  velktron
+//"Bling" view angles fixed (perhaps related to the "bleeding line bug"?)
+//
+//Revision 1.9  2010/09/27 02:27:29  velktron
+//BEASTLY update
+//
+//Revision 1.8  2010/09/23 20:36:45  velktron
+//*** empty log message ***
+//
+//Revision 1.7  2010/09/23 15:11:57  velktron
+//A bit closer...
+//
+//Revision 1.6  2010/09/22 16:40:02  velktron
+//MASSIVE changes in the status passing model.
+//DoomMain and DoomGame unified.
+//Doomstat merged into DoomMain (now status and game functions are one).
+//
+//Most of DoomMain implemented. Possible to attempt a "classic type" start but will stop when reading sprites.
+//
+//Revision 1.5  2010/09/21 15:53:37  velktron
+//Split the Map ...somewhat...
+//
+//Revision 1.4  2010/09/14 15:34:01  velktron
+//The enormity of this commit is incredible (pun intended)
+//
+//Revision 1.3  2010/09/08 15:22:18  velktron
+//x,y coords in some structs as value semantics. Possible speed increase?
+//
+//Revision 1.2  2010/09/02 15:56:54  velktron
+//Bulk of unified renderer copyediting done.
+//
+//Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
+//Revision 1.1  2010/09/01 15:53:42  velktron
+//Graphics data loader implemented....still need to figure out how column caching works, though.
+//
+//Revision 1.4  2010/08/19 23:14:49  velktron
+//Automap
+//
+//Revision 1.3  2010/08/13 14:06:36  velktron
+//Endlevel screen fully functional!
+//
+//Revision 1.2  2010/08/11 16:31:34  velktron
+//Map loading works! Check out LevelLoaderTester for more.
+//
+//Revision 1.1  2010/08/10 16:41:57  velktron
+//Threw some work into map loading.
+//
