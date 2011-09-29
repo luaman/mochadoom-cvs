@@ -15,15 +15,12 @@ import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
-import awt.MsgBox;
 import awt.OldAWTDoom;
 import awt.AWTDoom;
 import f.EndLevel;
 import f.Finale;
 import f.Wiper;
-import g.DoomSaveGame;
 import hu.HU;
-import m.JavaRandom;
 import m.Menu;
 import m.MenuMisc;
 import m.DoomRandom;
@@ -57,7 +54,6 @@ import s.DavidSFXModule;
 import s.DummyMusic;
 import s.DummySFX;
 import s.DummySoundDriver;
-import s.IDoomSound;
 import s.SpeakerDoomSoundDriver;
 import s.SuperDoomSoundDriver;
 //import s.SpeakerDoomSoundDriver;
@@ -92,7 +88,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.85 2011/09/29 13:30:38 velktron Exp $
+// $Id: DoomMain.java,v 1.86 2011/09/29 17:27:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -118,7 +114,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.85 2011/09/29 13:30:38 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.86 2011/09/29 17:27:36 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1093,12 +1089,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             }
         } */
 
-        { MsgBox modified=new MsgBox(null, "Alert", Strings.MODIFIED_GAME_DIALOG, true);
-          if (!modified.isOk()) {
+        // Generate WAD loading alert. Abort upon denial.
+        if (!I.GenerateAlert(Strings.MODIFIED_GAME_TITLE,Strings.MODIFIED_GAME_DIALOG)) {
         	  W.CloseAllHandles();
         	  System.exit(-2);
           }
-        }
         
         // Check and print which version is executed.
         switch ( getGameMode() )
@@ -1708,7 +1703,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     //
     //extern  gamestate_t     wipegamestate; 
 
-    public void DoLoadLevel () 
+    public boolean DoLoadLevel () 
     { 
         int             i; 
 
@@ -1749,7 +1744,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         } 
 
-        LL.SetupLevel (gameepisode, gamemap, 0, gameskill);    
+        try {
+        LL.SetupLevel (gameepisode, gamemap, 0, gameskill);
+        } catch (Exception e){
+        	e.printStackTrace();
+        	// Failure loading level.
+        	return false;
+        }
+        
         displayplayer = consoleplayer;      // view the guy you are playing    
         gameaction = gameaction_t.ga_nothing; 
         //Z_CheckHeap ();
@@ -1782,9 +1784,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
         // Try reclaiming some memory from limit-expanded buffers.
         R.resetLimits();
-        
+        return true;
     } 
-
+    
     protected boolean first=true;
     
     // Maes: needed because a caps lock down signal is issued
@@ -1951,12 +1953,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             switch (gameaction) 
             { 
             case ga_loadlevel: 
-                DoLoadLevel (); 
+                DoLoadLevel ();
                 break; 
             case ga_newgame: 
                 DoNewGame (); 
                 break; 
-            case ga_loadgame: 
+            case ga_loadgame:
                 DoLoadGame (); 
                 break; 
             case ga_savegame: 
@@ -2615,7 +2617,9 @@ public void ScreenShot ()
             VanillaDSGHeader header=new VanillaDSGHeader();
             IDoomSaveGame dsg=new VanillaDSG();
             dsg.updateStatus(this.DM);
-            gameaction = gameaction_t.ga_nothing; 
+            
+            // MAES: behavior modification.
+            //gameaction = gameaction_t.ga_nothing; 
 
             DoomFile f=new DoomFile(savename, "r"); 
 
@@ -2639,7 +2643,14 @@ public void ScreenShot ()
 
             // load a base level 
             InitNew (gameskill, gameepisode, gamemap); 
+            
+            if (gameaction == gameaction_t.ga_nothing) {
+            	// failure to load. Abor.
+            	return;
+            }
 
+            gameaction = gameaction_t.ga_nothing;
+            
             // get the times 
             leveltime = header.getLeveltime(); 
 
@@ -2900,9 +2911,22 @@ public void ScreenShot ()
                 break;
             } 
 
-        DoLoadLevel (); 
+        if (!DoLoadLevel ()) levelLoadFailure();
     } 
 
+    private void levelLoadFailure(){
+    	boolean endgame=I.GenerateAlert(Strings.LEVEL_FAILURE_TITLE, Strings.LEVEL_FAILURE_CAUSE);
+    	
+    	if (endgame){         	// Initiate endgame
+    	gameaction=gameaction_t.ga_nothing;
+    	gamestate = gamestate_t.GS_DEMOSCREEN; 
+    	M.ClearMenus();
+    	StartTitle();
+    	} else {
+    	// Shutdown immediately.
+    	I.Quit();	
+    	}
+    }
 
     //
     // DEMO RECORDING 
@@ -4188,6 +4212,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.86  2011/09/29 17:27:36  velktron
+//Uses GenerateAlert
+//
 //Revision 1.85  2011/09/29 13:30:38  velktron
 //Uses IDoomMenu and AbstractLevelLoader
 //
