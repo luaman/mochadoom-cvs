@@ -50,7 +50,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.38 2011/09/29 17:11:32 velktron Exp $
+// $Id: LevelLoader.java,v 1.39 2011/09/29 17:22:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,7 +72,7 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.38 2011/09/29 17:11:32 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.39 2011/09/29 17:22:08 velktron Exp $";
 
 
 public LevelLoader(DoomStatus DC) {
@@ -532,8 +532,11 @@ public LevelLoader(DoomStatus DC) {
     	  // and reuse the same memory space.
     	  if (i<count)
     		  blockmaplump[i]=blockmaplump[i+4]-4;
-    	  else
-    		  blockmaplump[i]=blockmaplump[i+4];
+    	  else{
+    		  // Make terminators definitively -1, different that 0xffff
+  	          short t = (short) blockmaplump[i+4];          // killough 3/1/98
+  	          blockmaplump[i] = (int) (t == -1 ? -1l : t & 0xffff);  	          
+    	  	}
       	}
       
       // clear out mobj chains
@@ -916,6 +919,9 @@ private int[] getMapBoundingBox(){
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.39  2011/09/29 17:22:08  velktron
+//Blockchain terminators are now -1 (extended)
+//
 //Revision 1.38  2011/09/29 17:11:32  velktron
 //Blockmap optimizations.
 //

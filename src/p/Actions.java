@@ -4585,9 +4585,9 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      // The index contains yet another offset, but this time 
      offset = LL.blockmap[offset];
 
-     // MAES: blockmap terminating marker is always 0xFFFF with signed/unsigned.
+     // MAES: blockmap terminating marker is always -1
      
-     for (int list=offset;(lineinblock=LL.blockmap[list])!=0xFFFF;list++){
+     for (int list=offset;(lineinblock=LL.blockmap[list])!=-1;list++){
     	 ld = LL.lines[lineinblock];
          //System.out.println(ld);
          if (ld.validcount == R.validcount)
