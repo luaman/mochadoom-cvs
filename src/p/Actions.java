@@ -4587,7 +4587,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
      // MAES: blockmap terminating marker is always 0xFFFF with signed/unsigned.
      
-     for (int list=offset;(lineinblock=LL.blockmaplump[list])!=0xFFFF;list++){
+     for (int list=offset;(lineinblock=LL.blockmap[list])!=0xFFFF;list++){
     	 ld = LL.lines[lineinblock];
          //System.out.println(ld);
          if (ld.validcount == R.validcount)
