@@ -13,7 +13,7 @@ import v.IVideoScaleAware;
 import w.IWadLoader;
 
 public abstract class AbstractDoomMenu
-        implements DoomStatusAware, IVideoScaleAware, IDoomMenu {
+        implements IDoomMenu {
 
     ////////////////////// CONTEXT ///////////////////
     
