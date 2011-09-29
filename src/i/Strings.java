@@ -11,6 +11,8 @@ public final class Strings {
          "                      press enter to continue\n"+
          "===========================================================================\n");
 	
+	public static final String MODIFIED_GAME_TITLE="Modified game alert";
+	
 	public static final String MODIFIED_GAME_DIALOG=
 		
 		("<html><center>"+
@@ -20,6 +22,15 @@ public final class Strings {
          "        You will not receive technical support for modified games.<br>"+
          "                      press OK to continue<br>"+
          "===========================================================================<br>"+
+         "</center></html>");
+	
+	public static final String LEVEL_FAILURE_TITLE="Level loading failure";
+	
+	public static final String LEVEL_FAILURE_CAUSE=
+		
+		("<html><center>"+
+		"Level loading failed!<br>"+
+		 "Press OK to end this game without exiting, or cancel to quit Doom."+
          "</center></html>");
 	
 }
