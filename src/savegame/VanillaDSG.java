@@ -10,16 +10,14 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
-import data.Defines;
 import data.info;
-import defines.GameMode_t;
 import doom.DoomStatus;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
 
+import p.AbstractLevelLoader;
 import p.Actions;
-import p.LevelLoader;
 import p.ThinkerList;
 import p.ceiling_t;
 import p.floormove_t;
@@ -34,13 +32,12 @@ import rr.sector_t;
 import rr.side_t;
 import utils.C2JUtils;
 import w.DoomFile;
-import w.IReadableDoomObject;
 
 public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
     
     VanillaDSGHeader header;
     DoomStatus DS;
-    LevelLoader LL;
+    AbstractLevelLoader LL;
     Actions A;
     IDoomSystem I;
     

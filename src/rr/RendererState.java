@@ -54,9 +54,7 @@ import java.util.List;
 
 import m.IDoomMenu;
 import m.MenuMisc;
-import m.fixed_t;
-
-import p.LevelLoader;
+import p.AbstractLevelLoader;
 import p.UnifiedGameMap;
 import p.mobj_t;
 import p.pspdef_t;
@@ -108,7 +106,7 @@ SpriteManager,IVideoScaleAware,ILimitResettable,IGetColumn{
 
     protected DoomMain DM;
     protected IDoomGameNetworking DGN;
-    protected LevelLoader LL;
+    protected AbstractLevelLoader LL;
     protected IWadLoader W;
     protected SegDrawer MySegs;
     protected IDoomMenu Menu;

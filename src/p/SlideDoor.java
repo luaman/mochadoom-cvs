@@ -1,6 +1,5 @@
 package p;
 
-import static data.Defines.ML_BLOCKING;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 import doom.DoomStatus;
@@ -14,7 +13,7 @@ public class SlideDoor implements DoomStatusAware {
 	
 		protected TextureManager TM;
 	
-		protected LevelLoader LL;
+		protected AbstractLevelLoader LL;
 		
 		protected DoomStatus DM;
 		

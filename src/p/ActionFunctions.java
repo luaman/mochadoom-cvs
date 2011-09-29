@@ -181,7 +181,7 @@ public class ActionFunctions implements DoomStatusAware{
 	protected RendererState R;
 	protected IDoomSound S;
 	protected Enemies EN;
-	protected LevelLoader LL;
+	protected AbstractLevelLoader LL;
 	protected DoomStatus DS;
 	protected IDoomGame DG;
 	protected SlideDoor SL;

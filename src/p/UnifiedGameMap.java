@@ -99,7 +99,7 @@ import s.IDoomSound;
 import st.StatusBar;
 import utils.C2JUtils;
 import w.IWadLoader;
-import automap.AbstractAutoMap;
+import automap.IAutoMap;
 import data.mapthing_t;
 import data.mobjtype_t;
 import data.state_t;
@@ -151,7 +151,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     IWadLoader W;
 
-    AbstractAutoMap AM;
+    IAutoMap AM;
 
     IRandom RND;
 
@@ -159,7 +159,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     
     TextureManager TM;
 
-    LevelLoader LL;
+    AbstractLevelLoader LL;
 
     DoomMain DM;
 

@@ -11,18 +11,13 @@ import i.IDoomSystem;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
-
-import p.LevelLoader;
+import p.AbstractLevelLoader;
 import doom.DoomStatus;
 import w.DoomBuffer;
 import w.IWadLoader;
-import w.WadLoader;
 import w.li_namespace;
 import w.lumpinfo_t;
 
@@ -40,7 +35,7 @@ public class SimpleTextureManager
     
     IWadLoader W;
     IDoomSystem I;
-    LevelLoader LL;
+    AbstractLevelLoader LL;
     DoomStatus DM;
     
     //
