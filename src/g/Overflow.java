@@ -386,11 +386,12 @@ public class Overflow {
     // No more desync on teeth-32.wad\teeth-32.lmp.
     // http://www.doomworld.com/vb/showthread.php?s=&threadid=35214
 
-    public static byte[] RejectOverrun(int rejectlump,int length, final byte[] rejectmatrix, int totallines, int numsectors)
+    public static byte[] RejectOverrun(int rejectlump, final byte[] rejectmatrix, int totallines, int numsectors)
     {
       int required;
       byte []newreject;
       byte pad;
+      int length=rejectmatrix.length;
 
       required = (numsectors * numsectors + 7) / 8;
 
