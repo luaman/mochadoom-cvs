@@ -9,11 +9,11 @@ import w.CacheableDoomObject;
 
 public class DeepBSPNodesV4 implements CacheableDoomObject{
 
-	private static final byte[] DeepBSPHeader={
+	public static final byte[] DeepBSPHeader={
 		'x','N','d','4',0,0,0,0
 		};
 	
-	byte[] header;
+	byte[] header=new byte[8];
 	mapnode_v4_t[] nodes;
 	int numnodes;
 	
