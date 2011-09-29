@@ -84,11 +84,14 @@ public abstract class AbstractLevelLoader  implements ILevelLoader {
     /** Blockmap size. */
     protected int     bmapwidth, bmapheight; // size in mapblocks
     
-	/** killough 3/1/98: remove blockmap limit internally: */
-	int[]     blockmap;              // was short -- killough
+	/** killough 3/1/98: remove blockmap limit internally.
+	 * Maes 29/9/2011: Header stripped during loading and pointers
+	 * pre-modified, so there's no double arraying. */
+	public int[]     blockmap;              // was short -- killough
 
-	/** offsets in blockmap are from here */
-	int[]      blockmaplump;          // was short -- killough
+	/** Maes 29/9/2011: Used only during loading. No more dichotomy with
+	 *  blockmap.*/
+	protected int[]      blockmaplump;          // was short -- killough
     /** (fixed_t) origin of block map */
     public int     bmaporgx, bmaporgy;
     /** for thing chains */
