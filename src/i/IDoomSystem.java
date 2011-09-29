@@ -27,6 +27,16 @@ public interface IDoomSystem {
 	void Error(String error);
 	
 	void Init();
+	
+	/** Generate a blocking alert with the intention of continuing or aborting
+	 * a certain game-altering action. E.g. loading PWADs, or upon critical 
+	 * level loading failures. This can be either a popup panel or console 
+	 * message.
+	 *  
+	 * @param cause Provide a clear string explaining why the alert was generated
+	 * @return true if we should continue, false if an alternate action should be taken.
+	 */
+	boolean GenerateAlert(String title,String cause);
 
 
 }
