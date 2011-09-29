@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.28 2011/07/28 16:35:03 velktron Exp $
+// $Id: Map.java,v 1.29 2011/09/29 13:25:09 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.29  2011/09/29 13:25:09  velktron
+// Eliminated "intermediate" AbstractAutoMap. Map implements IAutoMap  directly.
+//
 // Revision 1.28  2011/07/28 16:35:03  velktron
 // Well, we don't need to know that anymore.
 //
@@ -129,8 +132,7 @@ import static data.Limits.*;
 import static m.fixed_t.*;
 import static doom.englsh.*;
 import static data.Tables.*;
-import i.DoomStatusAware;
-import p.LevelLoader;
+import p.AbstractLevelLoader;
 import p.mobj_t;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -142,11 +144,10 @@ import st.IDoomStatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
-import v.IVideoScaleAware;
 import w.IWadLoader;
 import m.cheatseq_t;
 
-public class Map extends AbstractAutoMap{
+public class Map implements IAutoMap {
 
 /////////////////// Status objects ///////////////////
     
@@ -154,10 +155,10 @@ IDoomStatusBar ST;
 IWadLoader W;
 DoomMain DM;
 DoomVideoRenderer V;
-LevelLoader LL;    
+AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.28 2011/07/28 16:35:03 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.29 2011/09/29 13:25:09 velktron Exp $";
 
 /*
 #include <stdio.h>
