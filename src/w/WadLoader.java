@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.47 2011/09/27 15:57:09 velktron Exp $
+// $Id: WadLoader.java,v 1.48 2011/09/29 15:18:31 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.48  2011/09/29 15:18:31  velktron
+// Resource coalescing correctly handles wadfiles
+//
 // Revision 1.47  2011/09/27 15:57:09  velktron
 // Full wadinfo (lump "ownership") system in place, borrowed from prBoom+ with a twist ;-)
 //
@@ -581,6 +584,7 @@ public class WadLoader implements IWadLoader {
 		for (String s : filenames) {
 			if (s != null)
 				this.AddFile(s);
+			
 		}
 
 		if (numlumps == 0)
@@ -1338,7 +1342,7 @@ public class WadLoader implements IWadLoader {
 	            marked[num_marked].namespace =li_namespace.ns_global;        // killough 4/17/98
 	            marked[num_marked].handle=lump.handle;
 	            // No real use for this yet
-	            // marked[num_marked].wadfile = null;
+	            marked[num_marked].wadfile = lump.wadfile;
 	            num_marked = 1;
 		    	//System.err.printf("%s identified as FIRST starter mark for %s index %d\n",lump.name,
 		    	//		start_marker,i);
