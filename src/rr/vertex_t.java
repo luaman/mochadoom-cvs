@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import p.Resettable;
+
 import w.CacheableDoomObject;
 
 /** This is the vertex structure used IN MEMORY with fixed-point arithmetic.
@@ -14,7 +16,7 @@ import w.CacheableDoomObject;
  *
  */
 
-public class vertex_t  implements CacheableDoomObject{
+public class vertex_t  implements CacheableDoomObject, Resettable{
 
     public vertex_t(){
         
@@ -31,6 +33,12 @@ public class vertex_t  implements CacheableDoomObject{
         this.x=buf.getShort()<<FRACBITS;;
         this.y=buf.getShort()<<FRACBITS;;
         
+    }
+
+
+    @Override
+    public void reset() {
+        x=0; y=0;        
     }
     
 }

@@ -1,5 +1,7 @@
 package rr;
 
+import p.Resettable;
+
 /**
  * 
  * A SubSector. References a Sector. Basically, this is a list of LineSegs,
@@ -8,7 +10,7 @@ package rr;
  * 
  * @author admin
  */
-public class subsector_t {
+public class subsector_t implements Resettable{
 
 	public subsector_t() {
 		this(null,  0,  0);
@@ -45,6 +47,12 @@ public class subsector_t {
 	}
 	
 	private static StringBuilder sb=new StringBuilder();
+
+    @Override
+    public void reset() {
+        sector=null;
+        firstline=numlines=0;        
+    }
 	
 
 }

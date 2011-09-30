@@ -2,7 +2,10 @@ package rr;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import p.Interceptable;
+import p.Resettable;
 import s.degenmobj_t;
 import w.DoomFile;
 import w.IPackableDoomObject;
@@ -19,251 +22,248 @@ import doom.thinker_t;
 
 /** This is the actual linedef */
 
-public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomObject{
+public class line_t
+        implements Interceptable, IReadableDoomObject, IPackableDoomObject,
+        Resettable {
 
-        public line_t(){
-            sidenum=new short[2];
-            bbox=new int[4];
-            slopetype=slopetype_t.ST_HORIZONTAL;
+    public line_t() {
+        sidenum = new short[2];
+        bbox = new int[4];
+        slopetype = slopetype_t.ST_HORIZONTAL;
+    }
+
+    /**
+     * Vertices, from v1 to v2. NOTE: these are almost never passed as-such, nor
+     * linked to Maybe we can get rid of them and only use the value semantics?
+     */
+    public vertex_t v1, v2;
+
+    /** remapped vertex coords, for quick lookup with value semantics */
+    public int v1x, v1y, v2x, v2y;
+
+    /** (fixed_t) Precalculated v2 - v1 for side checking. */
+    public int dx, dy;
+
+    /** Animation related. */
+    public short flags, special, tag;
+
+    /**
+     * Visual appearance: SideDefs. sidenum[1] will be -1 if one sided
+     */
+    public short[] sidenum;
+
+    /**
+     * Neat. Another bounding box, for the extent of the LineDef. MAES: make
+     * this a proper bbox? fixed_t bbox[4];
+     */
+    public int[] bbox;
+
+    /** To aid move clipping. */
+    public slopetype_t slopetype;
+
+    /**
+     * Front and back sector. Note: redundant? Can be retrieved from SideDefs.
+     * MAES: pointers
+     */
+    public sector_t frontsector, backsector;
+
+    public int frontsectorid, backsectorid;
+
+    /** if == validcount, already checked */
+    public int validcount;
+
+    /** thinker_t for reversable actions MAES: (void*) */
+    public thinker_t specialdata;
+
+    public int specialdataid;
+
+    public degenmobj_t soundorg;
+
+    // From Boom
+    public int tranlump;
+
+    /** For Boom stuff, interprets sidenum specially */
+    public int getSpecialSidenum() {
+        return (sidenum[0] << 16) & (0x0000ffff & sidenum[1]);
+    }
+
+    public void assignVertexValues() {
+        this.v1x = v1.x;
+        this.v1y = v1.y;
+        this.v2x = v2.x;
+        this.v2y = v2.y;
+
+    }
+
+    /**
+     * P_PointOnLineSide
+     * 
+     * @param x
+     *        fixed_t
+     * @param y
+     *        fixed_t
+     * @return 0 or 1 (false, true) - (front, back)
+     */
+    public boolean PointOnLineSide(int x, int y)
+
+    {
+        int dx, dy, left, right;
+        if (this.dx == 0) {
+            if (x <= this.v1.x)
+                return this.dy > 0;
+
+            return this.dy < 0;
         }
-    
-        /** Vertices, from v1 to v2. NOTE: these are almost never passed as-such, nor linked to 
-         * Maybe we can get rid of them and only use the value semantics? */
-        public vertex_t   v1, v2;
-        
-        /** remapped vertex coords, for quick lookup with value semantics */        
-        public int v1x,v1y,v2x,v2y;
+        if (this.dy == 0) {
+            if (y <= this.v1.y)
+                return this.dx < 0;
 
-        /** (fixed_t) Precalculated v2 - v1 for side checking. */
-        public int dx, dy;
-
-        /** Animation related. */
-        public short   flags, special, tag;
-
-        /** Visual appearance: SideDefs.
-           sidenum[1] will be -1 if one sided */
-        public short[]   sidenum;         
-
-        /** Neat. Another bounding box, for the extent
-         of the LineDef.
-         MAES: make this a proper bbox?
-         fixed_t bbox[4]; */
-        public int[] bbox;
-
-        /** To aid move clipping. */
-        public slopetype_t slopetype;
-
-        /** Front and back sector.
-           Note: redundant? Can be retrieved from SideDefs.
-           MAES: pointers */
-        public sector_t   frontsector,  backsector;
-        public int frontsectorid, backsectorid;
-
-        /** if == validcount, already checked */
-        public int     validcount;
-
-        /** thinker_t for reversable actions MAES: (void*) */
-        public thinker_t   specialdata;
-        public int specialdataid;
-        
-        public degenmobj_t soundorg;
-        
-        /** For Boom stuff, interprets sidenum specially */
-        public int getSpecialSidenum(){
-        	return (sidenum[0]<<16)&(0x0000ffff&sidenum[1]);        	
+            return this.dx > 0;
         }
-        
-        public void assignVertexValues(){
-            this.v1x=v1.x;
-            this.v1y=v1.y;
-            this.v2x=v2.x;
-            this.v2y=v2.y;
-            
+
+        dx = (x - this.v1.x);
+        dy = (y - this.v1.y);
+
+        left = FixedMul(this.dy >> FRACBITS, dx);
+        right = FixedMul(dy, this.dx >> FRACBITS);
+
+        if (right < left)
+            return false; // front side
+        return true; // back side
+    }
+
+    /**
+     * P_BoxOnLineSide Considers the line to be infinite Returns side 0 or 1, -1
+     * if box crosses the line. Doubles as a convenient check for whether a
+     * bounding box crosses a line at all
+     * 
+     * @param tmbox
+     *        fixed_t[]
+     */
+    public int BoxOnLineSide(int[] tmbox) {
+        boolean p1 = false;
+        boolean p2 = false;
+
+        switch (this.slopetype) {
+        // Line perfectly horizontal, box floating "north" of line
+        case ST_HORIZONTAL:
+            p1 = tmbox[BOXTOP] > v1.y;
+            p2 = tmbox[BOXBOTTOM] > v1.y;
+            if (dx < 0) {
+                p1 ^= true;
+                p2 ^= true;
+            }
+            break;
+
+        // Line perfectly vertical, box floating "west" of line
+        case ST_VERTICAL:
+
+            p1 = tmbox[BOXRIGHT] < v1.x;
+            p2 = tmbox[BOXLEFT] < v1.x;
+            if (dy < 0) {
+                p1 ^= true;
+                p2 ^= true;
+            }
+            break;
+
+        case ST_POSITIVE:
+            // Positive slope, both points on one side.
+            p1 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP]);
+            p2 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
+            break;
+
+        case ST_NEGATIVE:
+            // Negative slope, both points (mirrored horizontally) on one side.
+            p1 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP]);
+            p2 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
+            break;
         }
-/**
- *    P_PointOnLineSide   
- *           
- * @param x fixed_t
- * @param y fixed_t
- * @return 0 or 1 (false, true) - (front, back)
- */
-      public boolean
-      PointOnLineSide
-      ( int   x,
-      int   y)
 
-      {
-       int dx,dy,left,right;
-       if (this.dx==0)
-       {
-       if (x <= this.v1.x)
-           return this.dy > 0;
-       
-       return this.dy < 0;
-       }
-       if (this.dy==0)
-       {
-       if (y <= this.v1.y)
-           return this.dx < 0;
-       
-       return this.dx > 0;
-       }
-       
-       dx = (x - this.v1.x);
-       dy = (y - this.v1.y);
-       
-       left = FixedMul ( this.dy>>FRACBITS , dx );
-       right = FixedMul ( dy , this.dx>>FRACBITS );
-       
-       if (right < left)
-       return false;       // front side
-       return true;           // back side
-      }
-       
-      /**
-       * P_BoxOnLineSide
-       * Considers the line to be infinite
-       * Returns side 0 or 1, -1 if box crosses the line.
-       * Doubles as a convenient check for whether a bounding
-       * box crosses a line at all 
-       *
-       *@param tmbox fixed_t[]
-       */
-      public int
-      BoxOnLineSide
-      ( int[]  tmbox)
-      {
-       boolean     p1=false;
-       boolean     p2=false;
-       
-       switch (this.slopetype)
-       { 
-       // Line perfectly horizontal, box floating "north" of line
-         case ST_HORIZONTAL:
-       p1 = tmbox[BOXTOP] > v1.y;
-       p2 = tmbox[BOXBOTTOM] > v1.y;
-       if (dx < 0)
-       {
-           p1 ^= true;
-           p2 ^= true;
-       }
-       break;
-       
-       // Line perfectly vertical, box floating "west" of line
-         case ST_VERTICAL:
-             
-       p1 = tmbox[BOXRIGHT] < v1.x;
-       p2 = tmbox[BOXLEFT] < v1.x;
-       if (dy < 0)
-       {
-           p1 ^= true;
-           p2 ^= true;
-       }
-       break;
-       
-         case ST_POSITIVE:
-       // Positive slope, both points on one side.
-       p1 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXTOP]);
-       p2 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
-       break;
-       
-         case ST_NEGATIVE:
-       // Negative slope,  both points (mirrored horizontally) on one side.
-       p1 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXTOP]);
-       p2 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
-       break;
-       }
+        if (p1 == p2)
+            return p1 ? 1 : 0;
+        // Any other result means non-inclusive crossing.
+        return -1;
+    }
 
-       if (p1 == p2)
-       return p1?1:0;
-       // Any other result means non-inclusive crossing.
-       return -1;
-      }
-      
-      /**
-       * Variant of P_BoxOnLineSide. Uses inclusive checks,
-       * so that even lines on the border of a box will be
-       * considered crossing. This is more useful for building 
-       * blockmaps.
-       *
-       *@param tmbox fixed_t[]
-       */
-      public int
-      BoxOnLineSideInclusive
-      ( int[]  tmbox)
-      {
-       boolean     p1=false;
-       boolean     p2=false;
-       
-       switch (this.slopetype)
-       { 
-       // Line perfectly horizontal, box floating "north" of line
-         case ST_HORIZONTAL:
-       p1 = tmbox[BOXTOP] >= v1.y;
-       p2 = tmbox[BOXBOTTOM] >= v1.y;
-       if (dx < 0)
-       {
-           p1 ^= true;
-           p2 ^= true;
-       }
-       break;
-       
-       // Line perfectly vertical, box floating "west" of line
-         case ST_VERTICAL:
-             
-       p1 = tmbox[BOXRIGHT] <= v1.x;
-       p2 = tmbox[BOXLEFT] <= v1.x;
-       if (dy < 0)
-       {
-           p1 ^= true;
-           p2 ^= true;
-       }
-       break;
-       
-         case ST_POSITIVE:
-       // Positive slope, both points on one side.
-       p1 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXTOP]);
-       p2 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
-       break;
-       
-         case ST_NEGATIVE:
-       // Negative slope,  both points (mirrored horizontally) on one side.
-       p1 = PointOnLineSide (tmbox[BOXRIGHT], tmbox[BOXTOP]);
-       p2 = PointOnLineSide (tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
-       break;
-       }
+    /**
+     * Variant of P_BoxOnLineSide. Uses inclusive checks, so that even lines on
+     * the border of a box will be considered crossing. This is more useful for
+     * building blockmaps.
+     * 
+     * @param tmbox
+     *        fixed_t[]
+     */
+    public int BoxOnLineSideInclusive(int[] tmbox) {
+        boolean p1 = false;
+        boolean p2 = false;
 
-       if (p1 == p2)
-       return p1?1:0;
-       // Any other result means non-inclusive crossing.
-       return -1;
-      }
-      
-      /**
-       * getNextSector()
-       * Return sector_t * of sector next to current.
-       * NULL if not two-sided line
-       */
-      
-      public sector_t getNextSector(sector_t sec) {
-          if (!flags(flags, ML_TWOSIDED))
-              return null;
+        switch (this.slopetype) {
+        // Line perfectly horizontal, box floating "north" of line
+        case ST_HORIZONTAL:
+            p1 = tmbox[BOXTOP] >= v1.y;
+            p2 = tmbox[BOXBOTTOM] >= v1.y;
+            if (dx < 0) {
+                p1 ^= true;
+                p2 ^= true;
+            }
+            break;
 
-          if (frontsector == sec)
-              return backsector;
+        // Line perfectly vertical, box floating "west" of line
+        case ST_VERTICAL:
 
-          return frontsector;
-      }
-      
-      public String toString(){
-          return (String.format("Flags: %d Special %d Tag: %d ",this.flags, this.special, this.tag));   
-      }
+            p1 = tmbox[BOXRIGHT] <= v1.x;
+            p2 = tmbox[BOXLEFT] <= v1.x;
+            if (dy < 0) {
+                p1 ^= true;
+                p2 ^= true;
+            }
+            break;
+
+        case ST_POSITIVE:
+            // Positive slope, both points on one side.
+            p1 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXTOP]);
+            p2 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXBOTTOM]);
+            break;
+
+        case ST_NEGATIVE:
+            // Negative slope, both points (mirrored horizontally) on one side.
+            p1 = PointOnLineSide(tmbox[BOXRIGHT], tmbox[BOXTOP]);
+            p2 = PointOnLineSide(tmbox[BOXLEFT], tmbox[BOXBOTTOM]);
+            break;
+        }
+
+        if (p1 == p2)
+            return p1 ? 1 : 0;
+        // Any other result means non-inclusive crossing.
+        return -1;
+    }
+
+    /**
+     * getNextSector() Return sector_t * of sector next to current. NULL if not
+     * two-sided line
+     */
+
+    public sector_t getNextSector(sector_t sec) {
+        if (!flags(flags, ML_TWOSIDED))
+            return null;
+
+        if (frontsector == sec)
+            return backsector;
+
+        return frontsector;
+    }
+
+    public String toString() {
+        return (String.format("Flags: %d Special %d Tag: %d ", this.flags,
+            this.special, this.tag));
+    }
+
     @Override
     public void read(DoomFile f)
             throws IOException {
-    	
-    	// For histerical reasons, these are the only parts of line_t that
-    	// are archived in vanilla savegames. Go figure.
+
+        // For histerical reasons, these are the only parts of line_t that
+        // are archived in vanilla savegames. Go figure.
         this.flags = f.readLEShort();
         this.special = f.readLEShort();
         this.tag = f.readLEShort();
@@ -274,10 +274,27 @@ public class line_t implements Interceptable, IReadableDoomObject,IPackableDoomO
         buffer.putShort(flags);
         buffer.putShort(special);
         buffer.putShort(tag);
-        //buffer.putShort((short) 0XDEAD);
-        //buffer.putShort((short) 0XBABE);
-        //buffer.putShort((short) 0XBEEF);
+        // buffer.putShort((short) 0XDEAD);
+        // buffer.putShort((short) 0XBABE);
+        // buffer.putShort((short) 0XBEEF);
     }
-      
-      
+
+    @Override
+    public void reset() {
+        v1 = v2 = null;
+        v1x = v1y = v2x = v2y = 0;
+        dx = dy = 0;
+        flags = special = tag = 0;
+        Arrays.fill(sidenum, (short) 0);
+        Arrays.fill(bbox, 0);
+        slopetype = slopetype_t.ST_HORIZONTAL;
+        frontsector = backsector = null;
+        frontsectorid = backsectorid = 0;
+        validcount = 0;
+        specialdata = null;
+        specialdataid = 0;
+        soundorg = null;
+        tranlump = 0;
     }
+
+}

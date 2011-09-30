@@ -3,40 +3,45 @@ package rr;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import p.Resettable;
+
 import static m.fixed_t.FRACBITS;
 import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 
-/** The SideDef.
+/**
+ * The SideDef.
  * 
  * @author admin
- *
  */
-public class side_t implements IReadableDoomObject, IPackableDoomObject{
-     /** (fixed_t) add this to the calculated texture column */
-     public int textureoffset;
-     
-     /** (fixed_t) add this to the calculated texture top */
-     public int rowoffset;
+public class side_t
+        implements IReadableDoomObject, IPackableDoomObject, Resettable {
+    /** (fixed_t) add this to the calculated texture column */
+    public int textureoffset;
 
-     /** Texture indices.
-      * We do not maintain names here.  
-      */
-     public short   toptexture;
-     public short   bottomtexture;
-     public short   midtexture;
+    /** (fixed_t) add this to the calculated texture top */
+    public int rowoffset;
 
-     /** Sector the SideDef is facing. MAES: pointer */
-     public sector_t   sector;
+    /**
+     * Texture indices. We do not maintain names here.
+     */
+    public short toptexture;
 
-     public int sectorid;
+    public short bottomtexture;
+
+    public short midtexture;
+
+    /** Sector the SideDef is facing. MAES: pointer */
+    public sector_t sector;
+
+    public int sectorid;
 
     public int special;
-     
-     public side_t() {
-     }
-     
+
+    public side_t() {
+    }
+
     public side_t(int textureoffset, int rowoffset, short toptexture,
             short bottomtexture, short midtexture, sector_t sector) {
         super();
@@ -56,17 +61,30 @@ public class side_t implements IReadableDoomObject, IPackableDoomObject{
         this.toptexture = f.readLEShort();
         this.bottomtexture = f.readLEShort();
         this.midtexture = f.readLEShort();
-        //this.sectorid=f.readLEInt();
-        
+        // this.sectorid=f.readLEInt();
+
     }
 
     @Override
     public void pack(ByteBuffer buffer) {
-        buffer.putShort((short) (textureoffset>> FRACBITS));
-        buffer.putShort((short) (rowoffset>> FRACBITS));
+        buffer.putShort((short) (textureoffset >> FRACBITS));
+        buffer.putShort((short) (rowoffset >> FRACBITS));
         buffer.putShort(toptexture);
         buffer.putShort(bottomtexture);
-        buffer.putShort(midtexture);        
-        }
-     
- }
+        buffer.putShort(midtexture);
+    }
+
+    @Override
+    public void reset() {
+        textureoffset = 0;
+        rowoffset = 0;
+        toptexture = 0;
+        bottomtexture = 0;
+        midtexture = 0;
+        sector = null;
+        sectorid = 0;
+        special = 0;
+
+    }
+
+}
