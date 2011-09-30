@@ -1850,10 +1850,16 @@ for (i=0 ; i< NUMMOBJTYPES ; i++)
 if (mthing.type == mobjinfo[i].doomednum)
   break;
 
-if (i==NUMMOBJTYPES)
-I.Error ("P_SpawnMapThing: Unknown type %d at (%d, %d)",
+// phares 5/16/98:
+// Do not abort because of an unknown thing. Ignore it, but post a
+// warning message for the player.
+
+if (i==NUMMOBJTYPES) {
+System.err.printf ("P_SpawnMapThing: Unknown type %d at (%d, %d)",
    mthing.type,
    mthing.x, mthing.y);
+   return null;
+}
   
 // don't spawn keycards and players in deathmatch
 if (DM.deathmatch && flags(mobjinfo[i].flags , MF_NOTDMATCH))
@@ -5029,12 +5035,13 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 	  
       sector_t   sector;
       int     i;
-      //int     episode;
+      
+      /*int     episode;
 
-      //episode = 1;
+      episode = 1;
       if (W.CheckNumForName("texture2") >= 0)
-      //episode = 2;
-
+      episode = 2;
+      */
       
       // See if -TIMER needs to be used.
       SPECS.levelTimer = false;
