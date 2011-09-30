@@ -9,18 +9,11 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
-import static p.mobj_t.MF_NOBLOCKMAP;
-import static p.mobj_t.MF_NOSECTOR;
 import static utils.C2JUtils.flags;
-import i.DoomStatusAware;
-import i.IDoomSystem;
-
 import java.io.IOException;
 import java.nio.ByteOrder;
 
 import m.BBox;
-import rr.RendererState;
-import rr.TextureManager;
 import rr.line_t;
 import rr.node_t;
 import rr.sector_t;
@@ -28,13 +21,9 @@ import rr.seg_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
-import s.IDoomSound;
 import s.degenmobj_t;
-import st.IDoomStatusBar;
 import utils.C2JUtils;
-import v.DoomVideoRenderer;
 import w.DoomBuffer;
-import w.IWadLoader;
 import data.maplinedef_t;
 import data.mapnode_t;
 import data.mapsector_t;
@@ -44,13 +33,12 @@ import data.mapsubsector_t;
 import data.mapthing_t;
 import data.mapvertex_t;
 import defines.*;
-import doom.DoomMain;
 import doom.DoomStatus;
 
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.39 2011/09/29 17:22:08 velktron Exp $
+// $Id: LevelLoader.java,v 1.40 2011/09/30 15:20:24 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -72,7 +60,7 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.39 2011/09/29 17:22:08 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.40 2011/09/30 15:20:24 velktron Exp $";
 
 
 public LevelLoader(DoomStatus DC) {
@@ -80,10 +68,6 @@ public LevelLoader(DoomStatus DC) {
 		// Traditional loader sets limit.
 		deathmatchstarts=new mapthing_t[MAX_DEATHMATCH_STARTS];
 	}
-
-  private boolean[] used_lines;
-
-  
 
   /**
   * P_LoadVertexes
@@ -136,10 +120,7 @@ public LevelLoader(DoomStatus DC) {
           ml=data[i];
       li.v1 = vertexes[ml.v1];
       li.v2 = vertexes[ml.v2];
-      li.v1x=li.v1.x;
-      li.v1y=li.v1.y;
-      li.v2x=li.v2.x;
-      li.v2y=li.v2.y;
+      li.assignVertexValues();
       
       li.angle = ((ml.angle)<<16)&0xFFFFFFFFL;
       li.offset = (ml.offset)<<16;
@@ -252,13 +233,14 @@ public LevelLoader(DoomStatus DC) {
       {
           mn=data[i];
           no=nodes[i];
+          
       no.x = mn.x<<FRACBITS;
       no.y = mn.y<<FRACBITS;
       no.dx = mn.dx<<FRACBITS;
       no.dy = mn.dy<<FRACBITS;
       for (j=0 ; j<2 ; j++)
       {
-          no.children[j] = mn.children[j];
+          no.children[j] = mn.children[j];          
           for (k=0 ; k<4 ; k++)
           no.bbox[j].set(k, mn.bbox[j][k]<<FRACBITS);
       }
@@ -490,8 +472,12 @@ public LevelLoader(DoomStatus DC) {
    */
   public void LoadBlockMap (int lump) throws IOException
   {
-      int     i;
-      int     count;
+      int     count=0;
+      
+      if (DM.CM.CheckParmBool("-blockmap") || W.LumpLength(lump) < 8
+              || (count = W.LumpLength(lump) / 2) >= 0x10000) // e6y
+          CreateBlockMap();
+      else {
       
       DoomBuffer data=(DoomBuffer)W.CacheLumpNum(lump,PU_LEVEL, DoomBuffer.class);
       count=W.LumpLength(lump)/2;
@@ -507,16 +493,24 @@ public LevelLoader(DoomStatus DC) {
       bmaporgy = blockmaplump[1]<<FRACBITS;
       bmapwidth = blockmaplump[2];
       bmapheight = blockmaplump[3];
-      count = bmapwidth*bmapheight;
       
-      if (count<0){
-          int[] shit=this.getMapBoundingBox();
-          bmaporgx=shit[0];
-          bmaporgy=shit[1];
-          bmapwidth=shit[2];
-          bmapheight=shit[3];
-          count=bmapwidth*bmapheight;          
+      // MAES: use killough's code to convert terminators to -1 beforehand
+      for (int i = 4; i < count; i++) {
+          short t = (short) blockmaplump[i]; // killough 3/1/98
+          blockmaplump[i] = (int) (t == -1 ? -1l : t & 0xffff);
       }
+      
+      // haleyjd 03/04/10: check for blockmap problems
+      // http://www.doomworld.com/idgames/index.php?id=12935
+      if (!VerifyBlockMap(count)) {
+          System.err
+                  .printf("P_LoadBlockMap: erroneous BLOCKMAP lump may cause crashes.\n");
+          System.err
+                  .printf("P_LoadBlockMap: use \"-blockmap\" command line switch for rebuilding\n");
+      }
+      
+      }
+     count = bmapwidth*bmapheight;
       
      // IMPORTANT MODIFICATION: no need to have both blockmaplump AND blockmap.
      // If the offsets in the lump are OK, then we can modify them (remove 4)
@@ -526,7 +520,7 @@ public LevelLoader(DoomStatus DC) {
       blockmap=new int[blockmaplump.length-4];
       
       // Offsets are relative to START OF BLOCKMAP, and IN SHORTS, not bytes.
-      for (i=0;i<blockmaplump.length-4;i++){
+      for (int i=0;i<blockmaplump.length-4;i++){
     	  // Modify indexes so that we don't need two different lumps.
     	  // Can probably be further optimized if we simply shift everything backwards.
     	  // and reuse the same memory space.
@@ -546,7 +540,7 @@ public LevelLoader(DoomStatus DC) {
       // Probably caused other bugs as well, as an extra object would appear in iterators.
       
        if (blocklinks!=null && blocklinks.length==count)
-          for (i=0;i<count;i++)
+          for (int i=0;i<count;i++)
               blocklinks[i]=null;
        else 
            blocklinks = new mobj_t[count];
@@ -588,20 +582,17 @@ public LevelLoader(DoomStatus DC) {
       
       total = 0;
 
-      for (int i=0 ; i<numlines ; i++)
-      {
-      li = lines[i];
-      total++;
-      li.frontsector.linecount++;
+        for (int i = 0; i < numlines; i++) {
+            li = lines[i];
+            total++;
+            li.frontsector.linecount++;
 
-      if ((li.backsector!=null) && (li.backsector != li.frontsector))
-      {
-          li.backsector.linecount++;
-          total++;
-      }
-      
-      
-      }
+            if ((li.backsector != null) && (li.backsector != li.frontsector)) {
+                li.backsector.linecount++;
+                total++;
+            }
+
+        }
       
       // build line tables for each sector    
       // MAES: we don't really need this in Java.
@@ -638,9 +629,9 @@ public LevelLoader(DoomStatus DC) {
       
       // So, this sector must have that many lines.
       sector.lines=new line_t[countlines];
-      int pointline=0;
 
       int addedlines=0;
+      int pointline=0;
       
       // Add actual lines into sectors.
       for (int j=0 ; j<numlines ; j++)
@@ -756,18 +747,17 @@ public LevelLoader(DoomStatus DC) {
       
       // note: most of this ordering is important
       
-      try {
-      this.LoadBlockMap (lumpnum+ML_BLOCKMAP);
-      } catch (IOException e){
-          // TODO: generate or otherwise sanitize
-      }
-      this.LoadVertexes (lumpnum+ML_VERTEXES);
+
+      this.LoadVertexes (lumpnum+ML_VERTEXES);      
       this.LoadSectors (lumpnum+ML_SECTORS);
       this.LoadSideDefs (lumpnum+ML_SIDEDEFS);
       this.LoadLineDefs (lumpnum+ML_LINEDEFS);
       this.LoadSubsectors (lumpnum+ML_SSECTORS);
       this.LoadNodes (lumpnum+ML_NODES);
       this.LoadSegs (lumpnum+ML_SEGS);
+      
+      // MAES: in order to apply optimizations and rebuilding, order must be changed.
+      this.LoadBlockMap (lumpnum+ML_BLOCKMAP);
       //this.SanitizeBlockmap();
       //this.getMapBoundingBox();
       
@@ -795,6 +785,8 @@ public LevelLoader(DoomStatus DC) {
       if (tmpreject.length<rejectmatrix.length) 
       System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",tmpreject.length,rejectmatrix.length);
       
+      // Maes: purely academic. Most maps are well above 0.68
+      //System.out.printf("Reject table density: %f",rejectDensity());
       
       this.GroupLines ();
 
@@ -838,87 +830,14 @@ public LevelLoader(DoomStatus DC) {
       }
   }
 
-// 
-  
-  /** Lame-ass attempt at fixing blockmaps > 128K in size.
-   * In such blockmaps, blocks will at some point contain
-   * pointers beyond 64K shorts (128 KB), which can't be coded
-   * in just two bytes. A pretty lame solution is to add 64K
-   * to any pointer that is clearly smaller than the blockmap
-   * offset table itself. This allows europe.wad to become playable,
-   * but where is this "extended blockmap format" defined?
-   * FIXME lookup Boom
-   */
-  private void SanitizeBlockmap() {
-    //  int errors=0;
-    if (blockmaplump.length>0x10000){
-	for (int i=0;i<blockmap.length;i++){
-		if (blockmap[i]<blockmap.length){
-			// Well, obviously there's a problem. How can we address stuff
-			// BEYOND the end of the blockmap offsets themselves with just 16 bits?
-			// Guesstimate: such offsets will be considered relative to the
-			// end of the blockmap (or of 64K?) So we add accordingly.
-			blockmap[i]+=0x10000;
-			//errors++;
-			}
-		}
-    }
-	//	  if (blockmaplump[i]>=lines.length-1){ 
-	//		  blockmaplump[i]=(char) (lines.length-1);
-	//		  errors++;
-	//	  	}
-	//  	}
-	//System.err.printf("%d blockmap errors encountered!\n",errors);
-}
 
-/** Returns an int[] array with orgx, orgy, and number of blocks.
- * Order is: orgx,orgy,bckx,bcky
- *   
- * @return
- */
-
-private int[] getMapBoundingBox(){    
-        
-    int minx=Integer.MAX_VALUE;
-    int miny=Integer.MAX_VALUE;
-    int maxx=Integer.MIN_VALUE;
-    int maxy=Integer.MIN_VALUE;
-    
-    // Scan linedefs to detect extremes    
-    
-    for (int i=0;i<this.lines.length;i++){
-        
-        if (used_lines[i]){
-        if (lines[i].v1x>maxx) maxx=lines[i].v1x;
-        if (lines[i].v1x<minx) minx=lines[i].v1x;
-        if (lines[i].v1y>maxy) maxy=lines[i].v1y;
-        if (lines[i].v1y<miny) miny=lines[i].v1y;
-        if (lines[i].v2x>maxx) maxx=lines[i].v2x;
-        if (lines[i].v2x<minx) minx=lines[i].v2x;
-        if (lines[i].v2y>maxy) maxy=lines[i].v2y;
-        if (lines[i].v2y<miny) miny=lines[i].v2y;
-        }
-    }
-    
-    System.err.printf("Map bounding %d %d %d %d\n",
-        minx>>FRACBITS,miny>>FRACBITS,maxx>>FRACBITS,maxy>>FRACBITS);
-    
-    // Blow up bounding to the closest 128-sized block, adding 8 units as padding.
-    // This seems to be the "official" formula.
-    int orgx=-BLOCKMAPPADDING+MAPBLOCKUNITS*(minx/MAPBLOCKUNITS);
-    int orgy=-BLOCKMAPPADDING+MAPBLOCKUNITS*(miny/MAPBLOCKUNITS);
-    int bckx=((BLOCKMAPPADDING+maxx)-orgx);
-    int bcky=((BLOCKMAPPADDING+maxy)-orgy);
-    
-    System.err.printf("%d %d %d %d\n",orgx>>FRACBITS,orgy>>FRACBITS,1+(bckx>>MAPBLOCKSHIFT),1+(bcky>>MAPBLOCKSHIFT));
-    
-    
-    return new int[]{orgx,orgy,bckx,bcky};
-}
 
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.40  2011/09/30 15:20:24  velktron
+//Very modified, useless SanitizeBlockmap method ditched. Common utility methods moved to superclass. Shares blockmap checking and generation with Boom-derived code. Now capable of running Europe.wad. TODO: Blockmap generation can be really slow on large levels. Optimize better for Java, or parallelize.
+//
 //Revision 1.39  2011/09/29 17:22:08  velktron
 //Blockchain terminators are now -1 (extended)
 //
