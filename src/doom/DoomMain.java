@@ -88,7 +88,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.86 2011/09/29 17:27:36 velktron Exp $
+// $Id: DoomMain.java,v 1.87 2011/10/02 14:22:33 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -114,7 +114,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.86 2011/09/29 17:27:36 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.87 2011/10/02 14:22:33 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -2618,8 +2618,7 @@ public void ScreenShot ()
             IDoomSaveGame dsg=new VanillaDSG();
             dsg.updateStatus(this.DM);
             
-            // MAES: behavior modification.
-            //gameaction = gameaction_t.ga_nothing; 
+            gameaction = gameaction_t.ga_nothing; 
 
             DoomFile f=new DoomFile(savename, "r"); 
 
@@ -2644,8 +2643,8 @@ public void ScreenShot ()
             // load a base level 
             InitNew (gameskill, gameepisode, gamemap); 
             
-            if (gameaction == gameaction_t.ga_nothing) {
-            	// failure to load. Abor.
+            if (gameaction == gameaction_t.ga_failure) {
+            	// failure to load. Abort.
             	return;
             }
 
@@ -2918,7 +2917,7 @@ public void ScreenShot ()
     	boolean endgame=I.GenerateAlert(Strings.LEVEL_FAILURE_TITLE, Strings.LEVEL_FAILURE_CAUSE);
     	
     	if (endgame){         	// Initiate endgame
-    	gameaction=gameaction_t.ga_nothing;
+    	gameaction=gameaction_t.ga_failure;
     	gamestate = gamestate_t.GS_DEMOSCREEN; 
     	M.ClearMenus();
     	StartTitle();
@@ -4212,6 +4211,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.87  2011/10/02 14:22:33  velktron
+//Added new ga_failure state.
+//
 //Revision 1.86  2011/09/29 17:27:36  velktron
 //Uses GenerateAlert
 //

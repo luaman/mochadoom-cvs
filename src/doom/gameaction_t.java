@@ -10,5 +10,6 @@ public enum gameaction_t {
         ga_completed,
         ga_victory,
         ga_worlddone,
-        ga_screenshot
+        ga_screenshot,
+        ga_failure // HACK: communicate failures silently
     }
