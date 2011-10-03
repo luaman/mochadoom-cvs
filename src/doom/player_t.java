@@ -590,7 +590,7 @@ public class player_t /*extends mobj_t */
         break;
                 
           default:
-        I.Error ("P_PlayerInSpecialSector: unknown special %i", sector.special);
+        I.Error ("P_PlayerInSpecialSector: unknown special %d", sector.special);
         break;
         };
     }    

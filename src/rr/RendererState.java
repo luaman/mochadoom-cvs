@@ -2539,8 +2539,15 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 					// draw the texture
 					byte[] data = GetColumn(texnum,
 							maskedtexturecol[pmaskedtexturecol + dc_x]);// -3);
-
+					
+					// Hack to fix hare-brained handling of "masked" solid midtextures
+					// e.g. in Europe.wad. Until I figure out a way to draw those without crashing,
+					// consider this a temporary fix.
+					if (TexMan.getTextureComposite(texnum)==null)
+						//DrawCompositeColumnPost(data);
+					 //else
 					DrawMaskedColumn(data);
+		
 					maskedtexturecol[pmaskedtexturecol + dc_x] = Short.MAX_VALUE;
 				}
 				spryscale += rw_scalestep;
@@ -4795,6 +4802,66 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 	}
 
 	/**
+	 * R_DrawMaskedColumnSinglePost. Used to handle some special cases where 
+	 * cached columns get used as "masked" middle textures. Will be treated
+	 * as a single-run post of capped length.
+	 * 
+	 */
+
+	protected final void DrawCompositeColumnPost(byte[] column) {
+			int topscreen;
+			int bottomscreen;
+			int basetexturemid; // fixed_t
+			int topdelta=0; // Fixed value
+			int length;
+
+			basetexturemid = dc_texturemid;
+			// That's true for the whole column.
+			dc_source = column;
+			int pointer = 0;
+
+			// for each post...
+			while (topdelta==0) {
+				// calculate unclipped screen coordinates
+				// for post
+				topscreen = sprtopscreen + spryscale * 0;
+				length = column.length;
+				bottomscreen = topscreen + spryscale * length;
+
+				dc_yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
+				dc_yh = (bottomscreen - 1) >> FRACBITS;
+
+				if (dc_yh >= mfloorclip[p_mfloorclip + dc_x])
+					dc_yh = mfloorclip[p_mfloorclip + dc_x] - 1;
+
+				if (dc_yl <= mceilingclip[p_mceilingclip + dc_x])
+					dc_yl = mceilingclip[p_mceilingclip + dc_x] + 1;
+
+				// killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
+				if (dc_yl <= dc_yh && dc_yh < viewheight) {
+					// Set pointer inside column to current post's data
+					// Rremember, it goes {postlen}{postdelta}{pad}[data]{pad}
+					dc_source_ofs = 0; // pointer + 3;
+					dc_texturemid = basetexturemid - (topdelta << FRACBITS);
+
+					// Drawn by either R_DrawColumn
+					// or (SHADOW) R_DrawFuzzColumn.
+					dc_texheight=0; // Killough
+
+					try {
+					maskedcolfunc.invoke();
+					} catch (Exception e){
+						System.err.printf("Error rendering %d %d %d\n",
+								dc_yl,dc_yh,dc_yh-dc_yl);
+					}
+				}
+				topdelta--;
+			}
+
+			dc_texturemid = basetexturemid;
+		}
+	
+	/**
 	 * R_DrawMaskedColumn Used for sprites and masked mid textures. Masked
 	 * means: partly transparent, i.e. stored in posts/runs of opaque pixels.
 	 * 
@@ -5900,7 +5967,12 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		// or patch.
 
 		if (tex == lasttex) {
+			try {
 			return lastpatch.columns[ofs].data;
+			} catch (Exception e){
+				System.err.printf("Texture %s column %d width %d\n",
+				TexMan.CheckTextureNameForNum(tex), ofs, TexMan.getTexturewidthmask(tex));
+			}
 		}
 
 		// If pointing inside a non-zero, positive lump, then it's not a

@@ -322,6 +322,8 @@ public abstract class AbstractLevelLoader
         int map_miny = Integer.MAX_VALUE;
         int map_maxx = Integer.MIN_VALUE;
         int map_maxy = Integer.MIN_VALUE;
+        
+        long a=System.nanoTime();
 
         // scan for map limits, which the blockmap must enclose
 
@@ -573,6 +575,10 @@ public abstract class AbstractLevelLoader
                 bl = tmp;
             }
         }
+        
+        long b=System.nanoTime();
+        
+        System.err.printf("Blockmap generated in %f sec\n",(b-a)/1e9);		
     }
 
     // jff 10/6/98
