@@ -92,4 +92,10 @@ public class DummyMenu
 
     }
 
+	@Override
+	public void ClearMenus() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }
