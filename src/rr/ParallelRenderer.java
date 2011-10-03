@@ -470,7 +470,10 @@ public class ParallelRenderer extends RendererState  {
           ds_x2 = x2;
 
           // high or low detail
-          spanfunc();    
+          if (detailshift==0)
+        	  spanfunc();
+          else
+        	  spanfunclow();          
       }
       
       // Each thread has its own copy of a colfun.
@@ -525,6 +528,74 @@ public class ParallelRenderer extends RendererState  {
     	         xtemp = position >>> 26;
     	         spot = xtemp | ytemp;
     	         position += step;
+    	         screen[dest++] = colormap[0x00FF&source[spot]];
+    	         count--;
+    	     }
+    	 }
+      
+   // Each thread has its own copy of a colfun.
+      private void spanfunclow(){
+    	     int position, step;
+    	     byte[] source;
+    	     byte[] colormap;
+    	     int dest;
+    	     int count;
+    	     int spot;
+    	     int xtemp;
+    	     int ytemp;
+    	     
+    	     position = ((ds_xfrac << 10) & 0xffff0000) | ((ds_yfrac >> 6) & 0xffff);
+    	     step = ((ds_xstep << 10) & 0xffff0000) | ((ds_ystep >> 6) & 0xffff);
+    	     source = vpw_ds_source;
+    	     colormap = vpw_ds_colormap;
+    	     
+    	     count = ds_x2 - ds_x1 + 1;
+    	     
+ 			// Blocky mode, need to multiply by 2.
+ 			ds_x1 <<= 1; 			
+    	     
+ 			dest = ylookup[vpw_ds_y] + columnofs[ds_x1];
+ 			
+    	     while (count >= 4) {
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;         
+    	         screen[dest] = colormap[0x00FF&source[spot]];
+    	         screen[dest+1] = colormap[0x00FF&source[spot]];
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest+2] = colormap[0x00FF&source[spot]];
+    	         screen[dest+3] = colormap[0x00FF&source[spot]];
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest+4] = colormap[0x00FF&source[spot]];
+    	         screen[dest+5] = colormap[0x00FF&source[spot]];
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest+6] = colormap[0x00FF&source[spot]];
+    	         screen[dest+7] = colormap[0x00FF&source[spot]];
+    	         count -= 4;
+    	         dest += 8;
+    	     }
+    	     
+    	     while (count > 0) {
+    	         ytemp = position >> 4;
+    	         ytemp = ytemp & 4032;
+    	         xtemp = position >>> 26;
+    	         spot = xtemp | ytemp;
+    	         position += step;
+    	         screen[dest++] = colormap[0x00FF&source[spot]];
     	         screen[dest++] = colormap[0x00FF&source[spot]];
     	         count--;
     	     }
