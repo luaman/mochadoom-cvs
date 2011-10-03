@@ -12,24 +12,23 @@ import doom.player_t;
 public class UnifiedRenderer extends RendererState{
     
     public UnifiedRenderer(DoomMain DM) {
-      this.updateStatus(DM);
+      super(DM);
       this.MySegs=new Segs();
       this.MyBSP=new BSP();
       this.MyPlanes=new Planes();
       this.MyThings=(Things) new Things();
-      // We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
-      this.V=DM.V;
-      this.I=DM.I;
+
       // Span functions
       DrawSpan=new R_DrawSpanUnrolled();
       DrawSpanLow=new R_DrawSpanLow();
       DrawTranslatedColumn=new R_DrawTranslatedColumn();
       DrawTLColumn=new R_DrawTLColumn();
       DrawFuzzColumn=new R_DrawFuzzColumn();
+      DrawFuzzColumnLow=new R_DrawFuzzColumnLow();
       DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
       DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
       DrawColumnPlayer=DrawColumnMasked;
-      DrawColumnLow=DrawColumnMasked;
+      DrawColumnLow=new R_DrawColumnBoomLow();
   }
   
   private final class Segs extends SegDrawer{

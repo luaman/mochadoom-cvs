@@ -76,17 +76,15 @@ public class ParallelRenderer extends RendererState  {
     private static final boolean DEBUG=false;
     
     public ParallelRenderer(DoomMain DM, int wallthread, int floorthreads) {
-        this.updateStatus(DM);
-        this.LL=DM.LL;
-        this.W=DM.W;
+        super(DM);
+
         this.MySegs=new ParallelSegs();
         this.MyBSP=new BSP();
         this.MyPlanes=new ParallelPlanes();
         this.MyThings=new Things();
-        // We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
-        this.V=DM.V;
-        this.I=DM.I;
-        // Span functions
+        
+        // Span functions. They are set, but actually not used by the parallel 
+        // renderer.
         DrawSpan=new R_DrawSpanUnrolled();
         DrawSpanLow=new R_DrawSpanLow();
         DrawTranslatedColumn=new R_DrawTranslatedColumn();
