@@ -57,26 +57,10 @@ public class ParallelRenderer2 extends RendererState  {
 
 	public ParallelRenderer2(DoomMain DM, int wallthread, int floorthreads) {
 
-		this.updateStatus(DM);
-		this.LL=DM.LL;
-		this.W=DM.W;
+		super(DM);
 		this.MySegs=new ParallelSegs();
-		this.MyBSP=new BSP();
-		this.MyPlanes=new ParallelPlanes();
-		this.MyThings=new Things();
-		// We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
-		this.V=DM.V;
-		this.I=DM.I;
-		// Span functions
-		DrawSpan=new R_DrawSpanUnrolled();
-		DrawSpanLow=new R_DrawSpanLow();
-		DrawTranslatedColumn=new R_DrawTranslatedColumn();
-	      DrawTLColumn=new R_DrawTLColumn();
-	      DrawFuzzColumn=new R_DrawFuzzColumn();
-	      DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
-	      DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
-	      DrawColumnPlayer=DrawColumnMasked;
-	      DrawColumnLow=DrawColumnMasked;
+		this.MyPlanes=new ParallelPlanes();		
+
 		this.NUMWALLTHREADS=wallthread;
 		this.NUMFLOORTHREADS=floorthreads;
 

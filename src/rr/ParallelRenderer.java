@@ -79,21 +79,8 @@ public class ParallelRenderer extends RendererState  {
         super(DM);
 
         this.MySegs=new ParallelSegs();
-        this.MyBSP=new BSP();
         this.MyPlanes=new ParallelPlanes();
-        this.MyThings=new Things();
         
-        // Span functions. They are set, but actually not used by the parallel 
-        // renderer.
-        DrawSpan=new R_DrawSpanUnrolled();
-        DrawSpanLow=new R_DrawSpanLow();
-        DrawTranslatedColumn=new R_DrawTranslatedColumn();
-        DrawTLColumn=new R_DrawTLColumn();
-        DrawFuzzColumn=new R_DrawFuzzColumn();
-        DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
-        DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
-        DrawColumnPlayer=DrawColumnMasked;
-        DrawColumnLow=DrawColumnMasked;
         this.NUMWALLTHREADS=wallthread;
         this.NUMFLOORTHREADS=floorthreads;
         

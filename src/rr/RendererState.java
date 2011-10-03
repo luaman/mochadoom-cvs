@@ -429,7 +429,25 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 	}
 
 	public RendererState(DoomStatus DS){
-		this.updateStatus(DS);
+		  this.updateStatus(DS);
+		
+		  // These don't change between implementations, yet.
+		  this.MyThings=new Things();
+		  this.MyBSP=new BSP();
+		
+	      // Span functions. Common to all renderers unless overriden
+		  // or unused e.g. parallel renderers ignore them.
+	      DrawSpan=new R_DrawSpanUnrolled();
+	      DrawSpanLow=new R_DrawSpanLow();
+	      DrawTranslatedColumn=new R_DrawTranslatedColumn();
+	      DrawTLColumn=new R_DrawTLColumn();
+	      DrawFuzzColumn=new R_DrawFuzzColumn();
+	      DrawFuzzColumnLow=new R_DrawFuzzColumnLow();
+	      DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
+	      DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
+	      DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
+	      DrawColumnLow=new R_DrawColumnBoomLow();
+		
 		}
 	
 	protected final void ResizeVisplanes() {
