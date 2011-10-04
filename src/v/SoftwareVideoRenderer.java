@@ -634,7 +634,6 @@ public abstract class SoftwareVideoRenderer
 @Override
 public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t patch)
 {
-    int count;
     int col;
     column_t column;
     int desttop;
@@ -723,7 +722,6 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
 
                 destPos = desttop + delta*dupy*this.width;  
                 //dest = desttop + column.topdelta * dupy * this.width;
-                count = column.length * dupy;
 
                 //ofs = 0;
                 //while (count-- > 0)
