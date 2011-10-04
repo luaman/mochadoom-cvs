@@ -76,5 +76,10 @@ public interface TextureManager {
 
 
 	byte[] getRogueColumn(int lump, int column);
+
+    patch_t getMaskedComposite(int tex);
+
+
+    void GenerateMaskedComposite(int texnum);
     
     }

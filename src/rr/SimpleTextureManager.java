@@ -11,6 +11,7 @@ import i.IDoomSystem;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -89,6 +90,9 @@ public class SimpleTextureManager
     //short[][]    texturecolumnindexes;
     /** Stores [textures][columns][data]. */
     protected byte[][][] texturecomposite;
+    
+    /** HACK to store "composite masked textures", a Boomism. */ 
+    protected patch_t[] patchcomposite;
 
     /** for global animation. Storage stores actual lumps, translation is a relative -> relative map */
     protected int[]        flattranslation, flatstorage,texturetranslation;
@@ -241,7 +245,7 @@ public class SimpleTextureManager
         
         texturecolumnlump = new short[numtextures][];
         texturecolumnofs = new char[numtextures][];
-        //texturecolumnindexes = new short[numtextures][];
+        patchcomposite=new patch_t[numtextures];
         texturecomposite = new byte[numtextures][][];
         texturecompositesize = new int[numtextures];
         texturewidthmask = new int[numtextures];
@@ -534,6 +538,72 @@ public class SimpleTextureManager
         }
     }
     
+    @Override
+    public void GenerateMaskedComposite(int texnum) {
+        byte[][] block;
+        boolean[][] pixmap; // Solidity map
+        texture_t texture;
+        texpatch_t[] patch;
+        patch_t realpatch = null;
+        int x;
+        int x1;
+        int x2;
+        column_t patchcol;
+        short[] collump;
+        char[] colofs; // unsigned short
+
+        texture = textures[texnum];
+
+        // MAES: we don't want to save a solid block this time. Will only use
+        // for synthesis.
+
+        block = new byte[texture.width][texture.height];
+        pixmap = new boolean[texture.width][texture.height]; // True values = solid
+
+        // Lump where a certain column will be read from (actually, a patch)
+        collump = texturecolumnlump[texnum];
+
+        // Offset of said column into the patch.
+        colofs = texturecolumnofs[texnum];
+
+        // Composite the columns together.
+        patch = texture.patches;
+
+        // For each patch in the texture...
+        for (int i = 0; i < texture.patchcount; i++) {
+
+            realpatch = W.CachePatchNum(patch[i].patch, PU_CACHE);
+            x1 = patch[i].originx;
+            x2 = x1 + realpatch.width;
+
+            if (x1 < 0)
+                x = 0;
+            else
+                x = x1;
+
+            if (x2 > texture.width)
+                x2 = texture.width;
+
+            for (; x < x2; x++) {
+                // Column does not have multiple patches?
+                if (collump[x] >= 0)
+                    continue;
+
+                // patchcol = (column_t *)((byte *)realpatch
+                // + LONG(realpatch.columnofs[x-x1]));
+
+                // We can look this up cleanly in Java. Ha!
+                patchcol = realpatch.columns[x - x1];
+                DrawColumnInCache(patchcol, block[x], pixmap[x], colofs[x],
+                    patch[i].originy, texture.height);
+            }
+
+        }
+        
+        // TODO Patch drawn on cache, synthesize patch_t using it. 
+        this.patchcomposite[texnum]=MultiPatchSynthesizer.synthesize(this.CheckTextureNameForNum(texnum),block, pixmap,texture.width,texture.height);
+    }
+    
     /**
      *  R_DrawColumnInCache
      *  Clip and draw a column from a patch into a cached post.
@@ -555,46 +625,87 @@ public class SimpleTextureManager
      *  
      */
     
-    public void
-    DrawColumnInCache
-    ( column_t patch,
-      byte[]     cache,
-      int offset,
-      int       originy,
-      int       cacheheight )
-    {
-        int     count;
-        int     position;
-        int  source=0; // treat as pointers
-        
-         /* Iterate inside column. This is starkly different from the C code,
-          * because post positions AND offsets are already precomputed at load time
-          */
-        
-        for (int i=0;i<patch.posts;i++){
-            
+    public void DrawColumnInCache(column_t patch, byte[] cache, int offset,
+            int originy, int cacheheight) {
+        int count;
+        int position;
+        int source = 0; // treat as pointers
+
+        /*
+         * Iterate inside column. This is starkly different from the C code,
+         * because post positions AND offsets are already precomputed at load
+         * time
+         */
+
+        for (int i = 0; i < patch.posts; i++) {
+
             // This should position us at the beginning of the next post
-            source=patch.postofs[i];
-            
+            source = patch.postofs[i];
+
             count = patch.postlen[i]; // length of this particular post
-            position = originy + patch.postdeltas[i]; // Position to draw inside cache.
+            position = originy + patch.postdeltas[i]; // Position to draw inside
+                                                      // cache.
 
-        // Post starts outside of texture's bounds. Adjust offset.
-            
-        if (position < 0)
-        {
-            count += position; // Consider that we have a "drawing debt".
-            position = 0;
+            // Post starts outside of texture's bounds. Adjust offset.
+
+            if (position < 0) {
+                count += position; // Consider that we have a "drawing debt".
+                position = 0;
+            }
+
+            // Post will go too far outside.
+            if (position + count > cacheheight)
+                count = cacheheight - position;
+
+            if (count > 0) // Draw this post. Won't draw posts that start
+                           // "outside"
+                // Will start at post's start, but will only draw enough pixels
+                // not to overdraw.
+                System.arraycopy(patch.data, source, cache, position, count);
+
         }
+    }
+    
+    
+    // Version also drawing on a supplied transparency map
+    public void DrawColumnInCache(column_t patch, byte[] cache,
+            boolean[] pixmap, int offset, int originy, int cacheheight) {
+        int count;
+        int position;
+        int source = 0; // treat as pointers
 
-        // Post will go too far outside.
-        if (position + count > cacheheight)
-            count = cacheheight - position;
+        /*
+         * Iterate inside column. This is starkly different from the C code,
+         * because post positions AND offsets are already precomputed at load
+         * time
+         */
 
-        if (count > 0) // Draw this post. Won't draw posts that start "outside"
-            // Will start at post's start, but will only draw enough pixels not to overdraw.
-            System.arraycopy( patch.data, source, cache, position,count);
+        for (int i = 0; i < patch.posts; i++) {
 
+            // This should position us at the beginning of the next post
+            source = patch.postofs[i];
+
+            count = patch.postlen[i]; // length of this particular post
+            position = originy + patch.postdeltas[i]; // Position to draw inside
+                                                      // cache.
+
+            // Post starts outside of texture's bounds. Adjust offset.
+
+            if (position < 0) {
+                count += position; // Consider that we have a "drawing debt".
+                position = 0;
+            }
+
+            // Post will go too far outside.
+            if (position + count > cacheheight)
+                count = cacheheight - position;
+
+            if (count > 0) {
+                // Draw post, AND fill solidity map
+                System.arraycopy(patch.data, source, cache, position, count);
+                Arrays.fill(pixmap, position, position+count, true);
+            }
+            // Repeat for next post(s), if any.
         }
     }
 
@@ -900,6 +1011,11 @@ public class SimpleTextureManager
     @Override
     public final byte[] getTextureComposite(int tex, int col) {
         return texturecomposite[tex][col];
+    }
+    
+    @Override
+    public final patch_t getMaskedComposite(int tex) {       
+        return this.patchcomposite[tex];
     }
     
     @Override
