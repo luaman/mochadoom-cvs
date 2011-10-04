@@ -2540,12 +2540,6 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 					byte[] data = GetColumn(texnum,
 							maskedtexturecol[pmaskedtexturecol + dc_x]);// -3);
 					
-					// Hack to fix hare-brained handling of "masked" solid midtextures
-					// e.g. in Europe.wad. Until I figure out a way to draw those without crashing,
-					// consider this a temporary fix.
-					if (TexMan.getTextureComposite(texnum)==null)
-						//DrawCompositeColumnPost(data);
-					 //else
 					DrawMaskedColumn(data);
 		
 					maskedtexturecol[pmaskedtexturecol + dc_x] = Short.MAX_VALUE;
@@ -5952,7 +5946,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 	 */
 
 	public byte[] GetColumn(int tex, int col) {
-		int lump, ofs;
+		int lump,ofs;
 
 		col &= TexMan.getTexturewidthmask(tex);
 		lump = TexMan.getTextureColumnLump(tex, col);
@@ -5963,21 +5957,17 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		dc_source_ofs = 0;
 
 		// Speed-increasing trick: speed up repeated accesses to the same
-		// texture
-		// or patch.
-
+		// texture or patch.
+		
 		if (tex == lasttex) {
-			try {
-			return lastpatch.columns[ofs].data;
-			} catch (Exception e){
-				System.err.printf("Texture %s column %d width %d\n",
-				TexMan.CheckTextureNameForNum(tex), ofs, TexMan.getTexturewidthmask(tex));
-			}
-		}
+		    if (composite)
+		        return lastpatch.columns[col].data;
+		    else
+		        return lastpatch.columns[ofs].data;
+		    }
 
 		// If pointing inside a non-zero, positive lump, then it's not a
-		// composite texture.
-		// Read from disk.
+		// composite texture. Read it from disk.
 		if (lump > 0) {
 			// This will actually return a pointer to a patch's columns.
 			// That is, to the ONE column exactly.{
@@ -5985,14 +5975,26 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			// "ahead".
 			lastpatch = W.CachePatchNum(lump, PU_CACHE);
 			lasttex = tex;
+			composite=false;
+			// If the column was a disk lump, use ofs.
 			return lastpatch.columns[ofs].data;
 		}
-		// Texture should be composite, but it doesn't yet exist. Create it.
-		if (TexMan.getTextureComposite(tex) == null)
-			TexMan.GenerateComposite(tex);
-		return TexMan.getTextureComposite(tex, col);
+		
+		// Problem. Composite texture requested as if it was masked
+		// but it doesn't yet exist. Create it.
+		if (TexMan.getMaskedComposite(tex) == null)
+			TexMan.GenerateMaskedComposite(tex);
+		
+		// Last resort. 
+	    lastpatch = TexMan.getMaskedComposite(tex);
+	    lasttex=tex;
+	    composite=true;
+		
+		return lastpatch.columns[col].data;
 	}
 
+    // False: disk-mirrored patch. True: improper "transparent composite".
+	private boolean composite = false;
 	private int lasttex = -1;
 	private patch_t lastpatch = null;
 
