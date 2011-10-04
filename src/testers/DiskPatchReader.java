@@ -14,7 +14,7 @@ public class DiskPatchReader {
 
     public static void main(String[] argv) throws Exception {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"C:\\iwads\\doom1.wad"});
     System.out.println("Total lumps read: "+W.numlumps);
    
     System.out.println("Num for WALL00_1: "+W.GetNumForName("WALL00_1"));
@@ -30,11 +30,11 @@ public class DiskPatchReader {
     System.out.println(lump.size);
     
     // Now open Doom1.wad standalone...
-    DoomFile f=new DoomFile("doom1.wad","r");
-    patch_t wall1=new patch_t();
-    f.seek(lump.position);
-    wall1.read(f);
-    System.out.println(wall1.height);
+    //DoomFile f=new DoomFile("doom1.wad","r");
+    //patch_t wall1=new patch_t();
+    //f.seek(lump.position);
+    //wall1.read(f);
+    //System.out.println(wall1.height);
     
     System.out.println("Num for HELP1: "+W.GetNumForName("HELP1"));
     //bb=W.CacheLumpName("HELP1", 0);

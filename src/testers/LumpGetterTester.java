@@ -12,7 +12,7 @@ public class LumpGetterTester {
     public static void main(String[] argv) {
         try {
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad","sprites.wad.backup1"});
+    W.InitMultipleFiles(new String[] {"C:\\iwads\\doom1.wad"});
     //W.AddFile("bitter.wad");
     System.out.println("Total lumps read: "+W.numlumps);
     int random;
