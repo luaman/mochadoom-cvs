@@ -24,7 +24,7 @@ public class patch_t implements /*IReadableDoomObject,*/CacheableDoomObject{
     /** pixels below the origin */
     public short       topoffset;   
     /** This used to be an implicit array pointing to raw posts of data. 
-     * 
+     * TODO: get rid of it? It's never used
      * only [width] used the [0] is &columnofs[width] */
     public int[]         columnofs;     
     /** The ACTUAL data is here, nicely deserialized (well, almost) */
@@ -32,6 +32,27 @@ public class patch_t implements /*IReadableDoomObject,*/CacheableDoomObject{
     
     /** Added for debug aid purposes */
     public String name;
+    
+    /** Synthesizing constructor.
+     * You have to provide the columns yourself, a-posteriori.
+     * 
+     * @param name
+     * @param width
+     * @param height
+     * @param leftoffset
+     * @param topoffset
+     */
+    public patch_t(String name, int width, int height, int leftoffset, int topoffset){
+        this.name=name;
+        this.width=(short) width;
+        this.height=(short) height;
+        this.leftoffset=(short) leftoffset;
+        this.columns=new column_t[width];
+    }
+    
+    public patch_t(){
+        
+    }
     
   /*  @Override
     public void read(DoomFile f) throws IOException{
@@ -125,12 +146,12 @@ public class patch_t implements /*IReadableDoomObject,*/CacheableDoomObject{
         
         tmp.data[size+4]=(byte) 0xFF;
         tmp.posts=1;
-        tmp.length=(short) size;
-        tmp.topdelta=0;
+        //tmp.length=(short) size;
+        //tmp.topdelta=0;
         tmp.postofs=new int[]{3};        
         tmp.postdeltas=new short[]{0};
         tmp.postlen=new short[]{(short) (size%256)};
-        tmp.setData();
+        //tmp.setData();
         badColumns.put(size, tmp);
     	}
     	
