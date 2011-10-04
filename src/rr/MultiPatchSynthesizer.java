@@ -6,6 +6,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import w.WadLoader;
@@ -34,6 +35,32 @@ public class MultiPatchSynthesizer {
         
         public int start;
         public int end;
+    }
+    
+    public static patch_t synthesizeFromFlat(String name,byte[] flat, int width, int height){
+        
+        byte[] expected=new byte[width *height];        
+        byte[][] pixels=new byte[width][height];
+        boolean[][] solid=new boolean[width][height];
+        
+        // Copy as much data as possible.
+        System.arraycopy(flat,0,expected,0,Math.min(flat.length,expected.length));
+
+        for (int i=0;i<width;i++){           
+            Arrays.fill(solid[i],true);
+            for (int j=0;j<height;j++){
+                pixels[i][j]=expected[i+j*width];
+            }
+        }
+        
+        patch_t result=new patch_t(name,0,0,width,height);
+        column_t[] columns=new column_t[width];
+        
+        for (int x=0;x<width;x++)
+            columns[x]=getColumnStream(pixels[x],solid[x],height);
+        
+       result.columns=columns;
+        return result;
     }
     
     public static patch_t synthesize(String name,byte[][] pixels, boolean[][] solid, int width, int height){
