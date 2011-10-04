@@ -24,8 +24,11 @@ public class column_t implements CacheableDoomObject{
     private static final short[] guesspostlens=new short[256];
     private static final short[] guesspostdeltas=new short[256];
     
-    public short        topdelta;   // -1 is the last post in a column (actually 0xFF, since this was unsigned???)
-    public short        length;     // length data bytes follows (actually add +2)
+    
+    // MAES: there are useless, since the renderer is using raw byte data anyway, and the per-post
+    // data is available in the special arrays.
+    // public short        topdelta;   // -1 is the last post in a column (actually 0xFF, since this was unsigned???)
+    // public short        length;     // length data bytes follows (actually add +2)
 	//public column_t[]      posts;    // This is quite tricky to read.
     /** The RAW data (includes initial header and padding, because no post gets preferential treatment). */
     public byte[] data; 
@@ -117,7 +120,7 @@ public class column_t implements CacheableDoomObject{
         
         this.postofs=new int[postno];
         this.postlen=new short[postno];
-        this.length=(short) colheight;
+        // this.length=(short) colheight;
         this.postdeltas=new short[postno];
         
         System.arraycopy(guesspostofs, 0,this.postofs, 0, postno);
@@ -137,16 +140,14 @@ public class column_t implements CacheableDoomObject{
     public int getLength(){
         return C2JUtils.toUnsignedByte(data[1]);
     }
-
-    public void setData(){
-        this.data[0]=(byte) this.topdelta;
-        this.data[1]=(byte) this.length;
-    	}
-    
+   
 }
 
 
 // $Log: column_t.java,v $
+// Revision 1.18  2011/10/04 14:34:08  velktron
+// Removed length and topdelta members (unused).
+//
 // Revision 1.17  2011/07/25 14:37:20  velktron
 // Added support for DeePSea tall patches.
 //
