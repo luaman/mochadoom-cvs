@@ -37,7 +37,7 @@ public class MultiPatchSynthesizer {
         public int end;
     }
     
-    public static patch_t synthesizeFromFlat(String name,byte[] flat, int width, int height){
+    public static patch_t synthesizePatchFromFlat(String name,byte[] flat, int width, int height){
         
         byte[] expected=new byte[width *height];        
         byte[][] pixels=new byte[width][height];
@@ -53,7 +53,7 @@ public class MultiPatchSynthesizer {
             }
         }
         
-        patch_t result=new patch_t(name,0,0,width,height);
+        patch_t result=new patch_t(name,width,height,0,0);
         column_t[] columns=new column_t[width];
         
         for (int x=0;x<width;x++)
@@ -65,7 +65,7 @@ public class MultiPatchSynthesizer {
     
     public static patch_t synthesize(String name,byte[][] pixels, boolean[][] solid, int width, int height){
         
-        patch_t result=new patch_t(name,0,0,width,height);
+        patch_t result=new patch_t(name,width,height,0,0);
         column_t[] columns=new column_t[width];
         
         for (int x=0;x<width;x++)
