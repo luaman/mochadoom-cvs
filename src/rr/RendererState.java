@@ -5957,9 +5957,9 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		dc_source_ofs = 0;
 
 		// Speed-increasing trick: speed up repeated accesses to the same
-		// texture or patch.
+		// texture or patch, if they come from the same lump
 		
-		if (tex == lasttex) {
+		if (tex == lasttex && lump == lastlump) {
 		    if (composite)
 		        return lastpatch.columns[col].data;
 		    else
@@ -5975,6 +5975,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			// "ahead".
 			lastpatch = W.CachePatchNum(lump, PU_CACHE);
 			lasttex = tex;
+			lastlump=lump;
 			composite=false;
 			// If the column was a disk lump, use ofs.
 			return lastpatch.columns[ofs].data;
@@ -5982,13 +5983,17 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		
 		// Problem. Composite texture requested as if it was masked
 		// but it doesn't yet exist. Create it.
-		if (TexMan.getMaskedComposite(tex) == null)
+		if (TexMan.getMaskedComposite(tex) == null){
+		    System.err.printf("Forced generation of composite %s\n",TexMan.CheckTextureNameForNum(tex),composite,col,ofs);
 			TexMan.GenerateMaskedComposite(tex);
+			System.err.printf("Composite patch %s %d\n",TexMan.getMaskedComposite(tex).name,TexMan.getMaskedComposite(tex).columns.length);
+		}
 		
 		// Last resort. 
 	    lastpatch = TexMan.getMaskedComposite(tex);
 	    lasttex=tex;
 	    composite=true;
+	    lastlump=0;
 		
 		return lastpatch.columns[col].data;
 	}
@@ -5996,6 +6001,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
     // False: disk-mirrored patch. True: improper "transparent composite".
 	private boolean composite = false;
 	private int lasttex = -1;
+	private int lastlump = -1;
 	private patch_t lastpatch = null;
 
 	/**
