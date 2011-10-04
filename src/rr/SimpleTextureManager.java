@@ -105,12 +105,14 @@ public class SimpleTextureManager
         this.W=DM.W;
         this.I=DM.I;
         this.LL=DM.LL;
+        FlatPatchCache=new Hashtable<Integer, patch_t>();
     }
   
     /** Hash table used for matching flat <i>lump</i> to flat <i>num</i> */
 
     Hashtable<Integer, Integer> FlatCache;
     
+    Hashtable<Integer, patch_t> FlatPatchCache;
 
       /**
        * R_CheckTextureNumForName Check whether texture is available. Filter out
@@ -336,6 +338,30 @@ public class SimpleTextureManager
             texturetranslation[i] = i;
     }
     
+    private patch_t retrievePatchSafe(int lump){
+        
+        // If this is a known troublesome lump, get it from the cache.
+        if (FlatPatchCache.containsKey(lump)){
+            return FlatPatchCache.get(lump);
+            }
+        
+        lumpinfo_t info = W.GetLumpInfo(lump);
+        patch_t realpatch;
+        
+        // Patch is actually a flat or something equally nasty. Ouch.
+        if (info.namespace==li_namespace.ns_flats) {
+                byte[] flat=W.CacheLumpNumAsRawBytes(lump, PU_CACHE);
+                realpatch= MultiPatchSynthesizer.synthesizePatchFromFlat(info.name,flat,64, 64);
+                this.FlatPatchCache.put(lump, realpatch);
+                W.UnlockLumpNum(lump);
+        }
+        else
+            // It's probably safe, at this point.
+            realpatch = (patch_t) W.CacheLumpNum (lump, PU_CACHE,patch_t.class);
+        
+        return realpatch;
+    }
+    
     /**
      * R_GenerateLookup
      * 
@@ -382,10 +408,9 @@ public class SimpleTextureManager
         // for each patch in a texture...
         for (int i=0; i<texture.patchcount;i++)
         {
-        lumpinfo_t lump = W.GetLumpInfo(patch[i].patch);
-        // Skip flats on walls, for now.
-        if (lump.namespace==li_namespace.ns_flats) continue;
-        realpatch = (patch_t) W.CacheLumpNum (patch[i].patch, PU_CACHE,patch_t.class);
+        // Retrieve patch...if it IS a patch.
+        realpatch=this.retrievePatchSafe(patch[i].patch);
+
         x1 = patch[i].originx;
         x2 = x1 + realpatch.width;
         
@@ -433,8 +458,9 @@ public class SimpleTextureManager
         // Can only occur if a column isn't covered by a patch at all, not even a transparent one.
         if (patchcount[x]==0)
         {
+            // TODO: somehow handle this. 
             System.err.print ("R_GenerateLookup: column without a patch ("+texture.name+")\n");
-            return;
+            //return;
         }
         // I_Error ("R_GenerateLookup: column without a patch");
         
@@ -504,8 +530,9 @@ public class SimpleTextureManager
         // For each patch in the texture...
         for (int i=0 ;i<texture.patchcount; i++)
         {
-
-        realpatch = W.CachePatchNum(patch[i].patch, PU_CACHE);
+        // Retrieve patch...if it IS a patch.
+        realpatch=this.retrievePatchSafe(patch[i].patch);
+            
         x1 = patch[i].originx;
         x2 = x1 + realpatch.width;
 
@@ -1142,8 +1169,8 @@ public class SimpleTextureManager
 	 */
 	
 	private byte[][] generateRoguePatch(int lump) {
-		// Get the patch from disk...
-		patch_t p = W.CachePatchNum(lump,PU_CACHE);
+        // Retrieve patch...if it IS a patch.
+        patch_t p=this.retrievePatchSafe(lump);		
 
 		// Allocate space for a cached block.
 		byte[][] block=new byte[p.width][p.height];
