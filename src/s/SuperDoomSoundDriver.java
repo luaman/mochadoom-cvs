@@ -561,34 +561,26 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 	        // Mix the next chunk, regardless of what the rest of the game is doing. 
 	        while (!terminate) {
 	        	
-
-				
-	        	update=false;
 		        // POINTERS to Left and right channel
 		        // which are in global mixbuffer, alternating.
 
 		        leftout = 0;
 		        rightout = 2;
 
-	        	
-	        	// Is anything playing back?
-	        	mixed=activeChannels();
-	        	        	
-	        	// If not, wait on update semaphore before draining queue.
+	        	// Wait on interrupt semaphore anyway before draining queue.
 	        	// This allows continuing mixing even if the main game loop
 	        	// is stalled. This will result in continuous sounds,
 	        	// rather than choppy interruptions.
-	        		
+
 	        		try {
 	        			//System.err.print("Waiting on semaphore...");
 						update_mixer.acquire();
-						this.update=true;
 						//System.err.print("...broke free\n");
 					} catch (InterruptedException e) {
 						// Nothing to do. Suck it down.
 					}
 	        	
-	        	if (update){
+	        	
 	        	
 	        	// Get current number of element in queue.
 	        	// At worse, there will be none.
@@ -602,8 +594,6 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
 	        	// This may have changed in the mean.
 	        	mixed=activeChannels();
-	        	}
-	        
 	        
 	        if (mixed) {// Avoid mixing entirely if no active channel.
 			
