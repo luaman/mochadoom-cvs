@@ -14,9 +14,11 @@ import boom.E6Y;
 import boom.ZNodeSegs;
 import boom.mapglvertex_t;
 import boom.mapnode_v4_t;
+import boom.mapnode_znod_t;
 import boom.mapseg_v4_t;
 import boom.mapseg_znod_t;
 import boom.mapsubsector_v4_t;
+import boom.mapsubsector_znod_t;
 
 import i.IDoomSystem;
 import data.Defines;
@@ -42,6 +44,7 @@ import rr.seg_t;
 import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
+import rr.z_vertex_t;
 import s.IDoomSound;
 import s.degenmobj_t;
 import utils.C2JUtils;
@@ -203,13 +206,16 @@ public class BoomLevelLoader
 
     private boolean P_CheckForZDoomNodes(int lumpnum, int gl_lumpnum) {
         byte[] data;
-
+        int check;
+        
         data = W.CacheLumpNumAsRawBytes(lumpnum + ML_NODES, 0);
-        if (ByteBuffer.wrap(data).getInt() == ZNOD)
+        check=ByteBuffer.wrap(data).getInt();
+        
+        if (check == ZNOD)
             I.Error("P_CheckForZDoomNodes: ZDoom nodes not supported yet");
 
         data = W.CacheLumpNumAsRawBytes(lumpnum + ML_SSECTORS, 0);
-        if (ByteBuffer.wrap(data).getInt() == ZGLN)
+        if (check == ZGLN)
             I.Error("P_CheckForZDoomNodes: ZDoom GL nodes not supported yet");
 
         // Unlock them to force different buffering interpretation.
@@ -247,19 +253,18 @@ public class BoomLevelLoader
     // http://zdoom.org/wiki/ZDBSP#Compressed_Nodes
     //
 
-    private static final byte[] ZDoomUncompressed = { 'X', 'N', 'O', 'D', 0, 0,
-            0, 0 };
+    private static final int XNOD = 0x584e4f44;
 
     private boolean P_CheckForZDoomUncompressedNodes(int lumpnum, int gl_lumpnum) {
         byte[] data;
+        int wrapper;
         boolean result = false;
 
         data = W.CacheLumpNumAsRawBytes(lumpnum + ML_NODES, 0);
-        byte[] compare = Arrays.copyOfRange(data, 0, 7);
+        wrapper=ByteBuffer.wrap(data).getInt();
 
-        if (Arrays.equals(compare, ZDoomUncompressed)) {
-            System.out
-                    .println("P_CheckForZDoomUncompressedNodes: ZDoom uncompressed normal nodes are detected\n");
+        if (wrapper==XNOD) {
+            System.out.println("P_CheckForZDoomUncompressedNodes: ZDoom uncompressed normal nodes are detected\n");
             result = true;
         }
 
@@ -276,13 +281,9 @@ public class BoomLevelLoader
         int ver = -1;
         nodesVersion = 0;
 
-        if ((gl_lumpnum > lumpnum) && (forceOldBsp == false)/*
-                                                             * &&
-                                                             * (compatibility_level
-                                                             * >=
-                                                             * prboom_2_compatibility
-                                                             * )
-                                                             */) {
+        if ((gl_lumpnum > lumpnum) && (forceOldBsp == false)
+            &&(DoomStatus.compatibility_level>=prboom_2_compatibility)
+                                                             ) {
 
             byte[] data = W.CacheLumpNumAsRawBytes(gl_lumpnum + ML_GL_VERTS, 0);
             int wrapper = ByteBuffer.wrap(data).getInt();
@@ -940,9 +941,9 @@ public class BoomLevelLoader
                 // e6y: support for extended nodes
                 if (no.children[j] == 0xFFFF) {
                     no.children[j] = 0xFFFFFFFF;
-                } else if (flags(no.children[j], NF_SUBSECTOR)) {
+                } else if (flags(no.children[j], NF_SUBSECTOR_CLASSIC)) {
                     // Convert to extended type
-                    no.children[j] &= ~NF_SUBSECTOR;
+                    no.children[j] &= ~NF_SUBSECTOR_CLASSIC;
 
                     // haleyjd 11/06/10: check for invalid subsector reference
                     if (no.children[j] >= numsubsectors) {
@@ -1003,23 +1004,18 @@ public class BoomLevelLoader
                 for (k = 0; k < 4; k++)
                     no.bbox[j].bbox[k] = mn.bbox[j][k] << FRACBITS;
             }
+            
+            
         }
 
         W.UnlockLumpNum(lump); // cph - release the data
     }
 
-    private void CheckZNodesOverflow(int size, int count) {
-        size -= count;
-
-        if (size < 0) {
-            I.Error("P_LoadZNodes: incorrect nodes");
-        }
-    }
-
-    private void P_LoadZSegs(ZNodeSegs data) {
+     private void P_LoadZSegs(ByteBuffer data) throws IOException {
         int i;
 
-        final mapseg_znod_t[] nodes = data.getNodes();
+        final mapseg_znod_t nodes[] = C2JUtils.createArrayOfObjects(mapseg_znod_t.class,numsegs);
+        CacheableDoomObjectContainer.unpack(data,nodes);
 
         for (i = 0; i < numsegs; i++) {
             line_t ldef;
@@ -1098,63 +1094,173 @@ public class BoomLevelLoader
         }
     }
 
-    /*
-     * private void P_LoadZNodes(int lump, int glnodes) { final byte *data;
-     * unsigned int i, len; unsigned int orgVerts, newVerts; unsigned int
-     * numSubs, currSeg; unsigned int numSegs; unsigned int numNodes; vertex_t
-     * *newvertarray = NULL; data = W.CacheLumpNum(lump); len =
-     * W.LumpLength(lump); // skip header CheckZNodesOverflow(&len, 4); data +=
-     * 4; // Read extra vertices added during node building
-     * CheckZNodesOverflow(&len, sizeof(orgVerts)); orgVerts = *((unsigned
-     * int*)data); data += sizeof(orgVerts); CheckZNodesOverflow(&len,
-     * sizeof(newVerts)); newVerts = *((unsigned int*)data); data +=
-     * sizeof(newVerts); if (!samelevel) { if (orgVerts + newVerts == (unsigned
-     * int)numvertexes) { newvertarray = vertexes; } else { newvertarray =
-     * calloc(orgVerts + newVerts, sizeof(vertex_t)); memcpy (newvertarray,
-     * vertexes, orgVerts * sizeof(vertex_t)); } CheckZNodesOverflow(&len,
-     * newVerts * (sizeof(newvertarray[0].x) + sizeof(newvertarray[0].y))); for
-     * (i = 0; i < newVerts; i++) { newvertarray[i + orgVerts].x = *((unsigned
-     * int*)data); data += sizeof(newvertarray[0].x); newvertarray[i +
-     * orgVerts].y = *((unsigned int*)data); data += sizeof(newvertarray[0].y);
-     * } if (vertexes != newvertarray) { for (i = 0; i < (unsigned int)numlines;
-     * i++) { lines[i].v1 = lines[i].v1 - vertexes + newvertarray; lines[i].v2 =
-     * lines[i].v2 - vertexes + newvertarray; } free(vertexes); vertexes =
-     * newvertarray; numvertexes = orgVerts + newVerts; } } else { int size =
-     * newVerts * (sizeof(newvertarray[0].x) + sizeof(newvertarray[0].y));
-     * CheckZNodesOverflow(&len, size); data += size; } // Read the subsectors
-     * CheckZNodesOverflow(&len, sizeof(numSubs)); numSubs = *((unsigned
-     * int*)data); data += sizeof(numSubs); numsubsectors = numSubs; if
-     * (numsubsectors <= 0) I_Error("P_LoadZNodes: no subsectors in level");
-     * subsectors = calloc_IfSameLevel(subsectors, numsubsectors,
-     * sizeof(subsector_t)); CheckZNodesOverflow(&len, numSubs *
-     * sizeof(mapsubsector_znod_t)); for (i = currSeg = 0; i < numSubs; i++) {
-     * final mapsubsector_znod_t *mseg = (final mapsubsector_znod_t *) data + i;
-     * subsectors[i].firstline = currSeg; subsectors[i].numlines = mseg.numsegs;
-     * currSeg += mseg.numsegs; } data += numSubs * sizeof(mapsubsector_znod_t);
-     * // Read the segs CheckZNodesOverflow(&len, sizeof(numSegs)); numSegs =
-     * *((unsigned int*)data); data += sizeof(numSegs); // The number of segs
-     * stored should match the number of // segs used by subsectors. if (numSegs
-     * != currSeg) {
-     * I_Error("P_LoadZNodes: Incorrect number of segs in nodes."); } numsegs =
-     * numSegs; segs = calloc_IfSameLevel(segs, numsegs, sizeof(seg_t)); if
-     * (glnodes == 0) { CheckZNodesOverflow(&len, numsegs *
-     * sizeof(mapseg_znod_t)); P_LoadZSegs(data); data += numsegs *
-     * sizeof(mapseg_znod_t); } else { //P_LoadGLZSegs (data, glnodes);
-     * I_Error("P_LoadZNodes: GL segs are not supported."); } // Read nodes
-     * CheckZNodesOverflow(&len, sizeof(numNodes)); numNodes = *((unsigned
-     * int*)data); data += sizeof(numNodes); numnodes = numNodes; nodes =
-     * calloc_IfSameLevel(nodes, numNodes, sizeof(node_t));
-     * CheckZNodesOverflow(&len, numNodes * sizeof(mapnode_znod_t)); for (i = 0;
-     * i < numNodes; i++) { int j, k; node_t *no = nodes + i; final
-     * mapnode_znod_t *mn = (final mapnode_znod_t *) data + i; no.x =
-     * LittleShort(mn.x)<<FRACBITS; no.y = LittleShort(mn.y)<<FRACBITS; no.dx =
-     * LittleShort(mn.dx)<<FRACBITS; no.dy = LittleShort(mn.dy)<<FRACBITS; for
-     * (j = 0; j < 2; j++) { no.children[j] = (unsigned int)(mn.children[j]);
-     * for (k = 0; k < 4; k++) no.bbox[j][k] =
-     * LittleShort(mn.bbox[j][k])<<FRACBITS; } } W.UnlockLumpNum(lump); // cph -
-     * release the data }
-     */
+    private int CheckZNodesOverflow(int size, int count)
+    {
+      size -= count;
 
+      if (size < 0)
+      {
+        I.Error("P_LoadZNodes: incorrect nodes");
+      }
+      
+      return size;
+    }
+    
+    private void P_LoadZNodes(int lump, int glnodes) throws IOException
+    {
+      ByteBuffer data;
+      int i, len;
+      int header; // for debugging
+      
+      int orgVerts, newVerts;
+      int numSubs, currSeg;
+      int numSegs;
+      int numNodes;
+      vertex_t[] newvertarray = null;
+
+      data = W.CacheLumpNumAsDoomBuffer(lump).getBuffer();
+      data.order(ByteOrder.LITTLE_ENDIAN);
+      len =  W.LumpLength(lump);
+      
+      // skip header
+      len=CheckZNodesOverflow(len, 4);
+      header=data.getInt();
+
+      // Read extra vertices added during node building
+      len=CheckZNodesOverflow(len, 4);
+      orgVerts = data.getInt();
+
+      len=CheckZNodesOverflow(len, 4);
+      newVerts = data.getInt();
+
+      if (!samelevel)
+      {
+        if (orgVerts + newVerts == numvertexes)
+        {
+          newvertarray = vertexes;
+        }
+        else
+        {
+          newvertarray = C2JUtils.createArrayOfObjects(vertex_t.class, orgVerts + newVerts);
+          System.arraycopy(vertexes, 0, newvertarray, 0, orgVerts);
+        }
+
+        //(sizeof(newvertarray[0].x) + sizeof(newvertarray[0].y))
+        len=CheckZNodesOverflow(len, newVerts * vertex_t.sizeOf());
+        z_vertex_t tmp=new z_vertex_t();
+        
+        for (i = 0; i < newVerts; i++)
+        {
+            tmp.unpack(data);
+            newvertarray[i + orgVerts].x=tmp.x;
+            newvertarray[i + orgVerts].y=tmp.y;
+        }
+
+        // Extra vertexes read in
+        if (vertexes != newvertarray)
+        {
+          for (i = 0; i < numlines; i++)
+          {
+            //lines[i].v1 = lines[i].v1 - vertexes + newvertarray;
+            //lines[i].v2 = lines[i].v2 - vertexes + newvertarray;
+              // Find indexes of v1 & v2 inside old vertexes array
+              // (.v1-vertexes) and use that index to re-point inside newvertarray              
+              lines[i].v1=newvertarray[C2JUtils.indexOf(vertexes,lines[i].v1)];
+              lines[i].v2=newvertarray[C2JUtils.indexOf(vertexes,lines[i].v2)];
+          }
+          // free(vertexes);
+          vertexes = newvertarray;
+          numvertexes = orgVerts + newVerts;
+        }
+      }
+      else
+      {
+        // Skip the reading of all these new vertices and the expensive indexOf searches.
+        int size = newVerts * z_vertex_t.sizeOf();
+        len=CheckZNodesOverflow(len, size);
+        data.position(data.position()+ size);
+      }
+
+      // Read the subsectors
+      len=CheckZNodesOverflow(len, 4);
+      numSubs=data.getInt();
+
+      numsubsectors = numSubs;
+      if (numsubsectors <= 0)
+        I.Error("P_LoadZNodes: no subsectors in level");
+      subsectors = calloc_IfSameLevel(subsectors, numsubsectors,subsector_t.class);
+
+      len=CheckZNodesOverflow(len, numSubs * mapsubsector_znod_t.sizeOf());
+      final mapsubsector_znod_t mseg=new mapsubsector_znod_t();
+      for (i = currSeg = 0; i < numSubs; i++)
+      {
+         mseg.unpack(data);
+
+        subsectors[i].firstline = currSeg;
+        subsectors[i].numlines = (int) mseg.numsegs;
+        currSeg += mseg.numsegs;
+      }      
+
+      // Read the segs
+      len=CheckZNodesOverflow(len, 4);
+      numSegs = data.getInt();
+
+      // The number of segs stored should match the number of
+      // segs used by subsectors.
+      if (numSegs != currSeg)
+      {
+        I.Error("P_LoadZNodes: Incorrect number of segs in nodes.");
+      }
+
+      numsegs = numSegs;
+      segs = calloc_IfSameLevel(segs, numsegs, seg_t.class);
+
+      if (glnodes == 0)
+      {
+        len=CheckZNodesOverflow(len, numsegs *mapseg_znod_t.sizeOf());
+        P_LoadZSegs(data);
+      }
+      else
+      {
+        //P_LoadGLZSegs (data, glnodes);
+        I.Error("P_LoadZNodes: GL segs are not supported.");
+      }
+
+      // Read nodes
+      len=CheckZNodesOverflow(len, 4);
+      numNodes = data.getInt();      
+
+      numnodes = numNodes;
+      nodes = calloc_IfSameLevel(nodes, numNodes, node_t.class);
+
+      len=CheckZNodesOverflow(len, numNodes * mapnode_znod_t.sizeOf());
+      
+      mapnode_znod_t[] znodes=C2JUtils.createArrayOfObjects(mapnode_znod_t.class, numNodes);
+      CacheableDoomObjectContainer.unpack(data,znodes);      
+      
+      for (i = 0; i < numNodes; i++)
+      {
+        int j, k;
+        node_t no = nodes[i];
+        final mapnode_znod_t mn = znodes[i];
+
+        no.x = mn.x << FRACBITS;
+        no.y = mn.y << FRACBITS;
+        no.dx = mn.dx<< FRACBITS;
+        no.dy = mn.dy<< FRACBITS;
+
+        for (j = 0; j < 2; j++)
+        {
+          no.children[j] = mn.children[j];
+
+          for (k = 0; k < 4; k++)
+            no.bbox[j].bbox[k] = mn.bbox[j][k] << FRACBITS;
+        }
+      }
+
+      W.UnlockLumpNum(lump); // cph - release the data
+    }
+    
     private boolean no_overlapped_sprites;
 
     private final int GETXY(mobj_t mobj) {
@@ -2112,7 +2218,7 @@ public class BoomLevelLoader
             // TODO: P_LoadGLSegs(gl_lumpnum + ML_GL_SEGS);
         } else {
             if (P_CheckForZDoomUncompressedNodes(lumpnum, gl_lumpnum)) {
-                // TODO: P_LoadZNodes(lumpnum + ML_NODES, 0);
+                P_LoadZNodes(lumpnum + ML_NODES, 0);
             } else if (P_CheckForDeePBSPv4Nodes(lumpnum, gl_lumpnum)) {
                 P_LoadSubsectors_V4(lumpnum + ML_SSECTORS);
                 P_LoadNodes_V4(lumpnum + ML_NODES);
@@ -2131,7 +2237,9 @@ public class BoomLevelLoader
 
         // reject loading and underflow padding separated out into new function
         // P_GroupLines modified to return a number the underflow padding needs
-        P_LoadReject(lumpnum, P_GroupLines());
+        // P_LoadReject(lumpnum, P_GroupLines());
+        P_GroupLines();
+        super.LoadReject(lumpnum+ML_REJECT);
 
         // e6y
         // Correction of desync on dv04-423.lmp/dv.wad
