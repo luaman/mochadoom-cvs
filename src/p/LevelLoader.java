@@ -38,7 +38,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.40 2011/09/30 15:20:24 velktron Exp $
+// $Id: LevelLoader.java,v 1.41 2011/10/06 16:44:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -60,7 +60,7 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.40 2011/09/30 15:20:24 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.41 2011/10/06 16:44:32 velktron Exp $";
 
 
 public LevelLoader(DoomStatus DC) {
@@ -240,7 +240,29 @@ public LevelLoader(DoomStatus DC) {
       no.dy = mn.dy<<FRACBITS;
       for (j=0 ; j<2 ; j++)
       {
-          no.children[j] = mn.children[j];          
+       // e6y: support for extended nodes
+          no.children[j] = (char) mn.children[j];
+
+          // e6y: support for extended nodes
+          if (no.children[j] == 0xFFFF) {
+              no.children[j] = 0xFFFFFFFF;
+          } else if (flags(no.children[j], NF_SUBSECTOR_CLASSIC)) {
+              // Convert to extended type
+              no.children[j] &= ~NF_SUBSECTOR_CLASSIC;
+
+              // haleyjd 11/06/10: check for invalid subsector reference
+              if (no.children[j] >= numsubsectors) {
+                  System.err
+                          .printf(
+                              "P_LoadNodes: BSP tree references invalid subsector %d.\n",
+                              no.children[j]);
+                  no.children[j] = 0;
+              }
+
+              no.children[j] |= NF_SUBSECTOR;
+          }
+
+          
           for (k=0 ; k<4 ; k++)
           no.bbox[j].set(k, mn.bbox[j][k]<<FRACBITS);
       }
@@ -761,32 +783,7 @@ public LevelLoader(DoomStatus DC) {
       //this.SanitizeBlockmap();
       //this.getMapBoundingBox();
       
-      byte[] tmpreject=new byte[0];
-      
-    //_D_: uncommented the rejectmatrix variable, this permitted changing level to work
-      try{
-      tmpreject=W.CacheLumpNumAsRawBytes(lumpnum+ML_REJECT,PU_LEVEL);
-      } catch (Exception e){
-          // Any exception at this point means missing REJECT lump. Fuck that, and move on.
-          // If everything goes OK, tmpreject will contain the REJECT lump's data
-          // BUT, alas, we're not done yet.
-      }
-      
-      // Sanity check on matrix.
-      // E.g. a 5-sector map will result in ceil(25/8)=4 bytes.
-      // If the reject table is broken/corrupt, too bad. It will all be zeroes.
-      // Much better than overflowing.
-      // TODO: build-in a REJECT-matrix rebuilder?
-      rejectmatrix = new byte[(int) (Math.ceil((this.numsectors*this.numsectors)/8.0))];
-      System.arraycopy(tmpreject, 0, rejectmatrix, 0, Math.min(tmpreject.length,rejectmatrix.length));
-
-      // Do warn on atypical reject map lengths, but use either default all-zeroes one,
-      // or whatever you happened to read anyway.
-      if (tmpreject.length<rejectmatrix.length) 
-      System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",tmpreject.length,rejectmatrix.length);
-      
-      // Maes: purely academic. Most maps are well above 0.68
-      //System.out.printf("Reject table density: %f",rejectDensity());
+      this.LoadReject(lumpnum+ML_REJECT);
       
       this.GroupLines ();
 
@@ -830,11 +827,12 @@ public LevelLoader(DoomStatus DC) {
       }
   }
 
-
-
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.41  2011/10/06 16:44:32  velktron
+//Proper support for extended nodes, made reject loading into a separate method.
+//
 //Revision 1.40  2011/09/30 15:20:24  velktron
 //Very modified, useless SanitizeBlockmap method ditched. Common utility methods moved to superclass. Shares blockmap checking and generation with Boom-derived code. Now capable of running Europe.wad. TODO: Blockmap generation can be really slow on large levels. Optimize better for Java, or parallelize.
 //
