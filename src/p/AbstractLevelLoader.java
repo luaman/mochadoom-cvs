@@ -5,6 +5,7 @@ import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MAPBLOCKUNITS;
 import static data.Defines.ML_TWOSIDED;
 import static data.Defines.NF_SUBSECTOR;
+import static data.Defines.PU_LEVEL;
 import static data.Defines.RANGECHECK;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedDiv;
@@ -231,9 +232,9 @@ public abstract class AbstractLevelLoader
         // single subsector is a special case
         if (numnodes == 0)
             return subsectors[0];
-
+        
         nodenum = numnodes - 1;
-
+        
         while ((nodenum & NF_SUBSECTOR) == 0) {
             node = nodes[nodenum];
             side = node.PointOnSide(x, y);
@@ -297,17 +298,13 @@ public abstract class AbstractLevelLoader
         done[blockno] = true;
     }
 
-    /**  
-     * Actually construct the blockmap lump from the level data
-     *
-     * This finds the intersection of each linedef with the column and
-     *  row lines at the left and bottom of each blockmap cell. It then
-     * adds the line to all block lists touching the intersection.
-     * 
-     * MAES 30/9/2011: Converted to Java. It's important that LINEDEFS
-     * and VERTEXES are already read-in and defined, so it is necessary
-     * to change map lump ordering for this to work.
-     *
+    /**
+     * Actually construct the blockmap lump from the level data This finds the
+     * intersection of each linedef with the column and row lines at the left
+     * and bottom of each blockmap cell. It then adds the line to all block
+     * lists touching the intersection. MAES 30/9/2011: Converted to Java. It's
+     * important that LINEDEFS and VERTEXES are already read-in and defined, so
+     * it is necessary to change map lump ordering for this to work.
      */
 
     protected final void CreateBlockMap() {
@@ -322,8 +319,8 @@ public abstract class AbstractLevelLoader
         int map_miny = Integer.MAX_VALUE;
         int map_maxx = Integer.MIN_VALUE;
         int map_maxy = Integer.MIN_VALUE;
-        
-        long a=System.nanoTime();
+
+        long a = System.nanoTime();
 
         // scan for map limits, which the blockmap must enclose
 
@@ -575,10 +572,10 @@ public abstract class AbstractLevelLoader
                 bl = tmp;
             }
         }
-        
-        long b=System.nanoTime();
-        
-        System.err.printf("Blockmap generated in %f sec\n",(b-a)/1e9);		
+
+        long b = System.nanoTime();
+
+        System.err.printf("Blockmap generated in %f sec\n", (b - a) / 1e9);
     }
 
     // jff 10/6/98
@@ -646,7 +643,7 @@ public abstract class AbstractLevelLoader
 
         return true;
     }
-    
+
     // cph - convenient sub-function
     protected void AddLineToSector(line_t li, sector_t sector) {
         int[] bbox = sector.blockbox;
@@ -655,156 +652,204 @@ public abstract class AbstractLevelLoader
         BBox.AddToBox(bbox, li.v1.x, li.v1.y);
         BBox.AddToBox(bbox, li.v2.x, li.v2.y);
     }
-    
-    /** Compute density of reject table. Aids choosing LUT optimizations.
+
+    /**
+     * Compute density of reject table. Aids choosing LUT optimizations.
      * 
      * @return
      */
-    
-    protected float rejectDensity(){
-       // float[] rowdensity=new float[numsectors];
+
+    protected float rejectDensity() {
+        // float[] rowdensity=new float[numsectors];
         float tabledensity;
-        int tcount=0;
-        
-        for (int i=0;i<numsectors;i++){
-           // int colcount=0;
-            for (int j=0;j<numsectors;j++){
-        // Determine subsector entries in REJECT table.
-        int pnum = i * numsectors + j;
-        int bytenum = pnum >> 3;
-        int bitnum = 1 << (pnum & 7);
+        int tcount = 0;
 
-        // Check in REJECT table.
-        if (!flags(rejectmatrix[bytenum], bitnum)) {
-            tcount++;
-            //colcount++;
+        for (int i = 0; i < numsectors; i++) {
+            // int colcount=0;
+            for (int j = 0; j < numsectors; j++) {
+                // Determine subsector entries in REJECT table.
+                int pnum = i * numsectors + j;
+                int bytenum = pnum >> 3;
+                int bitnum = 1 << (pnum & 7);
+
+                // Check in REJECT table.
+                if (!flags(rejectmatrix[bytenum], bitnum)) {
+                    tcount++;
+                    // colcount++;
+                }
             }
-            }
-            //rowdensity[i]=((float)colcount/numsectors);
+            // rowdensity[i]=((float)colcount/numsectors);
         }
-        
-        tabledensity=(float)tcount/(numsectors*numsectors);
+
+        tabledensity = (float) tcount / (numsectors * numsectors);
         return tabledensity;
-        
+
     }
-    
-    protected static int[] POKE_REJECT=new int[]{
-        1,2,4,8,16,32,64,128};
-    
-    /** Updates Reject table dynamically based on what expensive LOS checks say.
-     *  It does decrease the "reject density" the longer the level runs, however its
-     *  by no means perfect, and results in many sleeping monsters.
-     *  
-     * When called, visibility between sectors x and y will be set to "false" for the
-     * rest of the level, aka they will be rejected based on subsequent sight checks.  
-     *  
-     * @param x 
-     * @param y 
+
+    protected static int[] POKE_REJECT = new int[] { 1, 2, 4, 8, 16, 32, 64,
+            128 };
+
+    /**
+     * Updates Reject table dynamically based on what expensive LOS checks say.
+     * It does decrease the "reject density" the longer the level runs, however
+     * its by no means perfect, and results in many sleeping monsters. When
+     * called, visibility between sectors x and y will be set to "false" for the
+     * rest of the level, aka they will be rejected based on subsequent sight
+     * checks.
+     * 
+     * @param x
+     * @param y
      */
-    
-    protected void pokeIntoReject(int x, int y){
+
+    protected void pokeIntoReject(int x, int y) {
         // Locate bit pointer e.g. for a 4x4 table, x=2 and y=3 give
         // 3*4+2=14
-         final int pnum = y * numsectors + x;
-         
-         // Which byte?
-         // 14= 1110 >>3 = 0001 so 
-         // Byte 0   Byte 1
-         // xxxxxxxx xxxxxxxx 
-         //               ^  
-         // 0.....bits......16
-         // We are writing inside the second Byte 1
-         final int bytenum = pnum >> 3;
-        
+        final int pnum = y * numsectors + x;
+
+        // Which byte?
+        // 14= 1110 >>3 = 0001 so
+        // Byte 0 Byte 1
+        // xxxxxxxx xxxxxxxx
+        // ^
+        // 0.....bits......16
+        // We are writing inside the second Byte 1
+        final int bytenum = pnum >> 3;
+
         // OK, so how we pinpoint that one bit?
         // 1110 & 0111 = 0110 = 6 so it's the sixth bit
         // of the second byte
-         final int bitnum = pnum & 7;
-         
-         // This sets only that one bit, and the reject lookup will be faster next time.
-         rejectmatrix[bytenum]|=POKE_REJECT[bitnum];
-         
-         System.out.println(rejectDensity());
+        final int bitnum = pnum & 7;
 
-     }
+        // This sets only that one bit, and the reject lookup will be faster
+        // next time.
+        rejectmatrix[bytenum] |= POKE_REJECT[bitnum];
 
-    protected void retrieveFromReject(int x, int y, boolean value){
+        System.out.println(rejectDensity());
+
+    }
+
+    protected void retrieveFromReject(int x, int y, boolean value) {
         // Locate bit pointer e.g. for a 4x4 table, x=2 and y=3 give
         // 3*4+2=14
-         final int pnum = y * numsectors + x;
-         
-         // Which byte?
-         // 14= 1110 >>3 = 0001 so 
-         // Byte 0   Byte 1
-         // xxxxxxxx xxxxxxxx 
-         //               ^  
-         // 0.....bits......16
-         // We are writing inside the second Byte 1
-         final int bytenum = pnum >> 3;
-        
+        final int pnum = y * numsectors + x;
+
+        // Which byte?
+        // 14= 1110 >>3 = 0001 so
+        // Byte 0 Byte 1
+        // xxxxxxxx xxxxxxxx
+        // ^
+        // 0.....bits......16
+        // We are writing inside the second Byte 1
+        final int bytenum = pnum >> 3;
+
         // OK, so how we pinpoint that one bit?
         // 1110 & 0111 = 0110 = 6 so it's the sixth bit
         // of the second byte
-         final int bitnum = pnum & 7;
-         
-         // This sets only that one bit, and the reject lookup will be faster next time.
-         rejectmatrix[bytenum]|=POKE_REJECT[bitnum];
-         
-         System.out.println(rejectDensity());
+        final int bitnum = pnum & 7;
 
-     }
+        // This sets only that one bit, and the reject lookup will be faster
+        // next time.
+        rejectmatrix[bytenum] |= POKE_REJECT[bitnum];
 
-    
+        System.out.println(rejectDensity());
+
+    }
+
     // Keeps track of lines that belong to a sector, to exclude e.g.
     // orphaned ones from the blockmap.
     protected boolean[] used_lines;
-    
-    /** Returns an int[] array with orgx, orgy, and number of blocks.
-     * Order is: orgx,orgy,bckx,bcky
-     *   
+
+    /**
+     * Returns an int[] array with orgx, orgy, and number of blocks. Order is:
+     * orgx,orgy,bckx,bcky
+     * 
      * @return
      */
 
-    protected final int[] getMapBoundingBox(boolean playable){    
-            
-        int minx=Integer.MAX_VALUE;
-        int miny=Integer.MAX_VALUE;
-        int maxx=Integer.MIN_VALUE;
-        int maxy=Integer.MIN_VALUE;
-        
-        // Scan linedefs to detect extremes    
-        
-        for (int i=0;i<this.lines.length;i++){
-            
-            if (playable||used_lines[i]){
-            if (lines[i].v1x>maxx) maxx=lines[i].v1x;
-            if (lines[i].v1x<minx) minx=lines[i].v1x;
-            if (lines[i].v1y>maxy) maxy=lines[i].v1y;
-            if (lines[i].v1y<miny) miny=lines[i].v1y;
-            if (lines[i].v2x>maxx) maxx=lines[i].v2x;
-            if (lines[i].v2x<minx) minx=lines[i].v2x;
-            if (lines[i].v2y>maxy) maxy=lines[i].v2y;
-            if (lines[i].v2y<miny) miny=lines[i].v2y;
+    protected final int[] getMapBoundingBox(boolean playable) {
+
+        int minx = Integer.MAX_VALUE;
+        int miny = Integer.MAX_VALUE;
+        int maxx = Integer.MIN_VALUE;
+        int maxy = Integer.MIN_VALUE;
+
+        // Scan linedefs to detect extremes
+
+        for (int i = 0; i < this.lines.length; i++) {
+
+            if (playable || used_lines[i]) {
+                if (lines[i].v1x > maxx)
+                    maxx = lines[i].v1x;
+                if (lines[i].v1x < minx)
+                    minx = lines[i].v1x;
+                if (lines[i].v1y > maxy)
+                    maxy = lines[i].v1y;
+                if (lines[i].v1y < miny)
+                    miny = lines[i].v1y;
+                if (lines[i].v2x > maxx)
+                    maxx = lines[i].v2x;
+                if (lines[i].v2x < minx)
+                    minx = lines[i].v2x;
+                if (lines[i].v2y > maxy)
+                    maxy = lines[i].v2y;
+                if (lines[i].v2y < miny)
+                    miny = lines[i].v2y;
             }
         }
-        
-        System.err.printf("Map bounding %d %d %d %d\n",
-            minx>>FRACBITS,miny>>FRACBITS,maxx>>FRACBITS,maxy>>FRACBITS);
-        
-        // Blow up bounding to the closest 128-sized block, adding 8 units as padding.
+
+        System.err.printf("Map bounding %d %d %d %d\n", minx >> FRACBITS,
+            miny >> FRACBITS, maxx >> FRACBITS, maxy >> FRACBITS);
+
+        // Blow up bounding to the closest 128-sized block, adding 8 units as
+        // padding.
         // This seems to be the "official" formula.
-        int orgx=-BLOCKMAPPADDING+MAPBLOCKUNITS*(minx/MAPBLOCKUNITS);
-        int orgy=-BLOCKMAPPADDING+MAPBLOCKUNITS*(miny/MAPBLOCKUNITS);
-        int bckx=((BLOCKMAPPADDING+maxx)-orgx);
-        int bcky=((BLOCKMAPPADDING+maxy)-orgy);
-        
-        System.err.printf("%d %d %d %d\n",orgx>>FRACBITS,orgy>>FRACBITS,1+(bckx>>MAPBLOCKSHIFT),1+(bcky>>MAPBLOCKSHIFT));
-        
-        
-        return new int[]{orgx,orgy,bckx,bcky};
+        int orgx = -BLOCKMAPPADDING + MAPBLOCKUNITS * (minx / MAPBLOCKUNITS);
+        int orgy = -BLOCKMAPPADDING + MAPBLOCKUNITS * (miny / MAPBLOCKUNITS);
+        int bckx = ((BLOCKMAPPADDING + maxx) - orgx);
+        int bcky = ((BLOCKMAPPADDING + maxy) - orgy);
+
+        System.err.printf("%d %d %d %d\n", orgx >> FRACBITS, orgy >> FRACBITS,
+            1 + (bckx >> MAPBLOCKSHIFT), 1 + (bcky >> MAPBLOCKSHIFT));
+
+        return new int[] { orgx, orgy, bckx, bcky };
     }
 
-    
+    protected void LoadReject(int lumpnum) {
+        byte[] tmpreject = new byte[0];
 
-    
+        // _D_: uncommented the rejectmatrix variable, this permitted changing
+        // level to work
+        try {
+            tmpreject = W.CacheLumpNumAsRawBytes(lumpnum, PU_LEVEL);
+        } catch (Exception e) {
+            // Any exception at this point means missing REJECT lump. Fuck that,
+            // and move on.
+            // If everything goes OK, tmpreject will contain the REJECT lump's
+            // data
+            // BUT, alas, we're not done yet.
+        }
+
+        // Sanity check on matrix.
+        // E.g. a 5-sector map will result in ceil(25/8)=4 bytes.
+        // If the reject table is broken/corrupt, too bad. It will all be
+        // zeroes.
+        // Much better than overflowing.
+        // TODO: build-in a REJECT-matrix rebuilder?
+        rejectmatrix =
+            new byte[(int) (Math
+                    .ceil((this.numsectors * this.numsectors) / 8.0))];
+        System.arraycopy(tmpreject, 0, rejectmatrix, 0,
+            Math.min(tmpreject.length, rejectmatrix.length));
+
+        // Do warn on atypical reject map lengths, but use either default
+        // all-zeroes one,
+        // or whatever you happened to read anyway.
+        if (tmpreject.length < rejectmatrix.length)
+            System.err.printf("BROKEN REJECT MAP! Length %d expected %d\n",
+                tmpreject.length, rejectmatrix.length);
+
+        // Maes: purely academic. Most maps are well above 0.68
+        // System.out.printf("Reject table density: %f",rejectDensity());
+    }
+
 }
