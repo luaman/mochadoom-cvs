@@ -1169,8 +1169,12 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 						I.Error("R_DrawSpriteRange: bad texturecolumn");
 				}
 				column = patch.columns[texturecolumn];
-				
+				try {
 				DrawMaskedColumn(column);
+				} catch (Exception e){
+				    System.err.printf("Trouble with column %d of patch %s",texturecolumn,patch.name,
+				        vis.patch + firstspritelump);
+				}
 			}
 
 			colfunc = maskedcolfunc;
@@ -4909,16 +4913,16 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 				// 
 				// results in a negative initial frac number.				
 				
-				try {
+				//try {
 					colfunc.invoke();
-				} catch (Exception e) {
+				/*} catch (Exception e) {
 					int fracstep=dc_iscale;
 					int frac = dc_texturemid + (dc_yl - centery) * fracstep;
 					System.err.printf("Problem! %d = %x + (%x - %x) * %x\n",
 							frac,dc_texturemid, dc_yl, centery,
 							dc_iscale);
 					e.printStackTrace();
-				}
+				} */
 			}
 		}
 
