@@ -28,7 +28,7 @@ public class mapnode_v4_t
      * */
     public int[] children = new int[2];
 
-    public static int sizeOf() {
+    public static final int sizeOf() {
         return (8 + 16 + 8);
     }
 

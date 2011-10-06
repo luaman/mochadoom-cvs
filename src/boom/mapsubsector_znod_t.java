@@ -18,7 +18,7 @@ public class mapsubsector_znod_t implements CacheableDoomObject{
     this.numsegs = C2JUtils.unsigned(buf.getInt());
 	} 
 
-	public static int sizeOf(){
+	public static final int sizeOf(){
     return 4;
 	}
 	
