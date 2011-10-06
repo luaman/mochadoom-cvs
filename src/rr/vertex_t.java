@@ -30,15 +30,19 @@ public class vertex_t  implements CacheableDoomObject, Resettable{
     public void unpack(ByteBuffer buf)
             throws IOException {
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        this.x=buf.getShort()<<FRACBITS;;
-        this.y=buf.getShort()<<FRACBITS;;
+        this.x=buf.getShort()<<FRACBITS;
+        this.y=buf.getShort()<<FRACBITS;
         
     }
-
 
     @Override
     public void reset() {
         x=0; y=0;        
+    }
+
+
+    public static int sizeOf() {
+        return 4;
     }
     
 }
