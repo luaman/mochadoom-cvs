@@ -2,6 +2,10 @@ package rr;
 
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
+
+import java.util.Arrays;
+
+import p.Resettable;
 import utils.C2JUtils;
 import m.BBox;
 
@@ -10,7 +14,7 @@ import m.BBox;
  * @author Maes
  *
  */
-public class node_t {
+public class node_t implements Resettable{
 
     
     public node_t(){
@@ -218,6 +222,16 @@ public class node_t {
  		return 2;
  	    return 1;		// back side
  	}
+
+@Override
+    public void reset() {
+    x=y=dx = dy = 0;
+    for (int i=0;i<2;i++){
+        bbox[i].ClearBox();
+        }
+    Arrays.fill(children, 0);
+    
+    }
      
  }
 
