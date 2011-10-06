@@ -12,7 +12,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.44 2011/08/23 16:18:27 velktron Exp $
+// $Id: Defines.java,v 1.45 2011/10/06 16:44:53 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -396,9 +396,13 @@ public static final int SAVESTRINGSIZE = 24;
     /** Set if already seen, thus drawn in automap. */
     public static final int ML_MAPPED = 256;
 
-    /** Indicate a leaf. */
-    public static final int NF_SUBSECTOR = 0x8000;
-	
+    /** Indicate a leaf. e6y: support for extended nodes */
+    public static final int NF_SUBSECTOR = 0x80000000;
+
+    /** This is the regular leaf indicator. Use for reference/conversions */
+    public static final int NF_SUBSECTOR_CLASSIC = 0x8000;
+
+    
     
     /** Player states. */
     
@@ -413,6 +417,6 @@ public static final int SAVESTRINGSIZE = 24;
 
  
 static final String
-rcsid = "$Id: Defines.java,v 1.44 2011/08/23 16:18:27 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.45 2011/10/06 16:44:53 velktron Exp $";
 }
 
