@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.29 2011/09/29 13:25:09 velktron Exp $
+// $Id: Map.java,v 1.30 2011/10/07 16:08:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.30  2011/10/07 16:08:23  velktron
+// Now using g.Keys and line_t
+//
 // Revision 1.29  2011/09/29 13:25:09  velktron
 // Eliminated "intermediate" AbstractAutoMap. Map implements IAutoMap  directly.
 //
@@ -127,7 +130,8 @@ package automap;
 //
 //-----------------------------------------------------------------------------
 
-import static data.Defines.*;
+
+import static g.Keys.*;
 import static data.Limits.*;
 import static m.fixed_t.*;
 import static doom.englsh.*;
@@ -146,6 +150,8 @@ import v.DoomVideoRenderer;
 import v.IVideoScale;
 import w.IWadLoader;
 import m.cheatseq_t;
+import static rr.line_t.*;
+import static data.Defines.*;
 
 public class Map implements IAutoMap {
 
@@ -158,7 +164,7 @@ DoomVideoRenderer V;
 AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.29 2011/09/29 13:25:09 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.30 2011/10/07 16:08:23 velktron Exp $";
 
 /*
 #include <stdio.h>
