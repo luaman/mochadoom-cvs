@@ -1,5 +1,6 @@
 package p;
 
+import static rr.line_t.ML_TWOSIDED;
 import static data.Defines.*;
 import static data.Limits.MAXPLAYERS;
 import static data.Limits.MAXRADIUS;
@@ -38,7 +39,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.41 2011/10/06 16:44:32 velktron Exp $
+// $Id: LevelLoader.java,v 1.42 2011/10/07 16:05:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -60,7 +61,7 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.41 2011/10/06 16:44:32 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.42 2011/10/07 16:05:52 velktron Exp $";
 
 
 public LevelLoader(DoomStatus DC) {
@@ -830,6 +831,9 @@ public LevelLoader(DoomStatus DC) {
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.42  2011/10/07 16:05:52  velktron
+//Now using line_t for ML_* definitions.
+//
 //Revision 1.41  2011/10/06 16:44:32  velktron
 //Proper support for extended nodes, made reject loading into a separate method.
 //

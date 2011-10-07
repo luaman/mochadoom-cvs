@@ -4,7 +4,6 @@ import defines.*;
 import static p.ChaseDirections.*;
 import static p.DoorDefines.*;
 import static data.Defines.BASETHRESHOLD;
-import static data.Defines.BT_ATTACK;
 import static data.Defines.FLOATSPEED;
 import static data.Defines.ITEMQUESIZE;
 import static data.Defines.MAPBLOCKSHIFT;
@@ -12,10 +11,7 @@ import static data.Defines.MAPBLOCKSIZE;
 import static data.Defines.MAPBTOFRAC;
 import static data.Defines.MELEERANGE;
 import static data.Defines.MISSILERANGE;
-import static data.Defines.ML_BLOCKING;
-import static data.Defines.ML_BLOCKMONSTERS;
-import static data.Defines.ML_SECRET;
-import static data.Defines.ML_TWOSIDED;
+import static rr.line_t.*;
 import static data.Defines.MTF_AMBUSH;
 import static data.Defines.NUMCARDS;
 import static data.Defines.ONCEILINGZ;
@@ -1740,7 +1736,8 @@ return;
 p = DM.players[mthing.type-1];
 
 if (p.playerstate == PST_REBORN)
-DM.PlayerReborn (mthing.type-1);
+	p.PlayerReborn();
+//DM.PlayerReborn (mthing.type-1);
 
 x       = mthing.x << FRACBITS;
 y       = mthing.y << FRACBITS;
@@ -2323,7 +2320,7 @@ CheckMissileSpawn (th);
         mo.flags |= MF_DROPPED;    // special versions of items
     }
     
-    //
+  //
  // TELEPORTATION
  //
  int
@@ -2384,8 +2381,10 @@ CheckMissileSpawn (th);
              return 0;
          
          thing.z = thing.floorz;  //fixme: not needed?
-         if (thing.player!=null)
+         if (thing.player!=null) {
              thing.player.viewz = thing.z+thing.player.viewheight;
+             thing.player.lookdir = 0; // Reset lookdir
+         }
                  
          // spawn teleport fog at source and destination
          fog = SpawnMobj (oldx, oldy, oldz, mobjtype_t.MT_TFOG);

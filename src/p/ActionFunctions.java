@@ -1,10 +1,10 @@
 package p;
 
+import static rr.line_t.ML_BLOCKING;
 import static data.Defines.BT_ATTACK;
 import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MELEERANGE;
 import static data.Defines.MISSILERANGE;
-import static data.Defines.ML_BLOCKING;
 import static data.Defines.PST_DEAD;
 import static data.Defines.pw_strength;
 import static data.Limits.MAXPLAYERS;

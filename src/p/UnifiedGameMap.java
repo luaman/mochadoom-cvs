@@ -1,10 +1,9 @@
 package p;
 
+import static rr.line_t.*;
 import static data.Defines.ITEMQUESIZE;
 import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MELEERANGE;
-import static data.Defines.ML_SOUNDBLOCK;
-import static data.Defines.ML_TWOSIDED;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMAMMO;
 import static data.Defines.RANGECHECK;
