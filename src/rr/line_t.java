@@ -10,7 +10,6 @@ import s.degenmobj_t;
 import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
-import static data.Defines.ML_TWOSIDED;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
@@ -296,5 +295,44 @@ public class line_t
         soundorg = null;
         tranlump = 0;
     }
+    
+    /**
+     * LUT, motion clipping, walls/grid element // // LineDef attributes. // /**
+     * Solid, is an obstacle.
+     */
+    public static final int ML_BLOCKING = 1;
+
+    /** Blocks monsters only. */
+    public static final int ML_BLOCKMONSTERS = 2;
+
+    /** Backside will not be present at all if not two sided. */
+    public static final int ML_TWOSIDED = 4;
+
+    // If a texture is pegged, the texture will have
+    // the end exposed to air held constant at the
+    // top or bottom of the texture (stairs or pulled
+    // down things) and will move with a height change
+    // of one of the neighbor sectors.
+    // Unpegged textures allways have the first row of
+    // the texture at the top pixel of the line for both
+    // top and bottom textures (use next to windows).
+
+    /** upper texture unpegged */
+    public static final int ML_DONTPEGTOP = 8;
+
+    /** lower texture unpegged */
+    public static final int ML_DONTPEGBOTTOM = 16;
+
+    /** In AutoMap: don't map as two sided: IT'S A SECRET! */
+    public static final int ML_SECRET = 32;
+
+    /** Sound rendering: don't let sound cross two of these. */
+    public static final int ML_SOUNDBLOCK = 64;
+
+    /** Don't draw on the automap at all. */
+    public static final int ML_DONTDRAW = 128;
+
+    /** Set if already seen, thus drawn in automap. */
+    public static final int ML_MAPPED = 256;
 
 }
