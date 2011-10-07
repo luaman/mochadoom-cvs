@@ -38,7 +38,7 @@ import demo.VanillaTiccmd;
 import data.sounds.musicenum_t;
 import data.sounds.sfxenum_t;
 import static data.Defines.BACKUPTICS;
-import static data.Defines.KEY_ESCAPE;
+import static g.Keys.*;
 import static data.Defines.NORMALUNIX;
 import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
@@ -88,7 +88,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.87 2011/10/02 14:22:33 velktron Exp $
+// $Id: DoomMain.java,v 1.88 2011/10/07 16:01:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -114,7 +114,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.87 2011/10/02 14:22:33 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.88 2011/10/07 16:01:26 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1499,11 +1499,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         int     i; 
         boolean strafe;
         boolean bstrafe; 
-        int     speed;
-        int     tspeed; 
+        int     speed, tspeed,lspeed; 
         int     forward;
         int     side;
-
+        int look;
 
         //base = I_BaseTiccmd ();     // empty, or external driver
         // memcpy (cmd,base,sizeof(*cmd));
@@ -1515,16 +1514,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         || joybuttons(joybstrafe); 
         speed = ((gamekeydown[key_speed]^alwaysrun) || joybuttons(joybspeed))?1:0;
 
-        forward = side = 0;
-
-        
+        forward = side = look= 0;
         
         // use two stage accelerative turning
         // on the keyboard and joystick
-        if (joyxmove < 0
-                || joyxmove > 0  
-                || gamekeydown[key_right]
-                               || gamekeydown[key_left]) 
+        if (joyxmove < 0 || joyxmove > 0 ||
+        	gamekeydown[key_right] || gamekeydown[key_left]) 
             turnheld += ticdup; 
         else 
             turnheld = 0; 
@@ -1534,6 +1529,23 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         else 
             tspeed = speed;
 
+        if(gamekeydown[key_lookdown] || gamekeydown[key_lookup])
+    	{
+    		lookheld += ticdup;
+    	}
+    	else
+    	{
+    		lookheld = 0;
+    	}
+    	if(lookheld < SLOWTURNTICS)
+    	{
+    		lspeed = 1;
+    	}
+    	else
+    	{
+    		lspeed = 2;
+    	}
+        
         // let movement keys cancel each other out
         if (strafe) 
         { 
@@ -1574,7 +1586,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         {
             //System.err.print("down\n");
             forward -= forwardmove[speed]; 
-        }
+        }        
+        
         if (joyymove < 0) 
             forward += forwardmove[speed]; 
         if (joyymove > 0) 
@@ -1584,6 +1597,25 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (gamekeydown[key_strafeleft]) 
             side -= sidemove[speed];
 
+    	// Look up/down/center keys
+    	if(gamekeydown[key_lookup])
+    	{
+    		System.err.print("Look up\n");
+    		look = lspeed;
+    	}
+    	
+    	if(gamekeydown[key_lookdown])
+    	{
+    		System.err.print("Look down\n");
+    		look = -lspeed;
+    	}
+    	
+    	if(gamekeydown[key_lookcenter])
+    	{
+    		System.err.print("Center look\n");
+    		look = TOCENTER;
+    	}
+    	
         // buttons
         cmd.chatchar = HU.dequeueChatChar(); 
 
@@ -1683,6 +1715,16 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         cmd.forwardmove += forward; 
         cmd.sidemove += side;
 
+    	if(players[consoleplayer].playerstate == PST_LIVE)
+    	{
+    		if(look < 0)
+    		{
+    			look += 16;
+    		}
+    		
+    		cmd.lookfly = (char) look;
+    	}
+        
         // special buttons
         if (sendpause) 
         { 
@@ -2110,85 +2152,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         p = players[player]; 
 
         // clear everything else to defaults 
-        PlayerReborn (player); 
+        p.PlayerReborn (); 
 
     } 
-
-
-
-    /**
-     * G_PlayerFinishLevel
-     * Can when a player completes a level.
-     */
-
-    private final void PlayerFinishLevel (int player) 
-    { 
-        player_t   p; 
-
-        p = players[player]; 
-
-        Arrays.fill(p.powers, 0);
-        Arrays.fill(p.cards,false);       
-        p.mo.flags &= ~mobj_t.MF_SHADOW;     // cancel invisibility 
-        p.extralight = 0;          // cancel gun flashes 
-        p.fixedcolormap = 0;       // cancel ir gogles 
-        p.damagecount = 0;         // no palette changes 
-        p.bonuscount = 0; 
-    } 
-
-
-    /**
-     * G_PlayerReborn
-     * Called after a player dies 
-     * almost everything is cleared and initialized 
-     *
-     *@param player
-     */
-
-    @Override
-    public void PlayerReborn (int player) 
-    { 
-        player_t   p; 
-        int     i; 
-        int[]     frags=new int [MAXPLAYERS]; 
-        int     killcount;
-        int     itemcount;
-        int     secretcount; 
-
-        // System.arraycopy(players[player].frags, 0, frags, 0, frags.length);
-        // We save the player's frags here...
-        C2JUtils.memcpy (frags,players[player].frags,frags.length); 
-        killcount = players[player].killcount; 
-        itemcount = players[player].itemcount; 
-        secretcount = players[player].secretcount; 
-
-        //MAES: we need to simulate an erasure, possibly without making
-        // a new object.memset (p, 0, sizeof(*p));
-        //players[player]=(player_t) player_t.nullplayer.clone();
-        // players[player]=new player_t();
-        p=players[player];
-        p.reset();
-
-        // And we copy the old frags into the "new" player. 
-        C2JUtils.memcpy(players[player].frags, frags, players[player].frags.length); 
-
-        players[player].killcount = killcount; 
-        players[player].itemcount = itemcount; 
-        players[player].secretcount = secretcount; 
-
-        p.usedown = p.attackdown = true;  // don't do anything immediately 
-        p.playerstate = PST_LIVE;       
-        p.health[0] = MAXHEALTH; 
-        p.readyweapon = p.pendingweapon = weapontype_t.wp_pistol; 
-        p.weaponowned[weapontype_t.wp_fist.ordinal()] = true; 
-        p.weaponowned[weapontype_t.wp_pistol.ordinal()] = true; 
-        p.ammo[ammotype_t.am_clip.ordinal()] = 50; 
-
-        for (i=0 ; i<NUMAMMO ; i++) 
-            p.maxammo[i] = maxammo[i]; 
-
-    }
-
+    
     //
     // G_CheckSpot  
     // Returns false if the player cannot be respawned
@@ -2428,7 +2395,7 @@ public void ScreenShot ()
 
         for (i=0 ; i<MAXPLAYERS ; i++) 
             if (playeringame[i]) 
-                PlayerFinishLevel (i);        // take away cards and stuff 
+                players[i].PlayerFinishLevel ();        // take away cards and stuff 
 
         if (automapactive) 
             AM.Stop (); 
@@ -4211,6 +4178,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.88  2011/10/07 16:01:26  velktron
+//Added freelook stuff, using Keys.
+//
 //Revision 1.87  2011/10/02 14:22:33  velktron
 //Added new ga_failure state.
 //

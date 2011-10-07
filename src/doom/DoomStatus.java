@@ -1,6 +1,7 @@
 package doom;
 
 import static data.Defines.*;
+import static g.Keys.*;
 import static data.Limits.*;
 import p.mobj_t;
 import utils.C2JUtils;
@@ -264,7 +265,7 @@ public class DoomStatus extends DoomContext {
         This doubles with BackPack powerup item.
         NOTE: this "maxammo" is treated like a global.
          */
-    public int[] maxammo =  {200, 50, 300, 50};
+    public final static int[] maxammo =  {200, 50, 300, 50};
 
     // -----------------------------------------
     // Internal parameters, used for engine.
@@ -399,13 +400,18 @@ public class DoomStatus extends DoomContext {
 
     public int key_straferight='d';
 
-    public int key_fire=KEY_RCTRL;
+    public int key_fire=KEY_CTRL;
 
     public int key_use=' ';
     
-    public int key_strafe=KEY_RALT;
+    public int key_strafe=KEY_ALT;
 
-    public int key_speed=KEY_RSHIFT;
+    public int key_speed=KEY_SHIFT;
+    
+    // Heretic stuff
+    public int		key_lookup=KEY_PGUP;
+    public int		key_lookdown=KEY_PGDN;
+    public int      key_lookcenter=KEY_END;
 
     public int mousebfire=0;
 
@@ -448,6 +454,7 @@ public class DoomStatus extends DoomContext {
     public boolean alwaysrun;
 
     protected int turnheld; // for accelerative turning
+    protected int lookheld; // for accelerative looking?
 
     protected boolean[] mousearray = new boolean[4];
 
@@ -530,6 +537,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.32  2011/10/07 16:01:16  velktron
+// Added freelook stuff, using Keys.
+//
 // Revision 1.31  2011/09/27 16:01:41  velktron
 // -complevel_t
 //
