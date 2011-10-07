@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.44 2011/08/23 16:15:30 velktron Exp $
+// $Id: StatusBar.java,v 1.45 2011/10/07 16:07:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -26,6 +26,7 @@ package st;
 
 import defines.*;
 import static data.Limits.MAXPLAYERS;
+import static g.Keys.*;
 import static data.Defines.*;
 import static doom.englsh.*;
 import static automap.IAutoMap.*;
@@ -46,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.44 2011/08/23 16:15:30 velktron Exp $";
+        "$Id: StatusBar.java,v 1.45 2011/10/07 16:07:14 velktron Exp $";
 
    
     
@@ -1932,6 +1933,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.45  2011/10/07 16:07:14  velktron
+//Now using g.Keys for key input stuff.
+//
 //Revision 1.44  2011/08/23 16:15:30  velktron
 //Got rid of Z remnants.
 //

@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.28 2011/05/31 23:46:18 velktron Exp $
+// $Id: HU.java,v 1.29 2011/10/07 16:05:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +22,7 @@ package hu;
 // -----------------------------------------------------------------------------
 
 import static data.Defines.*;
+import static g.Keys.*;
 
 import defines.*;
 import static data.Limits.*;
@@ -51,7 +52,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.28 2011/05/31 23:46:18 velktron Exp $";
+        "$Id: HU.java,v 1.29 2011/10/07 16:05:22 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -670,10 +671,10 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
             numplayers += (DM.playeringame[i]) ? 1 : 0;
         }
 
-        if (ev.data1 == KEY_RSHIFT) {
+        if (ev.data1 == KEY_SHIFT) {
             shiftdown = (ev.type == evtype_t.ev_keydown);
             return false;
-        } else if (ev.data1 == KEY_RALT || ev.data1 == KEY_LALT) {
+        } else if (ev.data1 == KEY_ALT || ev.data1 == KEY_ALT) {
             altdown = (ev.type == evtype_t.ev_keydown);
             return false;
         }
@@ -1245,6 +1246,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 }
 
 //$Log: HU.java,v $
+//Revision 1.29  2011/10/07 16:05:22  velktron
+//Now using g.Keys for key input stuff.
+//
 //Revision 1.28  2011/05/31 23:46:18  velktron
 //Fixed scaling.
 //

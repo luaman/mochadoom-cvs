@@ -1,6 +1,6 @@
 package m;
 
-import static data.Defines.*;
+import static g.Keys.*;
 import static doom.englsh.*;
 import utils.C2JUtils;
 import doom.DoomStatus;
@@ -25,10 +25,10 @@ public enum Settings {
    key_down('s'),
    key_strafeleft('a'),
    key_straferight('d'),
-   key_fire(KEY_RCTRL),
+   key_fire(KEY_CTRL),
    key_use(' '),
-   key_strafe(KEY_RALT),
-   key_speed(KEY_RSHIFT),
+   key_strafe(KEY_ALT),
+   key_speed(KEY_SHIFT),
    use_mouse(1),
    mouseb_fire(0),
    mouseb_strafe(1),
