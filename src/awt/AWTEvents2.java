@@ -1,31 +1,6 @@
 package awt;
 
-import static data.Defines.KEY_BACKSPACE;
-import static data.Defines.KEY_DOWNARROW;
-import static data.Defines.KEY_ENTER;
-import static data.Defines.KEY_EQUALS;
-import static data.Defines.KEY_ESCAPE;
-import static data.Defines.KEY_F1;
-import static data.Defines.KEY_F10;
-import static data.Defines.KEY_F11;
-import static data.Defines.KEY_F12;
-import static data.Defines.KEY_F2;
-import static data.Defines.KEY_F3;
-import static data.Defines.KEY_F4;
-import static data.Defines.KEY_F5;
-import static data.Defines.KEY_F6;
-import static data.Defines.KEY_F7;
-import static data.Defines.KEY_F8;
-import static data.Defines.KEY_F9;
-import static data.Defines.KEY_LEFTARROW;
-import static data.Defines.KEY_MINUS;
-import static data.Defines.KEY_PAUSE;
-import static data.Defines.KEY_RALT;
-import static data.Defines.KEY_RCTRL;
-import static data.Defines.KEY_RIGHTARROW;
-import static data.Defines.KEY_RSHIFT;
-import static data.Defines.KEY_TAB;
-import static data.Defines.KEY_UPARROW;
+import static g.Keys.*;
 import i.DoomEventInterface;
 
 import java.awt.AWTEvent;
@@ -441,9 +416,13 @@ public class AWTEvents2 implements WindowListener,KeyEventDispatcher,KeyListener
       case KeyEvent.VK_UP:  rc = KEY_UPARROW;   break;
         case KeyEvent.VK_ESCAPE:  rc = KEY_ESCAPE;    break;
         case KeyEvent.VK_ENTER:   rc = KEY_ENTER;     break;
-        case KeyEvent.VK_CONTROL: rc=KEY_RCTRL; break;
-        case KeyEvent.VK_ALT: rc=KEY_RALT; break;
-        case KeyEvent.VK_SHIFT: rc=KEY_RSHIFT; break;
+        case KeyEvent.VK_CONTROL: rc= KEY_CTRL; break;
+        case KeyEvent.VK_ALT: rc=KEY_ALT; break;
+        case KeyEvent.VK_SHIFT: rc=KEY_SHIFT; break;
+        // Added handling of pgup/pgdown/home etc.
+        case KeyEvent.VK_PAGE_DOWN: rc= KEY_PGDN;	break;
+        case KeyEvent.VK_PAGE_UP: rc= KEY_PGUP;	break;
+        case KeyEvent.VK_HOME: rc= KEY_HOME;	break;
         case KeyEvent.VK_F1:  rc = KEY_F1;        break;
         case KeyEvent.VK_F2:  rc = KEY_F2;        break;
         case KeyEvent.VK_F3:  rc = KEY_F3;        break;
@@ -480,15 +459,15 @@ public class AWTEvents2 implements WindowListener,KeyEventDispatcher,KeyListener
             break;
 
         case KeyEvent.VK_SHIFT:
-        rc = KEY_RSHIFT;
+        rc = KEY_SHIFT;
         break;
         
         case KeyEvent.VK_CONTROL:
-        rc = KEY_RCTRL;
+        rc = KEY_CTRL;
         break;                           
        
         case KeyEvent.VK_ALT:
-        rc = KEY_RALT;
+        rc = KEY_ALT;
         break;
 
         case KeyEvent.VK_SPACE:
