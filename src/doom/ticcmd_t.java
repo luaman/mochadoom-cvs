@@ -38,6 +38,12 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
      * */
 
     public char chatchar, buttons; 
+    
+    /** HERETIC look/fly up/down/centering */    
+    public char		lookfly; 
+    
+    // TODO: will be ignored during vanilla demos. Consider using specialized
+    // per-demotype readers instead of Cacheable/Unpackage.
 
     /** replaces G_CmdChecksum (ticcmd_t cmd) */
 
@@ -66,6 +72,7 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
          dest.consistancy= consistancy;
          dest.chatchar= chatchar;
          dest.buttons= buttons;
+         dest.lookfly=lookfly;
      }
      
      private static StringBuilder sb=new StringBuilder();
