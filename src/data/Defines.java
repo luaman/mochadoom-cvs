@@ -5,6 +5,7 @@ import static data.Limits.MAXINT;
 import static data.Limits.MININT;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import g.Keys;
 import defines.ammotype_t;
 import defines.card_t;
 import doom.weapontype_t;
@@ -12,7 +13,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.45 2011/10/06 16:44:53 velktron Exp $
+// $Id: Defines.java,v 1.46 2011/10/07 16:07:41 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -121,50 +122,12 @@ public static final int    NUMPOWERS=6;
     INFRATICS=(120*TICRATE),
     IRONTICS =(60*TICRATE);
 
-//
-// DOOM keyboard definition.
-// This is the stuff configured by Setup.Exe.
-// Most key data are simple ascii (uppercased).
-//
-// Maes: using chars here instead of bytes.
-// NOTE: the codes used here are arbitrary, however they must
-// match what's used in the default.cfg files.
+// Center command from Heretic
+public final static int TOCENTER=-8;
 
-public final static char KEY_RIGHTARROW  =0x00ae;
-public final static char KEY_LEFTARROW   =0x00ac;
-public final static char KEY_UPARROW =0x00ad;
-public final static char KEY_DOWNARROW   =0x00af;
-public final static char KEY_ESCAPE = 27;
-public final static char KEY_ENTER =  13;
-public final static char KEY_TAB  =   9;
-public final static char KEY_F1      =(0x80+0x3b);
-public final static char KEY_F2      =(0x80+0x3c);
-public final static char KEY_F3      =(0x80+0x3d);
-public final static char KEY_F4      =(0x80+0x3e);
-public final static char KEY_F5      =(0x80+0x3f);
-public final static char KEY_F6      =(0x80+0x40);
-public final static char KEY_F7      =(0x80+0x41);
-public final static char KEY_F8      =(0x80+0x42);
-public final static char KEY_F9      =(0x80+0x43);
-public final static char KEY_F10     =(0x80+0x44);
-public final static char KEY_F11     =(0x80+0x57);
-public final static char KEY_F12     =(0x80+0x58);
-
-public final static char KEY_BACKSPACE  = 127;
-public final static char KEY_PAUSE   =0x00ff;
-
-public final static char KEY_EQUALS  =0x003d;
-public final static char KEY_MINUS   =0x002d;
-
-public final static char KEY_RSHIFT = (0x80+0x36);
-public final static char KEY_RCTRL  = (0x80+0x1d);
-public final static char KEY_RALT   = (0x80+0x38);
-
-public final static char KEY_LALT  =  KEY_RALT;
-public final static char KEY_CAPSLOCK =(0x80+0x3a);
-public final static char KEY_NUMLOCK =(0x80+0x45);
-public final static char KEY_SCRLCK = (0x80+0x46);
 // from r_defs.h:
+
+
 
 //Silhouette, needed for clipping Segs (mainly)
 //and sprites representing things.
@@ -249,7 +212,7 @@ public static final int BG     =     1;
 public static final int FG     =     0;
 
 //font stuff
-static public final char HU_CHARERASE  =  KEY_BACKSPACE;
+static public final char HU_CHARERASE  =  Keys.KEY_BACKSPACE;
 
 public static final int HU_MAXLINES  =   4;
 public static final int HU_MAXLINELENGTH  =  80;
@@ -267,7 +230,7 @@ public static final int HU_FONTSIZE = (HU_FONTEND - HU_FONTSTART + 1);
 
 static public final char HU_BROADCAST   = 5;
 
-static public final char HU_MSGREFRESH =  KEY_ENTER;
+static public final char HU_MSGREFRESH =  Keys.KEY_ENTER;
 static public final char HU_MSGX     =0;
 static public final char HU_MSGY     =0;
 static public final char HU_MSGWIDTH =64;  // in characters
@@ -356,45 +319,6 @@ public static final int SAVESTRINGSIZE = 24;
  // Time interval for item respawning.
  public static int ITEMQUESIZE       =128;
  
- 
-    /**
-     * LUT, motion clipping, walls/grid element // // LineDef attributes. // /**
-     * Solid, is an obstacle.
-     */
-    public static final int ML_BLOCKING = 1;
-
-    /** Blocks monsters only. */
-    public static final int ML_BLOCKMONSTERS = 2;
-
-    /** Backside will not be present at all if not two sided. */
-    public static final int ML_TWOSIDED = 4;
-
-    // If a texture is pegged, the texture will have
-    // the end exposed to air held constant at the
-    // top or bottom of the texture (stairs or pulled
-    // down things) and will move with a height change
-    // of one of the neighbor sectors.
-    // Unpegged textures allways have the first row of
-    // the texture at the top pixel of the line for both
-    // top and bottom textures (use next to windows).
-
-    /** upper texture unpegged */
-    public static final int ML_DONTPEGTOP = 8;
-
-    /** lower texture unpegged */
-    public static final int ML_DONTPEGBOTTOM = 16;
-
-    /** In AutoMap: don't map as two sided: IT'S A SECRET! */
-    public static final int ML_SECRET = 32;
-
-    /** Sound rendering: don't let sound cross two of these. */
-    public static final int ML_SOUNDBLOCK = 64;
-
-    /** Don't draw on the automap at all. */
-    public static final int ML_DONTDRAW = 128;
-
-    /** Set if already seen, thus drawn in automap. */
-    public static final int ML_MAPPED = 256;
 
     /** Indicate a leaf. e6y: support for extended nodes */
     public static final int NF_SUBSECTOR = 0x80000000;
@@ -417,6 +341,6 @@ public static final int SAVESTRINGSIZE = 24;
 
  
 static final String
-rcsid = "$Id: Defines.java,v 1.45 2011/10/06 16:44:53 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.46 2011/10/07 16:07:41 velktron Exp $";
 }
 
