@@ -128,6 +128,11 @@ public class player_t /*extends mobj_t */
     /** (fixed_t) bounded/scaled total momentum. */
     public int bob;
 
+    // Heretic stuff
+	public int			flyheight;
+	public int			lookdir;
+	public boolean		centering;
+    
     /**
      * This is only used between levels, mo->health is used during levels.
      * CORRECTION: this is also used by the automap widget.
@@ -284,6 +289,84 @@ public class player_t /*extends mobj_t */
                 && mo.state == states[statenum_t.S_PLAY.ordinal()]) {
             this.mo.SetMobjState(statenum_t.S_PLAY_RUN1);
         }
+        
+        // Freelook code ripped off Heretic. Sieg heil!
+        
+        int look = cmd.lookfly&15;
+        
+    	if(look > 7)
+    	{
+    		look -= 16;
+    	}
+    	if(look!=0)
+    	{
+    		if(look == TOCENTER)
+    		{
+    			centering = true;
+    		}
+    		else
+    		{
+    			lookdir += 5*look;
+    			if(lookdir > 90 || lookdir < -110)
+    			{
+    				lookdir -= 5*look;
+    			}
+    		}
+    	}
+    	
+    	// Centering is done over several tics
+    	if(centering)
+    	{
+    		if(lookdir > 0)
+    		{
+    			lookdir -= 8;
+    		}
+    		else if(lookdir < 0)
+    		{
+    			lookdir += 8;
+    		}
+    		if(Math.abs(lookdir) < 8)
+    		{
+    			lookdir = 0;
+    			centering = false;
+    		}
+    	}
+    	/* Flight stuff from Heretic
+    	fly = cmd.lookfly>>4;
+    		
+    	if(fly > 7)
+    	{
+    		fly -= 16;
+    	}
+    	if(fly && player->powers[pw_flight])
+    	{
+    		if(fly != TOCENTER)
+    		{
+    			player->flyheight = fly*2;
+    			if(!(player->mo->flags2&MF2_FLY))
+    			{
+    				player->mo->flags2 |= MF2_FLY;
+    				player->mo->flags |= MF_NOGRAVITY;
+    			}
+    		}
+    		else
+    		{
+    			player->mo->flags2 &= ~MF2_FLY;
+    			player->mo->flags &= ~MF_NOGRAVITY;
+    		}
+    	}
+    	else if(fly > 0)
+    	{
+    		P_PlayerUseArtifact(player, arti_fly);
+    	}
+    	if(player->mo->flags2&MF2_FLY)
+    	{
+    		player->mo->momz = player->flyheight*FRACUNIT;
+    		if(player->flyheight)
+    		{
+    			player->flyheight /= 2;
+    		}
+    	} */
     }
 
 
@@ -525,7 +608,23 @@ public class player_t /*extends mobj_t */
         return true;
     }
  
+    /**
+     * G_PlayerFinishLevel
+     * Called when a player completes a level.
+     */
 
+    public final void PlayerFinishLevel () 
+    { 
+        Arrays.fill(powers, 0);
+        Arrays.fill(cards,false);       
+        mo.flags &= ~mobj_t.MF_SHADOW;     // cancel invisibility 
+        extralight = 0;          // cancel gun flashes 
+        fixedcolormap = 0;       // cancel ir gogles 
+        damagecount = 0;         // no palette changes 
+        bonuscount = 0;
+        lookdir = 0; // From heretic
+    } 
+    
 
     /**
      * P_PlayerInSpecialSector
@@ -1239,6 +1338,57 @@ SetPsprite
      player.fixedcolormap = 0;
     }
 
+    /**
+     * G_PlayerReborn
+     * Called after a player dies 
+     * almost everything is cleared and initialized 
+     *
+     *
+     */
+
+    public void PlayerReborn () 
+    { 
+        int     i; 
+        int[]     frags=new int [MAXPLAYERS]; 
+        int     killcount;
+        int     itemcount;
+        int     secretcount; 
+
+        // System.arraycopy(players[player].frags, 0, frags, 0, frags.length);
+        // We save the player's frags here...
+        C2JUtils.memcpy (frags,this.frags,frags.length); 
+        killcount = this.killcount; 
+        itemcount = this.itemcount; 
+        secretcount = this.secretcount; 
+
+        //MAES: we need to simulate an erasure, possibly without making
+        // a new object.memset (p, 0, sizeof(*p));
+        //players[player]=(player_t) player_t.nullplayer.clone();
+        // players[player]=new player_t();
+        this.reset();
+
+        // And we copy the old frags into the "new" player. 
+        C2JUtils.memcpy(this.frags, frags, this.frags.length); 
+
+        this.killcount = killcount; 
+        this.itemcount = itemcount; 
+        this.secretcount = secretcount; 
+
+        usedown = attackdown = true;  // don't do anything immediately 
+        playerstate = PST_LIVE;       
+        health[0] = MAXHEALTH; 
+        readyweapon = pendingweapon = weapontype_t.wp_pistol; 
+        weaponowned[weapontype_t.wp_fist.ordinal()] = true; 
+        weaponowned[weapontype_t.wp_pistol.ordinal()] = true;        
+        ammo[ammotype_t.am_clip.ordinal()] = 50; 
+        lookdir = 0; // From Heretic
+
+        for (i=0 ; i<NUMAMMO ; i++) 
+        	this.maxammo[i] = DoomStatus.maxammo[i]; 
+
+    }
+
+    
     /** Called by Actions ticker */
     public void PlayerThink() {
         PlayerThink(this);       
