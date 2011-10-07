@@ -1,10 +1,8 @@
 package rr;
 
+import static rr.line_t.*;
 import static data.Defines.FF_FRAMEMASK;
 import static data.Defines.FF_FULLBRIGHT;
-import static data.Defines.ML_DONTPEGBOTTOM;
-import static data.Defines.ML_DONTPEGTOP;
-import static data.Defines.ML_MAPPED;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMCOLORMAPS;
 import static data.Defines.PU_CACHE;
@@ -52,6 +50,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 
+import m.FixedFloat;
 import m.IDoomMenu;
 import m.MenuMisc;
 import p.AbstractLevelLoader;
@@ -217,7 +216,27 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		extralight = player.extralight;
 
 		viewz = player.viewz;
-
+		lookdir=(int) player.lookdir;
+		int tempCentery;
+		
+		// MAES: hacks based on Heretic. Weapon movement needs to be compensated
+		if (setblocks==11)
+			tempCentery= (viewheight/2)+(int)(lookdir*SCREEN_MUL*setblocks)/11;
+		else
+			tempCentery =  (viewheight/2)+(int)(lookdir*SCREEN_MUL*setblocks)/10;
+		
+		if(centery != tempCentery)
+		{			
+			centery = tempCentery;
+			centeryfrac = centery<<FRACBITS;
+			int yslope[]=MyPlanes.getYslope();
+			for(i = 0; i < viewheight; i++)
+			{
+				yslope[i] = FixedDiv ((viewwidth<<detailshift)/2*FRACUNIT,
+					Math.abs(((i-centery)<<FRACBITS)+FRACUNIT/2));
+			}
+		}
+		
 		viewsin = Tables.finesine(viewangle);
 		viewcos = Tables.finecosine(viewangle);
 
@@ -239,6 +258,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		validcount++;
 	}
 
+	protected int lookdir;
+	
 	/**
 	 * R_SetupFrame for a particular actor.
 	 * 
@@ -1130,7 +1151,6 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		 * 
 		 */
 		public final void DrawVisSprite(vissprite_t vis, int x1, int x2) {
-			// System.out.println("Drawing vissprite "+vis);
 			column_t column;
 			int texturecolumn;
 			int frac; // fixed_t
@@ -1392,31 +1412,27 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			}
 
 			sprdef = getSprites()[psp.state.sprite.ordinal()];
+			
 			if (RANGECHECK) {
 				if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes)
 					I.Error("R_ProjectSprite: invalid sprite frame %i : %i ",
 							psp.state.sprite, psp.state.frame);
 			}
+			
 			sprframe = sprdef.spriteframes[psp.state.frame & FF_FRAMEMASK];
 
 			// Base frame for "angle 0" aka viewed from dead-front.
 			lump = sprframe.lump[0];
-			// Q: where can this be set? 
-			// A: at sprite loadtime.
+			// Q: where can this be set? A: at sprite loadtime.
 			flip = (boolean) (sprframe.flip[0] != 0);
 
 			// calculate edges of the shape. tx is expressed in "view units".
-
-			// OPTIMIZE: if weaponadjust is computed in-place, noticeable
-			// slowdown occurs.
-			// MAES: actually that was not what was causing it.
 			tx = (int) (FixedMul(psp.sx, BOBADJUST) - WEAPONADJUST);
 
 			tx -= spriteoffset[lump];
 
 			// So...centerxfrac is the center of the screen (pixel coords in
 			// fixed point).
-			//
 			x1 = (centerxfrac + FixedMul(tx, pspritescale)) >> FRACBITS;
 
 			// off the right side
@@ -1433,7 +1449,10 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			// store information in a vissprite ?
 			vis = avis;
 			vis.mobjflags = 0;
-			vis.texturemid = (BASEYCENTER << FRACBITS) + FRACUNIT / 2
+			// FIXME: I need to compensate for freelook here, otherwise the weapon wanders 
+			// around. Currently, only one screen scaling looks correct (fixed weapons),
+			// all others exhibit some degree of wandering.
+			vis.texturemid = ((BASEYCENTER+lookdir) << FRACBITS) + FRACUNIT / 2
 					- (psp.sy - spritetopoffset[lump]);
 			vis.x1 = x1 < 0 ? 0 : x1;
 			vis.x2 = x2 >= viewwidth ? viewwidth - 1 : x2;
@@ -1474,8 +1493,28 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			DrawVisSprite(vis, vis.x1, vis.x2);
 		}
 
+		/*
+		========================
+		=
+		= R_DrawPSprite
+		=
+		========================
+		*/
+
+		protected int PSpriteSY[] =
+		{
+			0,				// staff
+			5*FRACUNIT,		// goldwand
+			15*FRACUNIT,	// crossbow
+			15*FRACUNIT,	// blaster
+			15*FRACUNIT,	// skullrod
+			15*FRACUNIT,	// phoenix rod
+			15*FRACUNIT,	// mace
+			15*FRACUNIT,	// gauntlets
+			15*FRACUNIT		// beak
+		};
+		
 		/** used inside DrawPSprite, better make this static */
-		// vis=new vissprite_t();
 		protected vissprite_t avis = new vissprite_t();
 
 		/**
@@ -4232,13 +4271,6 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		V.MarkRect(0, 0, SCREENWIDTH, SCREENHEIGHT - DM.ST.getHeight());
 	}
 
-	/**
-	 * R_FillBackScreen Fills the back screen with a pattern for variable screen
-	 * sizes Also draws a beveled edge. This is actually stored in screen 1, and
-	 * is only OCCASIONALLY written to screen 1 (the visible one) by calling
-	 * R_VideoErase.
-	 */
-
 	public void ExecuteSetViewSize() {
 		int cosadj;
 		int dy;
@@ -4312,12 +4344,11 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			screenheightarray[i] = (short) viewheight;
 
 		// planes
-		for (i = 0; i < viewheight; i++) {
+		for (i = 0; i < viewheight; i++) {			
 			dy = ((i - viewheight / 2) << FRACBITS) + FRACUNIT / 2;
 			dy = Math.abs(dy);
 			MyPlanes.getYslope()[i] = FixedDiv((viewwidth << detailshift) / 2
 					* FRACUNIT, dy);
-			
 			// MyPlanes.yslopef[i] = ((viewwidth<<detailshift)/2)/ dy;
 		}
 
@@ -4341,13 +4372,8 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			for (j = 0; j < MAXLIGHTSCALE; j++) {
 				level = startmap - j * SCREENWIDTH / (viewwidth << detailshift)
 						/ DISTMAP;
-
-				if (level < 0)
-					level = 0;
-
-				if (level >= NUMCOLORMAPS)
-					level = NUMCOLORMAPS - 1;
-
+				if (level < 0) level = 0;
+				if (level >= NUMCOLORMAPS)level = NUMCOLORMAPS - 1;
 				scalelight[i][j] = colormaps[level];
 			}
 		}
@@ -4359,6 +4385,13 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 
 	}
 
+	/**
+	 * R_FillBackScreen Fills the back screen with a pattern for variable screen
+	 * sizes Also draws a beveled edge. This is actually stored in screen 1, and
+	 * is only OCCASIONALLY written to screen 0 (the visible one) by calling
+	 * R_VideoErase.
+	 */
+	
 	public void FillBackScreen() {
 		flat_t src;
 		byte[] dest;
