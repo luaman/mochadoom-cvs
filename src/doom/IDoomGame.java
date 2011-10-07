@@ -37,7 +37,7 @@ public interface IDoomGame {
 
    public void setGameAction(gameaction_t ga);
    
-   public void PlayerReborn(int player);
+   // public void PlayerReborn(int player);
    
    void DeathMatchSpawnPlayer(int playernum);
 
