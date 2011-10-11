@@ -2,12 +2,15 @@ package v;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.awt.image.DataBufferShort;
+import java.awt.image.DataBufferUShort;
+
 import m.BBox;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: TrueColorRenderer.java,v 1.2 2011/10/11 13:53:18 velktron Exp $
+// $Id: HIColorRenderer.java,v 1.1 2011/10/11 13:53:18 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,20 +31,20 @@ import m.BBox;
 //
 //-----------------------------------------------------------------------------
 
-public class TrueColorRenderer extends SoftwareVideoRenderer {
+public class HIColorRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: TrueColorRenderer.java,v 1.2 2011/10/11 13:53:18 velktron Exp $";
+static final String rcsid = "$Id: HIColorRenderer.java,v 1.1 2011/10/11 13:53:18 velktron Exp $";
 
 
 /* With a truecolour raster, some things are indeed easier */
-protected int[][] palettes;
-protected int[] raster;
+protected short[][] palettes;
+protected short[] raster;
 
-public TrueColorRenderer(){
+public HIColorRenderer(){
 super();
 }
 
-public TrueColorRenderer(int w,int h){
+public HIColorRenderer(int w,int h){
     // Defaults
     super(w,h);
 }
@@ -54,8 +57,7 @@ public void Init ()
 	}
      dirtybox=new BBox();
      
-  // Using ARGB is half the speed, WTF? While RGB is almost as fast as indexed. Go figure.
-  this.currentscreen=new BufferedImage(width,height, BufferedImage.TYPE_INT_RGB);
+  this.currentscreen=new BufferedImage(width,height, BufferedImage.TYPE_USHORT_565_RGB);
   this.mapInternalRasterToBufferedImage((BufferedImage) currentscreen);
 }
 
@@ -98,7 +100,7 @@ public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
 		  System.out.printf("Enough data for %d gamma levels",maxgammas);
     	  
     	  // Create as gamma levels as specified.
-    	  this.palettes=new int[maxgammas*maxpalettes][];
+    	  this.palettes=new short[maxgammas*maxpalettes][];
     	  
     	  // First set of palettes, normal gamma.
     	  //this.palettes[0]=new int[maxpalettes];
@@ -114,13 +116,16 @@ public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
     		  
     		  // For each palette
     		  for (int y=0;y<maxpalettes;y++){
-    			  this.palettes[z*maxpalettes+y]=new int[colors];
+    			  this.palettes[z*maxpalettes+y]=new short[colors];
     			  
     			  for (int x=0;x<256;x++){
     				  int r=gammadata[z][0xFF&paldata[y*colors*stride+stride*x]]; // R
     				  int g=gammadata[z][0xFF&paldata[1+y*colors*stride+stride*x]]; // G
     				  int b=gammadata[z][0xFF&paldata[2+y*colors*stride+stride*x]]; // B
-    				  int color=0xFF000000|r<<16|g<<8|b;
+    				  r>>>=3;
+    		  			g>>>=2;
+    		  			b>>>=3;
+    				  short color=(short) ((r<<11)|(g<<5)|b);
     				  this.palettes[z*maxpalettes+y][x]=color;
     			  	}
     	  		}
@@ -144,7 +149,7 @@ public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
  */
 
 private void mapInternalRasterToBufferedImage(BufferedImage b){
-    raster=((DataBufferInt)(b.getRaster().getDataBuffer())).getData();
+    raster=((DataBufferUShort)(b.getRaster().getDataBuffer())).getData();
     
 }
 
@@ -193,7 +198,7 @@ public void setPalette(byte[] pal){
 public  final void update()  {
     final byte[] scr=this.screens[usescreen];
     final int length=scr.length; 
-    final int[] pal=this.palettes[usegamma*maxpalettes+usepalette];
+    final short[] pal=this.palettes[usegamma*maxpalettes+usepalette];
     for (int i=0;i<length;i+=16){
         raster[i]=pal[0xFF&scr[i]];
         raster[i+1]=pal[0xFF&scr[i+1]];
