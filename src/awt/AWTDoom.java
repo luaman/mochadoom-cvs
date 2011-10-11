@@ -26,6 +26,7 @@ import javax.swing.JFrame;
 
 import timing.ITicker;
 import v.BufferedRenderer;
+import v.DoomVideoRenderer;
 import v.SoftwareVideoRenderer;
 import doom.DoomMain;
 import doom.ICommandLineManager;
@@ -67,19 +68,17 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	public DoomMain DM;            // Must be aware of general status.
 	public ICommandLineManager CM; // Must be aware of command line interface.
 	private IDoomSystem I;         // Must be aware of some other shit like event handler
-	private BufferedRenderer V;    // Must have a video renderer....
+	private DoomVideoRenderer V;    // Must have a video renderer....
 	private ITicker TICK;          // Must be aware of the ticker/
 	private byte[] RAWSCREEN;	   // RAW SCREEN DATA. Get from the Video Renderer.
 	private MochaEvents eventhandler; // Separate event handler a la _D_.
 	                               // However I won't make it fully "eternity like" yet
 	                               // also because it works quite flakey on Linux.
 	
-	
-	private IndexColorModel[][] cmaps;
 	  Robot robby;
 		Canvas drawhere;
-		/** These are the actual screens */
-        Image[] screens;
+		/** This is the actual screen */
+        Image screen;
         int palette=0;
         Dimension size;
         Image crap;
@@ -89,8 +88,6 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
         /** Dimensions of the screen buffers */
         protected int width,height;
         protected int multiply=1;
-        protected byte[] cmap;
-		private int maxpalettes;
 
 		/** Gimme some raw palette RGB data.
 		 *  I will do the rest
@@ -100,13 +97,12 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 		 * 
 		 */
      
-        public AWTDoom(DoomMain DM, BufferedRenderer V, byte[] cmap) {
+        public AWTDoom(DoomMain DM, DoomVideoRenderer V) {
         	this.DM=DM;
         	this.CM=DM.CM;
         	this.TICK=DM.TICK;
         	this.I=DM.I;
         	this.V= V;
-        	this.cmap=cmap;
             // If these aren't set here, the init code won't size up windows properly.
         	// Of course, we must have made up our mind about the resolution
         	// already, at this point (TODO: command line parameters and multiplication
@@ -130,8 +126,9 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
            // Should probably run just once. Overhead is minimal
            // compared to actually DRAWING the stuff.
            if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();
+           V.update();
            //voli.getGraphics().drawImage(bi,0,0,null);
-           g2d.drawImage(screens[palette],0,0,this);
+           g2d.drawImage(screen,0,0,this);
            
         }
         
@@ -178,7 +175,8 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	@Override
 	public void SetPalette (int palette)
 	{
-		   this.palette=palette%maxpalettes;      
+		V.setPalette(palette);
+		this.screen=V.getCurrentScreen();      
 	}
 	
 	
@@ -283,10 +281,6 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	  } catch (Exception e){
 		  I.Error("Error creating AWTDoom frame. Exiting.");
 	  }
-
-	  // create the colormaps
-	  
-	  createPalettes();
 	 
 	  // AWT: tab is a special case :-/
 	  // We need to "peg" it to the JFrame, rather than the canvas,
@@ -324,63 +318,15 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 	  // Gently tell the eventhandler to wake up and set itself.	  
 	  this.requestFocus();
 	  this.eventhandler.addEvent(MochaDoomInputEvent.GET_YOUR_ASS_OFF);
-	  setGamma(0); 
+	  SetGamma(0); 
 	  
 	}
-
-	/** Internal method for setting up palettes (and gamma tables)
-	 * 
-	 */
 	
-    protected void createPalettes() {
-        if (cmap!=null|| cmap.length<768) {
-        	  // As many as are likely contained
-        	  maxpalettes=cmap.length/768;
-        	  System.out.println(maxpalettes + " palettes read");
-        	  
-        	  // As many as gammas.
-        	  cmaps=new IndexColorModel[SoftwareVideoRenderer.gammatable.length][];
-        	  
-        	  // First set of palettes, normal gamma.
-        	  cmaps[0]=new IndexColorModel[maxpalettes];
-        
-        	  // Now we have our palettes.
-        	  for (int i=0;i<maxpalettes;i++){
-        		  cmaps[0][i]=new IndexColorModel(8, 256,cmap, i*768, false);
-        	  		}
-            
-            // Wire the others according to the gamma table.
-        	  byte[] tmpcmap=new byte[768];
-        	  
-        	  // For each gamma value...
-        	  for (int j=1;j<SoftwareVideoRenderer.gammatable.length;j++){
-        		  
-        		  cmaps[j]=new IndexColorModel[maxpalettes];
-        		  
-        		  // For each palette
-        		  for (int i=0;i<maxpalettes;i++){
-        			  
-        			  for (int k=1;k<256;k++){
-        				  tmpcmap[3*k]=(byte) SoftwareVideoRenderer.gammatable[j][0x00FF&cmap[i*768+3*k]]; // R
-        				  tmpcmap[3*k+1]=(byte) SoftwareVideoRenderer.gammatable[j][0x00FF&cmap[1+i*768+3*k]]; // G
-        				  tmpcmap[3*k+2]=(byte) SoftwareVideoRenderer.gammatable[j][0x00FF&cmap[2+i*768+3*k]]; // B
-        			  	}
-
-        			  cmaps[j][i]=new IndexColorModel(8, 256,tmpcmap, 0, false);
-        	  		}
-        	  }
-
-        	  
-          } else {
-        	  // TODO: Allow it to pull from some default location?
-        	  System.err.println("Palette and colormaps could not be set up. Bye");
-        	  System.exit(-1);
-          }
-    } 
 	
-	public void setGamma(int level){
+	public void SetGamma(int level){
 		if (D) System.err.println("Setting gamma "+level);
-		screens=V.getBufferedScreens(0, cmaps[level]);
+		V.setUsegamma(level);
+		screen=V.getCurrentScreen(); // Refresh screen after change.
 		RAWSCREEN=V.getScreen(0);
 	}
 	
@@ -480,6 +426,9 @@ public class AWTDoom extends JFrame implements DoomVideoInterface{
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.12  2011/10/11 13:24:51  velktron
+//Major overhaul to work with new renderer interface. Now only available windowing system.
+//
 //Revision 1.11  2011/08/01 00:59:57  velktron
 //Shut up debug messages.
 //
