@@ -1171,7 +1171,7 @@ public class Menu extends AbstractDoomMenu {
                 // FIXME: it's pointless to reload the same palette.
                 //I.SetPalette (W.CacheLumpName ("PLAYPAL",PU_CACHE));
                 DM.VI.SetPalette(0);
-                V.setUsegamma(usegamma);
+                DM.VI.SetGamma(usegamma);
                 return true;
 
             }
