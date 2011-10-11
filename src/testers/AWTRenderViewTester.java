@@ -9,10 +9,11 @@ import i.DoomSystem;
 import i.IDoomSystem;
 
 import p.Actions;
+import p.ILevelLoader;
 import p.LevelLoader;
 
 import automap.Map;
-import awt.OldAWTDoom;
+import awt.AWTDoom;
 
 import rr.SimpleTextureManager;
 import rr.UnifiedRenderer;
@@ -24,7 +25,12 @@ import m.IDoomMenu;
 import m.Menu;
 import m.DoomRandom;
 import v.BufferedRenderer;
+import v.DoomVideoRenderer;
+import v.GammaTables;
+import v.HiColorRenderer565;
+
 import v.IVideoScale;
+import v.TrueColorRenderer;
 import v.VideoScaleInfo;
 import w.DoomBuffer;
 import w.WadLoader;
@@ -57,12 +63,12 @@ public class AWTRenderViewTester {
     // Read the palette.
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     // Create a video renderer
-    BufferedRenderer V=new BufferedRenderer(VSI.getScreenWidth(),VSI.getScreenHeight());
+    DoomVideoRenderer V=new HiColorRenderer565(VSI.getScreenWidth(),VSI.getScreenHeight());
     V.setVideoScale(VSI);
     V.initScaling();
     V.Init();
     byte[] pal=palette.getBuffer().array();
-    
+    V.createPalettes(pal, GammaTables.gammatables, 14, 256, 3, 5);
 
     
     IDoomSystem I=new DoomSystem();
@@ -76,7 +82,7 @@ public class AWTRenderViewTester {
     DM.DGN=new DummyNetworkHandler();
     
     // Create the frame.
-    OldAWTDoom frame = new OldAWTDoom(DM,V,pal);
+    AWTDoom frame = new AWTDoom(DM,V);
     frame.InitGraphics();
     DM.I=I;
     DM.VI=frame;
@@ -125,7 +131,7 @@ public class AWTRenderViewTester {
     Map AM=new Map(DM);
     DM.AM=AM;
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
-    LevelLoader LL=DM.LL=new LevelLoader(DM);
+    ILevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
     DM.R=new UnifiedRenderer(DM);
     DM.TM=new SimpleTextureManager(DM);
@@ -145,7 +151,7 @@ public class AWTRenderViewTester {
     
     DM.P.Init();
     DM.players[0].updateStatus(DM);
-    DM.PlayerReborn(0);
+    DM.players[0].PlayerReborn();
     
     ST.Init();
     M.Init();
@@ -154,7 +160,7 @@ public class AWTRenderViewTester {
     AM.LevelInit();
     AM.Start();
     
-    DM.R.SetViewSize(11, 0);
+    DM.R.SetViewSize(11, 1);
     DM.R.ExecuteSetViewSize();
     DM.TM.setSkyTexture(DM.TM.CheckTextureNumForName("SKY1"));
     long a=System.nanoTime();
