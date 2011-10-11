@@ -838,8 +838,8 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
   
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
 
-  protected int SCREENWIDTH;
-  protected int SCREENHEIGHT;
+  protected int SCREENWIDTH=320;
+  protected int SCREENHEIGHT=200;
   protected IVideoScale vs;
 
 
