@@ -4,33 +4,17 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import m.BBox;
 
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id: TrueColorRenderer.java,v 1.2 2011/10/11 13:53:18 velktron Exp $
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-//
-// DESCRIPTION:
-//	Gamma correction LUT stuff.
-//	Functions to draw patches (by post) directly to screen.
-//	Functions to blit a block to the screen.
-//
-//-----------------------------------------------------------------------------
+/** Truecolor (24/32-bit) renderer. Uses indexed palette LUTs for a RGB888
+ * display. BufferedImage.TYPE_INT_RGB seems to be the fastest, almost on part 
+ * with built-in indexed, while ARGB has nearly half the performace. Go figure. 
+ * 
+ * @author velktron
+ *
+ */
 
 public class TrueColorRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: TrueColorRenderer.java,v 1.2 2011/10/11 13:53:18 velktron Exp $";
+static final String rcsid = "$Id: TrueColorRenderer.java,v 1.3 2011/10/11 16:55:30 velktron Exp $";
 
 
 /* With a truecolour raster, some things are indeed easier */
@@ -97,19 +81,9 @@ public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
 		  System.out.printf("Enough data for %d palettes",maxpalettes);
 		  System.out.printf("Enough data for %d gamma levels",maxgammas);
     	  
-    	  // Create as gamma levels as specified.
+    	  // Create as many gamma levels as specified.
     	  this.palettes=new int[maxgammas*maxpalettes][];
-    	  
-    	  // First set of palettes, normal gamma.
-    	  //this.palettes[0]=new int[maxpalettes];
-    
-    	  // Now we have our palettes.
-    	  // SUPER OPTIMIZATION: flat array access.
-    	  // Normally it would be palettes[gammas][palettes][colors];
-    	  // x + WIDTH * (y + DEPTH * z)]
-    	  // x= colors y= palette z= gamma WIDTH= #color DEPTH= #palettes
-    	  // For each gamma value...
-
+   	  
     	  for (int z=0;z<maxgammas;z++){
     		  
     		  // For each palette
@@ -145,41 +119,6 @@ public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
 
 private void mapInternalRasterToBufferedImage(BufferedImage b){
     raster=((DataBufferInt)(b.getRaster().getDataBuffer())).getData();
-    
-}
-
-/** Creates a 256 color int palette
- * 
- * @param pal palette lump from IWAD
- */
-
-public void setPalette(byte[] pal){
-/*
-    palette=new int[256*pal.length/768];    
-    
-    
-    for(int i = 0; i < pal.length/3; i++) {
-        System.out.print(Integer.toHexString(0xFF&pal[i*3])+" ");
-        System.out.print(Integer.toHexString(0xFF&pal[1+i*3])+" ");
-        System.out.print(Integer.toHexString(0xFF&pal[2+i*3])+" ");
-        
-        int r=C2JUtils.toUnsignedByte(pal[i * 3]);
-        int g=C2JUtils.toUnsignedByte(pal[1+i * 3]);
-        int b=C2JUtils.toUnsignedByte(pal[2+i * 3]);
-        
-        palette[i] = (r<<16|g<<8|b);
-        System.out.println(Integer.toHexString(0x00FFFFFF&palette[i]));
-    }
-
-    int[] tmp= new int[128];
-    
-    for(int i = 0; i < palette.length/256; i++) {
-        // Swap signed/unsigned.
-        System.arraycopy(palette, 128+256*i, tmp,0, 128);
-        System.arraycopy(palette, 0+256*i, palette,128+256*i, 128);
-        System.arraycopy(tmp, 0, palette,256*i, 128);
-        
-    } */
     
 }
 

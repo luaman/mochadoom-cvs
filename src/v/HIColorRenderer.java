@@ -1,39 +1,20 @@
 package v;
 
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
-import java.awt.image.DataBufferShort;
 import java.awt.image.DataBufferUShort;
 
 import m.BBox;
 
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
-//
-// $Id: HIColorRenderer.java,v 1.1 2011/10/11 13:53:18 velktron Exp $
-//
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-//
-// DESCRIPTION:
-//	Gamma correction LUT stuff.
-//	Functions to draw patches (by post) directly to screen.
-//	Functions to blit a block to the screen.
-//
-//-----------------------------------------------------------------------------
+/** Hi-Color (16-bit) renderer. Uses indexed palette LUTs for a RGB565
+ * display. Slower than a RGB 888 display, for some reason :-/
+ * 
+ * @author velktron
+ *
+ */
 
 public class HIColorRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: HIColorRenderer.java,v 1.1 2011/10/11 13:53:18 velktron Exp $";
+static final String rcsid = "$Id: HIColorRenderer.java,v 1.2 2011/10/11 16:55:30 velktron Exp $";
 
 
 /* With a truecolour raster, some things are indeed easier */
