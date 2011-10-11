@@ -15,7 +15,6 @@ import p.Actions;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
-import awt.OldAWTDoom;
 import awt.AWTDoom;
 import f.EndLevel;
 import f.Finale;
@@ -69,6 +68,8 @@ import timing.MilliTicker;
 import timing.NanoTicker;
 import utils.C2JUtils;
 import v.BufferedRenderer;
+import v.GammaTables;
+import v.HiColorRenderer555;
 import v.IVideoScale;
 import v.IVideoScaleAware;
 //import v.VideoScaleInfo;
@@ -88,7 +89,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.88 2011/10/07 16:01:26 velktron Exp $
+// $Id: DoomMain.java,v 1.89 2011/10/11 21:07:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -114,7 +115,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.88 2011/10/07 16:01:26 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.89 2011/10/11 21:07:39 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1021,6 +1022,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // init subsystems
         System.out.print ("V_Init: allocate screens.\n");
         V.Init ();
+        
 
         System.out.print ("M_LoadDefaults: Load system defaults.\n");
         MenuMisc.LoadDefaults (this);              // load before initing other systems
@@ -1039,6 +1041,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //
         System.out.print ("VI_Init: set colormaps.\n");
         byte[] tmppal=W.CacheLumpNameAsRawBytes("PLAYPAL", PU_STATIC);
+        V.createPalettes(tmppal, GammaTables.gammatables, 14, 256, 3, 5);
         // set it, create it, but don't make it visible yet.
         
         // MAES: FIX for incomplete palette lumps such as those in EGADOOM.
@@ -1046,16 +1049,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //byte[] pal=new byte[14*768];
         //System.arraycopy(tmppal, 0, pal, 0, tmppal.length);
         
-        p = CM.CheckParm ("-oldawtevents");
-        if (!eval(p)) {
-        	// This is the "mochaevents" interface, now default.
-        	VI=new AWTDoom(this,(BufferedRenderer) V,tmppal);
-        }
-        else {
-        	System.out.print("Using OLDER AWT inteface. Some stuff may be broken!\n");
-        	VI=new OldAWTDoom(this,(BufferedRenderer) V,tmppal);
-        }
-        
+
+        VI=new AWTDoom(this,V);
+
         VI.InitGraphics();
         
         
@@ -4178,6 +4174,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.89  2011/10/11 21:07:39  velktron
+//up-to-date DoomMain
+//
 //Revision 1.88  2011/10/07 16:01:26  velktron
 //Added freelook stuff, using Keys.
 //
