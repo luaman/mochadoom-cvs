@@ -1,5 +1,6 @@
 package v;
 
+import java.awt.Image;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
 
@@ -67,9 +68,7 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
     
     public void setScreen(int index, int width, int height);
     
-    public int getUsegamma();
-
-    public void setUsegamma(int gamma);
+    public int getUsegamma();    
     
     public void takeScreenShot(int screen, String imagefile, IndexColorModel icm) throws IOException;
     
@@ -86,5 +85,51 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
 
     void DrawPatchColScaled(int x,  patch_t patch,int col, IVideoScale vs,
             int screen);
+    
+    /** Perform any action necessary so that palettes get modified according to specified gamma.
+     *  Consider this a TIME CONSUMING operation, so don't call it unless really necessary.
+     * 
+     * @param gammalevel
+     * 
+     */
+    void setUsegamma(int gammalevel);
+    
+    /** Perform any action necessary so that the screen output uses the specified palette
+     * Consider this a TIME CONSUMING operation, so don't call it unless really necessary.
+     * 
+     * @param palette
+     */
+    
+    void setPalette(int palette);
+    
+    
+    /** Perform any action necessary so that palettes and gamma tables are created, e.g. by reading
+     * from on-disk resources or from somewhere else.
+     * 
+     */
+    void createPalettes(byte[] paldata, short[][] gammadata, final int palettes, final int colors, final int stride,final int gammalevels);
+    
+    
+    /** No matter how complex/weird/arcane palette manipulations you do internally, the AWT module
+     *  must always be able to "tap" into what's the current, "correct" screen after all manipulation and
+     *  color juju was applied. Call after a palette/gamma change.
+     * 
+     */
+    Image getCurrentScreen();
+    
+    /** Final call before updating a particular screen. 
+     *  In case that e.g. manual palette application or additonal
+     *  rendering must be performed on a screen.
+     * 
+     */
+    
+    void update();
+    
+    
+    /** Which of the internal screens you want to display next time you call getCurrentScreen
+     * 
+     * @param screen
+     */
+    void setCurrentScreen(int screen);
     
 }
