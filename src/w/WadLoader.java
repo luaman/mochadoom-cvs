@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.48 2011/09/29 15:18:31 velktron Exp $
+// $Id: WadLoader.java,v 1.49 2011/10/19 12:34:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,9 @@
 // for more details.
 //
 // $Log: WadLoader.java,v $
+// Revision 1.49  2011/10/19 12:34:29  velktron
+// Using extractFileBase in C2JUtils now, got rid of filelength
+//
 // Revision 1.48  2011/09/29 15:18:31  velktron
 // Resource coalescing correctly handles wadfiles
 //
@@ -272,61 +275,6 @@ public class WadLoader implements IWadLoader {
 		}
 	}
 
-	/** Maes: File intead of "inthandle" */
-
-	public long filelength(File handle) {
-		try {/*
-			 * stat fileinfo; if (fstat (handle,&fileinfo) == -1) I_Error
-			 * ("Error fstating");
-			 */
-
-			return handle.length();
-		} catch (Exception e) {
-			I.Error("Error fstating");
-			return -1;
-		}
-
-	}
-
-/** This method is supposed to return the "name" part of a filename. It was
- *  intended to return length-limited (max 8 chars) strings to use as lump 
- *  indicators. There's normally no need to enforce this behavior, as there's
- *  nothing preventing the engine from INTERNALLY using lump names with >8 chars.
- *  However, just the sure...
- * 
- * @param path
- * @return
- */
-
-	protected String ExtractFileBase(String path, boolean nolimit) {
-		int src = path.length() - 1;
-		// Duh???
-
-		// back up until a \ or the start
-		// MAES: hideously not OO or cross-platform :-p
-		/*
-		 * while ((src >=0) && path.charAt(src) != '\\' && path.charAt(src) !=
-		 * '/') { src--; }
-		 */
-
-		// Maes: better use this, I think. Now that TRULY is enterprise programming!
-
-		String separator=System.getProperty("file.separator");
-		src = path.lastIndexOf(separator);
-		// If proper separator is not found? 
-		// Filename is relative, 
-		//if (src < 0)
-		//	src = path.lastIndexOf(separator);
-		if (src < 0)
-			src = 0;
-
-		// copy UP to eight characters unless enforced otherwise.
-		
-		int pos = path.lastIndexOf('.');
-		if (nolimit) pos=Math.min(8,pos);
-		return path.substring(0,pos).toUpperCase();
-	}
-
 	//
 	// LUMP BASED ROUTINES.
 	//
@@ -400,7 +348,7 @@ public class WadLoader implements IWadLoader {
 			singleinfo.size = (long) (handle.length());
 			
 			// Single lumps. Only use 8 characters			
-			singleinfo.name = ExtractFileBase(filename, false);
+			singleinfo.name = C2JUtils.extractFileBase(filename, 8).toUpperCase();
 			
 			// MAES: check out certain known types of extension
 			if (C2JUtils.checkForExtension(filename,"lmp"))			
