@@ -15,7 +15,7 @@ import utils.C2JUtils;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.14 2011/10/11 13:22:58 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.15 2011/10/23 16:42:55 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,6 +29,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.15  2011/10/23 16:42:55  velktron
+// Minor rewriting of raster mangling code
+//
 // Revision 1.14  2011/10/11 13:22:58  velktron
 // Now handles palette and gamma construction internally, as per new interface. Got rid of some truecolour remnants.
 //
@@ -148,7 +151,7 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.14 2011/10/11 13:22:58 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.15 2011/10/23 16:42:55 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -189,8 +192,7 @@ public final void Init ()
  int		i;
  for (i=0 ; i<4 ; i++){
 	//screens[i] = new byte[this.getHeight()*this.getWidth()];
-     this.setScreen(i, this.width, this.height);
-     
+     this.setScreen(i, this.width, this.height);     
 	}
      dirtybox=new BBox();
 }
@@ -205,16 +207,21 @@ public final void Init ()
 @Override
 public final void setScreen(int index, int width, int height){
 
+	final WritableRaster r;
+	
     // We must FIRST initialize the image, so that the (immutable) color model will be set.
+    if (this.icm==null){
+    	screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED);
+    }
+    else{
+    	r=icm.createCompatibleWritableRaster(width,height);
+    	screenbuffer[index]=new BufferedImage(icm,r,false,null);
+    }
     
-    if (this.icm==null)
-    screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED);
-    else
-        screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED,this.icm);    
     
     // Hack: hotwire the screenbuffers directly to the image. T3h h4x, d00d.
-    // Now, HERE is where the magic happens. Once a BufferedImage is created, the internal raster is
-    // immutable, but its backing data array is accessible for read/write.
+    // Now, HERE is where the magic happens. Once a BufferedImage is created, 
+    // the internal raster is immutable, but its backing data array is accessible for read/write.
     // Ergo, we can now "hardwire" the vlb to the raster's backing array. Whatever we write in there,
     // will also appear in the image.
     
@@ -290,7 +297,7 @@ public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
         // 	Map databuffer to one of the screens.        
         
         // Create the first of the screens.
-        this.icm=icms[screen];
+        this.icm=icms[0];
         
         // MEGA hack: all images share the same raster data as screenbuffer[screen]
         // If this is the first time we called this method, the actually backing array
@@ -302,7 +309,7 @@ public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
     	   // WE ONLY DO THIS ONCE PER INSTANCE, OTHERWISE WHEN CHANGING GAMMA
            // THE OLD BYTE ARRAYS WILL BECOME UNDISPLAYABLE    	   	
         	setScreen(screen,this.getWidth(),this.getHeight());
-        	r= screenbuffer[screen].getRaster();
+        	this.r=screenbuffer[screen].getRaster();
        		}
         else setScreen(screen,r);
 
