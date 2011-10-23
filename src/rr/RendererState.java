@@ -176,12 +176,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 	 * Increment every time a check is made For some reason, this needs to be
 	 * visible even by enemies thinking :-S
 	 */
-	public int validcount = 1;
+	protected int validcount = 1;
 
-	public static int MAXOPENINGS;
+	protected int MAXOPENINGS;
 
 	/** Who can set this? A: The Menu. */
-	public boolean setsizeneeded;
+	protected boolean setsizeneeded;
 	protected int setblocks;
 	protected int setdetail;
 
@@ -505,7 +505,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 		this.W = DC.W;
 		this.P = DC.P;
 		// We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
-	    this.V=DC.V;
+	    this.V=(DoomVideoRenderer<byte[]>) DC.V;
 	    this.I=DC.I;
 	}
 
@@ -6524,8 +6524,33 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 	}
 
-	// //////////////////////////VIDEO SCALE STUFF
-	// ////////////////////////////////
+	// Some more isolation methods....
+	
+	public final int getValidCount(){
+		return validcount;
+	}
+	
+	public final void increaseValidCount(int amount){
+		validcount+=amount;
+	}
+	
+	public boolean getSetSizeNeeded(){
+		return setsizeneeded;
+	}
+
+	public final int getViewWindowX(){
+		return viewwindowx;
+	}
+
+	public final int getViewWindowY(){
+		return viewwindowy;
+	}
+	
+	public final int getScaledViewWidth(){
+		return scaledviewwidth;
+	}
+	
+	////////////////VIDEO SCALE STUFF ///////////////////////
 
 	protected int SCREENWIDTH;
 	protected int SCREENHEIGHT;
