@@ -86,6 +86,7 @@ import hu.HU;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 import m.IRandom;
+import rr.Renderer;
 import rr.RendererState;
 import rr.SpriteManager;
 import rr.TextureManager;
@@ -154,7 +155,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     IRandom RND;
 
-    RendererState R;
+    Renderer<?> R;
     
     TextureManager TM;
 
@@ -657,7 +658,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             // Now look from eyes of t1 to any part of t2.
             See.sightcounts[1]++;
 
-            R.validcount++;
+            R.increaseValidCount(1);
 
             See.sightzstart = t1.z + t1.height - (t1.height >> 2);
             topslope = (t2.z + t2.height) - See.sightzstart;
@@ -688,12 +689,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             sector_t other;
 
             // wake up all monsters in this sector
-            if (sec.validcount == R.validcount
+            if (sec.validcount == R.getValidCount()
                     && sec.soundtraversed <= soundblocks + 1) {
                 return; // already flooded
             }
 
-            sec.validcount = R.validcount;
+            sec.validcount = R.getValidCount();
             sec.soundtraversed = soundblocks + 1;
             sec.soundtarget = soundtarget;
 
@@ -731,7 +732,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         
         void NoiseAlert(mobj_t target, mobj_t emmiter) {
             soundtarget = target;
-            R.validcount++;
+            R.increaseValidCount(1);
             RecursiveSound(emmiter.subsector.sector, 0);
         }
 
@@ -1080,10 +1081,10 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 line = LL.segs[seg].linedef;
 
                 // allready checked other side?
-                if (line.validcount == R.validcount)
+                if (line.validcount == R.getValidCount())
                     continue;
 
-                line.validcount = R.validcount;
+                line.validcount = R.getValidCount();
 
                 //v1 = line.v1;
                 //v2 = line.v2;
