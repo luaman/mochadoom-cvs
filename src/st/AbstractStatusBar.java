@@ -6,7 +6,7 @@ import doom.DoomStatus;
 import i.DoomStatusAware;
 import i.DoomVideoInterface;
 import i.IDoomSystem;
-import rr.RendererState;
+import rr.Renderer;
 import s.IDoomSound;
 import v.DoomVideoRenderer;
 import v.IVideoScaleAware;
@@ -16,11 +16,11 @@ public abstract class AbstractStatusBar implements IDoomStatusBar,DoomStatusAwar
 
 	 // /// STATUS //////////
 
-    protected DoomVideoRenderer V;
+    protected DoomVideoRenderer<?> V;
 
     protected IWadLoader W;
 
-    protected RendererState R;
+    protected Renderer<?> R;
 
     protected DoomMain DM;
 
