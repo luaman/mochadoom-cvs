@@ -465,7 +465,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	      DrawFuzzColumnLow=new R_DrawFuzzColumnLow();
 	      DrawColumn=new R_DrawColumnBoomOpt(); // Use optimized for non-masked stuff
 	      DrawColumnMasked=new R_DrawColumnBoom(); // Use general-purpose one for sprites
-	      DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
+	      DrawColumnPlayer=DrawTLColumn; // Player normally uses masked.
 	      DrawColumnLow=new R_DrawColumnBoomLow();
 		
 		}
@@ -4601,24 +4601,17 @@ public abstract class RendererState implements Renderer<byte[]>,
 										 * filter percent
 										 */
 	byte[] main_tranmap;
-
-	/*
-	 * Maes: a "cleaner" way to construct a transparency map, at least compared
-	 * to Boom.
+	
+	/** A faster implementation of the tranmap calculations. Almost
+	 * 10x faster than the old one!
 	 * 
-	 * Essentially we average each color's RGB values vs each other and then
-	 * remap the blend to the closest existing color. E.g. for finding mix of
-	 * colors 0 and 100, we avg them, and find that e.g. their mix is closest to
-	 * color 139. Then we create the colormap table by putting 139 at position
-	 * 0,100.
-	 * 
-	 * Since this is a particularly time-consuming process, it would be better
-	 * to preload it from disk or a PWAD lump, if possible.
+	 * @param progress
 	 */
 
 	protected void R_InitTranMap(int progress) {
 		int lump = W.CheckNumForName("TRANMAP");
 
+		long ta=System.nanoTime();
 		int p;
 		String tranmap;
 
@@ -4671,23 +4664,25 @@ public abstract class RendererState implements Renderer<byte[]>,
 			byte[] playpal = W.CacheLumpNameAsRawBytes("PLAYPAL",
 					Defines.PU_STATIC);
 			main_tranmap = new byte[256 * 256]; // killough 4/11/98
-			Color[] basepal = new Color[256];
-			Color[] mixedpal = new Color[256 * 256];
+			int[] basepal = new int[3*256];
+			int[] mixedpal = new int[3*256 * 256];
 
 			main_tranmap = new byte[256 * 256];
 
 			// Init array of base colors.
 			for (int i = 0; i < 256; i++) {
-				basepal[i] = new Color(0x00FF & playpal[i * 3],
-						0x00FF & playpal[i * 3 + 1],
-						0x00FF & playpal[i * 3 + 2]);
+				basepal[3*i] = 0Xff&playpal[i * 3];
+				basepal[1+3*i] = 0Xff&playpal[1+i * 3];
+				basepal[2+3*i] = 0Xff&playpal[2+i * 3];
 			}
 
 			// Init array of mixed colors. These are true RGB.
 			// The diagonal of this array will be the original colors.
-			for (int i = 0; i < 256; i++) {
-				for (int j = 0; j < 256; j++) {
-					mixedpal[i * 256 + j] = mixColors(basepal[i], basepal[j]);
+			
+			for (int i = 0; i < 256*3; i+=3) {
+				for (int j = 0; j < 256*3; j+=3) {
+					mixColors(basepal, basepal,mixedpal,i,j, j*256+i);
+					
 				}
 			}
 
@@ -4705,12 +4700,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 					// We evaluate the mixture of a and b
 					// Construct distance table vs all of the ORIGINAL colors.
 					for (int k = 0; k < 256; k++) {
-						tmpdist[k] = colorDistance(mixedpal[a * 256 + b],
-								basepal[k]);
-					}
+						tmpdist[k] = colorDistance(mixedpal, basepal,3*(a  + b*256),
+								k*3);
+						}
 
 					main_tranmap[(a << 8) | b] = (byte) findMin(tmpdist);
-					main_tranmap[(b << 8) | a] = (byte) findMin(tmpdist);
+					main_tranmap[(b << 8) | a] = main_tranmap[(a << 8) | b];
 				}
 			}
 			System.out.print("...done\n");
@@ -4719,26 +4714,27 @@ public abstract class RendererState implements Renderer<byte[]>,
 				System.out
 						.print("TRANMAP.DAT saved to disk for your convenience! Next time will be faster.\n");
 		}
+		long b=System.nanoTime();
 
+		System.out.printf("Tranmap %d\n",(b-ta)/1000000);
 	}
 
+	
 	/** Mixes two RGB colors. Nuff said */
 
-	protected final Color mixColors(Color a, Color b) {
-		int red, green, blue;
-		red = (a.getRed() + b.getRed()) / 2;
-		green = (a.getGreen() + b.getGreen()) / 2;
-		blue = (a.getBlue() + b.getBlue()) / 2;
+	protected final void mixColors(int[] a, int[] b, int[] c,int pa,int pb, int pc) {
+		c[pc] = (a[pa] + b[pb]) / 2;
+		c[pc+1] = (a[pa+1] + b[pb+1]) / 2;
+		c[pc+2] = (a[pa+2] + b[pb+2]) / 2;
 
-		return new Color(red, green, blue);
 	}
-
+	
 	/** Returns the euclidean distance of two RGB colors. Nuff said */
-
-	protected final float colorDistance(Color a, Color b) {
-		return (float) Math.sqrt(Math.pow((a.getRed() - b.getRed()), 2)
-				+ Math.pow((a.getGreen() - b.getGreen()), 2)
-				+ Math.pow((a.getBlue() - b.getBlue()), 2));
+	
+	protected final float colorDistance(int[] a, int[] b, int pa, int pb) {
+		return (float) Math.sqrt((a[pa]-b[pb])*(a[pa]-b[pb])+
+				(a[pa+1]-b[pb+1])*(a[pa+1]-b[pb+1])+
+				(a[pa+2]-b[pb+2])*(a[pa+2]-b[pb+2]));
 	}
 
 	protected final int findMin(float[] a) {
