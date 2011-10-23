@@ -22,7 +22,7 @@ import rr.patch_t;
 import utils.C2JUtils;
 
 public abstract class SoftwareVideoRenderer
-        implements DoomVideoRenderer, IVideoScaleAware, DoomStatusAware{
+        implements DoomVideoRenderer<byte[]>, IVideoScaleAware, DoomStatusAware{
 
     IDoomSystem I;
     Image currentscreen;
@@ -98,8 +98,8 @@ public abstract class SoftwareVideoRenderer
           int     destscrn ) 
   { 
       // These are pointers inside an array.
-      byte[]  src=screens[srcscrn];
-      byte[]  dest=screens[destscrn]; 
+      final byte[]  src=screens[srcscrn];
+      final byte[]  dest=screens[destscrn]; 
 
       if  (RANGECHECK) {
           if (srcx<0
@@ -139,7 +139,7 @@ public abstract class SoftwareVideoRenderer
   public void FillRect(int srcx, int srcy, int width,
           int height,int destscrn){
       // These are pointers inside an array.
-      byte[]  dest=screens[destscrn]; 
+	  final byte[]  dest=screens[destscrn]; 
 
       if  (RANGECHECK) {
           if (srcx<0
@@ -182,7 +182,7 @@ public abstract class SoftwareVideoRenderer
 
    column_t   column; 
    int    desttop;
-   byte[] dest=screens[scrn];
+   final  byte[] dest=screens[scrn];
    int        w; 
        
    y -= patch.topoffset; 
@@ -257,7 +257,7 @@ public abstract class SoftwareVideoRenderer
       
    column_t   column; 
    int    desttop;
-   byte[] dest=screens[scrn];
+   final byte[] dest=screens[scrn];
    int        w; 
        
    y =y*n- patch.topoffset; 
@@ -475,7 +475,7 @@ public abstract class SoftwareVideoRenderer
 
       column_t    column; 
       int desttop;
-      byte[]  dest=screens[scrn];
+      final byte[]  dest=screens[scrn];
       int     w; 
        
       y -= patch.topoffset; 
@@ -554,7 +554,7 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
     int col;
     column_t column;
     int desttop;
-    byte[] dest = screens[scrn&0xFF];
+    final byte[] dest = screens[scrn&0xFF];
     //byte[] source;
 
     int dupx, dupy;
@@ -668,7 +668,7 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
     byte[]        src ) 
   { 
       // This is "screens[scrn]"
-      byte[]  dest=screens[scrn];  
+	  final  byte[]  dest=screens[scrn];  
        
   if (doRangeCheck(x, y, scrn))
       {
@@ -707,7 +707,7 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
     int       height,
     byte[]        dest ) 
   { 
-      byte[]  src=screens[scrn]; 
+	  final byte[]  src=screens[scrn]; 
        
   if (RANGECHECK){
       if (doRangeCheck(x,y,scrn)){    
