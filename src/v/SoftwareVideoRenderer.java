@@ -7,6 +7,7 @@ import i.IDoomSystem;
 
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.io.IOException;
@@ -835,6 +836,13 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
   public void update(){
 	// Override only if there's something else to be done, e.g. map palette to truecolor buffer  
   }
+  
+  public void report(BufferedImage[] b){
+	    System.out.println("Main video buffer "+screens[0]);
+	    for (int i=0;i<b.length;i++){
+	    System.out.println(((Object)b[i].getRaster()).toString()+" "+b[i].getRaster().hashCode()+" "+((DataBufferByte)(b[i].getRaster().getDataBuffer())).getData());
+	    }
+	}
   
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
 
