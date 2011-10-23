@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.45 2011/10/07 16:07:14 velktron Exp $
+// $Id: StatusBar.java,v 1.46 2011/10/23 15:57:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.45 2011/10/07 16:07:14 velktron Exp $";
+        "$Id: StatusBar.java,v 1.46 2011/10/23 15:57:08 velktron Exp $";
 
    
     
@@ -551,7 +551,7 @@ public class StatusBar extends AbstractStatusBar   {
         // MAES: screen(4) of the Video Renderer is actually reserved for the status bar.
         // The "clean" status bar is cached in there, and redrawn only as required.
         
-        this.V.setScreen(this.BG,ST_WIDTH,ST_HEIGHT);
+        this.V.setScreen(BG,ST_WIDTH,ST_HEIGHT);
     }
 
     protected boolean st_stopped = true;
@@ -1933,6 +1933,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.46  2011/10/23 15:57:08  velktron
+//BG reference
+//
 //Revision 1.45  2011/10/07 16:07:14  velktron
 //Now using g.Keys for key input stuff.
 //
