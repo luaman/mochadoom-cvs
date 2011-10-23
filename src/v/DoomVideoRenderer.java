@@ -7,13 +7,19 @@ import java.io.IOException;
 import rr.patch_t;
 
 /** DoomVideoSystem is now an interface, that all "video drivers" (wheter do screen, disk, etc.)
- *  must implement.
+ *  must implement. 
+ *  
+ *  23/10/2011: Made into a generic type, which affects the underlying raw screen data
+ *  type. This should make -in theory- true colour or super-indexed (>8 bits) video modes
+ *  possible. The catch is that everything directly meddling with the renderer must also
+ *  be aware of the underlying implementation. E.g. the various screen arrays will not be
+ *  necessarily byte[].
  * 
  * @author Maes
  *
  */
 
-public interface DoomVideoRenderer extends IVideoScaleAware {
+public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     
     //flags hacked in scrn (not supported by all functions (see src))
     // Added by _D_. Unsure if I should use VSI objects instead, as they
@@ -56,15 +62,15 @@ public interface DoomVideoRenderer extends IVideoScaleAware {
     
     // Draw a linear block of pixels into the view buffer.
     public void DrawBlock(int x, int y, int scrn, int width, int height,
-            byte[] src);
+            K src);
 
     // Reads a linear block of pixels into the view buffer.
     public void GetBlock(int x, int y, int scrn, int width, int height,
-            byte[] dest);
+            K dest);
 
     public void MarkRect(int x, int y, int width, int height);
 
-    public byte[] getScreen(int index);
+    public K getScreen(int index);
     
     public void setScreen(int index, int width, int height);
     
