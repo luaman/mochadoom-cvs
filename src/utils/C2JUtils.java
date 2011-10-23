@@ -462,12 +462,12 @@ public class C2JUtils {
      * chars. However, just to be sure...
      * 
      * @param path
-     * @param limit
-     *        Set to any value >0 to enforce a length limit
+     * @param limit  Set to any value >0 to enforce a length limit
+     * @param whole keep extension if set to true
      * @return
      */
 
-    public static String extractFileBase(String path, int limit) {
+    public static String extractFileBase(String path, int limit, boolean whole) {
     	
     	if (path==null) return path;
     	
@@ -480,7 +480,7 @@ public class C2JUtils {
             src = 0;
 
         int len = path.lastIndexOf('.');
-        if (len<0) len=path.length()-src; // No extension.
+        if (whole || len<0 ) len=path.length()-src; // No extension.
         else  len-= src;        
 
         // copy UP to the specific number of characters, or all        
