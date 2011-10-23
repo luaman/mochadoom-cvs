@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.30 2011/10/07 16:08:23 velktron Exp $
+// $Id: Map.java,v 1.31 2011/10/23 18:10:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.31  2011/10/23 18:10:32  velktron
+// Generic compliance for DoomVideoInterface
+//
 // Revision 1.30  2011/10/07 16:08:23  velktron
 // Now using g.Keys and line_t
 //
@@ -160,11 +163,11 @@ public class Map implements IAutoMap {
 IDoomStatusBar ST;
 IWadLoader W;
 DoomMain DM;
-DoomVideoRenderer V;
+DoomVideoRenderer<?> V;
 AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.30 2011/10/07 16:08:23 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.31 2011/10/23 18:10:32 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -625,7 +628,7 @@ public final  void initVariables()
     int pnum=0;
 
     DM.automapactive = true;
-    fb = V.getScreen(0);
+    fb = (byte[]) V.getScreen(0);
 
     f_oldloc.x = MAXINT;
     amclock = 0;

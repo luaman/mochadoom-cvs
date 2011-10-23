@@ -16,7 +16,6 @@ import i.DoomStatusAware;
 import java.io.IOException;
 
 import rr.SpriteManager;
-import rr.column_t;
 import rr.flat_t;
 import rr.patch_t;
 import rr.spritedef_t;
@@ -26,7 +25,6 @@ import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
 import w.IWadLoader;
-import data.Defines;
 import data.mobjtype_t;
 import data.sounds.musicenum_t;
 import data.state_t;
@@ -41,7 +39,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.23 2011/08/01 00:05:14 velktron Exp $
+// $Id: Finale.java,v 1.24 2011/10/23 18:11:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,11 +60,11 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.23 2011/08/01 00:05:14 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.24 2011/10/23 18:11:32 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
-  DoomVideoRenderer V;
+  DoomVideoRenderer<?> V;
   IDoomSound S;
   HU HU;
   IWadLoader W;
@@ -295,7 +293,7 @@ public void StartFinale ()
       
       // erase the entire screen to a tiled background
       src = ((flat_t)W.CacheLumpName ( finaleflat , PU_CACHE,flat_t.class)).data;
-      dest = V.getScreen(0);
+      dest = (byte[]) V.getScreen(0);
 
       int destPos=0;
       for (int y=0 ; y<SCREENHEIGHT ; y++)
@@ -650,52 +648,6 @@ protected void afterstopattack(){
         else
             V.DrawScaledPatch (160,170,0,vs,patch);
   }
-
-
-  /** Is there ANY good reason not to use the renderer function, instead?
-   * F_DrawPatchCol
-   */
-  
-  
-  public void
-  DrawPatchCol
-  ( int       x,
-    patch_t  patch,
-    int       col )
-  {
-      column_t   column;
-      int   source;
-      byte[]   dest;
-      int   desttop;
-      int     count;
-      
-      column = patch.columns[col];
-      desttop = x;
-      dest=V.getScreen(0);
-      // step through the posts in a column
-      
-      
-      for (int i=0;i<column.posts;i++){
-          // Get pointer to post offset.
-          source=column.postofs[i];
-          // Get post delta
-          short delta=column.postdeltas[i];
-          // We skip delta, len and padding.
-          source+=3; 
-          
-          // Skip transparent rows...
-          if (delta==0xFF) break;
-
-          int destPos = desttop + delta*SCREENWIDTH;  
-          
-          // These lengths are already correct.
-          for (int j=0;j<column.postlen[i];j++){
-                 dest[destPos] = column.data[source++];
-                 destPos += SCREENWIDTH;
-          }
-      }
-   }
-
   
   protected int  laststage;
 
@@ -811,7 +763,7 @@ public void updateStatus(DoomStatus DC) {
     S=DC.S;
     HU=DC.HU;
     W=DC.W;
-    R=DC.R;    
+    R=(SpriteManager) DC.R;    
 	}
 
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////

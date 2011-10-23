@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.29 2011/10/07 16:05:22 velktron Exp $
+// $Id: HU.java,v 1.30 2011/10/23 18:11:58 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -52,7 +52,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.29 2011/10/07 16:05:22 velktron Exp $";
+        "$Id: HU.java,v 1.30 2011/10/23 18:11:58 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -63,7 +63,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 
     RendererState R;
     
-    DoomVideoRenderer V;
+    DoomVideoRenderer<?> V;
 
     IDoomSound S;
     //
@@ -1246,6 +1246,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 }
 
 //$Log: HU.java,v $
+//Revision 1.30  2011/10/23 18:11:58  velktron
+//Generic compliance for DoomVideoInterface
+//
 //Revision 1.29  2011/10/07 16:05:22  velktron
 //Now using g.Keys for key input stuff.
 //

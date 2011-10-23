@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.6 2011/08/23 16:13:53 velktron Exp $
+// $Id: EndLevel.java,v 1.7 2011/10/23 18:11:32 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.7  2011/10/23 18:11:32  velktron
+// Generic compliance for DoomVideoInterface
+//
 // Revision 1.6  2011/08/23 16:13:53  velktron
 // Got rid of Z remnants.
 //
@@ -144,7 +147,7 @@ public class EndLevel extends AbstractEndLevel {
     ////////////////// STATUS ///////////////////
     private DoomMain DS;
     private IDoomGame DG;
-    private DoomVideoRenderer V;
+    private DoomVideoRenderer<?> V;
     private IDoomSound S;
     private IWadLoader W;
     private IDoomStatusBar ST;
