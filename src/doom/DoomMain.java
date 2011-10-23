@@ -6,6 +6,7 @@ import i.Strings;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -72,10 +73,14 @@ import v.BufferedRenderer;
 import v.DoomVideoRenderer;
 import v.GammaTables;
 import v.HiColorRenderer555;
+import v.HiColorRenderer565;
 import v.IVideoScale;
 import v.IVideoScaleAware;
+import v.PaletteGenerator;
+import v.TrueColorRenderer;
 //import v.VideoScaleInfo;
 import v.VisualSettings;
+import w.DoomBuffer;
 import w.DoomFile;
 import w.WadLoader;
 import static data.Defines.*;
@@ -91,7 +96,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.90 2011/10/23 18:19:08 velktron Exp $
+// $Id: DoomMain.java,v 1.91 2011/10/23 22:59:56 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -117,7 +122,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.90 2011/10/23 18:19:08 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.91 2011/10/23 22:59:56 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -923,7 +928,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
         
         // Subsequent uses of loaddemo use only the lump name.
-        loaddemo=C2JUtils.extractFileBase(loaddemo,0);
+        loaddemo=C2JUtils.extractFileBase(loaddemo,0,true);
 
         // get skill / episode / map from parms
         // FIXME: should get them FROM THE DEMO itself.
@@ -1045,16 +1050,22 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         //
         System.out.print ("VI_Init: set colormaps.\n");
-        byte[] tmppal=W.CacheLumpNameAsRawBytes("PLAYPAL", PU_STATIC);
-        V.createPalettes(tmppal, GammaTables.gammatables, 14, 256, 3, 5);
-        // set it, create it, but don't make it visible yet.
         
         // MAES: FIX for incomplete palette lumps such as those in EGADOOM.
-        // If PLAYPAL lump is too short, some palettes will be all-black.
-        //byte[] pal=new byte[14*768];
-        //System.arraycopy(tmppal, 0, pal, 0, tmppal.length);
+        // Generate the palette programmatically _anyway_
+        byte[] pal=PaletteGenerator.generatePalette(PaletteGenerator.playpal,
+        		256, PaletteGenerator.tints);
+        // Copy over the one you read from disk...
+        int pallump=W.GetNumForName("PLAYPAL");
+        byte[] tmppal=W.CacheLumpNumAsRawBytes(pallump, PU_STATIC);
+        if (tmppal!=null)
+        System.arraycopy(tmppal, 0, pal, 0, tmppal.length);
         
-
+        V.createPalettes(pal, GammaTables.gammatables, 14, 256, 3, 5);
+        
+        W.InjectLumpNum(pallump,new DoomBuffer(ByteBuffer.wrap(pal)));
+        // set it, create it, but don't make it visible yet.
+        
         VI=new AWTDoom(this,(DoomVideoRenderer<byte[]>) V);
 
         VI.InitGraphics();
@@ -4179,6 +4190,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.91  2011/10/23 22:59:56  velktron
+//Added full PLAYPAL safeguard, generic compliance.
+//
 //Revision 1.90  2011/10/23 18:19:08  velktron
 //loaddemo safeguard, generic compliance
 //
