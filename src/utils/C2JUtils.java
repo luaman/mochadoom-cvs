@@ -468,6 +468,9 @@ public class C2JUtils {
      */
 
     public static String extractFileBase(String path, int limit) {
+    	
+    	if (path==null) return path;
+    	
         int src = path.length() - 1;
 
         String separator = System.getProperty("file.separator");
