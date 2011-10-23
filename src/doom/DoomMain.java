@@ -43,6 +43,7 @@ import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
+import rr.SpriteManager;
 import rr.UnifiedRenderer;
 import rr.subsector_t;
 import s.AbstractDoomAudio;
@@ -68,6 +69,7 @@ import timing.MilliTicker;
 import timing.NanoTicker;
 import utils.C2JUtils;
 import v.BufferedRenderer;
+import v.DoomVideoRenderer;
 import v.GammaTables;
 import v.HiColorRenderer555;
 import v.IVideoScale;
@@ -89,7 +91,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.89 2011/10/11 21:07:39 velktron Exp $
+// $Id: DoomMain.java,v 1.90 2011/10/23 18:19:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -115,7 +117,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.89 2011/10/11 21:07:39 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.90 2011/10/23 18:19:08 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -197,7 +199,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         redrawsbar = false;
 
         // change the view size if needed
-        if (R.setsizeneeded)
+        if (R.getSetSizeNeeded())
         {
             R.ExecuteSetViewSize ();
             oldgamestate = gamestate_t.GS_MINUS_ONE;                      // force background redraw
@@ -290,8 +292,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             if (automapactive)
                 y = 4;
             else
-                y = R.viewwindowy+4;
-            V.DrawPatchDirect(R.viewwindowx+(R.scaledviewwidth-68)/2,
+                y = R.getViewWindowY()+4;
+            V.DrawPatchDirect(R.getViewWindowX()+(R.getScaledViewWidth()-68)/2,
                 y,0,W.CachePatchName ("M_PAUSE", PU_CACHE));
         }
 
@@ -919,6 +921,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             System.out.printf("Playing demo %s.lmp.\n",loaddemo);
             autostart=true;
         }
+        
+        // Subsequent uses of loaddemo use only the lump name.
+        loaddemo=C2JUtils.extractFileBase(loaddemo,0);
 
         // get skill / episode / map from parms
         // FIXME: should get them FROM THE DEMO itself.
@@ -1050,7 +1055,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         //System.arraycopy(tmppal, 0, pal, 0, tmppal.length);
         
 
-        VI=new AWTDoom(this,V);
+        VI=new AWTDoom(this,(DoomVideoRenderer<byte[]>) V);
 
         VI.InitGraphics();
         
@@ -2311,7 +2316,7 @@ public void ScreenShot ()
     String lbmname = null;
     
     // munge planar buffer to linear
-    linear = V.getScreen(2);
+    linear = (byte[]) V.getScreen(2);
     VI.ReadScreen (linear);
 
     // find a file name to save it to
@@ -2632,7 +2637,7 @@ public void ScreenShot ()
             // done 
             //Z_Free (savebuffer); 
 
-            if (R.setsizeneeded)
+            if (R.getSetSizeNeeded())
                 R.ExecuteSetViewSize ();
 
             // draw the pattern into the back screen
@@ -3183,7 +3188,7 @@ public void ScreenShot ()
         status_holders.add(this.ST=new StatusBar(this));
         status_holders.add(this.AM=new Map(this)); // Call Init later.
         this.TM=new SimpleTextureManager(this);
-        this.SM=this.R;
+        this.SM=(SpriteManager) this.R;
 
         //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
         // it seems to fit perfectly here
@@ -4174,6 +4179,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.90  2011/10/23 18:19:08  velktron
+//loaddemo safeguard, generic compliance
+//
 //Revision 1.89  2011/10/11 21:07:39  velktron
 //up-to-date DoomMain
 //
