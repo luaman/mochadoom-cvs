@@ -92,8 +92,8 @@ import doom.thinker_t;
  * 
  */
 
-public abstract class RendererState implements DoomStatusAware, Renderer,
-		SpriteManager, IVideoScaleAware, ILimitResettable, IGetColumn {
+public abstract class RendererState implements Renderer<byte[]>,
+		SpriteManager, ILimitResettable, IGetColumn {
 
 	protected static final boolean DEBUG = false;
 	protected static final boolean DEBUG2 = false;
@@ -113,7 +113,7 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 	protected BSP MyBSP;
 	protected PlaneDrawer MyPlanes;
 	protected Things MyThings;
-	protected DoomVideoRenderer V;
+	protected DoomVideoRenderer<byte[]> V;
 	protected UnifiedGameMap P;
 	protected IDoomSystem I;
 	protected TextureManager TexMan;
@@ -265,7 +265,6 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 	 * 
 	 */
 	public void SetupFrame(mobj_t actor) {
-		int i;
 
 		// viewplayer = player;
 		viewx = actor.x;
@@ -1724,25 +1723,6 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 					i++;
 				}
 			}
-		}
-
-		/**
-		 * Shellsort, using a sequence suggested by Gonnet.
-		 * 
-		 * @param a
-		 *            an array of Comparable items.
-		 */
-		protected final void shellsort(Comparable[] a, int length) {
-			for (int gap = length / 2; gap > 0; gap = gap == 2 ? 1
-					: (int) (gap / 2.2))
-				for (int i = gap; i < length; i++) {
-					Comparable tmp = a[i];
-					int j = i;
-
-					for (; j >= gap && tmp.compareTo(a[j - gap]) < 0; j -= gap)
-						a[j] = a[j - gap];
-					a[j] = tmp;
-				}
 		}
 
 		/**
@@ -3432,11 +3412,9 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 		public void MapPlane(int y, int x1, int x2) {
 			// MAES: angle_t
 			int angle;
-			float dangle;
 			// fixed_t
 			int distance;
 			int length;
-			float dlength;
 			int index;
 
 			if (RANGECHECK) {
@@ -4849,7 +4827,6 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			basetexturemid = dc_texturemid;
 			// That's true for the whole column.
 			dc_source = column;
-			int pointer = 0;
 
 			// for each post...
 			while (topdelta==0) {
@@ -5136,8 +5113,6 @@ public abstract class RendererState implements DoomStatusAware, Renderer,
 			int dest; // As pointer
 			// fixed_t
 			int frac, fracstep;
-			// Something gross happens.
-			boolean gross = false;
 			byte colmask = 127;
 			count = dc_yh - dc_yl;
 			// How much we should draw
