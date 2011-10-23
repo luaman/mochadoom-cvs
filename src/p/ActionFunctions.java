@@ -2124,9 +2124,15 @@ public class ActionFunctions implements DoomStatusAware{
     // A_FireBFG
     //
     class A_FireBFG implements ActionType2 {
+    	 
+    	
+    	 // plasma cells for a bfg attack
+    	 // IDEA: make action functions partially parametrizable?
+    	private static final int BFGCELLS      =  40;     
+    	
     	public void invoke( player_t player, pspdef_t psp )
         {   
-        player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= Actions.BFGCELLS;
+        player.ammo[weaponinfo[player.readyweapon.ordinal()].ammo.ordinal()] -= BFGCELLS;
         A.SpawnPlayerMissile (player.mo, mobjtype_t.MT_BFG);
         }
     }

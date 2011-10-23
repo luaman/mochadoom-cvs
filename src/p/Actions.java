@@ -25,7 +25,6 @@ import static data.Defines.PT_EARLYOUT;
 import static data.Defines.USERANGE;
 import static data.Defines.VIEWHEIGHT;
 import static data.Defines.pw_invulnerability;
-import static data.Defines.pw_strength;
 import static data.Limits.CEILSPEED;
 import static data.Limits.MAXBUTTONS;
 import static data.Limits.MAXCEILINGS;
@@ -34,9 +33,7 @@ import static data.Limits.MAXMOVE;
 import static data.Limits.MAXPLATS;
 import static data.Limits.MAXPLAYERS;
 import static data.Limits.MAXRADIUS;
-import static data.Limits.MAXSKULLS;
 import static data.Limits.MAXSPECIALCROSS;
-import static data.Limits.NUMBRAINTARGETS;
 import static data.Limits.NUMMOBJTYPES;
 import static data.Tables.*;
 import static data.info.mobjinfo;
@@ -47,13 +44,6 @@ import static doom.englsh.PD_REDK;
 import static doom.englsh.PD_REDO;
 import static doom.englsh.PD_YELLOWK;
 import static doom.englsh.PD_YELLOWO;
-import static doom.items.weaponinfo;
-import static doom.player_t.LOWERSPEED;
-import static doom.player_t.RAISESPEED;
-import static doom.player_t.WEAPONBOTTOM;
-import static doom.player_t.WEAPONTOP;
-import static doom.player_t.ps_flash;
-import static doom.player_t.ps_weapon;
 import static m.BBox.BOXBOTTOM;
 import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
@@ -71,11 +61,9 @@ import static p.ChaseDirections.DI_WEST;
 import static p.ChaseDirections.diags;
 import static p.ChaseDirections.opposite;
 import static p.MapUtils.AproxDistance;
-import static p.MapUtils.InterceptVector;
 import static utils.C2JUtils.*;
 
 import static p.mobj_t.*;
-import rr.drawseg_t;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
@@ -105,9 +93,6 @@ import doom.weapontype_t;
     */
 
 public class Actions extends UnifiedGameMap {
-  // plasma cells for a bfg attack
-  static int BFGCELLS      =  40;      
-
       
       //
       // CEILINGS
@@ -1526,9 +1511,6 @@ public class Actions extends UnifiedGameMap {
         actor.movecount = RND.P_Random()&15;
         return true;
     }
-    
-    private static final int TRACEANGLE = 0xc000000;
-
 
 /**
  * P_NightmareRespawn
