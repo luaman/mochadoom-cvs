@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.50 2011/10/23 18:16:31 velktron Exp $
+// $Id: WadLoader.java,v 1.51 2011/10/23 22:50:42 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -172,7 +172,7 @@ public class WadLoader implements IWadLoader {
 			singleinfo.size = (long) (handle.length());
 			
 			// Single lumps. Only use 8 characters			
-			singleinfo.name = C2JUtils.extractFileBase(filename, 8).toUpperCase();
+			singleinfo.name = C2JUtils.extractFileBase(filename, 8,false).toUpperCase();
 			
 			// MAES: check out certain known types of extension
 			if (C2JUtils.checkForExtension(filename,"lmp"))			
@@ -1184,6 +1184,11 @@ public class WadLoader implements IWadLoader {
 		lumpcache[lump]=null;
 	}
 
+	@Override
+	public void InjectLumpNum(int lump, CacheableDoomObject obj){
+		lumpcache[lump]=obj;
+	}
+	
 	//// Merged remnants from LumpZone here.
 
 	Hashtable<CacheableDoomObject, Integer> zone;
@@ -1241,6 +1246,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.51  2011/10/23 22:50:42  velktron
+//Added InjectLumpNum function to force generated contents.
+//
 //Revision 1.50  2011/10/23 18:16:31  velktron
 //Cleanup, moved logs to the end of the file
 //

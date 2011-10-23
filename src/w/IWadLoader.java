@@ -254,5 +254,14 @@ public interface IWadLoader {
      * @return
      */
     public abstract int GetNumWadfiles();
+
+    /** Force a lump (in memory) to be equal to a dictated content. Useful
+     *  for when you are e.g. repairing palette lumps or doing other sanity
+     *  checks.
+     * 
+     * @param lump
+     * @param obj
+     */
+	void InjectLumpNum(int lump, CacheableDoomObject obj);
 	
 }
