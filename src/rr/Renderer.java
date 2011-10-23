@@ -62,6 +62,26 @@ public interface Renderer<K> extends IVideoScaleAware,DoomStatusAware{
 	
 	public long PointToAngle2(int x1, int y1, int x2, int y2);
 	
+	public void PreCacheThinkers();
+	
+	public int getValidCount();
+	
+	public void increaseValidCount(int amount);
+
+	public boolean isFullHeight();
+
+	public void resetLimits();
+
+	public boolean getSetSizeNeeded();
+
+	public int getViewWindowX();
+
+	public int getViewWindowY();
+	
+	public int getScaledViewWidth();
+
+	public boolean isFullScreen();
+	
 	//public subsector_t PointInSubsector(int x, int y);
 
 }
