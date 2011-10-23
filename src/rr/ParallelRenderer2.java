@@ -11,16 +11,10 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import p.mobj_t;
-import rr.RendererState.R_DrawColumnBoom;
-import rr.RendererState.R_DrawColumnBoomOpt;
-import rr.RendererState.R_DrawFuzzColumn;
-import rr.RendererState.R_DrawTLColumn;
 import utils.C2JUtils;
 import data.Tables;
 import doom.DoomMain;
 import doom.player_t;
-import doom.thinker_t;
 
 /** This is a second attempt at building a seg-focused parallel renderer, instead of
  * column-based. It does function, but is broken and has unsolved data dependencies.
@@ -100,7 +94,7 @@ public class ParallelRenderer2 extends RendererState  {
 		protected void RenderSegLoop () 
 		{
 			int     angle; // angle_t
-			int     index;
+			//int     index;
 			int         yl; // low
 			int         yh; // hight
 			int         mid;

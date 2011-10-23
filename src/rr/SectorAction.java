@@ -1,6 +1,5 @@
 package rr;
 
-import w.IReadableDoomObject;
 import doom.thinker_t;
 
 /** Used for special sector-based function for doors, ceilings 

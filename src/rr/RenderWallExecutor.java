@@ -2,7 +2,6 @@ package rr;
 
 import static m.fixed_t.FRACBITS;
 
-import java.util.ArrayList;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 

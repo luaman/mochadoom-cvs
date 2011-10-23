@@ -1,7 +1,6 @@
 package rr;
 
 import static data.Defines.*;
-import static data.Limits.*;
 import static data.Tables.*;
 import static m.fixed_t.*;
 import java.io.IOException;
@@ -10,13 +9,9 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import p.mobj_t;
-import rr.RendererState.R_DrawColumnBoom;
-import rr.RendererState.R_DrawColumnBoomOpt;
 import utils.C2JUtils;
 import doom.DoomMain;
 import doom.player_t;
-import doom.thinker_t;
 
 /** This is Mocha Doom's famous parallel software renderer. It builds
  *  on the basic software renderer, but adds specialized handling for 

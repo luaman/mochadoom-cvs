@@ -3,9 +3,6 @@ package rr;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
 
-import java.util.Arrays;
-
-import defines.slopetype_t;
 import p.Resettable;
 
 /**

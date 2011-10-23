@@ -1,15 +1,9 @@
 package rr;
 
-import static data.Defines.PU_CACHE;
-
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import w.WadLoader;
 
 /**
  * Utilities to synthesize patch_t format images from multiple patches
