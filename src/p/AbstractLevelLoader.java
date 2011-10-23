@@ -11,7 +11,7 @@ import static p.mobj_t.MF_NOSECTOR;
 import static utils.C2JUtils.flags;
 import m.BBox;
 import i.IDoomSystem;
-import rr.RendererState;
+import rr.Renderer;
 import rr.TextureManager;
 import rr.line_t;
 import rr.node_t;
@@ -53,9 +53,9 @@ public abstract class AbstractLevelLoader
 
     DoomStatus DM;
 
-    DoomVideoRenderer V;
+    DoomVideoRenderer<?> V;
 
-    RendererState R;
+    Renderer<?> R;
 
     TextureManager TM;
 

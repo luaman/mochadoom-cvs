@@ -47,10 +47,9 @@ import static utils.C2JUtils.flags;
 import i.DoomStatusAware;
 import p.UnifiedGameMap.Enemies;
 import m.IRandom;
-import rr.RendererState;
+import rr.Renderer;
 import rr.line_t;
 import s.IDoomSound;
-import st.StatusBar;
 import data.Tables;
 import data.mobjinfo_t;
 import data.mobjtype_t;
@@ -178,7 +177,7 @@ public class ActionFunctions implements DoomStatusAware{
 	
 	protected Actions A;
 	protected IRandom RND;
-	protected RendererState R;
+	protected Renderer<?> R;
 	protected IDoomSound S;
 	protected Enemies EN;
 	protected AbstractLevelLoader LL;

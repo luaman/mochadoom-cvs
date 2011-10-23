@@ -3289,7 +3289,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         tmfloorz = tmdropoffz = newsubsec.sector.floorheight;
         tmceilingz = newsubsec.sector.ceilingheight;
                 
-        R.validcount++; // This is r_main's ?
+        R.increaseValidCount(1); // This is r_main's ?
         numspechit = 0;
         
         // stomp on any things contacted
@@ -3383,7 +3383,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         tmfloorz = tmdropoffz = newsubsec.sector.floorheight;
         tmceilingz = newsubsec.sector.ceilingheight;
                 
-        R.validcount++;
+        R.increaseValidCount(1);
         numspechit = 0;
 
         if ( flags(tmflags ,MF_NOCLIP ))
@@ -4574,13 +4574,15 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
      // MAES: blockmap terminating marker is always -1
      
+     final int validcount=R.getValidCount();
+     
      for (int list=offset;(lineinblock=LL.blockmap[list])!=-1;list++){
     	 ld = LL.lines[lineinblock];
          //System.out.println(ld);
-         if (ld.validcount == R.validcount)
+         if (ld.validcount == validcount)
              continue;   // line has already been checked
 
-         ld.validcount = R.validcount;
+         ld.validcount = validcount;
          if ( !func.invoke(ld) )
              return false;
          }
@@ -4618,7 +4620,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
          
      earlyout = flags(flags ,PT_EARLYOUT);
          
-     R.validcount++;
+     R.increaseValidCount(1);
      intercept_p = 0;
      
      if ( ((x1-LL.bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
