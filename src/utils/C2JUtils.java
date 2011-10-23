@@ -471,16 +471,18 @@ public class C2JUtils {
         int src = path.length() - 1;
 
         String separator = System.getProperty("file.separator");
-        src = path.lastIndexOf(separator);
+        src = path.lastIndexOf(separator)+1;
 
-        if (src < 0)
+        if (src < 0) // No separator
             src = 0;
 
-        // copy UP to eight characters unless enforced otherwise.
+        int len = path.lastIndexOf('.');
+        if (len<0) len=path.length()-src; // No extension.
+        else  len-= src;        
 
-        int len = path.lastIndexOf('.') - src;
-        if (limit > 0)
-            len = Math.min(limit, len);
+        // copy UP to the specific number of characters, or all        
+        if (limit > 0) len = Math.min(limit, len);
+        
         return path.substring(src, src + len);
     }
 
