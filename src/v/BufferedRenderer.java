@@ -1,21 +1,17 @@
 package v;
 
-import java.awt.Image;
-import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.awt.image.DataBufferInt;
 import java.awt.image.IndexColorModel;
-import java.awt.image.Raster;
+import java.awt.image.RasterOp;
 import java.awt.image.WritableRaster;
 
 import m.BBox;
-import utils.C2JUtils;
 
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.15 2011/10/23 16:42:55 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.16 2011/10/23 19:18:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,6 +25,9 @@ import utils.C2JUtils;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.16  2011/10/23 19:18:52  velktron
+// Major refactoring of raster & palette tricks. Much less cluttered, fixed some old fuckups.
+//
 // Revision 1.15  2011/10/23 16:42:55  velktron
 // Minor rewriting of raster mangling code
 //
@@ -151,15 +150,15 @@ import utils.C2JUtils;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.15 2011/10/23 16:42:55 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.16 2011/10/23 19:18:52 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
-public BufferedImage[] screenbuffer=new BufferedImage[5];
+private BufferedImage[] screenbuffer;
 
 /** Indexed renderers keep separate color models for each colormap (intended as gamma levels) and 
  * palette levels */
-protected IndexColorModel[][] cmaps;
+private IndexColorModel[][] cmaps;
 
 public BufferedRenderer(int w, int h, IndexColorModel icm) {
     super(w,h);
@@ -181,10 +180,8 @@ public BufferedRenderer(int w, int h) {
     super(w,h);
 }
 
-
+// Used only for internal status.
 private IndexColorModel icm;
-
-private int usepalette=0xFF;
 
 @Override
 public final void Init () 
@@ -197,35 +194,29 @@ public final void Init ()
      dirtybox=new BBox();
 }
 
-/** This implementation will "tie" a bufferedimage to the underlying byte raster.
- * 
- * NOTE: thie relies on the ability to "tap" into a BufferedImage's backing array,
- * in order to have fast writes without setpixel/getpixel. If that is not possible,
- * then we'll need to use a special renderer.
- * 
+/** This actually creates a raster with a fixed underlying array, but NOT the images
+ *  themselves. So it's possible to have "imageless" rasters (unless you specifically
+ *  request to make them visible, of course).
+ *  
  */
+
 @Override
 public final void setScreen(int index, int width, int height){
-
-	final WritableRaster r;
 	
     // We must FIRST initialize the image, so that the (immutable) color model will be set.
     if (this.icm==null){
-    	screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED);
+    	final byte[] dummy=new byte[256];
+    	for (int i=0;i<dummy.length;i++)
+    		dummy[i]=(byte) i;    	
+    	icm=new IndexColorModel(8,256,dummy,dummy,dummy);
     }
-    else{
-    	r=icm.createCompatibleWritableRaster(width,height);
-    	screenbuffer[index]=new BufferedImage(icm,r,false,null);
-    }
     
+    r[index]=icm.createCompatibleWritableRaster(width,height);
     
-    // Hack: hotwire the screenbuffers directly to the image. T3h h4x, d00d.
-    // Now, HERE is where the magic happens. Once a BufferedImage is created, 
-    // the internal raster is immutable, but its backing data array is accessible for read/write.
-    // Ergo, we can now "hardwire" the vlb to the raster's backing array. Whatever we write in there,
-    // will also appear in the image.
+    // Only create non-visible data, pegged to the raster. Create visible images
+    // only on-demand.
     
-    screens[index]=((DataBufferByte)screenbuffer[index].getRaster().getDataBuffer()).getData();
+    screens[index]=((DataBufferByte)r[index].getDataBuffer()).getData();
 
 }
 
@@ -239,11 +230,8 @@ public final void setScreen(int index, int width, int height){
  * @param r
  */
 
-protected final void setScreen(int index, WritableRaster r){
-
-    
-    screenbuffer[index]=new BufferedImage(this.icm,r,false,null);    
-
+private final BufferedImage createScreen(int index,IndexColorModel icm, WritableRaster r){
+    return new BufferedImage(icm,r,false,null);
 }
 
 /*
@@ -277,7 +265,7 @@ public final void changePalette(int pal){
 }
 
 /** Get a bunch of BufferedImages "pegged" on the same output screen of this
- *  Doom Video Renderer, but with different palettes, defined in icms[]
+ *  Doom Video Renderer, but with different palettes, defined in icms[].
  *  This is VERY speed efficient assuming that an IndexedColorModel will be used,
  *  rather than a 32-bit canvas, and memory overhead is minimal. Call this ONLY
  *  ONCE when initializing the video renderer, else it will invalidate pretty much
@@ -291,41 +279,33 @@ public final void changePalette(int pal){
  * @return
  */
 
-public BufferedImage[] getBufferedScreens(int screen,IndexColorModel[] icms) {
+private BufferedImage[] createScreenForPalettes(int screen,IndexColorModel[] icms) {
         
+		// These screens represent a complete range of palettes for a specific gamma
+		// and specific screen
         BufferedImage[] b=new BufferedImage[icms.length];
-        // 	Map databuffer to one of the screens.        
         
-        // Create the first of the screens.
-        this.icm=icms[0];
         
         // MEGA hack: all images share the same raster data as screenbuffer[screen]
         // If this is the first time we called this method, the actually backing array
-        // will be actually created.
-        
-        if (r==null){
-        	// This will create the first buffered image (and its data array)/
-           // as screenbuffer "screen". Usually this is screen 0.
-    	   // WE ONLY DO THIS ONCE PER INSTANCE, OTHERWISE WHEN CHANGING GAMMA
-           // THE OLD BYTE ARRAYS WILL BECOME UNDISPLAYABLE    	   	
-        	setScreen(screen,this.getWidth(),this.getHeight());
-        	this.r=screenbuffer[screen].getRaster();
-       		}
-        else setScreen(screen,r);
+        // will be actually created. If not...
 
+        // Create the first of the screens.
+        this.icm=icms[0];
         
-        	// This is the base image for this set of palettes (usually index 0).
-            b[screen]=this.screenbuffer[screen];
+        if (r[screen]==null){
+        	// This will create the first buffered image (and its data array)/
+            // as screenbuffer[0]	   	
+        	setScreen(screen,this.getWidth(),this.getHeight());
+       		}
+        
+        // This is the base image for this set of palettes (usually index 0).
+       
        
         // Create the rest of the screens (with different palettes) on the same raster.
         for (int i=0;i<icms.length;i++){
-            if (i!=screen)
-            b[i]=new BufferedImage(icms[i],r, false,null);
-            
+        	 b[i]=createScreen(screen,icms[i],r[screen]);
         }
-        
-        //this.report(b);
-        
         
         return b;
         
@@ -399,23 +379,14 @@ public void createPalettes(byte[] paldata, short[][] gammadata, final int palett
     	  System.err.println("Palette and colormaps could not be set up. Bye");
     	  System.exit(-1);
       }
-} 
-
-
-WritableRaster r;
-
-public void report(BufferedImage[] b){
-    System.out.println("Main video buffer "+screens[0]);
-    for (int i=0;i<b.length;i++){
-    System.out.println(((Object)b[i].getRaster()).toString()+" "+b[i].getRaster().hashCode()+" "+((DataBufferByte)(b[i].getRaster().getDataBuffer())).getData());
-    }
 }
 
+
+private WritableRaster[] r=new WritableRaster[5];
 
 public void setPalette(int palette){
 	this.currentpal=palette%maxpalettes;
 	this.currentscreen=this.screenbuffer[currentpal];
-	
 }
 
 @Override
@@ -427,7 +398,7 @@ public void setUsegamma(int gamma) {
 
 public void setCurrentScreen(int screen){
 	  super.setCurrentScreen(screen);
-	  this.screenbuffer=this.getBufferedScreens(usescreen, cmaps[usegamma]);
+	  this.screenbuffer=this.createScreenForPalettes(usescreen, cmaps[usegamma]);
 	  this.currentscreen=this.screenbuffer[currentpal];
 }
 
