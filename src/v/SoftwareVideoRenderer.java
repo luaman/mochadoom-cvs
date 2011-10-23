@@ -862,5 +862,68 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
       this.SCREENWIDTH=vs.getScreenWidth();
   }
 
+  /** Built-in method for recovering from palette disasters.
+   * Uses PaletteGenerator class to generate Doom's palettes with only the data of
+   * the first palette.
+   * 
+   */
+protected final void paletteRecovery() {
+	createPalettes(PaletteGenerator.generatePalette(PaletteGenerator.playpal, 256,PaletteGenerator.tints), GammaTables.gammatables, 14, 256, 3, 5);
+	
+}
+
+/** Internal method for setting up palettes (and gamma tables)
+ * 
+ */
+
+public void createPalettes(byte[] paldata, short[][] gammadata, final int palettes, final int colors, final int stride,final int gammalevels){
+	
+	// Sanity check on supplied data length. If there is not enough data to create the specified palettes,
+	// their number will be limited.
+	
+	if (paldata!=null) 	// As many as are likely contained
+		maxpalettes=paldata.length/(colors*stride);
+	else
+		maxpalettes=0; // Do some default action on null palette.
+
+	if (gammadata!=null) 	// As many as are likely contained
+		maxgammas=gammadata.length;
+	else
+		maxgammas=0; // Do some default action on null gamma tables.
+	
+	if (maxgammas==0){
+		gammadata=GammaTables.gammatables;
+		maxgammas=GammaTables.gammatables.length;
+	}
+	
+
+	// Enough data for all palettes. 
+	// Enough data for all palettes. 
+	if (maxpalettes>0 && maxgammas>0)
+			specificPaletteCreation(paldata,gammadata,palettes,colors,stride,gammalevels);
+		 else 
+			 paletteRecovery();
+    	  
+      }
     
+/** Override this in extending classes to perform specific actions depending on the
+ *  type of renderer. It's better not to assign a default action, nor make assumptions
+ *  on the underlying types of actual palettes
+ * 
+ * @param paldata
+ * @param gammadata
+ * @param palettes
+ * @param colors
+ * @param stride
+ * @param gammalevels
+ */
+
+protected abstract void specificPaletteCreation(byte[] paldata,
+		short[][] gammadata, 
+		final int palettes, 
+		final int colors,
+		final int stride,
+		final int gammalevels);
+
+
 }
