@@ -11,7 +11,7 @@ import m.BBox;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer.java,v 1.16 2011/10/23 19:18:52 velktron Exp $
+// $Id: BufferedRenderer.java,v 1.17 2011/10/23 20:40:44 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -25,6 +25,9 @@ import m.BBox;
 // for more details.
 //
 // $Log: BufferedRenderer.java,v $
+// Revision 1.17  2011/10/23 20:40:44  velktron
+// Added palette failsafe to all renderers, using shared code wtih SoftwareVideoRenderer.
+//
 // Revision 1.16  2011/10/23 19:18:52  velktron
 // Major refactoring of raster & palette tricks. Much less cluttered, fixed some old fuckups.
 //
@@ -150,7 +153,7 @@ import m.BBox;
 
 public class BufferedRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: BufferedRenderer.java,v 1.16 2011/10/23 19:18:52 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer.java,v 1.17 2011/10/23 20:40:44 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -311,76 +314,49 @@ private BufferedImage[] createScreenForPalettes(int screen,IndexColorModel[] icm
         
     }
 
-/** Internal method for setting up palettes (and gamma tables)
- * 
- */
+protected final void specificPaletteCreation(byte[] paldata,
+		short[][] gammadata, 
+		final int palettes, 
+		final int colors,
+		final int stride,
+		final int gammalevels){
 
-public void createPalettes(byte[] paldata, short[][] gammadata, final int palettes, final int colors, final int stride,final int gammalevels){
-	
-	// Sanity check on supplied data length. If there is not enough data to create the specified palettes,
-	// their number will be limited.
-	
-	if (paldata!=null) 	// As many as are likely contained
-		maxpalettes=paldata.length/(colors*stride);
-	else
-		maxpalettes=0; // Do some default action on null palette.
+	  System.out.printf("Enough data for %d palettes",maxpalettes);
+	  System.out.printf("Enough data for %d gamma levels",maxgammas);
+	  
+	  // Create as gamma levels as specified.
+	  cmaps=new IndexColorModel[maxgammas][];
+	  
+	  // First set of palettes, normal gamma.
+	  cmaps[0]=new IndexColorModel[maxpalettes];
 
-	if (gammadata!=null) 	// As many as are likely contained
-		maxgammas=gammadata.length;
-	else
-		maxgammas=0; // Do some default action on null gamma tables.
-	
-	if (maxgammas==0){
-		gammadata=GammaTables.gammatables;
-		maxgammas=GammaTables.gammatables.length;
-	}
-	
+	  // Now we have our palettes.
+	  for (int i=0;i<maxpalettes;i++){
+		  cmaps[0][i]=new IndexColorModel(8, colors,paldata, i*stride*colors, false);
+	  		}
+  
+  // Wire the others according to the gamma table.
+	  byte[] tmpcmap=new byte[colors*stride];
+	  
+	  // For each gamma value...
+	  for (int j=1;j<maxgammas;j++){
+		  
+		  cmaps[j]=new IndexColorModel[maxpalettes];
+		  
+		  // For each palette
+		  for (int i=0;i<maxpalettes;i++){
+			  
+			  for (int k=1;k<256;k++){
+				  tmpcmap[3*k]=(byte) gammadata[j][0x00FF&paldata[i*colors*stride+stride*k]]; // R
+				  tmpcmap[3*k+1]=(byte) gammadata[j][0x00FF&paldata[1+i*colors*stride+stride*k]]; // G
+				  tmpcmap[3*k+2]=(byte) gammadata[j][0x00FF&paldata[2+i*colors*stride+stride*k]]; // B
+			  	}
 
-	// Enough data for all palettes. 
-	if (maxpalettes>0 && maxgammas>0){
-		  System.out.printf("Enough data for %d palettes",maxpalettes);
-		  System.out.printf("Enough data for %d gamma levels",maxgammas);
-    	  
-    	  // Create as gamma levels as specified.
-    	  cmaps=new IndexColorModel[maxgammas][];
-    	  
-    	  // First set of palettes, normal gamma.
-    	  cmaps[0]=new IndexColorModel[maxpalettes];
-    
-    	  // Now we have our palettes.
-    	  for (int i=0;i<maxpalettes;i++){
-    		  cmaps[0][i]=new IndexColorModel(8, colors,paldata, i*stride*colors, false);
-    	  		}
-        
-        // Wire the others according to the gamma table.
-    	  byte[] tmpcmap=new byte[colors*stride];
-    	  
-    	  // For each gamma value...
-    	  for (int j=1;j<maxgammas;j++){
-    		  
-    		  cmaps[j]=new IndexColorModel[maxpalettes];
-    		  
-    		  // For each palette
-    		  for (int i=0;i<maxpalettes;i++){
-    			  
-    			  for (int k=1;k<256;k++){
-    				  tmpcmap[3*k]=(byte) gammadata[j][0x00FF&paldata[i*colors*stride+stride*k]]; // R
-    				  tmpcmap[3*k+1]=(byte) gammadata[j][0x00FF&paldata[1+i*colors*stride+stride*k]]; // G
-    				  tmpcmap[3*k+2]=(byte) gammadata[j][0x00FF&paldata[2+i*colors*stride+stride*k]]; // B
-    			  	}
+			  cmaps[j][i]=new IndexColorModel(8, 256,tmpcmap, 0, false);
+	  		}
+	  }
 
-    			  cmaps[j][i]=new IndexColorModel(8, 256,tmpcmap, 0, false);
-    	  		}
-    	  }
-
-    	  
-      } else {
-    	  // TODO: Allow it to pull from some default location?
-    	  System.err.println("Palette and colormaps could not be set up. Bye");
-    	  System.exit(-1);
-      }
 }
-
 
 private WritableRaster[] r=new WritableRaster[5];
 

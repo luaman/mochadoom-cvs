@@ -14,7 +14,7 @@ import m.BBox;
 
 public class TrueColorRenderer extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: TrueColorRenderer.java,v 1.3 2011/10/11 16:55:30 velktron Exp $";
+static final String rcsid = "$Id: TrueColorRenderer.java,v 1.4 2011/10/23 20:40:44 velktron Exp $";
 
 
 /* With a truecolour raster, some things are indeed easier */
@@ -55,60 +55,35 @@ public void setPalette(int palette) {
 }
 
 @Override
-public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
-		int colors, int stride, int gammalevels) {
-	// Sanity check on supplied data length. If there is not enough data to create the specified palettes,
-	// their number will be limited.
-	
-	if (paldata!=null) 	// As many as are likely contained
-		maxpalettes=paldata.length/(colors*stride);
-	else
-		maxpalettes=0; // Do some default action on null palette.
+protected final void specificPaletteCreation(byte[] paldata,
+		short[][] gammadata, 
+		final int palettes, 
+		final int colors,
+		final int stride,
+		final int gammalevels){
 
-	if (gammadata!=null) 	// As many as are likely contained
-		maxgammas=gammadata.length;
-	else
-		maxgammas=0; // Do some default action on null gamma tables.
-	
-	if (maxgammas==0){
-		gammadata=GammaTables.gammatables;
-		maxgammas=GammaTables.gammatables.length;
-	}
-	
+	  System.out.printf("Enough data for %d palettes",maxpalettes);
+	  System.out.printf("Enough data for %d gamma levels",maxgammas);
+	  
+	  this.palettes=new int[maxgammas*maxpalettes][];
+	  
+	  for (int z=0;z<maxgammas;z++){
+		  
+		  // For each palette
+		  for (int y=0;y<maxpalettes;y++){
+			  this.palettes[z*maxpalettes+y]=new int[colors];
+			  
+			  for (int x=0;x<colors;x++){
+				  int r=gammadata[z][0xFF&paldata[y*colors*stride+stride*x]]; // R
+				  int g=gammadata[z][0xFF&paldata[1+y*colors*stride+stride*x]]; // G
+				  int b=gammadata[z][0xFF&paldata[2+y*colors*stride+stride*x]]; // B
+				  int color=0xFF000000|r<<16|g<<8|b;
+				  this.palettes[z*maxpalettes+y][x]=color;
+			  	}
+	  		}
+	  }
 
-	// Enough data for all palettes. 
-	if (maxpalettes>0 && maxgammas>0){
-		  System.out.printf("Enough data for %d palettes",maxpalettes);
-		  System.out.printf("Enough data for %d gamma levels",maxgammas);
-    	  
-    	  // Create as many gamma levels as specified.
-    	  this.palettes=new int[maxgammas*maxpalettes][];
-   	  
-    	  for (int z=0;z<maxgammas;z++){
-    		  
-    		  // For each palette
-    		  for (int y=0;y<maxpalettes;y++){
-    			  this.palettes[z*maxpalettes+y]=new int[colors];
-    			  
-    			  for (int x=0;x<256;x++){
-    				  int r=gammadata[z][0xFF&paldata[y*colors*stride+stride*x]]; // R
-    				  int g=gammadata[z][0xFF&paldata[1+y*colors*stride+stride*x]]; // G
-    				  int b=gammadata[z][0xFF&paldata[2+y*colors*stride+stride*x]]; // B
-    				  int color=0xFF000000|r<<16|g<<8|b;
-    				  this.palettes[z*maxpalettes+y][x]=color;
-    			  	}
-    	  		}
-    	  }
-
-    	  
-      } else {
-    	  // TODO: Allow it to pull from some default location?
-    	  System.err.println("Palette and colormaps could not be set up. Bye");
-    	  System.exit(-1);
-      }
-	
 }
-
 
 /** Hotlinks a 32-bit "canvas" (the raster int[] array) to an externally supplied
  *  buffered image. Now whatever we write into raster, will appear in the image as well,

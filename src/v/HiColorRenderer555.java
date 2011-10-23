@@ -2,6 +2,7 @@ package v;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferUShort;
+import java.awt.image.IndexColorModel;
 
 import m.BBox;
 
@@ -14,7 +15,7 @@ import m.BBox;
 
 public class HiColorRenderer555 extends SoftwareVideoRenderer {
 	
-static final String rcsid = "$Id: HiColorRenderer555.java,v 1.1 2011/10/11 21:01:31 velktron Exp $";
+static final String rcsid = "$Id: HiColorRenderer555.java,v 1.2 2011/10/23 20:40:44 velktron Exp $";
 
 
 /* With a truecolour raster, some things are indeed easier */
@@ -53,74 +54,38 @@ public void setPalette(int palette) {
 	this.usepalette=palette%maxpalettes;
 }
 
-@Override
-public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
-		int colors, int stride, int gammalevels) {
-	// Sanity check on supplied data length. If there is not enough data to create the specified palettes,
-	// their number will be limited.
-	
-	if (paldata!=null) 	// As many as are likely contained
-		maxpalettes=paldata.length/(colors*stride);
-	else
-		maxpalettes=0; // Do some default action on null palette.
+protected final void specificPaletteCreation(byte[] paldata,
+		short[][] gammadata, 
+		final int palettes, 
+		final int colors,
+		final int stride,
+		final int gammalevels){
 
-	if (gammadata!=null) 	// As many as are likely contained
-		maxgammas=gammadata.length;
-	else
-		maxgammas=0; // Do some default action on null gamma tables.
-	
-	if (maxgammas==0){
-		gammadata=GammaTables.gammatables;
-		maxgammas=GammaTables.gammatables.length;
-	}
-	
+	  System.out.printf("Enough data for %d palettes",maxpalettes);
+	  System.out.printf("Enough data for %d gamma levels",maxgammas);
+	  
+	  this.palettes=new short[maxgammas*maxpalettes][];
+	  
+	  for (int z=0;z<maxgammas;z++){
+		  
+		  // For each palette
+		  for (int y=0;y<maxpalettes;y++){
+			  this.palettes[z*maxpalettes+y]=new short[colors];
+			  
+			  for (int x=0;x<256;x++){
+				  int r=gammadata[z][0xFF&paldata[y*colors*stride+stride*x]]; // R
+				  int g=gammadata[z][0xFF&paldata[1+y*colors*stride+stride*x]]; // G
+				  int b=gammadata[z][0xFF&paldata[2+y*colors*stride+stride*x]]; // B
+				  r>>>=3;
+		  			g>>>=3;
+		  			b>>>=3;
+				  short color=(short) ((r<<10)|(g<<5)|b);
+				  this.palettes[z*maxpalettes+y][x]=color;
+			  	}
+	  		}
+	  }
 
-	// Enough data for all palettes. 
-	if (maxpalettes>0 && maxgammas>0){
-		  System.out.printf("Enough data for %d palettes",maxpalettes);
-		  System.out.printf("Enough data for %d gamma levels",maxgammas);
-    	  
-    	  // Create as gamma levels as specified.
-    	  this.palettes=new short[maxgammas*maxpalettes][];
-    	  
-    	  // First set of palettes, normal gamma.
-    	  //this.palettes[0]=new int[maxpalettes];
-    
-    	  // Now we have our palettes.
-    	  // SUPER OPTIMIZATION: flat array access.
-    	  // Normally it would be palettes[gammas][palettes][colors];
-    	  // x + WIDTH * (y + DEPTH * z)]
-    	  // x= colors y= palette z= gamma WIDTH= #color DEPTH= #palettes
-    	  // For each gamma value...
-
-    	  for (int z=0;z<maxgammas;z++){
-    		  
-    		  // For each palette
-    		  for (int y=0;y<maxpalettes;y++){
-    			  this.palettes[z*maxpalettes+y]=new short[colors];
-    			  
-    			  for (int x=0;x<256;x++){
-    				  int r=gammadata[z][0xFF&paldata[y*colors*stride+stride*x]]; // R
-    				  int g=gammadata[z][0xFF&paldata[1+y*colors*stride+stride*x]]; // G
-    				  int b=gammadata[z][0xFF&paldata[2+y*colors*stride+stride*x]]; // B
-    				  r>>>=3;
-    		  			g>>>=3;
-    		  			b>>>=3;
-    				  short color=(short) ((r<<10)|(g<<5)|b);
-    				  this.palettes[z*maxpalettes+y][x]=color;
-    			  	}
-    	  		}
-    	  }
-
-    	  
-      } else {
-    	  // TODO: Allow it to pull from some default location?
-    	  System.err.println("Palette and colormaps could not be set up. Bye");
-    	  System.exit(-1);
-      }
-	
 }
-
 
 /** Hotlinks a 32-bit "canvas" (the raster int[] array) to an externally supplied
  *  buffered image. Now whatever we write into raster, will appear in the image as well,
@@ -131,41 +96,6 @@ public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
 
 private void mapInternalRasterToBufferedImage(BufferedImage b){
     raster=((DataBufferUShort)(b.getRaster().getDataBuffer())).getData();
-    
-}
-
-/** Creates a 256 color int palette
- * 
- * @param pal palette lump from IWAD
- */
-
-public void setPalette(byte[] pal){
-/*
-    palette=new int[256*pal.length/768];    
-    
-    
-    for(int i = 0; i < pal.length/3; i++) {
-        System.out.print(Integer.toHexString(0xFF&pal[i*3])+" ");
-        System.out.print(Integer.toHexString(0xFF&pal[1+i*3])+" ");
-        System.out.print(Integer.toHexString(0xFF&pal[2+i*3])+" ");
-        
-        int r=C2JUtils.toUnsignedByte(pal[i * 3]);
-        int g=C2JUtils.toUnsignedByte(pal[1+i * 3]);
-        int b=C2JUtils.toUnsignedByte(pal[2+i * 3]);
-        
-        palette[i] = (r<<16|g<<8|b);
-        System.out.println(Integer.toHexString(0x00FFFFFF&palette[i]));
-    }
-
-    int[] tmp= new int[128];
-    
-    for(int i = 0; i < palette.length/256; i++) {
-        // Swap signed/unsigned.
-        System.arraycopy(palette, 128+256*i, tmp,0, 128);
-        System.arraycopy(palette, 0+256*i, palette,128+256*i, 128);
-        System.arraycopy(tmp, 0, palette,256*i, 128);
-        
-    } */
     
 }
 
