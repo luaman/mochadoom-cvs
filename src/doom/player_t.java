@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import m.DoomRandom;
 import m.IRandom;
 
 import data.Tables;
@@ -23,7 +22,7 @@ import static p.mobj_t.*;
 import p.Actions;
 import p.mobj_t;
 import p.pspdef_t;
-import rr.RendererState;
+import rr.Renderer;
 import rr.sector_t;
 import s.IDoomSound;
 import utils.C2JUtils;
@@ -65,7 +64,7 @@ public class player_t /*extends mobj_t */
     private DoomStatus DS;
     private IDoomGame DG;
     private Actions P;
-    private RendererState R;
+    private Renderer<?> R;
     private IRandom RND;
     private IDoomSystem I;
     private IDoomSound S;
@@ -841,8 +840,8 @@ public void MovePsprites ()
 {
 
     pspdef_t    psp;
-    state_t state;
-    
+    @SuppressWarnings("unused") // Shut up compiler
+	state_t state=null;    
  
     for (int i=0 ; i<NUMPSPRITES ; i++)
     {
