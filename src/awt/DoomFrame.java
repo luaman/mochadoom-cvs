@@ -32,7 +32,7 @@ import doom.event_t;
 public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface {
 
     public DoomFrame(DoomMain DM,DoomVideoRenderer<K> V) {
-    	this.DM=DM.DM;
+    	this.DM=DM;
     	this.CM=DM.CM;
     	this.TICK=DM.TICK;
     	this.I=DM.I;
@@ -271,10 +271,6 @@ public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface 
 	  
 	}
 	
-	
-
-	
-
 	@Override
 	public void StartFrame() {
 		// Dummy. Nothing special to do...yet.
