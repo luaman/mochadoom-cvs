@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.11 2011/08/31 15:23:41 velktron Exp $
+// $Id: ISound.java,v 1.12 2011/10/24 02:30:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -65,7 +65,7 @@ public interface ISound {
 	/** How many audio chunks/frames to mix before submitting them to
 	 *  the output.
 	 */
-	public static final int BUFFER_CHUNKS=3;
+	public static final int BUFFER_CHUNKS=5;
 	
 	/** Ths audio buffer size of the audioline itself. 
 	 *  Increasing this is the only effective way to combat output stuttering on
@@ -127,6 +127,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.12  2011/10/24 02:30:27  velktron
+// 5 buffers better than 3?
+//
 // Revision 1.11  2011/08/31 15:23:41  velktron
 // Better sound stopping.
 //

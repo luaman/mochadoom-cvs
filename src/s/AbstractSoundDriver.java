@@ -1,7 +1,6 @@
 package s;
 
 import static data.sounds.S_sfx;
-import w.DoomBuffer;
 import data.sfxinfo_t;
 import data.sounds;
 import doom.DoomStatus;
