@@ -100,7 +100,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.92 2011/10/24 02:11:27 velktron Exp $
+// $Id: DoomMain.java,v 1.93 2011/10/24 02:30:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -126,7 +126,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.92 2011/10/24 02:11:27 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.93 2011/10/24 02:30:51 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1065,7 +1065,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         int pallump=W.GetNumForName("PLAYPAL");
         byte[] tmppal=W.CacheLumpNumAsRawBytes(pallump, PU_STATIC);
         if (tmppal!=null)
-        System.arraycopy(tmppal, 0, pal, 0, tmppal.length);
+        System.arraycopy(tmppal, 0, pal, 0, pal.length);
         
         V.createPalettes(pal, GammaTables.gammatables, 14, 256, 3, 5);
         
@@ -4209,6 +4209,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.93  2011/10/24 02:30:51  velktron
+//Fixed palette copying.
+//
 //Revision 1.92  2011/10/24 02:11:27  velktron
 //Stream compliancy
 //
