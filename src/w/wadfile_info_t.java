@@ -1,5 +1,8 @@
 package w;
 
+import java.io.DataInputStream;
+import java.io.InputStream;
+
 
 // CPhipps - changed wad init
 // We _must_ have the wadfiles[] the same as those actually loaded, so there 
@@ -8,5 +11,5 @@ package w;
 public class wadfile_info_t {
       public String name;
       public wad_source_t src;
-      public DoomFile handle;
+      public InputStream handle;
     }

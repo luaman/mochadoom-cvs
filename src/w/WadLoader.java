@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.51 2011/10/23 22:50:42 velktron Exp $
+// $Id: WadLoader.java,v 1.52 2011/10/24 02:07:08 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,7 +24,10 @@
 
 package w;
 
+import java.io.DataInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -129,14 +132,13 @@ public class WadLoader implements IWadLoader {
 		wadinfo_t header = new wadinfo_t();
 		int lump_p; // MAES: was lumpinfo_t* , but we can use it as an array
 		// pointer.
-		DoomFile handle;
+		InputStream handle,storehandle;
 		long length;
 		int startlump;
 		
 		filelump_t[] fileinfo = new filelump_t[1]; // MAES: was *
 		filelump_t singleinfo = new filelump_t();
-		DoomFile storehandle;
-		
+
 		// handle reload indicator.
 		if (filename.charAt(0) == '~') {
 			filename = filename.substring(1);
@@ -147,7 +149,7 @@ public class WadLoader implements IWadLoader {
         // open the file and add to directory
 		
 		try {
-			handle = new DoomFile(filename, "r");
+			handle = new FileInputStream(filename);
 		} catch (Exception e) {
 			I.Error(" couldn't open %s \n", filename);
 			return;
@@ -155,7 +157,7 @@ public class WadLoader implements IWadLoader {
 		
         // Create and set wadfile info
         wadfile_info_t wadinfo=new wadfile_info_t();
-        wadinfo.handle=handle;
+        wadinfo.handle= handle;
         wadinfo.name=filename;
 
 
@@ -169,7 +171,7 @@ public class WadLoader implements IWadLoader {
 
 		    fileinfo[0] = singleinfo;
 			singleinfo.filepos = 0;
-			singleinfo.size = (long) (handle.length());
+			singleinfo.size = (long) (handle.available());
 			
 			// Single lumps. Only use 8 characters			
 			singleinfo.name = C2JUtils.extractFileBase(filename, 8,false).toUpperCase();
@@ -194,7 +196,7 @@ public class WadLoader implements IWadLoader {
 			// Check out how reading is delegated to each class's "load" method.
 			// read (handle, &header, sizeof(header));
 
-			header.read(handle);
+			header.read(new DataInputStream( handle));
 			
 			if (header.identification.compareTo("IWAD") != 0) {
 				// Homebrew levels?
@@ -214,12 +216,20 @@ public class WadLoader implements IWadLoader {
 			length = header.numlumps;
 			// Init everything:
 			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
+			
+			handle.close();
+			try {
+				handle = new FileInputStream(filename);
+			} catch (Exception e) {
+				I.Error(" couldn't open %s \n", filename);
+				return;
+			}
 
-			handle.seek(header.infotableofs);
+			handle.skip(header.infotableofs);
 			// MAES: we can't read raw structs here, and even less BLOCKS of
 			// structs.
 
-			handle.readObjectArray(fileinfo, (int) length);
+			DoomIO.readObjectArray(new DataInputStream(handle),fileinfo, (int) length);
 
 			/*
 			 * for (int j=0;j<length;j++){ fileinfo[j].load (handle); }
@@ -291,7 +301,7 @@ public class WadLoader implements IWadLoader {
 		int lumpcount;
 		int lump_p; // Maes: same as in W_WADload
 		int i;
-		DoomFile handle = null;
+		DataInputStream handle = null;
 		int length;
 		filelump_t[] fileinfo;
 
@@ -299,7 +309,7 @@ public class WadLoader implements IWadLoader {
 			return;
 
 		try {
-			handle = new DoomFile(reloadname, "r");
+			handle = new DataInputStream(new FileInputStream(reloadname));
 		} catch (Exception e) {
 			I.Error("W_Reload: couldn't open %s", reloadname);
 		}
@@ -310,12 +320,14 @@ public class WadLoader implements IWadLoader {
 		header.infotableofs = header.infotableofs;
 		length = lumpcount;
 		fileinfo = new filelump_t[length];
-		handle.seek(header.infotableofs);
+		
+		handle.reset();
+		handle.skip(header.infotableofs);
 
 		// MAES: we can't read raw structs here, and even less BLOCKS of
 		// structs.
 
-		handle.readObjectArrayWithReflection(fileinfo, (int) length);
+		DoomIO.readObjectArrayWithReflection(handle,fileinfo, (int) length);
 
 		/*
 		 * for (int j=0;j<length;j++){ fileinfo[j].load (handle); }
@@ -556,7 +568,7 @@ public class WadLoader implements IWadLoader {
 	public void ReadLump(int lump, ByteBuffer dest) {
 		int c;
 		lumpinfo_t l; // Maes: was *..probably not array.
-		DoomFile handle = null;
+		InputStream handle = null;
 
 		if (lump >= this.numlumps) {
 			I.Error("W_ReadLump: %i >= numlumps", lump);
@@ -570,7 +582,7 @@ public class WadLoader implements IWadLoader {
 		if (l.handle == null) {
 			// reloadable file, so use open / read / close
 			try {
-				handle = new DoomFile(this.reloadname, "r");
+				handle = new FileInputStream(this.reloadname);
 			} catch (Exception e) {
 				e.printStackTrace();
 				I.Error("W_ReadLump: couldn't open %s", reloadname);
@@ -579,7 +591,7 @@ public class WadLoader implements IWadLoader {
 			handle = l.handle;
 
 		try {
-			handle.seek(l.position);
+			((FileInputStream)handle).getChannel().position(l.position);
 			byte[] buf = new byte[(int) l.size];
 			c = handle.read(buf);
 			dest.put(buf);
@@ -1039,7 +1051,7 @@ public class WadLoader implements IWadLoader {
 	
 	@Override
 	public void CloseAllHandles(){
-		ArrayList<DoomFile> d=new ArrayList<DoomFile>();
+		ArrayList<InputStream> d=new ArrayList<InputStream>();
 		
 		for (int i=0;i<this.lumpinfo.length;i++){
 			if (!d.contains(lumpinfo[i].handle)) d.add(lumpinfo[i].handle);
@@ -1047,7 +1059,7 @@ public class WadLoader implements IWadLoader {
 		
 		int count=0;
 		
-		for (DoomFile e:d){
+		for (InputStream e:d){
 			try {
 				e.close();
 				//System.err.printf("%s file handle closed",e.toString());
@@ -1246,6 +1258,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.52  2011/10/24 02:07:08  velktron
+//DoomFile model abandoned. Now streams are used whenever possible, with possible future expandability to use e.g. URL streams or other types of resources other than RandomAccessFiles.
+//
 //Revision 1.51  2011/10/23 22:50:42  velktron
 //Added InjectLumpNum function to force generated contents.
 //

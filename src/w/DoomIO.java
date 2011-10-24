@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomFile.java,v 1.16 2011/05/20 14:55:59 velktron Exp $
+//$Id: DoomIO.java,v 1.1 2011/10/24 02:07:08 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -46,31 +46,30 @@ import m.Swap;
 * much of the exposed interface, but it's not a priority for me right now. 
 * 
 */
-public class DoomFile extends RandomAccessFile {
+public class DoomIO  {
 
-   /** Standard Constructor. */
-   public DoomFile(String filename, String mode) throws FileNotFoundException {
-       super(filename, mode);
-   }
+	private DoomIO(){
+		
+	}
 
    /** Writes a Vector to a RandomAccessFile. */
-   public void writeVector(float v[]) throws IOException {
+   public static void writeVector(DataOutputStream dos,float v[]) throws IOException {
        for (int n = 0; n < 3; n++)
-           writeFloat(v[n]);
+           dos.writeFloat(v[n]);
    }
 
    /** Writes a Vector to a RandomAccessFile. */
-   public float[] readVector() throws IOException {
+   public static float[] readVector(DataInputStream dis) throws IOException {
        float res[] = { 0, 0, 0 };
        for (int n = 0; n < 3; n++)
-           res[n] = readFloat();
+           res[n] = dis.readFloat();
 
        return res;
    }
 
    /** Reads a length specified string from a file. */
-   public String readString() throws IOException {
-       int len = readInt();
+   public static final String readString(DataInputStream dis) throws IOException {
+       int len = dis.readInt();
 
        if (len == -1)
            return null;
@@ -80,7 +79,7 @@ public class DoomFile extends RandomAccessFile {
 
        byte bb[] = new byte[len];
 
-       super.read(bb, 0, len);
+       dis.read(bb, 0, len);
 
        return new String(bb, 0, len);
    }
@@ -93,7 +92,7 @@ public class DoomFile extends RandomAccessFile {
  * @throws IOException
  */
    
-   public String readString(int len) throws IOException {
+   public final static String readString(DataInputStream dis,int len) throws IOException {
 
        if (len == -1)
            return null;
@@ -103,7 +102,22 @@ public class DoomFile extends RandomAccessFile {
 
        byte bb[] = new byte[len];
 
-       super.read(bb, 0, len);
+       dis.read(bb, 0, len);
+
+       return new String(bb, 0, len);
+   }
+   
+   public static String readString(InputStream f,int len) throws IOException {
+
+       if (len == -1)
+           return null;
+
+       if (len == 0)
+           return "";
+
+       byte bb[] = new byte[len];
+
+       f.read(bb, 0, len);
 
        return new String(bb, 0, len);
    }
@@ -116,7 +130,7 @@ public class DoomFile extends RandomAccessFile {
     * @throws IOException
     */
    
-      public String readNullTerminatedString(int len) throws IOException {
+      public static final String readNullTerminatedString(InputStream dis,int len) throws IOException {
 
           if (len == -1)
               return null;
@@ -127,7 +141,7 @@ public class DoomFile extends RandomAccessFile {
           byte bb[] = new byte[len];
           int terminator=len;
 
-          super.read(bb, 0, len);
+          dis.read(bb, 0, len);
           
           for (int i=0;i<bb.length;i++){
               if (bb[i]==0) {
@@ -147,7 +161,7 @@ public class DoomFile extends RandomAccessFile {
     * @throws IOException
     */
       
-      public String[] readMultipleFixedLengthStrings(String[] dest, int num, int len) throws IOException {
+      public static final String[] readMultipleFixedLengthStrings(DataInputStream dis,String[] dest, int num, int len) throws IOException {
 
     	  // Some sanity checks...
           if (num<=0 || len < 0)
@@ -161,7 +175,7 @@ public class DoomFile extends RandomAccessFile {
           }        	  
           
           for (int i=0;i<num;i++){
-        	  dest[i]=this.readString(len);
+        	  dest[i]=readString(dis,len);
           }
           return dest;
       }
@@ -170,16 +184,16 @@ public class DoomFile extends RandomAccessFile {
    /** Writes a length specified string (Pascal style) to a file. 
     * 
     * */
-   public void writeString(String s) {
+   public static void writeString(DataOutputStream dos,String s) {
        try {
        if (s == null) {
-           writeInt(-1);
+           dos.writeInt(-1);
            return;
        }
 
-       writeInt(s.length());
+       dos.writeInt(s.length());
        if (s.length() != 0)
-           writeBytes(s);
+           dos.writeBytes(s);
        } catch (Exception e){
            System.err.println("writeString "+s+" to DoomFile failed!");
        }
@@ -194,43 +208,43 @@ public class DoomFile extends RandomAccessFile {
     * @throws IOException
     */
     
-   public void writeString(String s,int len) throws IOException {
+   public static void writeString(DataOutputStream dos,String s,int len) throws IOException {
 
        if (s==null) return;
        
        if (s.length() != 0){
            byte[] dest=s.getBytes();
-           write(dest,0,Math.min(len,dest.length));
+           dos.write(dest,0,Math.min(len,dest.length));
            // Fill in with 0s if something's left.
            if (dest.length<len){
                for (int i=0;i<len-dest.length;i++){
-                   write((byte)0x00);
+                   dos.write((byte)0x00);
                }
            }
        }
    }
 
-   public void readObjectArray(IReadableDoomObject[] s,int len) throws IOException {
+   public static void readObjectArray(DataInputStream dis,IReadableDoomObject[] s,int len) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){           
-           s[i].read(this);
+           s[i].read(dis);
        }
    }
 
-   public void readObjectArrayWithReflection(IReadableDoomObject[] s,int len) throws Exception {
+   public static void readObjectArrayWithReflection(DataInputStream dis,IReadableDoomObject[] s,int len) throws Exception {
 
        if (len==0) return;
        Class c=s.getClass().getComponentType();
        
        for (int i=0;i<Math.min(len,s.length);i++){
            if (s[i]==null) s[i]=(IReadableDoomObject) c.newInstance();
-           s[i].read(this);
+           s[i].read(dis);
        }
    }
    
-   public void readObjectArray(IReadableDoomObject[] s,int len, Class c) throws Exception {
+   public static void readObjectArray(DataInputStream dis,IReadableDoomObject[] s,int len, Class c) throws Exception {
 
        if ((s==null)||(len==0)) return;
        
@@ -238,48 +252,48 @@ public class DoomFile extends RandomAccessFile {
            if (s[i]==null) {
                s[i]=(IReadableDoomObject) c.newInstance();
            }
-           s[i].read(this);
+           s[i].read(dis);
        }
    }
    
-   public final void readIntArray(int[] s,int len, ByteOrder bo) throws IOException {
+   public static final void readIntArray(DataInputStream dis,int[] s,int len, ByteOrder bo) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){           
-           s[i]=this.readInt();
+           s[i]=dis.readInt();
            if (bo==ByteOrder.LITTLE_ENDIAN){
                s[i]=Swap.LONG(s[i]);
            }
        }
    }
    
-   public final void readShortArray(short[] s,int len, ByteOrder bo) throws IOException {
+   public static final void readShortArray(DataInputStream dis,short[] s,int len, ByteOrder bo) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){           
-           s[i]=this.readShort();
+           s[i]=dis.readShort();
            if (bo==ByteOrder.LITTLE_ENDIAN){
                s[i]=Swap.SHORT(s[i]);
            }
        }
    }
    
-   public final void readIntArray(int[] s,ByteOrder bo) throws IOException {
-       readIntArray(s,s.length,bo);
+   public static final void readIntArray(DataInputStream dis,int[] s,ByteOrder bo) throws IOException {
+       readIntArray(dis,s,s.length,bo);
    }
    
-   public final void readShortArray(short[] s,ByteOrder bo) throws IOException {
-       readShortArray(s,s.length,bo);
+   public static final void readShortArray(DataInputStream dis,short[] s,ByteOrder bo) throws IOException {
+       readShortArray(dis,s,s.length,bo);
    }
    
-   public void readBooleanArray(boolean[] s,int len) throws IOException {
+   public static void readBooleanArray(DataInputStream dis,boolean[] s,int len) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){
-           s[i]=this.readBoolean();
+           s[i]=dis.readBoolean();
            }
    }
    
@@ -293,60 +307,60 @@ public class DoomFile extends RandomAccessFile {
     * @throws IOException
     */
    
-   public void readBooleanIntArray(boolean[] s,int len) throws IOException {
+   public final static void readBooleanIntArray(DataInputStream dis,boolean[] s,int len) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){
-           s[i]=this.readIntBoolean();
+           s[i]=readIntBoolean(dis);
            }
    }
    
-   public void readBooleanIntArray(boolean[] s) throws IOException {
-       readBooleanIntArray(s,s.length);
+   public static final void readBooleanIntArray(DataInputStream dis,boolean[] s) throws IOException {
+       readBooleanIntArray(dis,s,s.length);
    }
    
-   public void writeBoolean(boolean[] s,int len) throws IOException {
+   public static final void writeBoolean(DataOutputStream dos,boolean[] s,int len) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){
-           this.writeBoolean(s[i]);
+           dos.writeBoolean(s[i]);
            }
    }
    
-   public void writeObjectArray(IWritableDoomObject[] s,int len) throws IOException {
+   public static final void writeObjectArray(DataOutputStream dos,IWritableDoomObject[] s,int len) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.length);i++){           
-           s[i].write(this);
+           s[i].write(dos);
        }
    }
    
-   public void writeListOfObjects(List<IWritableDoomObject> s,int len) throws IOException {
+   public static final void writeListOfObjects(DataOutputStream dos,List<IWritableDoomObject> s,int len) throws IOException {
 
        if ((s==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,s.size());i++){           
-           s.get(i).write(this);
+           s.get(i).write(dos);
        }
    }
    
-   public final void readBooleanArray(boolean[] s) throws IOException {
-       readBooleanArray(s,s.length);
+   public final static void readBooleanArray(DataInputStream dis,boolean[] s) throws IOException {
+       readBooleanArray(dis,s,s.length);
        }
    
-   public final void readIntBooleanArray(boolean[] s) throws IOException {
-       readBooleanIntArray(s,s.length);
+   public final static void readIntBooleanArray(DataInputStream dis,boolean[] s) throws IOException {
+       readBooleanIntArray(dis,s,s.length);
        }
   
-   public void writeCharArray(char[] charr,int len) throws IOException {
+   public static final void writeCharArray(DataOutputStream dos,char[] charr,int len) throws IOException {
 
        if ((charr==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,charr.length);i++){           
-           this.writeChar(charr[i]);
+           dos.writeChar(charr[i]);
        }
    }
    
@@ -357,12 +371,12 @@ public class DoomFile extends RandomAccessFile {
     * @throws IOException
     */
    
-   public void readCharArray(char[] charr,int len) throws IOException {
+   public static final void readCharArray(DataInputStream dis,char[] charr,int len) throws IOException {
 
        if ((charr==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,charr.length);i++){           
-           charr[i]=this.readChar();
+           charr[i]=dis.readChar();
        }
    }
    
@@ -374,12 +388,12 @@ public class DoomFile extends RandomAccessFile {
     * @throws IOException
     */
    
-   public void readNonUnicodeCharArray(char[] charr,int len) throws IOException {
+   public static final void readNonUnicodeCharArray(DataInputStream dis,char[] charr,int len) throws IOException {
 
        if ((charr==null)||(len==0)) return;
        
        for (int i=0;i<Math.min(len,charr.length);i++){           
-           charr[i]=(char) this.readUnsignedByte();
+           charr[i]=(char) dis.readUnsignedByte();
        }
    }
    
@@ -402,13 +416,18 @@ public class DoomFile extends RandomAccessFile {
  * @throws IOException 
 */
    
-   public int readLEInt() throws IOException{
-       int tmp=readInt();
+   public static final int readLEInt(DataInputStream dis) throws IOException{
+       int tmp=dis.readInt();
        return Swap.LONG(tmp);
    }
    
-   public void writeLEInt(int value) throws IOException{       
-       this.writeInt(Swap.LONG(value));
+   public static final int readLEInt(InputStream dis) throws IOException{	   
+       int tmp=new DataInputStream(dis).readInt();
+       return Swap.LONG(tmp);
+   }
+   
+   public static final void writeLEInt(DataOutputStream dos,int value) throws IOException{       
+	   dos.writeInt(Swap.LONG(value));
    }
    
 // 2-byte number
@@ -423,8 +442,8 @@ public class DoomFile extends RandomAccessFile {
        return((i&0xff)<<24)+((i&0xff00)<<8)+((i&0xff0000)>>8)+((i>>24)&0xff);
    }
 
-public short readLEShort() throws IOException {
-    short tmp=readShort();
+public static final short readLEShort(DataInputStream dis) throws IOException {
+    short tmp=dis.readShort();
     return Swap.SHORT(tmp);
 }
 
@@ -433,9 +452,10 @@ public short readLEShort() throws IOException {
  * @return
  * @throws IOException
  */
-public boolean readIntBoolean() throws IOException {
-    return (this.readInt()!=0);
+public static final boolean readIntBoolean(DataInputStream dis) throws IOException {
+    return (dis.readInt()!=0);
 
 }
+
    
 }

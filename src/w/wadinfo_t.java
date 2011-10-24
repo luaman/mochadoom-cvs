@@ -1,5 +1,6 @@
 package w;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 
 public class wadinfo_t implements IReadableDoomObject{
@@ -9,11 +10,10 @@ public class wadinfo_t implements IReadableDoomObject{
         long         infotableofs;
              
         /** Reads the wadinfo_t from the file.*/
-        public void read(DoomFile f) throws IOException {
-            
-            identification = f.readString(4);
-            numlumps=f.readLEInt();
-            infotableofs=f.readLEInt();
+        public void read(DataInputStream f) throws IOException {
+            identification = DoomIO.readString(f,4);
+            numlumps=DoomIO.readLEInt(f);
+            infotableofs=DoomIO.readLEInt(f);
         }
         
     }

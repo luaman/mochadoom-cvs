@@ -1,5 +1,9 @@
 package w;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.InputStream;
+
 /*
 typedef struct
 {
@@ -27,7 +31,7 @@ typedef struct
 
 public class lumpinfo_t implements Cloneable{
         public String    name;
-        public DoomFile     handle;
+        public InputStream     handle;
         public int     position;
         public long     size;
         // A 32-bit hash which should be enough for searching through hashtables.
