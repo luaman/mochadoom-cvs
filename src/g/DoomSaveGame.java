@@ -4,17 +4,17 @@ import static data.Defines.VERSION;
 import static data.Limits.*;
 
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import defines.*;
 import doom.DoomStatus;
-import doom.gameaction_t;
-
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
-import w.DoomFile;
+import w.DoomIO;
 import w.IReadableDoomObject;
 import w.IWritableDoomObject;
 
@@ -86,10 +86,10 @@ public class DoomSaveGame
     
    
     @Override
-    public void write(DoomFile f)
+    public void write(DataOutputStream f)
             throws IOException {
-        f.writeString(name,SAVESTRINGSIZE);
-        f.writeString(vcheck,VERSIONSIZE);
+        DoomIO.writeString(f,name,SAVESTRINGSIZE);
+        DoomIO.writeString(f,vcheck,VERSIONSIZE);
         f.writeByte(gameskill); 
         f.writeByte(gameepisode);
         f.writeByte(gamemap);
@@ -117,10 +117,10 @@ public class DoomSaveGame
     } 
     
     @Override
-    public void read(DoomFile f)
+    public void read(DataInputStream f)
             throws IOException {
-        name=f.readNullTerminatedString(SAVESTRINGSIZE);
-        vcheck=f.readNullTerminatedString(VERSIONSIZE);
+        name=DoomIO.readNullTerminatedString(f,SAVESTRINGSIZE);
+        vcheck=DoomIO.readNullTerminatedString(f,VERSIONSIZE);
         String vcheckb= ("version "+VERSION);
         // no more unpacking, and report it.
         if (wrongversion = !(vcheckb.equalsIgnoreCase(vcheck))) return;
@@ -142,12 +142,17 @@ public class DoomSaveGame
         leveltime = (a<<16) + (b<<8) + c; 
 
         // Mark this position...
-        long mark=f.getFilePointer();
-        f.seek(f.length()-1);
+        //long mark=f.getFilePointer();
+        //f.seek(f.length()-1);
+        //if (f.readByte() != 0x1d) properend=false; else
+        //    properend=true;
+        //f.seek(mark);
+            
+        long available=f.available();
+        f.skip(available-1);
         if (f.readByte() != 0x1d) properend=false; else
             properend=true;
-        f.seek(mark);
-            
+        
         // We've loaded whatever consistutes "header" info, the rest must be unpacked by proper
         // methods in the game engine itself.
         

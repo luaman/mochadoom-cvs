@@ -2,6 +2,7 @@ package demo;
 
 import static data.Limits.MAXPLAYERS;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -10,7 +11,7 @@ import java.util.List;
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
-import w.DoomFile;
+import w.DoomIO;
 import defines.skill_t;
 
 public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
@@ -200,7 +201,7 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
     }
 
     @Override
-    public void write(DoomFile f)
+    public void write(DataOutputStream f)
             throws IOException {
         
         f.writeByte(version);        
@@ -212,7 +213,7 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
         f.writeBoolean(fastparm);
         f.writeBoolean(nomonsters);
         f.writeByte(consoleplayer);
-        f.writeBoolean(this.playeringame,MAXPLAYERS);
+        DoomIO.writeBoolean(f,this.playeringame,MAXPLAYERS);
         for (IDemoTicCmd i: demorecorder) {            
             i.write(f);
         }

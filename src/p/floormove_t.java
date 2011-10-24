@@ -1,10 +1,11 @@
 package p;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import rr.SectorAction;
-import w.DoomFile;
+import w.DoomIO;
 import w.IReadableDoomObject;
 
 public class floormove_t extends SectorAction implements IReadableDoomObject{
@@ -27,17 +28,17 @@ public class floormove_t extends SectorAction implements IReadableDoomObject{
     public int speed;
 
     @Override
-    public void read(DoomFile f) throws IOException{
+    public void read(DataInputStream f) throws IOException{
 
         super.read(f); // Call thinker reader first            
-        type=floor_e.values()[f.readLEInt()];
-        crush=f.readIntBoolean();
-        super.sectorid=f.readLEInt(); // Sector index (or pointer?)
-        direction=f.readLEInt();
-        newspecial=f.readLEInt();
-        texture=f.readLEShort();
-        floordestheight=f.readLEInt();
-        speed=f.readLEInt();        
+        type=floor_e.values()[DoomIO.readLEInt(f)];
+        crush=DoomIO.readIntBoolean(f);
+        super.sectorid=DoomIO.readLEInt(f); // Sector index (or pointer?)
+        direction=DoomIO.readLEInt(f);
+        newspecial=DoomIO.readLEInt(f);
+        texture=DoomIO.readLEShort(f);
+        floordestheight=DoomIO.readLEInt(f);
+        speed=DoomIO.readLEInt(f);        
         }
    
     @Override

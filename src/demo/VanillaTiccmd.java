@@ -1,5 +1,6 @@
 package demo;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -7,7 +8,6 @@ import doom.ticcmd_t;
 
 import utils.C2JUtils;
 import w.CacheableDoomObject;
-import w.DoomFile;
 import w.IWritableDoomObject;
 
 /** A more lightweight version of ticcmd_t, which contains
@@ -109,7 +109,7 @@ public class VanillaTiccmd implements CacheableDoomObject, IDemoTicCmd,IWritable
     }
 
     @Override
-    public void write(DoomFile f)
+    public void write(DataOutputStream f)
             throws IOException {
         f.writeByte(forwardmove);
         f.writeByte(sidemove);

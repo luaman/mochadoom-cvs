@@ -1,24 +1,32 @@
 package m;
 
 import i.DoomSystem;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
 import doom.DoomStatus;
 import utils.C2JUtils;
-import w.DoomFile;
 import w.IWritableDoomObject;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.26 2011/07/30 22:04:30 velktron Exp $
+// $Id: MenuMisc.java,v 1.27 2011/10/24 02:11:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -42,7 +50,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.26 2011/07/30 22:04:30 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.27 2011/10/24 02:11:27 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -94,7 +102,7 @@ public abstract class MenuMisc{
     public static void LoadDefaults (DoomStatus DS)
     {
         int		i;
-        DoomFile	f;
+        BufferedReader	in;
         boolean	isstring;
 
         // set everything to base values
@@ -115,16 +123,16 @@ public abstract class MenuMisc{
         try {
 
             // read the file in, overriding any set defaults
-            f = new DoomFile (defaultfile, "r");
-            if (f!=null)
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(defaultfile)));
+            if (in!=null)
             {
-                long endfile=f.length()-1;
                 String name = null, value = null;
-
-                while (f.getFilePointer()<endfile)
+                String s;
+                
+                // Let's make this the sane way...read a string.
+                while (( s=in.readLine())!=null)
                 {
-                    // Let's make this the sane way...read a string.
-                    String s=f.readLine();
+
                     isstring = false;
                     StringTokenizer tk=new StringTokenizer(s);
 
@@ -217,7 +225,7 @@ public abstract class MenuMisc{
                 } // end-while
 
 
-                f.close();
+                in.close();
             } // not null
         }catch (IOException e){
             System.err.printf("I just can't read the settings file %s, will use defaults.\n",defaultfile);
@@ -230,9 +238,9 @@ public abstract class MenuMisc{
     //
   
     public static boolean WriteFile(String name, byte[] source, int length) {
-        DoomFile handle;
+        OutputStream handle;
         try {
-            handle = new DoomFile(name, "rw");
+            handle = new  FileOutputStream(name);
             handle.write(source, 0, length);
             handle.close();
         } catch (Exception e) {
@@ -244,9 +252,9 @@ public abstract class MenuMisc{
     }
 
     public static boolean WriteFile(String name, IWritableDoomObject source) {
-        DoomFile handle;
+        DataOutputStream handle;
         try {
-            handle = new DoomFile(name, "rw");
+            handle = new DataOutputStream(new FileOutputStream(name));
             source.write(handle);
             handle.close();
         } catch (Exception e) {
@@ -264,13 +272,13 @@ public abstract class MenuMisc{
      * 
      */
     public static ByteBuffer ReadFile(String name) {
-        DoomFile handle;
+        BufferedInputStream handle;
         int count, length;
         // struct stat fileinfo;
         ByteBuffer buf;
         try {
-            handle = new DoomFile(name, "r");
-            length = (int) handle.length();
+            handle = new BufferedInputStream(new FileInputStream(name));
+            length = (int) handle.available();
             buf = ByteBuffer.allocate(length);
             count = handle.read(buf.array());
             handle.close();
@@ -284,13 +292,13 @@ public abstract class MenuMisc{
 
     /** M_ReadFile */
     public static int ReadFile(String name, byte[] buffer) {
-        DoomFile handle;
+    	BufferedInputStream handle;
         int count, length;
         // struct stat fileinfo;
         byte[] buf;
         try {
-            handle = new DoomFile(name, "r");
-            length = (int) handle.length();
+            handle = new BufferedInputStream(new FileInputStream(name));
+            length = (int) handle.available();
             buf = new byte[length];
             count = handle.read(buf);
             handle.close();
@@ -368,9 +376,9 @@ public abstract class MenuMisc{
      length = p_pack;
      pcx.data=Arrays.copyOf(pack, length);
      
-     DoomFile f=null;
+     DataOutputStream f=null;
     try {
-        f = new DoomFile(filename,"rw");
+        f = new DataOutputStream(new FileOutputStream(filename));
         
     } catch (FileNotFoundException e) {
         // TODO Auto-generated catch block
@@ -378,7 +386,7 @@ public abstract class MenuMisc{
     }
      
     try {
-        f.setLength(0);
+        //f.setLength(0);
         pcx.write(f);
     } catch (IOException e) {
         // TODO Auto-generated catch block
@@ -394,6 +402,9 @@ public abstract class MenuMisc{
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.27  2011/10/24 02:11:27  velktron
+// Stream compliancy
+//
 // Revision 1.26  2011/07/30 22:04:30  velktron
 // Removed unused imports (including one that would cause problems compiling with OpenJDK).
 //

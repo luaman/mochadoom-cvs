@@ -3,9 +3,12 @@ package doom;
 import static data.Defines.*;
 import static g.Keys.*;
 import static data.Limits.*;
+
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+
 import p.mobj_t;
 import utils.C2JUtils;
-import w.DoomFile;
 import data.mapthing_t;
 import defines.*;
 import demo.IDoomDemo;
@@ -281,7 +284,7 @@ public class DoomStatus extends DoomContext {
     /** default file */
     String basedefault;      
     
-    public DoomFile debugfile;
+    public OutputStreamWriter debugfile;
 
     // if true, load all graphics at level load
     public boolean precache;
@@ -537,6 +540,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.33  2011/10/24 02:11:27  velktron
+// Stream compliancy
+//
 // Revision 1.32  2011/10/07 16:01:16  velktron
 // Added freelook stuff, using Keys.
 //

@@ -4,8 +4,13 @@ import i.DoomStatusAware;
 import i.DoomSystem;
 import i.Strings;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,7 +86,6 @@ import v.TrueColorRenderer;
 //import v.VideoScaleInfo;
 import v.VisualSettings;
 import w.DoomBuffer;
-import w.DoomFile;
 import w.WadLoader;
 import static data.Defines.*;
 import static data.Limits.*;
@@ -96,7 +100,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.91 2011/10/23 22:59:56 velktron Exp $
+// $Id: DoomMain.java,v 1.92 2011/10/24 02:11:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -122,7 +126,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.91 2011/10/23 22:59:56 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.92 2011/10/24 02:11:27 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -186,9 +190,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     /**
      * D_Display
      * draw current display, possibly wiping it from the previous
+     * @throws IOException 
      */
 
-    public void Display ()
+    public void Display () throws IOException
     {
         int				nowtime;
         int				tics;
@@ -353,9 +358,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      * Manages timing and IO,
      *  calls all ?_Responder, ?_Ticker, and ?_Drawer,
      *  calls I_GetTime, I_StartFrame, and I_StartTic
+     * @throws IOException 
      */
 
-    public void DoomLoop ()
+    public void DoomLoop () throws IOException
     {
         if (demorecording)
             BeginRecording ();
@@ -365,7 +371,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             String    filename="debug"+consoleplayer+".txt";
             System.out.println("debug output to: "+filename);
             try {
-                debugfile = new DoomFile(filename,"w");
+                debugfile = new OutputStreamWriter(new FileOutputStream(filename));
             } catch (FileNotFoundException e) {
                 System.err.println("Couldn't open debugfile. Now, that sucks some putrid shit out of John Romero's asshole!");
                 e.printStackTrace();
@@ -764,7 +770,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
     // D_DoomMain
     //
     @SuppressWarnings("deprecation")
-	public void Start ()
+	public void Start () throws IOException
     {
         int             p;
         StringBuffer file=new StringBuffer();
@@ -2599,11 +2605,12 @@ public void ScreenShot ()
             
             gameaction = gameaction_t.ga_nothing; 
 
-            DoomFile f=new DoomFile(savename, "r"); 
+            DataInputStream f=new DataInputStream(new FileInputStream(savename)); 
 
             header.read(f);
-            f.seek(0);
-
+            f.close();
+            
+            f=new DataInputStream(new FileInputStream(savename)); 
 
             // skip the description field 
             vcheck.append("version ");
@@ -2711,7 +2718,7 @@ public void ScreenShot ()
      dsg.setHeader(header);
      
      // Try opening a save file. No intermediate buffer (performance?)
-     DoomFile f=new DoomFile(name, "rw");
+     DataOutputStream f=new DataOutputStream(new FileOutputStream(name));
      boolean ok=dsg.doSave(f);
      f.close();
         } catch (Exception e){
@@ -3411,12 +3418,13 @@ public void ScreenShot ()
      * case is the rebound storage, which acts as a local "echo"
      * which is then picked up by the host itself. This is
      * necessary to simulate a 1-node network.
+     * @throws IOException 
      *
      */
     void
     HSendPacket
     (int   node,
-            int   flags ) 
+            int   flags )
     {
         netbuffer.checksum = (int) (NetbufferChecksum () | flags);
 
@@ -3451,13 +3459,13 @@ public void ScreenShot ()
             else
                 realretrans = -1;
 
-            DM.debugfile.writeString("send ("+ExpandTics(netbuffer.starttic)+", "+netbuffer.numtics + ", R "+
+            logger(debugfile,"send ("+ExpandTics(netbuffer.starttic)+", "+netbuffer.numtics + ", R "+
                 realretrans+ "["+ doomcom.datalength+"]");
 
             for (i=0 ; i<doomcom.datalength ; i++)
 
                 // TODO: get a serialized string representation.
-                DM.debugfile.writeString(netbuffer.toString()+"\n");
+            	logger(debugfile,netbuffer.toString()+"\n");
         }
 
         // This should execute a "send" command for the current stuff in doomcom.
@@ -3498,14 +3506,14 @@ public void ScreenShot ()
         if (doomcom.datalength != NetbufferSize ())
         {
             if (eval(debugfile))
-                debugfile.writeString("bad packet length "+doomcom.datalength+"\n");
+            	logger(debugfile,"bad packet length "+doomcom.datalength+"\n");
             return false;
         }
 
         if (NetbufferChecksum () != (netbuffer.checksum&NCMD_CHECKSUM) )
         {
             if (eval(debugfile))
-                debugfile.writeString("bad packet checksum\n");
+            	logger(debugfile,"bad packet checksum\n");
             return false;
         }
 
@@ -3515,7 +3523,7 @@ public void ScreenShot ()
             int i;
 
             if (flags(netbuffer.checksum , NCMD_SETUP))
-                debugfile.writeString("setup packet\n");
+            	logger(debugfile,"setup packet\n");
             else
             {
                 if (flags(netbuffer.checksum , NCMD_RETRANSMIT))
@@ -3535,7 +3543,7 @@ public void ScreenShot ()
                 sb.append(doomcom.datalength);
                 sb.append("]");
 
-                debugfile.writeString(sb.toString());
+                logger(debugfile,sb.toString());
 
                 // Trick: force update of internal buffer.
                 netbuffer.pack();
@@ -3549,8 +3557,8 @@ public void ScreenShot ()
 
                 try{
                     for (i=0 ; i<doomcom.datalength ; i++) {
-                        debugfile.writeString(Integer.toHexString(netbuffer.cached()[i]));
-                        debugfile.writeChar( '\n');
+                    	debugfile.write(Integer.toHexString(netbuffer.cached()[i]));
+                    	debugfile.write('\n');
                     }
                 }
                 catch( IOException e){
@@ -3618,7 +3626,7 @@ public void ScreenShot ()
                     sb.append("retransmit from ");
                     sb.append(resendto[netnode]);
                     sb.append('\n');
-                    debugfile.writeString(sb.toString());
+                    logger(debugfile,sb.toString());
                     resendcount[netnode] = RESENDCOUNT;
                 }
             }
@@ -3638,7 +3646,7 @@ public void ScreenShot ()
                     sb.append(" + ");
                     sb.append(netbuffer.numtics);
                     sb.append(")\n");
-                    debugfile.writeString(sb.toString());
+                    logger(debugfile,sb.toString());
                 }
                 continue;
             }
@@ -3656,7 +3664,7 @@ public void ScreenShot ()
                     sb.append(" - ");
                     sb.append(nettics[netnode]);
                     sb.append(")\n");
-                    debugfile.writeString(sb.toString());
+                    logger(debugfile,sb.toString());
                 }
                 remoteresend[netnode] = true;
                 continue;
@@ -3689,7 +3697,17 @@ public void ScreenShot ()
         }
     }
 
-    int      gametime;
+    private void logger(OutputStreamWriter debugfile, String string) {
+    		try {
+				debugfile.write(string);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		
+	}
+
+	int      gametime;
 
     @Override
     public void NetUpdate ()
@@ -3804,10 +3822,11 @@ public void ScreenShot ()
 
     /**
      * D_ArbitrateNetStart
+     * @throws IOException 
      *
      * 
      */
-    public void ArbitrateNetStart ()
+    public void ArbitrateNetStart () throws IOException
     {
         int     i;
         autostart = true;
@@ -3896,7 +3915,7 @@ public void ScreenShot ()
     // Works out player numbers among the net participants
     //
 
-    private void CheckNetGame ()
+    private void CheckNetGame () throws IOException
     {
         int             i;
 
@@ -3945,7 +3964,7 @@ public void ScreenShot ()
     // without hanging the other players
     //
     @Override
-    public void QuitNetGame ()
+    public void QuitNetGame () throws IOException
     {
         int             i, j;
 
@@ -3984,7 +4003,7 @@ public void ScreenShot ()
 
 
     @Override
-    public void TryRunTics ()
+    public void TryRunTics () throws IOException
     {
         int     i;
         int     lowtic;
@@ -4041,7 +4060,7 @@ public void ScreenShot ()
             sb.append("  game: ");
             sb.append(counts);
             sb.append("\n");
-            debugfile.writeString(sb.toString());
+            debugfile.write(sb.toString());
         }
 
         if (!demoplayback)
@@ -4190,6 +4209,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.92  2011/10/24 02:11:27  velktron
+//Stream compliancy
+//
 //Revision 1.91  2011/10/23 22:59:56  velktron
 //Added full PLAYPAL safeguard, generic compliance.
 //

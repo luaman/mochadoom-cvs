@@ -1,5 +1,6 @@
 package rr;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -7,7 +8,7 @@ import java.util.Arrays;
 import p.Interceptable;
 import p.Resettable;
 import s.degenmobj_t;
-import w.DoomFile;
+import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import static m.BBox.BOXBOTTOM;
@@ -258,14 +259,14 @@ public class line_t
     }
 
     @Override
-    public void read(DoomFile f)
+    public void read(DataInputStream f)
             throws IOException {
 
         // For histerical reasons, these are the only parts of line_t that
         // are archived in vanilla savegames. Go figure.
-        this.flags = f.readLEShort();
-        this.special = f.readLEShort();
-        this.tag = f.readLEShort();
+        this.flags = DoomIO.readLEShort(f);
+        this.special = DoomIO.readLEShort(f);
+        this.tag = DoomIO.readLEShort(f);
     }
 
     @Override

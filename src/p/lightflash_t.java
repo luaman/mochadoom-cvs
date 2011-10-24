@@ -1,11 +1,12 @@
 package p;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import m.IRandom;
 import rr.SectorAction;
-import w.DoomFile;
+import w.DoomIO;
 
 //
 // BROKEN LIGHT EFFECT
@@ -49,15 +50,15 @@ public class lightflash_t extends SectorAction{
     }
     
     @Override
-    public void read(DoomFile f) throws IOException{
+    public void read(DataInputStream f) throws IOException{
 
         super.read(f); // Call thinker reader first            
-        super.sectorid=f.readLEInt(); // Sector index
-        count=f.readLEInt();
-        maxlight=f.readLEInt();
-        minlight=f.readLEInt();
-        maxtime=f.readLEInt();
-        mintime=f.readLEInt();
+        super.sectorid=DoomIO.readLEInt(f); // Sector index
+        count=DoomIO.readLEInt(f);
+        maxlight=DoomIO.readLEInt(f);
+        minlight=DoomIO.readLEInt(f);
+        maxtime=DoomIO.readLEInt(f);
+        mintime=DoomIO.readLEInt(f);
         }
     
     @Override

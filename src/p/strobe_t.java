@@ -1,10 +1,11 @@
 package p;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import rr.SectorAction;
-import w.DoomFile;
+import w.DoomIO;
 
 public class strobe_t extends SectorAction{
 		
@@ -32,15 +33,15 @@ public class strobe_t extends SectorAction{
         }
         
         @Override
-        public void read(DoomFile f) throws IOException{
+        public void read(DataInputStream f) throws IOException{
 
             super.read(f); // Call thinker reader first            
-            super.sectorid=f.readLEInt(); // Sector index
-            count=f.readLEInt();
-            maxlight=f.readLEInt();
-            minlight=f.readLEInt();
-            darktime=f.readLEInt();
-            brighttime=f.readLEInt();       
+            super.sectorid=DoomIO.readLEInt(f); // Sector index
+            count=DoomIO.readLEInt(f);
+            maxlight=DoomIO.readLEInt(f);
+            minlight=DoomIO.readLEInt(f);
+            darktime=DoomIO.readLEInt(f);
+            brighttime=DoomIO.readLEInt(f);       
             }
         
         @Override

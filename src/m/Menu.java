@@ -25,12 +25,14 @@ import static doom.englsh.QSPROMPT;
 import static doom.englsh.SAVEDEAD;
 import static doom.englsh.SWSTRING;
 
+import java.io.DataInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 import rr.patch_t;
 import utils.C2JUtils;
 import v.IVideoScale;
-import w.DoomFile;
+import w.DoomIO;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 import doom.englsh;
@@ -363,7 +365,7 @@ public class Menu extends AbstractDoomMenu {
      */
     
     public void ReadSaveStrings() {
-        DoomFile handle;
+        DataInputStream handle;
         int count;
         int i;
         String name;
@@ -375,9 +377,9 @@ public class Menu extends AbstractDoomMenu {
                 name = SAVEGAMENAME + (i) + ".dsg";
 
             try {
-                handle = new DoomFile(name, "r");
+                handle = new DataInputStream(new FileInputStream(name));
                 savegamestrings[i] =
-                    handle.readString(SAVESTRINGSIZE).toCharArray();
+                    DoomIO.readString(handle,SAVESTRINGSIZE).toCharArray();
                 handle.close();
                 LoadMenu[i].status = 1;
             } catch (IOException e) {

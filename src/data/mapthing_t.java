@@ -1,11 +1,11 @@
 package data;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import w.CacheableDoomObject;
-import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IWritableDoomObject;
 
@@ -55,7 +55,7 @@ public class mapthing_t implements CacheableDoomObject,IPackableDoomObject,IWrit
     }
 
     @Override
-    public void write(DoomFile f)
+    public void write(DataOutputStream f)
             throws IOException {
         
         // More efficient, avoids duplicating code and

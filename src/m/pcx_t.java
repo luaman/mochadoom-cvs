@@ -1,8 +1,8 @@
 package m;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 
-import w.DoomFile;
 import w.IWritableDoomObject;
 
 /** Yeah, this is actually a PCX header implementation, and Mocha Doom
@@ -64,7 +64,7 @@ public class pcx_t implements IWritableDoomObject{
 	    byte[] data;
 	    
 		@Override
-		public void write(DoomFile f) throws IOException {
+		public void write(DataOutputStream f) throws IOException {
 			// char -> byte Bytes.
 
 			f.writeByte(manufacturer);

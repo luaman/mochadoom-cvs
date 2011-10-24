@@ -2,11 +2,12 @@ package p;
 
 import static p.DoorDefines.GLOWSPEED;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import rr.SectorAction;
-import w.DoomFile;
+import w.DoomIO;
 
 public class glow_t extends SectorAction{
         public int     minlight;
@@ -40,13 +41,13 @@ public class glow_t extends SectorAction{
         }
         
         @Override
-        public void read(DoomFile f) throws IOException{
+        public void read(DataInputStream f) throws IOException{
 
             super.read(f); // Call thinker reader first            
-            super.sectorid=f.readLEInt(); // Sector index
-            minlight=f.readLEInt();
-            maxlight=f.readLEInt();
-            direction=f.readLEInt();
+            super.sectorid=DoomIO.readLEInt(f); // Sector index
+            minlight=DoomIO.readLEInt(f);
+            maxlight=DoomIO.readLEInt(f);
+            direction=DoomIO.readLEInt(f);
             }
         
         @Override

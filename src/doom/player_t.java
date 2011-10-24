@@ -3,7 +3,10 @@ package doom;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -27,7 +30,7 @@ import rr.sector_t;
 import s.IDoomSound;
 import utils.C2JUtils;
 import w.DoomBuffer;
-import w.DoomFile;
+import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import static utils.C2JUtils.*;
@@ -1420,7 +1423,7 @@ SetPsprite
 
 	private static StringBuilder sb=new StringBuilder();
 
-    public void read(DoomFile f) throws IOException{
+    public void read(DataInputStream f) throws IOException{
 
             // Careful when loading/saving:
             // A player only carries a pointer to a mobj, which is "saved"
@@ -1434,57 +1437,57 @@ SetPsprite
             // its own map object in an absolute way. Once we identify
             // at least one (e.g. object #45 is pointer 0x43545345) then, since
             // map objects are stored in a nice serialized order.
-            this.p_mobj= f.readLEInt(); // player mobj pointer
+            this.p_mobj= DoomIO.readLEInt(f); // player mobj pointer
             
-            this.playerstate=f.readLEInt();
+            this.playerstate=DoomIO.readLEInt(f);
             this.cmd.read(f);
-            this.viewz=f.readLEInt();
-            this.viewheight= f.readLEInt();
-            this.deltaviewheight= f.readLEInt();
-            this.bob=f.readLEInt();
-            this.health[0]=f.readLEInt();
-            this.armorpoints[0]=f.readLEInt(); 
-            this.armortype=f.readLEInt(); 
-            f.readIntArray(this.powers, ByteOrder.LITTLE_ENDIAN); 
-            f.readBooleanIntArray(this.cards);
-            this.backpack=f.readIntBoolean();
-            f.readIntArray(frags, ByteOrder.LITTLE_ENDIAN);
-            this.readyweapon=weapontype_t.values()[f.readLEInt()];
-            this.pendingweapon=weapontype_t.values()[f.readLEInt()];
-            f.readBooleanIntArray(this.weaponowned);
-            f.readIntArray(ammo,ByteOrder.LITTLE_ENDIAN);
-            f.readIntArray(maxammo,ByteOrder.LITTLE_ENDIAN);
+            this.viewz=DoomIO.readLEInt(f);
+            this.viewheight= DoomIO.readLEInt(f);
+            this.deltaviewheight= DoomIO.readLEInt(f);
+            this.bob=DoomIO.readLEInt(f);
+            this.health[0]=DoomIO.readLEInt(f);
+            this.armorpoints[0]=DoomIO.readLEInt(f); 
+            this.armortype=DoomIO.readLEInt(f); 
+            DoomIO.readIntArray(f,this.powers, ByteOrder.LITTLE_ENDIAN); 
+            DoomIO.readBooleanIntArray(f,this.cards);
+            this.backpack=DoomIO.readIntBoolean(f);
+            DoomIO.readIntArray(f,frags, ByteOrder.LITTLE_ENDIAN);
+            this.readyweapon=weapontype_t.values()[DoomIO.readLEInt(f)];
+            this.pendingweapon=weapontype_t.values()[DoomIO.readLEInt(f)];
+            DoomIO.readBooleanIntArray(f,this.weaponowned);
+            DoomIO.readIntArray(f,ammo,ByteOrder.LITTLE_ENDIAN);
+            DoomIO.readIntArray(f,maxammo,ByteOrder.LITTLE_ENDIAN);
             // Read these as "int booleans"
-            this.attackdown=f.readIntBoolean();
-            this.usedown=f.readIntBoolean();
-            this.cheats=f.readLEInt();
-            this.refire=f.readLEInt();
+            this.attackdown=DoomIO.readIntBoolean(f);
+            this.usedown=DoomIO.readIntBoolean(f);
+            this.cheats=DoomIO.readLEInt(f);
+            this.refire=DoomIO.readLEInt(f);
             // For intermission stats.
-            this.killcount=f.readLEInt();
-            this.itemcount=f.readLEInt();
-            this.secretcount=f.readLEInt();
+            this.killcount=DoomIO.readLEInt(f);
+            this.itemcount=DoomIO.readLEInt(f);
+            this.secretcount=DoomIO.readLEInt(f);
             // Hint messages.
             f.skipBytes(4);
             // For screen flashing (red or bright).
-            this.damagecount=f.readLEInt();
-            this.bonuscount=f.readLEInt();
+            this.damagecount=DoomIO.readLEInt(f);
+            this.bonuscount=DoomIO.readLEInt(f);
             // Who did damage (NULL for floors/ceilings).
             // TODO: must be properly denormalized before saving/loading
             f.skipBytes(4); // TODO: waste a read for attacker mobj.
             // So gun flashes light up areas.
-            this.extralight=f.readLEInt();
+            this.extralight=DoomIO.readLEInt(f);
             // Current PLAYPAL, ???
             //  can be set to REDCOLORMAP for pain, etc.
-            this.fixedcolormap=f.readLEInt();
-            this.colormap=f.readLEInt();
+            this.fixedcolormap=DoomIO.readLEInt(f);
+            this.colormap=DoomIO.readLEInt(f);
             // PSPDEF _is_ readable.
             for (pspdef_t p: this.psprites)
                 p.read(f);
-            this.didsecret=f.readIntBoolean();
+            this.didsecret=DoomIO.readIntBoolean(f);
             // Total size should be 280 bytes.
         }
     
-    public void write(DoomFile f) throws IOException{
+    public void write(DataOutputStream f) throws IOException{
 
         // It's much more convenient to pre-buffer, since
         // we'll be writing all Little Endian stuff.

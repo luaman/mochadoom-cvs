@@ -3,7 +3,12 @@ import static data.Limits.*;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -31,7 +36,7 @@ import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
 import utils.C2JUtils;
-import w.DoomFile;
+import w.DoomIO;
 
 public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
     
@@ -63,14 +68,18 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
         
     }
 
-    private DoomFile f;
+    private DataInputStream f;
+    private DataOutputStream fo;
+    private int maxsize;
     
     @Override
-    public boolean doLoad(DoomFile f)
+    public boolean doLoad(DataInputStream f)
             {
         try {
-        this.header=new VanillaDSGHeader();
         this.f=f;
+        maxsize=f.available();
+        System.out.println("Max size "+maxsize);
+        this.header=new VanillaDSGHeader();
         header.read(f);
         UnArchivePlayers();
         UnArchiveWorld();
@@ -102,7 +111,7 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
      // Multiplayer savegames are different!
      if (!DS.playeringame[i])
          continue;
-     PADSAVEP(f); // this will move us on the 52th byte, instead of 50th.
+     PADSAVEP(f,maxsize); // this will move us on the 52th byte, instead of 50th.
      DS.players[i].read(f);
      
      //memcpy (&players[i],save_p, sizeof(player_t));
@@ -141,10 +150,10 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
      if (!DS.playeringame[i])
          continue;
      
-     PADSAVEP(f); // this will move us on the 52th byte, instead of 50th.
+     PADSAVEP(fo); // this will move us on the 52th byte, instead of 50th.
 
      // State will have to be serialized when saving.
-     DS.players[i].write(f);
+     DS.players[i].write(fo);
 
      //System.out.printf("Player %d has mobj hashcode %d",(1+i),DS.players[i].mo.hashCode());
      }
@@ -179,7 +188,7 @@ protected void ArchiveWorld () throws IOException
   }
   
   adaptSectors();
-  f.write(buffer.array(),0,buffer.position());
+  fo.write(buffer.array(),0,buffer.position());
   
   // do lines 
   // Allocate for the worst-case scenario (6+20 per line)
@@ -208,7 +217,7 @@ protected void ArchiveWorld () throws IOException
   }
   
   int write=buffer.position();
-  f.write(buffer.array(),0,write);
+  fo.write(buffer.array(),0,write);
 }
 
  
@@ -406,11 +415,11 @@ for (th = A.getThinkerCap().next ; th != A.getThinkerCap(); th=th.next)
 if (th.function!=null && th.function==think_t.P_MobjThinker)
 {
     // Indicate valid thinker
-    f.writeByte(thinkerclass_t.tc_mobj.ordinal());
+    fo.writeByte(thinkerclass_t.tc_mobj.ordinal());
     // Pad...
-    PADSAVEP(f);
+    PADSAVEP(fo);
     mobj=(mobj_t)th;
-    mobj.write(f);
+    mobj.write(fo);
    
     // MAES: state is explicit in state.id
    // save_p += sizeof(*mobj);
@@ -426,7 +435,7 @@ if (th.function!=null && th.function==think_t.P_MobjThinker)
 }
 
 // add a terminating marker
-f.writeByte(thinkerclass_t.tc_end.ordinal());
+fo.writeByte(thinkerclass_t.tc_end.ordinal());
 
 }
 
@@ -477,7 +486,7 @@ protected void UnArchiveThinkers () throws IOException
      break;     // end of list
          
    case tc_mobj:
-     PADSAVEP(f);     
+     PADSAVEP(f,maxsize);     
      mobj=new mobj_t(A);
      mobj.read(f);
      mobj.id=++id;
@@ -614,7 +623,7 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     
     // Write out any pending objects.
     if (buffer.position()>0){
-        f.write(buffer.array(),0,buffer.position());
+        fo.write(buffer.array(),0,buffer.position());
         //System.out.println("Wrote out "+buffer.position()+" bytes");
             
         }
@@ -631,8 +640,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
         
         if (i<MAXCEILINGS)
         {
-        f.writeByte(specials_e.tc_ceiling.ordinal());
-        PADSAVEP(f);        
+        fo.writeByte(specials_e.tc_ceiling.ordinal());
+        PADSAVEP(fo);        
         // Set id for saving        
         ceiling=(ceiling_t)th;
         ceiling.sectorid=ceiling.sector.id;
@@ -644,8 +653,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     // Well, apparently some do.
     if (th.function== think_t.T_MoveCeiling) {
         
-        f.writeByte(specials_e.tc_ceiling.ordinal());
-        PADSAVEP(f);        
+        fo.writeByte(specials_e.tc_ceiling.ordinal());
+        PADSAVEP(fo);        
         ceiling=(ceiling_t)th;
         ceiling.sectorid=ceiling.sector.id;
         ceiling.pack(buffer);
@@ -655,8 +664,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     // Well, apparently some do.
     if (th.function== think_t.T_VerticalDoor) {
 
-        f.writeByte(specials_e.tc_door.ordinal());
-        PADSAVEP(f);
+        fo.writeByte(specials_e.tc_door.ordinal());
+        PADSAVEP(fo);
         door=(vldoor_t)th;
         door.sectorid=door.sector.id;
         door.pack(buffer);
@@ -665,8 +674,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     
     // Well, apparently some do.
     if (th.function== think_t.T_MoveFloor) {
-        f.writeByte(specials_e.tc_floor.ordinal());
-        PADSAVEP(f);
+        fo.writeByte(specials_e.tc_floor.ordinal());
+        PADSAVEP(fo);
         floor=(floormove_t)th;
         floor.sectorid=floor.sector.id;
         floor.pack(buffer);
@@ -675,8 +684,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     
     // Well, apparently some do.
     if (th.function== think_t.T_PlatRaise) {
-        f.writeByte(specials_e.tc_plat.ordinal());
-        PADSAVEP(f);
+        fo.writeByte(specials_e.tc_plat.ordinal());
+        PADSAVEP(fo);
         plat=(plat_t)th;
         plat.sectorid=plat.sector.id;
         plat.pack(buffer);
@@ -685,8 +694,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
 
     // Well, apparently some do.
     if (th.function== think_t.T_LightFlash) {
-        f.writeByte(specials_e.tc_flash.ordinal());
-        PADSAVEP(f);
+        fo.writeByte(specials_e.tc_flash.ordinal());
+        PADSAVEP(fo);
         flash=(lightflash_t)th;
         flash.sectorid=flash.sector.id;
         flash.pack(buffer);
@@ -695,8 +704,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
 
     // Well, apparently some do.
     if (th.function== think_t.T_StrobeFlash) {
-        f.writeByte(specials_e.tc_strobe.ordinal());
-        PADSAVEP(f);
+        fo.writeByte(specials_e.tc_strobe.ordinal());
+        PADSAVEP(fo);
         strobe=(strobe_t)th;
         strobe.sectorid=strobe.sector.id;
         strobe.pack(buffer);
@@ -705,8 +714,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     
     // Well, apparently some do.
     if (th.function== think_t.T_Glow) {
-        f.writeByte(specials_e.tc_glow.ordinal());
-        PADSAVEP(f);
+        fo.writeByte(specials_e.tc_glow.ordinal());
+        PADSAVEP(fo);
         glow=(glow_t)th;
         glow.sectorid=glow.sector.id;
         glow.pack(buffer);
@@ -716,12 +725,12 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
 }
 
 if (buffer.position()>0){
-    f.write(buffer.array(),0,buffer.position());        
+    fo.write(buffer.array(),0,buffer.position());        
     }
 
 
 // Finito!
-f.writeByte((byte) specials_e.tc_endspecials.ordinal());
+fo.writeByte((byte) specials_e.tc_endspecials.ordinal());
 }
 
 
@@ -756,7 +765,7 @@ protected void UnArchiveSpecials () throws IOException
      return; // end of list
          
    case tc_ceiling:
-     PADSAVEP(f);
+     PADSAVEP(f,maxsize);
      ceiling = new ceiling_t();
      ceiling.read(f);
      ceiling.sector = LL.sectors[ceiling.sectorid];
@@ -770,7 +779,7 @@ protected void UnArchiveSpecials () throws IOException
      break;
              
    case tc_door:
-     PADSAVEP(f);
+     PADSAVEP(f,maxsize);
      door=new vldoor_t();
      door.read(f);
      door.sector = LL.sectors[door.sectorid];
@@ -781,7 +790,7 @@ protected void UnArchiveSpecials () throws IOException
      break;
              
    case tc_floor:
-     PADSAVEP(f);
+     PADSAVEP(f,maxsize);
      floor=new floormove_t();
      floor.read(f);
      floor.sector = LL.sectors[floor.sectorid];
@@ -792,7 +801,7 @@ protected void UnArchiveSpecials () throws IOException
      break;
              
    case tc_plat:
-     PADSAVEP(f);
+     PADSAVEP(f,maxsize);
      plat=new plat_t();
      plat.read(f);
      plat.sector = LL.sectors[plat.sectorid];
@@ -806,7 +815,7 @@ protected void UnArchiveSpecials () throws IOException
      break;
              
    case tc_flash:
-     PADSAVEP(f);
+     PADSAVEP(f,maxsize);
      flash=new lightflash_t(this.DS.RND);
      flash.read(f);
      
@@ -817,7 +826,7 @@ protected void UnArchiveSpecials () throws IOException
      break;
              
    case tc_strobe:
-     PADSAVEP(f);
+     PADSAVEP(f,maxsize);
      
      strobe = new strobe_t();
      strobe.read(f);
@@ -828,7 +837,7 @@ protected void UnArchiveSpecials () throws IOException
      break;
              
    case tc_glow:
-     PADSAVEP(f);
+     PADSAVEP(f,maxsize);
      glow = new glow_t();
      glow.read(f);
      glow.sector = LL.sectors[glow.sectorid];
@@ -860,11 +869,20 @@ protected void UnArchiveSpecials () throws IOException
     //    return (save_p += (4 - ((int) save_p & 3)) & 3);
     //}
 
-    protected final long PADSAVEP(DoomFile f) throws IOException{
-        long save_p=f.getFilePointer();
+    protected final long PADSAVEP(DataInputStream f, int maxsize) throws IOException{
+        long save_p=maxsize-f.available();
         int padding =(4 - ((int) save_p & 3)) & 3;
-        //System.out.printf("Current position %d Padding by %d bytes\n",save_p,padding);        
-        f.seek(save_p+padding);
+       // System.out.printf("Current position %d Padding by %d bytes %d\n",save_p,padding,maxsize);        
+        f.skip(padding);
+        return padding;        
+        }
+    
+    protected final long PADSAVEP(DataOutputStream f) throws IOException{
+        long save_p=f.size();
+        int padding =(4 - ((int) save_p & 3)) & 3;
+       // System.out.printf("Current position %d Padding by %d bytes\n",save_p,padding);
+        for (int i=0;i<padding;i++)
+        	f.write(0);
         return padding;        
         }
 
@@ -877,11 +895,11 @@ protected void UnArchiveSpecials () throws IOException
 
 
     @Override
-    public boolean doSave(DoomFile f) {
+    public boolean doSave(DataOutputStream f) {
             try {
              // The header must have been set, at this point.
-                this.f=f;
-                f.setLength(0); // Kill old info.
+                this.fo=f;
+                //f.setLength(0); // Kill old info.
                 header.write(f);
             
             

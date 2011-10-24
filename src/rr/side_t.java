@@ -1,12 +1,13 @@
 package rr;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import p.Resettable;
 
 import static m.fixed_t.FRACBITS;
-import w.DoomFile;
+import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 
@@ -54,13 +55,13 @@ public class side_t
     }
 
     @Override
-    public void read(DoomFile f)
+    public void read(DataInputStream f)
             throws IOException {
-        this.textureoffset = f.readLEShort() << FRACBITS;
-        this.rowoffset = f.readLEShort() << FRACBITS;
-        this.toptexture = f.readLEShort();
-        this.bottomtexture = f.readLEShort();
-        this.midtexture = f.readLEShort();
+        this.textureoffset = DoomIO.readLEShort(f) << FRACBITS;
+        this.rowoffset = DoomIO.readLEShort(f) << FRACBITS;
+        this.toptexture = DoomIO.readLEShort(f);
+        this.bottomtexture = DoomIO.readLEShort(f);
+        this.midtexture = DoomIO.readLEShort(f);
         // this.sectorid=f.readLEInt();
 
     }

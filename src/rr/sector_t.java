@@ -6,6 +6,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FRACBITS;
 import static p.DoorDefines.*;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -23,7 +24,7 @@ import p.strobe_t;
 import p.vldoor_e;
 import p.vldoor_t;
 import s.degenmobj_t;
-import w.DoomFile;
+import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 
@@ -407,7 +408,7 @@ public class sector_t
     }
 
     @Override
-    public void read(DoomFile f)
+    public void read(DataInputStream f)
             throws IOException {
 
         // ACHTUNG: the only situation where we'd
@@ -415,16 +416,16 @@ public class sector_t
         // savegames, and in vanilla savegames, not all info
         // is saved (or read) from disk.
 
-        this.floorheight = f.readLEShort() << FRACBITS;
-        this.ceilingheight = f.readLEShort() << FRACBITS;
+        this.floorheight = DoomIO.readLEShort(f) << FRACBITS;
+        this.ceilingheight = DoomIO.readLEShort(f) << FRACBITS;
         // MAES: it may be necessary to apply a hack in order to
         // read vanilla savegames.
-        this.floorpic = (short) f.readLEShort();
-        this.ceilingpic = (short) f.readLEShort();
+        this.floorpic = (short) DoomIO.readLEShort(f);
+        this.ceilingpic = (short) DoomIO.readLEShort(f);
         // f.skipBytes(4);
-        this.lightlevel = f.readLEShort();
-        this.special = f.readLEShort(); // needed?
-        this.tag = f.readLEShort(); // needed?
+        this.lightlevel = DoomIO.readLEShort(f);
+        this.special = DoomIO.readLEShort(f); // needed?
+        this.tag = DoomIO.readLEShort(f); // needed?
     }
 
     @Override

@@ -1,10 +1,10 @@
 package utils;
 
 import java.io.File;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Array;
 
 import p.Resettable;
-import w.DoomFile;
 
 /**
  * Some utilities that emulate C stlib methods or provide convenient functions
@@ -317,7 +317,7 @@ public class C2JUtils {
 
         boolean access = true;
         try {
-            DoomFile test = new DoomFile(filename, mode);
+            RandomAccessFile test = new RandomAccessFile(filename, mode);
         } catch (Exception e) {
             // Something went wrong. In any case, access isn't guaranteed.
             access = false;

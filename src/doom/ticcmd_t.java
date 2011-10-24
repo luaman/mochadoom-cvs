@@ -1,11 +1,11 @@
 package doom;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import w.CacheableDoomObject;
-import w.DoomFile;
 import w.IReadableDoomObject;
 
 public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,CacheableDoomObject{
@@ -148,7 +148,7 @@ public class ticcmd_t implements IDatagramSerializable, IReadableDoomObject,Cach
     }
 
     @Override
-    public void read(DoomFile f)
+    public void read(DataInputStream f)
             throws IOException {
     	iobuffer.position(0);
     	iobuffer.order(ByteOrder.LITTLE_ENDIAN);

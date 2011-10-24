@@ -1,12 +1,12 @@
 package p;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import rr.SectorAction;
 import w.CacheableDoomObject;
-import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 
@@ -37,7 +37,7 @@ public class ceiling_t extends SectorAction implements CacheableDoomObject,IRead
         public static final ceiling_e[] values=ceiling_e.values();
         
         @Override
-        public void read(DoomFile f) throws IOException{
+        public void read(DataInputStream f) throws IOException{
         	// Read 48 bytes.
         	readbuffer.position(0);
         	readbuffer.order(ByteOrder.LITTLE_ENDIAN);

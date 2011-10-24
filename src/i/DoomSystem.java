@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.13 2011/09/29 15:16:04 velktron Exp $
+// $Id: DoomSystem.java,v 1.14 2011/10/24 02:11:27 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.14  2011/10/24 02:11:27  velktron
+// Stream compliancy
+//
 // Revision 1.13  2011/09/29 15:16:04  velktron
 // Modal popup generation moved here.
 //
@@ -82,6 +85,8 @@
 
 package i;
 
+import java.io.IOException;
+
 import awt.MsgBox;
 import m.MenuMisc;
 import doom.DoomMain;
@@ -139,7 +144,12 @@ public void Quit ()
 {
 
  //DM.CheckDemoStatus();
- DM.QuitNetGame ();
+ try {
+	DM.QuitNetGame ();
+} catch (IOException e) {
+	// TODO Auto-generated catch block
+	e.printStackTrace();
+}
  DM.ISND.ShutdownSound();
  DM.IMUS.ShutdownMusic();
  MenuMisc.SaveDefaults(DM);
@@ -202,9 +212,15 @@ public void Error (String error, Object ... args)
     // Shutdown. Here might be other errors.
     if (DM.demorecording)
 	DM.DG.CheckDemoStatus();
-    DM.VI.ShutdownGraphics();    
+    if (DM.VI!=null)
+    	DM.VI.ShutdownGraphics();    
     
-    DM.QuitNetGame ();
+    try {
+		DM.QuitNetGame ();
+	} catch (IOException e) {
+		// TODO Auto-generated catch block
+		e.printStackTrace();
+	}
    // DM.VI.ShutdownGraphics();
     
     System.exit(-1);

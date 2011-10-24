@@ -1,11 +1,12 @@
 package p;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import rr.SectorAction;
 import rr.sector_t;
-import w.DoomFile;
+import w.DoomIO;
 import w.IReadableDoomObject;
 
 public class plat_t extends SectorAction implements IReadableDoomObject{
@@ -29,22 +30,22 @@ public class plat_t extends SectorAction implements IReadableDoomObject{
         }
         
         @Override
-        public void read(DoomFile f) throws IOException{
+        public void read(DataInputStream f) throws IOException{
 
             super.read(f); // Call thinker reader first            
-            super.sectorid=f.readLEInt(); // Sector index
-            speed=f.readLEInt();
-            low=f.readLEInt();
-            high=f.readLEInt();
-            wait=f.readLEInt();
-            count=f.readLEInt();
-            status=plat_e.values()[f.readLEInt()];
-            oldstatus=plat_e.values()[f.readLEInt()];
+            super.sectorid=DoomIO.readLEInt(f); // Sector index
+            speed=DoomIO.readLEInt(f);
+            low=DoomIO.readLEInt(f);
+            high=DoomIO.readLEInt(f);
+            wait=DoomIO.readLEInt(f);
+            count=DoomIO.readLEInt(f);
+            status=plat_e.values()[DoomIO.readLEInt(f)];
+            oldstatus=plat_e.values()[DoomIO.readLEInt(f)];
             System.out.println(status);
             System.out.println(oldstatus);
-            crush=f.readIntBoolean();
-            tag=f.readLEInt();
-            type=plattype_e.values()[f.readLEInt()];        
+            crush=DoomIO.readIntBoolean(f);
+            tag=DoomIO.readLEInt(f);
+            type=plattype_e.values()[DoomIO.readLEInt(f)];        
             }
         
         @Override

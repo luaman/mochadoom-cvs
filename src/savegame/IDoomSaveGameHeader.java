@@ -1,8 +1,5 @@
 package savegame;
 
-import w.DoomFile;
-import w.IReadWriteDoomObject;
-import w.IReadableDoomObject;
 import defines.skill_t;
 
 

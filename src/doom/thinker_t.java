@@ -1,12 +1,12 @@
 package doom;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import static utils.C2JUtils.pointer;
 import w.CacheableDoomObject;
-import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import p.ActionType1;
@@ -33,7 +33,7 @@ public class thinker_t implements CacheableDoomObject,IReadableDoomObject,IPacka
    
    
 @Override
-public void read(DoomFile f)
+public void read(DataInputStream f)
         throws IOException {
 	readbuffer.position(0);
 	readbuffer.order(ByteOrder.LITTLE_ENDIAN);

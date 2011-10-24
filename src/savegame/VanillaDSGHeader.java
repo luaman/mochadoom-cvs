@@ -1,11 +1,13 @@
 package savegame;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import utils.C2JUtils;
 import w.CacheableDoomObject;
 import w.DoomBuffer;
-import w.DoomFile;
+import w.DoomIO;
 import w.IReadableDoomObject;
 import w.IWritableDoomObject;
 import defines.skill_t;
@@ -91,10 +93,10 @@ public boolean wrongversion;
    }
    
    @Override
-   public void write(DoomFile f)
+   public void write(DataOutputStream f)
            throws IOException {
-       f.writeString(name,SAVESTRINGSIZE);
-       f.writeString(vcheck,VERSIONSIZE);
+       DoomIO.writeString(f,name,SAVESTRINGSIZE);
+       DoomIO.writeString(f,vcheck,VERSIONSIZE);
        f.writeByte(gameskill.ordinal()); 
        f.writeByte(gameepisode);
        f.writeByte(gamemap);
@@ -119,10 +121,10 @@ public boolean wrongversion;
    } 
    
    @Override
-   public void read(DoomFile f)
+   public void read(DataInputStream f)
            throws IOException {
-       name= f.readNullTerminatedString(SAVESTRINGSIZE);
-       vcheck=f.readNullTerminatedString(VERSIONSIZE);
+       name= DoomIO.readNullTerminatedString(f,SAVESTRINGSIZE);
+       vcheck=DoomIO.readNullTerminatedString(f,VERSIONSIZE);
        gameskill=skill_t.values()[f.readUnsignedByte()]; 
        gameepisode=f.readByte();
        gamemap=f.readByte();

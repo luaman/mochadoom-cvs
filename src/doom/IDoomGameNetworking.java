@@ -1,5 +1,7 @@
 package doom;
 
+import java.io.IOException;
+
 /** Doom is actually tied to its networking module.
  *  Therefore, no matter where and how you implement it, these functions
  *  need to be callable from within many modules.
@@ -14,12 +16,13 @@ package doom;
 
 public interface IDoomGameNetworking {
 	
-	public void TryRunTics();
+	public void TryRunTics() throws IOException;
 	
 	/**
 	 * NetUpdate
 	 * Builds ticcmds for console player,
 	 * sends out a packet
+	 * @throws IOException 
 	 */
 
 	public void NetUpdate ();

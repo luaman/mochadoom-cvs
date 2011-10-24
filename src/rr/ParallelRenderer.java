@@ -668,6 +668,7 @@ private void RenderRWIPipeline() {
   * As you can guess, this renders the player view of a particular player object.
   * In practice, it could render the view of any mobj too, provided you adapt the
   * SetupFrame method (where the viewing variables are set).
+ * @throws IOException 
   * 
   */
  

@@ -7,13 +7,14 @@ import static data.info.states;
 import static p.MapUtils.AproxDistance;
 import static utils.C2JUtils.pointer;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import rr.subsector_t;
 import s.ISoundOrigin;
-import w.DoomFile;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import w.IWritableDoomObject;
@@ -422,7 +423,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	}
 
 	// _D_: to permit this object to save/load
-	public void read(DoomFile f) throws IOException {
+	public void read(DataInputStream f) throws IOException {
 		// More efficient, avoids duplicating code and
 		// handles little endian better.
 		buffer.position(0);
@@ -432,7 +433,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	}
 
 	@Override
-	public void write(DoomFile f) throws IOException {
+	public void write(DataOutputStream f) throws IOException {
 
 		// More efficient, avoids duplicating code and
 		// handles little endian better.

@@ -1,9 +1,10 @@
 package p;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import w.DoomFile;
+import w.DoomIO;
 import w.IPackableDoomObject;
 import w.IReadableDoomObject;
 import data.state_t;
@@ -23,12 +24,12 @@ public class pspdef_t implements IReadableDoomObject,IPackableDoomObject{
     public int readstate;
     
     @Override
-    public void read(DoomFile f) throws IOException {
+    public void read(DataInputStream f) throws IOException {
         //state=data.info.states[f.readLEInt()];
-        readstate=f.readLEInt();
-        tics=f.readLEInt();
-        sx=f.readLEInt();
-        sy=f.readLEInt();
+        readstate=DoomIO.readLEInt(f);
+        tics=DoomIO.readLEInt(f);
+        sx=DoomIO.readLEInt(f);
+        sy=DoomIO.readLEInt(f);
     }
     
     @Override

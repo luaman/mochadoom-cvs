@@ -2,11 +2,14 @@ package doom;
 
 import static utils.C2JUtils.eval;
 
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.StringTokenizer;
 
-import w.DoomFile;
+import w.DoomIO;
 
 /**
  * A class to handle the command-line args in an unified manner, and without
@@ -127,11 +130,11 @@ public class CommandLine implements ICommandLineManager {
             for (int i = 1;i < getArgc();i++)
                 if (getArgv(i).charAt(0)=='@')
                 {
-                    DoomFile        handle;
+                    DataInputStream handle;
                     // save o       
                     int             size;
                     int             indexinfile;
-                    char[]    infile=null;
+                    char[]   infile=null;
                     char[]    file=null;
                     // Fuck that, we're doing it properly.
                     ArrayList<String>  parsedargs=new ArrayList<String>();
@@ -139,17 +142,17 @@ public class CommandLine implements ICommandLineManager {
                     String    firstargv;
 
                     // READ THE RESPONSE FILE INTO MEMORY
-                    handle = new DoomFile(myargv[i].substring(1),"rb");
+                    handle = new DataInputStream(new FileInputStream(myargv[i].substring(1)));
                     if (!eval(handle))
                     {
                         System.out.print ("\nNo such response file!");
                         System.exit(1);
                     }
                     System.out.println("Found response file "+myargv[i].substring(1));
-                    size = (int) handle.length();
-
-                    file = new char[size];
-                    handle.readNonUnicodeCharArray(file, file.length);
+                    size = (int) handle.available();
+                    file=new char[size];
+                    
+                    DoomIO.readNonUnicodeCharArray(handle, file,size);
                     handle.close();
 
                     // Save first argument.

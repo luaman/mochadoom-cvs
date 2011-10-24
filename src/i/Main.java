@@ -1,5 +1,7 @@
 package i;
 
+import java.io.IOException;
+
 import v.VideoScaleInfo;
 import doom.CommandLine;
 import doom.DoomMain;
@@ -8,7 +10,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.9 2011/06/01 00:08:35 velktron Exp $
+//$Id: Main.java,v 1.10 2011/10/24 02:11:27 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +25,9 @@ import doom.ICommandLineManager;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.10  2011/10/24 02:11:27  velktron
+//Stream compliancy
+//
 //Revision 1.9  2011/06/01 00:08:35  velktron
 //Downsized to essentiality.
 //
@@ -65,9 +70,9 @@ import doom.ICommandLineManager;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.9 2011/06/01 00:08:35 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.10 2011/10/24 02:11:27 velktron Exp $";
 
-    public static void main(String[] argv){
+    public static void main(String[] argv) throws IOException{
 
     	
     	  // These are the most essential
