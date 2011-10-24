@@ -2903,7 +2903,7 @@ mobj_t  thing )
     }    
     
 ////////////////// PTR Traverse Interception Functions ///////////////////////    
-    public class PTR_AimTraverse implements PTR_InterceptFunc{ 
+    protected class PTR_AimTraverse implements PTR_InterceptFunc{ 
         public boolean
         invoke (intercept_t in)
         {
@@ -2991,7 +2991,7 @@ mobj_t  thing )
      * 9/5/2011: Accepted _D_'s fix
      */
     
-    public class PTR_ShootTraverse implements PTR_InterceptFunc {
+    protected class PTR_ShootTraverse implements PTR_InterceptFunc {
     public boolean invoke(intercept_t in){
     int     x,y,z,frac; // fixed_t
     line_t    li;
@@ -3111,7 +3111,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     // PTR_SlideTraverse
     //   
     
-    public class PTR_SlideTraverse implements PTR_InterceptFunc{ 
+    protected class PTR_SlideTraverse implements PTR_InterceptFunc{ 
     public boolean
     invoke (intercept_t in)
     {
@@ -3179,7 +3179,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     //
 
 
-    public class PTR_UseTraverse implements PTR_InterceptFunc{
+    protected class PTR_UseTraverse implements PTR_InterceptFunc{
     	
 
     public boolean invoke (intercept_t in)
@@ -5331,7 +5331,7 @@ PIT_ChangeSector ChangeSector;
  */
 
 
-class PIT_VileCheck  implements PIT_MobjFunction {
+protected class PIT_VileCheck  implements PIT_MobjFunction {
 	
     public mobj_t      corpsehit;
     public mobj_t      vileobj;
@@ -5509,7 +5509,7 @@ protected class PIT_CheckLine implements PIT_LineFunction {
 
 /**PIT_CheckThing  */
 
-private class PIT_CheckThing  implements PIT_MobjFunction {
+protected class PIT_CheckThing  implements PIT_MobjFunction {
     public boolean invoke (mobj_t thing) {
     int     blockdist; // fixed_t
     boolean     solid;
@@ -5610,7 +5610,7 @@ private class PIT_CheckThing  implements PIT_MobjFunction {
  * that caused the explosion at "bombspot".
  */
 
-private class PIT_RadiusAttack implements PIT_MobjFunction {
+protected class PIT_RadiusAttack implements PIT_MobjFunction {
     public boolean invoke (mobj_t thing)
 {
     int dx,dy,dist; // fixed_t
@@ -5650,7 +5650,7 @@ private class PIT_RadiusAttack implements PIT_MobjFunction {
  *PIT_StompThing
  */
 
-private class PIT_StompThing implements PIT_MobjFunction {
+protected class PIT_StompThing implements PIT_MobjFunction {
 public boolean invoke (mobj_t thing)
 {
  int blockdist; // fixed_t
