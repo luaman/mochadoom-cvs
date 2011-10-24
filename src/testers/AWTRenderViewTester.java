@@ -16,6 +16,7 @@ import automap.Map;
 import awt.AWTDoom;
 
 import rr.SimpleTextureManager;
+import rr.SpriteManager;
 import rr.UnifiedRenderer;
 import s.DummySoundDriver;
 import st.StatusBar;
@@ -30,7 +31,6 @@ import v.GammaTables;
 import v.HiColorRenderer565;
 
 import v.IVideoScale;
-import v.TrueColorRenderer;
 import v.VideoScaleInfo;
 import w.DoomBuffer;
 import w.WadLoader;
@@ -46,7 +46,7 @@ import doom.wbstartstruct_t;
 
 public class AWTRenderViewTester {
 
-    static IVideoScale VSI=new VideoScaleInfo(4.0f);
+    static IVideoScale VSI=new VideoScaleInfo(3.0f);
     
     public static void main(String[] argv) {
         try {
@@ -63,7 +63,7 @@ public class AWTRenderViewTester {
     // Read the palette.
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     // Create a video renderer
-    DoomVideoRenderer V=new HiColorRenderer565(VSI.getScreenWidth(),VSI.getScreenHeight());
+    DoomVideoRenderer<byte[]> V=new BufferedRenderer(VSI.getScreenWidth(),VSI.getScreenHeight());
     V.setVideoScale(VSI);
     V.initScaling();
     V.Init();
@@ -82,7 +82,7 @@ public class AWTRenderViewTester {
     DM.DGN=new DummyNetworkHandler();
     
     // Create the frame.
-    AWTDoom frame = new AWTDoom(DM,V);
+    AWTDoom frame = new AWTDoom(DM,(DoomVideoRenderer<byte[]>) V);
     frame.InitGraphics();
     DM.I=I;
     DM.VI=frame;
@@ -135,7 +135,7 @@ public class AWTRenderViewTester {
     DM.P=new Actions(DM);
     DM.R=new UnifiedRenderer(DM);
     DM.TM=new SimpleTextureManager(DM);
-    DM.SM=DM.R;    
+    DM.SM=(SpriteManager) DM.R;    
     DM.P.updateStatus(DM);
     LL.updateStatus(DM);
     M.updateStatus(DM);

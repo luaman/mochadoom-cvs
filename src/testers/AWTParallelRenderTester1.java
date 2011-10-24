@@ -16,6 +16,7 @@ import automap.Map;
 import awt.AWTDoom;
 import rr.ParallelRenderer;
 import rr.SimpleTextureManager;
+import rr.SpriteManager;
 import s.DummySoundDriver;
 import st.StatusBar;
 import timing.MilliTicker;
@@ -42,7 +43,7 @@ import doom.wbstartstruct_t;
 
 public class AWTParallelRenderTester1 {
 
-    static IVideoScale VSI=new VideoScaleInfo(4.0f);
+    static IVideoScale VSI=new VideoScaleInfo(3.0f);
     
     public static void main(String[] argv) {
         try {
@@ -133,7 +134,7 @@ public class AWTParallelRenderTester1 {
     ILevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
     DM.R=new ParallelRenderer(DM,2,1); 
-    DM.SM=DM.R;
+    DM.SM=(SpriteManager) DM.R;
     DM.TM=new SimpleTextureManager(DM);
     
     DM.P.updateStatus(DM);

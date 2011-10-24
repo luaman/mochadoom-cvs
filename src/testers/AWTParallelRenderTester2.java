@@ -16,6 +16,7 @@ import automap.Map;
 import awt.AWTDoom;
 import rr.ParallelRenderer2;
 import rr.SimpleTextureManager;
+import rr.SpriteManager;
 import s.DummySoundDriver;
 import st.StatusBar;
 import timing.MilliTicker;
@@ -59,7 +60,7 @@ public class AWTParallelRenderTester2 {
     // Read the palette.
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     // Create a video renderer
-    DoomVideoRenderer V=new BufferedRenderer(VSI.getScreenWidth(),VSI.getScreenHeight());
+    DoomVideoRenderer<?> V=new BufferedRenderer(VSI.getScreenWidth(),VSI.getScreenHeight());
     V.setVideoScale(VSI);
     V.initScaling();
     V.Init();
@@ -80,7 +81,7 @@ public class AWTParallelRenderTester2 {
     DM.DGN=new DummyNetworkHandler();
     
     // Create the frame.
-    AWTDoom frame = new AWTDoom(DM,V);
+    AWTDoom frame = new AWTDoom(DM,(DoomVideoRenderer<byte[]>) V);
     frame.InitGraphics();
 
     DM.I=I;
@@ -133,7 +134,7 @@ public class AWTParallelRenderTester2 {
     ILevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
     DM.R=new ParallelRenderer2(DM,2,1); 
-    DM.SM=DM.R;
+    DM.SM=(SpriteManager) DM.R;
     DM.TM=new SimpleTextureManager(DM);
     
     DM.P.updateStatus(DM);
