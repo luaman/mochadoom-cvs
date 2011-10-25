@@ -1,8 +1,10 @@
 package m;
+
+import data.Defines;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: fixed_t.java,v 1.13 2011/07/27 20:48:08 velktron Exp $
+// $Id: fixed_t.java,v 1.14 2011/10/25 19:52:13 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -36,6 +38,7 @@ public class fixed_t implements Comparable<fixed_t>{
 
     public static final int FRACBITS =       16;
     public static final int FRACUNIT =       (1<<FRACBITS);
+    public static final int MAPFRACUNIT =    FRACUNIT/Defines.TIC_MUL;
     public int val;
     
     public fixed_t(){
@@ -71,7 +74,7 @@ public fixed_t(fixed_t x) {
         this.val=x.val;
     }
 
-public static final String rcsid = "$Id: fixed_t.java,v 1.13 2011/07/27 20:48:08 velktron Exp $";
+public static final String rcsid = "$Id: fixed_t.java,v 1.14 2011/10/25 19:52:13 velktron Exp $";
 
 /** Creates a new fixed_t object for the result a*b
  * 

@@ -68,6 +68,7 @@ import static doom.englsh.GOTYELWCARD;
 import static doom.englsh.GOTYELWSKUL;
 import static doom.items.weaponinfo;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.DoorDefines.SLOWDARK;
@@ -1312,7 +1313,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 switch (line.special) {
                 case 48:
                     // EFFECT FIRSTCOL SCROLL +
-                    LL.sides[line.sidenum[0]].textureoffset += FRACUNIT;
+                    LL.sides[line.sidenum[0]].textureoffset += MAPFRACUNIT;
                     break;
                 }
             }

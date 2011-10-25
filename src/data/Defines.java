@@ -5,6 +5,7 @@ import static data.Limits.MAXINT;
 import static data.Limits.MININT;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
 import g.Keys;
 import defines.ammotype_t;
 import defines.card_t;
@@ -13,7 +14,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.46 2011/10/07 16:07:41 velktron Exp $
+// $Id: Defines.java,v 1.47 2011/10/25 19:53:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -73,9 +74,9 @@ public static final boolean RANGECHECK=false;
 // MAES: moved static defines out of here and into VideoScaleInfo.
 
 // State updates, number of tics / second.
-public static final int TICRATE = 35;
-
-
+public static final int BASETICRATE = 35;
+public static final int TIC_MUL = 1;
+public static final int TICRATE = BASETICRATE*TIC_MUL;
 
 //
 // Difficulty/skill settings/filters.
@@ -96,12 +97,8 @@ public static final int NUMCARDS=card_t.NUMCARDS.ordinal();
 //Maes: this makes it a bit less retarded.
 public static final int NUMWEAPONS=weapontype_t.NUMWEAPONS.ordinal();
 
- ;
-
 //Maes: this makes it a bit less retarded.
 public static final int NUMAMMO=ammotype_t.NUMAMMO.ordinal();
-
-
 
 // Power up artifacts.
 public static final int pw_invulnerability=0;
@@ -146,19 +143,10 @@ static public final String SKYFLATNAME  ="F_SKY1";
 // The sky map is 256*128*4 maps.
 public static final int ANGLETOSKYSHIFT   = 22;
 
-
 // From r_draw.c
 
 // status bar height at bottom of screen
 public static final int  SBARHEIGHT     = 32;
-
-// From stuff
-
-//
-//Data needed to add patches to full screen intermission pics.
-//Patches are statistics messages, and animations.
-//Loads of by-pixel layout and placement, offsets etc.
-//
 
 
 //
@@ -291,12 +279,7 @@ public static final int SAVESTRINGSIZE = 24;
 
     // player radius for movement checking
     public static final int PLAYERRADIUS  =16*FRACUNIT;
-
-
-
-    public static final int GRAVITY   =   FRACUNIT;
-
-
+    public static final int GRAVITY   =   MAPFRACUNIT;
     public static int USERANGE      =(64*FRACUNIT);
     public static int MELEERANGE    =   (64*FRACUNIT);
     public static int MISSILERANGE=(32*64*FRACUNIT);
@@ -341,6 +324,6 @@ public static final int SAVESTRINGSIZE = 24;
 
  
 static final String
-rcsid = "$Id: Defines.java,v 1.46 2011/10/07 16:07:41 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.47 2011/10/25 19:53:03 velktron Exp $";
 }
 

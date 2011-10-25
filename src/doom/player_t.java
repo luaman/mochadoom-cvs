@@ -13,6 +13,7 @@ import java.util.Arrays;
 
 import m.IRandom;
 
+import data.Defines;
 import data.Tables;
 import data.state_t;
 import defines.*;
@@ -267,6 +268,7 @@ public class player_t /*extends mobj_t */
         mo.momy += FixedMul(move, finesine( angle));
     }
 
+    protected final static int PLAYERTHRUST=2048/TIC_MUL;
     
     /**
      * P_MovePlayer
@@ -282,10 +284,10 @@ public class player_t /*extends mobj_t */
         onground = (mo.z <= mo.floorz);
 
         if (cmd.forwardmove != 0 && onground)
-            Thrust(mo.angle, cmd.forwardmove * 2048);
+            Thrust(mo.angle, cmd.forwardmove * PLAYERTHRUST);
 
         if (cmd.sidemove != 0 && onground)
-            Thrust((mo.angle - ANG90)&BITS32, cmd.sidemove * 2048);
+            Thrust((mo.angle - ANG90)&BITS32, cmd.sidemove * PLAYERTHRUST);
 
         if ((cmd.forwardmove != 0 || cmd.sidemove != 0)
                 && mo.state == states[statenum_t.S_PLAY.ordinal()]) {
@@ -950,8 +952,8 @@ SetPsprite
         ps_flash=1,
         NUMPSPRITES=2;  
     
-    public static int  LOWERSPEED  =   FRACUNIT*6;
-    public static int  RAISESPEED  =   FRACUNIT*6;
+    public static int  LOWERSPEED  =   MAPFRACUNIT*6;
+    public static int  RAISESPEED  =   MAPFRACUNIT*6;
 
     public static int  WEAPONBOTTOM    =128*FRACUNIT;
     public static int  WEAPONTOP       =32*FRACUNIT;
@@ -1200,7 +1202,7 @@ SetPsprite
      if (flags(player.mo.flags , MF_JUSTATTACKED))
      {
      cmd.angleturn = 0;
-     cmd.forwardmove = 0xc800/512;
+     cmd.forwardmove = (0xc800/512);
      cmd.sidemove = 0;
      player.mo.flags &= ~MF_JUSTATTACKED;
      }

@@ -1,6 +1,8 @@
 package p;
 
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
+import static data.Defines.TIC_MUL;
 
 public final class ChaseDirections {
 
@@ -35,11 +37,11 @@ public final class ChaseDirections {
         { DI_NORTHWEST, DI_NORTHEAST, DI_SOUTHWEST, DI_SOUTHEAST };
 
     public final static int[] xspeed =
-        { FRACUNIT, 47000, 0, -47000, -FRACUNIT, -47000, 0, 47000 }; // all
+        { MAPFRACUNIT, 47000/TIC_MUL, 0, -47000/TIC_MUL, -MAPFRACUNIT, -47000/TIC_MUL, 0, 47000/TIC_MUL }; // all
                                                                      // fixed
 
     public final static int[] yspeed =
-        { 0, 47000, FRACUNIT, 47000, 0, -47000, -FRACUNIT, -47000 }; // all
+        { 0, 47000/TIC_MUL, MAPFRACUNIT, 47000/TIC_MUL, 0, -47000/TIC_MUL, -MAPFRACUNIT, -47000/TIC_MUL }; // all
                                                                      // fixed
     
 }

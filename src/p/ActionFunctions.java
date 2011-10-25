@@ -30,6 +30,7 @@ import static doom.player_t.WEAPONTOP;
 import static doom.player_t.ps_flash;
 import static doom.player_t.ps_weapon;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
 import static m.fixed_t.FixedMul;
 import static p.ChaseDirections.DI_NODIR;
 import static p.ChaseDirections.xspeed;
@@ -1292,7 +1293,7 @@ public class ActionFunctions implements DoomStatusAware{
                   actor.y-actor.momy,
                   actor.z, mobjtype_t.MT_SMOKE);
         
-        th.momz = FRACUNIT;
+        th.momz = MAPFRACUNIT;
         th.tics -= RND.P_Random()&3;
         if (th.tics < 1)
         th.tics = 1;
@@ -1628,7 +1629,7 @@ public class ActionFunctions implements DoomStatusAware{
 
         S.StartSound(actor, sfxenum_t.sfx_barexp);
         A.DamageMobj (actor.target, actor, actor, 20);
-        actor.target.momz = 1000*FRACUNIT/actor.target.info.mass;
+        actor.target.momz = 1000*MAPFRACUNIT/actor.target.info.mass;
         
        // an = actor.angle >> ANGLETOFINESHIFT;
 
@@ -1721,7 +1722,7 @@ public class ActionFunctions implements DoomStatusAware{
 
 
 
-    private static final int SKULLSPEED  =    (20*FRACUNIT);
+    private static final int SKULLSPEED  =    (20*MAPFRACUNIT);
     /**      
      * SkullAttack
      * Fly at the player like a missile.

@@ -5,6 +5,7 @@ import p.ActionType2;
 import p.ActionTypeSS;
 import doom.think_t;
 import defines.statenum_t;
+import static data.Defines.TIC_MUL;
 
 public class state_t {
 
@@ -16,7 +17,7 @@ public class state_t {
             statenum_t nextstate, int misc1, int misc2) {
         this.sprite = sprite;
         this.frame = frame;
-        this.tics = tics;
+        this.tics = tics*TIC_MUL;
         this.action = action;
         this.nextstate = nextstate;
         this.misc1 = misc1;

@@ -50,6 +50,7 @@ import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.ChaseDirections.DI_EAST;
@@ -2097,7 +2098,7 @@ CheckMissileSpawn (th);
                     target.x,
                     target.y)&BITS32;
             
-        thrust = damage*(FRACUNIT>>3)*100/target.info.mass;
+        thrust = damage*(MAPFRACUNIT>>3)*100/target.info.mass;
 
         // make fall forwards sometimes
         if ( (damage < 40)
@@ -2903,7 +2904,7 @@ mobj_t  thing )
     }    
     
 ////////////////// PTR Traverse Interception Functions ///////////////////////    
-    protected class PTR_AimTraverse implements PTR_InterceptFunc{ 
+    public class PTR_AimTraverse implements PTR_InterceptFunc{ 
         public boolean
         invoke (intercept_t in)
         {
@@ -2991,7 +2992,7 @@ mobj_t  thing )
      * 9/5/2011: Accepted _D_'s fix
      */
     
-    protected class PTR_ShootTraverse implements PTR_InterceptFunc {
+    public class PTR_ShootTraverse implements PTR_InterceptFunc {
     public boolean invoke(intercept_t in){
     int     x,y,z,frac; // fixed_t
     line_t    li;
@@ -3111,7 +3112,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     // PTR_SlideTraverse
     //   
     
-    protected class PTR_SlideTraverse implements PTR_InterceptFunc{ 
+    public class PTR_SlideTraverse implements PTR_InterceptFunc{ 
     public boolean
     invoke (intercept_t in)
     {
@@ -3179,7 +3180,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     //
 
 
-    protected class PTR_UseTraverse implements PTR_InterceptFunc{
+    public class PTR_UseTraverse implements PTR_InterceptFunc{
     	
 
     public boolean invoke (intercept_t in)
@@ -3606,69 +3607,8 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         tmxmove = FixedMul (newlen, finecosine(lineangle)); 
         tmymove = FixedMul (newlen, finesine(lineangle));   
     }
-
-
-    //
-    // PTR_SlideTraverse
-    //
-    boolean SlideTraverse (intercept_t in)
-    {
-        line_t li;
-        
-        if (!in.isaline)
-        I.Error ("PTR_SlideTraverse: not a line?");
-            
-        li = (line_t) in.d();
-        
-        if ( ! flags(li.flags ,ML_TWOSIDED) )
-        {
-        if (li.PointOnLineSide (slidemo.x, slidemo.y))
-        {
-            // don't hit the back side
-            return true;        
-        }
-        return isblocking(in,li);
-        }
-
-        // set openrange, opentop, openbottom
-        LineOpening (li);
-        
-        if ((openrange < slidemo.height)|| // doesn't fit
-            (opentop - slidemo.z < slidemo.height)|| // mobj is too high
-            (openbottom - slidemo.z > 24*FRACUNIT )) // too big a step up
-        {
-        if (in.frac < bestslidefrac)
-        {
-        secondslidefrac = bestslidefrac;
-        secondslideline = bestslideline;
-        bestslidefrac = in.frac;
-        bestslideline = li;
-        }
-        
-        return false;   // stop
-    }
-        
-        else
-        // this line doesn't block movement
-        return true;        
-        
-
-    }
-
-    private final boolean isblocking(intercept_t in, line_t li){
-    // the line does block movement,
-    // see if it is closer than best so far
- 
-    if (in.frac < bestslidefrac)
-    {
-    secondslidefrac = bestslidefrac;
-    secondslideline = bestslideline;
-    bestslidefrac = in.frac;
-    bestslideline = li;
-    }
     
-    return false;   // stop
-    }
+    protected final static int FUDGE=0x800;///(FRACUNIT/MAPFRACUNIT);
     
     //
     // P_SlideMove
@@ -3740,7 +3680,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
           }     // don't loop forever
 
         // fudge a bit to make sure it doesn't hit
-        bestslidefrac -= 0x800; 
+        bestslidefrac -= FUDGE; 
         if (bestslidefrac > 0)
         {
         newx = FixedMul (mo.momx, bestslidefrac);
@@ -3757,7 +3697,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         
         // Now continue along the wall.
         // First calculate remainder.
-        bestslidefrac = FRACUNIT-(bestslidefrac+0x800);
+        bestslidefrac = FRACUNIT-(bestslidefrac+FUDGE);
         
         if (bestslidefrac > FRACUNIT)
         bestslidefrac = FRACUNIT;
@@ -4735,7 +4675,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     // FLOORS
     //
     
-    private static final int FLOORSPEED= FRACUNIT;
+    private static final int FLOORSPEED= MAPFRACUNIT;
 
     /** Move a plane (floor or ceiling) and check for crushing
      *  @param sector
@@ -5331,7 +5271,7 @@ PIT_ChangeSector ChangeSector;
  */
 
 
-protected class PIT_VileCheck  implements PIT_MobjFunction {
+class PIT_VileCheck  implements PIT_MobjFunction {
 	
     public mobj_t      corpsehit;
     public mobj_t      vileobj;
@@ -5509,7 +5449,7 @@ protected class PIT_CheckLine implements PIT_LineFunction {
 
 /**PIT_CheckThing  */
 
-protected class PIT_CheckThing  implements PIT_MobjFunction {
+private class PIT_CheckThing  implements PIT_MobjFunction {
     public boolean invoke (mobj_t thing) {
     int     blockdist; // fixed_t
     boolean     solid;
@@ -5610,7 +5550,7 @@ protected class PIT_CheckThing  implements PIT_MobjFunction {
  * that caused the explosion at "bombspot".
  */
 
-protected class PIT_RadiusAttack implements PIT_MobjFunction {
+private class PIT_RadiusAttack implements PIT_MobjFunction {
     public boolean invoke (mobj_t thing)
 {
     int dx,dy,dist; // fixed_t
@@ -5650,7 +5590,7 @@ protected class PIT_RadiusAttack implements PIT_MobjFunction {
  *PIT_StompThing
  */
 
-protected class PIT_StompThing implements PIT_MobjFunction {
+private class PIT_StompThing implements PIT_MobjFunction {
 public boolean invoke (mobj_t thing)
 {
  int blockdist; // fixed_t

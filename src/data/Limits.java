@@ -1,6 +1,7 @@
 package data;
 
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
 
 /** Everything that constitutes a removable limit should go here */
 
@@ -12,7 +13,7 @@ public final class Limits {
 	public static final int MAXVISSPRITES = 128;
 	public static final int MAXDRAWSEGS = 256;
 	// MAES: Moved MAXOPENINGS to renderer state, it's scale dependant.
-	public static final int CEILSPEED = FRACUNIT;
+	public static final int CEILSPEED = MAPFRACUNIT;
 	public static final int CEILWAIT = 150;
 	public static final int MAXCEILINGS = 30;
 
@@ -65,7 +66,7 @@ public final class Limits {
 	public static final int MAXRADIUS = 32 * FRACUNIT;
 
 	public static final int MAXINTERCEPTS = 128;
-	public static final int MAXMOVE = (30 * FRACUNIT);
+	public static final int MAXMOVE = (30 * MAPFRACUNIT);
 
 	/** Player spawn spots for deathmatch. */
 	public static final int MAX_DM_STARTS = 10;
@@ -93,7 +94,7 @@ public final class Limits {
 	public static final int VERSIONSIZE = 16;
 
 	public static final int PLATWAIT = 3;
-	public static final int PLATSPEED = FRACUNIT;
+	public static final int PLATSPEED = MAPFRACUNIT;
 	public static final int MAXPLATS = 30;
 	public static final int MAXSKULLS = 20;
 	public static final int NUMBRAINTARGETS=32;
