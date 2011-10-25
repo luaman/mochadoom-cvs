@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.53 2011/10/25 19:42:48 velktron Exp $
+// $Id: WadLoader.java,v 1.54 2011/10/25 19:45:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -630,7 +630,7 @@ public class WadLoader implements IWadLoader {
 			BufferedInputStream bis=new BufferedInputStream(handle);
 			
 			while (c<l.size)
-			    c+= new BufferedInputStream(handle).read(buf,offset+c, (int) (l.size-c));
+			    c+= bis.read(buf,offset+c, (int) (l.size-c));
 			
 			
 			if (c < l.size)
@@ -1297,6 +1297,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.54  2011/10/25 19:45:51  velktron
+//More efficient use of bis ;-)
+//
 //Revision 1.53  2011/10/25 19:42:48  velktron
 //Added advanced streaming input support and more convenient byte[] ReadLump methods.
 //
