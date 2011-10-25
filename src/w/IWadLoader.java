@@ -102,15 +102,6 @@ public interface IWadLoader {
 	public abstract int LumpLength(int lump);
 
 	/**
-	 * W_ReadLump Loads the lump into the given buffer, which must be >=
-	 * W_LumpLength().
-	 * 
-	 * @throws IOException
-	 */
-
-	public abstract void ReadLump(int lump, ByteBuffer dest);
-
-	/**
 	 * W_CacheLumpNum Modified to read a lump as a specific type of
 	 * CacheableDoomObject. If the class is not identified or is null, then a
 	 * generic DoomBuffer object is left in the lump cache and returned.
@@ -263,5 +254,27 @@ public interface IWadLoader {
      * @param obj
      */
 	void InjectLumpNum(int lump, CacheableDoomObject obj);
+
+	/** Read a lump into a bunch of bytes straight. No caching, no frills.
+	 * 
+	 * @param lump
+	 * @return
+	 */
+    byte[] ReadLump(int lump);
+
+    /** Use your own buffer, of proper size of course.
+     * 
+     * @param lump
+     * @param buf
+     */
+    void ReadLump(int lump, byte[] buf);
+    
+    /** Use your own buffer, of proper size AND offset.
+     * 
+     * @param lump
+     * @param buf
+     */
+
+    void ReadLump(int lump, byte[] buf, int offset);
 	
 }
