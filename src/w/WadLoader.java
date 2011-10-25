@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.52 2011/10/24 02:07:08 velktron Exp $
+// $Id: WadLoader.java,v 1.53 2011/10/25 19:42:48 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,7 +24,9 @@
 
 package w;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -128,7 +130,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#AddFile(java.lang.String)
 	 */
 
-	public void AddFile(String filename) throws Exception {
+	public void AddFile(String uri) throws Exception {
 		wadinfo_t header = new wadinfo_t();
 		int lump_p; // MAES: was lumpinfo_t* , but we can use it as an array
 		// pointer.
@@ -140,108 +142,96 @@ public class WadLoader implements IWadLoader {
 		filelump_t singleinfo = new filelump_t();
 
 		// handle reload indicator.
-		if (filename.charAt(0) == '~') {
-			filename = filename.substring(1);
-			reloadname = filename;
+		if (uri.charAt(0) == '~') {
+		    uri = uri.substring(1);
+			reloadname = uri;
 			reloadlump = numlumps;
 		}
 
-        // open the file and add to directory
+        // open the resource and add to directory
+		// It can be any streamed type handled by the "sugar" utilities.
 		
 		try {
-			handle = new FileInputStream(filename);
+			handle = InputStreamSugar.createInputStreamFromURI(uri);
 		} catch (Exception e) {
-			I.Error(" couldn't open %s \n", filename);
+			I.Error(" couldn't open resource %s \n", uri);
 			return;
 		}
 		
         // Create and set wadfile info
         wadfile_info_t wadinfo=new wadfile_info_t();
         wadinfo.handle= handle;
-        wadinfo.name=filename;
+        wadinfo.name=uri;
 
 
 		// System.out.println(" adding " + filename + "\n");
 
 		// We start at the number of lumps. This allows appending stuff.
 		startlump = this.numlumps;
-
+		
 		// If not "WAD" then we check for single lumps.
-		if (!C2JUtils.checkForExtension(filename,"wad")) {
+		if (!C2JUtils.checkForExtension(uri,"wad")) {
+		    
+		    
 
 		    fileinfo[0] = singleinfo;
 			singleinfo.filepos = 0;
 			singleinfo.size = (long) (handle.available());
 			
 			// Single lumps. Only use 8 characters			
-			singleinfo.name = C2JUtils.extractFileBase(filename, 8,false).toUpperCase();
+			singleinfo.name = C2JUtils.removeExtension(uri).toUpperCase();
 			
 			// MAES: check out certain known types of extension
-			if (C2JUtils.checkForExtension(filename,"lmp"))			
+			if (C2JUtils.checkForExtension(uri,"lmp"))			
 			    wadinfo.src=wad_source_t.source_lmp;
 			else
-            if (C2JUtils.checkForExtension(filename,"deh"))         
+            if (C2JUtils.checkForExtension(uri,"deh"))         
                 wadinfo.src=wad_source_t.source_deh;
             else        
-            if (C2JUtils.checkForExtension(filename,null))         
+            if (C2JUtils.checkForExtension(uri,null))         
                     wadinfo.src=wad_source_t.source_deh;
                 
 			numlumps++;			
 			
 		} else {
 			// MAES: 14/06/10 this is historical, for this is the first time I
-			// implement reading something
-			// from RAF into Doom's structs. Kudos to the JAKE2 team who solved
-			// this problem before me.
-			// Check out how reading is delegated to each class's "load" method.
-			// read (handle, &header, sizeof(header));
-
-			header.read(new DataInputStream( handle));
+			// implement reading something from RAF into Doom's structs. 
+		    // Kudos to the JAKE2 team who solved  this problem before me.
+		    // MAES: 25/10/11: In retrospect, this solution, while functional, was
+		    // inelegant and limited.
+		    
+			header.read(new DataInputStream(new BufferedInputStream( handle)));			
 			
 			if (header.identification.compareTo("IWAD") != 0) {
 				// Homebrew levels?
 				if (header.identification.compareTo("PWAD") != 0) {
-					I.Error("Wad file %s doesn't have IWAD or PWAD id\n",
-							filename);
+					I.Error("Wad file %s doesn't have IWAD or PWAD id\n",uri);
 				} else wadinfo.src=wad_source_t.source_pwad;
 
 				// modifiedgame = true;
 			} else wadinfo.src=wad_source_t.source_iwad;
 
-			// MAES: I don't think the following are needed. Casting to long?
-			// :-S
-			// header.numlumps = header.numlumps;
-			// header.infotableofs = header.infotableofs;
-
 			length = header.numlumps;
 			// Init everything:
 			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
 			
-			handle.close();
-			try {
-				handle = new FileInputStream(filename);
-			} catch (Exception e) {
-				I.Error(" couldn't open %s \n", filename);
-				return;
-			}
-
-			handle.skip(header.infotableofs);
+			handle=InputStreamSugar.streamSeek(handle,header.infotableofs,-1,uri);
+			
+			
 			// MAES: we can't read raw structs here, and even less BLOCKS of
 			// structs.
 
 			DoomIO.readObjectArray(new DataInputStream(handle),fileinfo, (int) length);
 
-			/*
-			 * for (int j=0;j<length;j++){ fileinfo[j].load (handle); }
-			 */
 			numlumps += header.numlumps;
+			wadinfo.maxsize=estimateWadSize(header,lumpinfo);
+			
 		    } // end loading wad
 		
 		    //  At this point, a WADFILE or LUMPFILE been successfully loaded, 
 		    // and so is added to the list
 		    this.wadfiles.add(wadinfo);
-
-		
+		    
 			// Fill in lumpinfo
 			// MAES: this was a realloc(lumpinfo, numlumps*sizeof(lumpinfo_t)),
 			// so we have to increase size and copy over. Maybe this should be
@@ -288,11 +278,36 @@ public class WadLoader implements IWadLoader {
 				lumpinfo[lump_p].wadfile=wadinfo; // MAES: Add Boom provenience info
 			}
 			
+			
+			
 			if (reloadname != null)
 				handle.close();
 	}
 
-	/* (non-Javadoc)
+	/** Try to guess a realistic wad size limit based only on the number of lumps and their
+	 *  STATED contents, in case it's not possible to get an accurate stream size otherwise.
+	 *  Of course, they may be way off with deliberately malformed files etc.
+	 *  
+	 * @param header
+	 * @param lumpinfo2
+	 * @return
+	 */
+	
+	private long estimateWadSize(wadinfo_t header, lumpinfo_t[] lumpinfo) {
+	    
+	    long maxsize=header.infotableofs+header.numlumps*16;
+	    
+	    for (int i=0;i<lumpinfo.length;i++){
+	        if ((lumpinfo[i].position+lumpinfo[i].size) >maxsize){
+	            maxsize=lumpinfo[i].position+lumpinfo[i].size;
+	        }
+	    }
+	    
+        // TODO Auto-generated method stub
+        return maxsize;
+    }
+
+    /* (non-Javadoc)
 	 * @see w.IWadLoader#Reload()
 	 */
 	@SuppressWarnings("null")
@@ -309,7 +324,7 @@ public class WadLoader implements IWadLoader {
 			return;
 
 		try {
-			handle = new DataInputStream(new FileInputStream(reloadname));
+			handle = new DataInputStream(new BufferedInputStream(new FileInputStream(reloadname)));
 		} catch (Exception e) {
 			I.Error("W_Reload: couldn't open %s", reloadname);
 		}
@@ -561,12 +576,30 @@ public class WadLoader implements IWadLoader {
 		return (int) lumpinfo[lump].size;
 	}
 
-	/* (non-Javadoc)
-	 * @see w.IWadLoader#ReadLump(int, java.nio.ByteBuffer)
-	 */
+	@Override
+	public byte[] ReadLump(int lump){
+	    lumpinfo_t l=lumpinfo[lump];
+	    byte[] buf=new byte[(int) l.size];
+	    ReadLump(lump, buf);
+	    return buf;
+	    
+	}
+	
+	@Override
+	public void ReadLump(int lump, byte[] buf) {
+	    ReadLump(lump, buf, 0);
+	}
+	
+    /**
+     * W_ReadLump Loads the lump into the given buffer, which must be >=
+     * W_LumpLength(). SKIPS CACHING
+     * 
+     * @throws IOException
+     */
 
-	public void ReadLump(int lump, ByteBuffer dest) {
-		int c;
+	@Override
+	public void ReadLump(int lump, byte[] buf, int offset) {
+		int c=0;
 		lumpinfo_t l; // Maes: was *..probably not array.
 		InputStream handle = null;
 
@@ -582,7 +615,7 @@ public class WadLoader implements IWadLoader {
 		if (l.handle == null) {
 			// reloadable file, so use open / read / close
 			try {
-				handle = new FileInputStream(this.reloadname);
+				handle = InputStreamSugar.createInputStreamFromURI(this.reloadname);
 			} catch (Exception e) {
 				e.printStackTrace();
 				I.Error("W_ReadLump: couldn't open %s", reloadname);
@@ -591,22 +624,31 @@ public class WadLoader implements IWadLoader {
 			handle = l.handle;
 
 		try {
-			((FileInputStream)handle).getChannel().position(l.position);
-			byte[] buf = new byte[(int) l.size];
-			c = handle.read(buf);
-			dest.put(buf);
-
+		    handle=InputStreamSugar.streamSeek(handle,l.position,l.wadfile.maxsize,l.wadfile.name);
+		    
+			// read buffered.
+			BufferedInputStream bis=new BufferedInputStream(handle);
+			
+			while (c<l.size)
+			    c+= new BufferedInputStream(handle).read(buf,offset+c, (int) (l.size-c));
+			
+			
 			if (c < l.size)
-				I.Error("W_ReadLump: only read %i of %i on lump %i", c, l.size,
-						lump);
+				System.err.printf("W_ReadLump: only read %d of %d on lump %d %d\n", c, l.size,
+						lump,l.position);
 
 			if (l.handle == null)
 				handle.close();
-
+			else
+			    l.handle=handle;
+			
+			return;
+			
 			// ??? I_EndRead ();
 		} catch (Exception e) {
 			I.Error("W_ReadLump: could not read lump " + lump);
 			e.printStackTrace();
+			return;
 		}
 
 	}
@@ -639,8 +681,7 @@ public class WadLoader implements IWadLoader {
 			// Fake Zone system: mark this particular lump with the tag specified
 			// ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[lump]);
 			// Read as a byte buffer anyway.
-			ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
-			ReadLump(lump, thebuffer);
+			ByteBuffer thebuffer = ByteBuffer.wrap(ReadLump(lump));
 
 			// Class type specified
 
@@ -725,8 +766,7 @@ public class WadLoader implements IWadLoader {
 
 			//System.out.println("cache miss on lump " + lump);
 			// Read as a byte buffer anyway.
-			ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
-			ReadLump(lump, thebuffer);
+			ByteBuffer thebuffer = ByteBuffer.wrap(ReadLump(lump));
 			// Store the buffer anyway (as a DoomBuffer)
 			lumpcache[lump] = new DoomBuffer(thebuffer);
 			
@@ -798,8 +838,7 @@ public class WadLoader implements IWadLoader {
 		if ((lumpcache[lump] == null)&&(what!=null)) {
 			//System.out.println("cache miss on lump " + lump);
 			// Read as a byte buffer anyway.
-			ByteBuffer thebuffer = ByteBuffer.allocate(this.LumpLength(lump));
-			ReadLump(lump, thebuffer);
+		    ByteBuffer thebuffer = ByteBuffer.wrap(ReadLump(lump));
 
 			CacheableDoomObject[] stuff=(CacheableDoomObject[]) C2JUtils.createArrayOfObjects(what, num);
 			
@@ -1258,6 +1297,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.53  2011/10/25 19:42:48  velktron
+//Added advanced streaming input support and more convenient byte[] ReadLump methods.
+//
 //Revision 1.52  2011/10/24 02:07:08  velktron
 //DoomFile model abandoned. Now streams are used whenever possible, with possible future expandability to use e.g. URL streams or other types of resources other than RandomAccessFiles.
 //
