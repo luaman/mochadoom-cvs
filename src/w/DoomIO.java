@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomIO.java,v 1.1 2011/10/24 02:07:08 velktron Exp $
+//$Id: DoomIO.java,v 1.2 2011/10/25 19:40:50 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -415,6 +415,11 @@ public class DoomIO  {
    }
  * @throws IOException 
 */
+   
+   public static final long readUnsignedLEInt(DataInputStream dis) throws IOException{
+       int tmp=dis.readInt();
+       return 0xFFFFFFFFL&Swap.LONG(tmp);
+   }
    
    public static final int readLEInt(DataInputStream dis) throws IOException{
        int tmp=dis.readInt();
