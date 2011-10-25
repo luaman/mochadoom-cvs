@@ -431,12 +431,21 @@ public class C2JUtils {
             return o.hashCode();
     }
 
+ 
     public static boolean checkForExtension(String filename, String ext) {
-
+        
         // Null filenames satisfy null extensions.
         if ((filename == null || filename.isEmpty())
                 && (ext == null || ext.isEmpty()))
             return true;
+        
+        String separator = System.getProperty("file.separator");
+
+        // Remove the path upto the filename.
+        int lastSeparatorIndex = filename.lastIndexOf(separator);
+        if (lastSeparatorIndex != -1) {
+            filename = filename.substring(lastSeparatorIndex + 1);
+        }
 
         String realext = null;
 
@@ -452,8 +461,30 @@ public class C2JUtils {
 
         // No extension, and non-null/nonempty comparator.
         return false;
+    }    
+    
+    public static String removeExtension(String s) {
+
+        String separator = System.getProperty("file.separator");
+        String filename;
+
+        // Remove the path upto the filename.
+        int lastSeparatorIndex = s.lastIndexOf(separator);
+        if (lastSeparatorIndex == -1) {
+            filename = s;
+        } else {
+            filename = s.substring(lastSeparatorIndex + 1);
+        }
+
+        // Remove the extension.
+        int extensionIndex = filename.lastIndexOf(".");
+        if (extensionIndex == -1)
+            return filename;
+
+        return filename.substring(0, extensionIndex);
     }
 
+    
     /**
      * This method is supposed to return the "name" part of a filename. It was
      * intended to return length-limited (max 8 chars) strings to use as lump
