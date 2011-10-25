@@ -32,7 +32,7 @@ typedef struct
 public class lumpinfo_t implements Cloneable{
         public String    name;
         public InputStream     handle;
-        public int     position;
+        public long     position;
         public long     size;
         // A 32-bit hash which should be enough for searching through hashtables.
         public int hash;
