@@ -142,7 +142,7 @@ public class CommandLine implements ICommandLineManager {
                     String    firstargv;
 
                     // READ THE RESPONSE FILE INTO MEMORY
-                    handle = new DataInputStream(new FileInputStream(myargv[i].substring(1)));
+                    handle = new DataInputStream(new BufferedInputStream(new FileInputStream(myargv[i].substring(1))));
                     if (!eval(handle))
                     {
                         System.out.print ("\nNo such response file!");

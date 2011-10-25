@@ -4,6 +4,7 @@ import i.DoomStatusAware;
 import i.DoomSystem;
 import i.Strings;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
@@ -95,12 +96,13 @@ import static data.info.mobjinfo;
 import static data.info.states;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
+import static m.fixed_t.MAPFRACUNIT;
 import static utils.C2JUtils.*;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.93 2011/10/24 02:30:51 velktron Exp $
+// $Id: DoomMain.java,v 1.94 2011/10/25 19:52:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -126,7 +128,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.93 2011/10/24 02:30:51 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.94 2011/10/25 19:52:47 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -2605,7 +2607,7 @@ public void ScreenShot ()
             
             gameaction = gameaction_t.ga_nothing; 
 
-            DataInputStream f=new DataInputStream(new FileInputStream(savename)); 
+            DataInputStream f=new DataInputStream(new BufferedInputStream(new FileInputStream(savename))); 
 
             header.read(f);
             f.close();
@@ -2840,17 +2842,17 @@ public void ScreenShot ()
         { 
             for (i=statenum_t.S_SARG_RUN1.ordinal() ; i<=statenum_t.S_SARG_PAIN2.ordinal() ; i++) 
                 states[i].tics >>= 1; 
-            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 20*FRACUNIT; 
-            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 20*FRACUNIT; 
-            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 20*FRACUNIT; 
+            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 20*MAPFRACUNIT; 
+            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 20*MAPFRACUNIT; 
+            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 20*MAPFRACUNIT; 
         } 
         else if (skill != skill_t.sk_nightmare && gameskill == skill_t.sk_nightmare) 
         { 
             for (i=statenum_t.S_SARG_RUN1.ordinal() ; i<=statenum_t.S_SARG_PAIN2.ordinal() ; i++) 
                 states[i].tics <<= 1; 
-            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 15*FRACUNIT; 
-            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 10*FRACUNIT; 
-            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 10*FRACUNIT; 
+            mobjinfo[mobjtype_t.MT_BRUISERSHOT.ordinal()].speed = 15*MAPFRACUNIT; 
+            mobjinfo[mobjtype_t.MT_HEADSHOT.ordinal()].speed = 10*MAPFRACUNIT; 
+            mobjinfo[mobjtype_t.MT_TROOPSHOT.ordinal()].speed = 10*MAPFRACUNIT; 
         } 
 
 
@@ -4209,6 +4211,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.94  2011/10/25 19:52:47  velktron
+//Using TIC_MUL and MAPFRACUNIT for speed scaling. Also buffered I/O and other stuff.
+//
 //Revision 1.93  2011/10/24 02:30:51  velktron
 //Fixed palette copying.
 //
