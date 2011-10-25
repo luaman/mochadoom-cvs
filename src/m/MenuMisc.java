@@ -26,7 +26,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.27 2011/10/24 02:11:27 velktron Exp $
+// $Id: MenuMisc.java,v 1.28 2011/10/25 19:52:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -50,7 +50,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.27 2011/10/24 02:11:27 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.28 2011/10/25 19:52:03 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -123,7 +123,7 @@ public abstract class MenuMisc{
         try {
 
             // read the file in, overriding any set defaults
-            in = new BufferedReader(new InputStreamReader(new FileInputStream(defaultfile)));
+            in = new BufferedReader(new InputStreamReader(new BufferedInputStream(new FileInputStream(defaultfile))));
             if (in!=null)
             {
                 String name = null, value = null;
@@ -402,6 +402,9 @@ public abstract class MenuMisc{
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.28  2011/10/25 19:52:03  velktron
+// Using buffered I/O when possible
+//
 // Revision 1.27  2011/10/24 02:11:27  velktron
 // Stream compliancy
 //
