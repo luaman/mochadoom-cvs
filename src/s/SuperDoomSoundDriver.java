@@ -70,12 +70,11 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         produce.drainPermits();
         update_mixer.drainPermits();
         this.MIXSRV=new MixServer(numChannels);
-        MIXTIMER= new Timer();
+        MIXTIMER= new Timer(true);
         // Sound tics every 1/35th of a second. Grossly
         // inaccurate under Windows though, will get rounded
         // down to the closest multiple of 15 or 16 ms.
-        MIXTIMER.schedule(new SoundTimer(), 0,SOUND_PERIOD);
-        
+        MIXTIMER.schedule(new SoundTimer(), 0,SOUND_PERIOD);        
     }
 
 
@@ -173,10 +172,13 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
         SOUNDSRV = new PlaybackServer(line);
         SOUNDTHREAD = new Thread(SOUNDSRV);
+        SOUNDTHREAD.setDaemon(true);
         SOUNDTHREAD.start();
-        // Vroom!
+        // Vroom!        
         MIXTHREAD= new Thread(MIXSRV);
+        MIXTHREAD.setDaemon(true);
         MIXTHREAD.start();
+        
         
         
         // Initialize external data (all sounds) at start, keep static.
