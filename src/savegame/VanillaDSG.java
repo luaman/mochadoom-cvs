@@ -3,12 +3,9 @@ import static data.Limits.*;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 
-import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -36,7 +33,6 @@ import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
 import utils.C2JUtils;
-import w.DoomIO;
 
 public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
     

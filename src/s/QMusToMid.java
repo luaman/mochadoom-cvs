@@ -1,5 +1,7 @@
 package s;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -505,8 +507,8 @@ public class QMusToMid {
 	int convert( String mus, String mid, boolean nodisplay, int div,
             int size, boolean nocomp, Ptr<Integer> ow ) throws IOException
 {
-		InputStream is = new FileInputStream(new File(mid));
-		OutputStream os = new FileOutputStream(new File(mid));
+		InputStream is = new BufferedInputStream(new FileInputStream(new File(mid)));
+		OutputStream os = new BufferedOutputStream(new FileOutputStream(new File(mid)));
 		
 	  int error;
 	  //struct stat file_data ;
