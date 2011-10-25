@@ -6140,10 +6140,10 @@ public abstract class RendererState implements Renderer<byte[]>,
 		lump = W.GetNumForName("COLORMAP");
 		length = W.LumpLength(lump) + 256;
 		colormaps = new byte[(length / 256)][256];
+		System.out.println("Colormaps: " + colormaps.length);
+
 		byte[] tmp = new byte[length];
-		System.out.println("Colomaps: " + colormaps.length);
-		ByteBuffer b = ByteBuffer.wrap(tmp);
-		W.ReadLump(lump, b);
+		W.ReadLump(lump,tmp);
 
 		for (int i = 0; i < colormaps.length; i++) {
 			System.arraycopy(tmp, i * 256, colormaps[i], 0, 256);
@@ -6151,8 +6151,9 @@ public abstract class RendererState implements Renderer<byte[]>,
 		
 		// MAES: blurry effect is hardcoded to this colormap.
 		BLURRY_MAP=colormaps[6];
-		// colormaps = (byte *)( ((int)colormaps + 255)&~0xff);
+		// colormaps = (byte *)( ((int)colormaps + 255)&~0xff);		
 
+		
 	}
 
 	/**
