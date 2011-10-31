@@ -7,6 +7,12 @@ import static rr.RendererState.*;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
+import rr.drawfuns.ColVars;
+import rr.drawfuns.DoomColumnFunction;
+import rr.drawfuns.R_DrawColumnBoom;
+import rr.drawfuns.R_DrawColumnBoomOpt;
+import rr.drawfuns.R_DrawColumnBoomOptLow;
+
 import data.Tables;
 
 import v.IVideoScale;
@@ -47,30 +53,21 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 	private final CyclicBarrier barrier;
 	private RenderSegInstruction[] RSI;
 	private final long[] xtoviewangle;
-	private final int[] ylookup,columnofs;
-	private final byte[] screen;
 	private final short[] ceilingclip, floorclip;
 
 	// Each thread should do its own ceiling/floor blanking
     private final short[] BLANKFLOORCLIP;
     private final short[] BLANKCEILINGCLIP;
-	
-	// These are needed to communicate with the column drawer.
-	// But are not required to be supplied externally.
 
-	private int dc_x,dc_yl,dc_yh,dc_iscale;
-	private byte[] dc_source;
-	private byte[] dc_colormap;
-	//private volatile int dc_source_ofs;
-	private volatile int dc_texheight, dc_texturemid;
-	private int centery;
-
-
-	protected static final int HEIGHTBITS   =   12;
+    protected static final int HEIGHTBITS   =   12;
 	protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
 	private final int id;
-
-	public RenderSegExecutor(int id,byte[] screen, 
+	
+	private final DoomColumnFunction<byte[]> colfunchi,colfunclow;
+	private DoomColumnFunction<byte[]> colfunc;
+	private final ColVars<byte[]> dcvars;
+	
+	public RenderSegExecutor(int SCREENWIDTH, int SCREENHEIGHT,int id,byte[] screen, 
 			IGetColumn  gc,
 			TextureManager texman,
 			RenderSegInstruction[] RSI,
@@ -87,16 +84,17 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		this.id=id;
 		this.GC=gc;
 		this.TM=texman;
-		this.screen=screen;
 		this.RSI=RSI;
 		this.barrier=barrier;		
 		this.ceilingclip=ceilingclip;
 		this.floorclip=floorclip;
 		this.xtoviewangle=xtoviewangle;
-		this.columnofs=columnofs;
-		this.ylookup=ylookup;
 		this.BLANKCEILINGCLIP=BLANKCEILINGCLIP;
 		this.BLANKFLOORCLIP=BLANKFLOORCLIP;
+		dcvars=new ColVars<byte[]>();
+		colfunc=colfunchi=new R_DrawColumnBoomOpt(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
+        colfunclow=new R_DrawColumnBoomOptLow(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
+        
 	}
 
 	
@@ -131,7 +129,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		// For each "SegDraw" instruction...
 		for (int i=0;i<rsiend;i++){
 			rsi=RSI[i];
-			centery=RSI[i].centery;
+			dcvars.centery=RSI[i].centery;
 			int startx,endx;
 			// Does a wall actually start in our screen zone?
 			// If yes, we need no bias, since it was meant for it.
@@ -170,7 +168,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 
 	}
 
-
+/*
 	// Essentially, it's the Boom/Killough column drawing function.
 	protected final void CompleteColumn(){
 		int              count; 
@@ -256,6 +254,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 			}
 		}
 	}
+	*/
 	
 	protected final void ProcessRSI(RenderSegInstruction rsi, int startx,int endx,boolean contained){
 		int     angle; // angle_t
@@ -338,22 +337,22 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                 if (index >=  MAXLIGHTSCALE )
                 index = MAXLIGHTSCALE-1;
 
-                dc_colormap = rsi.walllights[index];
-                dc_x = rw_x;
-                dc_iscale = (int) (0xffffffffL / rw_scale);
+                dcvars.dc_colormap = rsi.walllights[index];
+                dcvars.dc_x = rw_x;
+                dcvars.dc_iscale = (int) (0xffffffffL / rw_scale);
             }
             
             // draw the wall tiers
             if (rsi.midtexture!=0)
             {
                 // single sided line
-                dc_yl = yl;
-                dc_yh = yh;
-                dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
-                dc_texturemid = rsi.rw_midtexturemid;    
-                dc_source = GC.GetCachedColumn(rsi.midtexture,texturecolumn);
+                dcvars.dc_yl = yl;
+                dcvars.dc_yh = yh;
+                dcvars.dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
+                dcvars.dc_texturemid = rsi.rw_midtexturemid;    
+                dcvars.dc_source = GC.GetCachedColumn(rsi.midtexture,texturecolumn);
                 //dc_source_ofs=0;
-                CompleteColumn();
+                colfunc.invoke();
                 ceilingclip[rw_x] = (short) rsi.viewheight;
                 floorclip[rw_x] = -1;
             }
@@ -371,13 +370,13 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 
                 if (mid >= yl)
                 {
-                    dc_yl = yl;
-                    dc_yh = mid;
-                    dc_texturemid = rsi.rw_toptexturemid;
-                    dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
-                    dc_source = GC.GetCachedColumn(rsi.toptexture,texturecolumn);
+                    dcvars.dc_yl = yl;
+                    dcvars.dc_yh = mid;
+                    dcvars.dc_texturemid = rsi.rw_toptexturemid;
+                    dcvars.dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
+                    dcvars.dc_source = GC.GetCachedColumn(rsi.toptexture,texturecolumn);
                     //dc_source_ofs=0;
-                    CompleteColumn();
+                    colfunc.invoke();
     				ceilingclip[rw_x] = (short) mid;
 				}
 				else
@@ -402,13 +401,13 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
                 
                 if (mid <= yh)
                 {
-                    dc_yl = mid;
-                    dc_yh = yh;
-                    dc_texturemid = rsi.rw_bottomtexturemid;
-                    dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
-                    dc_source = GC.GetCachedColumn(rsi.bottomtexture,texturecolumn);
+                    dcvars.dc_yl = mid;
+                    dcvars.dc_yh = yh;
+                    dcvars.dc_texturemid = rsi.rw_bottomtexturemid;
+                    dcvars.dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
+                    dcvars.dc_source = GC.GetCachedColumn(rsi.bottomtexture,texturecolumn);
                     // dc_source_ofs=0;
-                    CompleteColumn();
+                    colfunc.invoke();
 					floorclip[rw_x] = (short) mid;
 				}
 				else
@@ -453,6 +452,9 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.11  2011/10/31 18:33:56  velktron
+// Much cleaner implementation using the new rendering model. Now it's quite faster, too.
+//
 // Revision 1.10  2011/07/25 11:39:10  velktron
 // Optimized to work without dc_source_ofs (uses only cached, solid textures)
 //
