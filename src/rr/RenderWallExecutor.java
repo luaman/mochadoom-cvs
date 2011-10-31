@@ -1,7 +1,5 @@
 package rr;
 
-import static m.fixed_t.FRACBITS;
-
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -9,10 +7,7 @@ import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomOpt;
-import rr.drawfuns.R_DrawColumnBoomSuperOpt;
-
-import v.IVideoScale;
-import v.IVideoScaleAware;
+import rr.drawfuns.R_DrawColumnBoomOptLow;
 
 /** This is what actual executes the RenderWallInstruction.
  *  Essentially it's a self-contained column rendering function.
@@ -36,8 +31,8 @@ public class RenderWallExecutor implements Runnable {
         this.SCREENWIDTH=SCREENWIDTH;
         this.SCREENHEIGHT=SCREENHEIGHT;
         
-        colfunc=colfunchi=new R_DrawColumnBoom(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,null,screen,null );
-        colfunclow=new R_DrawColumnBoomOpt(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,null,screen,null );
+        colfunc=colfunchi=new R_DrawColumnBoomOpt(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,null,screen,null );
+        colfunclow=new R_DrawColumnBoomOptLow(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,null,screen,null );
         
         
     }
