@@ -109,20 +109,20 @@ public class line_t
     {
         int dx, dy, left, right;
         if (this.dx == 0) {
-            if (x <= this.v1.x)
+            if (x <= this.v1x)
                 return this.dy > 0;
 
             return this.dy < 0;
         }
         if (this.dy == 0) {
-            if (y <= this.v1.y)
+            if (y <= this.v1y)
                 return this.dx < 0;
 
             return this.dx > 0;
         }
 
-        dx = (x - this.v1.x);
-        dy = (y - this.v1.y);
+        dx = (x - this.v1x);
+        dy = (y - this.v1y);
 
         left = FixedMul(this.dy >> FRACBITS, dx);
         right = FixedMul(dy, this.dx >> FRACBITS);
@@ -147,8 +147,8 @@ public class line_t
         switch (this.slopetype) {
         // Line perfectly horizontal, box floating "north" of line
         case ST_HORIZONTAL:
-            p1 = tmbox[BOXTOP] > v1.y;
-            p2 = tmbox[BOXBOTTOM] > v1.y;
+            p1 = tmbox[BOXTOP] > v1y;
+            p2 = tmbox[BOXBOTTOM] > v1y;
             if (dx < 0) {
                 p1 ^= true;
                 p2 ^= true;
@@ -158,8 +158,8 @@ public class line_t
         // Line perfectly vertical, box floating "west" of line
         case ST_VERTICAL:
 
-            p1 = tmbox[BOXRIGHT] < v1.x;
-            p2 = tmbox[BOXLEFT] < v1.x;
+            p1 = tmbox[BOXRIGHT] < v1x;
+            p2 = tmbox[BOXLEFT] < v1x;
             if (dy < 0) {
                 p1 ^= true;
                 p2 ^= true;
@@ -200,8 +200,8 @@ public class line_t
         switch (this.slopetype) {
         // Line perfectly horizontal, box floating "north" of line
         case ST_HORIZONTAL:
-            p1 = tmbox[BOXTOP] >= v1.y;
-            p2 = tmbox[BOXBOTTOM] >= v1.y;
+            p1 = tmbox[BOXTOP] >= v1y;
+            p2 = tmbox[BOXBOTTOM] >= v1y;
             if (dx < 0) {
                 p1 ^= true;
                 p2 ^= true;
@@ -211,8 +211,8 @@ public class line_t
         // Line perfectly vertical, box floating "west" of line
         case ST_VERTICAL:
 
-            p1 = tmbox[BOXRIGHT] <= v1.x;
-            p2 = tmbox[BOXLEFT] <= v1.x;
+            p1 = tmbox[BOXRIGHT] <= v1x;
+            p2 = tmbox[BOXLEFT] <= v1x;
             if (dy < 0) {
                 p1 ^= true;
                 p2 ^= true;
