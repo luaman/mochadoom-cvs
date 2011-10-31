@@ -171,30 +171,31 @@ public class UnifiedRenderer extends RendererState{
               // Cache skytexture stuff here. They aren't going to change while
               // being drawn, after all, are they?
               int skytexture=TexMan.getSkyTexture();
-              dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;
+              skydcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;
               
-              dc_iscale = pspriteiscale>>detailshift;
+              skydcvars.dc_iscale = pspriteiscale>>detailshift;
               
               /* Sky is allways drawn full bright,
                * i.e. colormaps[0] is used.
                * Because of this hack, sky is not affected
                * by INVUL inverse mapping.
                */    
-              dc_colormap = colormaps[0];
-              dc_texturemid = TexMan.getSkyTextureMid();
+              skydcvars.dc_colormap = colormaps[0];
+              skydcvars.dc_texturemid = TexMan.getSkyTextureMid();
               for (x=pln.minx ; x <= pln.maxx ; x++)
               {
             
-              dc_yl = pln.getTop(x);
-              dc_yh = pln.getBottom(x);
+                  skydcvars.dc_yl = pln.getTop(x);
+                  skydcvars.dc_yh = pln.getBottom(x);
               
-              if (dc_yl <= dc_yh)
+              if (skydcvars.dc_yl <= skydcvars.dc_yh)
               {
                   angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
-                  dc_x = x;
+                  skydcvars.dc_x = x;
                   // Optimized: texheight is going to be the same during normal skies drawing...right? 
-                  dc_source = GetCachedColumn(skytexture,angle);
-                  colfunc.invoke();
+                  skydcvars.dc_source = GetCachedColumn(skytexture,angle);
+                  skydcvars.dc_source_ofs=0;
+                  skycolfunc.invoke();
               }
               }
               continue;
@@ -288,6 +289,8 @@ public void RenderPlayerView (player_t player)
   DGN.NetUpdate ();
   
   MyThings.DrawMasked ();
+  
+  colfunc=basecolfunc;
 
   // Check for new console commands.
   DGN.NetUpdate ();             
@@ -333,6 +336,9 @@ public void Init ()
    
    System.out.print("\nR_InitTranMap: ");
    R_InitTranMap(0);
+   
+   System.out.print("\nR_InitDrawingFunctions: ");
+   R_InitDrawingFunctions();
    
    framecount = 0;
 }
