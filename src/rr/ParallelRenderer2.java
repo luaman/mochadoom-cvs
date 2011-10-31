@@ -168,8 +168,8 @@ public class ParallelRenderer2 extends RendererState  {
 				if (midtexture!=0)
 				{
 					
-					dc_source = GetCachedColumn(midtexture,texturecolumn);
-					dc_m=dc_source_ofs;
+					dcvars.dc_source = GetCachedColumn(midtexture,texturecolumn);
+					dc_m=dcvars.dc_source_ofs;
 					// single sided line
 					ceilingclip[rw_x] = (short) viewheight;
 					floorclip[rw_x] = -1;
@@ -188,8 +188,8 @@ public class ParallelRenderer2 extends RendererState  {
 
 						if (mid >= yl)
 						{
-			                dc_source = GetCachedColumn(toptexture,texturecolumn);
-			                dc_t=dc_source_ofs;
+						    dcvars.dc_source = GetCachedColumn(toptexture,texturecolumn);
+			                dc_t=dcvars.dc_source_ofs;
 			                ceilingclip[rw_x] = (short) mid;
 						}
 						else
@@ -214,8 +214,8 @@ public class ParallelRenderer2 extends RendererState  {
 
 						if (mid <= yh)
 						{
-		                    dc_source = GetCachedColumn(bottomtexture,texturecolumn);
-		                    dc_b=dc_source_ofs;
+						    dcvars.dc_source = GetCachedColumn(bottomtexture,texturecolumn);
+		                    dc_b=dcvars.dc_source_ofs;
 							floorclip[rw_x] = (short) mid;
 						}
 						else
@@ -405,28 +405,28 @@ public class ParallelRenderer2 extends RendererState  {
 	         // sky flat
 	         if (pln.picnum == TexMan.getSkyFlatNum() )
 	         {
-	             dc_iscale = skyscale>>detailshift;
+	             skydcvars.dc_iscale = skyscale>>detailshift;
 	             
 	             /* Sky is allways drawn full bright,
 	              * i.e. colormaps[0] is used.
 	              * Because of this hack, sky is not affected
 	              * by INVUL inverse mapping.
 	              */    
-	             dc_colormap = colormaps[0];
-	             dc_texturemid = TexMan.getSkyTextureMid();
+			    skydcvars.dc_colormap = colormaps[0];
+			    skydcvars.dc_texturemid = TexMan.getSkyTextureMid();
 	             for (x=pln.minx ; x <= pln.maxx ; x++)
 	             {
 	           
-	             dc_yl = pln.getTop(x);
-	             dc_yh = pln.getBottom(x);
+	             skydcvars.dc_yl = pln.getTop(x);
+	             skydcvars.dc_yh = pln.getBottom(x);
 	             
-	             if (dc_yl <= dc_yh)
+	             if (skydcvars.dc_yl <= skydcvars.dc_yh)
 	             {
 	                 angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
-	                 dc_x = x;
-	                 dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
-	                 dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
-	                 colfunc.invoke();
+	                 skydcvars.dc_x = x;
+	                 skydcvars.dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
+	                 skydcvars.dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
+	                 skycolfunc.invoke();
 	             }
 	             }
 	             continue;
@@ -769,7 +769,7 @@ public class ParallelRenderer2 extends RendererState  {
 		
 		//offsets=new int[NUMWALLTHREADS];
 		for (int i=0;i<NUMWALLTHREADS;i++){
-			RSIExec[i]=new RenderSegExecutor(i,screen,
+			RSIExec[i]=new RenderSegExecutor(SCREENWIDTH,SCREENHEIGHT,i,screen,
 					this, TexMan, RSI,this.BLANKCEILINGCLIP,this.BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, 
 					xtoviewangle, ylookup, this.visplanes,walllights, this.visplanebarrier);
 			RSIExec[i].setVideoScale(this.vs);
@@ -878,6 +878,7 @@ public class ParallelRenderer2 extends RendererState  {
 
 		MyThings.DrawMasked ();
 
+		colfunc=basecolfunc;
 
 		// Check for new console commands.
 		DGN.NetUpdate ();           
@@ -921,12 +922,15 @@ public class ParallelRenderer2 extends RendererState  {
 
 		System.out.print("\nR_InitTranslationsTables");
 		InitTranslationTables ();
-
+		
 		System.out.print("\nR_InitRWISubsystem: ");
 		InitRSISubsystem();
 
 		System.out.print("\nR_InitTranMap: ");
 		R_InitTranMap(0);
+		
+		System.out.print("\nR_InitDrawingFunctions: ");
+        R_InitDrawingFunctions();       		
 
 		framecount = 0;
 	}
