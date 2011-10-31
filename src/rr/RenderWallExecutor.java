@@ -5,6 +5,12 @@ import static m.fixed_t.FRACBITS;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
+import rr.drawfuns.ColVars;
+import rr.drawfuns.DoomColumnFunction;
+import rr.drawfuns.R_DrawColumnBoom;
+import rr.drawfuns.R_DrawColumnBoomOpt;
+import rr.drawfuns.R_DrawColumnBoomSuperOpt;
+
 import v.IVideoScale;
 import v.IVideoScaleAware;
 
@@ -15,47 +21,47 @@ import v.IVideoScaleAware;
  *
  */
 
-public class RenderWallExecutor implements Runnable, IVideoScaleAware {
+public class RenderWallExecutor implements Runnable {
     
     private CyclicBarrier barrier;
-    private RenderWallInstruction[] RWI;
-    private final int[] ylookup;
-    private final byte[] screen;
-    private final int[] columnofs;
+    private ColVars<byte[]>[] RWI;
     private int start, end;
+    private final DoomColumnFunction<byte[]> colfunchi, colfunclow;
+    private DoomColumnFunction<byte[]> colfunc;
     
-    public RenderWallExecutor(int[] columnofs,int[] ylookup, byte[] screen, RenderWallInstruction[] RWI, CyclicBarrier barrier){
-    	this.columnofs=columnofs;
-        this.ylookup=ylookup;
-        this.screen=screen;
+    
+    public RenderWallExecutor(int SCREENWIDTH,int SCREENHEIGHT,int[] columnofs,int[] ylookup, byte[] screen, ColVars<byte[]>[] RWI, CyclicBarrier barrier){
         this.RWI=RWI;
         this.barrier=barrier;
+        this.SCREENWIDTH=SCREENWIDTH;
+        this.SCREENHEIGHT=SCREENHEIGHT;
+        
+        colfunc=colfunchi=new R_DrawColumnBoom(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,null,screen,null );
+        colfunclow=new R_DrawColumnBoomOpt(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,null,screen,null );
+        
+        
     }
     
     public void setRange(int start, int end){
         this.end=end;
         this.start=start;
     }
+    
+    public void setDetail(int detailshift){
+        if (detailshift==0) colfunc=colfunchi;
+            else colfunc=colfunclow;
+        }
 
     public void run(){
-
-        int centery;
-        int dc_iscale;
-        //int dc_source_ofs;
-        int dc_texturemid;
-        int dc_x;
-        int dc_yh;
-        int dc_yl;
-        int dc_texheight;
-        byte[] dc_colormap;
-        byte[] dc_source;
 
         //System.out.println("Wall executor from "+start +" to "+ end);
         
         for (int i=start;i<end;i++){
-        
+            colfunc.invoke(RWI[i]);
+            
+            
         // Copy shit over from current RWIs...     
-        centery=RWI[i].centery;
+        /*centery=RWI[i].centery;
         dc_iscale=RWI[i].dc_iscale;
         //dc_source_ofs=RWI[i].dc_source_ofs;
         dc_texturemid=RWI[i].dc_texturemid;
@@ -92,7 +98,7 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
         // This is as fast as it gets.       (Yeah, right!!! -- killough)
         //
         // killough 2/1/98: more performance tuning
-
+        if (dc_colormap!=null)
         {
           final byte[] source = dc_source;       
            final byte[] colormap = dc_colormap; 
@@ -125,9 +131,13 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
          else
         	 while (count>=4)   // texture height is a power of 2 -- killough
              {
+        	     try{
                screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;
+        	     } catch (Exception e){
+        	         System.err.printf("RWI %d bad!\n",i);
+        	     }
                screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
                dest += SCREENWIDTH; 
                frac += fracstep;
@@ -142,11 +152,11 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
            
            	while (count>0){
                screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
-               dest += SCREENWIDTH; 
+               dest += SCREENWIDTH;
                frac += fracstep;
                count--;
            	}
-        }
+        }*/
         }
         try {
             barrier.await();
@@ -159,15 +169,16 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
         }
     }
 
-    public void updateRWI(RenderWallInstruction[] RWI) {
+    public void updateRWI(ColVars<byte[]>[] RWI) {
         this.RWI=RWI;
         
     }
     
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
 
-    protected int SCREENWIDTH;
-    protected int SCREENHEIGHT;
+    protected final int SCREENWIDTH;
+    protected final int SCREENHEIGHT;
+    /*
     protected IVideoScale vs;
 
     @Override
@@ -179,6 +190,6 @@ public class RenderWallExecutor implements Runnable, IVideoScaleAware {
     public void initScaling() {
         this.SCREENHEIGHT=vs.getScreenHeight();
         this.SCREENWIDTH=vs.getScreenWidth();
-    }
+    }*/
 
 }

@@ -4,10 +4,13 @@ import static data.Defines.*;
 import static data.Tables.*;
 import static m.fixed_t.*;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
+import rr.drawfuns.ColVars;
 
 import utils.C2JUtils;
 import doom.DoomMain;
@@ -57,7 +60,7 @@ public class ParallelRenderer extends RendererState  {
 	 * 
 	 */
 		
-	private RenderWallInstruction[] RWI;
+	private ColVars<byte[]>[] RWI;
 	
 	/** Increment this as you submit RWI to the "queue". Remember to reset to 0 when you have drawn everything!
 	 * 
@@ -104,6 +107,10 @@ public class ParallelRenderer extends RendererState  {
           
 
           }
+          
+          RWIcount=0;
+          
+          dcvars=RWI[0];
     }
  
   private final class ParallelSegs extends SegDrawer{
@@ -120,24 +127,23 @@ public class ParallelRenderer extends RendererState  {
       
       @Override
       protected final void CompleteColumn(){
-          /*(int centery, int dc_iscale, int dc_source_ofs, int dc_texturemid,
-          int dc_x, int dc_yh, int dc_yl, int[] columnofs, byte[] dc_colormap, byte[] dc_source){*/
-          if (RWIcount>=RWI.length){
+
+          
+          // Don't wait to go over
+          if (RWIcount==RWI.length-1){
               ResizeRWIBuffer();
           }
-              
-          RWI[RWIcount].centery=centery;
-          RWI[RWIcount].dc_iscale=dc_iscale;
-          RWI[RWIcount].dc_x=dc_x;
-          RWI[RWIcount].dc_yh=dc_yh;
-          RWI[RWIcount].dc_yl=dc_yl;
-          //RWI[RWIcount].columnofs=columnofs;
-          RWI[RWIcount].dc_colormap=dc_colormap;
-          RWI[RWIcount].dc_source=dc_source;
-          // RWI[RWIcount].dc_source_ofs=dc_source_ofs; It's always 0 for solid walls.
-          RWI[RWIcount].dc_texturemid=dc_texturemid;
-          RWI[RWIcount].dc_texheight=dc_texheight;
-          RWIcount++;
+          
+          // A deep copy is still necessary, as dc
+          RWI[RWIcount].copyFrom(dcvars);
+
+          // We only need to point to the next one in the list.
+          RWIcount++;          
+
+          //dcvars=RWI[RWIcount];
+          /*(int centery, int dc_iscale, int dc_source_ofs, int dc_texturemid,
+          int dc_x, int dc_yh, int dc_yl, int[] columnofs, byte[] dc_colormap, byte[] dc_source){*/
+          
       }
 
 
@@ -256,28 +262,28 @@ public class ParallelRenderer extends RendererState  {
          // sky flat
          if (pln.picnum == TexMan.getSkyFlatNum() )
          {
-             dc_iscale = skyscale>>detailshift;
+             skydcvars.dc_iscale = skyscale>>detailshift;
              
              /* Sky is allways drawn full bright,
               * i.e. colormaps[0] is used.
               * Because of this hack, sky is not affected
               * by INVUL inverse mapping.
               */    
-             dc_colormap = colormaps[0];
-             dc_texturemid = TexMan.getSkyTextureMid();
+      	    skydcvars.dc_colormap = colormaps[0];
+      	    skydcvars.dc_texturemid = TexMan.getSkyTextureMid();
              for (x=pln.minx ; x <= pln.maxx ; x++)
              {
            
-             dc_yl = pln.getTop(x);
-             dc_yh = pln.getBottom(x);
+                 skydcvars.dc_yl = pln.getTop(x);
+                 skydcvars.dc_yh = pln.getBottom(x);
              
-             if (dc_yl <= dc_yh)
+             if (skydcvars.dc_yl <= skydcvars.dc_yh)
              {
                  angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
-                 dc_x = x;
-                 dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
-                 dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
-                 colfunc.invoke();
+                 skydcvars.dc_x = x;
+                 skydcvars.dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
+                 skydcvars.dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
+                 skycolfunc.invoke();
              }
              }
              continue;
@@ -618,10 +624,13 @@ private void InitRWISubsystem() {
     // AFTER we initialize the RWI themselves,
     // before V is set (right?) 
     for (int i=0;i<NUMWALLTHREADS;i++){
-        RWIExec[i]=new RenderWallExecutor(columnofs,ylookup, screen,RWI,visplanebarrier);
-        RWIExec[i].setVideoScale(this.vs);
-        RWIExec[i].initScaling();
+        RWIExec[i]=new RenderWallExecutor(SCREENWIDTH,SCREENHEIGHT,columnofs,ylookup, screen,RWI,visplanebarrier);
+        //RWIExec[i].setVideoScale(this.vs);
+        //RWIExec[i].initScaling();
     }
+    
+    // Use the RWI buffers as "dcvars"
+    dcvars=RWI[0];
 }
 
 /** Resizes RWI buffer, updates executors. Sorry for the hackish implementation
@@ -631,10 +640,9 @@ private void InitRWISubsystem() {
  */
 
 private void ResizeRWIBuffer() {
-    RenderWallInstruction[] tmp=new RenderWallInstruction[RWI.length*2];
+    ColVars<byte[]> fake=new ColVars<byte[]>(); 
+    ColVars<byte[]>[] tmp=C2JUtils.createArrayOfObjects(fake,RWI.length*2);
     System.arraycopy(RWI, 0, tmp, 0, RWI.length);
-    
-    C2JUtils.initArrayOfObjects(tmp,RWI.length,tmp.length);
     
     // Bye bye, old RWI.
     RWI=tmp;   
@@ -643,7 +651,7 @@ private void ResizeRWIBuffer() {
         RWIExec[i].updateRWI(RWI);
     }
     
-    System.out.println("RWI Buffer resized. Actual capacity "+RWI.length);
+    System.err.println("RWI Buffer resized. Actual capacity "+RWI.length);
 }
 
 
@@ -700,9 +708,13 @@ public void RenderPlayerView (player_t player)
   
   // Check for new console commands.
   DGN.NetUpdate ();
+  
+ //dcvars=RWI[0];
 
   // The head node is the last node output.
   MyBSP.RenderBSPNode (LL.numnodes-1);
+  
+  //System.out.printf("Entered %d RWI\n",RWIcount);
   
   RenderRWIPipeline();
   // Check for new console commands.
@@ -767,6 +779,9 @@ public void Init ()
    System.out.print("\nR_InitTranslationsTables");
    InitTranslationTables ();
    
+   System.out.print("\nR_InitDrawingFunctions: ");
+   R_InitDrawingFunctions();
+   
    System.out.print("\nR_InitRWISubsystem: ");
    InitRWISubsystem();
    
@@ -779,9 +794,8 @@ public void Init ()
 @Override
 public void initScaling(){
     super.initScaling();
-    this.RWI=new RenderWallInstruction[SCREENWIDTH*3];
-    C2JUtils.initArrayOfObjects(RWI);
-    
+    ColVars<byte[]> fake=new ColVars<byte[]>();
+    RWI=C2JUtils.createArrayOfObjects(fake,SCREENWIDTH*3);    
     initializeParallelStuff();
 }
 
