@@ -1,17 +1,16 @@
 package rr;
 
-import static data.Defines.*;
 import static data.Limits.*;
 import static data.Tables.*;
 import static m.fixed_t.*;
 
 import java.io.IOException;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import utils.C2JUtils;
+import v.DoomVideoRenderer;
 import data.Tables;
 import doom.DoomMain;
 import doom.player_t;
@@ -77,11 +76,6 @@ public class ParallelRenderer2 extends RendererState  {
 		visplanebarrier=new CyclicBarrier(NUMFLOORTHREADS+NUMWALLTHREADS+1);
 
 		vpw=new VisplaneWorker[NUMFLOORTHREADS];
-
-		for (int i=0;i<NUMFLOORTHREADS;i++){
-			vpw[i]=new VisplaneWorker(visplanebarrier);
-			vpw[i].id=i;
-		}
 	}
 
 	private final class ParallelSegs extends SegDrawer{
@@ -332,425 +326,7 @@ public class ParallelRenderer2 extends RendererState  {
 		}
 
 	} // End Plane class
-
-	class VisplaneWorker implements Runnable{
-
-		public int id;
-		int startvp;  
-		int endvp;
-		int vpw_planeheight;
-		byte[][] vpw_planezlight;
-		int vpw_basexscale;
-		int vpw_baseyscale;
-	    int[] cachedheight;
-	    int[] cacheddistance;
-	    int[] cachedxstep;
-	    int[] cachedystep;
-	    int[] distscale;
-	    int[] yslope;
-		int vpw_dc_texturemid;
-		int vpw_dc_texheight;
-		int vpw_dc_iscale;
-		byte[] vpw_dc_colormap, vpw_dc_source, vpw_ds_source,vpw_ds_colormap;
-	    int vpw_dc_yl;
-	    int vpw_dc_yh;
-	    int vpw_dc_x;
-	    int vpw_dc_y;
-	    int vpw_ds_x;
-	    int vpw_ds_y;
-	    int ds_x1;
-	    int ds_x2;
-	    int ds_xstep;
-	    int ds_xfrac;
-	    int ds_ystep;
-	    int ds_yfrac;
-	    int dc_source_ofs;
-	    
-		public VisplaneWorker(CyclicBarrier barrier){
-			  this.barrier=barrier;
-		      // Alias to those of Planes.
-		      cachedheight=MyPlanes.getCachedHeight();
-		      cacheddistance=MyPlanes.getCachedDistance();
-		      cachedxstep=MyPlanes.getCachedXStep();
-		      cachedystep=MyPlanes.getCachedYStep();
-		      distscale=MyPlanes.getDistScale();
-		      yslope=MyPlanes.getYslope();
-		      spanstart=new int[SCREENHEIGHT];
-		      spanstop=new int [SCREENHEIGHT];
-		      }
-		
-		@Override
-		public void run() {
-	        visplane_t      pln=null; //visplane_t
-	    	// These must override the global ones
-
-
-	        int         light;
-	        int         x;
-	        int         stop;
-	        int         angle;
-
-	        // Now it's a good moment to set them.
-	        vpw_basexscale=MyPlanes.getBaseXScale();
-	        vpw_baseyscale=MyPlanes.getBaseYScale();
-	        
-				for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
-	             pln=visplanes[pl];
-	            // System.out.println(id +" : "+ pl);
-	             
-	         if (pln.minx > pln.maxx)
-	             continue;
-
-	         
-	         // sky flat
-	         if (pln.picnum == TexMan.getSkyFlatNum() )
-	         {
-	             skydcvars.dc_iscale = skyscale>>detailshift;
-	             
-	             /* Sky is allways drawn full bright,
-	              * i.e. colormaps[0] is used.
-	              * Because of this hack, sky is not affected
-	              * by INVUL inverse mapping.
-	              */    
-			    skydcvars.dc_colormap = colormaps[0];
-			    skydcvars.dc_texturemid = TexMan.getSkyTextureMid();
-	             for (x=pln.minx ; x <= pln.maxx ; x++)
-	             {
-	           
-	             skydcvars.dc_yl = pln.getTop(x);
-	             skydcvars.dc_yh = pln.getBottom(x);
-	             
-	             if (skydcvars.dc_yl <= skydcvars.dc_yh)
-	             {
-	                 angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
-	                 skydcvars.dc_x = x;
-	                 skydcvars.dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
-	                 skydcvars.dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
-	                 skycolfunc.invoke();
-	             }
-	             }
-	             continue;
-	         }
-	         
-	         // regular flat
-	         vpw_ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
-	                        PU_STATIC,flat_t.class)).data;
-	         
-	         
-	         if (vpw_ds_source.length<4096){
-	             System.err.println("vpw_ds_source size <4096 ");
-	             new Exception().printStackTrace();
-	         }
-	         
-	         vpw_planeheight = Math.abs(pln.height-viewz);
-	         light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
-
-	         if (light >= LIGHTLEVELS)
-	             light = LIGHTLEVELS-1;
-
-	         if (light < 0)
-	             light = 0;
-
-	         vpw_planezlight = zlight[light];
-
-	         // We set those values at the border of a plane's top to a "sentinel" value...ok.
-	         pln.setTop(pln.maxx+1,(char) 0xffff);
-	         pln.setTop(pln.minx-1, (char) 0xffff);
-	         
-	         stop = pln.maxx + 1;
-
-	         
-	         for (x=pln.minx ; x<= stop ; x++) {
-	       	  MakeSpans(x,pln.getTop(x-1),
-	             pln.getBottom(x-1),
-	             pln.getTop(x),
-	             pln.getBottom(x));
-	         	}
-	         
-	         }
-			 // We're done, wait.
-
-				try {
-	                barrier.await();
-	            } catch (InterruptedException e) {
-	                // TODO Auto-generated catch block
-	                e.printStackTrace();
-	            } catch (BrokenBarrierException e) {
-	                // TODO Auto-generated catch block
-	                e.printStackTrace();
-	            }
-
-	     }
-			
-
-		public void setRange(int startvp, int endvp) {
-			this.startvp=startvp;
-			this.endvp=endvp;
-			
-		}
-		
-		/**
-	     * R_MakeSpans
-	     * 
-	     * Called only by DrawPlanes.
-	     * If you wondered where the actual boundaries for the visplane
-	     * flood-fill are laid out, this is it.
-	     * 
-	     * The system of coords seems to be defining a sort of cone.          
-	     *          
-	     * 
-	     * @param x Horizontal position
-	     * @param t1 Top-left y coord?
-	     * @param b1 Bottom-left y coord?
-	     * @param t2 Top-right y coord ?
-	     * @param b2 Bottom-right y coord ?
-	     * 
-	     */
-
-	      private final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
-	          
-	          // If t1 = [sentinel value] then this part won't be executed.
-	          while (t1 < t2 && t1 <= b1) {
-	              this.MapPlane(t1, spanstart[t1], x - 1);
-	              t1++;
-	          }
-	          while (b1 > b2 && b1 >= t1) {
-	              this.MapPlane(b1, spanstart[b1], x - 1);
-	              b1--;
-	          }
-
-	          // So...if t1 for some reason is < t2, we increase t2 AND store the current x
-	          // at spanstart [t2] :-S
-	          while (t2 < t1 && t2 <= b2) {
-	              //System.out.println("Increasing t2");
-	              spanstart[t2] = x;
-	              t2++;
-	          }
-
-	          // So...if t1 for some reason b2 > b1, we decrease b2 AND store the current x
-	          // at spanstart [t2] :-S
-
-	          while (b2 > b1 && b2 >= t2) {
-	              //System.out.println("Decreasing b2");
-	              spanstart[b2] = x;
-	              b2--;
-	          }
-	      }
-	      
-	      /**
-	       * R_MapPlane
-	       *
-	       * Called only by R_MakeSpans.
-	       * 
-	       * This is where the actual span drawing function is called.
-	       * 
-	       * Uses global vars:
-	       * planeheight
-	       *  ds_source -> flat data has already been set.
-	       *  basexscale -> actual drawing angle and position is computed from these
-	       *  baseyscale
-	       *  viewx
-	       *  viewy
-	       *
-	       * BASIC PRIMITIVE
-	       */
-	      
-	      private void
-	      MapPlane
-	      ( int       y,
-	        int       x1,
-	        int       x2 )
-	      {
-	          // MAES: angle_t
-	          int angle;
-	          // fixed_t
-	          int distance;
-	          int length;
-	          int index;
-	          
-	      if (RANGECHECK){
-	          if (x2 < x1
-	          || x1<0
-	          || x2>=viewwidth
-	          || y>viewheight)
-	          {
-	          I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
-	          }
-	      }
-
-	          if (vpw_planeheight != cachedheight[y])
-	          {
-	          cachedheight[y] = vpw_planeheight;
-	          distance = cacheddistance[y] = FixedMul (vpw_planeheight , yslope[y]);
-	          ds_xstep = cachedxstep[y] = FixedMul (distance,vpw_basexscale);
-	          ds_ystep = cachedystep[y] = FixedMul (distance,vpw_baseyscale);
-	          }
-	          else
-	          {
-	          distance = cacheddistance[y];
-	          ds_xstep = cachedxstep[y];
-	          ds_ystep = cachedystep[y];
-	          }
-	          
-	          length = FixedMul (distance,distscale[x1]);
-	          angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
-	          ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-	          ds_yfrac = -viewy - FixedMul(finesine[angle], length);
-
-	          if (fixedcolormap!=null)
-	          vpw_ds_colormap = fixedcolormap;
-	          else
-	          {
-	          index = distance >>> LIGHTZSHIFT;
-	          
-	          if (index >= MAXLIGHTZ )
-	              index = MAXLIGHTZ-1;
-
-	          vpw_ds_colormap = vpw_planezlight[index];
-	          }
-	          
-	          vpw_ds_y = y;
-	          ds_x1 = x1;
-	          ds_x2 = x2;
-
-	          // high or low detail
-	          if (detailshift==0)
-	        	  spanfunc();
-	          else
-	        	  spanfunclow();          
-	      }
-	      
-	      // Each thread has its own copy of a colfun.
-	      private void spanfunc(){
-	    	     int position, step;
-	    	     byte[] source;
-	    	     byte[] colormap;
-	    	     int dest;
-	    	     int count;
-	    	     int spot;
-	    	     int xtemp;
-	    	     int ytemp;
-	    	     
-	    	     position = ((ds_xfrac << 10) & 0xffff0000) | ((ds_yfrac >> 6) & 0xffff);
-	    	     step = ((ds_xstep << 10) & 0xffff0000) | ((ds_ystep >> 6) & 0xffff);
-	    	     source = vpw_ds_source;
-	    	     colormap = vpw_ds_colormap;
-	    	     dest = ylookup[vpw_ds_y] + columnofs[ds_x1];
-	    	     count = ds_x2 - ds_x1 + 1;
-	    	     while (count >= 4) {
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;         
-	    	         screen[dest] = colormap[0x00FF&source[spot]];
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest+1] = colormap[0x00FF&source[spot]];
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest+2] = colormap[0x00FF&source[spot]];
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest+3] = colormap[0x00FF&source[spot]];
-	    	         count -= 4;
-	    	         dest += 4;
-	    	     }
-	    	     
-	    	     while (count > 0) {
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest++] = colormap[0x00FF&source[spot]];
-	    	         count--;
-	    	     }
-	    	 }
-	      
-	   // Each thread has its own copy of a colfun.
-	      private void spanfunclow(){
-	    	     int position, step;
-	    	     byte[] source;
-	    	     byte[] colormap;
-	    	     int dest;
-	    	     int count;
-	    	     int spot;
-	    	     int xtemp;
-	    	     int ytemp;
-	    	     
-	    	     position = ((ds_xfrac << 10) & 0xffff0000) | ((ds_yfrac >> 6) & 0xffff);
-	    	     step = ((ds_xstep << 10) & 0xffff0000) | ((ds_ystep >> 6) & 0xffff);
-	    	     source = vpw_ds_source;
-	    	     colormap = vpw_ds_colormap;
-	    	     
-	    	     count = ds_x2 - ds_x1 + 1;
-	    	     
-	 			// Blocky mode, need to multiply by 2.
-	 			ds_x1 <<= 1; 			
-	    	     
-	 			dest = ylookup[vpw_ds_y] + columnofs[ds_x1];
-	 			
-	    	     while (count >= 4) {
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;         
-	    	         screen[dest] = colormap[0x00FF&source[spot]];
-	    	         screen[dest+1] = colormap[0x00FF&source[spot]];
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest+2] = colormap[0x00FF&source[spot]];
-	    	         screen[dest+3] = colormap[0x00FF&source[spot]];
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest+4] = colormap[0x00FF&source[spot]];
-	    	         screen[dest+5] = colormap[0x00FF&source[spot]];
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest+6] = colormap[0x00FF&source[spot]];
-	    	         screen[dest+7] = colormap[0x00FF&source[spot]];
-	    	         count -= 4;
-	    	         dest += 8;
-	    	     }
-	    	     
-	    	     while (count > 0) {
-	    	         ytemp = position >> 4;
-	    	         ytemp = ytemp & 4032;
-	    	         xtemp = position >>> 26;
-	    	         spot = xtemp | ytemp;
-	    	         position += step;
-	    	         screen[dest++] = colormap[0x00FF&source[spot]];
-	    	         screen[dest++] = colormap[0x00FF&source[spot]];
-	    	         count--;
-	    	     }
-	    	 }
-	      
-	      // Private to each thread.
-	      int[]           spanstart;
-	      int[]           spanstop;
-	      CyclicBarrier barrier;
-	      
-	  }
+	
 	
 	////////////////// Generic rendering methods /////////////////////
 
@@ -777,6 +353,12 @@ public class ParallelRenderer2 extends RendererState  {
 			// Each SegExecutor sticks to its own half (or 1/nth) of the screen.
 			RSIExec[i].setScreenRange(i*(SCREENWIDTH/NUMWALLTHREADS),(i+1)*(SCREENWIDTH/NUMWALLTHREADS));
 		}
+		
+
+        for (int i=0;i<NUMFLOORTHREADS;i++){
+            vpw[i]=new VisplaneWorker(SCREENWIDTH,SCREENHEIGHT,columnofs,ylookup, screen,visplanebarrier,NUMFLOORTHREADS);
+            vpw[i].id=i;
+        }
 	}
 
 	/** Resizes RWI buffer, updates executors. Sorry for the hackish implementation
@@ -899,7 +481,7 @@ public class ParallelRenderer2 extends RendererState  {
 		//C2JUtils.initArrayOfObjects(drawsegs);
 
 		// DON'T FORGET ABOUT MEEEEEE!!!11!!!
-		this.screen=V.getScreen(0);
+		this.screen=V.getScreen(DoomVideoRenderer.SCREEN_FG);
 
 		System.out.print("\nR_InitData");
 		InitData ();
