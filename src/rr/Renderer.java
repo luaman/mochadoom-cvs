@@ -80,7 +80,11 @@ public interface Renderer<K> extends IVideoScaleAware,DoomStatusAware{
 	
 	public int getScaledViewWidth();
 
+	public int getScaledViewHeight();
+	
 	public boolean isFullScreen();
+
+    
 	
 	//public subsector_t PointInSubsector(int x, int y);
 
