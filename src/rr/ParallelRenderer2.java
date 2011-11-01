@@ -44,8 +44,6 @@ public class ParallelRenderer2 extends RendererState  {
 
 	private RenderSegExecutor[] RSIExec;
 
-
-
 	private static final boolean DEBUG=false;
 
 	public ParallelRenderer2(DoomMain DM, int wallthread, int floorthreads) {
@@ -240,7 +238,7 @@ public class ParallelRenderer2 extends RendererState  {
 		protected final void GenerateRSI(){
 
 			if (RSIcount>=RSI.length){
-				ResizeRWIBuffer();
+				ResizeRSIBuffer();
 			}
 
 			RenderSegInstruction rsi=RSI[RSIcount];
@@ -352,12 +350,15 @@ public class ParallelRenderer2 extends RendererState  {
 			RSIExec[i].initScaling();
 			// Each SegExecutor sticks to its own half (or 1/nth) of the screen.
 			RSIExec[i].setScreenRange(i*(SCREENWIDTH/NUMWALLTHREADS),(i+1)*(SCREENWIDTH/NUMWALLTHREADS));
+			detailaware.add(RSIExec[i]);
+			
 		}
 		
 
         for (int i=0;i<NUMFLOORTHREADS;i++){
             vpw[i]=new VisplaneWorker(SCREENWIDTH,SCREENHEIGHT,columnofs,ylookup, screen,visplanebarrier,NUMFLOORTHREADS);
             vpw[i].id=i;
+            detailaware.add(vpw[i]);
         }
 	}
 
@@ -367,7 +368,7 @@ public class ParallelRenderer2 extends RendererState  {
 	 * 
 	 */
 
-	private void ResizeRWIBuffer() {
+	private void ResizeRSIBuffer() {
 		RenderSegInstruction[] tmp=new RenderSegInstruction[RSI.length*2];
 		System.arraycopy(RSI, 0, tmp, 0, RSI.length);
 

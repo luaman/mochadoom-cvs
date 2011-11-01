@@ -43,7 +43,7 @@ import v.IVideoScaleAware;
  *
  */
 
-public class RenderSegExecutor implements Runnable, IVideoScaleAware {
+public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAware {
 
 	// This needs to be set by the partitioner.
 	private int rw_start, rw_end,rsiend;
@@ -97,6 +97,13 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
         
 	}
 
+	@Override
+    public void setDetail(int detailshift) {
+        if (detailshift == 0)
+            colfunc = colfunchi;
+        else
+            colfunc = colfunclow;
+    }
 	
 	/** Only called once per screen width change */
 	public void setScreenRange(int rwstart, int rwend){
@@ -123,9 +130,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 		// Each worker blanks its own portion of the floor/ceiling clippers.
 		System.arraycopy(BLANKFLOORCLIP,rw_start,floorclip, rw_start,rw_end-rw_start);
 		System.arraycopy(BLANKCEILINGCLIP,rw_start,ceilingclip, rw_start,rw_end-rw_start);
-		
 
-		int count=0;
 		// For each "SegDraw" instruction...
 		for (int i=0;i<rsiend;i++){
 			rsi=RSI[i];
@@ -148,14 +153,10 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 				endx=Math.min(rsi.rw_stopx,rw_end);
 				// Is there anything to actually draw?
 				if ((endx-startx)>0) {
-					//System.out.printf("RSI %d from %d to %d trimmed to %d %d (%d %d)\n",i,rsi.rw_x,rsi.rw_stopx,startx,endx,rw_start,rw_end);
 					ProcessRSI(rsi,startx,endx,contained);
-					count++;
 					}
 		} // end-instruction
-
-		//System.out.printf("Thread %s %d %d executed rsi %d\n",this.toString(),rw_start,rw_end,count);
-		
+	
 		try {
 			barrier.await();
 		} catch (InterruptedException e) {
@@ -168,94 +169,6 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 
 	}
 
-/*
-	// Essentially, it's the Boom/Killough column drawing function.
-	protected final void CompleteColumn(){
-		int              count; 
-		int dest;            // killough
-		int  frac;            // killough
-		int fracstep;     
-
-		count = dc_yh - dc_yl + 1; 
-
-		if (count <= 0)    // Zero length, column does not exceed a pixel.
-			return; 
-		//System.out.printf("Completing column %d %d\n", dc_yh,dc_yl);
-
-		// Framebuffer destination address.
-		// Use ylookup LUT to avoid multiply with ScreenWidth.
-		// Use columnofs LUT for subwindows? 
-
-		dest = ylookup[dc_yl] + columnofs[dc_x];  
-
-		// Determine scaling, which is the only mapping to be done.
-
-		fracstep = dc_iscale; 
-		frac = dc_texturemid + (dc_yl-centery)*fracstep; 
-
-		// Inner loop that does the actual texture mapping,
-		//  e.g. a DDA-lile scaling.
-		// This is as fast as it gets.       (Yeah, right!!! -- killough)
-		//
-		// killough 2/1/98: more performance tuning
-
-		{
-			final byte[] source = dc_source;       
-			final byte[] colormap = dc_colormap; 
-			int heightmask = dc_texheight-1;
-			if ((dc_texheight & heightmask)!=0)   // not a power of 2 -- killough
-			{
-				heightmask++;
-				heightmask <<= FRACBITS;
-
-				if (frac < 0)
-					while ((frac += heightmask) <  0);
-				else
-					while (frac >= heightmask)
-						frac -= heightmask;
-
-				do
-				{
-					// Re-map color indices from wall texture column
-					//  using a lighting/special effects LUT.
-
-					// heightmask is the Tutti-Frutti fix -- killough
-
-					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS))]];
-					dest += SCREENWIDTH; 
-					if ((frac += fracstep) >= heightmask)
-						frac -= heightmask;
-				} 
-				while (--count>0);
-			}
-			else
-				while (count>=4)   // texture height is a power of 2 -- killough
-				{
-					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
-					dest += SCREENWIDTH; 
-					frac += fracstep;
-					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
-					dest += SCREENWIDTH; 
-					frac += fracstep;
-					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
-					dest += SCREENWIDTH; 
-					frac += fracstep;
-					screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
-					dest += SCREENWIDTH; 
-					frac += fracstep;
-					count-=4;
-				}
-
-			while (count>0){
-				screen[dest] = colormap[0x00FF&source[((frac>>FRACBITS) & heightmask)]];
-				dest += SCREENWIDTH; 
-				frac += fracstep;
-				count--;
-			}
-		}
-	}
-	*/
-	
 	protected final void ProcessRSI(RenderSegInstruction rsi, int startx,int endx,boolean contained){
 		int     angle; // angle_t
 		int     index;
@@ -318,15 +231,16 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
               // If added with pure unsigned rules, this doesn't hold anymore,
               // not even if accounting for overflow.
                 angle = Tables.toBAMIndex(rsi.rw_centerangle + (int)xtoviewangle[rw_x]);
-                //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
+              //angle = (int) (((rw_centerangle + xtoviewangle[rw_x])&BITS31)>>>ANGLETOFINESHIFT);
               //angle&=0x1FFF;
                 
               // FIXME: We are accessing finetangent here, the code seems pretty confident
               // in that angle won't exceed 4K no matter what. But xtoviewangle
               // alone can yield 8K when shifted.
               // This usually only overflows if we idclip and look at certain directions 
-             // (probably angles get fucked up), however it seems rare enough to just 
-             // "swallow" the exception. You can eliminate it by anding with 0x1FFF if you're so inclined. 
+              // (probably angles get fucked up), however it seems rare enough to just 
+              // "swallow" the exception. You can eliminate it by anding with 0x1FFF
+              // if you're so inclined. 
               
               texturecolumn = rsi.rw_offset-FixedMul(finetangent[angle],rsi.rw_distance);
                texturecolumn >>= FRACBITS;
@@ -452,6 +366,9 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware {
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.12  2011/11/01 19:04:06  velktron
+// Cleaned up, using IDetailAware for subsystems.
+//
 // Revision 1.11  2011/10/31 18:33:56  velktron
 // Much cleaner implementation using the new rendering model. Now it's quite faster, too.
 //

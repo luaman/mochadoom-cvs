@@ -194,6 +194,9 @@ public class ParallelRenderer
             RWIExec[i] =
                 new RenderWallExecutor(SCREENWIDTH, SCREENHEIGHT, columnofs,
                         ylookup, screen, RWI, visplanebarrier);
+            
+            detailaware.add(RWIExec[i]);
+            
             // RWIExec[i].setVideoScale(this.vs);
             // RWIExec[i].initScaling();
         }
@@ -203,6 +206,8 @@ public class ParallelRenderer
                 new VisplaneWorker(SCREENWIDTH, SCREENHEIGHT, columnofs,
                         ylookup, screen, visplanebarrier, NUMFLOORTHREADS);
             vpw[i].id = i;
+            
+            detailaware.add(vpw[i]);
         }
 
     }
