@@ -3,7 +3,7 @@ package st;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: StatusBar.java,v 1.46 2011/10/23 15:57:08 velktron Exp $
+// $Id: StatusBar.java,v 1.47 2011/11/01 23:46:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -47,7 +47,7 @@ import static v.DoomVideoRenderer.*;
 
 public class StatusBar extends AbstractStatusBar   {
     public static final String rcsid =
-        "$Id: StatusBar.java,v 1.46 2011/10/23 15:57:08 velktron Exp $";
+        "$Id: StatusBar.java,v 1.47 2011/11/01 23:46:37 velktron Exp $";
 
    
     
@@ -516,6 +516,8 @@ public class StatusBar extends AbstractStatusBar   {
     cheatseq_t cheat_clev = new cheatseq_t(cheat_clev_seq, 0);
 
     cheatseq_t cheat_mypos = new cheatseq_t(cheat_mypos_seq, 0);
+    
+    cheatseq_t cheat_tnthom= new cheatseq_t("tnthom",false);
 
     // 
     String[] mapnames;
@@ -718,6 +720,11 @@ public class StatusBar extends AbstractStatusBar   {
                 else if (cheat_mypos.CheckCheat((char) ev.data1)) {
                     // MAES: made into a toggleable cheat.
                    this.st_idmypos=!st_idmypos;
+                }
+                else if (cheat_tnthom.CheckCheat((char) ev.data1)) {
+                    // MAES: made into a toggleable cheat.
+                	plyr.message = (DM.flashing_hom = !DM.flashing_hom) ? "HOM Detection On" :
+                	    "HOM Detection Off";
                 }
             }
 
@@ -1933,6 +1940,9 @@ public class StatusBar extends AbstractStatusBar   {
 }
 
 //$Log: StatusBar.java,v $
+//Revision 1.47  2011/11/01 23:46:37  velktron
+//Added TNTHOM cheat.
+//
 //Revision 1.46  2011/10/23 15:57:08  velktron
 //BG reference
 //
