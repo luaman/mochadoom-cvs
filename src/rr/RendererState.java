@@ -3413,33 +3413,33 @@ public abstract class RendererState implements Renderer<byte[]>,
 			if (planeheight != cachedheight[y]) {
 				cachedheight[y] = planeheight;
 				distance = cacheddistance[y] = FixedMul(planeheight, yslope[y]);
-				ds_xstep = cachedxstep[y] = FixedMul(distance, basexscale);
-				ds_ystep = cachedystep[y] = FixedMul(distance, baseyscale);
+				dsvars.ds_xstep = cachedxstep[y] = FixedMul(distance, basexscale);
+				dsvars.ds_ystep = cachedystep[y] = FixedMul(distance, baseyscale);
 			} else {
 				distance = cacheddistance[y];
-				ds_xstep = cachedxstep[y];
-				ds_ystep = cachedystep[y];
+				dsvars.ds_xstep = cachedxstep[y];
+				dsvars.ds_ystep = cachedystep[y];
 			}
 
 			length = FixedMul(distance, distscale[x1]);
 			angle = (int) (((viewangle + xtoviewangle[x1]) & BITS32) >>> ANGLETOFINESHIFT);
-			ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-			ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+			dsvars.ds_xfrac = viewx + FixedMul(finecosine[angle], length);
+			dsvars.ds_yfrac = -viewy - FixedMul(finesine[angle], length);
 
 			if (fixedcolormap != null)
-				ds_colormap = fixedcolormap;
+			    dsvars.ds_colormap = fixedcolormap;
 			else {
 				index = distance >>> LIGHTZSHIFT;
 
 				if (index >= MAXLIGHTZ)
 					index = MAXLIGHTZ - 1;
 
-				ds_colormap = planezlight[index];
+				dsvars.ds_colormap = planezlight[index];
 			}
 
-			ds_y = y;
-			ds_x1 = x1;
-			ds_x2 = x2;
+			dsvars.ds_y = y;
+			dsvars.ds_x1 = x1;
+			dsvars.ds_x2 = x2;
 
 			// high or low detail
 			spanfunc.invoke();
@@ -3609,8 +3609,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	/** Columns offset to set where?! */
 	protected int[] columnofs = new int[MAXWIDTH];
 	
-	/** General purpose. Used for solid walls and as an intermediary for threading.
-	 */
+	/** General purpose. Used for solid walls and as an intermediary for threading */
 	
 	protected ColVars<byte[]> dcvars;
 	
@@ -3619,6 +3618,10 @@ public abstract class RendererState implements Renderer<byte[]>,
  
 	// Used by parallel renderers to finish up some business
 	protected ColVars<byte[]> maskedcvars;
+	
+	/** Used for spans */
+	
+	protected SpanVars<byte[]> dsvars;
 	
 	/**
 	 * Color tables for different players, translate a limited part to another
@@ -4126,7 +4129,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	protected DoomColumnFunction<byte[]>  glasscolfunc;
 	protected DoomColumnFunction<byte[]>  playercolfunc;
 	protected DoomColumnFunction<byte[]> skycolfunc;
-	protected colfunc_t  spanfunc;
+	protected DoomSpanFunction<byte[]>  spanfunc;
 
 	protected DoomColumnFunction<byte[]>  DrawTranslatedColumn;
 	protected DoomColumnFunction<byte[]>  DrawColumnPlayer;
@@ -4141,7 +4144,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	protected DoomColumnFunction<byte[]>  DrawTLColumn;
 
 	/** to be set in UnifiedRenderer */
-	protected colfunc_t DrawSpan, DrawSpanLow;
+	protected DoomSpanFunction<byte[]> DrawSpan, DrawSpanLow;
 
 	//////////////// r_draw methods //////////////
 
@@ -4892,89 +4895,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 	
 
-	/** An unrolled (4x) rendering loop with full quality */
-	// public final int dumb=63 * 64;
 
-	protected final class R_DrawSpanUnrolled2 implements colfunc_t {
-		public void invoke() {
-
-			int f_xfrac; // fixed_t
-			int f_yfrac; // fixed_t
-			int dest;
-			int count;
-			int spot;
-
-			// System.out.println("R_DrawSpan: "+ds_x1+" to "+ds_x2+" at "+
-			// ds_y);
-
-			if (RANGECHECK) {
-				if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
-						|| ds_y > SCREENHEIGHT) {
-					I.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
-				}
-				// dscount++;
-			}
-
-			f_xfrac = ds_xfrac;
-			f_yfrac = ds_yfrac;
-
-			dest = ylookup[ds_y] + columnofs[ds_x1];
-
-			count = ds_x2 - ds_x1;
-			while (count >= 4) {
-				// Current texture index in u,v.
-				spot = ((f_yfrac >> (16 - 6)) & (63 * 64))
-						+ ((f_xfrac >> 16) & 63);
-
-				// Lookup pixel from flat texture tile,
-				// re-index using light/colormap.
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-
-				// Next step in u,v.
-				f_xfrac += ds_xstep;
-				f_yfrac += ds_ystep;
-
-				// UNROLL 2
-				spot = ((f_yfrac >> (16 - 6)) & (63 * 64))
-						+ ((f_xfrac >> 16) & 63);
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-				f_xfrac += ds_xstep;
-				f_yfrac += ds_ystep;
-
-				// UNROLL 3
-				spot = ((f_yfrac >> (16 - 6)) & (63 * 64))
-						+ ((f_xfrac >> 16) & 63);
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-				f_xfrac += ds_xstep;
-				f_yfrac += ds_ystep;
-
-				// UNROLL 4
-				spot = ((f_yfrac >> (16 - 6)) & (63 * 64))
-						+ ((f_xfrac >> 16) & 63);
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-				f_xfrac += ds_xstep;
-				f_yfrac += ds_ystep;
-
-				count -= 4;
-			}
-
-			while (count > 0) {
-				// Current texture index in u,v.
-				spot = ((f_yfrac >> (16 - 6)) & (63 * 64))
-						+ ((f_xfrac >> 16) & 63);
-
-				// Lookup pixel from flat texture tile,
-				// re-index using light/colormap.
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-
-				// Next step in u,v.
-				f_xfrac += ds_xstep;
-				f_yfrac += ds_ystep;
-				count--;
-			}
-
-		}
-	}
 	
 	
 
@@ -5345,12 +5266,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 		return (Things) this.MyThings;
 	}
 
-	protected int ds_y;
-
-	protected int ds_x1;
-
-	protected int ds_x2;
-
 	/**
 	 * e6y: this is a precalculated value for more precise flats drawing (see
 	 * R_MapPlane) "Borrowed" from PrBoom+
@@ -5358,212 +5273,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 	 * */
 	protected float viewfocratio;
 	protected int projectiony;
-
-	/** DrawSpan colormap. */
-	protected byte[] ds_colormap;
-	/*
-	 * pointer into colormap int pds_colormap;
-	 */
-
-	/** fixed_t */
-	protected int ds_xfrac;
-
-	/** fixed_t */
-	protected int ds_yfrac;
-
-	/** fixed_t */
-	protected int ds_xstep;
-
-	/** fixed_t */
-	protected int ds_ystep;
-
-	/** start of a 64*64 tile image (treat as pointer inside ds_source) */
-	protected int pds_source;
-
-	protected byte[] ds_source;
-
-	/** just for profiling */
-	protected int dscount;
-
-	/**
-	 * Draws the actual span.
-	 * 
-	 * ds_frac, ds_yfrac, ds_x2, ds_x1, ds_xstep and ds_ystep must be set.
-	 * 
-	 */
-
-	protected final class R_DrawSpan implements colfunc_t {
-
-		public void invoke() {
-
-			int f_xfrac; // fixed_t
-			int f_yfrac; // fixed_t
-			int dest;
-			int count;
-			int spot;
-
-			// System.out.println("R_DrawSpan: "+ds_x1+" to "+ds_x2+" at "+
-			// ds_y);
-
-			if (RANGECHECK) {
-				if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= SCREENWIDTH
-						|| ds_y > SCREENHEIGHT) {
-					I.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
-				}
-				// dscount++;
-			}
-
-			f_xfrac = ds_xfrac;
-			f_yfrac = ds_yfrac;
-
-			dest = ylookup[ds_y] + columnofs[ds_x1];
-
-			// We do not check for zero spans here?
-			count = ds_x2 - ds_x1;
-
-			do {
-				// Current texture index in u,v.
-				spot = ((f_yfrac >> (16 - 6)) & (63 * 64))
-						+ ((f_xfrac >> 16) & 63);
-
-				// Lookup pixel from flat texture tile,
-				// re-index using light/colormap.
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-
-				// Next step in u,v.
-				f_xfrac += ds_xstep;
-				f_yfrac += ds_ystep;
-
-			} while (count-- > 0);
-		}
-	}
-
-	protected final class R_DrawSpanLow implements colfunc_t {
-
-		@Override
-		public void invoke() {
-			int f_xfrac;
-			int f_yfrac;
-			int dest;
-			int count;
-			int spot;
-
-			if (RANGECHECK) {
-				if ((ds_x2 < ds_x1) || (ds_x1 < 0) || ds_x2 >= SCREENWIDTH
-						|| ds_y > SCREENHEIGHT) {
-					I.Error("R_DrawSpan: %i to %i at %i", ds_x1, ds_x2, ds_y);
-				}
-				// dscount++;
-			}
-
-			f_xfrac = ds_xfrac;
-			f_yfrac = ds_yfrac;
-
-			// MAES: count must be performed before shifting.
-			count = ds_x2 - ds_x1;
-			
-			// Blocky mode, need to multiply by 2.
-			ds_x1 <<= 1;
-			ds_x2 <<= 1;
-
-			dest = ylookup[ds_y] + columnofs[ds_x1];			
-			
-			do {
-				spot = ((f_yfrac >> (16 - 6)) & (63 * 64))
-						+ ((f_xfrac >> 16) & 63);
-				// Lowres/blocky mode does it twice,
-				// while scale is adjusted appropriately.
-
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-				screen[dest++] = ds_colormap[0x00FF & ds_source[spot]];
-
-				f_xfrac += ds_xstep;
-				f_yfrac += ds_ystep;
-
-			} while (count-- > 0);
-
-		}
-
-	}
-
-	/**
-	 * Drawspan loop unrolled by 4. However it has low rendering quality and bad
-	 * distortion. However it does actually does give a small speed boost (120
-	 * -> 130 fps with a Mul of 3.0)
-	 * 
-	 */
-
-	protected final class R_DrawSpanUnrolled implements colfunc_t {
-
-		public void invoke() {
-			int position, step;
-			byte[] source;
-			byte[] colormap;
-			int dest;
-			int count;
-			int spot;
-			int xtemp;
-			int ytemp;
-
-			position = ((ds_xfrac << 10) & 0xffff0000)
-					| ((ds_yfrac >> 6) & 0xffff);
-			step = ((ds_xstep << 10) & 0xffff0000) | ((ds_ystep >> 6) & 0xffff);
-			source = ds_source;
-			colormap = ds_colormap;
-			dest = ylookup[ds_y] + columnofs[ds_x1];
-			count = ds_x2 - ds_x1 + 1;
-			//int rolls = 0;
-			while (count >= 4) {
-				ytemp = position >> 4;
-				ytemp = ytemp & 0xfc0;
-				xtemp = position >>> 26;
-				spot = xtemp | ytemp;
-				position += step;
-				screen[dest] = colormap[0x00FF & source[spot]];
-				ytemp = position >> 4;
-				ytemp = ytemp & 0xfc0;
-				xtemp = position >>> 26;
-				spot = xtemp | ytemp;
-				position += step;
-				screen[dest + 1] = colormap[0x00FF & source[spot]];
-				ytemp = position >> 4;
-				ytemp = ytemp & 0xfc0;
-				xtemp = position >>> 26;
-				spot = xtemp | ytemp;
-				position += step;
-				screen[dest + 2] = colormap[0x00FF & source[spot]];
-				ytemp = position >> 4;
-				ytemp = ytemp & 0xfc0;
-				xtemp = position >>> 26;
-				spot = xtemp | ytemp;
-				position += step;
-				screen[dest + 3] = colormap[0x00FF & source[spot]];
-				count -= 4;
-				dest += 4;
-
-				// Half-assed attempt to fix precision by forced periodic
-				// realignment.
-
-				/*
-				 * if ((rolls++)%64==0){ position =
-				 * ((((rolls*4)*ds_xstep+ds_xfrac) << 10) & 0xffff0000) |
-				 * ((((rolls*4)*ds_ystep+ds_yfrac) >> 6) & 0xffff); }
-				 */
-
-			}
-
-			while (count > 0) {
-				ytemp = position >> 4;
-				ytemp = ytemp & 4032;
-				xtemp = position >>> 26;
-				spot = xtemp | ytemp;
-				position += step;
-				screen[dest++] = colormap[0x00FF & source[spot]];
-				count--;
-			}
-		}
-
-	}
 
 	// Some more isolation methods....
 	
@@ -5645,10 +5354,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 	    maskedcvars.dc_translation=translationtables[0];
 	    skydcvars=new ColVars<byte[]>();
 	    
+	    dsvars=new SpanVars<byte[]>();
+	    
         // Span functions. Common to all renderers unless overriden
         // or unused e.g. parallel renderers ignore them.
-        DrawSpan=new R_DrawSpanUnrolled();
-        DrawSpanLow=new R_DrawSpanLow();
+        DrawSpan=new R_DrawSpanUnrolled(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+        DrawSpanLow=new R_DrawSpanLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
         
         
         // Translated columns are usually sprites-only.
