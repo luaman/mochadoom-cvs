@@ -3,7 +3,7 @@ package m;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: cheatseq_t.java,v 1.7 2011/05/06 14:00:54 velktron Exp $
+// $Id: cheatseq_t.java,v 1.8 2011/11/01 23:47:50 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +18,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: cheatseq_t.java,v $
+// Revision 1.8  2011/11/01 23:47:50  velktron
+// Added constructor method to start from unscrambled strings.
+//
 // Revision 1.7  2011/05/06 14:00:54  velktron
 // More of _D_'s changes committed.
 //
@@ -87,6 +90,16 @@ public class cheatseq_t {
         this.p = 0;
     }
 
+    public cheatseq_t(String sequence, boolean prescrambled){
+    	if (prescrambled){
+    		this.sequence=sequence.toCharArray();
+    		p=0;
+    	} else {
+    		this.sequence=scrambleString(sequence);
+    		p=0;
+    	}    	
+    	}
+    
     /**
      * This was in cheat.c, but makes more sense to be used as an
      * initializer/constructor.
@@ -200,6 +213,17 @@ public class cheatseq_t {
         return (char) ((((a) & 1) << 7) + (((a) & 2) << 5) + ((a) & 4)
                 + (((a) & 8) << 1) + (((a) & 16) >>> 1) + ((a) & 32)
                 + (((a) & 64) >>> 5) + (((a) & 128) >>> 7));
+    }
+    
+    public static char[] scrambleString(String s){
+    	
+    	char[] tmp=new char[s.length()+1];
+    	for (int i=0;i<s.length();i++){
+    		tmp[i]=SCRAMBLE(s.charAt(i));
+    	}    	
+    	tmp[s.length()]=0xff;    	
+    	
+    	return tmp;    	
     }
 
     /**
