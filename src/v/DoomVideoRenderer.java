@@ -33,6 +33,13 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     public static final int V_TRANSLUCENTPATCH  = 0x400000;   // draw patch translucent    
     public static final int V_PREDIVIDE  = 0x800000;   // pre-divide by best x/y scale.    
     public static final int V_SCALEOFFSET = 0x1000000; // Scale the patch offset
+    
+    public static final int SCREEN_FG = 0; // Foreground screen
+    public static final int SCREEN_BG= 1; // Used for endlevel/finale BG
+    public static final int SCREEN_WS = 2; // Wipe start screen, also used for screenshots
+    public static final int SCREEN_WE = 3; // Wipe end screen
+    public static final int SCREEN_SB = 4; // Used for status bar
+    
     // Allocates buffer screens, call before R_Init.
     public void Init();
 
@@ -137,5 +144,7 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
      * @param screen
      */
     void setCurrentScreen(int screen);
+
+    void FillScreen(byte color, int screen, int x, int y, int width, int height);
     
 }

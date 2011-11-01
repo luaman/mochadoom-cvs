@@ -925,5 +925,46 @@ protected abstract void specificPaletteCreation(byte[] paldata,
 		final int stride,
 		final int gammalevels);
 
+protected int lastcolor=-1;
+protected byte[] scanline;
+
+/**
+ * Clear automap frame buffer.
+ * MAES: optimized for efficiency, seen the lack of a proper "memset" in Java.
+ * 
+ */
+
+@Override
+public final void FillScreen(byte color,int screen, int x,int y,int width, int height) {
+    byte[] arr=screens[screen];
+    int fromIndex=x+y*width;
+    int toIndex=x+(height-y-1)*width;
+    
+    int size=(width-1-x)*(height-y);
+    int blockSize=1<<5;
+    
+    if (size > (blockSize << 1) - blockSize) {
+        int j=blockSize;
+        for(int hh=fromIndex;hh<j;hh++) {
+         arr[hh]=color;
+        }
+        while (j+blockSize<toIndex) {
+                System.arraycopy(arr,fromIndex,arr,j,blockSize);
+                j+=blockSize;
+                blockSize <<= 1;
+        }
+        if (j<=toIndex) {
+                System.arraycopy(arr,fromIndex,arr,j,toIndex-j);
+        }
+    } else {
+        for(int hh=fromIndex;hh<toIndex;hh++) {
+             arr[hh]=color;
+        }
+    }
+}
+
+
+
+
 
 }
