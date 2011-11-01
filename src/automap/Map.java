@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.32 2011/11/01 19:03:10 velktron Exp $
+// $Id: Map.java,v 1.33 2011/11/01 23:48:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.33  2011/11/01 23:48:43  velktron
+// Using FillRect
+//
 // Revision 1.32  2011/11/01 19:03:10  velktron
 // Using screen number constants
 //
@@ -170,7 +173,7 @@ DoomVideoRenderer<?> V;
 AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.32 2011/11/01 19:03:10 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.33 2011/11/01 23:48:43 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -1594,7 +1597,7 @@ public final  void Drawer ()
 {
     if (!DM.automapactive) return;
     //System.out.println("Drawing map");
-    if (overlay<1) V.FillScreen((byte)BACKGROUND,FB,0,0,f_w, f_h); // BACKGROUND
+    if (overlay<1) V.FillRect((byte)BACKGROUND,FB,0,0,f_w, f_h); // BACKGROUND
     if (grid)
     drawGrid(GRIDCOLORS);
     drawWalls();
