@@ -202,12 +202,12 @@ public class UnifiedRenderer extends RendererState{
           }
           
           // regular flat
-          ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
+          dsvars.ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
                          PU_STATIC,flat_t.class)).data;
           
           
-          if (ds_source.length==0){
-              System.err.printf("YOU READ SHIT %s %d %d %d\n ", W.GetNameForNum(TexMan.getFlatTranslation(pln.picnum)),TexMan.getFlatTranslation(pln.picnum),pln.picnum, ds_source.length);
+          if (dsvars.ds_source.length==0){
+              System.err.printf("YOU READ SHIT %s %d %d %d\n ", W.GetNameForNum(TexMan.getFlatTranslation(pln.picnum)),TexMan.getFlatTranslation(pln.picnum),pln.picnum, dsvars.ds_source.length);
           }
           
           planeheight = Math.abs(pln.height-viewz);
