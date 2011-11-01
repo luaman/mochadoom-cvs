@@ -929,42 +929,25 @@ protected int lastcolor=-1;
 protected byte[] scanline;
 
 /**
- * Clear automap frame buffer.
+ * Clear automap frame buffer or fi
  * MAES: optimized for efficiency, seen the lack of a proper "memset" in Java.
  * 
  */
 
 @Override
-public final void FillScreen(byte color,int screen, int x,int y,int width, int height) {
+public final void FillRect(byte color,int screen, int x,int y,int width, int height) {
     byte[] arr=screens[screen];
-    int fromIndex=x+y*width;
-    int toIndex=x+(height-y-1)*width;
     
-    int size=(width-1-x)*(height-y);
-    int blockSize=1<<5;
+    // Do a "per scanline" copy. 
+    int fromIndex=x+y*SCREENWIDTH;
+    int toIndex=x+(y+height-1)*SCREENWIDTH;
     
-    if (size > (blockSize << 1) - blockSize) {
-        int j=blockSize;
-        for(int hh=fromIndex;hh<j;hh++) {
-         arr[hh]=color;
-        }
-        while (j+blockSize<toIndex) {
-                System.arraycopy(arr,fromIndex,arr,j,blockSize);
-                j+=blockSize;
-                blockSize <<= 1;
-        }
-        if (j<=toIndex) {
-                System.arraycopy(arr,fromIndex,arr,j,toIndex-j);
-        }
-    } else {
-        for(int hh=fromIndex;hh<toIndex;hh++) {
-             arr[hh]=color;
-        }
-    }
+    // First scanline.
+    for (int i=0;i<width;i++)
+    	arr[fromIndex+i]=color;
+    
+    for (;fromIndex<toIndex;fromIndex+=SCREENWIDTH)
+    	System.out.printf("%d %d %d\n",fromIndex,fromIndex+SCREENWIDTH,width);
 }
-
-
-
-
 
 }
