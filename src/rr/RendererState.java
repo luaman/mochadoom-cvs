@@ -1,11 +1,13 @@
 package rr;
 
 import static rr.line_t.*;
+import static data.Defines.ANGLETOSKYSHIFT;
 import static data.Defines.FF_FRAMEMASK;
 import static data.Defines.FF_FULLBRIGHT;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMCOLORMAPS;
 import static data.Defines.PU_CACHE;
+import static data.Defines.PU_STATIC;
 import static data.Defines.SIL_BOTH;
 import static data.Defines.SIL_BOTTOM;
 import static data.Defines.SIL_TOP;
@@ -49,6 +51,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 
 import m.FixedFloat;
 import m.IDoomMenu;
@@ -58,6 +62,12 @@ import p.UnifiedGameMap;
 import p.mobj_t;
 import p.pspdef_t;
 import rr.drawfuns.ColVars;
+import rr.drawfuns.DoomColumnFunction;
+import rr.drawfuns.DoomSpanFunction;
+import rr.drawfuns.R_DrawColumnBoomOpt;
+import rr.drawfuns.R_DrawSpanLow;
+import rr.drawfuns.R_DrawSpanUnrolled;
+import rr.drawfuns.SpanVars;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 import utils.C2JUtils;
@@ -103,7 +113,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	protected int[] BLANKCACHEDHEIGHT;
 	protected short[] BLANKFLOORCLIP;
 	protected short[] BLANKCEILINGCLIP;
-
+	
 	// ////////////////////////////// STATUS ////////////////
 
 	protected DoomMain DM;
@@ -589,6 +599,8 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 			// System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
 		}
+		
+		
 
 		/////////////// VIDEO SCALE STUFF /////////////////////
 
@@ -3588,6 +3600,300 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 	}
 
+	protected class VisplaneWorker implements Runnable{
+
+        public int id;
+        private final int NUMFLOORTHREADS;
+        int startvp;  
+        int endvp;
+        int vpw_planeheight;
+        byte[][] vpw_planezlight;
+        int vpw_basexscale,vpw_baseyscale;
+        int[] cachedheight;
+        int[] cacheddistance;
+        int[] cachedxstep;
+        int[] cachedystep;
+        int[] distscale;
+        int[] yslope;
+        private final SpanVars<byte[]> vpw_dsvars;
+        private final ColVars<byte[]> vpw_dcvars;
+        private final DoomSpanFunction<byte[]> vpw_spanfunc;
+        private final DoomSpanFunction<byte[]> vpw_spanfunclow;
+        private final DoomColumnFunction<byte[]> vpw_skyfunc;
+        
+        
+        public VisplaneWorker(int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
+                int[] ylookup, byte[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
+            this.barrier=visplanebarrier;
+            // Alias to those of Planes.
+            cachedheight=MyPlanes.getCachedHeight();
+            cacheddistance=MyPlanes.getCachedDistance();
+            cachedxstep=MyPlanes.getCachedXStep();
+            cachedystep=MyPlanes.getCachedYStep();
+            distscale=MyPlanes.getDistScale();
+            yslope=MyPlanes.getYslope();
+            spanstart=new int[SCREENHEIGHT];
+            spanstop=new int [SCREENHEIGHT];
+            vpw_dsvars=new SpanVars<byte[]>();
+            vpw_dcvars=new ColVars<byte[]>();
+            vpw_spanfunc=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_spanfunclow=new R_DrawSpanLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_skyfunc=new R_DrawColumnBoomOpt(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            this.NUMFLOORTHREADS=NUMFLOORTHREADS;
+        }
+
+        @Override
+        public void run() {
+            visplane_t      pln=null; //visplane_t
+            // These must override the global ones
+
+
+            int         light;
+            int         x;
+            int         stop;
+            int         angle;
+            
+            // Now it's a good moment to set them.
+            vpw_basexscale=MyPlanes.getBaseXScale();
+            vpw_baseyscale=MyPlanes.getBaseYScale();
+            
+            // TODO: find a better way to split work. As it is, it's very uneven
+            // and merged visplanes in particular are utterly dire.
+            
+                for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
+                 pln=visplanes[pl];
+                // System.out.println(id +" : "+ pl);
+                 
+             if (pln.minx > pln.maxx)
+                 continue;
+
+             
+             // sky flat
+             if (pln.picnum == TexMan.getSkyFlatNum() )
+             {
+                 vpw_dcvars.dc_iscale = skyscale>>detailshift;
+                 vpw_dcvars.viewheight=viewheight;
+                 /* Sky is allways drawn full bright,
+                  * i.e. colormaps[0] is used.
+                  * Because of this hack, sky is not affected
+                  * by INVUL inverse mapping.
+                  */    
+                vpw_dcvars.dc_colormap = colormaps[0];
+                vpw_dcvars.dc_texturemid = TexMan.getSkyTextureMid();
+                 for (x=pln.minx ; x <= pln.maxx ; x++)
+                 {
+               
+                     vpw_dcvars.dc_yl = pln.getTop(x);
+                     vpw_dcvars.dc_yh = pln.getBottom(x);
+                 
+                 if (vpw_dcvars.dc_yl <= vpw_dcvars.dc_yh)
+                 {
+                     angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
+                     vpw_dcvars.dc_x = x;
+                     vpw_dcvars.dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
+                     vpw_dcvars.dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
+                     vpw_skyfunc.invoke();
+                 }
+                 }
+                 continue;
+             }
+             
+             // regular flat
+             vpw_dsvars.ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
+                            PU_STATIC,flat_t.class)).data;
+             
+             
+             if (vpw_dsvars.ds_source.length<4096){
+                 System.err.println("vpw_ds_source size <4096 ");
+                 new Exception().printStackTrace();
+             }
+             
+             vpw_planeheight = Math.abs(pln.height-viewz);
+             light = (pln.lightlevel >>> LIGHTSEGSHIFT)+extralight;
+
+             if (light >= LIGHTLEVELS)
+                 light = LIGHTLEVELS-1;
+
+             if (light < 0)
+                 light = 0;
+
+             vpw_planezlight = zlight[light];
+
+             // We set those values at the border of a plane's top to a "sentinel" value...ok.
+             pln.setTop(pln.maxx+1,(char) 0xffff);
+             pln.setTop(pln.minx-1, (char) 0xffff);
+             
+             stop = pln.maxx + 1;
+
+             
+             for (x=pln.minx ; x<= stop ; x++) {
+              MakeSpans(x,pln.getTop(x-1),
+                 pln.getBottom(x-1),
+                 pln.getTop(x),
+                 pln.getBottom(x));
+                }
+             
+             }
+             // We're done, wait.
+
+                try {
+                    barrier.await();
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                } catch (BrokenBarrierException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+
+         }
+            
+
+        public void setRange(int startvp, int endvp) {
+            this.startvp=startvp;
+            this.endvp=endvp;
+            
+        }
+        
+        /**
+         * R_MakeSpans
+         * 
+         * Called only by DrawPlanes.
+         * If you wondered where the actual boundaries for the visplane
+         * flood-fill are laid out, this is it.
+         * 
+         * The system of coords seems to be defining a sort of cone.          
+         *          
+         * 
+         * @param x Horizontal position
+         * @param t1 Top-left y coord?
+         * @param b1 Bottom-left y coord?
+         * @param t2 Top-right y coord ?
+         * @param b2 Bottom-right y coord ?
+         * 
+         */
+
+          private final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+              
+              // If t1 = [sentinel value] then this part won't be executed.
+              while (t1 < t2 && t1 <= b1) {
+                  this.MapPlane(t1, spanstart[t1], x - 1);
+                  t1++;
+              }
+              while (b1 > b2 && b1 >= t1) {
+                  this.MapPlane(b1, spanstart[b1], x - 1);
+                  b1--;
+              }
+
+              // So...if t1 for some reason is < t2, we increase t2 AND store the current x
+              // at spanstart [t2] :-S
+              while (t2 < t1 && t2 <= b2) {
+                  //System.out.println("Increasing t2");
+                  spanstart[t2] = x;
+                  t2++;
+              }
+
+              // So...if t1 for some reason b2 > b1, we decrease b2 AND store the current x
+              // at spanstart [t2] :-S
+
+              while (b2 > b1 && b2 >= t2) {
+                  //System.out.println("Decreasing b2");
+                  spanstart[b2] = x;
+                  b2--;
+              }
+          }
+          
+          /**
+           * R_MapPlane
+           *
+           * Called only by R_MakeSpans.
+           * 
+           * This is where the actual span drawing function is called.
+           * 
+           * Uses global vars:
+           * planeheight
+           *  ds_source -> flat data has already been set.
+           *  basexscale -> actual drawing angle and position is computed from these
+           *  baseyscale
+           *  viewx
+           *  viewy
+           *
+           * BASIC PRIMITIVE
+           */
+          
+          private void
+          MapPlane
+          ( int       y,
+            int       x1,
+            int       x2 )
+          {
+              // MAES: angle_t
+              int angle;
+              // fixed_t
+              int distance;
+              int length;
+              int index;
+              
+          if (RANGECHECK){
+              if (x2 < x1
+              || x1<0
+              || x2>=viewwidth
+              || y>viewheight)
+              {
+              I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+              }
+          }
+
+              if (vpw_planeheight != cachedheight[y])
+              {
+              cachedheight[y] = vpw_planeheight;
+              distance = cacheddistance[y] = FixedMul (vpw_planeheight , yslope[y]);
+              vpw_dsvars.ds_xstep = cachedxstep[y] = FixedMul (distance,vpw_basexscale);
+              vpw_dsvars.ds_ystep = cachedystep[y] = FixedMul (distance,vpw_baseyscale);
+              }
+              else
+              {
+              distance = cacheddistance[y];
+              vpw_dsvars.ds_xstep = cachedxstep[y];
+              vpw_dsvars.ds_ystep = cachedystep[y];
+              }
+              
+              length = FixedMul (distance,distscale[x1]);
+              angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
+              vpw_dsvars.ds_xfrac = viewx + FixedMul(finecosine[angle], length);
+              vpw_dsvars.ds_yfrac = -viewy - FixedMul(finesine[angle], length);
+
+              if (fixedcolormap!=null)
+                  vpw_dsvars.ds_colormap = fixedcolormap;
+              else
+              {
+              index = distance >>> LIGHTZSHIFT;
+              
+              if (index >= MAXLIGHTZ )
+                  index = MAXLIGHTZ-1;
+
+              vpw_dsvars.ds_colormap = vpw_planezlight[index];
+              }
+              
+              vpw_dsvars.ds_y = y;
+              vpw_dsvars.ds_x1 = x1;
+              vpw_dsvars.ds_x2 = x2;
+
+              // high or low detail
+              if (detailshift==0)
+                  vpw_spanfunc.invoke();
+              else
+                  vpw_spanfunclow.invoke();         
+          }
+          
+          
+          // Private to each thread.
+          int[]           spanstart;
+          int[]           spanstop;
+          CyclicBarrier barrier;
+          
+      }
+	
 	// /////////////////////// LIGHTS, POINTERS, COLORMAPS ETC. ////////////////
 
 	// /// FROM R_DATA, R_MAIN , R_DRAW //////////
@@ -4159,7 +4465,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	public void VideoErase(int ofs, int count) {
 
 		// memcpy (screens[0]+ofs, screens[1]+ofs, count);
-		System.arraycopy(V.getScreen(1), ofs, V.getScreen(0), ofs, count);
+		System.arraycopy(V.getScreen(DoomVideoRenderer.SCREEN_BG), ofs, V.getScreen(DoomVideoRenderer.SCREEN_FG), ofs, count);
 
 	}
 
@@ -4352,7 +4658,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 		/* This is a flat we're reading here */
 		src = (flat_t) (W.CacheLumpName(name, PU_CACHE, flat_t.class));
-		dest = V.getScreen(1);
+		dest = V.getScreen(DoomVideoRenderer.SCREEN_BG);
 		int destPos = 0;
 
 		/* This part actually draws the border itself, without bevels */
@@ -4924,8 +5230,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 		ofs = TexMan.getTextureColumnOfs(tex, col);
 
 		// It's always 0 for this kind of access.
-		// TODO: optimize away?
-		maskedcvars.dc_source_ofs = 0;
 
 		// Speed-increasing trick: speed up repeated accesses to the same
 		// texture or patch, if they come from the same lump
@@ -5299,6 +5603,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 	public final int getScaledViewWidth(){
 		return scaledviewwidth;
 	}
+
+    @Override
+    public final int getScaledViewHeight() {
+        return viewheight;
+    }
+
 	
 	////////////////VIDEO SCALE STUFF ///////////////////////
 
