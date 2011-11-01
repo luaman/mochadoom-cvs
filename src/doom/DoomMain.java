@@ -49,6 +49,7 @@ import static data.Defines.NORMALUNIX;
 import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
 import rr.ParallelRenderer;
+import rr.ParallelRenderer2;
 import rr.SimpleTextureManager;
 import rr.SpriteManager;
 import rr.UnifiedRenderer;
@@ -102,7 +103,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.94 2011/10/25 19:52:47 velktron Exp $
+// $Id: DoomMain.java,v 1.95 2011/11/01 19:02:35 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -128,7 +129,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.94 2011/10/25 19:52:47 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.95 2011/11/01 19:02:35 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -259,9 +260,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             break;
         }
 
-
         // draw the view directly
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
+            if (gametic%2==0)
+                V.FillScreen((byte) 127,0,R.getViewWindowX(),R.getViewWindowY(),
+                    R.getScaledViewWidth(),R.getScaledViewHeight());
+            else        
+                V.FillScreen((byte) 128,0,R.getViewWindowX(),R.getViewWindowY(),
+                    R.getScaledViewWidth(),R.getScaledViewHeight());
             R.RenderPlayerView (players[displayplayer]);
         	}
 
@@ -2335,7 +2341,7 @@ public void ScreenShot ()
     String lbmname = null;
     
     // munge planar buffer to linear
-    linear = (byte[]) V.getScreen(2);
+    linear = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
     VI.ReadScreen (linear);
 
     // find a file name to save it to
@@ -3252,9 +3258,11 @@ public void ScreenShot ()
         } else 
 
             // Parallel. Either with default values (2,1) or user-specified.
-            if (eval(CM.CheckParm("-parallelrenderer"))){        
+            if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
                 int p = CM.CheckParm ("-parallelrenderer");
-                if (eval(p) && p < CM.getArgc()-1)
+                if (p<1) p=CM.CheckParm("-parallelrenderer2");
+                
+                if (p < CM.getArgc()-1)
                 {
                     // Next two args must be numbers.
                     int walls=2, floors=1;
@@ -3275,7 +3283,10 @@ public void ScreenShot ()
                     }
 
                     // In the worst case, we will use the defaults.
-                    this.R=new ParallelRenderer(this,walls,floors);
+                    if  (CM.CheckParmBool("-parallelrenderer"))
+                        this.R=new ParallelRenderer(this,walls,floors);
+                    else
+                        this.R=new ParallelRenderer2(this,walls,floors);
                 }
             } else {
                 // Force serial
@@ -4211,6 +4222,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.95  2011/11/01 19:02:35  velktron
+//Allow selection of 2nd parallel renderer
+//
 //Revision 1.94  2011/10/25 19:52:47  velktron
 //Using TIC_MUL and MAPFRACUNIT for speed scaling. Also buffered I/O and other stuff.
 //
