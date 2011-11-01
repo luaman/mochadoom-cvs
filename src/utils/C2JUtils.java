@@ -226,6 +226,50 @@ public class C2JUtils {
 
         return os;
     }
+    
+    /**
+     * Uses reflection to automatically create and initialize an array of
+     * objects of the specified class. Does not require casting on "reception".
+     * Requires an instance of the desired class. This allows getting around
+     * determining the runtime type of parametrized types.
+     * 
+     * 
+     * @param <T>
+     * @param instance An instance of a particular class. 
+     * @param num
+     * @return
+     * @return
+     */
+
+    @SuppressWarnings("unchecked")
+    public static <T> T[] createArrayOfObjects(T instance, int num) {
+        T[] os = null;
+        
+        Class<T> c=(Class<T>) instance.getClass();
+
+        try {
+            os = (T[]) Array.newInstance(c, num);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Failure to allocate " + num
+                    + " objects of class " + c.getName() + "!");
+            System.exit(-1);
+        }
+
+        try {
+            for (int i = 0; i < os.length; i++) {
+                os[i] = (T) c.newInstance();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Failure to instantiate " + os.length
+                    + " objects of class " + c.getName() + "!");
+            System.exit(-1);
+        }
+
+        return os;
+    }
+
 
     /**
      * Automatically "initializes" arrays of objects with their default
