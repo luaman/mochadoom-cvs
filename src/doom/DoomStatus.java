@@ -67,8 +67,7 @@ public class DoomStatus extends DoomContext {
     
     public boolean isShareware(){
     	return (gamemode== GameMode_t.shareware);
-    }
-    
+    }    
     
     /** Commercial means Doom 2, Plutonia, TNT, and possibly others like XBLA.
      * 
@@ -213,6 +212,9 @@ public class DoomStatus extends DoomContext {
 
     public int totalsecret;
 
+    /** TNTHOM "cheat" for flashing HOM-detecting BG */
+	public boolean flashing_hom;
+    
     // Added for prBoom+ code
     public int totallive;
     
@@ -540,6 +542,9 @@ public class DoomStatus extends DoomContext {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.34  2011/11/01 23:48:10  velktron
+// Added tnthom stuff.
+//
 // Revision 1.33  2011/10/24 02:11:27  velktron
 // Stream compliancy
 //
