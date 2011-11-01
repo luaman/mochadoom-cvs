@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.30 2011/10/23 18:11:58 velktron Exp $
+// $Id: HU.java,v 1.31 2011/11/01 22:17:46 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -32,16 +32,12 @@ import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
-import v.SoftwareVideoRenderer;
-
 import m.IDoomMenu;
 import m.Menu;
-import m.Swap;
 import rr.RendererState;
 import rr.patch_t;
 import s.IDoomSound;
 import w.IWadLoader;
-import data.Defines;
 import data.sounds.sfxenum_t;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -52,7 +48,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.30 2011/10/23 18:11:58 velktron Exp $";
+        "$Id: HU.java,v 1.31 2011/11/01 22:17:46 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -96,6 +92,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                 HUSTR_CHATMACRO6, HUSTR_CHATMACRO7, HUSTR_CHATMACRO8,
                 HUSTR_CHATMACRO9 };
     
+    @Override
     public void setChatMacro(int i, String s){
         this.chat_macros[i]=s;
     }
@@ -288,7 +285,6 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 
     public static final char[] english_shiftxform =
         {
-
                 0,
                 1,
                 2,
@@ -380,7 +376,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
                 'K', 'L', ',', 'N', 'O', 'P', 'A', 'R', 'S', 'T', 'U', 'V',
                 'Z', 'X', 'Y', 'W', '^', '\\', '$', '^', 127 };
 
-    char ForeignTranslation(char ch) {
+    protected final char ForeignTranslation(char ch) {
         return ch < 128 ? frenchKeyMap[ch] : ch;
     }
 
@@ -410,6 +406,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
      * @throws Exception
      */
 
+    @Override
     public void Init()
              {
         String xxx = new String("STCFN%03d");
@@ -442,11 +439,13 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         HU_INPUTY = (HU_MSGY + HU_MSGHEIGHT * hu_font[0].height + 1);
 
     }
-
+    
+    @Override
     public void Stop() {
         headsupactive = false;
     }
 
+    @Override
     public void Start() {
 
         int i;
@@ -526,24 +525,22 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 
     }
 
+    @Override
     public void Drawer() {
-
-        
         this.w_message.drawSText();
         this.w_chat.drawIText();
         if (DM.automapactive)
             this.w_title.drawTextLine(false);
-
     }
 
+    @Override
     public void Erase() {
-
         this.w_message.eraseSText();
         this.w_chat.eraseIText();
         this.w_title.eraseTextLine();
-
     }
 
+    @Override
     public void Ticker() {
 
         int i;
@@ -619,7 +616,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 
     protected int tail = 0;
 
-    public void queueChatChar(char c) {
+    protected void queueChatChar(char c) {
         if (((head + 1) & (QUEUESIZE - 1)) == tail) {
             plr.message = HUSTR_MSGU;
         } else {
@@ -628,6 +625,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
         }
     }
 
+    @Override
     public char dequeueChatChar() {
         char c;
 
@@ -655,6 +653,7 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 
     protected int num_nobrainers = 0;
 
+    @Override
     public boolean Responder(event_t ev) {
 
     	//System.out.println("Player "+DM.players[0].mo.x);
@@ -1207,8 +1206,8 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 
     }
 
-    public patch_t[] getHUFonts() {
-        
+    @Override
+    public patch_t[] getHUFonts() {        
         return this.hu_font;
     }
 
@@ -1246,6 +1245,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 }
 
 //$Log: HU.java,v $
+//Revision 1.31  2011/11/01 22:17:46  velktron
+//Cleaned up a bit, implements IHeadsUp
+//
 //Revision 1.30  2011/10/23 18:11:58  velktron
 //Generic compliance for DoomVideoInterface
 //
