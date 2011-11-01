@@ -103,7 +103,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.95 2011/11/01 19:02:35 velktron Exp $
+// $Id: DoomMain.java,v 1.96 2011/11/01 23:48:31 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -129,7 +129,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.95 2011/11/01 19:02:35 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.96 2011/11/01 23:48:31 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -262,11 +262,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // draw the view directly
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
-            if (gametic%2==0)
-                V.FillScreen((byte) 127,0,R.getViewWindowX(),R.getViewWindowY(),
+        	if (flashing_hom)
+                V.FillRect((byte) (gametic%256),0,R.getViewWindowX(),R.getViewWindowY(),
                     R.getScaledViewWidth(),R.getScaledViewHeight());
-            else        
-                V.FillScreen((byte) 128,0,R.getViewWindowX(),R.getViewWindowY(),
+        	if (flashing_hom)
+        	System.out.printf("View window %d %d %d %d\n",R.getViewWindowX(),R.getViewWindowY(),
                     R.getScaledViewWidth(),R.getScaledViewHeight());
             R.RenderPlayerView (players[displayplayer]);
         	}
@@ -4192,6 +4192,8 @@ public void ScreenShot ()
     protected int SAFE_SCALE;
     protected IVideoScale vs;
 
+
+
     @Override
     public void setVideoScale(IVideoScale vs) {
         this.vs=vs;
@@ -4222,6 +4224,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.96  2011/11/01 23:48:31  velktron
+//Added tnthom stuff
+//
 //Revision 1.95  2011/11/01 19:02:35  velktron
 //Allow selection of 2nd parallel renderer
 //
