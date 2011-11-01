@@ -103,7 +103,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.96 2011/11/01 23:48:31 velktron Exp $
+// $Id: DoomMain.java,v 1.97 2011/11/01 23:53:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -129,7 +129,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.96 2011/11/01 23:48:31 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.97 2011/11/01 23:53:26 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -264,9 +264,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
         	if (flashing_hom)
                 V.FillRect((byte) (gametic%256),0,R.getViewWindowX(),R.getViewWindowY(),
-                    R.getScaledViewWidth(),R.getScaledViewHeight());
-        	if (flashing_hom)
-        	System.out.printf("View window %d %d %d %d\n",R.getViewWindowX(),R.getViewWindowY(),
                     R.getScaledViewWidth(),R.getScaledViewHeight());
             R.RenderPlayerView (players[displayplayer]);
         	}
@@ -4224,6 +4221,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.97  2011/11/01 23:53:26  velktron
+//-verbose
+//
 //Revision 1.96  2011/11/01 23:48:31  velktron
 //Added tnthom stuff
 //

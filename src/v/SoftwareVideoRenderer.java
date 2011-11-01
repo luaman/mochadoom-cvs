@@ -946,8 +946,13 @@ public final void FillRect(byte color,int screen, int x,int y,int width, int hei
     for (int i=0;i<width;i++)
     	arr[fromIndex+i]=color;
     
-    for (;fromIndex<toIndex;fromIndex+=SCREENWIDTH)
-    	System.out.printf("%d %d %d\n",fromIndex,fromIndex+SCREENWIDTH,width);
+    for (;fromIndex<toIndex;fromIndex+=SCREENWIDTH){
+    		System.arraycopy(arr,fromIndex,arr,fromIndex+SCREENWIDTH,width);
+        }
 }
+
+
+
+
 
 }
