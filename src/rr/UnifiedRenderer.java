@@ -6,6 +6,7 @@ import static data.Tables.*;
 import static m.fixed_t.*;
 import java.io.IOException;
 import utils.C2JUtils;
+import v.DoomVideoRenderer;
 import doom.DoomMain;
 import doom.player_t;
 
@@ -34,95 +35,7 @@ public class UnifiedRenderer extends RendererState{
       }
   
   protected final class Planes extends PlaneDrawer{
-
-      /* UNUSED Eternity-like version. Don't use.
-      @Override
-      public final void
-      MapPlane
-      ( int       y,
-        int       x1,
-        int       x2 )
-      {
-          // MAES: angle_t
-          int angle;
-          // fixed_t
-          int distance;
-          int length;
-          int index;
-          
-      if (RANGECHECK){
-          if (x2 < x1
-          || x1<0
-          || x2>=viewwidth
-          || y>viewheight)
-          {
-          I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
-          }
-      }
-
-      boolean render_precise=true;
-      
-      if (!render_precise){
-          if (planeheight != cachedheight[y])
-          {
-          cachedheight[y] = planeheight;
-          distance = cacheddistance[y] = FixedMul (planeheight , yslope[y]);
-          ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
-          ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
-          }
-          else
-          {
-          distance = cacheddistance[y];
-          ds_xstep = cachedxstep[y];
-          ds_ystep = cachedystep[y];
-          }
-          
-          length = FixedMul (distance,distscale[x1]);
-          angle = (int)(((viewangle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
-          ds_xfrac = viewx + FixedMul(finecosine[angle], length);
-          ds_yfrac = -viewy - FixedMul(finesine[angle], length);
-      } else {
-          // Accuratized version, from Boom/PrBoom+
-          float slope, realy;
-          
-          distance = FixedMul (planeheight, yslope[y]);
-          slope = (float)(planeheight / 65535.0f / Math.abs(centery - y));
-          realy = (float)distance / 65536.0f;
-
-          ds_xstep = (int) (viewsin * slope * viewfocratio);
-          ds_ystep = (int) (viewcos * slope * viewfocratio);
-
-          ds_xfrac =  viewx + (int)(viewcos * realy) + (x1 - centerx) * ds_xstep;
-          ds_yfrac = -viewy - (int)(viewsin * realy) + (x1 - centerx) * ds_ystep;
-          
-      }
-          // FIXME: alternate, more FPU-friendly implementation.
-          //dlength = (distance);//*distscalef[x1];
-          //dangle = (float) (2*Math.PI*(double)((viewangle +xtoviewangle[x1])&BITS32)/((double)0xFFFFFFFFL));
-          // = viewx + (int)(Math.cos(dangle)* dlength);
-          //ds_yfrac = -viewy -(int)(Math.sin(dangle)* dlength);
-
-          
-          if (fixedcolormap!=null)
-          ds_colormap = fixedcolormap;
-          else
-          {
-          index = distance >>> LIGHTZSHIFT;
-          
-          if (index >= MAXLIGHTZ )
-              index = MAXLIGHTZ-1;
-
-          ds_colormap = planezlight[index];
-          }
-          
-          ds_y = y;
-          ds_x1 = x1;
-          ds_x2 = x2;
-
-          // high or low detail
-          spanfunc.invoke();    
-      }
-*/
+     
       /**
        * R_DrawPlanes
        * At the end of each frame.
@@ -171,8 +84,7 @@ public class UnifiedRenderer extends RendererState{
               // Cache skytexture stuff here. They aren't going to change while
               // being drawn, after all, are they?
               int skytexture=TexMan.getSkyTexture();
-              skydcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;
-              
+              skydcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;              
               skydcvars.dc_iscale = pspriteiscale>>detailshift;
               
               /* Sky is allways drawn full bright,
@@ -192,9 +104,8 @@ public class UnifiedRenderer extends RendererState{
               {
                   angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                   skydcvars.dc_x = x;
-                  // Optimized: texheight is going to be the same during normal skies drawing...right? 
+                  // Optimized: texheight is going to be the same during normal skies drawing...right?
                   skydcvars.dc_source = GetCachedColumn(skytexture,angle);
-                  skydcvars.dc_source_ofs=0;
                   skycolfunc.invoke();
               }
               }
@@ -273,7 +184,7 @@ public void RenderPlayerView (player_t player)
   MyPlanes.ClearPlanes ();
   MyThings.ClearSprites ();
   
-  // TODO: check for new console commands.
+  // Check for new console commands.
   DGN.NetUpdate ();
 
   // The head node is the last node output.
@@ -310,7 +221,7 @@ public void Init ()
 	//C2JUtils.initArrayOfObjects(drawsegs);
 	
     // DON'T FORGET ABOUT MEEEEEE!!!11!!!
-    this.screen=V.getScreen(0);
+    this.screen=V.getScreen(DoomVideoRenderer.SCREEN_FG);
     
    System.out.print("\nR_InitData");
    InitData ();
@@ -495,9 +406,5 @@ public void ExecuteSetViewSize ()
     }
     }
 }*/
-
-
- 
-  
   
 }
