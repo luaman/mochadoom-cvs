@@ -119,7 +119,7 @@ public class AWTDoom extends DoomFrame<byte[]> {
     		if (D) System.err.println("Setting gamma "+level);
     		V.setUsegamma(level);
     		screen=V.getCurrentScreen(); // Refresh screen after change.
-    		RAWSCREEN=(byte[]) V.getScreen(0);
+    		RAWSCREEN=(byte[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
     	}
         
         @Override
@@ -130,6 +130,9 @@ public class AWTDoom extends DoomFrame<byte[]> {
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.14  2011/11/01 19:03:10  velktron
+//Using screen number constants
+//
 //Revision 1.13  2011/10/23 18:11:07  velktron
 //Split functionality into DoomFrame, gerenic compliance.
 //

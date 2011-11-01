@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.31 2011/10/23 18:10:32 velktron Exp $
+// $Id: Map.java,v 1.32 2011/11/01 19:03:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.32  2011/11/01 19:03:10  velktron
+// Using screen number constants
+//
 // Revision 1.31  2011/10/23 18:10:32  velktron
 // Generic compliance for DoomVideoInterface
 //
@@ -167,7 +170,7 @@ DoomVideoRenderer<?> V;
 AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.31 2011/10/23 18:10:32 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.32 2011/11/01 19:03:10 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -628,7 +631,7 @@ public final  void initVariables()
     int pnum=0;
 
     DM.automapactive = true;
-    fb = (byte[]) V.getScreen(0);
+    fb = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
 
     f_oldloc.x = MAXINT;
     amclock = 0;
@@ -710,7 +713,7 @@ public final  void LevelInit()
     f_w = finit_width;
     f_h = finit_height;
     
-    scanline=new byte[f_h*f_w];
+    //scanline=new byte[f_h*f_w];
 
     this.clearMarks();
 
@@ -1020,39 +1023,6 @@ public final  void Ticker ()
 }
 
 //private static int BUFFERSIZE=f_h*f_w;
-
-
-private int lastcolor=-1;
-
-/**
- * Clear automap frame buffer.
- * MAES: optimized for efficiency, seen the lack of a proper "memset" in Java.
- * 
- */
-
-private byte[] scanline;
-
-public final  void clearFB(byte color)
-{
-    if (lastcolor==-1 || lastcolor !=color){
-    // Buffer a whole scanline with the appropriate color.
-    
-    for (int i=0;i<scanline.length;i++){
-        scanline[i]=color;
-    }
-    lastcolor=color;
-    }
-    /*
-    for (int i=1;i<(f_h*f_w)/BUFFERSIZE;i++){
-    System.arraycopy(fb, (i-1)*BUFFERSIZE, fb, i*BUFFERSIZE, BUFFERSIZE);
-    }*/
-    System.arraycopy(scanline, 0, fb, 0, f_h*f_w);
-    
- //   memset(fb, color, f_w*f_h);
-}
-
-
-
 
 /**
 * Automap clipping of lines.
@@ -1624,7 +1594,7 @@ public final  void Drawer ()
 {
     if (!DM.automapactive) return;
     //System.out.println("Drawing map");
-    if (overlay<1) clearFB((byte)BACKGROUND); // BACKGROUND
+    if (overlay<1) V.FillScreen((byte)BACKGROUND,FB,0,0,f_w, f_h); // BACKGROUND
     if (grid)
     drawGrid(GRIDCOLORS);
     drawWalls();
@@ -1666,7 +1636,6 @@ public void initScaling() {
     // Pre-scale stuff.
     finit_width = SCREENWIDTH;
     finit_height = SCREENHEIGHT - 32*vs.getSafeScaling();
-    this.scanline=new byte[SCREENWIDTH*SCREENHEIGHT];
 }
 
 }

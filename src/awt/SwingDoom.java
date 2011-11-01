@@ -128,7 +128,7 @@ public class SwingDoom extends DoomFrame<byte[]> {
 		if (D) System.err.println("Setting gamma "+level);
 		V.setUsegamma(level);
 		screen=V.getCurrentScreen(); // Refresh screen after change.
-		RAWSCREEN=V.getScreen(0);
+		RAWSCREEN=V.getScreen(DoomVideoRenderer.SCREEN_FG);
 	}
 	
 
@@ -186,6 +186,9 @@ public class SwingDoom extends DoomFrame<byte[]> {
 }
 
 //$Log: SwingDoom.java,v $
+//Revision 1.2  2011/11/01 19:03:10  velktron
+//Using screen number constants
+//
 //Revision 1.1  2011/10/23 18:11:07  velktron
 //Split functionality into DoomFrame, gerenic compliance.
 //

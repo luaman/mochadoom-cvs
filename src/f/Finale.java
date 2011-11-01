@@ -39,7 +39,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.24 2011/10/23 18:11:32 velktron Exp $
+// $Id: Finale.java,v 1.25 2011/11/01 19:02:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -60,7 +60,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.24 2011/10/23 18:11:32 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.25 2011/11/01 19:02:57 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -293,7 +293,7 @@ public void StartFinale ()
       
       // erase the entire screen to a tiled background
       src = ((flat_t)W.CacheLumpName ( finaleflat , PU_CACHE,flat_t.class)).data;
-      dest = (byte[]) V.getScreen(0);
+      dest = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
 
       int destPos=0;
       for (int y=0 ; y<SCREENHEIGHT ; y++)

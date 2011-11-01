@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.7 2011/10/23 18:11:32 velktron Exp $
+// $Id: EndLevel.java,v 1.8 2011/11/01 19:02:57 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.8  2011/11/01 19:02:57  velktron
+// Using screen number constants
+//
 // Revision 1.7  2011/10/23 18:11:32  velktron
 // Generic compliance for DoomVideoInterface
 //
@@ -309,7 +312,7 @@ protected void slamBackground()
 {
     //    memcpy(screens[0], screens[1], SCREENWIDTH * SCREENHEIGHT);
     // Remember, the second arg is the source!
-    System.arraycopy(V.getScreen(1), 0 ,V.getScreen(0),0, SCREENWIDTH * SCREENHEIGHT);
+    System.arraycopy(V.getScreen(SCREEN_BG), 0 ,V.getScreen(SCREEN_FG),0, SCREENWIDTH * SCREENHEIGHT);
     V.MarkRect (0, 0, SCREENWIDTH, SCREENHEIGHT);
 }
 
