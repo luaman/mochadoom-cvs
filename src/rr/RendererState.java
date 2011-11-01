@@ -4868,7 +4868,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 			fuzzcolfunc = DrawFuzzColumnLow;
 			transcolfunc = DrawTranslatedColumn;
 			glasscolfunc = DrawTLColumn;
-			playercolfunc = DrawColumnLow;
+			playercolfunc = DrawColumnMaskedLow;
 			skycolfunc= DrawColumnSkiesLow;
 			spanfunc = DrawSpanLow;
 
