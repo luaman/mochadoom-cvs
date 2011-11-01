@@ -11,16 +11,18 @@ import i.IDoomSystem;
 
 public final class R_DrawSpanUnrolled extends DoomSpanFunction<byte[]> {
 
-	public R_DrawSpanUnrolled(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-            byte[] screen, IDoomSystem I) {
-        super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
+
+	public R_DrawSpanUnrolled(int sCREENWIDTH, int sCREENHEIGHT, int[] ylookup,
+            int[] columnofs, SpanVars<byte[]> dsvars, byte[] screen,
+            IDoomSystem I) {
+        super(sCREENWIDTH, sCREENHEIGHT, ylookup, columnofs, dsvars, screen, I);
+        // TODO Auto-generated constructor stub
     }
 
-	public void invoke() {
+    public void invoke() {
 		int position, step;
-		byte[] source;
-		byte[] colormap;
+		final byte[] source;
+		final byte[] colormap;
 		int dest;
 		int count;
 		int spot;
@@ -32,7 +34,7 @@ public final class R_DrawSpanUnrolled extends DoomSpanFunction<byte[]> {
 		step = ((dsvars.ds_xstep << 10) & 0xffff0000) | ((dsvars.ds_ystep >> 6) & 0xffff);
 		source = dsvars.ds_source;
 		colormap = dsvars.ds_colormap;
-		dest = dsvars.ylookup[dsvars.ds_y] + dsvars.columnofs[dsvars.ds_x1];
+		dest = ylookup[dsvars.ds_y] + columnofs[dsvars.ds_x1];
 		count = dsvars.ds_x2 - dsvars.ds_x1 + 1;
 		//int rolls = 0;
 		while (count >= 4) {

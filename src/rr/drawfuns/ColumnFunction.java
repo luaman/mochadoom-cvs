@@ -6,7 +6,7 @@ package rr.drawfuns;
  *
  */
 
-public interface DrawFunction<T> {
+public interface ColumnFunction<T> {
     public void invoke();
     
 	public void invoke(ColVars<T> dcvars);

@@ -9,7 +9,7 @@ import i.IDoomSystem;
  * @param <T>
  */
 
-public abstract class DoomColumnFunction<T> implements DrawFunction<T>{
+public abstract class DoomColumnFunction<T> implements ColumnFunction<T>{
     
     protected final boolean RANGECHECK=false;
     protected final int SCREENWIDTH;
