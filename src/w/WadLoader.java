@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.54 2011/10/25 19:45:51 velktron Exp $
+// $Id: WadLoader.java,v 1.55 2011/11/01 22:09:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -215,7 +215,7 @@ public class WadLoader implements IWadLoader {
 			// Init everything:
 			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
 			
-			handle=InputStreamSugar.streamSeek(handle,header.infotableofs,-1,uri);
+			handle=InputStreamSugar.streamSeek(handle,header.infotableofs,wadinfo.maxsize,-1,uri);
 			
 			
 			// MAES: we can't read raw structs here, and even less BLOCKS of
@@ -577,7 +577,7 @@ public class WadLoader implements IWadLoader {
 	}
 
 	@Override
-	public byte[] ReadLump(int lump){
+	public final byte[] ReadLump(int lump){
 	    lumpinfo_t l=lumpinfo[lump];
 	    byte[] buf=new byte[(int) l.size];
 	    ReadLump(lump, buf);
@@ -586,7 +586,7 @@ public class WadLoader implements IWadLoader {
 	}
 	
 	@Override
-	public void ReadLump(int lump, byte[] buf) {
+	public final void ReadLump(int lump, byte[] buf) {
 	    ReadLump(lump, buf, 0);
 	}
 	
@@ -598,7 +598,7 @@ public class WadLoader implements IWadLoader {
      */
 
 	@Override
-	public void ReadLump(int lump, byte[] buf, int offset) {
+	public final void ReadLump(int lump, byte[] buf, int offset) {
 		int c=0;
 		lumpinfo_t l; // Maes: was *..probably not array.
 		InputStream handle = null;
@@ -624,15 +624,20 @@ public class WadLoader implements IWadLoader {
 			handle = l.handle;
 
 		try {
-		    handle=InputStreamSugar.streamSeek(handle,l.position,l.wadfile.maxsize,l.wadfile.name);
+
+			handle=InputStreamSugar.streamSeek(handle,l.position,
+		    l.wadfile.maxsize,l.wadfile.knownpos,l.wadfile.name);
 		    
-			// read buffered.
-			BufferedInputStream bis=new BufferedInputStream(handle);
+			// read buffered. Unfortunately that interferes badly with 
+			// guesstimating the actual stream position.
+			BufferedInputStream bis=new BufferedInputStream(handle,8192);
 			
 			while (c<l.size)
 			    c+= bis.read(buf,offset+c, (int) (l.size-c));
 			
-			
+			// Well, that's a no-brainer.
+			//l.wadfile.knownpos=l.position+c;
+				
 			if (c < l.size)
 				System.err.printf("W_ReadLump: only read %d of %d on lump %d %d\n", c, l.size,
 						lump,l.position);
@@ -1297,6 +1302,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.55  2011/11/01 22:09:11  velktron
+//Some more progress on URI handling. Not essential/not breaking.
+//
 //Revision 1.54  2011/10/25 19:45:51  velktron
 //More efficient use of bis ;-)
 //

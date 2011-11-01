@@ -1,16 +1,16 @@
 package w;
 
-import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+
+import sun.net.www.protocol.http.HttpURLConnection;
 
 /** As we know, Java can be a bit awkward when handling streams e.g. you can't really skip 
  *  at will without doing some nasty crud. This class helps doing such crud.
@@ -74,13 +74,30 @@ public class InputStreamSugar {
      * @throws IOException 
      */
     
-    public static final InputStream streamSeek(InputStream is, long pos,long size, String URI) throws IOException{
-        FileInputStream fis;
-        
+    public static final InputStream streamSeek(InputStream is, long pos,long size,long knownpos, String URI) throws IOException{
         if (is==null) return is;
         
         // If we know our actual position in the stream, we can aid seeking forward
         
+    	/* Too buggy :-/ pity
+        if (knownpos>=0 && knownpos<=pos){
+        	
+        	if (pos==knownpos) return is;
+            try{
+            final long mustskip=pos-knownpos;
+            long skipped=0;
+            while (skipped<mustskip){
+            	skipped+=is.skip(mustskip-skipped);
+            	System.out.printf("Must skip %d skipped %d\n",mustskip,skipped);
+            	}            	
+                return is;
+            } catch (Exception e){
+            	// We couldn't skip cleanly. Swallow up and try normally.
+                System.err.println("Couldn't skip");
+            }
+        } */
+        
+        // This is a more reliable method, although it's less than impressive in results.
             if (size>0){
                 try{
                 long available=is.available();
@@ -97,10 +114,7 @@ public class InputStreamSugar {
         // Cast succeeded
         if (is instanceof FileInputStream){
             try {                
-                //long a=System.nanoTime();
                 ((FileInputStream)is).getChannel().position(pos);
-                //long b=System.nanoTime();
-                //System.out.printf("Stream seeked WITHOUT closing %d\n",(b-a)/1000);
                 return is;
             } catch (IOException e) {
                 // Ouch. Do a dumb close & reopening.
@@ -117,13 +131,13 @@ public class InputStreamSugar {
         //}
         
         try { // Is it a net resource? We have to reopen it :-/
-            long a=System.nanoTime();
+            //long a=System.nanoTime();
             URL u=new URL(URI);
             InputStream nis=u.openStream();
             nis.skip(pos);
             is.close();
-            long b=System.nanoTime();
-            System.out.printf("Network stream seeked WITH closing %d\n",(b-a)/1000);
+            //long b=System.nanoTime();
+            //System.out.printf("Network stream seeked WITH closing %d\n",(b-a)/1000);
             return  nis;
         } catch (Exception e) {
             

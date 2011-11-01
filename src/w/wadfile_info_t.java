@@ -13,4 +13,5 @@ public class wadfile_info_t {
       public String URI; // A resource identifier which will allow re-opening this resource.
       public boolean cached; // Whether we use local caching e.g. for URL or zips
       public long maxsize=-1; // Update when known for sure. Will speed up seeking.
+      public long knownpos=-1;
     }
