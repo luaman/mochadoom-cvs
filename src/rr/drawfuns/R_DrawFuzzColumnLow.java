@@ -74,6 +74,7 @@ public final class R_DrawFuzzColumnLow
         // Looks like an attempt at dithering,
         // using the colormap #6 (of 0-31, a bit
         // brighter than average).
+        if (count>4)
         do {
             // Lookup framebuffer, and retrieve
             // a pixel that is either one column
@@ -93,6 +94,37 @@ public final class R_DrawFuzzColumnLow
 
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
-        } while (count-- > 0);
+            
+            screen[dest] = BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+            screen[dest2] = screen[dest];
+            if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+            dest += SCREENWIDTH;
+            dest2 += SCREENWIDTH;
+                
+            screen[dest] = BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+            screen[dest2] = screen[dest];
+            if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+            dest += SCREENWIDTH;
+            dest2 += SCREENWIDTH;
+
+            screen[dest] = BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+            screen[dest2] = screen[dest];
+            if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+            dest += SCREENWIDTH;
+            dest2 += SCREENWIDTH;            
+        } while ((count-=4) > 4);
+        
+        if (count>0)
+        do {
+            screen[dest] =
+                BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+            screen[dest2] = screen[dest];
+            
+            if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+
+            dest += SCREENWIDTH;
+            dest2 += SCREENWIDTH;
+        } while (count-- != 0);
+        
     }
 }

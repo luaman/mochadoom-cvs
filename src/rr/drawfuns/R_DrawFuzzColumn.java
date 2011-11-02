@@ -75,6 +75,7 @@ import i.IDoomSystem;
 			// Looks like an attempt at dithering,
 			// using the colormap #6 (of 0-31, a bit
 			// brighter than average).
+			if (count>4) // MAES: unroll by 4
 			do {
 				// Lookup framebuffer, and retrieve
 				// a pixel that is either one column
@@ -87,8 +88,41 @@ import i.IDoomSystem;
 				if (++fuzzpos == FUZZTABLE)
 					fuzzpos = 0;
 
-				dest += SCREENWIDTH;
-			} while (count-- > 0);
+				dest += SCREENWIDTH;				
+                
+				screen[dest] = 
+                        BLURRY_MAP[0x00FF & screen[dest+ fuzzoffset[fuzzpos]]];
+                if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                dest += SCREENWIDTH;
+                
+                screen[dest] = 
+                        BLURRY_MAP[0x00FF & screen[dest+ fuzzoffset[fuzzpos]]];
+                if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                dest += SCREENWIDTH;
+                
+                screen[dest] = 
+                        BLURRY_MAP[0x00FF & screen[dest+ fuzzoffset[fuzzpos]]];
+                if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
+                dest += SCREENWIDTH;
+				
+			} while ((count-=4) > 4);
+			
+			if (count>0)
+	         do {
+	                // Lookup framebuffer, and retrieve
+	                // a pixel that is either one column
+	                // left or right of the current one.
+	                // Add index from colormap to index.
+	                screen[dest] = BLURRY_MAP[0x00FF & screen[dest
+	                        + fuzzoffset[fuzzpos]]];
+
+	                // Clamp table lookup index.
+	                if (++fuzzpos == FUZZTABLE)
+	                    fuzzpos = 0;
+
+	                dest += SCREENWIDTH;
+	            } while (count-- > 0);
+			
 		}
 
 
