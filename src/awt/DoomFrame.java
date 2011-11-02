@@ -156,7 +156,7 @@ public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface 
 
 	  // Try setting the locale the US, otherwise there will be problems
 	  // with non-US keyboards.
-	  if (!this.getInputContext().selectInputMethod(java.util.Locale.US)){
+	  if (this.getInputContext()==null || !this.getInputContext().selectInputMethod(java.util.Locale.US)){
 		  System.err.println("Could not set the input context to US! Keyboard input will be glitchy!");
 	  } else {
 		  System.err.println("Input context successfully set to US.");
@@ -228,7 +228,7 @@ public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface 
       
       
 	  } catch (Exception e){
-		  I.Error("Error creating AWTDoom frame. Exiting.");
+		  I.Error("Error creating AWTDoom frame. Exiting. Reason: %s",e.getMessage());
 	  }
 	 
 	  // AWT: tab is a special case :-/
