@@ -1165,13 +1165,8 @@ public abstract class RendererState implements Renderer<byte[]>,
 				// NULL colormap = shadow draw
 				colfunc = fuzzcolfunc;
 			} else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
-				colfunc = DrawTranslatedColumn;
-				
+				colfunc = transcolfunc;
 				maskedcvars.dc_translation = translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
-				// Let's interpret this:
-				// MF_TRANSSHIFT -8 = 18 Shifting 0xc000000>>18 gives 0x300 or 768
-				// It could also give 512 or 256. Essentially, the mask gives 4 
-				// possible translations. 0= no change, and 1,2,3 : different tables. 
 			}
 
 			maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> detailshift;
@@ -1191,12 +1186,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 						I.Error("R_DrawSpriteRange: bad texturecolumn");
 				}
 				column = patch.columns[texturecolumn];
-				//try {
 				DrawMaskedColumn(column);
-				//} catch (Exception e){
-				    //System.err.printf("Trouble with column %d of patch %s",texturecolumn,patch.name,
-				      //  vis.patch + firstspritelump);
-				//}
 			}
 
 			colfunc = maskedcolfunc;
@@ -4246,7 +4236,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	 * (color ramps used for suit colors).
 	 */
 
-	protected byte[][] translations = new byte[3][256];
+	protected byte[][] translationtables;
 
 	//
 	// Lighting LUT.
@@ -4648,11 +4638,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 		return dist;
 	}
 
-	// /////////////// COLORMAPS ///////////////////////////////
-
-	protected byte[][] translationtables;
-
-	// /////////////// COMMON RENDERING GLOBALS ////////////////
+	////////////// COMMON RENDERING GLOBALS ////////////////
 
 	/*
 	 * ON COLORMAPS: they are supposed to be
@@ -4730,10 +4716,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 	/** needed for pre rendering (fixed_t[]) */
 	protected int[] spritewidth, spriteoffset, spritetopoffset;
 
-	protected interface colfunc_t {
-		public void invoke();
-	}
-
 	////////////////// COLUMN AND SPAN FUNCTIONS    //////////////
 
 	protected DoomColumnFunction<byte[]> colfunc;
@@ -4747,6 +4729,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	protected DoomSpanFunction<byte[]>  spanfunc;
 
 	protected DoomColumnFunction<byte[]>  DrawTranslatedColumn;
+	protected DoomColumnFunction<byte[]>  DrawTranslatedColumnLow;
 	protected DoomColumnFunction<byte[]>  DrawColumnPlayer;
 	protected DoomColumnFunction<byte[]>  DrawColumnSkies;
 	protected DoomColumnFunction<byte[]>  DrawColumnSkiesLow;
@@ -4866,7 +4849,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 			colfunc = basecolfunc = DrawColumnLow;
 			maskedcolfunc = DrawColumnMaskedLow;
 			fuzzcolfunc = DrawFuzzColumnLow;
-			transcolfunc = DrawTranslatedColumn;
+			transcolfunc = DrawTranslatedColumnLow;
 			glasscolfunc = DrawTLColumn;
 			playercolfunc = DrawColumnMaskedLow;
 			skycolfunc= DrawColumnSkiesLow;
@@ -5062,7 +5045,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	 * appropriate.
 	 * 
 	 */
-	public final void InitTextureMapping() {
+	protected final void InitTextureMapping() {
 		int i, x, t;
 		int focallength; // fixed_t
 		int fov = FIELDOFVIEW;
@@ -5841,23 +5824,54 @@ public abstract class RendererState implements Renderer<byte[]>,
 	 * Could be read from a lump instead.
 	 */
 
-	public void InitTranslationTables() {
+	protected final void InitTranslationTables() {
 		int i;
 
+		final int TR_COLORS=28;
+		
 		// translationtables = Z_Malloc (256*3+255, PU_STATIC, 0);
 		// translationtables = (byte *)(( (int)translationtables + 255 )& ~255);
-		translationtables = new byte[4][256];
+		translationtables = new byte[TR_COLORS][256];
 
 		// translate just the 16 green colors
 		for (i = 0; i < 256; i++) {
+		    translationtables[0][i] = (byte) i;
+		    
 			if (i >= 0x70 && i <= 0x7f) {
-				// map green ramp to gray, brown, red
-				translationtables[1][i] = (byte) (0x60 + (i & 0xf));
-				translationtables[2][i] = (byte) (0x40 + (i & 0xf));
-				translationtables[3][i] = (byte) (0x20 + (i & 0xf));
-			} else {
-				// Keep all other colors as is.
-				translationtables[1][i] = translationtables[2][i] = translationtables[3][i] = (byte) i;
+				// Remap green range to other ranges.
+				translationtables[1][i] = (byte) (0x60 + (i & 0xf)); // gray
+				translationtables[2][i] = (byte) (0x40 + (i & 0xf)); // brown
+				translationtables[3][i] = (byte) (0x20 + (i & 0xf)); // red
+				translationtables[4][i] = (byte) (0x10 + (i & 0xf)); // pink
+				translationtables[5][i] = (byte) (0x30 + (i & 0xf)); // skin
+				translationtables[6][i] = (byte) (0x50 + (i & 0xf)); // metal
+				translationtables[7][i] = (byte) (0x80 + (i & 0xf)); // copper
+				translationtables[8][i] = (byte) (0xB0 + (i & 0xf)); // b.red
+				translationtables[9][i] = (byte) (0xC0 + (i & 0xf)); // electric blue
+				translationtables[10][i] = (byte) (0xD0 + (i & 0xf)); // guantanamo
+				// "Halfhue" colors for which there are only 8 distinct hues
+                translationtables[11][i] = (byte) (0x90 + (i & 0xf)/2); // brown2
+                translationtables[12][i] = (byte) (0x98 + (i & 0xf)/2); // gray2
+                translationtables[13][i] = (byte) (0xA0 + (i & 0xf)/2); // piss
+                translationtables[14][i] = (byte) (0xA8 + (i & 0xf)/2); // gay
+                translationtables[15][i] = (byte) (0xE0 + (i & 0xf)/2); // yellow
+                translationtables[16][i] = (byte) (0xE8 + (i & 0xf)/2); // turd
+                translationtables[17][i] = (byte) (0xF0 + (i & 0xf)/2); // compblue
+                translationtables[18][i] = (byte) (0xF8 + (i & 0xf)/2); // whore
+                translationtables[19][i] = (byte) (0x05 + (i & 0xf)/2); // nigga
+                // "Pimped up" colors, using mixed hues.
+                translationtables[20][i] = (byte) (0x90 + (i & 0xf)); // soldier
+                translationtables[21][i] = (byte) (0xA0 + (i & 0xf)); // drag queen
+                translationtables[22][i] = (byte) (0xE0 + (i & 0xf)); // shit & piss
+                translationtables[23][i] = (byte) (0xF0 + (i & 0xf)); // raver
+                translationtables[24][i] = (byte) (0x70 + (0xf-i & 0xf)); // inv.marine
+                translationtables[25][i] = (byte) (0xF0 + (0xf-i & 0xf)); // inv.raver
+                translationtables[26][i] = (byte) (0xE0 + (0xf-i & 0xf)); // piss & shit
+                translationtables[27][i] = (byte) (0xA0 + (i & 0xf)); // shitty gay
+                } else {
+			    for (int j=1;j<TR_COLORS;j++)
+			        // Keep all other colors as is.
+			        translationtables[j][i] =(byte) i;
 			}
 		}
 	}
@@ -5970,7 +5984,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	    
 	    dcvars=new ColVars<byte[]>();	    
 	    maskedcvars=new ColVars<byte[]>();
-	    maskedcvars.dc_translation=translationtables[0];
+	    //maskedcvars.dc_translation=translationtables[0];
 	    skydcvars=new ColVars<byte[]>();
 	    
 	    dsvars=new SpanVars<byte[]>();
@@ -5983,6 +5997,7 @@ public abstract class RendererState implements Renderer<byte[]>,
         
         // Translated columns are usually sprites-only.
         DrawTranslatedColumn=new R_DrawTranslatedColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+        DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
         DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
         
         // Fuzzy columns. These are also masked.
