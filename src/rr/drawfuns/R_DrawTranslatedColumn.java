@@ -48,6 +48,8 @@ public final class R_DrawTranslatedColumn
             dcvars.dc_texturemid + (dcvars.dc_yl - dcvars.centery) * fracstep;
 
         // Here we do an additional index re-mapping.
+        // Maes: Unroll by 4
+        if (count>=4)
         do {
             // Translation tables are used
             // to map certain colorramps to other ones,
@@ -55,7 +57,39 @@ public final class R_DrawTranslatedColumn
             // Thus the "green" ramp of the player 0 sprite
             // is mapped to gray, red, black/indigo.
             screen[dest] =
-                dc_colormap[0x00FF & dc_translation[dc_source[dc_source_ofs
+                dc_colormap[0x00FF & dc_translation[0xFF&dc_source[dc_source_ofs
+                        + (frac >> FRACBITS)]]];
+            dest += SCREENWIDTH;
+            frac += fracstep;
+            
+            screen[dest] =
+                    dc_colormap[0x00FF & dc_translation[0xFF&dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
+            dest += SCREENWIDTH;
+            frac += fracstep;
+            
+            screen[dest] =
+                    dc_colormap[0x00FF & dc_translation[0xFF&dc_source[dc_source_ofs
+                            + (frac >> FRACBITS)]]];
+                dest += SCREENWIDTH;
+                frac += fracstep;
+                
+                screen[dest] =
+                        dc_colormap[0x00FF & dc_translation[0xFF&dc_source[dc_source_ofs
+                                + (frac >> FRACBITS)]]];
+                dest += SCREENWIDTH;
+                frac += fracstep;
+            
+        } while ((count-=4) >4);
+        
+        do {
+            // Translation tables are used
+            // to map certain colorramps to other ones,
+            // used with PLAY sprites.
+            // Thus the "green" ramp of the player 0 sprite
+            // is mapped to gray, red, black/indigo.
+            screen[dest] =
+                dc_colormap[0x00FF & dc_translation[0xFF&dc_source[dc_source_ofs
                         + (frac >> FRACBITS)]]];
             dest += SCREENWIDTH;
 
