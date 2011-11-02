@@ -82,6 +82,7 @@ public final class R_DrawTranslatedColumn
             
         } while ((count-=4) >4);
         
+        if (count>0)
         do {
             // Translation tables are used
             // to map certain colorramps to other ones,
