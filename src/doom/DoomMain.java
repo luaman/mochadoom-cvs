@@ -19,6 +19,7 @@ import java.util.List;
 import n.DummyNetworkDriver;
 import static data.dstrings.*;
 import p.Actions;
+import p.BoomLevelLoader;
 import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
@@ -103,7 +104,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.97 2011/11/01 23:53:26 velktron Exp $
+// $Id: DoomMain.java,v 1.98 2011/11/03 15:45:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -129,7 +130,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.97 2011/11/01 23:53:26 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.98 2011/11/03 15:45:34 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3202,7 +3203,7 @@ public void ScreenShot ()
         // Then the menu...
         status_holders.add(this.HU=new HU(this));
         status_holders.add(this.M=new Menu(this));
-        status_holders.add(this.LL=new LevelLoader(this));
+        status_holders.add(this.LL=new BoomLevelLoader(this));
         
         // This will set R.
         selectRenderer();
@@ -3211,7 +3212,7 @@ public void ScreenShot ()
         status_holders.add(this.ST=new StatusBar(this));
         status_holders.add(this.AM=new Map(this)); // Call Init later.
         this.TM=new SimpleTextureManager(this);
-        this.SM=(SpriteManager) this.R;
+        this.SM=new SpriteManager(this);
 
         //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
         // it seems to fit perfectly here
@@ -4221,6 +4222,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.98  2011/11/03 15:45:34  velktron
+//Adapted to using ISpriteManager
+//
 //Revision 1.97  2011/11/01 23:53:26  velktron
 //-verbose
 //
