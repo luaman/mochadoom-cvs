@@ -16,7 +16,6 @@ import static data.Limits.MAXHEIGHT;
 import static data.Limits.MAXSEGS;
 import static data.Limits.MAXVISSPRITES;
 import static data.Limits.MAXWIDTH;
-import static data.Limits.MAX_SPRITEFRAMES;
 import static data.Tables.ANG180;
 import static data.Tables.ANG270;
 import static data.Tables.ANG45;
@@ -100,15 +99,13 @@ import rr.drawfuns.*;
  * 
  */
 
-public abstract class RendererState implements Renderer<byte[]>,
-		SpriteManager, ILimitResettable, IGetColumn {
+public abstract class RendererState implements Renderer<byte[]>, ILimitResettable, IGetColumn {
 
 	protected static final boolean DEBUG = false;
 	protected static final boolean DEBUG2 = false;
 	// HACK: An all zeroes array used for fast clearing of certain visplanes.
 	protected int[] BLANKCACHEDHEIGHT;
-	protected short[] BLANKFLOORCLIP;
-	protected short[] BLANKCEILINGCLIP;
+
 	
 	/////////////////////// STATUS ////////////////////////
 
@@ -116,11 +113,13 @@ public abstract class RendererState implements Renderer<byte[]>,
 	protected IDoomGameNetworking DGN;
 	protected AbstractLevelLoader LL;
 	protected IWadLoader W;
-	protected SegDrawer MySegs;
+	protected ISegDrawer MySegs;
 	protected IDoomMenu Menu;
 	protected BSP MyBSP;
 	protected PlaneDrawer MyPlanes;
-	protected Things MyThings;
+	protected IThingDrawer MyThings;
+	protected ISpriteManager SM;
+	protected IVisSpriteManagement VIS;
 	protected DoomVideoRenderer<byte[]> V;
 	protected UnifiedGameMap P;
 	protected IDoomSystem I;
@@ -164,12 +163,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 	// initially.
 	protected int MAXVISPLANES = Limits.MAXVISPLANES;
 	protected int MAXDRAWSEGS = Limits.MAXDRAWSEGS;
-
-	/**
-	 * Clip values are the solid pixel bounding the range. floorclip starts out
-	 * SCREENHEIGHT ceilingclip starts out -1
-	 */
-	protected short[] floorclip, ceilingclip;
 
 	/** visplane_t*, treat as indexes into visplanes */
 	protected int lastvisplane, floorplane, ceilingplane;
@@ -472,8 +465,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 		  // These don't change between implementations, yet.
 		  this.MyThings=new Things();
 		  this.MyBSP=new BSP();
+		  this.VIS=new VisSprites();
 		  
 		  this.detailaware=new ArrayList<IDetailAware>();
+		  
+		  // Initialize array of minus ones for sprite clipping
+          InitNegOneArray();
 		
 		  // Set rendering functions only after screen sizes 
 		  // and stuff have been set.		
@@ -515,28 +512,11 @@ public abstract class RendererState implements Renderer<byte[]>,
 		this.P = DC.P;
 		// We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
 	    this.V=(DoomVideoRenderer<byte[]>) DC.V;
+	    this.SM=DC.SM;
 	    this.I=DC.I;
 	}
 
 	// ////////////////////////////// THINGS ////////////////////////////////
-
-	// MAES: Shit taken from things
-
-	protected int firstspritelump;
-	protected int lastspritelump;
-	protected int numspritelumps;
-
-	//
-	// Sprite rotation 0 is facing the viewer,
-	// rotation 1 is one angle turn CLOCKWISE around the axis.
-	// This is not the same as the angle,
-	// which increases counter clockwise (protractor).
-	// There was a lot of stuff grabbed wrong, so I changed it...
-	//
-
-	/** fixed_t */
-	protected int pspritescale, pspriteiscale, pspritexscale, pspriteyscale,
-			skyscale;
 
 	protected byte[][] spritelights;
 
@@ -556,56 +536,28 @@ public abstract class RendererState implements Renderer<byte[]>,
 	protected short[] mceilingclip;
 	protected int p_mceilingclip;
 
-	//
-	// INITIALIZATION FUNCTIONS
-	//
-
-	/**
-	 * variables used to look up and range check thing_t sprites patches
-	 */
-	private spritedef_t[] sprites;
-	protected int numsprites;
-
-	/*
-	 * variables used to look up and range check thing_t sprites patches
-	 */
-
-	/**
-	 * Temporarily contains the frames of a given sprite before they are
-	 * registered with the rendering system. Apparently, a maximum of 29 frames
-	 * per sprite is allowed.
-	 */
-	protected spriteframe_t[] sprtemp = new spriteframe_t[29];
-	protected int maxframe;
-	protected String spritename;
-
 	/** Refresh of things, i.e. objects represented by sprites. */
 
-	protected final class Things implements IVideoScaleAware, ILimitResettable {
-
-		private static final int MAX_SPRITE_FRAMES = 29; 
-		
+	protected final class Things implements IThingDrawer{
+	    
+	    // Cache those you get from the sprite manager
+	    protected int[] spritewidth, spriteoffset, spritetopoffset;
+	    
+	    /** fixed_t */
+	    protected int pspritescale, pspriteiscale, pspritexscale, pspriteyscale,
+	            skyscale;
+	    
 		public Things() {
-			sprtemp = new spriteframe_t[MAX_SPRITEFRAMES];
-			C2JUtils.initArrayOfObjects(sprtemp);
-			vissprites = new vissprite_t[MAXVISSPRITES];
-			C2JUtils.initArrayOfObjects(vissprites);
-			vsprsortedhead = new vissprite_t();
-			unsorted = new vissprite_t();
+
 			// ts=new ThreadSort<vissprite_t>(vissprites);
 		}
 
-		public void resetLimits() {
-			vissprite_t[] tmp = new vissprite_t[MAXVISSPRITES];
-			System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
-
-			// Now, that was quite a haircut!.
-			vissprites = tmp;
-
-			// System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
+		@Override
+		public void cacheSpriteManager(ISpriteManager SM){
+	          this.spritewidth=SM.getSpriteWidth();
+	            this.spriteoffset=SM.getSpriteOffset();
+	            this.spritetopoffset=SM.getSpriteTopOffset();
 		}
-		
-		
 
 		/////////////// VIDEO SCALE STUFF /////////////////////
 
@@ -631,517 +583,14 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 		// //////////////////////////////////////////////////////////////////////////
 
-		/**
-		 * R_InstallSpriteLump Local function for R_InitSprites.
-		 */
-
-		protected final void InstallSpriteLump(int lump, int frame,
-				int rotation, boolean flipped) {
-
-			// System.out.println("Trying to install "+spritename+" Frame "+
-			// (char)('A'+frame)+" rot "+(rotation)
-			// +" . Should have rotations: "+sprtemp[frame].rotate);
-			int r;
-
-			if (frame >= 29 || rotation > 8)
-				I.Error("R_InstallSpriteLump: Bad frame characters in lump %i",
-						lump);
-
-			if ((int) frame > maxframe)
-				maxframe = frame;
-
-			/*
-			 * A rotation value of 0 means that we are either checking the first
-			 * frame of a sprite that HAS rotations, or something that has no
-			 * rotations at all. The value of rotate doesn't really help us
-			 * discern here, unless set to "false" a-priori...which can't happen
-			 * ?!
-			 */
-
-			if (rotation == 0) {
-				/*
-				 * MAES: notice how comparisons are done with strict literals
-				 * (true and false) which are actually defined to be 0 and 1,
-				 * rather than assuming that true is "any nonzero value". This
-				 * happens because rotate's value could be -1 at this point (!),
-				 * if a series of circumstances occur. Therefore it's actually a
-				 * "tri-state", and the comparison 0==false and
-				 * "anything else"==true was not good enough in this case. A
-				 * value of -1 doesn't yield either true or false here.
-				 */
-
-				// the lump should be used for all rotations
-				if (sprtemp[frame].rotate == 0) {
-					/*
-					 * MAES: Explanation: we stumbled upon this lump before, and
-					 * decided that this frame should have no more rotations,
-					 * hence we found an error and we bomb everything.
-					 */
-					I.Error("R_InitSprites: Sprite %s frame %c has multiple rot=0 lump",
-							spritename, 'A' + frame);
-				}
-
-				// This should NEVER happen!
-				if (sprtemp[frame].rotate == 1) {
-					/*
-					 * MAES: This can only happen if we decided that a sprite's
-					 * frame was already decided to have rotations, but now we
-					 * stumble upon another occurence of "rotation 0". Or if you
-					 * use naive true/false evaluation for .rotate ( -1 is also
-					 * an admissible value).
-					 */
-					I.Error("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump",
-							spritename, 'A' + frame);
-				}
-
-				// Rotation is acknowledged to be totally false at this point.
-				sprtemp[frame].rotate = 0;
-				for (r = 0; r < 8; r++) {
-					sprtemp[frame].lump[r] = (short) (lump - firstspritelump);
-					sprtemp[frame].flip[r] = (byte) (flipped ? 1 : 0);
-				}
-				return;
-			}
-
-			// the lump is only used for one rotation
-			if (sprtemp[frame].rotate == 0)
-				I.Error("R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump",
-						spritename, 'A' + frame);
-
-			sprtemp[frame].rotate = 1;
-
-			// make 0 based
-			rotation--;
-			if (sprtemp[frame].lump[rotation] == -1) {
-				// FUN FACT: with resource coalesing, this is no longer an
-				// error.
-				// I.Error
-				// ("R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it",
-				// spritename, 'A'+frame, '1'+rotation);
-
-				// Everything is OK, we can bless the temporary sprite's frame's
-				// rotation.
-				sprtemp[frame].lump[rotation] = (short) (lump - firstspritelump);
-				sprtemp[frame].flip[rotation] = (byte) (flipped ? 1 : 0);
-				sprtemp[frame].rotate = 1; // jff 4/24/98 only change if rot
-											// used
-			}
-		}
-
-		/**
-		 * R_InstallSpriteLump Local function for R_InitSprites.
-		 * 
-		 * Boom function, more suited to resource coalescing.
-		 * 
-		 */
-
-		protected final void InstallSpriteLump2(int lump, int frame,
-				int rotation, boolean flipped) {
-			if (frame >= MAX_SPRITE_FRAMES || rotation > 8)
-				I.Error("R_InstallSpriteLump: Bad frame characters in lump %i",
-						lump);
-
-			if ((int) frame > maxframe)
-				maxframe = frame;
-
-			if (rotation == 0) { // the lump should be used for all rotations
-				int r;
-				for (r = 0; r < 8; r++)
-					if (sprtemp[frame].lump[r] == -1) {
-						sprtemp[frame].lump[r] = lump - firstspritelump;
-						sprtemp[frame].flip[r] = (byte) (flipped ? 1 : 0);
-						sprtemp[frame].rotate = 0; // jff 4/24/98 if any subbed,
-													// rotless
-					}
-				return;
-			}
-
-			// the lump is only used for one rotation
-
-			if (sprtemp[frame].lump[--rotation] == -1) {
-				sprtemp[frame].lump[rotation] = lump - firstspritelump;
-				sprtemp[frame].flip[rotation] = (byte) (flipped ? 1 : 0);
-				sprtemp[frame].rotate = 1; // jff 4/24/98 only change if rot
-											// used
-			}
-		}
-
-		//
-		// R_InitSpriteDefs
-		// Pass a null terminated list of sprite names
-		// (4 chars exactly) to be used.
-		//
-		// Builds the sprite rotation matrixes to account
-		// for horizontally flipped sprites.
-		//
-		// Will report an error if the lumps are inconsistent.
-		// Only called at startup.
-		//
-		// Sprite lump names are 4 characters for the actor,
-		// a letter for the frame, and a number for the rotation.
-		//
-		// A sprite that is flippable will have an additional
-		// letter/number appended.
-		//
-		// The rotation character can be 0 to signify no rotations.
-		//
-		// 1/25/98, 1/31/98 killough : Rewritten for performance
-		//
-		// Empirically verified to have excellent hash
-		// properties across standard Doom sprites:
-
-		private final void InitSpriteDefs2(String[] namelist) {
-			int numentries = lastspritelump - firstspritelump + 1;
-			Hashtable<Integer, List<Integer>> hash;
-			int i;
-
-			if (numentries == 0 || namelist == null)
-				return;
-
-			// count the number of sprite names
-			i = namelist.length;
-
-			numsprites = i;
-
-			sprites = new spritedef_t[numsprites];
-			C2JUtils.initArrayOfObjects(sprites);
-
-			// Create hash table based on just the first four letters of each
-			// sprite
-			// killough 1/31/98
-			// Maes: the idea is to have a chained hastable which can handle
-			// multiple
-			// entries (sprites) on the same primary key (the 4 first chars of
-			// the
-			// sprite name)
-
-			hash = new Hashtable<Integer, List<Integer>>(numentries); // allocate
-																		// hash
-																		// table
-
-			// We have to trasverse this in the opposite order, so that later
-			// lumps
-			// trump previous ones in order.
-			for (i = numentries - 1; i >= 0; i--) {
-				int hashcode = SpriteNameHash(W
-						.GetLumpInfo(i + firstspritelump).name);
-				// Create chain list for each sprite class (e.g. TROO, POSS,
-				// etc.)
-				//
-				if (!hash.containsKey(hashcode)) {
-					hash.put(hashcode, new ArrayList<Integer>());
-				}
-
-				// Store (yet another) lump index for this sprite.
-				hash.get(hashcode).add(i);
-			}
-
-			// scan all the lump names for each of the names,
-			// noting the highest frame letter.
-
-			for (i = 0; i < numsprites; i++) {
-
-				// We only look for entries that are known to be sprites.
-				// The hashtable may contain a lot of other shit, at this point
-				// which will be hopefully ignored.
-				String spritename = namelist[i];
-				List<Integer> list = hash.get(SpriteNameHash(spritename));
-
-				// Well, it may have been something else. Fuck it.
-				if (list != null && !list.isEmpty()) {
-
-					// Maes: the original code actually set everything to "-1"
-					// here, including the
-					// "boolean" rotate value. The idea was to create a
-					// "tristate" of sorts, where -1
-					// means a sprite of uncertain status. Goto
-					// InstallSpriteLumps for more.
-					for (int k = 0; k < sprtemp.length; k++) {
-						Arrays.fill(sprtemp[k].flip, (byte) -1);
-						Arrays.fill(sprtemp[k].lump, (short) -1);
-						// This should be INDETERMINATE at this point.
-						sprtemp[k].rotate = -1;
-					}
-					maxframe = -1;
-
-					// What is stored in the lists are all actual lump numbers
-					// relative
-					// to e.g. TROO. In coalesced lumps, there will be overlap.
-					// This procedure should, in theory, trump older ones.
-
-					for (Integer j : list) {
-
-						lumpinfo_t lump = W.GetLumpInfo(j + firstspritelump);
-
-						// We don't know a-priori which frames exist.
-						// However, we do know how to interpret existing ones,
-						// and have an implicit maximum sequence of 29 Frames.
-						// A frame can also hame multiple rotations.
-
-						if (lump.name.substring(0, 4).equalsIgnoreCase(
-								spritename.substring(0, 4))) {
-
-							int frame = lump.name.charAt(4) - 'A';
-							int rotation = lump.name.charAt(5) - '0';
-
-							if (sprtemp[frame].rotate != -1) {
-								// We already encountered this sprite, but we
-								// may need to trump it with something else
-
-							}
-
-							InstallSpriteLump2(j + firstspritelump, frame,
-									rotation, false);
-							if (lump.name.length() >= 7) {
-								frame = lump.name.charAt(6) - 'A';
-								rotation = lump.name.charAt(7) - '0';
-								InstallSpriteLump2(j + firstspritelump, frame,
-										rotation, true);
-							}
-						}
-					}
-
-					// check the frames that were found for completeness
-					if ((sprites[i].numframes = ++maxframe) != 0) // killough
-																	// 1/31/98
-					{
-						int frame;
-						for (frame = 0; frame < maxframe; frame++)
-							switch ((int) sprtemp[frame].rotate) {
-							case -1:
-								// no rotations were found for that frame at all
-								I.Error("R_InitSprites: No patches found for %s frame %c",
-										namelist[i], frame + 'A');
-								break;
-
-							case 0:
-								// only the first rotation is needed
-								break;
-
-							case 1:
-								// must have all 8 frames
-							{
-								int rotation;
-								for (rotation = 0; rotation < 8; rotation++)
-									if (sprtemp[frame].lump[rotation] == -1)
-										I.Error("R_InitSprites: Sprite %s frame %c is missing rotations",
-												namelist[i], frame + 'A');
-								break;
-							}
-							}
-						// allocate space for the frames present and copy
-						// sprtemp to it
-						// MAES: we can do that elegantly in one line.
-
-						sprites[i].copy(sprtemp, maxframe);
-					}
-
-				}
-			}
-
-		}
-
-		private final int SpriteNameHash(String ss) {
-			return ss.substring(0, 4).hashCode();
-		}
-
-		/**
-		 * R_InitSpriteDefs Pass a null terminated list of sprite names (4 chars
-		 * exactly) to be used. Builds the sprite rotation matrixes to account
-		 * for horizontally flipped sprites. Will report an error if the lumps
-		 * are inconsistent. Only called at startup.
-		 * 
-		 * Sprite lump names are 4 characters for the actor, a letter for the
-		 * frame, and a number for the rotation. A sprite that is flippable will
-		 * have an additional letter/number appended. The rotation character can
-		 * be 0 to signify no rotations.
-		 */
-
-		public void InitSpriteDefs(String[] namelist) {
-
-			int intname;
-			int frame;
-			int rotation;
-			int start;
-			int end;
-			int patched;
-
-			if (namelist == null)
-				return;
-			numsprites = namelist.length;
-
-			if (numsprites == 0)
-				return;
-
-			sprites = new spritedef_t[numsprites];
-			C2JUtils.initArrayOfObjects(sprites);
-
-			start = firstspritelump - 1;
-			end = lastspritelump + 1;
-
-			// scan all the lump names for each of the names,
-			// noting the highest frame letter.
-			// Just compare 4 characters as ints
-			for (int i = 0; i < numsprites; i++) {
-				// System.out.println("Preparing sprite "+i);
-				spritename = namelist[i];
-
-				// The original code actually set everything to "-1"
-				// here, including the "boolean" rotate value. The idea was 
-				// to create a "tristate" of sorts, where -1 means a 
-				// sprite of uncertain status. Goto InstallSpriteLumps
-				// for more.
-				for (int j = 0; j < sprtemp.length; j++) {
-					Arrays.fill(sprtemp[j].flip, (byte) -1);
-					Arrays.fill(sprtemp[j].lump, (short) -1);
-					// This should be INDETERMINATE at this point.
-					sprtemp[j].rotate = -1;
-				}
-
-				maxframe = -1;
-				intname = name8.getIntName(namelist[i].toUpperCase());
-
-				// scan the lumps,
-				// filling in the frames for whatever is found
-				for (int l = start + 1; l < end; l++) {
-					// We HOPE it has 8 characters.
-					char[] cname = W.GetLumpInfo(l).name.toCharArray();
-					if (cname.length == 6 || cname.length == 8) // Sprite names
-																// must be this
-																// way
-
-						// If the check is successful, we keep looking for more
-						// frames
-						// for a particular sprite e.g. TROOAx, TROOHxHy etc.
-						//
-						if (W.GetLumpInfo(l).intname == intname) {
-							frame = cname[4] - 'A';
-							rotation = cname[5] - '0';
-
-							if (DM.modifiedgame)
-								patched = W
-										.GetNumForName(W.GetLumpInfo(l).name);
-							else
-								patched = l;
-
-							InstallSpriteLump2(patched, frame, rotation, false);
-
-							// Second set of rotations?
-							if (cname.length > 6 && cname[6] != 0) {
-								frame = cname[6] - 'A';
-								rotation = cname[7] - '0';
-								InstallSpriteLump2(l, frame, rotation, true);
-							}
-						}
-				}
-
-				// check the frames that were found for completeness
-				// This can only be -1 at this point if we didn't install
-				// a single frame successfuly.
-				//
-				if (maxframe == -1) {
-					// System.out.println("Sprite "+spritename+" has no frames!");
-					getSprites()[i].numframes = 0;
-					// We move on to the next sprite with this one.
-					continue;
-				}
-
-				maxframe++;
-
-				for (frame = 0; frame < maxframe; frame++) {
-					switch ((int) sprtemp[frame].rotate) {
-					case -1:
-						// no rotations were found for that frame at all
-						I.Error("R_InitSprites: No patches found for %s frame %c",
-								namelist[i], frame + 'A');
-						break;
-
-					case 0:
-						// only the first rotation is needed
-						break;
-
-					case 1:
-						// must have all 8 frames
-						for (rotation = 0; rotation < 8; rotation++)
-							if (sprtemp[frame].lump[rotation] == -1)
-								I.Error("R_InitSprites: Sprite %s frame %c is missing rotations",
-										namelist[i], frame + 'A');
-						break;
-					}
-				}
-
-				// allocate space for the frames present and copy sprtemp to it
-				// MAES: we can do that elegantly in one line.
-
-				sprites[i].copy(sprtemp, maxframe);
-
-				// sprites[i].numframes = maxframe;
-				// sprites[i].spriteframes = new spriteframe_t[maxframe];
-				// C2JUtils.initArrayOfObjects(sprites[i].spriteframes,spriteframe_t.class);
-
-				// for (int j=0;j<)
-				// System.arraycopy(src, srcPos, dest, destPos, length)
-				// memcpy (sprites[i].spriteframes, sprtemp,
-				// maxframe*sizeof(spriteframe_t));
-			}
-
-		}
+		
 
 		//
 		// GAME FUNCTIONS
 		//
-		vissprite_t[] vissprites;
-		int vissprite_p;
-		int newvissprite;
 
-		/**
-		 * R_ClearSprites Called at frame start.
-		 */
-		public void ClearSprites() {
-			// vissprite_p = vissprites;
-			vissprite_p = 0;
-		}
 
-		private final vissprite_t overflowsprite = new vissprite_t();
 
-		/**
-		 * R_NewVisSprite
-		 * 
-		 * Returns either a "new" sprite (actually, reuses a pool), or a special
-		 * "overflow sprite" which just gets overwritten with bogus data.
-		 * 
-		 * FIXME: It's a bit of dumb thing to do, since the overflow sprite is
-		 * never rendered but we have to copy data over it anyway. Would make
-		 * more sense to check for it specifically and avoiding copying data,
-		 * which should be more time consuming.
-		 * 
-		 * TODO: definitive fix for this would be to make it fully
-		 * limit-removing.
-		 * 
-		 * @return
-		 */
-		public vissprite_t NewVisSprite() {
-			if (vissprite_p == (vissprites.length - 1)) {
-				ResizeSprites();
-			}
-			// return overflowsprite;
-
-			vissprite_p++;
-			return vissprites[vissprite_p - 1];
-		}
-
-		protected final void ResizeSprites() {
-			vissprite_t[] tmp = new vissprite_t[vissprites.length * 2];
-			System.arraycopy(vissprites, 0, tmp, 0, vissprites.length);
-
-			C2JUtils.initArrayOfObjects(tmp, vissprites.length, tmp.length);
-
-			// Bye bye, old vissprites.
-			vissprites = tmp;
-
-			System.out.println("Vissprites resized. Actual capacity "
-					+ vissprites.length);
-		}
 
 		/**
 		 * R_DrawVisSprite mfloorclip and mceilingclip should also be set.
@@ -1149,7 +598,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 		 * Sprites are actually drawn here.
 		 * 
 		 */
-		public final void DrawVisSprite(vissprite_t vis, int x1, int x2) {
+		protected final void DrawVisSprite(vissprite_t vis, int x1, int x2) {
 			column_t column;
 			int texturecolumn;
 			int frac; // fixed_t
@@ -1157,7 +606,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 			// At this point, the view angle (and patch) has already been
 			// chosen. Go back.
-			patch = W.CachePatchNum(vis.patch + firstspritelump, PU_CACHE);
+			patch = W.CachePatchNum(vis.patch + SM.getFirstSpriteLump(), PU_CACHE);
 
 			maskedcvars.dc_colormap = vis.colormap;
 			// colfunc=glasscolfunc;
@@ -1192,189 +641,9 @@ public abstract class RendererState implements Renderer<byte[]>,
 			colfunc = maskedcolfunc;
 		}
 
-		/**
-		 * R_ProjectSprite Generates a vissprite for a thing if it might be
-		 * visible.
-		 * 
-		 * @param thing
-		 */
-		public void ProjectSprite(mobj_t thing) {
-			int tr_x, tr_y;
-			int gxt, gyt;
-			int tx, tz;
+		
 
-			int xscale, x1, x2;
-
-			spritedef_t sprdef;
-			spriteframe_t sprframe;
-			int lump;
-
-			int rot;
-			boolean flip;
-
-			int index;
-
-			vissprite_t vis;
-
-			long ang;
-			int iscale;
-
-			// transform the origin point
-			tr_x = thing.x - viewx;
-			tr_y = thing.y - viewy;
-
-			gxt = FixedMul(tr_x, viewcos);
-			gyt = -FixedMul(tr_y, viewsin);
-
-			tz = gxt - gyt;
-
-			// thing is behind view plane?
-			if (tz < MINZ)
-				return;
-			/* MAES: so projection/tz gives horizontal scale */
-			xscale = FixedDiv(projection, tz);
-
-			gxt = -FixedMul(tr_x, viewsin);
-			gyt = FixedMul(tr_y, viewcos);
-			tx = -(gyt + gxt);
-
-			// too far off the side?
-			if (Math.abs(tx) > (tz << 2))
-				return;
-
-			// decide which patch to use for sprite relative to player
-			if (RANGECHECK) {
-				if (thing.sprite.ordinal() >= numsprites)
-					I.Error("R_ProjectSprite: invalid sprite number %i ",
-							thing.sprite);
-			}
-			sprdef = getSprites()[thing.sprite.ordinal()];
-			if (RANGECHECK) {
-				if ((thing.frame & FF_FRAMEMASK) >= sprdef.numframes)
-					I.Error("R_ProjectSprite: invalid sprite frame %i : %i ",
-							thing.sprite, thing.frame);
-			}
-			sprframe = sprdef.spriteframes[thing.frame & FF_FRAMEMASK];
-
-			if (sprframe.rotate != 0) {
-				// choose a different rotation based on player view
-				ang = PointToAngle(thing.x, thing.y);
-				rot = (int) ((ang - thing.angle + (ANG45 * 9) / 2) & BITS32) >>> 29;
-				lump = sprframe.lump[rot];
-				flip = (boolean) (sprframe.flip[rot] != 0);
-			} else {
-				// use single rotation for all views
-				lump = sprframe.lump[0];
-				flip = (boolean) (sprframe.flip[0] != 0);
-			}
-
-			// calculate edges of the shape
-			tx -= spriteoffset[lump];
-			x1 = (centerxfrac + FixedMul(tx, xscale)) >> FRACBITS;
-
-			// off the right side?
-			if (x1 > viewwidth)
-				return;
-
-			tx += spritewidth[lump];
-			x2 = ((centerxfrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
-
-			// off the left side
-			if (x2 < 0)
-				return;
-
-			// store information in a vissprite
-			vis = NewVisSprite();
-			vis.mobjflags = thing.flags;
-			vis.scale = xscale << detailshift;
-			vis.gx = thing.x;
-			vis.gy = thing.y;
-			vis.gz = thing.z;
-			vis.gzt = thing.z + spritetopoffset[lump];
-			vis.texturemid = vis.gzt - viewz;
-			vis.x1 = x1 < 0 ? 0 : x1;
-			vis.x2 = x2 >= viewwidth ? viewwidth - 1 : x2;
-			/*
-			 * This actually determines the general sprite scale) iscale =
-			 * 1/xscale, if this was floating point.
-			 */
-			iscale = FixedDiv(FRACUNIT, xscale);
-
-			if (flip) {
-				vis.startfrac = spritewidth[lump] - 1;
-				vis.xiscale = -iscale;
-			} else {
-				vis.startfrac = 0;
-				vis.xiscale = iscale;
-			}
-
-			if (vis.x1 > x1)
-				vis.startfrac += vis.xiscale * (vis.x1 - x1);
-			vis.patch = lump;
-
-			// get light level
-			if ((thing.flags & MF_SHADOW) != 0) {
-				// shadow draw
-				vis.colormap = null;
-			} else if (fixedcolormap != null) {
-				// fixed map
-				vis.colormap = fixedcolormap;
-				// vis.pcolormap=0;
-			} else if ((thing.frame & FF_FULLBRIGHT) != 0) {
-				// full bright
-				vis.colormap = colormaps[0];
-				// vis.pcolormap=0;
-			}
-
-			else {
-				// diminished light
-				index = xscale >> (LIGHTSCALESHIFT - detailshift);
-
-				if (index >= MAXLIGHTSCALE)
-					index = MAXLIGHTSCALE - 1;
-
-				vis.colormap = spritelights[index];
-				// vis.pcolormap=index;
-			}
-		}
-
-		/**
-		 * R_AddSprites
-		 * 
-		 * During BSP traversal, this adds sprites by sector.
-		 * 
-		 * 
-		 */
-		public void AddSprites(sector_t sec) {
-			if (DEBUG)
-				System.out.println("AddSprites");
-			mobj_t thing;
-			int lightnum;
-
-			// BSP is traversed by subsector.
-			// A sector might have been split into several
-			// subsectors during BSP building.
-			// Thus we check whether its already added.
-			if (sec.validcount == validcount)
-				return;
-
-			// Well, now it will be done.
-			sec.validcount = validcount;
-
-			lightnum = (sec.lightlevel >> LIGHTSEGSHIFT) + extralight;
-
-			if (lightnum < 0)
-				spritelights = scalelight[0];
-			else if (lightnum >= LIGHTLEVELS)
-				spritelights = scalelight[LIGHTLEVELS - 1];
-			else
-				spritelights = scalelight[lightnum];
-
-			// Handle all things in sector.
-			for (thing = sec.thinglist; thing != null; thing = (mobj_t) thing.snext)
-				ProjectSprite(thing);
-		}
-
+		
 		/**
 		 * R_DrawPSprite
 		 * 
@@ -1383,7 +652,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 		 * 
 		 */
 
-		public final void DrawPSprite(pspdef_t psp) {
+		protected final void DrawPSprite(pspdef_t psp) {
 
 			int tx;
 			int x1;
@@ -1398,12 +667,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 			// decide which patch to use (in terms of angle?)
 			if (RANGECHECK) {
-				if (psp.state.sprite.ordinal() >= numsprites)
+				if (psp.state.sprite.ordinal() >= SM.getNumSprites())
 					I.Error("R_ProjectSprite: invalid sprite number %i ",
 							psp.state.sprite);
 			}
 
-			sprdef = getSprites()[psp.state.sprite.ordinal()];
+			sprdef = SM.getSprite(psp.state.sprite.ordinal());
 			
 			if (RANGECHECK) {
 				if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes)
@@ -1552,25 +821,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 			}
 		}
 
-		vissprite_t vsprsortedhead;
-		// A dummy used as temp during sorting.
-		vissprite_t unsorted;
-
-		/**
-		 * R_SortVisSprites
-		 * 
-		 * UNUSED more efficient Comparable sorting + built-in Arrays.sort
-		 * function used.
-		 * 
-		 */
-
-		protected final void SortVisSprites() {
-			Arrays.sort(vissprites, 0, vissprite_p);
-
-			// Maes: got rid of old vissprite sorting code. Java's is better
-			// Hell, almost anything was better than that.
-			
-		}
 
 		// MAES: Scale to SCREENWIDTH
 		protected short[] clipbot;
@@ -1580,7 +830,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 		 * R_DrawSprite
 		 */
 
-		public void DrawSprite(vissprite_t spr) {
+		protected void DrawSprite(vissprite_t spr) {
 			int ds;
 			drawseg_t dss;
 
@@ -1690,35 +940,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 		}
 
 		/**
-		 * An alternate comb sort implementation. It doesn't perform as well as
-		 * a generic quicksort/mergesort, but performs pretty close.
-		 * 
-		 * @param input
-		 * @param length
-		 */
-
-		protected final void combSort(vissprite_t[] input, int length) {
-			int gap = length;
-			boolean swapped = true;
-			while (gap > 1 || swapped) {
-				if (gap > 1)
-					gap = (int) (gap / 1.247330950103979);
-
-				int i = 0;
-				swapped = false;
-				while (i + gap < length) {
-					if (input[i].compareTo(input[i + gap]) > 0) {
-						vissprite_t t = input[i];
-						input[i] = input[i + gap];
-						input[i + gap] = t;
-						swapped = true;
-					}
-					i++;
-				}
-			}
-		}
-
-		/**
 		 * R_DrawMasked
 		 * 
 		 * Sorts and draws vissprites (room for optimization in sorting func.)
@@ -1729,7 +950,9 @@ public abstract class RendererState implements Renderer<byte[]>,
 		 * 
 		 * 
 		 */
-		protected final void DrawMasked() {
+		
+		@Override
+		public final void DrawMasked() {
 			// vissprite_t spr;
 			int ds;
 			drawseg_t dss;
@@ -1744,7 +967,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 			// the original algorithm is so dreadful it actually does slow
 			// things down.
 
-			SortVisSprites();
+			VIS.SortVisSprites();
 
 			// If you are feeling adventurous, try these ones. They *might*
 			// perform
@@ -1784,7 +1007,10 @@ public abstract class RendererState implements Renderer<byte[]>,
 			colfunc = maskedcolfunc; // Sprites use fully-masked capable
 										// function.
 
-			for (int i = 0; i < vissprite_p; i++) {
+			final vissprite_t[] vissprites=VIS.getVisSprites();
+			final int numvissprites=VIS.getNumVisSprites();
+			
+			for (int i = 0; i < numvissprites; i++) {
 				DrawSprite(vissprites[i]);
 			}
 
@@ -1803,8 +1029,320 @@ public abstract class RendererState implements Renderer<byte[]>,
 			colfunc = maskedcolfunc;
 		}
 
+        @Override
+        public final void setPspriteIscale(int i) {
+            pspriteiscale=i;
+            
+        }
+
+        @Override
+        public final void setPspriteScale(int i) {
+            pspritescale=i;            
+        }
+        
 	}
 
+	protected final class VisSprites implements IVisSpriteManagement{
+	    
+	     vissprite_t[] vissprites;
+	     int vissprite_p;
+	     int newvissprite;
+	     
+	     // UNUSED
+	     //private final vissprite_t unsorted;
+	     //private final vissprite_t vsprsortedhead;
+	     
+	      // Cache those you get from the sprite manager
+	     protected int[] spritewidth, spriteoffset, spritetopoffset;
+	      
+	     public VisSprites(){
+	            vissprites = new vissprite_t[MAXVISSPRITES];
+	            C2JUtils.initArrayOfObjects(vissprites);
+	            //vsprsortedhead = new vissprite_t();
+	            //unsorted = new vissprite_t();
+	     }
+	    
+	    /**
+         * R_AddSprites
+         * 
+         * During BSP traversal, this adds sprites by sector.
+         * 
+         * 
+         */
+        
+        @Override
+        public void AddSprites(sector_t sec) {
+            if (DEBUG)
+                System.out.println("AddSprites");
+            mobj_t thing;
+            int lightnum;
+
+            // BSP is traversed by subsector.
+            // A sector might have been split into several
+            // subsectors during BSP building.
+            // Thus we check whether its already added.
+            if (sec.validcount == validcount)
+                return;
+
+            // Well, now it will be done.
+            sec.validcount = validcount;
+
+            lightnum = (sec.lightlevel >> LIGHTSEGSHIFT) + extralight;
+
+            if (lightnum < 0)
+                spritelights = scalelight[0];
+            else if (lightnum >= LIGHTLEVELS)
+                spritelights = scalelight[LIGHTLEVELS - 1];
+            else
+                spritelights = scalelight[lightnum];
+
+            // Handle all things in sector.
+            for (thing = sec.thinglist; thing != null; thing = (mobj_t) thing.snext)
+                ProjectSprite(thing);
+        }
+        
+        /**
+         * R_ProjectSprite Generates a vissprite for a thing if it might be
+         * visible.
+         * 
+         * @param thing
+         */
+        protected final void ProjectSprite(mobj_t thing) {
+            int tr_x, tr_y;
+            int gxt, gyt;
+            int tx, tz;
+
+            int xscale, x1, x2;
+
+            spritedef_t sprdef;
+            spriteframe_t sprframe;
+            int lump;
+
+            int rot;
+            boolean flip;
+
+            int index;
+
+            vissprite_t vis;
+
+            long ang;
+            int iscale;
+
+            // transform the origin point
+            tr_x = thing.x - viewx;
+            tr_y = thing.y - viewy;
+
+            gxt = FixedMul(tr_x, viewcos);
+            gyt = -FixedMul(tr_y, viewsin);
+
+            tz = gxt - gyt;
+
+            // thing is behind view plane?
+            if (tz < MINZ)
+                return;
+            /* MAES: so projection/tz gives horizontal scale */
+            xscale = FixedDiv(projection, tz);
+
+            gxt = -FixedMul(tr_x, viewsin);
+            gyt = FixedMul(tr_y, viewcos);
+            tx = -(gyt + gxt);
+
+            // too far off the side?
+            if (Math.abs(tx) > (tz << 2))
+                return;
+
+            // decide which patch to use for sprite relative to player
+            if (RANGECHECK) {
+                if (thing.sprite.ordinal() >= SM.getNumSprites())
+                    I.Error("R_ProjectSprite: invalid sprite number %i ",
+                            thing.sprite);
+            }
+            sprdef = SM.getSprite(thing.sprite.ordinal());
+            if (RANGECHECK) {
+                if ((thing.frame & FF_FRAMEMASK) >= sprdef.numframes)
+                    I.Error("R_ProjectSprite: invalid sprite frame %i : %i ",
+                            thing.sprite, thing.frame);
+            }
+            sprframe = sprdef.spriteframes[thing.frame & FF_FRAMEMASK];
+
+            if (sprframe.rotate != 0) {
+                // choose a different rotation based on player view
+                ang = PointToAngle(thing.x, thing.y);
+                rot = (int) ((ang - thing.angle + (ANG45 * 9) / 2) & BITS32) >>> 29;
+                lump = sprframe.lump[rot];
+                flip = (boolean) (sprframe.flip[rot] != 0);
+            } else {
+                // use single rotation for all views
+                lump = sprframe.lump[0];
+                flip = (boolean) (sprframe.flip[0] != 0);
+            }
+
+            // calculate edges of the shape
+            tx -= spriteoffset[lump];
+            x1 = (centerxfrac + FixedMul(tx, xscale)) >> FRACBITS;
+
+            // off the right side?
+            if (x1 > viewwidth)
+                return;
+
+            tx += spritewidth[lump];
+            x2 = ((centerxfrac + FixedMul(tx, xscale)) >> FRACBITS) - 1;
+
+            // off the left side
+            if (x2 < 0)
+                return;
+
+            // store information in a vissprite
+            vis = NewVisSprite();
+            vis.mobjflags = thing.flags;
+            vis.scale = xscale << detailshift;
+            vis.gx = thing.x;
+            vis.gy = thing.y;
+            vis.gz = thing.z;
+            vis.gzt = thing.z + spritetopoffset[lump];
+            vis.texturemid = vis.gzt - viewz;
+            vis.x1 = x1 < 0 ? 0 : x1;
+            vis.x2 = x2 >= viewwidth ? viewwidth - 1 : x2;
+            /*
+             * This actually determines the general sprite scale) iscale =
+             * 1/xscale, if this was floating point.
+             */
+            iscale = FixedDiv(FRACUNIT, xscale);
+
+            if (flip) {
+                vis.startfrac = spritewidth[lump] - 1;
+                vis.xiscale = -iscale;
+            } else {
+                vis.startfrac = 0;
+                vis.xiscale = iscale;
+            }
+
+            if (vis.x1 > x1)
+                vis.startfrac += vis.xiscale * (vis.x1 - x1);
+            vis.patch = lump;
+
+            // get light level
+            if ((thing.flags & MF_SHADOW) != 0) {
+                // shadow draw
+                vis.colormap = null;
+            } else if (fixedcolormap != null) {
+                // fixed map
+                vis.colormap = fixedcolormap;
+                // vis.pcolormap=0;
+            } else if ((thing.frame & FF_FULLBRIGHT) != 0) {
+                // full bright
+                vis.colormap = colormaps[0];
+                // vis.pcolormap=0;
+            }
+
+            else {
+                // diminished light
+                index = xscale >> (LIGHTSCALESHIFT - detailshift);
+
+                if (index >= MAXLIGHTSCALE)
+                    index = MAXLIGHTSCALE - 1;
+
+                vis.colormap = spritelights[index];
+                // vis.pcolormap=index;
+            }
+        }
+
+        /**
+         * R_NewVisSprite
+         * 
+         * Returns either a "new" sprite (actually, reuses a pool), or a special
+         * "overflow sprite" which just gets overwritten with bogus data.
+         * 
+         * It's a bit of dumb thing to do, since the overflow sprite is
+         * never rendered but we have to copy data over it anyway. Would make
+         * more sense to check for it specifically and avoiding copying data,
+         * which should be more time consuming.
+         * 
+         * Fixed by making this fully limit-removing.
+         * 
+         * @return
+         */
+        protected final vissprite_t NewVisSprite() {
+            if (vissprite_p == (vissprites.length - 1)) {
+                ResizeSprites();
+            }
+            // return overflowsprite;
+
+            vissprite_p++;
+            return vissprites[vissprite_p - 1];
+        }
+        
+        @Override
+        public void cacheSpriteManager(ISpriteManager SM){
+              this.spritewidth=SM.getSpriteWidth();
+                this.spriteoffset=SM.getSpriteOffset();
+                this.spritetopoffset=SM.getSpriteTopOffset();
+        }
+        
+        /**
+         * R_ClearSprites Called at frame start.
+         */
+        
+        @Override
+        public void ClearSprites() {
+            // vissprite_p = vissprites;
+            vissprite_p = 0;
+        }
+
+        // UNUSED private final vissprite_t overflowsprite = new vissprite_t();
+
+        protected final void ResizeSprites() {
+            vissprite_t[] tmp = new vissprite_t[vissprites.length * 2];
+            System.arraycopy(vissprites, 0, tmp, 0, vissprites.length);
+
+            C2JUtils.initArrayOfObjects(tmp, vissprites.length, tmp.length);
+
+            // Bye bye, old vissprites.
+            vissprites = tmp;
+
+            System.out.println("Vissprites resized. Actual capacity "
+                    + vissprites.length);
+        }
+        
+        public void resetLimits() {
+            vissprite_t[] tmp = new vissprite_t[MAXVISSPRITES];
+            System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
+
+            // Now, that was quite a haircut!.
+            vissprites = tmp;
+
+            // System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
+        }
+        
+
+        /**
+         * R_SortVisSprites
+         * 
+         * UNUSED more efficient Comparable sorting + built-in Arrays.sort
+         * function used.
+         * 
+         */
+
+        @Override
+        public final void SortVisSprites() {
+            Arrays.sort(vissprites, 0, vissprite_p);
+
+            // Maes: got rid of old vissprite sorting code. Java's is better
+            // Hell, almost anything was better than that.
+            
+        }
+
+        @Override
+        public int getNumVisSprites() {
+            return vissprite_p;
+        }
+
+        @Override
+        public vissprite_t[] getVisSprites() {
+            return vissprites;
+        }
+	}
+	
 	protected final class BSP {
 
 		/** newend is one past the last valid seg (cliprange_t) */
@@ -2096,7 +1634,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 				return;
 
 			// Global angle needed by segcalc.
-			rw_angle1 = angle1;
+			MySegs.setGlobalAngle(angle1);
 			angle1 -= viewangle;
 			angle2 -= viewangle;
 
@@ -2389,7 +1927,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 				ceilingplane = -1; // In lieu of NULL. Will bomb if actually
 									// used.
 
-			MyThings.AddSprites(frontsector);
+			VIS.AddSprites(frontsector);
 
 			if (DEBUG)
 				System.out.println("Enter Addline for SubSector " + num
@@ -2452,11 +1990,74 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 	}
 
-	protected abstract class SegDrawer implements ILimitResettable {
+	protected abstract class SegDrawer implements ISegDrawer {
 
 		protected static final int HEIGHTBITS = 12;
 		protected static final int HEIGHTUNIT = (1 << HEIGHTBITS);
 
+		// Fast blanking buffers.
+		protected short[] BLANKFLOORCLIP;
+		protected short[] BLANKCEILINGCLIP;
+		
+		@Override
+		public short[] getBLANKFLOORCLIP(){
+		    return BLANKFLOORCLIP;
+		}
+
+		@Override
+		public short[] getBLANKCEILINGCLIP(){
+	            return BLANKCEILINGCLIP;
+	        }
+
+		
+	    /** fixed_t */
+	    protected int pixhigh, pixlow, pixhighstep, pixlowstep, topfrac, topstep,
+	            bottomfrac, bottomstep;
+	    
+	    protected int worldtop, worldbottom, worldhigh, worldlow;
+	    
+	    /** True if any of the segs textures might be visible. */
+	    protected boolean segtextured;
+
+	    /**
+	     * Clip values are the solid pixel bounding the range. floorclip starts out
+	     * SCREENHEIGHT ceilingclip starts out -1
+	     */
+	    protected short[] floorclip, ceilingclip;
+	    
+	    public final short[] getFloorClip(){
+	        return floorclip;
+	    }
+
+	    public final short[] getCeilingClip(){
+	         return ceilingclip;
+	    }
+
+	    
+	    /** False if the back side is the same plane. */
+	    protected boolean markfloor, markceiling;
+
+	    protected boolean maskedtexture;
+	    protected int toptexture;
+	    protected int bottomtexture;
+	    protected int midtexture;
+	    
+	    /** angle_t, used after adding ANG90 in StoreWallRange */
+	    protected long rw_normalangle;
+
+	    /** angle to line origin */
+	    protected long rw_angle1;
+
+	    //
+	    // regular wall
+	    //
+	    protected int rw_x;
+	    protected int rw_stopx;
+	    protected long rw_centerangle; // angle_t
+	    /** fixed_t */
+	    protected int rw_offset, rw_distance, rw_scale, rw_scalestep,
+	            rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
+		
 		public void resetLimits() {
 			drawseg_t[] tmp = new drawseg_t[MAXDRAWSEGS];
 			System.arraycopy(drawsegs, 0, tmp, 0, MAXDRAWSEGS);
@@ -3130,6 +2731,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 			}
 		}
 
+	      @Override
+	        public void ClearClips() {
+	            System.arraycopy(BLANKFLOORCLIP, 0, floorclip, 0, viewwidth);
+	            System.arraycopy(BLANKCEILINGCLIP, 0, ceilingclip, 0, viewwidth);
+	        }
+		
 		/**
 		 * Called from RenderSegLoop. This should either invoke the column
 		 * function, or store a wall rendering instruction in the parallel
@@ -3139,6 +2746,14 @@ public abstract class RendererState implements Renderer<byte[]>,
 		 */
 		protected abstract void CompleteColumn();
 
+		@Override
+		public void ExecuteSetViewSize(int viewwidth){
+		      for (int i = 0; i < viewwidth; i++) {
+		            BLANKFLOORCLIP[i] = (short) viewheight;
+		            BLANKCEILINGCLIP[i] = -1;
+		        }
+		}
+		
 		protected column_t col;
 
 		public SegDrawer() {
@@ -3147,13 +2762,77 @@ public abstract class RendererState implements Renderer<byte[]>,
 			C2JUtils.initArrayOfObjects(drawsegs);
 		}
 
-	}
+		/**
+	     * R_ScaleFromGlobalAngle Returns the texture mapping scale for the current
+	     * line (horizontal span) at the given angle. rw_distance must be calculated
+	     * first.
+	     */
 
-	protected interface IPlaneDrawer {
+	    protected final int ScaleFromGlobalAngle(long visangle) {
+	        int scale; // fixed_t
+	        long anglea;
+	        long angleb;
+	        int sinea;
+	        int sineb;
+	        int num; // fixed_t
+	        int den;
+
+	        // UNUSED
+	        /*
+	         * { fixed_t dist; fixed_t z; fixed_t sinv; fixed_t cosv;
+	         * 
+	         * sinv = finesine[(visangle-rw_normalangle)>>ANGLETOFINESHIFT]; dist =
+	         * FixedDiv (rw_distance, sinv); cosv =
+	         * finecosine[(viewangle-visangle)>>ANGLETOFINESHIFT]; z = abs(FixedMul
+	         * (dist, cosv)); scale = FixedDiv(projection, z); return scale; }
+	         */
+
+	        anglea = (ANG90 + visangle - viewangle) & BITS32;
+	        angleb = (ANG90 + visangle - rw_normalangle) & BITS32;
+
+	        // both sines are allways positive
+	        sinea = finesine(anglea);
+	        sineb = finesine(angleb);
+	        num = FixedMul(projection, sineb) << detailshift;
+	        den = FixedMul(rw_distance, sinea);
+
+	        if (den > num >> 16) {
+	            scale = FixedDiv(num, den);
+
+	            if (scale > 64 * FRACUNIT)
+	                scale = 64 * FRACUNIT;
+	            else if (scale < 256)
+	                scale = 256;
+	        } else
+	            scale = 64 * FRACUNIT;
+
+	        return scale;
+	    }
+	
+	    public void setGlobalAngle(long angle){
+	        this.rw_angle1=angle;
+	    }
+	    
+	    public void initScaling(){
+	           this.floorclip=new short[vs.getScreenWidth()];
+	           this.ceilingclip=new short[vs.getScreenWidth()];
+	           BLANKFLOORCLIP = new short[vs.getScreenWidth()];
+	           BLANKCEILINGCLIP = new short[vs.getScreenWidth()];
+	    }
+	    
+	    @Override
+	    public void setVideoScale(IVideoScale vs) {
+	        this.vs=vs;
+	    }
+
+	    IVideoScale vs;
+	}
+	
+	protected interface IPlaneDrawer extends IVideoScaleAware {
 
 		void InitPlanes();
-
-		void MapPlane(int y, int x1, int x2);
+		
+        void MapPlane(int y, int x1, int x2);
 
 		void ClearPlanes();
 
@@ -3176,15 +2855,72 @@ public abstract class RendererState implements Renderer<byte[]>,
 		int getBaseYScale();
 
 		void DrawPlanes();
+		
+		void setSkyScale(int skyscale);
+		
+		int getSkyScale();
 	}
+	
+	protected interface ISegDrawer extends IVideoScaleAware,ILimitResettable{
+        public void ClearClips();
 
-	public abstract class PlaneDrawer implements IPlaneDrawer, IVideoScaleAware {
+        short[] getBLANKCEILINGCLIP();
+
+        short[] getBLANKFLOORCLIP();
+
+        short[] getFloorClip();
+
+        short[] getCeilingClip();
+        
+        void ExecuteSetViewSize(int viewwidth);
+
+        public void setGlobalAngle(long angle1);
+
+        public void RenderMaskedSegRange(drawseg_t dss, int r1, int r2);
+
+        public void StoreWallRange(int first, int last);	    
+	}
+	
+    protected interface IThingDrawer extends IVideoScaleAware{
+
+        /** Cache the sprite manager, if possible */
+        
+        void cacheSpriteManager(ISpriteManager SM);
+        
+        void DrawMasked();
+
+        void setPspriteIscale(int i);
+
+        void setPspriteScale(int i);
+    }
+
+    protected interface IVisSpriteManagement extends ILimitResettable {
+        
+        void AddSprites(sector_t sec);
+        
+        /** Cache the sprite manager, if possible */
+        
+        void cacheSpriteManager(ISpriteManager SM);
+        
+        void SortVisSprites();
+
+        int getNumVisSprites();
+
+        vissprite_t[] getVisSprites();
+
+        void ClearSprites();
+        
+    }
+    
+	public abstract class PlaneDrawer implements IPlaneDrawer{
 
 		// protected planefunction_t floorfunc;
 		// protected planefunction_t ceilingfunc;
 
 		protected final boolean RANGECHECK = false;
 
+		protected int skyscale;
+		
 		//
 		// spanstart holds the start of a plane span
 		// initialized to 0 at start
@@ -3199,10 +2935,8 @@ public abstract class RendererState implements Renderer<byte[]>,
 		protected int planeheight;
 		/** To treat at fixed_t */
 		protected int[] yslope;
-		protected float[] yslopef;
 		/** To treat as fixed_t */
 		protected int[] distscale;
-		protected float[] distscalef;
 		/** To treat as fixed_t */
 		protected int basexscale, baseyscale;
 
@@ -3356,10 +3090,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 			 * viewheight).
 			 */
 
-			// Maes: this should be faster, since it's called so often.
-			System.arraycopy(BLANKFLOORCLIP, 0, floorclip, 0, viewwidth);
-			System.arraycopy(BLANKCEILINGCLIP, 0, ceilingclip, 0, viewwidth);
-
 			// Point to #1 in visplane list? OK... ?!
 			lastvisplane = 0;
 
@@ -3383,11 +3113,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 			baseyscale = -FixedDiv(finesine[angle], centerxfrac);
 		}
 
-		public void ClearClips() {
 
-			System.arraycopy(BLANKFLOORCLIP, 0, floorclip, 0, viewwidth);
-			System.arraycopy(BLANKCEILINGCLIP, 0, ceilingclip, 0, viewwidth);
-		}
 
 		/**
 		 * R_MapPlane
@@ -3536,9 +3262,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 			spanstart = new int[SCREENHEIGHT];
 			spanstop = new int[SCREENHEIGHT];
 			yslope = new int[SCREENHEIGHT];
-			yslopef = new float[SCREENHEIGHT];
 			distscale = new int[SCREENWIDTH];
-			distscalef = new float[SCREENWIDTH];
 			cachedheight = new int[SCREENHEIGHT];
 			cacheddistance = new int[SCREENHEIGHT];
 			cachedxstep = new int[SCREENHEIGHT];
@@ -3593,7 +3317,18 @@ public abstract class RendererState implements Renderer<byte[]>,
 			return baseyscale;
 		}
 
+		@Override
+		public int getSkyScale(){
+		    return skyscale;
+		}
+		
+        public void setSkyScale(int i) {
+            skyscale=i;
+            
+        }
 	}
+	
+	
 
 	protected class VisplaneWorker implements Runnable,IDetailAware{
 
@@ -3687,7 +3422,7 @@ public abstract class RendererState implements Renderer<byte[]>,
                  vpw_dcvars.viewheight=viewheight;
                  vpw_dcvars.centery=centery;
                  vpw_dcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;                 
-                 vpw_dcvars.dc_iscale = pspriteiscale>>detailshift;
+                 vpw_dcvars.dc_iscale = MyPlanes.getSkyScale()>>detailshift;
                  
                  vpw_dcvars.dc_colormap = colormaps[0];
                  vpw_dcvars.dc_texturemid = TexMan.getSkyTextureMid();
@@ -3973,7 +3708,7 @@ public abstract class RendererState implements Renderer<byte[]>,
              // sky flat
              if (pln.picnum == TexMan.getSkyFlatNum() )
              {
-                 vpw_dcvars.dc_iscale = skyscale>>detailshift;
+                 vpw_dcvars.dc_iscale = MyPlanes.getSkyScale()>>detailshift;
                  vpw_dcvars.viewheight=viewheight;
                  /* Sky is allways drawn full bright,
                   * i.e. colormaps[0] is used.
@@ -4257,7 +3992,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	 * e6y: wide-res Borrowed from PrBoom+;
 	 */
 
-	protected int wide_centerx, wide_ratio, wide_offsetx, wide_offset2x,
+	/*protected int wide_centerx, wide_ratio, wide_offsetx, wide_offset2x,
 			wide_offsety, wide_offset2y;
 
 	protected final base_ratio_t[] BaseRatioSizes = {
@@ -4267,7 +4002,8 @@ public abstract class RendererState implements Renderer<byte[]>,
 			new base_ratio_t(960, 600, 0, 48, 1.333333f),
 			new base_ratio_t(960, 640, (int) (6.5 * FRACUNIT), 48 * 15 / 16,
 					1.25f) // 5:4
-	};
+	}; */
+
 
 	/** Used to determine the view center and projection in view units fixed_t */
 	protected int centerxfrac, centeryfrac, projection;
@@ -4506,52 +4242,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 		// return 0;
 	}
 
-	/**
-	 * R_ScaleFromGlobalAngle Returns the texture mapping scale for the current
-	 * line (horizontal span) at the given angle. rw_distance must be calculated
-	 * first.
-	 */
-
-	protected final int ScaleFromGlobalAngle(long visangle) {
-		int scale; // fixed_t
-		long anglea;
-		long angleb;
-		int sinea;
-		int sineb;
-		int num; // fixed_t
-		int den;
-
-		// UNUSED
-		/*
-		 * { fixed_t dist; fixed_t z; fixed_t sinv; fixed_t cosv;
-		 * 
-		 * sinv = finesine[(visangle-rw_normalangle)>>ANGLETOFINESHIFT]; dist =
-		 * FixedDiv (rw_distance, sinv); cosv =
-		 * finecosine[(viewangle-visangle)>>ANGLETOFINESHIFT]; z = abs(FixedMul
-		 * (dist, cosv)); scale = FixedDiv(projection, z); return scale; }
-		 */
-
-		anglea = (ANG90 + visangle - viewangle) & BITS32;
-		angleb = (ANG90 + visangle - rw_normalangle) & BITS32;
-
-		// both sines are allways positive
-		sinea = finesine(anglea);
-		sineb = finesine(angleb);
-		num = FixedMul(projection, sineb) << detailshift;
-		den = FixedMul(rw_distance, sinea);
-
-		if (den > num >> 16) {
-			scale = FixedDiv(num, den);
-
-			if (scale > 64 * FRACUNIT)
-				scale = 64 * FRACUNIT;
-			else if (scale < 256)
-				scale = 256;
-		} else
-			scale = 64 * FRACUNIT;
-
-		return scale;
-	}
+	
 
 	//
 	// R_InitTables
@@ -4652,45 +4343,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 	/** "peg" this to the one from RendererData */
 	protected byte[][] colormaps;
 
-	// // FROM SEGS ////
-	/** angle_t, used after adding ANG90 in StoreWallRange */
-	protected long rw_normalangle;
-
-	// OPTIMIZE: closed two sided lines as single sided
-
-	/** True if any of the segs textures might be visible. */
-	protected boolean segtextured;
-
-	/** False if the back side is the same plane. */
-	protected boolean markfloor, markceiling;
-
-	protected boolean maskedtexture;
-	protected int toptexture;
-	protected int bottomtexture;
-	protected int midtexture;
-
-	/** angle to line origin */
-	protected long rw_angle1;
-
-	//
-	// regular wall
-	//
-	protected int rw_x;
-	protected int rw_stopx;
-	protected long rw_centerangle; // angle_t
-	/** fixed_t */
-	protected int rw_offset, rw_distance, rw_scale, rw_scalestep,
-			rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
-
-	protected int worldtop;
-	protected int worldbottom;
-	protected int worldhigh;
-	protected int worldlow;
-
-	/** fixed_t */
-	protected int pixhigh, pixlow, pixhighstep, pixlowstep, topfrac, topstep,
-			bottomfrac, bottomstep;
-
 	/** lighttable_t** */
 	protected byte[][] walllights;
 
@@ -4710,11 +4362,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 	protected seg_t curline;
 	protected side_t sidedef;
 	protected line_t linedef;
-
-	// /////////////////// Renderer Data ////////////////////////
-
-	/** needed for pre rendering (fixed_t[]) */
-	protected int[] spritewidth, spriteoffset, spritetopoffset;
 
 	////////////////// COLUMN AND SPAN FUNCTIONS    //////////////
 
@@ -4865,9 +4512,9 @@ public abstract class RendererState implements Renderer<byte[]>,
 		// pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
 		// pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
 
-		pspritescale = (int) (FRACUNIT * ((float) SCREEN_MUL * viewwidth) / SCREENWIDTH);
-		pspriteiscale = (int) (FRACUNIT * (SCREENWIDTH / (viewwidth * (float) SCREEN_MUL)));
-		skyscale = (int) (FRACUNIT * (SCREENWIDTH / (viewwidth * (float) SCREEN_MUL)));
+		MyThings.setPspriteScale((int) (FRACUNIT * ((float) SCREEN_MUL * viewwidth) / SCREENWIDTH));
+		MyThings.setPspriteIscale((int) (FRACUNIT * (SCREENWIDTH / (viewwidth * (float) SCREEN_MUL))));
+		MyPlanes.setSkyScale((int) (FRACUNIT * (SCREENWIDTH / (viewwidth * (float) SCREEN_MUL))));
 
 		BOBADJUST = (int) (this.vs.getSafeScaling() << 15);
 		WEAPONADJUST = (int) ((SCREENWIDTH / (2 * SCREEN_MUL)) * FRACUNIT);
@@ -4911,10 +4558,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 			}
 		}
 
-		for (i = 0; i < viewwidth; i++) {
-			BLANKFLOORCLIP[i] = (short) viewheight;
-			BLANKCEILINGCLIP[i] = -1;
-		}
+		MySegs.ExecuteSetViewSize(viewwidth);
 
 	}
 
@@ -5053,6 +4697,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 		// For widescreen displays, increase the FOV so that the middle part of
 		// the
 		// screen that would be visible on a 4:3 display has the requested FOV.
+		/* UNUSED
 		if (wide_centerx != centerx) { // wide_centerx is what centerx would be
 										// if the display was not widescreen
 			fov = (int) (Math.atan((double) centerx
@@ -5061,7 +4706,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 					* FINEANGLES / Math.PI);
 			if (fov > 130 * FINEANGLES / 360)
 				fov = 130 * FINEANGLES / 360;
-		}
+		} */
 
 		// Use tangent table to generate viewangletox:
 		// viewangletox will give the next greatest x
@@ -5656,35 +5301,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 	// int[] offsets;
 
-	/**
-	 * R_InitSpriteLumps Finds the width and hoffset of all sprites in the wad,
-	 * so the sprite does not need to be cached completely just for having the
-	 * header info ready during rendering.
-	 */
-
-	protected void InitSpriteLumps() throws IOException {
-		int i;
-		patch_t patch;
-
-		firstspritelump = W.GetNumForName("S_START") + 1;
-		lastspritelump = W.GetNumForName("S_END") - 1;
-
-		numspritelumps = lastspritelump - firstspritelump + 1;
-		spritewidth = new int[numspritelumps];
-		spriteoffset = new int[numspritelumps];
-		spritetopoffset = new int[numspritelumps];
-
-		for (i = 0; i < numspritelumps; i++) {
-			if ((i & 63) == 0)
-				System.out.print(".");
-
-			patch = (patch_t) W.CacheLumpNum(firstspritelump + i, PU_CACHE,
-					patch_t.class);
-			spritewidth[i] = patch.width << FRACBITS;
-			spriteoffset[i] = patch.leftoffset << FRACBITS;
-			spritetopoffset[i] = patch.topoffset << FRACBITS;
-		}
-	}
+	
 
 	/**
 	 * R_InitColormaps
@@ -5723,7 +5340,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	 */
 
 	public void InitData() {
-		try {
+		try {		    
 			System.out.print("\nInit Texture and Flat Manager");
 			TexMan = this.DM.TM;
 			System.out.print("\nInitTextures");
@@ -5731,7 +5348,9 @@ public abstract class RendererState implements Renderer<byte[]>,
 			System.out.print("\nInitFlats");
 			TexMan.InitFlats();
 			System.out.print("\nInitSprites");
-			InitSpriteLumps();
+			SM.InitSpriteLumps();
+			MyThings.cacheSpriteManager(SM);
+			VIS.cacheSpriteManager(SM);
 			System.out.print("\nInitColormaps");
 			InitColormaps();
 
@@ -5742,40 +5361,12 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 	}
 
-	// //////////////////////// FLAT AND TEXTURE MANAGEMENT
-	// //////////////////////////
-
-	/*
-	 * UNUSED: older, sequential search method.
-	 * 
-	 * public int CheckTextureNumForName(String name) { int i; // "NoTexture"
-	 * marker. if (name.charAt(0) == '-') return 0;
-	 * 
-	 * 
-	 * for (i = 0; i < numtextures; i++) if
-	 * (textures[i].name.compareToIgnoreCase(name) == 0) return i;
-	 * 
-	 * return -1; }
-	 */
-
 	protected int spritememory;
-
-	/**
-	 * R_InitSprites Called at program start.
-	 * 
-	 */
-
-	public void InitSprites(String[] namelist) {
-		int i;
-
-		for (i = 0; i < SCREENWIDTH; i++) {
-			negonearray[i] = -1;
-		}
-
-		MyThings.InitSpriteDefs2(namelist);
-
+	
+	protected final void InitNegOneArray(){
+	       C2JUtils.memset(negonearray, (short)-1,SCREENWIDTH);
 	}
-
+	
 	/**
 	 * To be called right after PrecacheLevel from SetupLevel in LevelLoader.
 	 * It's an ugly hack, in that it must communicate with the "Game map" class
@@ -5794,6 +5385,9 @@ public abstract class RendererState implements Renderer<byte[]>,
 		spriteframe_t sf;
 		int i, j, k;
 		int lump;
+		
+		final spritedef_t[] sprites=SM.getSprites();
+		final int numsprites=SM.getNumSprites();
 
 		spritepresent = new boolean[numsprites];
 
@@ -5807,10 +5401,10 @@ public abstract class RendererState implements Renderer<byte[]>,
 			if (!spritepresent[i])
 				continue;
 
-			for (j = 0; j < getSprites()[i].numframes; j++) {
-				sf = getSprites()[i].spriteframes[j];
+			for (j = 0; j < sprites[i].numframes; j++) {
+				sf = sprites[i].spriteframes[j];
 				for (k = 0; k < 8; k++) {
-					lump = firstspritelump + sf.lump[k];
+					lump = SM.getFirstSpriteLump() + sf.lump[k];
 					spritememory += W.GetLumpInfo(lump).size;
 					W.CacheLumpNum(lump, PU_CACHE, patch_t.class);
 				}
@@ -5878,16 +5472,6 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 	// ///////////////// Generic rendering methods /////////////////////
 
-	// /// DRAWSPAN ///////////
-	@Override
-	public int getFirstSpriteLump() {
-		return this.firstspritelump;
-	}
-
-	@Override
-	public spritedef_t[] getSprites() {
-		return sprites;
-	}
 
 	public Things getThings() {
 		return (Things) this.MyThings;
@@ -5953,11 +5537,8 @@ public abstract class RendererState implements Renderer<byte[]>,
 
 		// Pre-scale stuff.
 		BLANKCACHEDHEIGHT = new int[SCREENHEIGHT];
-		BLANKFLOORCLIP = new short[SCREENWIDTH];
-		BLANKCEILINGCLIP = new short[SCREENWIDTH];
 
-		floorclip = new short[SCREENWIDTH];
-		ceilingclip = new short[SCREENWIDTH];
+
 		negonearray = new short[SCREENWIDTH]; // MAES: in scaling
 		screenheightarray = new short[SCREENWIDTH];// MAES: in scaling
 		xtoviewangle = new long[SCREENWIDTH + 1];
@@ -5967,11 +5548,13 @@ public abstract class RendererState implements Renderer<byte[]>,
 		negonearray = new short[SCREENWIDTH];
 		screenheightarray = new short[SCREENWIDTH];
 		openings = new short[MAXOPENINGS];
-		// Initialize children objects
-		this.MyPlanes.setVideoScale(vs);
-		this.MyThings.setVideoScale(vs);
+		// Initialize children objects\
+		MySegs.setVideoScale(vs);
+		MyPlanes.setVideoScale(vs);
+		MyThings.setVideoScale(vs);
 		MyPlanes.initScaling();
 		MyThings.initScaling();
+		MySegs.initScaling();
 		
 	}
 	
@@ -6025,7 +5608,7 @@ public abstract class RendererState implements Renderer<byte[]>,
 	@Override
 	public void resetLimits() {
 		// Call it only at the beginning of new levels.
-		MyThings.resetLimits();
+		VIS.resetLimits();
 		MySegs.resetLimits();
 	}
 
