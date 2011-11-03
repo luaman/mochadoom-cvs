@@ -39,7 +39,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.42 2011/10/07 16:05:52 velktron Exp $
+// $Id: LevelLoader.java,v 1.43 2011/11/03 15:19:51 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,7 +61,7 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.42 2011/10/07 16:05:52 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.43 2011/11/03 15:19:51 velktron Exp $";
 
 
 public LevelLoader(DoomStatus DC) {
@@ -831,6 +831,9 @@ public LevelLoader(DoomStatus DC) {
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.43  2011/11/03 15:19:51  velktron
+//Adapted to using ISpriteManager
+//
 //Revision 1.42  2011/10/07 16:05:52  velktron
 //Now using line_t for ML_* definitions.
 //
@@ -838,7 +841,11 @@ public LevelLoader(DoomStatus DC) {
 //Proper support for extended nodes, made reject loading into a separate method.
 //
 //Revision 1.40  2011/09/30 15:20:24  velktron
-//Very modified, useless SanitizeBlockmap method ditched. Common utility methods moved to superclass. Shares blockmap checking and generation with Boom-derived code. Now capable of running Europe.wad. TODO: Blockmap generation can be really slow on large levels. Optimize better for Java, or parallelize.
+//Very modified, useless SanitizeBlockmap method ditched. 
+//Common utility methods moved to superclass. Shares blockmap checking and generation 
+//with Boom-derived code. Now capable of running Europe.wad. 
+//TODO: Blockmap generation can be really slow on large levels. 
+//Optimize better for Java, or parallelize.
 //
 //Revision 1.39  2011/09/29 17:22:08  velktron
 //Blockchain terminators are now -1 (extended)

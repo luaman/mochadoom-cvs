@@ -15,7 +15,7 @@ import i.DoomStatusAware;
 
 import java.io.IOException;
 
-import rr.SpriteManager;
+import rr.ISpriteManager;
 import rr.flat_t;
 import rr.patch_t;
 import rr.spritedef_t;
@@ -39,7 +39,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.25 2011/11/01 19:02:57 velktron Exp $
+// $Id: Finale.java,v 1.26 2011/11/03 15:20:02 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -60,7 +60,7 @@ import doom.gameaction_t;
 
 public class Finale implements DoomStatusAware, IVideoScaleAware{
 
-  public static final String rcsid = "$Id: Finale.java,v 1.25 2011/11/01 19:02:57 velktron Exp $";
+  public static final String rcsid = "$Id: Finale.java,v 1.26 2011/11/03 15:20:02 velktron Exp $";
 
   IDoomGame DG;
   DoomStatus DS;
@@ -68,7 +68,7 @@ public class Finale implements DoomStatusAware, IVideoScaleAware{
   IDoomSound S;
   HU HU;
   IWadLoader W;
-  SpriteManager R;
+  ISpriteManager SM;
   
   int     finalestage;
 
@@ -634,14 +634,14 @@ protected void afterstopattack(){
       this.CastPrint (castorder[castnum].name);
       
       // draw the current frame in the middle of the screen
-      sprdef = R.getSprites()[caststate.sprite.ordinal()];
+      sprdef = SM.getSprite(caststate.sprite.ordinal());
       sprframe = sprdef.spriteframes[ caststate.frame & FF_FRAMEMASK];
       lump = sprframe.lump[0];
       flip = eval(sprframe.flip[0]);
               // flip=false;
               //lump=0;
               
-        patch = W.CachePatchNum(lump+R.getFirstSpriteLump(), PU_CACHE);
+        patch = W.CachePatchNum(lump+SM.getFirstSpriteLump(), PU_CACHE);
 
         if (flip)
             V.DrawScaledPatch (160,170,0 | DoomVideoRenderer.V_FLIPPEDPATCH,vs,patch);
@@ -763,7 +763,7 @@ public void updateStatus(DoomStatus DC) {
     S=DC.S;
     HU=DC.HU;
     W=DC.W;
-    R=(SpriteManager) DC.R;    
+    SM=DC.SM;    
 	}
 
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
