@@ -43,7 +43,7 @@ import doom.wbstartstruct_t;
 
 public class AWTParallelRenderTester1 {
 
-    static IVideoScale VSI=new VideoScaleInfo(3.0f);
+    static IVideoScale VSI=new VideoScaleInfo(4.0f);
     
     public static void main(String[] argv) {
         try {
@@ -133,10 +133,9 @@ public class AWTParallelRenderTester1 {
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     ILevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
-    DM.R=new ParallelRenderer(DM,2,1); 
-    DM.SM=(SpriteManager) DM.R;
-    DM.TM=new SimpleTextureManager(DM);
-    
+    DM.SM=new SpriteManager(DM);
+    DM.R=new ParallelRenderer(DM,2,1);    
+    DM.TM=new SimpleTextureManager(DM);    
     DM.P.updateStatus(DM);
     LL.updateStatus(DM);
     M.updateStatus(DM);

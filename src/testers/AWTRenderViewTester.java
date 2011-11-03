@@ -7,7 +7,6 @@ import n.DummyNetworkHandler;
 import hu.HU;
 import i.DoomSystem;
 import i.IDoomSystem;
-
 import p.Actions;
 import p.ILevelLoader;
 import p.LevelLoader;
@@ -28,8 +27,6 @@ import m.DoomRandom;
 import v.BufferedRenderer;
 import v.DoomVideoRenderer;
 import v.GammaTables;
-import v.HiColorRenderer565;
-
 import v.IVideoScale;
 import v.VideoScaleInfo;
 import w.DoomBuffer;
@@ -46,7 +43,7 @@ import doom.wbstartstruct_t;
 
 public class AWTRenderViewTester {
 
-    static IVideoScale VSI=new VideoScaleInfo(3.0f);
+    static IVideoScale VSI=new VideoScaleInfo(4.0f);
     
     public static void main(String[] argv) {
         try {
@@ -133,9 +130,9 @@ public class AWTRenderViewTester {
     StatusBar ST=(StatusBar) (DM.ST=new StatusBar(DM));
     ILevelLoader LL=DM.LL=new LevelLoader(DM);
     DM.P=new Actions(DM);
+    DM.SM=new SpriteManager(DM);    
     DM.R=new UnifiedRenderer(DM);
     DM.TM=new SimpleTextureManager(DM);
-    DM.SM=(SpriteManager) DM.R;    
     DM.P.updateStatus(DM);
     LL.updateStatus(DM);
     M.updateStatus(DM);
