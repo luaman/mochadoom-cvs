@@ -104,7 +104,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.98 2011/11/03 15:45:34 velktron Exp $
+// $Id: DoomMain.java,v 1.99 2011/11/03 21:23:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -130,7 +130,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.98 2011/11/03 15:45:34 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.99 2011/11/03 21:23:25 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -695,7 +695,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
 
-        if ( testAccess(vcheck.doom2fwad,"r" ))
+        if ( testReadAccess(vcheck.doom2fwad))
         {
             setGameMode(GameMode_t.commercial);
             // C'est ridicule!
@@ -707,35 +707,35 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
 
-        if ( testAccess(vcheck.doom2wad,"r" ))
+        if ( testReadAccess(vcheck.doom2wad))
         {
             setGameMode(GameMode_t.commercial);
             AddFile (vcheck.doom2wad);
             return vcheck.doom2wad;
         }
 
-        if ( testAccess (vcheck.plutoniawad, "r" ) )
+        if ( testReadAccess (vcheck.plutoniawad) )
         {
             setGameMode(GameMode_t.pack_plut);
             AddFile (vcheck.plutoniawad);
             return vcheck.plutoniawad;
         }
 
-        if ( testAccess ( vcheck.tntwad, "r" ) )
+        if ( testReadAccess ( vcheck.tntwad) )
         {
             setGameMode(GameMode_t.pack_tnt);
             AddFile (vcheck.tntwad);
             return vcheck.tntwad;
         }
         
-        if ( testAccess ( vcheck.tntwad, "r" ) )
+        if ( testReadAccess ( vcheck.tntwad) )
         {
             setGameMode(GameMode_t.pack_xbla);
             AddFile (vcheck.xblawad);
             return vcheck.xblawad;
         }
 
-        if ( testAccess (vcheck.doomuwad,"r") )
+        if ( testReadAccess (vcheck.doomuwad) )
         {
             // TODO auto-detect ultimate Doom even from doom.wad
         	// Maes: this is done later on.
@@ -744,14 +744,14 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             return vcheck.doomuwad;
         }
 
-        if ( testAccess (vcheck.doomwad,"r") )
+        if ( testReadAccess (vcheck.doomwad) )
         {
             setGameMode(GameMode_t.registered);
             AddFile (vcheck.doomwad);
             return vcheck.doomwad;
         }
 
-        if ( testAccess (vcheck.doom1wad,"r") )
+        if ( testReadAccess (vcheck.doom1wad) )
         {
             setGameMode(GameMode_t.shareware);
             AddFile (vcheck.doom1wad);
@@ -2353,7 +2353,7 @@ public void ScreenShot ()
     digit[2] = (char) (i/10 + '0');
     digit[3] =  (char) (i%10 + '0');
     lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
-    if (!C2JUtils.testAccess(lbmname,"r"))
+    if (!C2JUtils.testWriteAccess(lbmname))
         break;  // file doesn't exist
     }
     if (i==10000)
@@ -4222,6 +4222,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.99  2011/11/03 21:23:25  velktron
+//Using testReadAccess now
+//
 //Revision 1.98  2011/11/03 15:45:34  velktron
 //Adapted to using ISpriteManager
 //
