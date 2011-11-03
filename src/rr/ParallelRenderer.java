@@ -278,7 +278,8 @@ public class ParallelRenderer
         MyBSP.ClearClipSegs();
         MyBSP.ClearDrawSegs();
         MyPlanes.ClearPlanes();
-        MyThings.ClearSprites();
+        MySegs.ClearClips();
+        VIS.ClearSprites();
 
         // Check for new console commands.
         DGN.NetUpdate();

@@ -59,15 +59,15 @@ public class UnifiedRenderer extends RendererState{
                       
       if (RANGECHECK){
           if (ds_p > MAXDRAWSEGS)
-          I.Error("R_DrawPlanes: drawsegs overflow (%i)",
+          I.Error("R_DrawPlanes: drawsegs overflow (%d)",
               ds_p );
           
           if (lastvisplane > MAXVISPLANES)
-              I.Error(" R_DrawPlanes: visplane overflow (%i)",
+              I.Error(" R_DrawPlanes: visplane overflow (%d)",
                lastvisplane);
           
           if (lastopening  > MAXOPENINGS)
-              I.Error( "R_DrawPlanes: opening overflow (%i)",
+              I.Error( "R_DrawPlanes: opening overflow (%d)",
                lastopening );
       }
 
@@ -85,7 +85,7 @@ public class UnifiedRenderer extends RendererState{
               // being drawn, after all, are they?
               int skytexture=TexMan.getSkyTexture();
               skydcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;              
-              skydcvars.dc_iscale = pspriteiscale>>detailshift;
+              skydcvars.dc_iscale = skyscale>>detailshift;
               
               /* Sky is allways drawn full bright,
                * i.e. colormaps[0] is used.
@@ -182,7 +182,8 @@ public void RenderPlayerView (player_t player)
   MyBSP.ClearClipSegs ();
   MyBSP.ClearDrawSegs ();
   MyPlanes.ClearPlanes ();
-  MyThings.ClearSprites ();
+  MySegs.ClearClips();
+  VIS.ClearSprites ();
   
   // Check for new console commands.
   DGN.NetUpdate ();

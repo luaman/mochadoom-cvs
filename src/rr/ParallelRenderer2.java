@@ -344,7 +344,7 @@ public class ParallelRenderer2 extends RendererState  {
 		//offsets=new int[NUMWALLTHREADS];
 		for (int i=0;i<NUMWALLTHREADS;i++){
 			RSIExec[i]=new RenderSegExecutor(SCREENWIDTH,SCREENHEIGHT,i,screen,
-					this, TexMan, RSI,this.BLANKCEILINGCLIP,this.BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, 
+					this, TexMan, RSI,MySegs.getBLANKCEILINGCLIP(),MySegs.getBLANKFLOORCLIP(), MySegs.getCeilingClip(), MySegs.getFloorClip(), columnofs, 
 					xtoviewangle, ylookup, this.visplanes,walllights, this.visplanebarrier);
 			RSIExec[i].setVideoScale(this.vs);
 			RSIExec[i].initScaling();
@@ -433,7 +433,8 @@ public class ParallelRenderer2 extends RendererState  {
 		MyBSP.ClearClipSegs ();
 		MyBSP.ClearDrawSegs ();
 		MyPlanes.ClearPlanes ();
-		MyThings.ClearSprites ();
+		MySegs.ClearClips();
+		VIS.ClearSprites ();
 
 		// Check for new console commands.
 		DGN.NetUpdate ();
