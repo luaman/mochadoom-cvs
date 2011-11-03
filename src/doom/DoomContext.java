@@ -11,8 +11,8 @@ import m.IDoomMenu;
 import m.IRandom;
 import p.AbstractLevelLoader;
 import p.Actions;
+import rr.ISpriteManager;
 import rr.Renderer;
-import rr.SpriteManager;
 import rr.TextureManager;
 import s.IDoomSound;
 import s.IMusic;
@@ -60,7 +60,7 @@ public class DoomContext {
     public EndLevel WI;
     public Wiper WIPE;
     public TextureManager TM;
-    public SpriteManager SM;
+    public ISpriteManager SM;
     public ICommandLineManager CM;
     public ITicker TICK; 
 }
