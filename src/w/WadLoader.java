@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.55 2011/11/01 22:09:11 velktron Exp $
+// $Id: WadLoader.java,v 1.56 2011/11/03 21:14:30 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -381,9 +381,12 @@ public class WadLoader implements IWadLoader {
 		lumpinfo = new lumpinfo_t[0];
 
 		for (String s : filenames) {
-			if (s != null)
-				this.AddFile(s);
-			
+			if (s != null){
+				if (C2JUtils.testReadAccess(s))
+					this.AddFile(s);
+				else
+					System.err.printf("Couldn't open resource %s\n",s);
+			}
 		}
 
 		if (numlumps == 0)
@@ -1302,6 +1305,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.56  2011/11/03 21:14:30  velktron
+//Added -FINALLY!- resource access testing before adding them -_-
+//
 //Revision 1.55  2011/11/01 22:09:11  velktron
 //Some more progress on URI handling. Not essential/not breaking.
 //
