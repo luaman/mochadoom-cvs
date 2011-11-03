@@ -27,7 +27,6 @@ import static data.Tables.ANG270;
 import static data.Tables.ANG90;
 import static data.Tables.BITS32;
 import static data.info.mobjinfo;
-import static data.info.sprnames;
 import static data.info.states;
 import static doom.englsh.GOTARMBONUS;
 import static doom.englsh.GOTARMOR;
@@ -87,9 +86,8 @@ import hu.HU;
 import i.DoomStatusAware;
 import i.IDoomSystem;
 import m.IRandom;
+import rr.ISpriteManager;
 import rr.Renderer;
-import rr.RendererState;
-import rr.SpriteManager;
 import rr.TextureManager;
 import rr.line_t;
 import rr.node_t;
@@ -174,7 +172,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     
     IDoomSound S;
     
-    SpriteManager SM;
+    ISpriteManager SM;
 
     @Override
     public void updateStatus(DoomStatus DC) {
@@ -1951,7 +1949,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     public void Init() {
         SW.InitSwitchList();
         SPECS.InitPicAnims();
-        SM.InitSprites(sprnames);
+        SM.InitSprites(ISpriteManager.doomsprnames);
     }
 
     /**
