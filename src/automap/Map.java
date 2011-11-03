@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.33 2011/11/01 23:48:43 velktron Exp $
+// $Id: Map.java,v 1.34 2011/11/03 18:11:14 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.34  2011/11/03 18:11:14  velktron
+// Fixed long-standing issue with 0-rot vector being reduced to pixels. Fixed broken map panning functionality after keymap change.
+//
 // Revision 1.33  2011/11/01 23:48:43  velktron
 // Using FillRect
 //
@@ -156,6 +159,7 @@ import rr.patch_t;
 import st.IDoomStatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
+import static v.DoomVideoRenderer.V_NOSCALESTART;
 import v.IVideoScale;
 import w.IWadLoader;
 import m.cheatseq_t;
@@ -173,7 +177,7 @@ DoomVideoRenderer<?> V;
 AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.33 2011/11/01 23:48:43 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.34 2011/11/03 18:11:14 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -240,10 +244,10 @@ public static final int XHAIRCOLORS =GRAYS;
 // drawing stuff
 public static final int FB  =   0;
 
-public static final char AM_PANDOWNKEY  =0xaf;
-public static final char AM_PANUPKEY    =0xad;
-public static final char AM_PANRIGHTKEY =0xae;
-public static final char AM_PANLEFTKEY  =0xac;
+public static final char AM_PANDOWNKEY  =KEY_DOWNARROW;
+public static final char AM_PANUPKEY    =KEY_UPARROW;
+public static final char AM_PANRIGHTKEY =KEY_RIGHTARROW;
+public static final char AM_PANLEFTKEY  =KEY_LEFTARROW;
 public static final char AM_ZOOMINKEY=  '=';
 public static final char AM_ZOOMOUTKEY= '-';
 public static final char AM_STARTKEY=   KEY_TAB;	// KEY_TAB
@@ -691,7 +695,7 @@ public final  void unloadPics()
     int i;
   
     for (i=0;i<10;i++){
-   // TODO: Z_ChangeTag(marknums[i], PU_CACHE);
+        W.UnlockLumpNum(marknums[i]);
     }
 }
 
@@ -1202,10 +1206,7 @@ private final  void drawFline
 
     // For debugging only
 
- /*   if (      fl.a.x < 0 || fl.a.x >= f_w
-       || fl.a.y < 0 || fl.a.y >= f_h
-       || fl.b.x < 0 || fl.b.x >= f_w
-       || fl.b.y < 0 || fl.b.y >= f_h)
+ /*   
 =======
     /*if (      fl.ax < 0 || fl.ax >= f_w
        || fl.ay < 0 || fl.ay >= f_h
@@ -1449,6 +1450,7 @@ drawLineCharacter
   )
 {
     int     i;
+    final boolean rotate=(angle!=0); 
     mline_t l=new mline_t();
 
     for (i=0;i<lineguylines;i++)
@@ -1462,17 +1464,13 @@ drawLineCharacter
         l.ay = FixedMul(scale, l.ay);
     }
     
-   // System.out.print("BAM Angle "+angle+ " for "+FixedFloat.toFloat(l.ax)+ " "+FixedFloat.toFloat(l.ay));
-
-    if (angle!=0)
+    if (rotate){
         rotate(l.ax, l.ay, angle);
-//    System.out.print(" rotated by "+90*(angle/ANG90)+"\n" );
-
+        // MAES: assign rotations
+            l.ax=rotx;
+            l.ay=roty;
+        }
     
-    // MAES: assign rotations
-    	l.ax=rotx;
-    	l.ay=roty;
-
     l.ax += x;
     l.ay += y;
 
@@ -1485,12 +1483,12 @@ drawLineCharacter
         l.by = FixedMul(scale, l.by);
     }
 
-    if (angle!=0)
+    if (rotate) {
         rotate(l.bx, l.by, angle);
-    // MAES: assign rotations
-	l.bx=rotx;
-	l.by=roty;
-
+        // MAES: assign rotations
+        l.bx=rotx;
+        l.by=roty;
+    }
     
     l.bx += x;
     l.by += y;
@@ -1515,10 +1513,10 @@ public final  void drawPlayers()
     if (cheating!=0)
         drawLineCharacter
         (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-          toBAMIndex((int)plr.mo.angle), WHITE, plr.mo.x, plr.mo.y);
+          toBAMIndex(plr.mo.angle), WHITE, plr.mo.x, plr.mo.y);
     else
         drawLineCharacter
-        (player_arrow, NUMPLYRLINES, 0,  toBAMIndex((int)plr.mo.angle),
+        (player_arrow, NUMPLYRLINES, 0,  toBAMIndex(plr.mo.angle),
          WHITE, plr.mo.x, plr.mo.y);
     return;
     }
@@ -1574,14 +1572,16 @@ public final  void drawMarks()
     {
     if (markpoints[i].x != -1)
     {
-        //      w = SHORT(marknums[i].width);
-        //      h = SHORT(marknums[i].height);
-        w = 5; // because something's wrong with the wad, i guess
-        h = 6; // because something's wrong with the wad, i guess
+         w = marknums[i].width;
+         h = marknums[i].height;
+        // Nothing wrong with v1.9 IWADs, but I wouldn't put my hand on 
+        // the fire for older ones.
+        //w = 5; // because something's wrong with the wad, i guess
+        //h = 6; // because something's wrong with the wad, i guess
         fx = CXMTOF(markpoints[i].x);
         fy = CYMTOF(markpoints[i].y);
         if (fx >= f_x && fx <= f_w - w && fy >= f_y && fy <= f_h - h)
-        V.DrawPatch(fx, fy, FB, marknums[i]);
+        V.DrawScaledPatch(fx, fy, FB|V_NOSCALESTART,vs, marknums[i]);
     }
     }
 
