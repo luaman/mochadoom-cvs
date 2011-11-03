@@ -75,7 +75,7 @@ public class DoomVersions {
 		GameMode_t tmp=VersionChecker.get(iwad.toLowerCase());
 		if (tmp!=null) {
 		// Can we read it?
-		if (C2JUtils.testAccess(doomwaddir+iwad, "r"))
+		if (C2JUtils.testReadAccess(doomwaddir+iwad))
 			return tmp; // Yes, so communicate the gamemode back.
 		}
 		

@@ -4820,7 +4820,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		
 		if ((p = DM.CM.CheckParm("-tranmap")) != 0) {
 			if ((tranmap = DM.CM.getArgv(p + 1)) != null) {
-				if (C2JUtils.testAccess(tranmap, "r")) {
+				if (C2JUtils.testReadAccess(tranmap)) {
 					System.out
 							.printf("Translucency map file %s specified in -tranmap arg. Attempting to use...",
 									tranmap);
@@ -4847,7 +4847,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		}
 
 		// A default map file already exists. Try to read it.
-		if (C2JUtils.testAccess("tranmap.dat", "r")) {
+		if (C2JUtils.testReadAccess("tranmap.dat")) {
 			System.out
 					.print("Translucency map found in default tranmap.dat file. Attempting to use...");
 			main_tranmap = new byte[256 * 256]; // killough 4/11/98
