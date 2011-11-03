@@ -1,8 +1,15 @@
 package utils;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Array;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import p.Resettable;
 
@@ -360,23 +367,83 @@ public class C2JUtils {
         System.arraycopy(src, 0, dest, 0, length);
     }
 
-    public static final boolean testAccess(String filename, String mode) {
-
+    public static final boolean testReadAccess(String URI) {
+    	InputStream in=null;
+    	
         // This is bullshit.
-        if (filename == null)
+        if (URI == null)
             return false;
-        if (filename.length() == 0)
+        if (URI.length() == 0)
             return false;
 
-        boolean access = true;
         try {
-            RandomAccessFile test = new RandomAccessFile(filename, mode);
+            in=new FileInputStream(URI);
         } catch (Exception e) {
-            // Something went wrong. In any case, access isn't guaranteed.
-            access = false;
-        }
-        return access;
+            // Not a file...
+            URL u;
+			try {
+				u = new URL(URI);
+			} catch (MalformedURLException e1) {
+				return false;
+			}
+            try {
+				in=u.openConnection().getInputStream();
+			} catch (IOException e1) {
+				return false;
+			}
 
+        }
+        
+        if (in!=null) {
+        	try {
+				in.close();
+			} catch (IOException e) {
+
+			}
+        	return true;
+        }
+        // All is well. Go on...
+        return true;
+
+    }
+    
+    public static final boolean testWriteAccess(String URI) {
+    	OutputStream out=null;
+    	
+        // This is bullshit.
+        if (URI == null)
+            return false;
+        if (URI.length() == 0)
+            return false;
+
+        try {
+            out=new FileOutputStream(URI);
+        } catch (Exception e) {
+            // Not a file...
+            URL u;
+			try {
+				u = new URL(URI);
+			} catch (MalformedURLException e1) {
+				return false;
+			}
+            try {
+				out=u.openConnection().getOutputStream();
+			} catch (IOException e1) {
+				return false;
+			}
+
+        }
+
+        if (out!=null) {
+        	try {
+				out.close();
+			} catch (IOException e) {
+
+			}
+        	return true;
+        }
+        // All is well. Go on...
+        return true;
     }
 
     /**
