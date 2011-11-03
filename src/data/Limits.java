@@ -57,8 +57,6 @@ public final class Limits {
 	public static final int MAXSPECIALCROSS = 8;
 	public static final int MAXHEALTH = 100;
 
-	/** There seems to be an arbitrary limit of 29 distinct frames per THING */
-	public static final int MAX_SPRITEFRAMES = 29;
 	/**
 	 * MAXRADIUS is for precalculated sector block boxes the spider demon is
 	 * larger, but we do not have any moving sectors nearby
