@@ -1,11 +1,5 @@
 package rr;
 
-import static data.Defines.*;
-import static data.Limits.*;
-import static data.Tables.*;
-import static m.fixed_t.*;
-import java.io.IOException;
-import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import doom.DoomMain;
 import doom.player_t;
@@ -14,6 +8,7 @@ public class UnifiedRenderer extends RendererState{
     
     public UnifiedRenderer(DoomMain DM) {
       super(DM);
+      this.MyThings=new Things();
       this.MySegs=new Segs();
       this.MyPlanes=new Planes();
       }
@@ -22,7 +17,7 @@ public class UnifiedRenderer extends RendererState{
 
 
       public Segs(){
-          super();
+          super();          
       }
 
       
@@ -34,125 +29,7 @@ public class UnifiedRenderer extends RendererState{
       
       }
   
-  protected final class Planes extends PlaneDrawer{
-     
-      /**
-       * R_DrawPlanes
-       * At the end of each frame.
-       * 
-       * This also means that visplanes must have been set BEFORE we called this
-       * function. Therefore, look for errors behind.
-       * 
-       * @throws IOException 
-       */
-       
-      @Override
-      
-      public final void DrawPlanes () 
-      {
-    	  if(DEBUG) System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "+ lastvisplane);
-          visplane_t      pln=null; //visplane_t
-          int         light;
-          int         x;
-          int         stop;
-          int         angle;
-                      
-      if (RANGECHECK){
-          if (ds_p > MAXDRAWSEGS)
-          I.Error("R_DrawPlanes: drawsegs overflow (%d)",
-              ds_p );
-          
-          if (lastvisplane > MAXVISPLANES)
-              I.Error(" R_DrawPlanes: visplane overflow (%d)",
-               lastvisplane);
-          
-          if (lastopening  > MAXOPENINGS)
-              I.Error( "R_DrawPlanes: opening overflow (%d)",
-               lastopening );
-      }
-
-          for (int pl = 0 ; pl < lastvisplane ;  pl++)
-          {
-              pln=visplanes[pl];
-             if (DEBUG2) System.out.println(pln);
-              
-          if (pln.minx > pln.maxx)
-              continue;
-          // sky flat
-          if (pln.picnum == TexMan.getSkyFlatNum())
-          {
-              // Cache skytexture stuff here. They aren't going to change while
-              // being drawn, after all, are they?
-              int skytexture=TexMan.getSkyTexture();
-              skydcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;              
-              skydcvars.dc_iscale = skyscale>>detailshift;
-              
-              /* Sky is allways drawn full bright,
-               * i.e. colormaps[0] is used.
-               * Because of this hack, sky is not affected
-               * by INVUL inverse mapping.
-               */    
-              skydcvars.dc_colormap = colormaps[0];
-              skydcvars.dc_texturemid = TexMan.getSkyTextureMid();
-              for (x=pln.minx ; x <= pln.maxx ; x++)
-              {
-            
-                  skydcvars.dc_yl = pln.getTop(x);
-                  skydcvars.dc_yh = pln.getBottom(x);
-              
-              if (skydcvars.dc_yl <= skydcvars.dc_yh)
-              {
-                  angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
-                  skydcvars.dc_x = x;
-                  // Optimized: texheight is going to be the same during normal skies drawing...right?
-                  skydcvars.dc_source = GetCachedColumn(skytexture,angle);
-                  skycolfunc.invoke();
-              }
-              }
-              continue;
-          }
-          
-          // regular flat
-          dsvars.ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
-                         PU_STATIC,flat_t.class)).data;
-          
-          
-          if (dsvars.ds_source.length==0){
-              System.err.printf("YOU READ SHIT %s %d %d %d\n ", W.GetNameForNum(TexMan.getFlatTranslation(pln.picnum)),TexMan.getFlatTranslation(pln.picnum),pln.picnum, dsvars.ds_source.length);
-          }
-          
-          planeheight = Math.abs(pln.height-viewz);
-          light = (pln.lightlevel >> LIGHTSEGSHIFT)+extralight;
-
-          if (light >= LIGHTLEVELS)
-              light = LIGHTLEVELS-1;
-
-          if (light < 0)
-              light = 0;
-
-          planezlight = zlight[light];
-
-          // We set those values at the border of a plane's top to a "sentinel" value...ok.
-          pln.setTop(pln.maxx+1,visplane_t.SENTINEL);
-          pln.setTop(pln.minx-1, visplane_t.SENTINEL);
-          
-          stop = pln.maxx + 1;
-
-          
-          for (x=pln.minx ; x<= stop ; x++) {
-        	  MakeSpans(x,pln.getTop(x-1),
-              pln.getBottom(x-1),
-              pln.getTop(x),
-              pln.getBottom(x));
-          	}
-          
-          //Z_ChangeTag (ds_source, PU_CACHE);
-          }
-      }
-
-      
-      
-  } // End Plane class
+  
       
 
   
