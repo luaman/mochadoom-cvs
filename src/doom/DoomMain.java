@@ -104,7 +104,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.99 2011/11/03 21:23:25 velktron Exp $
+// $Id: DoomMain.java,v 1.100 2011/11/04 20:24:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -130,7 +130,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.99 2011/11/03 21:23:25 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.100 2011/11/04 20:24:10 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3262,8 +3262,8 @@ public void ScreenShot ()
                 
                 if (p < CM.getArgc()-1)
                 {
-                    // Next two args must be numbers.
-                    int walls=2, floors=1;
+                    // Next THREE args must be numbers.
+                    int walls=1, floors=1,masked=2;
                     startmap = Integer.parseInt(CM.getArgv(p+1));
                     // Try parsing walls.
                     try {
@@ -3279,10 +3279,16 @@ public void ScreenShot ()
                     } catch (Exception e){
                         // OK, move on anyway.
                     }
+                    
+                    try {
+                        masked=Integer.parseInt(CM.getArgv(p+3));
+                    } catch (Exception e){
+                        // OK, move on anyway.
+                    }
 
                     // In the worst case, we will use the defaults.
                     if  (CM.CheckParmBool("-parallelrenderer"))
-                        this.R=new ParallelRenderer(this,walls,floors);
+                        this.R=new ParallelRenderer(this,walls,floors,masked);
                     else
                         this.R=new ParallelRenderer2(this,walls,floors);
                 }
@@ -4222,6 +4228,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.100  2011/11/04 20:24:10  velktron
+//Using 3-parameter parallel renderers.
+//
 //Revision 1.99  2011/11/03 21:23:25  velktron
 //Using testReadAccess now
 //
