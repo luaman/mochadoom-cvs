@@ -1788,8 +1788,6 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         
         @Override
         public void run() {
-            if (id<2)
-            {
             // vissprite_t spr;
             int ds;
             drawseg_t dss;
@@ -1834,7 +1832,6 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             colfunc = playercolfunc;
             DrawPlayerSprites();
             colfunc = maskedcolfunc;
-        }
             
             try {
                 barrier.await();
