@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import sun.net.www.protocol.http.HttpURLConnection;
-
 /** As we know, Java can be a bit awkward when handling streams e.g. you can't really skip 
  *  at will without doing some nasty crud. This class helps doing such crud.
  *  
