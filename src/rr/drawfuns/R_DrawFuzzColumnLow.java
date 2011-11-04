@@ -14,6 +14,8 @@ public final class R_DrawFuzzColumnLow
             byte[] screen, IDoomSystem I, byte[] BLURRY_MAP) {
         super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I,
                 BLURRY_MAP);
+        
+        this.flags=DcFlags.LOW_DETAIL|DcFlags.FUZZY;
 
         FUZZOFF = SCREENWIDTH;
 

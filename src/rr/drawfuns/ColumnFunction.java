@@ -10,4 +10,7 @@ public interface ColumnFunction<T> {
     public void invoke();
     
 	public void invoke(ColVars<T> dcvars);
+	
+	/** A set of flags that help identifying the type of function */
+	public int getFlags();
 }

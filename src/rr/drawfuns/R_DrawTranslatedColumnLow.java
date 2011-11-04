@@ -10,6 +10,7 @@ public final class R_DrawTranslatedColumnLow
             int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
             byte[] screen, IDoomSystem I) {
         super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
+        this.flags=DcFlags.TRANSLATED|DcFlags.LOW_DETAIL;
     }
 
     public void invoke() {

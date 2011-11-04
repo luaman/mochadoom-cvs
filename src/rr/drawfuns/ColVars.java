@@ -7,9 +7,7 @@ package rr.drawfuns;
  *  
  */
 
-public class ColVars<T> {
-
-   
+public class ColVars<T> {    
     /** when passing dc_source around, also set this */
     public T dc_source;
     public int dc_source_ofs;
@@ -31,6 +29,8 @@ public class ColVars<T> {
     public int dc_x;
     public int dc_yh;
     public int dc_yl;
+    
+    public int dc_flags;
 
     /**
      * MAES: this was a typedef for unsigned bytes, called "lighttable_t". It
@@ -42,7 +42,9 @@ public class ColVars<T> {
     
     public T dc_colormap;
 
-    public void copyFrom(ColVars<T> dcvars) {
+    /** Copies all BUT flags */
+    
+    public final void copyFrom(ColVars<T> dcvars) {
         this.dc_source=dcvars.dc_source;
         this.dc_colormap=dcvars.dc_colormap;
         this.dc_source_ofs=dcvars.dc_source_ofs;
@@ -53,8 +55,13 @@ public class ColVars<T> {
         this.dc_yl=dcvars.dc_yl;
         this.dc_texturemid=dcvars.dc_texturemid;
         this.dc_iscale=dcvars.dc_iscale;
-        this.dc_texheight=dcvars.dc_texheight;
-        
+        this.dc_texheight=dcvars.dc_texheight;        
+    }
+    
+    /** Assigns specific flags */
+    public void copyFrom(ColVars<T> dcvars,int flags) {
+        this.copyFrom(dcvars);
+        this.dc_flags=flags;
     }
     
 

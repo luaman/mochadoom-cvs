@@ -21,6 +21,7 @@ public abstract class DoomColumnFunction<T> implements ColumnFunction<T>{
     protected final T BLURRY_MAP; 
     protected final int[] ylookup;
     protected final int[] columnofs;
+    protected int flags;
     
     public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
             int[] columnofs, ColVars<T> dcvars, T screen,IDoomSystem I) {
@@ -75,6 +76,10 @@ public abstract class DoomColumnFunction<T> implements ColumnFunction<T>{
     public final void invoke(ColVars<T> dcvars) {
         this.dcvars=dcvars;
         invoke();
+    }
+    
+    public final int getFlags(){
+        return this.flags;
     }
     
 }

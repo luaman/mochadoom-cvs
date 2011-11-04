@@ -9,6 +9,7 @@ public final class R_DrawColumnLow extends DoomColumnFunction<byte[]> {
 	            int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
 	            byte[] screen, IDoomSystem I) {
 	        super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
+	        this.flags=DcFlags.LOW_DETAIL;
 	    }
 
         public void invoke() {

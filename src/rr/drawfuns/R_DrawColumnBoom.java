@@ -101,8 +101,12 @@ import i.IDoomSystem;
 					}
 
 					while (count > 0) {
+					    try{
 						screen[dest] = colormap[0x00FF & source[dc_source_ofs
 								+ ((frac >> FRACBITS) & heightmask)]];
+					    } catch (Exception e){
+					        System.err.printf("%s %s %x %x %x\n",colormap, source,dc_source_ofs,frac,heightmask);
+					    }
 						dest += SCREENWIDTH;
 						frac += fracstep;
 						count--;

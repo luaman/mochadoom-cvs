@@ -15,6 +15,7 @@ import i.IDoomSystem;
                 byte[] screen, IDoomSystem I,byte[] BLURRY_MAP) {
             super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I,BLURRY_MAP);
         
+            this.flags=DcFlags.FUZZY;
         
         FUZZOFF = SCREENWIDTH;
         
