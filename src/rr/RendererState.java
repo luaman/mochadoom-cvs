@@ -1184,7 +1184,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	     * 
 	     */
 
-	    protected void DrawMaskedColumn(column_t column) {
+	    private final void DrawMaskedColumn(column_t column) {
 	        int topscreen;
 	        int bottomscreen;
 	        int basetexturemid; // fixed_t
@@ -1350,19 +1350,19 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
          * 
          * 
          */
-        private final void DrawVisSprite(vissprite_t vis,int x1, int x2) {
+        private final void DrawVisSprite(vissprite_t vis) {
             column_t column;
             int texturecolumn;
             int frac; // fixed_t
             patch_t patch;
             // The sprite may have been partially drawn on another portion of the
             // screen.
-            int bias=startx-x1;
+            int bias=startx-vis.x1;
                 if (bias<0) bias=0; // nope, it ain't.
 
             // Trim bounds to zone NOW
-            x1=Math.max(startx,x1);
-            x2=Math.min(endx,x2);
+            int x1=Math.max(startx, vis.x1);
+            int x2=Math.min(endx,vis.x2);
                 
             // At this point, the view angle (and patch) has already been
             // chosen. Go back.
@@ -1609,7 +1609,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             }
 
             //System.out.printf("Weapon draw from %d to %d\n",vis.x1,vis.x2);
-            DrawVisSprite(vis,vis.x1,vis.x2);
+            DrawVisSprite(vis);
         }
         
         /** used inside DrawPSprite, better make this static */
@@ -1771,7 +1771,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             mceilingclip = cliptop;
             p_mceilingclip = 0;
             // Let DrawVisSprite do the final trimming and biasing.
-            DrawVisSprite(spr,spr.x1,spr.x2);
+            DrawVisSprite(spr);
         }
 
         /**
@@ -4364,7 +4364,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             // TODO: find a better way to split work. As it is, it's very uneven
             // and merged visplanes in particular are utterly dire.
             
-                for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
+            for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
                  pln=visplanes[pl];
                 // System.out.println(id +" : "+ pl);
                  

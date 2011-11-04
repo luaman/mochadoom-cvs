@@ -6,18 +6,12 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import rr.RendererState.AbstractThings;
-import rr.RendererState.MaskedWorker;
-import rr.RendererState.Things;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DcFlags;
 import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomLow;
-import rr.drawfuns.R_DrawColumnBoomOpt;
-import rr.drawfuns.R_DrawColumnBoomOptLow;
 import rr.drawfuns.R_DrawFuzzColumn;
 import rr.drawfuns.R_DrawFuzzColumnLow;
-import rr.drawfuns.R_DrawTLColumn;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
 import utils.C2JUtils;
@@ -112,7 +106,7 @@ public class ParallelRenderer
     private void initializeParallelStuff() {
         // Prepare parallel stuff
         RWIExec = new RenderWallExecutor[NUMWALLTHREADS];
-        //RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];        
+        RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];        
         vpw = new VisplaneWorker[NUMFLOORTHREADS];
         maskedworkers=new MaskedWorker[NUMMASKEDTHREADS];
         
@@ -200,12 +194,13 @@ public class ParallelRenderer
 
     } // End Plane class
 
-    /** Overrides only the terminal drawing methods from things, using a mechanism
-     *  very similar to column-based wall threading. It's not very efficient,
-     *  since some of the really heavy parts (such as visibility priority) are still done
-     *  serially, and actually do take up a lot of the actual rendering time, and the 
-     *  number of columns generated is REALLY enormous (100K+ for something like nuts.wad),
-     *  and the thing chokes on synchronization, more than anything.
+    /** Overrides only the terminal drawing methods from things, 
+     * using a mechanism very similar to column-based wall threading.
+     * It's not very efficient, since some of the really heavy parts 
+     * (such as visibility priority) are still done serially, and actually do 
+     * take up a lot of the actual rendering time, and the number of columns generated 
+     * is REALLY enormous (100K+ for something like nuts.wad), and the thing chokes 
+     * on synchronization, more than anything.
      *  
      *  The only appropriate thing to do would be to have a per-vissprite 
      *  renderer, which would actually move much of the brunt work away from 
@@ -226,6 +221,22 @@ public class ParallelRenderer
     
     protected final class ParallelThings extends AbstractThings{
         
+    	@Override
+    	public void DrawMasked(){
+    		super.DrawMasked();
+    		RenderRMIPipeline();
+    		
+    		try {
+				maskedbarrier.await();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (BrokenBarrierException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+    	
         @Override
         public void completeColumn(){
             
@@ -312,32 +323,30 @@ public class ParallelRenderer
             
             detailaware.add(RWIExec[i]);
         }
+    }
+ 
+    private void InitRMISubsystem() {
+    for (int i = 0; i < NUMMASKEDTHREADS; i++) {
+        // Each masked executor gets its own set of column functions.
         
-        /*
-        for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-            // Each masked executor gets its own set of column functions.
+        RMIExec[i] =
+            new RenderMaskedExecutor(SCREENWIDTH, SCREENHEIGHT, columnofs,
+                    ylookup, screen, RMI, maskedbarrier,
+                    // Regular masked columns
+                    new R_DrawColumnBoom(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
+                    new R_DrawColumnBoomLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
+                    
+                    // Fuzzy columns
+                    new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP),
+                    new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP),
+
+                    // Translated columns
+                    new R_DrawTranslatedColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
+                    new R_DrawTranslatedColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I)
+                    );
             
-            RMIExec[i] =
-                new RenderMaskedExecutor(SCREENWIDTH, SCREENHEIGHT, columnofs,
-                        ylookup, screen, RMI, maskedbarrier,
-                        // Regular masked columns
-                        new R_DrawColumnBoom(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
-                        new R_DrawColumnBoomLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
-                        
-                        // Fuzzy columns
-                        new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP),
-                        new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP),
-
-                        // Translated columns
-                        new R_DrawTranslatedColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
-                        new R_DrawTranslatedColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I)
-                        );
-                
-            detailaware.add(RMIExec[i]);
-        } */
-
-
-
+        detailaware.add(RMIExec[i]);
+    	}
     }
     
     private void InitPlaneWorkers(){
@@ -515,10 +524,6 @@ public class ParallelRenderer
     public void Init()
 
     {
-        // Any good reason for this to be here?
-        // drawsegs=new drawseg_t[MAXDRAWSEGS];
-        // C2JUtils.initArrayOfObjects(drawsegs);
-
         // DON'T FORGET ABOUT MEEEEEE!!!11!!!
         this.screen = V.getScreen(DoomVideoRenderer.SCREEN_FG);
 
@@ -549,6 +554,7 @@ public class ParallelRenderer
 
         System.out.print("\nR_InitRWISubsystem: ");
         InitRWISubsystem();
+        InitRMISubsystem();
         InitPlaneWorkers();
         InitMaskedWorkers();
 
