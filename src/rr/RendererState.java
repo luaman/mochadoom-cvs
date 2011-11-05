@@ -4292,19 +4292,17 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 	protected class VisplaneWorker implements Runnable,IDetailAware{
 
-        public int id;
+        private final int id;
         private final int NUMFLOORTHREADS;
-        int startvp;  
-        int endvp;
-        int vpw_planeheight;
-        byte[][] vpw_planezlight;
-        int vpw_basexscale,vpw_baseyscale;
-        int[] cachedheight;
-        int[] cacheddistance;
-        int[] cachedxstep;
-        int[] cachedystep;
-        int[] distscale;
-        int[] yslope;
+        private int vpw_planeheight;
+        private byte[][] vpw_planezlight;
+        private int vpw_basexscale,vpw_baseyscale;
+        private int[] cachedheight;
+        private int[] cacheddistance;
+        private int[] cachedxstep;
+        private int[] cachedystep;
+        private int[] distscale;
+        private int[] yslope;
         private final SpanVars<byte[]> vpw_dsvars;
         private final ColVars<byte[]> vpw_dcvars;
         private DoomSpanFunction<byte[]> vpw_spanfunc;
@@ -4314,9 +4312,10 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         private final DoomColumnFunction<byte[]> vpw_skyfunchi;
         private final DoomColumnFunction<byte[]> vpw_skyfunclow;
         
-        public VisplaneWorker(int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
+        public VisplaneWorker(int id,int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
                 int[] ylookup, byte[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
             this.barrier=visplanebarrier;
+            this.id=id;
             // Alias to those of Planes.
             cachedheight=MyPlanes.getCachedHeight();
             cacheddistance=MyPlanes.getCachedDistance();
@@ -4324,8 +4323,8 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             cachedystep=MyPlanes.getCachedYStep();
             distscale=MyPlanes.getDistScale();
             yslope=MyPlanes.getYslope();
-            spanstart=new int[SCREENHEIGHT];
-            spanstop=new int [SCREENHEIGHT];
+            spanstart=new int[sCREENHEIGHT];
+            spanstop=new int [sCREENHEIGHT];
             vpw_dsvars=new SpanVars<byte[]>();
             vpw_dcvars=new ColVars<byte[]>();
             vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
@@ -4350,13 +4349,11 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         public void run() {
             visplane_t      pln=null; //visplane_t
             // These must override the global ones
-
-
             int         light;
             int         x;
             int         stop;
             int         angle;
-            
+          
             // Now it's a good moment to set them.
             vpw_basexscale=MyPlanes.getBaseXScale();
             vpw_baseyscale=MyPlanes.getBaseYScale();
@@ -4454,13 +4451,6 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
          }
             
-
-        public void setRange(int startvp, int endvp) {
-            this.startvp=startvp;
-            this.endvp=endvp;
-            
-        }
-        
         /**
          * R_MakeSpans
          * 
@@ -4597,31 +4587,37 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
           
       }
 	
-	protected class VisplaneWorker2 implements Runnable{
+	protected class VisplaneWorker2 implements Runnable,IDetailAware{
 
-        public int id;
+        private final int id;
+        private final char SENTINEL;
         private final int NUMFLOORTHREADS;
-        int startvp;  
-        int endvp;
-        int vpw_planeheight;
-        byte[][] vpw_planezlight;
-        int vpw_basexscale,vpw_baseyscale;
-        int[] cachedheight;
-        int[] cacheddistance;
-        int[] cachedxstep;
-        int[] cachedystep;
-        int[] distscale;
-        int[] yslope;
+        private int startvp;  
+        private int endvp;
+        private int vpw_planeheight;
+        private byte[][] vpw_planezlight;
+        private int vpw_basexscale,vpw_baseyscale;
+        private int[] cachedheight;
+        private int[] cacheddistance;
+        private int[] cachedxstep;
+        private int[] cachedystep;
+        private int[] distscale;
+        private int[] yslope;
         private final SpanVars<byte[]> vpw_dsvars;
         private final ColVars<byte[]> vpw_dcvars;
-        private final DoomSpanFunction<byte[]> vpw_spanfunc;
+        private DoomSpanFunction<byte[]> vpw_spanfunc;
+        private DoomColumnFunction<byte[]> vpw_skyfunc;
+        private final DoomSpanFunction<byte[]> vpw_spanfunchi;
         private final DoomSpanFunction<byte[]> vpw_spanfunclow;
-        private final DoomColumnFunction<byte[]> vpw_skyfunc;
-       
+        private final DoomColumnFunction<byte[]> vpw_skyfunchi;
+        private final DoomColumnFunction<byte[]> vpw_skyfunclow;
+        private visplane_t pln;
         
-        public VisplaneWorker2(int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
+        public VisplaneWorker2(int id,int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
                 int[] ylookup, byte[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
             this.barrier=visplanebarrier;
+            this.id=id;
+            this.SENTINEL=(char) (visplane_t.SENTINEL^id);
             // Alias to those of Planes.
             cachedheight=MyPlanes.getCachedHeight();
             cacheddistance=MyPlanes.getCachedDistance();
@@ -4629,55 +4625,69 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             cachedystep=MyPlanes.getCachedYStep();
             distscale=MyPlanes.getDistScale();
             yslope=MyPlanes.getYslope();
-            spanstart=new int[SCREENHEIGHT];
-            spanstop=new int [SCREENHEIGHT];
+            spanstart=new int[sCREENWIDTH];
+            spanstop=new int [sCREENWIDTH];
             vpw_dsvars=new SpanVars<byte[]>();
             vpw_dcvars=new ColVars<byte[]>();
-            vpw_spanfunc=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_spanfunclow=new R_DrawSpanLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=new R_DrawColumnBoomOpt(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunclow=new R_DrawColumnBoomOptLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
             this.NUMFLOORTHREADS=NUMFLOORTHREADS;
         }
 
         @Override
         public void run() {
-            visplane_t      pln=null; //visplane_t
+            pln=null; //visplane_t
             // These must override the global ones
-
 
             int         light;
             int         x;
             int         stop;
             int         angle;
+            int minx,maxx;
             
             // Now it's a good moment to set them.
             vpw_basexscale=MyPlanes.getBaseXScale();
             vpw_baseyscale=MyPlanes.getBaseYScale();
             
+            startvp=((id*viewwidth)/NUMFLOORTHREADS);
+            endvp=(((id+1)*viewwidth)/NUMFLOORTHREADS);
+            
             // TODO: find a better way to split work. As it is, it's very uneven
             // and merged visplanes in particular are utterly dire.
             
-                for (int pl= this.id; pl <lastvisplane; pl+=NUMFLOORTHREADS) {
+             for (int pl= 0; pl <lastvisplane; pl++) {
                  pln=visplanes[pl];
                 // System.out.println(id +" : "+ pl);
-                 
+
+            // Trivial rejection.
+             if ((pln.minx > endvp) || (pln.maxx <startvp)) 
+                     continue;
+
+             // Reject non-visible  
              if (pln.minx > pln.maxx)
                  continue;
 
+             // Trim to zone
+             minx=Math.max(pln.minx,startvp);
+             maxx=Math.min(pln.maxx,endvp);
              
              // sky flat
              if (pln.picnum == TexMan.getSkyFlatNum() )
              {
-                 vpw_dcvars.dc_iscale = MyPlanes.getSkyScale()>>detailshift;
+                 // Cache skytexture stuff here. They aren't going to change while
+                 // being drawn, after all, are they?
+                 int skytexture=TexMan.getSkyTexture();
+                 // MAES: these must be updated to keep up with screen size changes.
                  vpw_dcvars.viewheight=viewheight;
-                 /* Sky is allways drawn full bright,
-                  * i.e. colormaps[0] is used.
-                  * Because of this hack, sky is not affected
-                  * by INVUL inverse mapping.
-                  */    
-                vpw_dcvars.dc_colormap = colormaps[0];
-                vpw_dcvars.dc_texturemid = TexMan.getSkyTextureMid();
-                 for (x=pln.minx ; x <= pln.maxx ; x++)
+                 vpw_dcvars.centery=centery;
+                 vpw_dcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;                 
+                 vpw_dcvars.dc_iscale = MyPlanes.getSkyScale()>>detailshift;
+                 
+                 vpw_dcvars.dc_colormap = colormaps[0];
+                 vpw_dcvars.dc_texturemid = TexMan.getSkyTextureMid();
+                 for (x=minx ; x <= maxx ; x++)
                  {
                
                      vpw_dcvars.dc_yl = pln.getTop(x);
@@ -4716,14 +4726,32 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
              vpw_planezlight = zlight[light];
 
-             // We set those values at the border of a plane's top to a "sentinel" value...ok.
-             pln.setTop(pln.maxx+1,(char) 0xffff);
-             pln.setTop(pln.minx-1, (char) 0xffff);
+             // Some tinkering required to make sure visplanes
+             // don't end prematurely on each other's stop markers
              
-             stop = pln.maxx + 1;
-
+             char value=pln.getTop(maxx+1);
+             if (!isMarker(value)) { // is it a marker?
+            	 	value|=visplane_t.SENTINEL; // Mark it so.
+            	 	value&=visplane_t.THREADIDCLEAR; //clear id bits
+            	 	value|=(id<<visplane_t.THREADIDSHIFT); // set our own id.
+             		} // Otherwise, it was set by another thread.
+             		  // Leave it be.
              
-             for (x=pln.minx ; x<= stop ; x++) {
+             pln.setTop(maxx+1,value);
+             
+             value=pln.getTop(minx-1);
+             if (!isMarker(value)) { // is it a marker?
+            	 	value|=visplane_t.SENTINEL; // Mark it so.
+            	 	value&=visplane_t.THREADIDCLEAR; //clear id bits
+            	 	value|=(id<<visplane_t.THREADIDSHIFT); // set our own id.
+             		} // Otherwise, it was set by another thread.
+             		  // Leave it be.
+             
+          	 pln.setTop(minx-1, value);
+          	 
+             stop = maxx+1;
+             
+             for (x=minx ; x<= stop ; x++) {
               MakeSpans(x,pln.getTop(x-1),
                  pln.getBottom(x-1),
                  pln.getTop(x),
@@ -4745,11 +4773,27 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
          }
             
-
-        public void setRange(int startvp, int endvp) {
-            this.startvp=startvp;
-            this.endvp=endvp;
-            
+        private final boolean isMarker(int t1){
+        	return ((t1&visplane_t.SENTINEL)!=0);
+        	}
+        
+        private final int decodeID(int t1){
+        	return (t1&visplane_t.THREADIDBITS)>>visplane_t.THREADIDSHIFT;
+        	}
+        
+        private final int decodeValue(int t1){
+        	return t1&visplane_t.THREADVALUEBITS;
+        	}
+        
+        public void setDetail(int detailshift) {
+            if (detailshift == 0){
+                vpw_spanfunc = vpw_spanfunchi;
+                vpw_skyfunc= vpw_skyfunchi;
+            }
+            else{
+                vpw_spanfunc = vpw_spanfunclow;
+                vpw_skyfunc =vpw_skyfunclow;
+            }
         }
         
         /**
@@ -4771,7 +4815,17 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
          */
 
           private final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
-              
+      	  
+        	  // Top 1 sentinel encountered.
+        	  if (isMarker(t1))
+        		  if (decodeID(t1)!=id) // We didn't put it here.
+        			  t1=decodeValue(t1);
+
+        	// Top 2 sentinel encountered.
+        	  if (isMarker(t2))
+        		  if (decodeID(t2)!=id)
+        			  t2=decodeValue(t2);
+        		  
               // If t1 = [sentinel value] then this part won't be executed.
               while (t1 < t2 && t1 <= b1) {
                   this.MapPlane(t1, spanstart[t1], x - 1);
