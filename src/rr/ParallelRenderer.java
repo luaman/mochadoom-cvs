@@ -45,7 +45,7 @@ public class ParallelRenderer
 
     private Executor tp;
 
-    private VisplaneWorker[] vpw;
+    private Runnable[] vpw;
     
     private MaskedWorker[] maskedworkers;
 
@@ -92,6 +92,11 @@ public class ParallelRenderer
         this.NUMFLOORTHREADS = floorthreads;
         this.NUMMASKEDTHREADS = nummaskedthreads;
         
+    	smp_composite=new boolean[nummaskedthreads];// = false;
+    	smp_lasttex=new int[nummaskedthreads];// = -1;
+    	smp_lastlump=new int[nummaskedthreads];// = -1;
+    	smp_lastpatch=new patch_t[nummaskedthreads];;// = null;
+        
     }
 
     /**
@@ -107,7 +112,7 @@ public class ParallelRenderer
         // Prepare parallel stuff
         RWIExec = new RenderWallExecutor[NUMWALLTHREADS];
         RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];        
-        vpw = new VisplaneWorker[NUMFLOORTHREADS];
+        vpw = new Runnable[NUMFLOORTHREADS];
         maskedworkers=new MaskedWorker[NUMMASKEDTHREADS];
         
         tp = Executors.newCachedThreadPool();
@@ -352,11 +357,11 @@ public class ParallelRenderer
     private void InitPlaneWorkers(){
         for (int i = 0; i < NUMFLOORTHREADS; i++) {
             vpw[i] =
-                new VisplaneWorker(SCREENWIDTH, SCREENHEIGHT, columnofs,
+                new VisplaneWorker2(i,SCREENWIDTH, SCREENHEIGHT, columnofs,
                         ylookup, screen, visplanebarrier, NUMFLOORTHREADS);
-            vpw[i].id = i;
+            //vpw[i].id = i;
             
-            detailaware.add(vpw[i]);
+            detailaware.add((IDetailAware) vpw[i]);
         }
     }
     

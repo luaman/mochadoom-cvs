@@ -1324,19 +1324,22 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         /** fixed_t */
 	    private int pspritescale, pspriteiscale;
         
-        // Used for masked segs
+        // Used for masked segs. Use private for each thread.
 	    private int rw_scalestep;
+	    private int pmaskedtexturecol;
+	    private short[] maskedtexturecol;
         
-        protected int spryscale;
-        protected int sprtopscreen;
-        protected short[] mfloorclip;
-        protected int p_mfloorclip;
-        protected short[] mceilingclip;
-        protected int p_mceilingclip;
+	    private int spryscale;
+	    private int sprtopscreen;
+	    private short[] mfloorclip;
+	    private int p_mfloorclip;
+	    private short[] mceilingclip;
+	    private int p_mceilingclip;
         
-        protected sector_t frontsector;
-        protected sector_t backsector;
-
+	    private sector_t frontsector;
+	    private sector_t backsector;
+        private seg_t curline;
+        
         public void cacheSpriteManager(ISpriteManager SM){
               this.spritewidth=SM.getSpriteWidth();
                 this.spriteoffset=SM.getSpriteOffset();
@@ -1413,12 +1416,30 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
          * @param x1
          * @param x2
          */
-        private void RenderMaskedSegRange(drawseg_t ds, int x1, int x2) {
+        /**
+         * R_RenderMaskedSegRange
+         * 
+         * @param ds
+         * @param x1
+         * @param x2
+         */
+        
+        private final void RenderMaskedSegRange(drawseg_t ds, int x1, int x2) {
+        	
+        	// Trivial rejection
+            if (ds.x1>endx || ds.x2<startx) return;
+            
+            // Trim bounds to zone NOW
+            x1=Math.max(startx, x1);
+            x2=Math.min(endx,x2);
+        	
             int index;
 
             int lightnum;
             int texnum;
-
+            int bias=startx-ds.x1; // Correct for starting outside
+            if (bias<0) bias=0; // nope, it ain't.
+            
             // System.out.printf("RenderMaskedSegRange from %d to %d\n",x1,x2);
 
             // Calculate light table.
@@ -1492,18 +1513,16 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
                     maskedcvars.dc_iscale = (int) (0xffffffffL / spryscale);
 
                     // draw the texture
-                    byte[] data = GetColumn(texnum,
-                            maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x]);// -3);
+                    byte[] data = GetSmpColumn(texnum,
+                            maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x],id);// -3);
                     
                     DrawMaskedColumn(data);
-        
                     maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x] = Short.MAX_VALUE;
                 }
                 spryscale += rw_scalestep;
             }
 
-        }       
-
+        }		
         
         /**
          * R_DrawPSprite
@@ -1558,14 +1577,14 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             x1 = (centerxfrac + FixedMul(tx, pspritescale)) >> FRACBITS;
 
             // off the right side
-            if (x1 > endx>>detailshift)
+            if (x1 > endx)
                 return;
 
             tx += spritewidth[lump];
             x2 = ((centerxfrac + FixedMul(tx, pspritescale)) >> FRACBITS) - 1;
 
             // off the left side
-            if (x2 < startx>>detailshift)
+            if (x2 < startx)
                 return;
 
             // store information in a vissprite ?
@@ -1675,12 +1694,13 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             int silhouette;
 
             // Trivially outside. Don't bother computing anything for it.
-            if (spr.x1>=endx || spr.x2<=startx) return;
+            //if (spr.x1>=endx || spr.x2<=startx) return;
             
             // Trimmed boundaries. Only do masked seg computations on these.
-            int sprx1=Math.max(startx,spr.x1);
-            int sprx2=Math.min(endx,spr.x2);
-                        
+            int sprx1=spr.x1;//Math.max(startx,spr.x1);
+            int sprx2=spr.x2;//Math.min(endx,spr.x2);
+            
+            
             // Trim bounds if necessary.
             for (x = sprx1; x <=  sprx2; x++)
                 clipbot[x] = cliptop[x] = -2;
@@ -1823,7 +1843,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             for (ds = ds_p - 1; ds >= 0; ds--) {
                 dss = drawsegs[ds];
                 if (!dss.nullMaskedTextureCol())
-                    RenderMaskedSegRange(dss, Math.max(startx,dss.x1), Math.min(endx,dss.x2));
+                    RenderMaskedSegRange(dss, dss.x1,dss.x2);
             }
             // draw the psprites on top of everything
             // but does not draw on side views
@@ -6100,6 +6120,8 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	private int lastlump = -1;
 	private patch_t lastpatch = null;
 
+	
+	
 	/**
 	 * R_GetColumn variation which is tutti-frutti proof. It only returns cached
 	 * columns, and even pre-caches single-patch textures intead of trashing the
@@ -6139,51 +6161,67 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 	/**
 	 * Special version of GetColumn meant to be called concurrently by different
-	 * seg rendering threads, identfiex by index. This allows to preserve global
-	 * offsets (in offsets[index]) and avoid the phenomenon of getting "jittery"
-	 * textures on the walls.
+	 * seg rendering threads, identfiex by index. This serves to avoid stomping
+	 * on mutual cached textures and causing crashes.
 	 * 
 	 */
 
-	public byte[] GetColumn(int tex, int col, int index) {
-		int lump, ofs;
+	public byte[] GetSmpColumn(int tex, int col, int id) {
+		int lump,ofs;
 
 		col &= TexMan.getTexturewidthmask(tex);
 		lump = TexMan.getTextureColumnLump(tex, col);
 		ofs = TexMan.getTextureColumnOfs(tex, col);
 
-		// If pointing inside a non-zero, positive lump, then it's not a
-		// composite texture.
-		// Read from disk.
-		dcvars.dc_source_ofs = 0;
+		// It's always 0 for this kind of access.
+
+		// Speed-increasing trick: speed up repeated accesses to the same
+		// texture or patch, if they come from the same lump
+		
+		if (tex == smp_lasttex[id] && lump == smp_lastlump[id]) {
+		    if (composite)
+		        return smp_lastpatch[id].columns[col].data;
+		    else
+		        return smp_lastpatch[id].columns[ofs].data;
+		    }
 
 		// If pointing inside a non-zero, positive lump, then it's not a
-		// composite texture.
-		// Read from disk, and safeguard vs tutti frutti.
+		// composite texture. Read it from disk.
 		if (lump > 0) {
 			// This will actually return a pointer to a patch's columns.
-			return TexMan.getRogueColumn(lump, ofs);
+			// That is, to the ONE column exactly.{
+			// If the caller needs access to a raw column, we must point 3 bytes
+			// "ahead".
+			smp_lastpatch[id] = W.CachePatchNum(lump, PU_CACHE);
+			smp_lasttex[id] = tex;
+			smp_lastlump[id]=lump;
+			smp_composite[id]=false;
+			// If the column was a disk lump, use ofs.
+			return smp_lastpatch[id].columns[ofs].data;
 		}
-
-		// this.offsets[index]=0;
-		// Texture should be composite, but it doesn't yet exist. Create it.
-		if (TexMan.getTextureComposite(tex) == null)
-			TexMan.GenerateComposite(tex);
-
-		// This implies that texturecomposite actually stores raw, compressed
-		// columns,
-		// or else those "ofs" would go in-between.
-		// The source offset int this case is 0, else we'll skip over stuff.
-
-		return TexMan.getTextureComposite(tex, col);
+		
+		// Problem. Composite texture requested as if it was masked
+		// but it doesn't yet exist. Create it.
+		if (TexMan.getMaskedComposite(tex) == null){
+		    System.err.printf("Forced generation of composite %s\n",TexMan.CheckTextureNameForNum(tex),smp_composite[id],col,ofs);
+			TexMan.GenerateMaskedComposite(tex);
+			System.err.printf("Composite patch %s %d\n",TexMan.getMaskedComposite(tex).name,TexMan.getMaskedComposite(tex).columns.length);
+		}
+		
+		// Last resort. 
+	    smp_lastpatch[id] = TexMan.getMaskedComposite(tex);
+	    smp_lasttex[id]=tex;
+	    smp_composite[id]=true;
+	    smp_lastlump[id]=0;
+		
+		return lastpatch.columns[col].data;
 	}
 
-	/*
-	 * @Override public final int getDCSourceOffset(int index){ return
-	 * offsets[index]; }
-	 */
-
-	// int[] offsets;
+    // False: disk-mirrored patch. True: improper "transparent composite".
+	protected boolean[] smp_composite;// = false;
+	protected int[] smp_lasttex;// = -1;
+	protected int[] smp_lastlump;// = -1;
+	protected patch_t[] smp_lastpatch;// = null;
 
 	
 
