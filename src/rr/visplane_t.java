@@ -3,9 +3,10 @@ import java.util.Arrays;
 import v.IVideoScale;
 
 /** Now what is a visplane, anyway?
- *  Basically, it's a big buffer representing
+ *  Basically, it's a bunch of arrays buffer representing
  *  a top and a bottom boundary of a region to be filled with a
- *  specific kind of flat. Think of it as an arbitrary boundary.
+ *  specific kind of flat. They are as wide as the screen, 
+ *  and actually store height bounding values or sentinel valuesThink of it as an arbitrary boundary.
  *  
  *  These are refreshed continuously during rendering, and mark 
  *  the limits between flat regions. Special values mean "do not 
@@ -21,7 +22,19 @@ public class visplane_t{
     public static final int TOPOFFSET=1;
     public static final int MIDDLEPADDING=2;
     public static int BOTTOMOFFSET;
-    public static final char SENTINEL=Character.MAX_VALUE;
+    
+    // Multithreading trickery (for strictly x-bounded drawers)
+    // The thread if is encoded in the upper 3 bits (puts an upper limit 
+    // of 8 floor threads), and the stomped value is encoded in the next 12 
+    // bits (this puts an upper height limit of 4096 pixels). 
+    // Not the cleanest system possible, but it's backwards compatible
+    // TODO: expand visplane buffers to full-fledged ints?
+    
+    public static final char SENTINEL=0x8000;
+    public static final char THREADIDSHIFT=12;
+    public static final char THREADIDCLEAR=0x8FFF;
+    public static final char THREADIDBITS=0XFFFF-THREADIDCLEAR;
+    public static final char THREADVALUEBITS=THREADIDCLEAR-SENTINEL;
     
     public visplane_t(){
         this.data=new char[4+2*SCREENWIDTH];
