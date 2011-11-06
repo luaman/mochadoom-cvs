@@ -36,9 +36,10 @@ public final class Limits {
 	public static final int MAXPLAYERS = 4;
 	public final static int MAXNETNODES = 8;
 
-	// Some quirky engine limits
+	/** Some quirky engine limits */
 	public static final int MAXEVENTS = 64;
-	/** max # of wall switches in a level */
+	
+	/** max # of wall switch TYPES in a level */
 	public static final int MAXSWITCHES = 50;
 
 	/** 20 adjoining sectors max! */
