@@ -27,7 +27,7 @@ public abstract class DoomSpanFunction<T> implements SpanFunction<T> {
     protected final void doRangeCheck(){
         if (dsvars.ds_x2 < dsvars.ds_x1 || dsvars.ds_x1 < 0 || dsvars.ds_x2 >= SCREENWIDTH
                 || dsvars.ds_y > SCREENHEIGHT) {
-            I.Error("R_DrawSpan: %i to %i at %i", dsvars.ds_x1, dsvars.ds_x2, dsvars.ds_y);
+            I.Error("R_DrawSpan: %d to %d at %d", dsvars.ds_x1, dsvars.ds_x2, dsvars.ds_y);
         }
     }
 

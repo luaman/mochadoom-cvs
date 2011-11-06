@@ -49,7 +49,7 @@ public abstract class DoomColumnFunction<T> implements ColumnFunction<T>{
     
     protected final void performRangeCheck(){
         if (dcvars.dc_x >= SCREENWIDTH || dcvars.dc_yl < 0 || dcvars.dc_yh >= SCREENHEIGHT)
-            I.Error("R_DrawColumn: %i to %i at %i", dcvars.dc_yl, dcvars.dc_yh, dcvars.dc_x);
+            I.Error("R_DrawColumn: %d to %d at %d", dcvars.dc_yl, dcvars.dc_yh, dcvars.dc_x);
     }
     
     /**
