@@ -6,10 +6,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 
 import p.Resettable;
 
@@ -20,37 +20,44 @@ import p.Resettable;
  * @author Maes
  */
 
-public class C2JUtils {
+public final class C2JUtils {
 
-    static public char[] strcpy(char[] s1, final char[] s2) {
+    static public final char[] strcpy(char[] s1, final char[] s2) {
         for (int i = 0; i < Math.min(s1.length, s2.length); i++) {
             s1[i] = s2[i];
         }
         return s1;
     }
 
-    static public char[] strcpy(char[] s1, final char[] s2, int off, int len) {
+    static public final char[] strcpy(char[] s1, final char[] s2, int off, int len) {
         for (int i = 0; i < len; i++) {
             s1[i] = s2[i + off];
         }
         return s1;
     }
 
-    static public char[] strcpy(char[] s1, final char[] s2, int off) {
+    static public final char[] strcpy(char[] s1, final char[] s2, int off) {
         for (int i = 0; i < Math.min(s1.length, s2.length - off); i++) {
             s1[i] = s2[i + off];
         }
         return s1;
     }
 
-    static public char[] strcpy(char[] s1, String s2) {
+    static public final char[] strcpy(char[] s1, String s2) {
         for (int i = 0; i < Math.min(s1.length, s2.length()); i++) {
             s1[i] = s2.charAt(i);
         }
         return s1;
     }
 
-    public static byte[] toByteArray(String str) {
+    
+    /** Return a byte[] array from the string's chars,
+     *  ANDed to the lowest 8 bits.
+     * 
+     * @param str
+     * @return
+     */
+    public static final byte[] toByteArray(String str) {
         byte[] retour = new byte[str.length()];
         for (int i = 0; i < str.length(); i++) {
             retour[i] = (byte) (str.charAt(i) & 0xFF);
@@ -94,7 +101,7 @@ public class C2JUtils {
      * @return
      */
 
-    static public boolean strcmp(char[] s1, final char[] s2) {
+    static public final boolean strcmp(char[] s1, final char[] s2) {
         boolean match = true;
         for (int i = 0; i < Math.min(s1.length, s2.length); i++) {
             if (s1[i] != s2[i]) {
@@ -105,7 +112,7 @@ public class C2JUtils {
         return match;
     }
 
-    static public boolean strcmp(char[] s1, String s2) {
+    static public final boolean strcmp(char[] s1, String s2) {
         return strcmp(s1, s2.toCharArray());
     }
 
@@ -115,7 +122,7 @@ public class C2JUtils {
      * @param s1
      * @return
      */
-    static public int strlen(char[] s1) {
+    static public final int strlen(char[] s1) {
         if (s1 == null)
             return 0;
         int len = 0;
@@ -129,12 +136,12 @@ public class C2JUtils {
     }
 
     /**
-     * C-like string length (null termination).
+     * Return a new String based on C-like null termination.
      * 
-     * @param s1
+     * @param s
      * @return
      */
-    static public String nullTerminatedString(char[] s) {
+    static public final String nullTerminatedString(char[] s) {
         if (s == null)
             return "";
         int len = 0;
@@ -158,7 +165,7 @@ public class C2JUtils {
      * @throws
      */
 
-    public static final void initArrayOfObjects(Object[] os, Class c) {
+    public static final <T> void initArrayOfObjects(T[] os, Class<T> c) {
         try {
             for (int i = 0; i < os.length; i++) {
                 os[i] = c.newInstance();
@@ -181,11 +188,11 @@ public class C2JUtils {
      * @throws
      */
 
-    public static final void initArrayOfObjects(Object[] os) {
-        Class c = os.getClass().getComponentType();
+    public static final <T> void initArrayOfObjects(T[] os) {
+        Class<T> c = (Class<T>) os.getClass().getComponentType();
         try {
             for (int i = 0; i < os.length; i++) {
-                os[i] = c.newInstance();
+                os[i] = (T) c.newInstance();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -207,18 +214,10 @@ public class C2JUtils {
      * @return
      */
 
-    @SuppressWarnings("unchecked")
-    public static <T> T[] createArrayOfObjects(Class<T> c, int num) {
+    public static final <T> T[] createArrayOfObjects(Class<T> c, int num) {
         T[] os = null;
 
-        try {
-            os = (T[]) Array.newInstance(c, num);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Failure to allocate " + num
-                    + " objects of class " + c.getName() + "!");
-            System.exit(-1);
-        }
+        os=getNewArray(c,num);
 
         try {
             for (int i = 0; i < os.length; i++) {
@@ -249,19 +248,12 @@ public class C2JUtils {
      */
 
     @SuppressWarnings("unchecked")
-    public static <T> T[] createArrayOfObjects(T instance, int num) {
+    public static final <T> T[] createArrayOfObjects(T instance, int num) {
         T[] os = null;
         
         Class<T> c=(Class<T>) instance.getClass();
 
-        try {
-            os = (T[]) Array.newInstance(c, num);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Failure to allocate " + num
-                    + " objects of class " + c.getName() + "!");
-            System.exit(-1);
-        }
+        os=getNewArray(c,num);
 
         try {
             for (int i = 0; i < os.length; i++) {
@@ -284,13 +276,16 @@ public class C2JUtils {
      * way, be my guest.
      * 
      * @param os
+     * @param startpos inclusive
+     * @param endpos non-inclusive
      * @throws Exception
      * @throws
      */
 
-    public static final void initArrayOfObjects(Object[] os, int startpos,
+    public static final<T> void initArrayOfObjects(T[] os, int startpos,
             int endpos) {
-        Class c = os.getClass().getComponentType();
+        @SuppressWarnings("unchecked")
+		Class<T> c = (Class<T>) os.getClass().getComponentType();
         try {
             for (int i = startpos; i < endpos; i++) {
                 os[i] = c.newInstance();
@@ -312,7 +307,7 @@ public class C2JUtils {
 
     // Optimized array-fill methods designed to operate like C's memset.
 
-    public static void memset(boolean[] array, boolean value, int len) {
+    public static final void memset(boolean[] array, boolean value, int len) {
         if (len > 0)
             array[0] = value;
         for (int i = 1; i < len; i += i) {
@@ -321,7 +316,7 @@ public class C2JUtils {
         }
     }
 
-    public static void memset(char[] array, char value, int len) {
+    public static final void memset(char[] array, char value, int len) {
         if (len > 0)
             array[0] = value;
         for (int i = 1; i < len; i += i) {
@@ -330,7 +325,7 @@ public class C2JUtils {
         }
     }
 
-    public static void memset(int[] array, int value, int len) {
+    public static final void memset(int[] array, int value, int len) {
         if (len > 0)
             array[0] = value;
         for (int i = 1; i < len; i += i) {
@@ -339,7 +334,7 @@ public class C2JUtils {
         }
     }
     
-    public static void memset(short[] array, short value, int len) {
+    public static final void memset(short[] array, short value, int len) {
         if (len > 0)
             array[0] = value;
         for (int i = 1; i < len; i += i) {
@@ -521,7 +516,7 @@ public class C2JUtils {
      * @return
      */
 
-    public static String unquote(String s, char c) {
+    public static final String unquote(String s, char c) {
 
         int firstq = s.indexOf(c);
         int lastq = s.lastIndexOf(c);
@@ -535,7 +530,7 @@ public class C2JUtils {
         return null;
     }
 
-    public static String unquoteIfQuoted(String s, char c) {
+    public static final String unquoteIfQuoted(String s, char c) {
 
         String tmp = unquote(s, c);
         if (tmp != null)
@@ -543,7 +538,10 @@ public class C2JUtils {
         return s;
     }
 
-    /** Return either 0 or a hashcode */
+    /** Return either 0 or a hashcode 
+     * 
+     * @param o 
+     */
     public static final int pointer(Object o) {
         if (o == null)
             return 0;
@@ -552,7 +550,7 @@ public class C2JUtils {
     }
 
  
-    public static boolean checkForExtension(String filename, String ext) {
+    public static final boolean checkForExtension(String filename, String ext) {
         
         // Null filenames satisfy null extensions.
         if ((filename == null || filename.isEmpty())
@@ -583,7 +581,14 @@ public class C2JUtils {
         return false;
     }    
     
-    public static String removeExtension(String s) {
+    /** Return the filename without extension, and stripped
+     * of the path.
+     * 
+     * @param s
+     * @return
+     */
+    
+    public static final String removeExtension(String s) {
 
         String separator = System.getProperty("file.separator");
         String filename;
@@ -618,7 +623,7 @@ public class C2JUtils {
      * @return
      */
 
-    public static String extractFileBase(String path, int limit, boolean whole) {
+    public static final String extractFileBase(String path, int limit, boolean whole) {
     	
     	if (path==null) return path;
     	
@@ -651,5 +656,110 @@ public class C2JUtils {
         }
 
     }
+
+	@SuppressWarnings("unchecked")
+	public static final <T> T[] resize(T[] oldarray, int newsize) {
+		
+		if (oldarray[0]!=null) return resize(oldarray[0],oldarray,newsize); 
+		
+		T cls=null;
+		try {
+			cls = (T) oldarray.getClass().getComponentType().newInstance();
+			return resize(cls,oldarray,newsize);
+		} catch (Exception e) {
+			System.err.println("Cannot autodetect type in resizeArray.\n");
+			return null;
+		}
+
+
+	}
+    
+	/** Generic array resizing method. Calls Arrays.copyOf but then also
+	 *  uses initArrayOfObject for the "abundant" elements.
+	 * 
+	 * @param <T>
+	 * @param instance
+	 * @param oldarray
+	 * @param newsize
+	 * @return
+	 */
+	
+	public static final <T> T[] resize(T instance,T[] oldarray, int newsize) {
+		
+		//  Hmm... nope.
+		if (newsize<=oldarray.length) return oldarray;
+		
+		// Copy old array with built-in stuff.
+		T[] tmp =Arrays.copyOf(oldarray,newsize);
+		
+		// Init the null portions as well
+		C2JUtils.initArrayOfObjects(tmp, oldarray.length,tmp.length);
+
+		System.out.printf("Old array of type %s resized. New capacity: %d\n"
+				,instance.getClass(),newsize);
+		
+		return tmp;
+
+	}
+	
+	/** Resize an array without autoinitialization. Same as Arrays.copyOf(..), just
+	 * prints a message.
+	 *  
+	 * @param <T>
+	 * @param oldarray
+	 * @param newsize
+	 * @return
+	 */
+	
+	public static final <T> T[] resizeNoAutoInit(T[] oldarray, int newsize) {
+		
+		// For non-autoinit types, this is enough.
+		T[] tmp =Arrays.copyOf(oldarray,newsize);
+		
+		System.out.printf("Old array of type %s resized without auto-init. New capacity: %d\n"
+				,tmp.getClass().getComponentType(),newsize);
+		
+		return tmp;
+
+	}
+	
+	@SuppressWarnings("unchecked")
+	public final static<T> T[] getNewArray(T instance,int size){
+		
+		T[] os=null;
+		Class<T> c=(Class<T>) instance.getClass();
+		
+        try {
+            os = (T[]) Array.newInstance(c, size);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Failure to allocate " + size
+                    + " objects of class " + c.getName() + "!");
+            System.exit(-1);
+        }
+        
+        return os;
+	}
+	
+	public final static<T> T[] getNewArray(int size,T instance){
+		@SuppressWarnings("unchecked")
+		Class<T> c=(Class<T>) instance.getClass();
+		return getNewArray(c,size);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public final static<T> T[] getNewArray(Class<T> c,int size){
+		T[] os=null;
+        try {
+            os = (T[]) Array.newInstance(c, size);
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("Failure to allocate " + size
+                    + " objects of class " + c.getName() + "!");
+            System.exit(-1);
+        }
+        
+        return os;
+	}
 
 }
