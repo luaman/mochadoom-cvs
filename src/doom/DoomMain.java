@@ -104,7 +104,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.100 2011/11/04 20:24:10 velktron Exp $
+// $Id: DoomMain.java,v 1.101 2011/11/06 17:35:38 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -130,7 +130,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.100 2011/11/04 20:24:10 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101 2011/11/06 17:35:38 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -889,13 +889,13 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 if (p<10){
                     file.append("~");
                     file.append(DEVMAPS);
-                    file.append(String.format("cdata/map0%i.wad", p));
+                    file.append(String.format("cdata/map0%d.wad", p));
                 }
                 else
                 {
                     file.append("~");
                     file.append(DEVMAPS);
-                    file.append(String.format("cdata/map%i.wad", p));
+                    file.append(String.format("cdata/map%d.wad", p));
                 }
                 break;
             }
@@ -2088,7 +2088,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                     if (gametic > BACKUPTICS 
                             && consistancy[i][buf] != cmd.consistancy) 
                     { 
-                        I.Error ("consistency failure (%i should be %i)",
+                        I.Error ("consistency failure (%d should be %d)",
                             cmd.consistancy, consistancy[i][buf]); 
                     } 
                     if (players[i].mo!=null) 
@@ -2250,7 +2250,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         selections = deathmatch_p; 
         if (selections < 4) 
-            I.Error ("Only %i deathmatch spots, 4 required", selections); 
+            I.Error ("Only %d deathmatch spots, 4 required", selections); 
 
         for (j=0 ; j<20 ; j++) 
         { 
@@ -3422,7 +3422,7 @@ public void ScreenShot ()
         if (delta < -64)
             return (maketic&~0xff) + 256 + low;
 
-        I.Error ("ExpandTics: strange value %i at maketic %i",low,maketic);
+        I.Error ("ExpandTics: strange value %d at maketic %d",low,maketic);
         return 0;
     }
 
@@ -4228,6 +4228,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101  2011/11/06 17:35:38  velktron
+//Fixed %i printf modifiers.
+//
 //Revision 1.100  2011/11/04 20:24:10  velktron
 //Using 3-parameter parallel renderers.
 //
