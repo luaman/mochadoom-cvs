@@ -478,30 +478,12 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		}
 	
 	protected final void ResizeVisplanes() {
-		visplane_t[] tmp = new visplane_t[visplanes.length * 2];
-		System.arraycopy(visplanes, 0, tmp, 0, visplanes.length);
-
-		C2JUtils.initArrayOfObjects(tmp, visplanes.length, tmp.length);
-
 		// Bye bye, old visplanes.
-		visplanes = tmp;
-
-		System.out.println("Visplane buffer resized. Actual capacity "
-				+ visplanes.length);
+		visplanes = C2JUtils.resize(visplanes[0], visplanes, visplanes.length*2);
 	}
 
 	protected final void ResizeDrawsegs() {
-		drawseg_t[] tmp = new drawseg_t[drawsegs.length * 2];
-		System.arraycopy(drawsegs, 0, tmp, 0, drawsegs.length);
-
-		C2JUtils.initArrayOfObjects(tmp, drawsegs.length, tmp.length);
-
-		// Bye bye, old drawsegs.
-		drawsegs = tmp;
-		// MAXDRAWSEGS*=2;
-
-		System.out.println("Drawseg buffer resized. Actual capacity "
-				+ drawsegs.length);
+		drawsegs = C2JUtils.resize(drawsegs[0], drawsegs, drawsegs.length*2);
 	}
 
 	@Override
@@ -768,7 +750,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 			// decide which patch to use (in terms of angle?)
 			if (RANGECHECK) {
 				if (psp.state.sprite.ordinal() >= SM.getNumSprites())
-					I.Error("R_ProjectSprite: invalid sprite number %i ",
+					I.Error("R_ProjectSprite: invalid sprite number %d ",
 							psp.state.sprite);
 			}
 
@@ -776,7 +758,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 			
 			if (RANGECHECK) {
 				if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes)
-					I.Error("R_ProjectSprite: invalid sprite frame %i : %i ",
+					I.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
 							psp.state.sprite, psp.state.frame);
 			}
 			
@@ -1416,13 +1398,6 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
          * @param x1
          * @param x2
          */
-        /**
-         * R_RenderMaskedSegRange
-         * 
-         * @param ds
-         * @param x1
-         * @param x2
-         */
         
         private final void RenderMaskedSegRange(drawseg_t ds, int x1, int x2) {
         	
@@ -1548,7 +1523,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             // decide which patch to use (in terms of angle?)
             if (RANGECHECK) {
                 if (psp.state.sprite.ordinal() >= SM.getNumSprites())
-                    I.Error("R_ProjectSprite: invalid sprite number %i ",
+                    I.Error("R_ProjectSprite: invalid sprite number %d ",
                             psp.state.sprite);
             }
 
@@ -1556,7 +1531,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             
             if (RANGECHECK) {
                 if ((psp.state.frame & FF_FRAMEMASK) >= sprdef.numframes)
-                    I.Error("R_ProjectSprite: invalid sprite frame %i : %i ",
+                    I.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
                             psp.state.sprite, psp.state.frame);
             }
             
@@ -1736,7 +1711,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
                         || (lowscale < spr.scale && (dss.curline
                                 .PointOnSegSide(spr.gx, spr.gy) == 0))) {
                     // masked mid texture?
-                    if (!dss.nullMaskedTextureCol())
+                    if (!(dss.x1>endx || dss.x2<startx) && !dss.nullMaskedTextureCol())
                         RenderMaskedSegRange(dss, r1, r2);
                     // seg is behind sprite
                     continue;
@@ -1842,7 +1817,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             // render any remaining masked mid textures
             for (ds = ds_p - 1; ds >= 0; ds--) {
                 dss = drawsegs[ds];
-                if (!dss.nullMaskedTextureCol())
+                if (!(dss.x1>endx || dss.x2<startx)&&!dss.nullMaskedTextureCol())
                     RenderMaskedSegRange(dss, dss.x1,dss.x2);
             }
             // draw the psprites on top of everything
@@ -2107,13 +2082,13 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             // decide which patch to use for sprite relative to player
             if (RANGECHECK) {
                 if (thing.sprite.ordinal() >= SM.getNumSprites())
-                    I.Error("R_ProjectSprite: invalid sprite number %i ",
+                    I.Error("R_ProjectSprite: invalid sprite number %d ",
                             thing.sprite);
             }
             sprdef = SM.getSprite(thing.sprite.ordinal());
             if (RANGECHECK) {
                 if ((thing.frame & FF_FRAMEMASK) >= sprdef.numframes)
-                    I.Error("R_ProjectSprite: invalid sprite frame %i : %i ",
+                    I.Error("R_ProjectSprite: invalid sprite frame %d : %d ",
                             thing.sprite, thing.frame);
             }
             sprframe = sprdef.spriteframes[thing.frame & FF_FRAMEMASK];
@@ -2245,16 +2220,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         // UNUSED private final vissprite_t overflowsprite = new vissprite_t();
 
         protected final void ResizeSprites() {
-            vissprite_t[] tmp = new vissprite_t[vissprites.length * 2];
-            System.arraycopy(vissprites, 0, tmp, 0, vissprites.length);
-
-            C2JUtils.initArrayOfObjects(tmp, vissprites.length, tmp.length);
-
-            // Bye bye, old vissprites.
-            vissprites = tmp;
-
-            System.out.println("Vissprites resized. Actual capacity "
-                    + vissprites.length);
+        	vissprites=C2JUtils.resize(vissprites[0], vissprites,vissprites.length*2);            // Bye bye, old vissprites.
         }
         
         public void resetLimits() {
@@ -2465,17 +2431,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		}
 
 		protected final void ResizeSolidSegs() {
-			cliprange_t[] tmp = new cliprange_t[solidsegs.length * 2];
-			System.arraycopy(solidsegs, 0, tmp, 0, solidsegs.length);
-
-			C2JUtils.initArrayOfObjects(tmp, solidsegs.length, tmp.length);
-
-			// Bye bye, old solidsegs.
-			solidsegs = tmp;
-			// MAXDRAWSEGS*=2;
-
-			System.out.println("Solidseg buffer resized. Actual capacity: "
-					+ solidsegs.length);
+			solidsegs=C2JUtils.resize(solidsegs, solidsegs.length*2);
 		}
 
 		//
@@ -2843,7 +2799,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 			if (RANGECHECK) {
 				if (num >= LL.numsubsectors)
-					I.Error("R_Subsector: ss %i with numss = %i", num,
+					I.Error("R_Subsector: ss %d with numss = %d", num,
 							LL.numsubsectors);
 			}
 
@@ -3052,7 +3008,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 			if (RANGECHECK) {
 				if (start >= viewwidth || start > stop)
-					I.Error("Bad R_RenderWallRange: %i to %i", start, stop);
+					I.Error("Bad R_RenderWallRange: %d to %d", start, stop);
 			}
 
 			seg = drawsegs[ds_p];
@@ -4002,7 +3958,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 			if (RANGECHECK) {
 				if (x2 < x1 || x1 < 0 || x2 >= viewwidth || y > viewheight) {
-					I.Error("R_MapPlane: %i, %i at %i", x1, x2, y);
+					I.Error("R_MapPlane: %d, %d at %d", x1, x2, y);
 				}
 			}
 
@@ -4556,7 +4512,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
               || x2>=viewwidth
               || y>viewheight)
               {
-              I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+              I.Error ("R_MapPlane: %d, %d at %d",x1,x2,y);
               }
           }
 
@@ -4911,7 +4867,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
               || x2>=viewwidth
               || y>viewheight)
               {
-              I.Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+              I.Error ("R_MapPlane: %d, %d at %d",x1,x2,y);
               }
           }
 

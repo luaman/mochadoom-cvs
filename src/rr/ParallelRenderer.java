@@ -180,14 +180,14 @@ public class ParallelRenderer
 
             if (RANGECHECK) {
                 if (ds_p > MAXDRAWSEGS)
-                    I.Error("R_DrawPlanes: drawsegs overflow (%i)", ds_p);
+                    I.Error("R_DrawPlanes: drawsegs overflow (%d)", ds_p);
 
                 if (lastvisplane > MAXVISPLANES)
-                    I.Error(" R_DrawPlanes: visplane overflow (%i)",
+                    I.Error(" R_DrawPlanes: visplane overflow (%d)",
                         lastvisplane);
 
                 if (lastopening > MAXOPENINGS)
-                    I.Error("R_DrawPlanes: opening overflow (%i)", lastopening);
+                    I.Error("R_DrawPlanes: opening overflow (%d)", lastopening);
             }
 
             // vpw[0].setRange(0,lastvisplane/2);
@@ -383,18 +383,14 @@ public class ParallelRenderer
 
     private void ResizeRWIBuffer() {
         ColVars<byte[]> fake = new ColVars<byte[]>();
-        ColVars<byte[]>[] tmp =
-            C2JUtils.createArrayOfObjects(fake, RWI.length * 2);
-        System.arraycopy(RWI, 0, tmp, 0, RWI.length);
 
         // Bye bye, old RWI.
-        RWI = tmp;
+        RWI = C2JUtils.resize(fake, RWI, RWI.length * 2);
 
         for (int i = 0; i < NUMWALLTHREADS; i++) {
-            RWIExec[i].updateRWI(RWI);
-            
-        }
-        System.err.println("RWI Buffer resized. Actual capacity " + RWI.length);
+            RWIExec[i].updateRWI(RWI);            
+        	}
+        //System.err.println("RWI Buffer resized. Actual capacity " + RWI.length);
     }
     
     private void ResizeRMIBuffer() {

@@ -356,8 +356,7 @@ public class ParallelRenderer2 extends RendererState  {
 		
 
         for (int i=0;i<NUMFLOORTHREADS;i++){
-            vpw[i]=new VisplaneWorker(SCREENWIDTH,SCREENHEIGHT,columnofs,ylookup, screen,visplanebarrier,NUMFLOORTHREADS);
-            vpw[i].id=i;
+            vpw[i]=new VisplaneWorker(i,SCREENWIDTH,SCREENHEIGHT,columnofs,ylookup, screen,visplanebarrier,NUMFLOORTHREADS);
             detailaware.add(vpw[i]);
         }
 	}
