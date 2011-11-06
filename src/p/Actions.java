@@ -99,16 +99,19 @@ public class Actions extends UnifiedGameMap {
       // CEILINGS
       //
 
-
       private ceiling_t[]  activeceilings=new ceiling_t[MAXCEILINGS];
 
       /** This needs to be called before loading, otherwise
        *  crushers won't be able to be restarted. 
        */
       public void ClearCeilingsBeforeLoading(){
-          for (int i = 0; i < MAXPLATS; i++) {
+
+    	  this.activeceilings=new ceiling_t[MAXCEILINGS];
+          
+    	  /*
+    	  for (int i = 0; i < MAXPLATS; i++) {
                   this.activeceilings[i] = null;
-              }
+              } */
       }
       
       
@@ -238,14 +241,16 @@ public class Actions extends UnifiedGameMap {
       {
           int     i;
           
-          for (i = 0; i < MAXCEILINGS;i++)
+          for (i = 0; i < getMaxCeilings();i++)
           {
-          if (getActiveceilings()[i] == null)
+          if (getActiveCeilings()[i] == null)
           {
-              getActiveceilings()[i] = c;
+              getActiveCeilings()[i] = c;
               return;
           }
           }
+          // Needs rezising
+          setActiveceilings(C2JUtils.resize(c, getActiveCeilings(), 2*getActiveCeilings().length));
       }
 
 
@@ -257,13 +262,13 @@ public class Actions extends UnifiedGameMap {
       {
           int     i;
           
-          for (i = 0;i < MAXCEILINGS;i++)
+          for (i = 0;i < getMaxCeilings();i++)
           {
-          if (getActiveceilings()[i] == c)
+          if (getActiveCeilings()[i] == c)
           {
-              getActiveceilings()[i].sector.specialdata = null;
-              RemoveThinker (getActiveceilings()[i]);
-              getActiveceilings()[i] = null;
+              getActiveCeilings()[i].sector.specialdata = null;
+              RemoveThinker (getActiveCeilings()[i]);
+              getActiveCeilings()[i] = null;
               break;
           }
           }
@@ -278,16 +283,16 @@ public class Actions extends UnifiedGameMap {
       {
           int     i;
           
-          for (i = 0;i < MAXCEILINGS;i++)
+          for (i = 0;i < getMaxCeilings();i++)
           {
-          if (getActiveceilings()[i]!=null
-              && (getActiveceilings()[i].tag == line.tag)
-              && (getActiveceilings()[i].direction == 0))
+          if (getActiveCeilings()[i]!=null
+              && (getActiveCeilings()[i].tag == line.tag)
+              && (getActiveCeilings()[i].direction == 0))
           {
-              getActiveceilings()[i].direction = getActiveceilings()[i].olddirection;
-              getActiveceilings()[i].function
+              getActiveCeilings()[i].direction = getActiveCeilings()[i].olddirection;
+              getActiveCeilings()[i].function
                 = think_t.T_MoveCeiling;
-              FUNS.doWireThinker( getActiveceilings()[i]);
+              FUNS.doWireThinker( getActiveCeilings()[i]);
           }
           }
       }
@@ -686,17 +691,17 @@ public class Actions extends UnifiedGameMap {
           int     rtn;
           
           rtn = 0;
-          for (i = 0;i < MAXCEILINGS;i++)
+          for (i = 0;i < getMaxCeilings();i++)
           {
-          if (getActiveceilings()[i]!=null
-              && (getActiveceilings()[i].tag == line.tag)
-              && (getActiveceilings()[i].direction != 0))
+          if (getActiveCeilings()[i]!=null
+              && (getActiveCeilings()[i].tag == line.tag)
+              && (getActiveCeilings()[i].direction != 0))
           {
-              getActiveceilings()[i].olddirection = getActiveceilings()[i].direction;
+              getActiveCeilings()[i].olddirection = getActiveCeilings()[i].direction;
               // MAES: don't set it to NOP here, otherwise its thinker will be
               // removed and it won't be possible to restart it.
-              getActiveceilings()[i].function = null;
-              getActiveceilings()[i].direction = 0;       // in-stasis
+              getActiveCeilings()[i].function = null;
+              getActiveCeilings()[i].direction = 0;       // in-stasis
               rtn = 1;
           }
           }
@@ -2892,16 +2897,8 @@ mobj_t  thing )
     
     
     protected final void ResizeSpechits() {
-    	line_t[] tmp=new line_t[spechit.length*2];
-        System.arraycopy(spechit, 0, tmp, 0, spechit.length);
-        
-        C2JUtils.initArrayOfObjects(tmp,spechit.length,tmp.length);
-        
-        // Bye bye, old spechit.
-        spechit=tmp;   
-       
-        System.out.println("Spechit capacity resized. Actual capacity "+spechit.length);
-    }    
+        spechit=C2JUtils.resize(spechit[0],spechit,spechit.length*2);
+        }    
     
 ////////////////// PTR Traverse Interception Functions ///////////////////////    
     public class PTR_AimTraverse implements PTR_InterceptFunc{ 
@@ -4069,151 +4066,151 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
           case 7:
        // Build Stairs
        if (BuildStairs(line,stair_e.build8))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
 
           case 9:
        // Change Donut
        if (DoDonut(line))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 11:
        // Exit level
-              SW.ChangeSwitchTexture(line,0);
+              SW.ChangeSwitchTexture(line,false);
        DM.ExitLevel ();
        break;
        
           case 14:
        // Raise Floor 32 and change texture
        if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 15:
        // Raise Floor 24 and change texture
        if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 18:
        // Raise Floor to next highest floor
        if (DoFloor(line, floor_e.raiseFloorToNearest))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 20:
        // Raise Plat next highest floor and change texture
        if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 21:
        // PlatDownWaitUpStay
        if (PEV.DoPlat(line,plattype_e.downWaitUpStay,0))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 23:
        // Lower Floor to Lowest
        if (DoFloor(line,floor_e.lowerFloorToLowest))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 29:
        // Raise Door
        if (DoDoor(line,vldoor_e.normal))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 41:
        // Lower Ceiling to Floor
        if (DoCeiling(line,ceiling_e.lowerToFloor))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 71:
        // Turbo Lower Floor
        if (DoFloor(line,floor_e.turboLower))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 49:
        // Ceiling Crush And Raise
        if (DoCeiling(line,ceiling_e.crushAndRaise))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 50:
        // Close Door
        if (DoDoor(line,vldoor_e.close))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 51:
        // Secret EXIT
-              SW.ChangeSwitchTexture(line,0);
+              SW.ChangeSwitchTexture(line,false);
        DM.SecretExitLevel ();
        break;
        
           case 55:
        // Raise Floor Crush
        if (DoFloor(line,floor_e.raiseFloorCrush))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 101:
        // Raise Floor
        if (DoFloor(line,floor_e.raiseFloor))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 102:
        // Lower Floor to Surrounding floor height
        if (DoFloor(line,floor_e.lowerFloor))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 103:
        // Open Door
        if (DoDoor(line,vldoor_e.open))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 111:
        // Blazing Door Raise (faster than TURBO!)
        if (DoDoor (line,vldoor_e.blazeRaise))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 112:
        // Blazing Door Open (faster than TURBO!)
        if (DoDoor (line,vldoor_e.blazeOpen))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 113:
        // Blazing Door Close (faster than TURBO!)
        if (DoDoor (line,vldoor_e.blazeClose))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 122:
        // Blazing PlatDownWaitUpStay
        if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 127:
        // Build Stairs Turbo 16
        if (BuildStairs(line,stair_e.turbo16))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 131:
        // Raise Floor Turbo
        if (DoFloor(line,floor_e.raiseFloorTurbo))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 133:
@@ -4223,128 +4220,128 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
           case 137:
        // BlzOpenDoor YELLOW
        if (DoLockedDoor (line,vldoor_e.blazeOpen,thing))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
           case 140:
        // Raise Floor 512
        if (DoFloor(line,floor_e.raiseFloor512))
-           SW.ChangeSwitchTexture(line,0);
+           SW.ChangeSwitchTexture(line,false);
        break;
        
        // BUTTONS
           case 42:
        // Close Door
        if (DoDoor(line,vldoor_e.close))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 43:
        // Lower Ceiling to Floor
        if (DoCeiling(line,ceiling_e.lowerToFloor))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 45:
        // Lower Floor to Surrounding floor height
        if (DoFloor(line,floor_e.lowerFloor))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 60:
        // Lower Floor to Lowest
        if (DoFloor(line,floor_e.lowerFloorToLowest))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 61:
        // Open Door
        if (DoDoor(line,vldoor_e.open))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 62:
        // PlatDownWaitUpStay
        if (PEV.DoPlat(line,plattype_e.downWaitUpStay,1))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 63:
        // Raise Door
        if (DoDoor(line,vldoor_e.normal))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 64:
        // Raise Floor to ceiling
        if (DoFloor(line,floor_e.raiseFloor))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 66:
        // Raise Floor 24 and change texture
        if (PEV.DoPlat(line,plattype_e.raiseAndChange,24))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 67:
        // Raise Floor 32 and change texture
        if (PEV.DoPlat(line,plattype_e.raiseAndChange,32))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 65:
        // Raise Floor Crush
        if (DoFloor(line,floor_e.raiseFloorCrush))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 68:
        // Raise Plat to next highest floor and change texture
        if (PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 69:
        // Raise Floor to next highest floor
        if (DoFloor(line, floor_e.raiseFloorToNearest))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 70:
        // Turbo Lower Floor
        if (DoFloor(line,floor_e.turboLower))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 114:
        // Blazing Door Raise (faster than TURBO!)
        if (DoDoor (line,vldoor_e.blazeRaise))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 115:
        // Blazing Door Open (faster than TURBO!)
        if (DoDoor (line,vldoor_e.blazeOpen))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 116:
        // Blazing Door Close (faster than TURBO!)
        if (DoDoor (line,vldoor_e.blazeClose))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 123:
        // Blazing PlatDownWaitUpStay
        if (PEV.DoPlat(line,plattype_e.blazeDWUS,0))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 132:
        // Raise Floor Turbo
        if (DoFloor(line,floor_e.raiseFloorTurbo))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 99:
@@ -4354,19 +4351,19 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
           case 136:
        // BlzOpenDoor YELLOW
        if (DoLockedDoor (line,vldoor_e.blazeOpen,thing))
-           SW.ChangeSwitchTexture(line,1);
+           SW.ChangeSwitchTexture(line,true);
        break;
        
           case 138:
        // Light Turn On
        LEV.LightTurnOn(line,255);
-       SW.ChangeSwitchTexture(line,1);
+       SW.ChangeSwitchTexture(line,true);
        break;
        
           case 139:
        // Light Turn Off
        LEV.LightTurnOn(line,35);
-       SW.ChangeSwitchTexture(line,1);
+       SW.ChangeSwitchTexture(line,true);
        break;
                
         }
@@ -4930,19 +4927,19 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         case 24:
       // RAISE FLOOR
       DoFloor(line,floor_e.raiseFloor);
-      SW.ChangeSwitchTexture(line,0);
+      SW.ChangeSwitchTexture(line,false);
       break;
       
         case 46:
       // OPEN DOOR
       DoDoor(line,vldoor_e.open);
-      SW.ChangeSwitchTexture(line,1);
+      SW.ChangeSwitchTexture(line,true);
       break;
       
         case 47:
       // RAISE FLOOR NEAR AND CHANGE
       PEV.DoPlat(line,plattype_e.raiseToNearestAndChange,0);
-      SW.ChangeSwitchTexture(line,0);
+      SW.ChangeSwitchTexture(line,false);
       break;
       }
   }
@@ -5068,14 +5065,13 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
       
       //  Init other misc stuff
-      for (i = 0;i < MAXCEILINGS;i++)
-      getActiveceilings()[i] = null;
+      for (i = 0;i < getMaxCeilings();i++)
+    	  getActiveCeilings()[i] = null;
 
-      for (i = 0;i < MAXPLATS;i++)
-      PEV.activeplats[i] = null;
+      PEV.initActivePlats();
       
-      for (i = 0;i < MAXBUTTONS;i++)
-          SW.buttonlist[i].reset();
+      SW.initButtonList();
+
 
       // UNUSED: no horizonal sliders.
       // if (SL!=null) {
@@ -5236,17 +5232,16 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
   }
 
 
-
-
 public void setActiveceilings(ceiling_t[] activeceilings) {
     this.activeceilings = activeceilings;
 }
 
-
-
-
-public ceiling_t[] getActiveceilings() {
+public final ceiling_t[] getActiveCeilings() {
     return activeceilings;
+}
+
+public final int getMaxCeilings() {
+    return activeceilings.length;
 }
 
 ///////////////////// PIT AND PTR FUNCTIONS //////////////////

@@ -18,7 +18,6 @@ import static data.Limits.MAXANIMS;
 import static data.Limits.MAXBUTTONS;
 import static data.Limits.MAXINT;
 import static data.Limits.MAXINTERCEPTS;
-import static data.Limits.MAXPLATS;
 import static data.Limits.MAXSPECIALCROSS;
 import static data.Limits.MAXSWITCHES;
 import static data.Limits.PLATSPEED;
@@ -82,6 +81,9 @@ import static p.mobj_t.MF_NOSECTOR;
 import static p.mobj_t.MF_SPECIAL;
 import static utils.C2JUtils.eval;
 import static utils.C2JUtils.flags;
+
+import java.util.Arrays;
+
 import hu.HU;
 import i.DoomStatusAware;
 import i.IDoomSystem;
@@ -437,16 +439,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     }
     
     protected final void ResizeIntercepts() {
-        intercept_t[] tmp=new intercept_t[intercepts.length*2];
-        System.arraycopy(intercepts, 0, tmp, 0, intercepts.length);
-        
-        C2JUtils.initArrayOfObjects(tmp,intercepts.length,tmp.length);
-        
-        // Bye bye, old intercepts.
-        intercepts=tmp;   
-       
-        System.err.println("Intercepts capacity resized. Actual capacity "+intercepts.length);
-    }    
+        intercepts=C2JUtils.resize(intercepts[0],intercepts,intercepts.length*2);
+    	}    
 
     class Lights {
 
@@ -824,8 +818,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     class Plats {
 
         public Plats() {
-            activeplats = new plat_t[MAXPLATS];
-            C2JUtils.initArrayOfObjects(activeplats);
+        	initActivePlats();
         }
 
         plat_t[] activeplats;
@@ -945,7 +938,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         void ActivateInStasis(int tag) {
             int i;
 
-            for (i = 0; i < MAXPLATS; i++)
+            for (i = 0; i < activeplats.length; i++)
                 if ((activeplats[i] != null) && (activeplats[i].tag == tag)
                         && (activeplats[i].status == plat_e.in_stasis)) {
                     (activeplats[i]).status = (activeplats[i]).oldstatus;
@@ -957,7 +950,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         void StopPlat(line_t line) {
             int j;
 
-            for (j = 0; j < MAXPLATS; j++)
+            for (j = 0; j < activeplats.length; j++)
                 if ((activeplats[j] != null)
                         && (activeplats[j].status != plat_e.in_stasis)
                         && (activeplats[j].tag == line.tag)) {
@@ -983,7 +976,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
         void RemoveActivePlat(plat_t plat) {
             int i;
-            for (i = 0; i < MAXPLATS; i++)
+            for (i = 0; i < activeplats.length; i++)
                 if (plat == activeplats[i]) {
                     (activeplats[i]).sector.specialdata = null;
                     RemoveThinker(activeplats[i]);
@@ -993,6 +986,13 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 }
             I.Error("P_RemoveActivePlat: can't find plat!");
         }
+
+		public void initActivePlats() {
+			// activeplats is just a placeholder. Plat objects aren't
+			// actually reused, so we don't need an initialized array.
+			// Same rule when resizing.
+			activeplats=new plat_t[data.Limits.MAXPLATS];
+		}
 
     }
 
@@ -1066,7 +1066,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             if (RANGECHECK) {
                 if (num >= LL.numsubsectors)
-                    I.Error("P_CrossSubsector: ss %i with numss = %i",
+                    I.Error("P_CrossSubsector: ss %d with numss = %d",
                         num, LL.numsubsectors);
             }
 
@@ -1317,30 +1317,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             }
 
             // DO BUTTONS
-            for (int i = 0; i < MAXBUTTONS; i++)
-                if (eval(SW.buttonlist[i].btimer)) {
-                    SW.buttonlist[i].btimer--;
-                    if (!eval(SW.buttonlist[i].btimer)) {
-                        switch (SW.buttonlist[i].where) {
-                        case top:
-                            LL.sides[SW.buttonlist[i].line.sidenum[0]].toptexture =
-                                (short) SW.buttonlist[i].btexture;
-                            break;
-
-                        case middle:
-                            LL.sides[SW.buttonlist[i].line.sidenum[0]].midtexture =
-                                (short) SW.buttonlist[i].btexture;
-                            break;
-
-                        case bottom:
-                            LL.sides[SW.buttonlist[i].line.sidenum[0]].bottomtexture =
-                                (short) SW.buttonlist[i].btexture;
-                            break;
-                        }
-                        S.StartSound(SW.buttonlist[i].soundorg,sfxenum_t.sfx_swtchn);
-                        SW.buttonlist[i].reset();
-                    }
-                }
+            SW.doButtons();
         }
 
         public void InitPicAnims() {
@@ -1384,11 +1361,37 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     class Switches {
 
     	public Switches(){
-    		switchlist= new int[MAXSWITCHES * 2];
-    		buttonlist =  new button_t[MAXBUTTONS];
-    		C2JUtils.initArrayOfObjects(buttonlist);
+    		switchlist= new int[MAXSWITCHES];
+    		initButtonList();
     	}
-        //
+        public void doButtons() {
+        	for (int i = 0; i < buttonlist.length; i++)
+                if (eval(buttonlist[i].btimer)) {
+                    buttonlist[i].btimer--;
+                    if (!eval(buttonlist[i].btimer)) {
+                        switch (buttonlist[i].where) {
+                        case top:
+                            LL.sides[buttonlist[i].line.sidenum[0]].toptexture =
+                                (short) buttonlist[i].btexture;
+                            break;
+
+                        case middle:
+                            LL.sides[buttonlist[i].line.sidenum[0]].midtexture =
+                                (short) buttonlist[i].btexture;
+                            break;
+
+                        case bottom:
+                            LL.sides[buttonlist[i].line.sidenum[0]].bottomtexture =
+                                (short) buttonlist[i].btexture;
+                            break;
+                        }
+                        S.StartSound(buttonlist[i].soundorg,sfxenum_t.sfx_swtchn);
+                        buttonlist[i].reset();
+                    }
+                }
+			
+		}
+		//
         // CHANGE THE TEXTURE OF A WALL SWITCH TO ITS OPPOSITE
         //
         switchlist_t[] alphSwitchList =
@@ -1441,6 +1444,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                     new switchlist_t("\0", "\0", 0) };
 
+        /** A (runtime generated) list of the KNOWN button types */
         int[] switchlist;
 
         int numswitches;
@@ -1465,6 +1469,14 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 episode = 3;
 
             for (index = 0, i = 0; i < MAXSWITCHES; i++) {
+            	
+            	if (index>=switchlist.length) {
+            		// Remove limit
+            		switchlist=Arrays.copyOf(switchlist,switchlist.length>0?switchlist.length*2:8);
+            		}
+            	// Trickery. Looks for "end of list" marker
+            	// Since the list has pairs of switches, the
+            	// actual number of distinct switches is index/2
                 if (alphSwitchList[i].episode == 0) {
                     numswitches = index / 2;
                     switchlist[index] = -1;
@@ -1494,39 +1506,50 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             int i;
 
             // See if button is already pressed
-            for (i = 0; i < MAXBUTTONS; i++) {
+            for (i = 0; i < buttonlist.length; i++) {
                 if (buttonlist[i].btimer != 0 && buttonlist[i].line == line) {
 
                     return;
                 }
             }
+            
+            // At this point, it may mean that THE button of that particular
+            // line was not active, or simply that there were not enough 
+            // buttons in buttonlist to support an additional entry.
 
-            for (i = 0; i < MAXBUTTONS; i++) {
+            // Search for a free button slot.
+            for (i = 0; i < buttonlist.length; i++) {
                 if (buttonlist[i].btimer == 0) {
                     buttonlist[i].line = line;
                     buttonlist[i].where = w;
                     buttonlist[i].btexture = texture;
                     buttonlist[i].btimer = time;
-                    buttonlist[i].soundorg = line.frontsector.soundorg;
+                    buttonlist[i].soundorg = line.soundorg;
                     return;
                 }
             }
-
-            I.Error("P_StartButton: no button slots left!");
+            
+            // Extremely rare event, We must be able to push more than MAXBUTTONS buttons
+            // in one tic, which can't normally happen except in really pathological maps.
+            // In any case, resizing should solve this problem.
+            buttonlist=C2JUtils.resize(buttonlist[0], buttonlist, buttonlist.length*2);
+            // Try again
+            StartButton(line,w,texture,time);
+            // I.Error("P_StartButton: no button slots left!");
         }
 
         //
         // Function that changes wall texture.
-        // Tell it if switch is ok to use again (1=yes, it's a button).
+        // Tell it if switch is ok to use again (true=yes, it's a button).
         //
-        void ChangeSwitchTexture(line_t line, int useAgain) {
+        void ChangeSwitchTexture(line_t line, boolean useAgain) {
             int texTop;
             int texMid;
             int texBot;
             int i;
             int sound;
 
-            if (!eval(useAgain))
+            if (!useAgain)
                 line.special = 0;
 
             texTop = LL.sides[line.sidenum[0]].toptexture;
@@ -1545,7 +1568,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                     LL.sides[line.sidenum[0]].toptexture =
                         (short) switchlist[i ^ 1];
 
-                    if (eval(useAgain))
+                    if (useAgain)
                         StartButton(line, bwhere_e.top, switchlist[i],
                             BUTTONTIME);
 
@@ -1556,7 +1579,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                         LL.sides[line.sidenum[0]].midtexture =
                             (short) switchlist[i ^ 1];
 
-                        if (eval(useAgain))
+                        if (useAgain)
                             StartButton(line, bwhere_e.middle, switchlist[i],
                                 BUTTONTIME);
 
@@ -1567,7 +1590,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                             LL.sides[line.sidenum[0]].bottomtexture =
                                 (short) switchlist[i ^ 1];
 
-                            if (eval(useAgain))
+                            if (useAgain)
                                 StartButton(line, bwhere_e.bottom,
                                     switchlist[i], BUTTONTIME);
 
@@ -1577,6 +1600,13 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 }
             }
         }
+		public void initButtonList() {
+			// Unlike plats, buttonlist needs statically allocated and reusable
+			// objects. The MAXBUTTONS limit actually applied to buttons PRESSED
+			// or ACTIVE at once, not how many there can actually be in a map.
+			
+    		buttonlist =  C2JUtils.createArrayOfObjects(button_t.class,MAXBUTTONS);
+			}
 
     }
 
@@ -1889,7 +1919,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     }
    
     public void ClearPlatsBeforeLoading(){
-        for (int i = 0; i < MAXPLATS; i++) {
+        for (int i = 0; i < PEV.activeplats.length; i++) {
                 PEV.activeplats[i] = null;
             }
     }
@@ -1897,12 +1927,17 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     public void AddActivePlat(plat_t plat) {
         int i;
 
-        for (i = 0; i < MAXPLATS; i++)
+        for (i = 0; i < PEV.activeplats.length; i++)
             if (PEV.activeplats[i] == null) {
                 PEV.activeplats[i] = plat;
                 return;
             }
-        I.Error("P_AddActivePlat: no more plats!");
+        // Uhh... lemme guess. Needs to resize?
+        // Resize but leave extra items empty.
+        PEV.activeplats=C2JUtils.resizeNoAutoInit(PEV.activeplats,2*PEV.activeplats.length);
+        AddActivePlat(plat);
+        
+        //I.Error("P_AddActivePlat: no more plats!");
     }
         
     // MAES: works, but not worth it.
