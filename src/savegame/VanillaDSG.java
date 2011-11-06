@@ -504,7 +504,7 @@ protected void UnArchiveThinkers () throws IOException
      break;
          
    default:
-     I.Error ("Unknown tclass %i in savegame",tclass);
+     I.Error ("Unknown tclass %d in savegame",tclass);
  }
  
  }
@@ -630,8 +630,8 @@ for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.nex
     // So ceilings don't think?
     if (th.function== null) {
         // i maintains status between iterations
-        for (i = 0; i < MAXCEILINGS;i++)
-        if ((th instanceof ceiling_t) && (A.getActiveceilings()[i] == (ceiling_t)th))
+        for (i = 0; i < A.getMaxCeilings();i++)
+        if ((th instanceof ceiling_t) && (A.getActiveCeilings()[i] == (ceiling_t)th))
             break;
         
         if (i<MAXCEILINGS)
