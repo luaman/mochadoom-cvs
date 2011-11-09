@@ -12,6 +12,7 @@ import java.net.URL;
 import java.util.Arrays;
 
 import p.Resettable;
+import w.InputStreamSugar;
 
 /**
  * Some utilities that emulate C stlib methods or provide convenient functions
@@ -571,6 +572,10 @@ public final class C2JUtils {
         int pos = filename.lastIndexOf('.');
 
         if (pos >= 0 && pos <= filename.length() - 2) { // Extension present
+            
+            // Null comparator on valid extension
+            if (ext == null || ext.isEmpty()) return false;
+            
             realext = filename.substring(pos + 1);
             return realext.compareToIgnoreCase(ext) == 0;
         } else // No extension, and null/empty comparator
@@ -761,5 +766,63 @@ public final class C2JUtils {
         
         return os;
 	}
+
+    /**
+     * Try to guess whether a URI represents a local file, a network any of the
+     * above but zipped. Returns
+     * 
+     * @param URI
+     * @return an int with flags set according to InputStreamSugar
+     */
+
+    public static int guessResourceType(String URI) {
+
+        int result = 0;
+        InputStream in = null;
+
+        // This is bullshit.
+        if (URI == null || URI.length() == 0)
+            return InputStreamSugar.BAD_URI;
+
+        try {
+            in = new FileInputStream(new File(URI));
+            // It's a file
+            result |= InputStreamSugar.FILE;
+        } catch (Exception e) {
+            // Not a file...
+            URL u;
+            try {
+                u = new URL(URI);
+            } catch (MalformedURLException e1) {
+                return InputStreamSugar.BAD_URI;
+            }
+            try {
+                in = u.openConnection().getInputStream();
+                result |= InputStreamSugar.NETWORK_FILE;
+            } catch (IOException e1) {
+                return InputStreamSugar.BAD_URI;
+            }
+
+        }
+
+        // Try guessing if it's a ZIP file. A bit lame, really
+        // TODO: add proper validation, and maybe MIME type checking
+        // for network streams, for cases that we can't really
+        // tell from extension alone.
+
+        if (checkForExtension(URI, "zip")) {
+            result |= InputStreamSugar.ZIP_FILE;
+
+        }
+
+        try {
+            in.close();
+        } catch (IOException e) {
+
+        }
+
+        // All is well. Go on...
+        return result;
+    }
 
 }
