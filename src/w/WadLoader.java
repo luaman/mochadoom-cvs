@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.56 2011/11/03 21:14:30 velktron Exp $
+// $Id: WadLoader.java,v 1.57 2011/11/09 19:07:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -34,6 +34,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import rr.patch_t;
 
@@ -125,12 +127,14 @@ public class WadLoader implements IWadLoader {
 
 	// MAES: was char*
 	String reloadname;
+    /**
+     * This is where lumps are actually read + loaded from a file.
+     * 
+     * @param filename
+     * @throws Exception
+     */
 
-	/* (non-Javadoc)
-	 * @see w.IWadLoader#AddFile(java.lang.String)
-	 */
-
-	public void AddFile(String uri) throws Exception {
+	private void AddFile(String uri,ZipEntry entry,int type) throws Exception {
 		wadinfo_t header = new wadinfo_t();
 		int lump_p; // MAES: was lumpinfo_t* , but we can use it as an array
 		// pointer.
@@ -152,7 +156,7 @@ public class WadLoader implements IWadLoader {
 		// It can be any streamed type handled by the "sugar" utilities.
 		
 		try {
-			handle = InputStreamSugar.createInputStreamFromURI(uri);
+			handle = InputStreamSugar.createInputStreamFromURI(uri,entry,type);
 		} catch (Exception e) {
 			I.Error(" couldn't open resource %s \n", uri);
 			return;
@@ -162,21 +166,23 @@ public class WadLoader implements IWadLoader {
         wadfile_info_t wadinfo=new wadfile_info_t();
         wadinfo.handle= handle;
         wadinfo.name=uri;
-
-
+        wadinfo.entry=entry;
+        wadinfo.type=type;
+        
 		// System.out.println(" adding " + filename + "\n");
 
 		// We start at the number of lumps. This allows appending stuff.
 		startlump = this.numlumps;
 		
+		String checkname=(wadinfo.entry!=null?wadinfo.entry.getName():uri);
 		// If not "WAD" then we check for single lumps.
-		if (!C2JUtils.checkForExtension(uri,"wad")) {
+		if (!C2JUtils.checkForExtension(checkname,"wad")) {
 		    
 		    
 
 		    fileinfo[0] = singleinfo;
 			singleinfo.filepos = 0;
-			singleinfo.size = (long) (handle.available());
+			singleinfo.size = InputStreamSugar.getSizeEstimate(handle,wadinfo.entry);
 			
 			// Single lumps. Only use 8 characters			
 			singleinfo.name = C2JUtils.removeExtension(uri).toUpperCase();
@@ -205,7 +211,7 @@ public class WadLoader implements IWadLoader {
 			if (header.identification.compareTo("IWAD") != 0) {
 				// Homebrew levels?
 				if (header.identification.compareTo("PWAD") != 0) {
-					I.Error("Wad file %s doesn't have IWAD or PWAD id\n",uri);
+					I.Error("Wad file %s doesn't have IWAD or PWAD id\n",checkname);
 				} else wadinfo.src=wad_source_t.source_pwad;
 
 				// modifiedgame = true;
@@ -215,7 +221,7 @@ public class WadLoader implements IWadLoader {
 			// Init everything:
 			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
 			
-			handle=InputStreamSugar.streamSeek(handle,header.infotableofs,wadinfo.maxsize,-1,uri);
+			handle=InputStreamSugar.streamSeek(handle,header.infotableofs,wadinfo.maxsize,uri,entry,type);
 			
 			
 			// MAES: we can't read raw structs here, and even less BLOCKS of
@@ -383,7 +389,20 @@ public class WadLoader implements IWadLoader {
 		for (String s : filenames) {
 			if (s != null){
 				if (C2JUtils.testReadAccess(s))
-					this.AddFile(s);
+				{
+				    // Resource is readable, guess type.
+				    int type=C2JUtils.guessResourceType(s);
+				    if (C2JUtils.flags(type,InputStreamSugar.ZIP_FILE)){
+				        addZipFile(s, type);
+				    } else {
+				        this.AddFile(s,null, type);				        
+				    }
+				    
+				    System.out.printf("\tadded %s (zipped: %s network: %s)\n",s,
+				        C2JUtils.flags(type, InputStreamSugar.ZIP_FILE),
+				        C2JUtils.flags(type, InputStreamSugar.NETWORK_FILE));
+				    
+				}
 				else
 					System.err.printf("Couldn't open resource %s\n",s);
 			}
@@ -406,6 +425,28 @@ public class WadLoader implements IWadLoader {
 
 		this.InitLumpHash();
 	}
+
+    /**
+     * @param s
+     * @param type
+     * @throws IOException
+     * @throws Exception
+     */
+    protected void addZipFile(String s, int type)
+            throws IOException, Exception {
+        // Get entries				        
+        BufferedInputStream is=new BufferedInputStream(
+            InputStreamSugar.createInputStreamFromURI(s, null, type)
+            );
+        ZipInputStream zip=new ZipInputStream(is);
+        List<ZipEntry> zes=InputStreamSugar.getAllEntries(zip);
+        zip.close();
+        for (ZipEntry zz:zes){
+            // The name of a zip file will be used as an identifier
+            if (!zz.isDirectory())
+            this.AddFile(s,zz, type);
+        }
+    }
 
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#InitFile(java.lang.String)
@@ -618,7 +659,8 @@ public class WadLoader implements IWadLoader {
 		if (l.handle == null) {
 			// reloadable file, so use open / read / close
 			try {
-				handle = InputStreamSugar.createInputStreamFromURI(this.reloadname);
+			    // FIXME: reloadable files can only be that. Files.
+				handle = InputStreamSugar.createInputStreamFromURI(this.reloadname,null,0);
 			} catch (Exception e) {
 				e.printStackTrace();
 				I.Error("W_ReadLump: couldn't open %s", reloadname);
@@ -629,7 +671,7 @@ public class WadLoader implements IWadLoader {
 		try {
 
 			handle=InputStreamSugar.streamSeek(handle,l.position,
-		    l.wadfile.maxsize,l.wadfile.knownpos,l.wadfile.name);
+		    l.wadfile.maxsize,l.wadfile.name,l.wadfile.entry,l.wadfile.type);
 		    
 			// read buffered. Unfortunately that interferes badly with 
 			// guesstimating the actual stream position.
@@ -1305,6 +1347,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.57  2011/11/09 19:07:40  velktron
+//Adapted to handling ZIP files
+//
 //Revision 1.56  2011/11/03 21:14:30  velktron
 //Added -FINALLY!- resource access testing before adding them -_-
 //
