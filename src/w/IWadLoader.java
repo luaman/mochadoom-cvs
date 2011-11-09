@@ -11,15 +11,6 @@ import rr.patch_t;
 public interface IWadLoader {
 
 	/**
-	 * This is where lumps are actually read + loaded from a file.
-	 * 
-	 * @param filename
-	 * @throws Exception
-	 */
-
-	public abstract void AddFile(String filename) throws Exception;
-
-	/**
 	 * W_Reload Flushes any of the reloadable lumps in memory and reloads the
 	 * directory.
 	 * 
