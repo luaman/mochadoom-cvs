@@ -11,12 +11,12 @@ import i.IDoomSystem;
 	 * 
 	 */
 
-	public final class R_DrawColumnBoom extends DoomColumnFunction<byte[]> {
+	public final class R_DrawColumnBoom extends DoomColumnFunction<byte[],short[]> {
 
 
         public R_DrawColumnBoom(int SCREENWIDTH, int SCREENHEIGHT,
-                int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-                byte[] screen, IDoomSystem I) {
+                int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+                short[] screen, IDoomSystem I) {
             super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
         }
 
@@ -50,7 +50,7 @@ import i.IDoomSystem;
 
 			{
 				final byte[] source = dcvars.dc_source;
-				final byte[] colormap = dcvars.dc_colormap;
+				final short[] colormap = dcvars.dc_colormap;
 				int heightmask = dcvars.dc_texheight - 1;
 				if ((dcvars.dc_texheight & heightmask) != 0) // not a power of 2 --
 														// killough

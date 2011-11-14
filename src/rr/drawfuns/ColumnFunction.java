@@ -6,10 +6,10 @@ package rr.drawfuns;
  *
  */
 
-public interface ColumnFunction<T> {
+public interface ColumnFunction<T,V> {
     public void invoke();
     
-	public void invoke(ColVars<T> dcvars);
+	public void invoke(ColVars<T,V> dcvars);
 	
 	/** A set of flags that help identifying the type of function */
 	public int getFlags();

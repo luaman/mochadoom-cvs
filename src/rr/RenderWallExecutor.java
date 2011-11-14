@@ -21,17 +21,17 @@ public class RenderWallExecutor
 
     private CyclicBarrier barrier;
 
-    private ColVars<byte[]>[] RWI;
+    private ColVars<byte[],short[]>[] RWI;
 
     private int start, end;
 
-    private final DoomColumnFunction<byte[]> colfunchi, colfunclow;
+    private final DoomColumnFunction<byte[],short[]> colfunchi, colfunclow;
 
-    private DoomColumnFunction<byte[]> colfunc;
+    private DoomColumnFunction<byte[],short[]> colfunc;
 
     public RenderWallExecutor(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] columnofs, int[] ylookup, byte[] screen,
-            ColVars<byte[]>[] RWI, CyclicBarrier barrier) {
+            int[] columnofs, int[] ylookup, short[] screen,
+            ColVars<byte[],short[]>[] RWI, CyclicBarrier barrier) {
         this.RWI = RWI;
         this.barrier = barrier;
         this.SCREENWIDTH = SCREENWIDTH;
@@ -74,7 +74,7 @@ public class RenderWallExecutor
         }
     }
 
-    public void updateRWI(ColVars<byte[]>[] RWI) {
+    public void updateRWI(ColVars<byte[],short[]>[] RWI) {
         this.RWI = RWI;
 
     }

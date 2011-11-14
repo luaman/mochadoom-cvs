@@ -2,10 +2,10 @@ package rr.drawfuns;
 
 import i.IDoomSystem;
 
-public final class R_DrawSpanLow extends DoomSpanFunction<byte[]> {
+public final class R_DrawSpanLow extends DoomSpanFunction<byte[],short[]> {
 
 		public R_DrawSpanLow(int sCREENWIDTH, int sCREENHEIGHT, int[] ylookup,
-            int[] columnofs, SpanVars<byte[]> dsvars, byte[] screen,
+            int[] columnofs, SpanVars<byte[],short[]> dsvars, short[] screen,
             IDoomSystem I) {
         super(sCREENWIDTH, sCREENHEIGHT, ylookup, columnofs, dsvars, screen, I);
         // TODO Auto-generated constructor stub
@@ -14,7 +14,7 @@ public final class R_DrawSpanLow extends DoomSpanFunction<byte[]> {
         @Override
 		public void invoke() {
 		    final byte[] ds_source= dsvars.ds_source;
-		    final byte[] ds_colormap= dsvars.ds_colormap;
+		    final short[] ds_colormap= dsvars.ds_colormap;
 		    final int ds_xstep=dsvars.ds_xstep;
 		    final int ds_ystep=dsvars.ds_ystep;
 			int f_xfrac=dsvars.ds_xfrac;

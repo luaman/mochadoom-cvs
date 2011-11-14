@@ -2,10 +2,14 @@ package m;
 
 import i.DoomSystem;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferShort;
+import java.awt.image.Raster;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -19,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
+import javax.imageio.ImageIO;
+
 import doom.DoomStatus;
 import utils.C2JUtils;
 import w.IWritableDoomObject;
@@ -26,7 +32,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.28 2011/10/25 19:52:03 velktron Exp $
+// $Id: MenuMisc.java,v 1.28.2.1 2011/11/14 00:27:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -50,7 +56,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.28 2011/10/25 19:52:03 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.28.2.1 2011/11/14 00:27:11 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -399,9 +405,29 @@ public abstract class MenuMisc{
 
     public abstract void setShowMessages(boolean val);
 
+	public static void WritePNGfile(String imagename, short[] linear,
+			int width, int height) {
+		
+		BufferedImage buf=new BufferedImage(width,height,BufferedImage.TYPE_USHORT_555_RGB);
+		DataBufferShort sh=(DataBufferShort) buf.getRaster().getDataBuffer();
+		short[] shd=sh.getData();
+		System.arraycopy(linear,0,shd,0,Math.min(linear.length,shd.length));
+		try {
+			ImageIO.write(buf, "PNG",new File("imagename"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		// TODO Auto-generated method stub
+		
+	}
+
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.28.2.1  2011/11/14 00:27:11  velktron
+// A barely functional HiColor branch. Most stuff broken. DO NOT USE
+//
 // Revision 1.28  2011/10/25 19:52:03  velktron
 // Using buffered I/O when possible
 //

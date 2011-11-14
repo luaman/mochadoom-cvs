@@ -55,7 +55,7 @@ public abstract class AbstractLevelLoader
 
     DoomVideoRenderer<?> V;
 
-    Renderer<?> R;
+    Renderer<?,?> R;
 
     TextureManager TM;
 

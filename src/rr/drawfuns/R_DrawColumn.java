@@ -19,11 +19,11 @@ import i.IDoomSystem;
  * mostly from inside Draw and from an external "Renderer"
  */
 
-public final class R_DrawColumn extends DoomColumnFunction<byte[]> {
+public final class R_DrawColumn extends DoomColumnFunction<byte[],short[]> {
     
     public R_DrawColumn(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-            byte[] screen, IDoomSystem I) {
+            int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+            short[] screen, IDoomSystem I) {
         super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
     }
     

@@ -854,5 +854,26 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
       this.SCREENWIDTH=vs.getScreenWidth();
   }
 
-    
+  /**
+   * Clear automap frame buffer or fi
+   * MAES: optimized for efficiency, seen the lack of a proper "memset" in Java.
+   * 
+   */
+
+  @Override
+  public final void FillRect(int color,int screen, int x,int y,int width, int height) {
+      short[] arr=screens[screen];
+      
+      // Do a "per scanline" copy. 
+      int fromIndex=x+y*SCREENWIDTH;
+      int toIndex=x+(y+height-1)*SCREENWIDTH;
+      
+      // First scanline.
+      for (int i=0;i<width;i++)
+      	arr[fromIndex+i]=(short)color;
+      
+      for (;fromIndex<toIndex;fromIndex+=SCREENWIDTH){
+      		System.arraycopy(arr,fromIndex,arr,fromIndex+SCREENWIDTH,width);
+          }
+  }
 }

@@ -7,11 +7,11 @@ import i.IDoomSystem;
  */
 
 public final class R_DrawFuzzColumnLow
-        extends DoomColumnFunction<byte[]> {
+        extends DoomColumnFunction<byte[],short[]> {
 
     public R_DrawFuzzColumnLow(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-            byte[] screen, IDoomSystem I, byte[] BLURRY_MAP) {
+            int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+            short[] screen, IDoomSystem I, short[] BLURRY_MAP) {
         super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I,
                 BLURRY_MAP);
         

@@ -22,7 +22,7 @@ public class RenderMaskedExecutor
 
     private CyclicBarrier barrier;
 
-    private ColVars<byte[]>[] RMI;
+    private ColVars<byte[],short[]>[] RMI;
     
     private int rmiend;
 
@@ -30,21 +30,21 @@ public class RenderMaskedExecutor
     
     private int start, end;
 
-    private final DoomColumnFunction<byte[]> colfunchi, colfunclow;
-    private final DoomColumnFunction<byte[]> fuzzfunchi, fuzzfunclow;
-    private final DoomColumnFunction<byte[]> transfunchi, transfunclow;
+    private final DoomColumnFunction<byte[],short[]> colfunchi, colfunclow;
+    private final DoomColumnFunction<byte[],short[]> fuzzfunchi, fuzzfunclow;
+    private final DoomColumnFunction<byte[],short[]> transfunchi, transfunclow;
     
-    private DoomColumnFunction<byte[]> colfunc;
+    private DoomColumnFunction<byte[],short[]> colfunc;
 
     public RenderMaskedExecutor(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] columnofs, int[] ylookup, byte[] screen,
-            ColVars<byte[]>[] RMI, CyclicBarrier barrier,
-            DoomColumnFunction<byte[]> colfunc,
-            DoomColumnFunction<byte[]> colfunclo,
-            DoomColumnFunction<byte[]> fuzzfunc,
-            DoomColumnFunction<byte[]> fuzzfunclo,
-            DoomColumnFunction<byte[]> transfunc,
-            DoomColumnFunction<byte[]> transfunclo
+            int[] columnofs, int[] ylookup, short[] screen,
+            ColVars<byte[],short[]>[] RMI, CyclicBarrier barrier,
+            DoomColumnFunction<byte[],short[]> colfunc,
+            DoomColumnFunction<byte[],short[]> colfunclo,
+            DoomColumnFunction<byte[],short[]> fuzzfunc,
+            DoomColumnFunction<byte[],short[]> fuzzfunclo,
+            DoomColumnFunction<byte[],short[]> transfunc,
+            DoomColumnFunction<byte[],short[]> transfunclo
             ) {
         this.RMI = RMI;
         this.barrier = barrier;
@@ -118,7 +118,7 @@ public class RenderMaskedExecutor
         this.rmiend=rmiend;
     }         
 
-    public void updateRMI(ColVars<byte[]>[] RMI) {
+    public void updateRMI(ColVars<byte[],short[]>[] RMI) {
         this.RMI = RMI;
 
     }

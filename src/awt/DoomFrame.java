@@ -29,7 +29,7 @@ import doom.event_t;
 
 /** Common code for Doom's video frames */
 
-public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface {
+public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface<K> {
 
     public DoomFrame(DoomMain DM,DoomVideoRenderer<K> V) {
     	this.DM=DM;

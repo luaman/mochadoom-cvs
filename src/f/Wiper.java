@@ -3,9 +3,9 @@ package f;
 import v.DoomVideoRenderer;
 import doom.DoomMain;
 
-public class Wiper extends AbstractWiper {
+public class Wiper extends AbstractWiper<short[]> {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.17 2011/11/01 19:02:57 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.17.2.1 2011/11/14 00:27:11 velktron Exp $";
     
     protected wipefun[] wipes;
     
@@ -49,37 +49,6 @@ public class Wiper extends AbstractWiper {
 
     }
     
-    /** Those guys sure have an obsession with shit...this is supposed to do some
-     * lame-ass transpose.
-     * 
-     * @param array
-     * @param width
-     * @param height
-     */
-    
-    public void
-    shittyColMajorXform
-    ( byte[]    array,
-      int       width,
-      int       height )
-    {
-        int     x;
-        int     y;
-        byte[]  dest;
-
-        dest = new byte[width*height];
-
-        for(y=0;y<height;y++)
-        for(x=0;x<width;x++){
-            dest[x*height+y] = array[y*width+x];
-            //dest[(1+x)*height+y] = array[y*width+(1+x)];
-        }
-        System.arraycopy(dest, 0, array, 0, width*height);
-
-        //Z_Free(dest);
-
-    }
-    
     class wipe_initColorXForm implements wipefun{
         public boolean
         invoke
@@ -101,8 +70,8 @@ public class Wiper extends AbstractWiper {
       int   ticks )
     {
         boolean changed;
-        byte[]   w=wipe_scr;
-        byte[]   e=wipe_scr_end;
+        short[]   w=wipe_scr;
+        short[]   e=wipe_scr_end;
         int     newval;
 
         changed = false;
@@ -119,7 +88,7 @@ public class Wiper extends AbstractWiper {
             if (newval < e[pe])
                 w[pw] = e[pe];
             else
-                w[pw] = (byte) newval;
+                w[pw] = (short) newval;
             changed = true;
             }
             else if (w[pw] < e[pe])
@@ -128,7 +97,7 @@ public class Wiper extends AbstractWiper {
             if (newval > e[pe])
                 w[pw] = e[pe];
             else
-                w[pw] = (byte) newval;
+                w[pw] = (short) newval;
             changed = true;
             }
         }
@@ -218,8 +187,8 @@ public class Wiper extends AbstractWiper {
         int  ps;
         int  pd;
         
-        byte[] s;//=wipe_scr_end;
-        byte[] d=wipe_scr;
+        short[] s;//=wipe_scr_end;
+        short[] d=wipe_scr;
         
         boolean done = true;
 
@@ -300,7 +269,7 @@ public class Wiper extends AbstractWiper {
       int   width,
       int   height )
     {
-        wipe_scr_start = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
+        wipe_scr_start = (short[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
         //  byte[] screen_zero=V.getScreen(0);
         VI.ReadScreen(wipe_scr_start);
         
@@ -319,11 +288,11 @@ public class Wiper extends AbstractWiper {
       int   height )
     {
         // Set end screen to "screen 3" and copy visible screen to it.
-        wipe_scr_end = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_WE);
+        wipe_scr_end = (short[]) V.getScreen(DoomVideoRenderer.SCREEN_WE);
         VI.ReadScreen(wipe_scr_end);
         
         // Restore starting screen.
-        byte[] screen_zero=(byte[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);        
+        short[] screen_zero=(short[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);        
         System.arraycopy(wipe_scr_start,0,screen_zero, 0, SCREENWIDTH*SCREENHEIGHT);
         return false;
     }
@@ -346,7 +315,7 @@ public class Wiper extends AbstractWiper {
         {
         go = true;
         //wipe_scr = new byte[width*height]; // DEBUG
-        wipe_scr = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
+        wipe_scr = (short[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
         // HOW'S THAT FOR A FUNCTION POINTER, BIATCH?!
         (wipes[wipeno*3]).invoke(width, height, ticks);
         }

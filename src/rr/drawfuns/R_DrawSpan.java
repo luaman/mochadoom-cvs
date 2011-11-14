@@ -9,10 +9,10 @@ import i.IDoomSystem;
 	 * 
 	 */
 
-	public final class R_DrawSpan extends DoomSpanFunction<byte[]> {
+	public final class R_DrawSpan extends DoomSpanFunction<byte[],short[]> {
 
         public R_DrawSpan(int sCREENWIDTH, int sCREENHEIGHT, int[] ylookup,
-            int[] columnofs, SpanVars<byte[]> dsvars, byte[] screen,
+            int[] columnofs, SpanVars<byte[],short[]> dsvars,short[] screen,
             IDoomSystem I) {
         super(sCREENWIDTH, sCREENHEIGHT, ylookup, columnofs, dsvars, screen, I);
         }
@@ -22,7 +22,7 @@ import i.IDoomSystem;
 			int f_xfrac; // fixed_t
 			int f_yfrac; // fixed_t
 			int dest,count,spot;
-			final byte[] ds_colormap=dsvars.ds_colormap;
+			final short[] ds_colormap=dsvars.ds_colormap;
 			final byte[] ds_source=dsvars.ds_source;
 
 			// System.out.println("R_DrawSpan: "+ds_x1+" to "+ds_x2+" at "+

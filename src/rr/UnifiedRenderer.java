@@ -29,13 +29,6 @@ public class UnifiedRenderer extends RendererState{
       
       }
   
-  
-      
-
-  
- 
- 
-
 
 ///////////////////////// The actual rendering calls ///////////////////////
  

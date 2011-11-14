@@ -30,7 +30,7 @@ import doom.DoomMain;
  * @author Velktron
  *
  */
-public class AWTDoom extends DoomFrame<byte[]> {
+public class AWTDoom extends DoomFrame<short[]> {
 
 
     private static final long serialVersionUID = 3118508722502652276L;
@@ -46,8 +46,8 @@ public class AWTDoom extends DoomFrame<byte[]> {
 		 * 
 		 */
      
-        public AWTDoom(DoomMain DM, DoomVideoRenderer<byte[]> V) {
-      		super(DM,(DoomVideoRenderer<byte[]>) V);
+        public AWTDoom(DoomMain DM, DoomVideoRenderer<short[]> V) {
+      		super(DM,(DoomVideoRenderer<short[]>) V);
       		drawhere=new Canvas();
         // Don't do anything yet until InitGraphics is called.
         }
@@ -119,17 +119,20 @@ public class AWTDoom extends DoomFrame<byte[]> {
     		if (D) System.err.println("Setting gamma "+level);
     		V.setUsegamma(level);
     		screen=V.getCurrentScreen(); // Refresh screen after change.
-    		RAWSCREEN=(byte[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
+    		RAWSCREEN=(short[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
     	}
         
         @Override
-        public void ReadScreen(byte[] scr) {
+        public void ReadScreen(short[] scr) {
             System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
             }
 
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.14.2.1  2011/11/14 00:27:11  velktron
+//A barely functional HiColor branch. Most stuff broken. DO NOT USE
+//
 //Revision 1.14  2011/11/01 19:03:10  velktron
 //Using screen number constants
 //

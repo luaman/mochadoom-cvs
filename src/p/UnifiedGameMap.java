@@ -156,7 +156,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     IRandom RND;
 
-    Renderer<?> R;
+    Renderer<?,?> R;
     
     TextureManager TM;
 

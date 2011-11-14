@@ -50,9 +50,6 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
 import m.IDoomMenu;
 import m.MenuMisc;
 import p.AbstractLevelLoader;
@@ -72,8 +69,6 @@ import v.DoomVideoRenderer;
 import v.IVideoScale;
 import v.IVideoScaleAware;
 import w.IWadLoader;
-import w.lumpinfo_t;
-import w.name8;
 import data.Defines;
 import data.Limits;
 import data.Tables;
@@ -101,7 +96,7 @@ import rr.drawfuns.*;
  * 
  */
 
-public abstract class RendererState implements Renderer<byte[]>, ILimitResettable, IGetColumn {
+public abstract class RendererState implements Renderer<byte[],short[]>, ILimitResettable, IGetColumn {
 
 	protected static final boolean DEBUG = false;
 	protected static final boolean DEBUG2 = false;
@@ -121,8 +116,8 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	protected PlaneDrawer MyPlanes;
 	protected IMaskedDrawer MyThings;
 	protected ISpriteManager SM;
-	protected IVisSpriteManagement VIS;
-	protected DoomVideoRenderer<byte[]> V;
+	protected IVisSpriteManagement<short[]> VIS;
+	protected DoomVideoRenderer<short[]> V;
 	protected UnifiedGameMap P;
 	protected IDoomSystem I;
 	protected TextureManager TexMan;
@@ -494,14 +489,14 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		this.W = DC.W;
 		this.P = DC.P;
 		// We must also connect screen to V. Don't forget it. Do it in Init(), OK?      
-	    this.V=(DoomVideoRenderer<byte[]>) DC.V;
+	    this.V=(DoomVideoRenderer<short[]>) DC.V;
 	    this.SM=DC.SM;
 	    this.I=DC.I;
 	}
 
 	// ////////////////////////////// THINGS ////////////////////////////////
 
-	protected byte[][] spritelights;
+	protected short[][] spritelights;
 
 	protected int WEAPONADJUST;
 	protected int BOBADJUST;
@@ -584,7 +579,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		 *       +2 fps on nuts.wad timedemo.
 		 * 
 		 */
-		protected final void DrawVisSprite(vissprite_t vis) {
+		protected final void DrawVisSprite(vissprite_t<short[]> vis) {
 			column_t column;
 			int texturecolumn;
 			int frac; // fixed_t
@@ -741,7 +736,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 			int x2;
 			spritedef_t sprdef;
 			spriteframe_t sprframe;
-			vissprite_t vis;
+			vissprite_t<short[]> vis;
 			int lump;
 			boolean flip;
 
@@ -855,7 +850,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		};
 		
 		/** used inside DrawPSprite, better make this static */
-		protected vissprite_t avis = new vissprite_t();
+		protected vissprite_t<short[]> avis = new vissprite_t<short[]>();
 
 		/**
 		 * R_DrawPlayerSprites
@@ -909,7 +904,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		 * R_DrawSprite
 		 */
 
-		protected final void DrawSprite(vissprite_t spr) {
+		protected final void DrawSprite(vissprite_t<short[]> spr) {
 			int ds;
 			drawseg_t dss;
 
@@ -1078,7 +1073,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 			colfunc = maskedcolfunc; // Sprites use fully-masked capable
 									 // function.
 
-			final vissprite_t[] vissprites=VIS.getVisSprites();
+			final vissprite_t<short[]>[] vissprites=VIS.getVisSprites();
 			final int numvissprites=VIS.getNumVisSprites();
 			
 			for (int i = 0; i < numvissprites; i++) {
@@ -1256,31 +1251,31 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	    private final int id;
 	    private final int numthreads;
 	    
-	    private DoomColumnFunction<byte[]> colfunc;
-	    private DoomColumnFunction<byte[]> transcolfunc;
-	    private DoomColumnFunction<byte[]> maskedcolfunc;
-	    private DoomColumnFunction<byte[]> fuzzcolfunc;
-	    private DoomColumnFunction<byte[]> playercolfunc;
+	    private DoomColumnFunction<byte[],short[]> colfunc;
+	    private DoomColumnFunction<byte[],short[]> transcolfunc;
+	    private DoomColumnFunction<byte[],short[]> maskedcolfunc;
+	    private DoomColumnFunction<byte[],short[]> fuzzcolfunc;
+	    private DoomColumnFunction<byte[],short[]> playercolfunc;
 	    
 	    // final
-	    private final DoomColumnFunction<byte[]> maskedcolfunchi;
-	    private final DoomColumnFunction<byte[]> maskedcolfunclow;
-	    private final DoomColumnFunction<byte[]> fuzzcolfunchi;
-	    private final DoomColumnFunction<byte[]> fuzzcolfunclow;
-	    private final DoomColumnFunction<byte[]> transcolhigh;
-	    private final DoomColumnFunction<byte[]> transcollow;
+	    private final DoomColumnFunction<byte[],short[]> maskedcolfunchi;
+	    private final DoomColumnFunction<byte[],short[]> maskedcolfunclow;
+	    private final DoomColumnFunction<byte[],short[]> fuzzcolfunchi;
+	    private final DoomColumnFunction<byte[],short[]> fuzzcolfunclow;
+	    private final DoomColumnFunction<byte[],short[]> transcolhigh;
+	    private final DoomColumnFunction<byte[],short[]> transcollow;
 	    
-	    private final ColVars<byte[]> maskedcvars;
+	    private final ColVars<byte[],short[]> maskedcvars;
 	    
         // MAES: Scale to SCREENWIDTH
         private final short[] clipbot;
         private final short[] cliptop;
 	    
-	    public MaskedWorker(int id,int SCREENWIDTH, int SCREENHEIGHT,int[] ylookup, int[] columnofs,int numthreads,byte[] screen,CyclicBarrier barrier){
+	    public MaskedWorker(int id,int SCREENWIDTH, int SCREENHEIGHT,int[] ylookup, int[] columnofs,int numthreads,short[] screen,CyclicBarrier barrier){
 	        this.id=id;
 	        this.numthreads=numthreads;
 	        this.barrier=barrier;
-	        maskedcvars=new ColVars<byte[]>();
+	        maskedcvars=new ColVars<byte[],short[]>();
 	        
 	        clipbot=new short[SCREENWIDTH];
 	        cliptop=new short[SCREENWIDTH];
@@ -1335,7 +1330,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
          * 
          * 
          */
-        private final void DrawVisSprite(vissprite_t vis) {
+        private final void DrawVisSprite(vissprite_t<short[]> vis) {
             column_t column;
             int texturecolumn;
             int frac; // fixed_t
@@ -1514,7 +1509,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             int x2;
             spritedef_t sprdef;
             spriteframe_t sprframe;
-            vissprite_t vis;
+            vissprite_t<short[]> vis;
             int lump;
             boolean flip;
 
@@ -1607,7 +1602,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         }
         
         /** used inside DrawPSprite, better make this static */
-        private vissprite_t avis = new vissprite_t();
+        private vissprite_t<short[]> avis = new vissprite_t<short[]>();
 
         /**
          * R_DrawPlayerSprites
@@ -1657,7 +1652,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
          * R_DrawSprite
          */
 
-        private final void DrawSprite(vissprite_t spr) {
+        private final void DrawSprite(vissprite_t<short[]> spr) {
             int ds;
             drawseg_t dss;
 
@@ -1801,7 +1796,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             
             // Update thread's own vissprites
             
-            final vissprite_t[] vissprites=VIS.getVisSprites();
+            final vissprite_t<short[]>[] vissprites=VIS.getVisSprites();
             final int numvissprites=VIS.getNumVisSprites();
             
             //System.out.printf("Sprites to render: %d\n",numvissprites);
@@ -1970,9 +1965,9 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         
     }
 	
-	protected final class VisSprites implements IVisSpriteManagement{
+	protected final class VisSprites implements IVisSpriteManagement<short[]>{
 	    
-	     vissprite_t[] vissprites;
+	     vissprite_t<short[]>[] vissprites;
 	     int vissprite_p;
 	     int newvissprite;
 	     
@@ -1984,8 +1979,8 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	     protected int[] spritewidth, spriteoffset, spritetopoffset;
 	      
 	     public VisSprites(){
-	            vissprites = new vissprite_t[MAXVISSPRITES];
-	            C2JUtils.initArrayOfObjects(vissprites);
+	    	 	vissprite_t<short[]> tmp=new vissprite_t<short[]>();
+	    	 	vissprites=C2JUtils.createArrayOfObjects(tmp,MAXVISSPRITES);
 	            //vsprsortedhead = new vissprite_t();
 	            //unsorted = new vissprite_t();
 	     }
@@ -2051,7 +2046,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
             int index;
 
-            vissprite_t vis;
+            vissprite_t<short[]> vis;
 
             long ang;
             int iscale;
@@ -2190,7 +2185,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
          * 
          * @return
          */
-        protected final vissprite_t NewVisSprite() {
+        protected final vissprite_t<short[]> NewVisSprite() {
             if (vissprite_p == (vissprites.length - 1)) {
                 ResizeSprites();
             }
@@ -2224,7 +2219,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         }
         
         public void resetLimits() {
-            vissprite_t[] tmp = new vissprite_t[MAXVISSPRITES];
+            vissprite_t<short[]>[] tmp = C2JUtils.createArrayOfObjects(vissprites[0],MAXVISSPRITES);
             System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
 
             // Now, that was quite a haircut!.
@@ -2257,7 +2252,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         }
 
         @Override
-        public vissprite_t[] getVisSprites() {
+        public vissprite_t<short[]>[] getVisSprites() {
             return vissprites;
         }
 	}
@@ -3713,7 +3708,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         void completeColumn();
     }
 
-    protected interface IVisSpriteManagement extends ILimitResettable {
+    protected interface IVisSpriteManagement<V> extends ILimitResettable {
         
         void AddSprites(sector_t sec);
         
@@ -3725,7 +3720,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
         int getNumVisSprites();
 
-        vissprite_t[] getVisSprites();
+        vissprite_t<V>[] getVisSprites();
 
         void ClearSprites();
         
@@ -3749,7 +3744,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		//
 		// texture mapping
 		//
-		protected byte[][] planezlight; // The distance lighting effect you see
+		protected short[][] planezlight; // The distance lighting effect you see
 		/** To treat as fixed_t */
 		protected int planeheight;
 		/** To treat at fixed_t */
@@ -4271,7 +4266,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         private final int id;
         private final int NUMFLOORTHREADS;
         private int vpw_planeheight;
-        private byte[][] vpw_planezlight;
+        private short[][] vpw_planezlight;
         private int vpw_basexscale,vpw_baseyscale;
         private int[] cachedheight;
         private int[] cacheddistance;
@@ -4279,17 +4274,17 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         private int[] cachedystep;
         private int[] distscale;
         private int[] yslope;
-        private final SpanVars<byte[]> vpw_dsvars;
-        private final ColVars<byte[]> vpw_dcvars;
-        private DoomSpanFunction<byte[]> vpw_spanfunc;
-        private DoomColumnFunction<byte[]> vpw_skyfunc;
-        private final DoomSpanFunction<byte[]> vpw_spanfunchi;
-        private final DoomSpanFunction<byte[]> vpw_spanfunclow;
-        private final DoomColumnFunction<byte[]> vpw_skyfunchi;
-        private final DoomColumnFunction<byte[]> vpw_skyfunclow;
+        private final SpanVars<byte[],short[]> vpw_dsvars;
+        private final ColVars<byte[],short[]> vpw_dcvars;
+        private DoomSpanFunction<byte[],short[]> vpw_spanfunc;
+        private DoomColumnFunction<byte[],short[]> vpw_skyfunc;
+        private final DoomSpanFunction<byte[],short[]> vpw_spanfunchi;
+        private final DoomSpanFunction<byte[],short[]> vpw_spanfunclow;
+        private final DoomColumnFunction<byte[],short[]> vpw_skyfunchi;
+        private final DoomColumnFunction<byte[],short[]> vpw_skyfunclow;
         
         public VisplaneWorker(int id,int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
-                int[] ylookup, byte[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
+                int[] ylookup, short[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
             this.barrier=visplanebarrier;
             this.id=id;
             // Alias to those of Planes.
@@ -4301,8 +4296,8 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             yslope=MyPlanes.getYslope();
             spanstart=new int[sCREENHEIGHT];
             spanstop=new int [sCREENHEIGHT];
-            vpw_dsvars=new SpanVars<byte[]>();
-            vpw_dcvars=new ColVars<byte[]>();
+            vpw_dsvars=new SpanVars<byte[],short[]>();
+            vpw_dcvars=new ColVars<byte[],short[]>();
             vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_spanfunclow=new R_DrawSpanLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
@@ -4566,12 +4561,11 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	protected class VisplaneWorker2 implements Runnable,IDetailAware{
 
         private final int id;
-        private final char SENTINEL;
         private final int NUMFLOORTHREADS;
         private int startvp;  
         private int endvp;
         private int vpw_planeheight;
-        private byte[][] vpw_planezlight;
+        private short[][] vpw_planezlight;
         private int vpw_basexscale,vpw_baseyscale;
         private int[] cachedheight;
         private int[] cacheddistance;
@@ -4579,21 +4573,20 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
         private int[] cachedystep;
         private int[] distscale;
         private int[] yslope;
-        private final SpanVars<byte[]> vpw_dsvars;
-        private final ColVars<byte[]> vpw_dcvars;
-        private DoomSpanFunction<byte[]> vpw_spanfunc;
-        private DoomColumnFunction<byte[]> vpw_skyfunc;
-        private final DoomSpanFunction<byte[]> vpw_spanfunchi;
-        private final DoomSpanFunction<byte[]> vpw_spanfunclow;
-        private final DoomColumnFunction<byte[]> vpw_skyfunchi;
-        private final DoomColumnFunction<byte[]> vpw_skyfunclow;
+        private final SpanVars<byte[],short[]> vpw_dsvars;
+        private final ColVars<byte[],short[]> vpw_dcvars;
+        private DoomSpanFunction<byte[],short[]> vpw_spanfunc;
+        private DoomColumnFunction<byte[],short[]> vpw_skyfunc;
+        private final DoomSpanFunction<byte[],short[]> vpw_spanfunchi;
+        private final DoomSpanFunction<byte[],short[]> vpw_spanfunclow;
+        private final DoomColumnFunction<byte[],short[]> vpw_skyfunchi;
+        private final DoomColumnFunction<byte[],short[]> vpw_skyfunclow;
         private visplane_t pln;
         
         public VisplaneWorker2(int id,int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
-                int[] ylookup, byte[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
+                int[] ylookup, short[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
             this.barrier=visplanebarrier;
             this.id=id;
-            this.SENTINEL=(char) (visplane_t.SENTINEL^id);
             // Alias to those of Planes.
             cachedheight=MyPlanes.getCachedHeight();
             cacheddistance=MyPlanes.getCachedDistance();
@@ -4603,8 +4596,8 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
             yslope=MyPlanes.getYslope();
             spanstart=new int[sCREENWIDTH];
             spanstop=new int [sCREENWIDTH];
-            vpw_dsvars=new SpanVars<byte[]>();
-            vpw_dcvars=new ColVars<byte[]>();
+            vpw_dsvars=new SpanVars<byte[],short[]>();
+            vpw_dcvars=new ColVars<byte[],short[]>();
             vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_spanfunclow=new R_DrawSpanLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
@@ -4929,7 +4922,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	 * OK< this is supposed to "peg" into screen buffer 0. It will work AS LONG
 	 * AS SOMEONE FUCKING ACTUALLY SETS IT !!!!
 	 */
-	protected byte[] screen;
+	protected short[] screen;
 
 	protected static final boolean RANGECHECK = false;
 
@@ -4944,17 +4937,17 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	
 	/** General purpose. Used for solid walls and as an intermediary for threading */
 	
-	protected ColVars<byte[]> dcvars;
+	protected ColVars<byte[],short[]> dcvars;
 	
 	// Used for sky drawer, to avoid clashing with shared dcvars
-	protected ColVars<byte[]> skydcvars;
+	protected ColVars<byte[],short[]> skydcvars;
  
 	// Used by parallel renderers to finish up some business
-	protected ColVars<byte[]> maskedcvars;
+	protected ColVars<byte[],short[]> maskedcvars;
 	
 	/** Used for spans */
 	
-	protected SpanVars<byte[]> dsvars;
+	protected SpanVars<byte[],short[]> dsvars;
 	
 	/**
 	 * Color tables for different players, translate a limited part to another
@@ -4970,7 +4963,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	//
 
 	/** Use in conjunction with pfixedcolormap */
-	protected byte[] fixedcolormap;
+	protected short[] fixedcolormap;
 	/** Use in conjunction with fixedcolormap[] */
 	protected int pfixedcolormap;
 	// lighttable_t[][] walllights;
@@ -5061,9 +5054,9 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	 * array to finally pick a color, so they should be expanded to shorts.
 	 */
 
-	protected byte[][][] scalelight = new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
-	protected byte[][] scalelightfixed = new byte[MAXLIGHTSCALE][];
-	protected byte[][][] zlight = new byte[LIGHTLEVELS][MAXLIGHTZ][];
+	protected short[][][] scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
+	protected short[][] scalelightfixed = new short[MAXLIGHTSCALE][];
+	protected short[][][] zlight = new short[LIGHTLEVELS][MAXLIGHTZ][];
 
 	// bumped light from gun blasts
 	protected static int extralight;
@@ -5321,20 +5314,13 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 	////////////// COMMON RENDERING GLOBALS ////////////////
 
-	/*
-	 * ON COLORMAPS: they are supposed to be
-	 * "from this color to some other color" mappings. "Color" means an index in
-	 * the palette, like those used in screen. Their contents should be bytes,
-	 * although their indexing has to be "unsigned bytes" the very least.
-	 * 
-	 * Lengths: for some reas
-	 */
+	// For HiColor, this is, effectively, a 555 RGB palette.
 
 	/** "peg" this to the one from RendererData */
-	protected byte[][] colormaps;
+	protected short[][] colormaps;
 
 	/** lighttable_t** */
-	protected byte[][] walllights;
+	protected short[][] walllights;
 
 	protected short[] maskedtexturecol;
 	protected int pmaskedtexturecol = 0;
@@ -5355,31 +5341,31 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 	////////////////// COLUMN AND SPAN FUNCTIONS    //////////////
 
-	protected DoomColumnFunction<byte[]> colfunc;
-	protected DoomColumnFunction<byte[]>  basecolfunc;
-	protected DoomColumnFunction<byte[]>  maskedcolfunc;
-	protected DoomColumnFunction<byte[]>  fuzzcolfunc;
-	protected DoomColumnFunction<byte[]>  transcolfunc;
-	protected DoomColumnFunction<byte[]>  glasscolfunc;
-	protected DoomColumnFunction<byte[]>  playercolfunc;
-	protected DoomColumnFunction<byte[]> skycolfunc;
-	protected DoomSpanFunction<byte[]>  spanfunc;
+	protected DoomColumnFunction<byte[],short[]> colfunc;
+	protected DoomColumnFunction<byte[],short[]>  basecolfunc;
+	protected DoomColumnFunction<byte[],short[]>  maskedcolfunc;
+	protected DoomColumnFunction<byte[],short[]>  fuzzcolfunc;
+	protected DoomColumnFunction<byte[],short[]>  transcolfunc;
+	protected DoomColumnFunction<byte[],short[]>  glasscolfunc;
+	protected DoomColumnFunction<byte[],short[]>  playercolfunc;
+	protected DoomColumnFunction<byte[],short[]> skycolfunc;
+	protected DoomSpanFunction<byte[],short[]>  spanfunc;
 
-	protected DoomColumnFunction<byte[]>  DrawTranslatedColumn;
-	protected DoomColumnFunction<byte[]>  DrawTranslatedColumnLow;
-	protected DoomColumnFunction<byte[]>  DrawColumnPlayer;
-	protected DoomColumnFunction<byte[]>  DrawColumnSkies;
-	protected DoomColumnFunction<byte[]>  DrawColumnSkiesLow;
-	protected DoomColumnFunction<byte[]>  DrawFuzzColumn;
-	protected DoomColumnFunction<byte[]>  DrawFuzzColumnLow;
-	protected DoomColumnFunction<byte[]>  DrawColumn;
-	protected DoomColumnFunction<byte[]>  DrawColumnLow;	
-	protected DoomColumnFunction<byte[]>  DrawColumnMasked;
-	protected DoomColumnFunction<byte[]>  DrawColumnMaskedLow;
-	protected DoomColumnFunction<byte[]>  DrawTLColumn;
+	protected DoomColumnFunction<byte[],short[]>  DrawTranslatedColumn;
+	protected DoomColumnFunction<byte[],short[]>  DrawTranslatedColumnLow;
+	protected DoomColumnFunction<byte[],short[]>  DrawColumnPlayer;
+	protected DoomColumnFunction<byte[],short[]>  DrawColumnSkies;
+	protected DoomColumnFunction<byte[],short[]>  DrawColumnSkiesLow;
+	protected DoomColumnFunction<byte[],short[]>  DrawFuzzColumn;
+	protected DoomColumnFunction<byte[],short[]>  DrawFuzzColumnLow;
+	protected DoomColumnFunction<byte[],short[]>  DrawColumn;
+	protected DoomColumnFunction<byte[],short[]>  DrawColumnLow;	
+	protected DoomColumnFunction<byte[],short[]>  DrawColumnMasked;
+	protected DoomColumnFunction<byte[],short[]>  DrawColumnMaskedLow;
+	protected DoomColumnFunction<byte[],short[]>  DrawTLColumn;
 
 	/** to be set in UnifiedRenderer */
-	protected DoomSpanFunction<byte[]> DrawSpan, DrawSpanLow;
+	protected DoomSpanFunction<byte[],short[]> DrawSpan, DrawSpanLow;
 
 	//////////////// r_draw methods //////////////
 
@@ -5561,7 +5547,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	
 	public void FillBackScreen() {
 		flat_t src;
-		byte[] dest;
+		short[] dest;
 		int x;
 		int y;
 		patch_t patch;
@@ -6184,23 +6170,32 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	/**
 	 * R_InitColormaps
 	 * 
+	 * This is VERY different for hicolor.
+	 * 
 	 * @throws IOException
 	 */
 	protected void InitColormaps() throws IOException {
 		int lump, length;
 
-		// Load in the light tables,
-		// 256 byte align tables.
-		lump = W.GetNumForName("COLORMAP");
-		length = W.LumpLength(lump) + 256;
-		colormaps = new byte[(length / 256)][256];
-		System.out.println("Colormaps: " + colormaps.length);
+
+		// For HiCOlor, load COLORS15 lump
+		lump = W.GetNumForName("COLORS15");
+		length = W.LumpLength(lump);
+		// Allow space for one extra colormap, to use as invuln.
+		colormaps = new short[1+(length / 512)][256];
+		System.out.println("COLORS15 Colormaps: " + colormaps.length);
 
 		byte[] tmp = new byte[length];
+		short[] tmp2=new short[256+(length/2)];
 		W.ReadLump(lump,tmp);
+		
+		for (int i=0;i<length/2;i++){
+			tmp2[i]=(short) ((tmp[1+2*i]<<8)|(0x00FF&tmp[2*i]));
+		}
+		
 
 		for (int i = 0; i < colormaps.length; i++) {
-			System.arraycopy(tmp, i * 256, colormaps[i], 0, 256);
+			System.arraycopy(tmp2, i * 256, colormaps[i], 0, 256);
 		}
 		
 		// MAES: blurry effect is hardcoded to this colormap.
@@ -6210,7 +6205,7 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 		
 	}
 	
-	protected byte[] BLURRY_MAP;
+	protected short[] BLURRY_MAP;
 
 	/**
 	 * R_InitData Locates all the lumps that will be used by all views Must be
@@ -6442,12 +6437,12 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	
 	protected void R_InitDrawingFunctions(){
 	    
-	    dcvars=new ColVars<byte[]>();	    
-	    maskedcvars=new ColVars<byte[]>();
+	    dcvars=new ColVars<byte[],short[]>();	    
+	    maskedcvars=new ColVars<byte[],short[]>();
 	    //maskedcvars.dc_translation=translationtables[0];
-	    skydcvars=new ColVars<byte[]>();
+	    skydcvars=new ColVars<byte[],short[]>();
 	    
-	    dsvars=new SpanVars<byte[]>();
+	    dsvars=new SpanVars<byte[],short[]>();
 	    
         // Span functions. Common to all renderers unless overriden
         // or unused e.g. parallel renderers ignore them.

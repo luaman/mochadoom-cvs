@@ -6,7 +6,7 @@ import i.DoomStatusAware;
 import v.IVideoScaleAware;
 import doom.player_t;
 
-public interface Renderer<K> extends IVideoScaleAware,DoomStatusAware{
+public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware{
 	
 	// Lighting constants.
 	// Now why not 32 levels here?

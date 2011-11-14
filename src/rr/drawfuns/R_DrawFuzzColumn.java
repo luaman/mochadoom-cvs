@@ -8,11 +8,11 @@ import i.IDoomSystem;
 	 * could create the SHADOW effect, i.e. spectres and invisible players.
 	 */
 
-	public final class R_DrawFuzzColumn extends DoomColumnFunction<byte[]>  {
+	public final class R_DrawFuzzColumn extends DoomColumnFunction<byte[],short[]>  {
 		
 	    public R_DrawFuzzColumn(int SCREENWIDTH, int SCREENHEIGHT,
-                int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-                byte[] screen, IDoomSystem I,byte[] BLURRY_MAP) {
+                int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+                short[] screen, IDoomSystem I,short[] BLURRY_MAP) {
             super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I,BLURRY_MAP);
         
             this.flags=DcFlags.FUZZY;

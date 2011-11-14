@@ -3,11 +3,11 @@ package rr.drawfuns;
 import i.IDoomSystem;
 import static m.fixed_t.FRACBITS;
 
-public final class R_DrawColumnLow extends DoomColumnFunction<byte[]> {
+public final class R_DrawColumnLow extends DoomColumnFunction<byte[],short[]> {
     
 		public R_DrawColumnLow(int SCREENWIDTH, int SCREENHEIGHT,
-	            int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-	            byte[] screen, IDoomSystem I) {
+	            int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+	            short[] screen, IDoomSystem I) {
 	        super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
 	        this.flags=DcFlags.LOW_DETAIL;
 	    }
@@ -17,7 +17,7 @@ public final class R_DrawColumnLow extends DoomColumnFunction<byte[]> {
 			// MAES: were pointers. Of course...
 			int dest, dest2;
 			final byte[] dc_source=dcvars.dc_source;
-			final byte[] dc_colormap=dcvars.dc_colormap;
+			final short[] dc_colormap=dcvars.dc_colormap;
 			final int dc_source_ofs=dcvars.dc_source_ofs;
 			// Maes: fixed_t never used as such.
 			int frac;

@@ -20,7 +20,7 @@ public abstract class AbstractStatusBar implements IDoomStatusBar,DoomStatusAwar
 
     protected IWadLoader W;
 
-    protected Renderer<?> R;
+    protected Renderer<?,?> R;
 
     protected DoomMain DM;
 

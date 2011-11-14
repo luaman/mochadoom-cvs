@@ -6,7 +6,7 @@ package rr;
  * I.e. a sprite object that is partly visible.
  */
 
-public class vissprite_t implements Comparable<vissprite_t>{
+public class vissprite_t<T> implements Comparable<vissprite_t>{
 
 // Doubly linked list.
 public vissprite_t prev;
@@ -39,7 +39,7 @@ public int         patch;
  * 
  * Use paired with pcolormap;
  */ 
-public byte[]   colormap;
+public T colormap;
 
 /* pointer into colormap
 public int pcolormap; */

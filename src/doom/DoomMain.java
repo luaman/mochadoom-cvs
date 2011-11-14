@@ -20,7 +20,6 @@ import n.DummyNetworkDriver;
 import static data.dstrings.*;
 import p.Actions;
 import p.BoomLevelLoader;
-import p.LevelLoader;
 import p.mobj_t;
 import automap.Map;
 import awt.AWTDoom;
@@ -49,8 +48,6 @@ import static g.Keys.*;
 import static data.Defines.NORMALUNIX;
 import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
-import rr.ParallelRenderer;
-import rr.ParallelRenderer2;
 import rr.SimpleTextureManager;
 import rr.SpriteManager;
 import rr.UnifiedRenderer;
@@ -77,15 +74,12 @@ import timing.ITicker;
 import timing.MilliTicker;
 import timing.NanoTicker;
 import utils.C2JUtils;
-import v.BufferedRenderer;
+import v.BufferedRenderer16;
 import v.DoomVideoRenderer;
 import v.GammaTables;
-import v.HiColorRenderer555;
-import v.HiColorRenderer565;
 import v.IVideoScale;
 import v.IVideoScaleAware;
 import v.PaletteGenerator;
-import v.TrueColorRenderer;
 //import v.VideoScaleInfo;
 import v.VisualSettings;
 import w.DoomBuffer;
@@ -97,14 +91,13 @@ import static data.dstrings.SAVEGAMENAME;
 import static data.info.mobjinfo;
 import static data.info.states;
 import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.MAPFRACUNIT;
 import static utils.C2JUtils.*;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101 2011/11/06 17:35:38 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.1 2011/11/14 00:27:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -130,7 +123,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101 2011/11/06 17:35:38 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.1 2011/11/14 00:27:11 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1078,7 +1071,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         W.InjectLumpNum(pallump,new DoomBuffer(ByteBuffer.wrap(pal)));
         // set it, create it, but don't make it visible yet.
         
-        VI=new AWTDoom(this,(DoomVideoRenderer<byte[]>) V);
+        VI=new AWTDoom(this,(DoomVideoRenderer<short[]>) V);
 
         VI.InitGraphics();
         
@@ -2334,12 +2327,12 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 public void ScreenShot ()
 {
     int     i;
-    byte[]  linear;
-    String format=new String("DOOM%c%c%c%c.pcx");
+    short[]  linear;
+    String format=new String("DOOM%c%c%c%c.png");
     String lbmname = null;
     
     // munge planar buffer to linear
-    linear = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
+    linear = (short[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
     VI.ReadScreen (linear);
 
     // find a file name to save it to
@@ -2357,12 +2350,11 @@ public void ScreenShot ()
         break;  // file doesn't exist
     }
     if (i==10000)
-    I.Error ("M_ScreenShot: Couldn't create a PCX");
+    I.Error ("M_ScreenShot: Couldn't create a PNG");
 
     // save the pcx file
-    MenuMisc.WritePCXfile (lbmname, linear,
-          SCREENWIDTH, SCREENHEIGHT,
-          W.CacheLumpNameAsRawBytes ("PLAYPAL",PU_CACHE));
+    MenuMisc.WritePNGfile (lbmname, linear,
+          SCREENWIDTH, SCREENHEIGHT);
 
     players[consoleplayer].message = "screen shot";
 }
@@ -3229,7 +3221,7 @@ public void ScreenShot ()
         // etc. for main. Children will be set later in Start().
         this.initScaling();
         
-        this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
+        this.V=new BufferedRenderer16(SCREENWIDTH,SCREENHEIGHT);
 
         status_holders.add((DoomStatusAware) this.I);
         status_holders.add((DoomStatusAware) this.V);
@@ -3254,7 +3246,7 @@ public void ScreenShot ()
         if (eval(CM.CheckParm("-serialrenderer"))){
             this.R=new UnifiedRenderer(this);    
         } else 
-
+/*
             // Parallel. Either with default values (2,1) or user-specified.
             if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
                 int p = CM.CheckParm ("-parallelrenderer");
@@ -3292,10 +3284,10 @@ public void ScreenShot ()
                     else
                         this.R=new ParallelRenderer2(this,walls,floors);
                 }
-            } else {
+            } else {*/
                 // Force serial
                 this.R=new UnifiedRenderer(this);   
-            }
+            //}
     }
 
 
@@ -4228,6 +4220,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.1  2011/11/14 00:27:11  velktron
+//A barely functional HiColor branch. Most stuff broken. DO NOT USE
+//
 //Revision 1.101  2011/11/06 17:35:38  velktron
 //Fixed %i printf modifiers.
 //

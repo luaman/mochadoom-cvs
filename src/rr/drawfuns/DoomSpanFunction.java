@@ -2,19 +2,19 @@ package rr.drawfuns;
 
 import i.IDoomSystem;
 
-public abstract class DoomSpanFunction<T> implements SpanFunction<T> {
+public abstract class DoomSpanFunction<T,V> implements SpanFunction<T,V> {
     
     protected final boolean RANGECHECK=false;
     protected final int SCREENWIDTH;
     protected final int SCREENHEIGHT;
-    protected SpanVars<T> dsvars;
+    protected SpanVars<T,V> dsvars;
     protected final int[] ylookup;
     protected final int[] columnofs;
-    protected final T screen;
+    protected final V screen;
     protected final IDoomSystem I;
     
     public DoomSpanFunction(int sCREENWIDTH, int sCREENHEIGHT,
-            int[] ylookup, int[] columnofs,SpanVars<T> dsvars, T screen,IDoomSystem I) {
+            int[] ylookup, int[] columnofs,SpanVars<T,V> dsvars, V screen,IDoomSystem I) {
         SCREENWIDTH = sCREENWIDTH;
         SCREENHEIGHT = sCREENHEIGHT;
         this.ylookup=ylookup;
@@ -32,7 +32,7 @@ public abstract class DoomSpanFunction<T> implements SpanFunction<T> {
     }
 
     @Override
-    public final void invoke(SpanVars<T> dsvars) {
+    public final void invoke(SpanVars<T,V> dsvars) {
         this.dsvars=dsvars;
         invoke();
     }

@@ -13,7 +13,7 @@ package i;
  *  
  */
 
-public interface DoomVideoInterface {
+public interface DoomVideoInterface<K> {
 
 	public void StartFrame();
 
@@ -31,6 +31,6 @@ public interface DoomVideoInterface {
 
 	public void SetGamma(int gammalevel);
 	
-	public void ReadScreen(byte[] linear);
+	public void ReadScreen(K linear);
 
 }

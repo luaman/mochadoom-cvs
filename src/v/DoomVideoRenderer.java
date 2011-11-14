@@ -145,6 +145,6 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
      */
     void setCurrentScreen(int screen);
 
-    void FillRect(byte color, int screen, int x, int y, int width, int height);
+    void FillRect(int color, int screen, int x, int y, int width, int height);
     
 }

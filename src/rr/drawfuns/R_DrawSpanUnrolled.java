@@ -9,11 +9,11 @@ import i.IDoomSystem;
  * 
  */
 
-public final class R_DrawSpanUnrolled extends DoomSpanFunction<byte[]> {
+public final class R_DrawSpanUnrolled extends DoomSpanFunction<byte[],short[]> {
 
 
 	public R_DrawSpanUnrolled(int sCREENWIDTH, int sCREENHEIGHT, int[] ylookup,
-            int[] columnofs, SpanVars<byte[]> dsvars, byte[] screen,
+            int[] columnofs, SpanVars<byte[],short[]> dsvars, short[] screen,
             IDoomSystem I) {
         super(sCREENWIDTH, sCREENHEIGHT, ylookup, columnofs, dsvars, screen, I);
         // TODO Auto-generated constructor stub
@@ -22,7 +22,7 @@ public final class R_DrawSpanUnrolled extends DoomSpanFunction<byte[]> {
     public void invoke() {
 		int position, step;
 		final byte[] source;
-		final byte[] colormap;
+		final short[] colormap;
 		int dest;
 		int count;
 		int spot;

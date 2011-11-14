@@ -67,7 +67,7 @@ public class ParallelRenderer
      * to look into visplanes ugh...
      */
 
-    private ColVars<byte[]>[] RWI,RMI;
+    private ColVars<byte[],short[]>[] RWI,RMI;
 
     /**
      * Increment this as you submit RWI to the "queue". Remember to reset to 0
@@ -382,7 +382,7 @@ public class ParallelRenderer
      */
 
     private void ResizeRWIBuffer() {
-        ColVars<byte[]> fake = new ColVars<byte[]>();
+        ColVars<byte[],short[]> fake = new ColVars<byte[],short[]>();
 
         // Bye bye, old RWI.
         RWI = C2JUtils.resize(fake, RWI, RWI.length * 2);
@@ -394,8 +394,8 @@ public class ParallelRenderer
     }
     
     private void ResizeRMIBuffer() {
-        ColVars<byte[]> fake = new ColVars<byte[]>();
-        ColVars<byte[]>[] tmp =
+        ColVars<byte[],short[]> fake = new ColVars<byte[],short[]>();
+        ColVars<byte[],short[]>[] tmp =
             C2JUtils.createArrayOfObjects(fake, RMI.length * 2);
         System.arraycopy(RMI, 0, tmp, 0, RMI.length);
 
@@ -568,7 +568,7 @@ public class ParallelRenderer
     @Override
     public void initScaling() {
         super.initScaling();
-        ColVars<byte[]> fake = new ColVars<byte[]>();
+        ColVars<byte[],short[]> fake = new ColVars<byte[],short[]>();
         RWI = C2JUtils.createArrayOfObjects(fake, SCREENWIDTH * 3);
         // Be MUCH more generous with this one.
         RMI = C2JUtils.createArrayOfObjects(fake, SCREENWIDTH * 6);

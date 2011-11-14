@@ -9,7 +9,6 @@ import java.util.concurrent.CyclicBarrier;
 
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
-import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomOpt;
 import rr.drawfuns.R_DrawColumnBoomOptLow;
 
@@ -51,7 +50,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 	private final IGetColumn GC;
 	private final TextureManager TM;
 	private final CyclicBarrier barrier;
-	private RenderSegInstruction[] RSI;
+	private RenderSegInstruction<short[]>[] RSI;
 	private final long[] xtoviewangle;
 	private final short[] ceilingclip, floorclip;
 
@@ -63,14 +62,14 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 	protected static final int HEIGHTUNIT   =   (1<<HEIGHTBITS);
 	private final int id;
 	
-	private final DoomColumnFunction<byte[]> colfunchi,colfunclow;
-	private DoomColumnFunction<byte[]> colfunc;
-	private final ColVars<byte[]> dcvars;
+	private final DoomColumnFunction<byte[],short[]> colfunchi,colfunclow;
+	private DoomColumnFunction<byte[],short[]> colfunc;
+	private final ColVars<byte[],short[]> dcvars;
 	
-	public RenderSegExecutor(int SCREENWIDTH, int SCREENHEIGHT,int id,byte[] screen, 
+	public RenderSegExecutor(int SCREENWIDTH, int SCREENHEIGHT,int id,short[] screen, 
 			IGetColumn  gc,
 			TextureManager texman,
-			RenderSegInstruction[] RSI,
+			RenderSegInstruction<short[]>[] RSI,
 			short[] BLANKCEILINGCLIP,
 			short[] BLANKFLOORCLIP,
 			short[] ceilingclip,
@@ -91,7 +90,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 		this.xtoviewangle=xtoviewangle;
 		this.BLANKCEILINGCLIP=BLANKCEILINGCLIP;
 		this.BLANKFLOORCLIP=BLANKFLOORCLIP;
-		dcvars=new ColVars<byte[]>();
+		dcvars=new ColVars<byte[],short[]>();
 		colfunc=colfunchi=new R_DrawColumnBoomOpt(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
         colfunclow=new R_DrawColumnBoomOptLow(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
         
@@ -125,7 +124,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 	public void run()
 	{
 
-		RenderSegInstruction rsi;
+		RenderSegInstruction<short[]> rsi;
 
 		// Each worker blanks its own portion of the floor/ceiling clippers.
 		System.arraycopy(BLANKFLOORCLIP,rw_start,floorclip, rw_start,rw_end-rw_start);
@@ -169,7 +168,7 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 
 	}
 
-	protected final void ProcessRSI(RenderSegInstruction rsi, int startx,int endx,boolean contained){
+	protected final void ProcessRSI(RenderSegInstruction<short[]> rsi, int startx,int endx,boolean contained){
 		int     angle; // angle_t
 		int     index;
 		int     yl; // low
@@ -360,12 +359,15 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 		this.SCREENWIDTH=vs.getScreenWidth();
 	}
 
-	public void updateRSI(RenderSegInstruction[] rsi) {
+	public void updateRSI(RenderSegInstruction<short[]>[] rsi) {
 		this.RSI=rsi;
 		}
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.12.2.1  2011/11/14 00:27:11  velktron
+// A barely functional HiColor branch. Most stuff broken. DO NOT USE
+//
 // Revision 1.12  2011/11/01 19:04:06  velktron
 // Cleaned up, using IDetailAware for subsystems.
 //

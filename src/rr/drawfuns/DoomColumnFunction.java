@@ -9,22 +9,22 @@ import i.IDoomSystem;
  * @param <T>
  */
 
-public abstract class DoomColumnFunction<T> implements ColumnFunction<T>{
+public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
     
     protected final boolean RANGECHECK=false;
     protected final int SCREENWIDTH;
     protected final int SCREENHEIGHT;
-    protected ColVars<T> dcvars;
-    protected final T screen;
+    protected ColVars<T,V> dcvars;
+    protected final V screen;
     protected final IDoomSystem I;
     /** Only for fuzzy functions. It's ok to leave it null if not used */
-    protected final T BLURRY_MAP; 
+    protected final V BLURRY_MAP; 
     protected final int[] ylookup;
     protected final int[] columnofs;
     protected int flags;
     
     public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
-            int[] columnofs, ColVars<T> dcvars, T screen,IDoomSystem I) {
+            int[] columnofs, ColVars<T,V> dcvars, V screen,IDoomSystem I) {
         SCREENWIDTH = sCREENWIDTH;
         SCREENHEIGHT = sCREENHEIGHT;
         this.ylookup=ylookup;
@@ -36,7 +36,7 @@ public abstract class DoomColumnFunction<T> implements ColumnFunction<T>{
     }
     
     public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
-            int[] columnofs,ColVars<T> dcvars, T screen,IDoomSystem I,T BLURRY_MAP) {
+            int[] columnofs,ColVars<T,V> dcvars, V screen,IDoomSystem I,V BLURRY_MAP) {
         SCREENWIDTH = sCREENWIDTH;
         SCREENHEIGHT = sCREENHEIGHT;
         this.ylookup=ylookup;
@@ -73,7 +73,7 @@ public abstract class DoomColumnFunction<T> implements ColumnFunction<T>{
     }
 
     @Override
-    public final void invoke(ColVars<T> dcvars) {
+    public final void invoke(ColVars<T,V> dcvars) {
         this.dcvars=dcvars;
         invoke();
     }

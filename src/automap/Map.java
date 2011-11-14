@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.34 2011/11/03 18:11:14 velktron Exp $
+// $Id: Map.java,v 1.34.2.1 2011/11/14 00:27:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.34.2.1  2011/11/14 00:27:11  velktron
+// A barely functional HiColor branch. Most stuff broken. DO NOT USE
+//
 // Revision 1.34  2011/11/03 18:11:14  velktron
 // Fixed long-standing issue with 0-rot vector being reduced to pixels. Fixed broken map panning functionality after keymap change.
 //
@@ -173,11 +176,11 @@ public class Map implements IAutoMap {
 IDoomStatusBar ST;
 IWadLoader W;
 DoomMain DM;
-DoomVideoRenderer<?> V;
+DoomVideoRenderer<short[]> V;
 AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.34 2011/11/03 18:11:14 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.34.2.1 2011/11/14 00:27:11 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -397,7 +400,7 @@ protected int  f_h;
 /** used for funky strobing effect */
 protected int  lightlev;       
 /** pseudo-frame buffer */
-protected byte[]    fb;             
+protected short[]    fb;             
 protected int  amclock;
 
 /** (fixed_t) how far the window pans each tic (map coords) */
@@ -638,7 +641,7 @@ public final  void initVariables()
     int pnum=0;
 
     DM.automapactive = true;
-    fb = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
+    fb = (short[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
 
     f_oldloc.x = MAXINT;
     amclock = 0;

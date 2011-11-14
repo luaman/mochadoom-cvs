@@ -35,7 +35,7 @@ import automap.IAutoMap;
  *
  */
 
-public class DoomContext {
+public class DoomContext{
 	
     public DoomMain DM;
     public IDoomGame DG;
@@ -45,15 +45,15 @@ public class DoomContext {
     public IDoomSound S;
     public ISound ISND;
     public IMusic IMUS;
-    public DoomVideoInterface VI;
+    public DoomVideoInterface<short[]> VI;
     public AbstractStatusBar ST;
-    public DoomVideoRenderer<?> V;
+    public DoomVideoRenderer<short[]> V;
     public DoomSystemNetworking DNI;
     public IDoomGameNetworking DGN;
     public AbstractLevelLoader LL;
     public IDoomMenu M;
     public Actions P;
-    public Renderer<?> R;
+    public Renderer<?,short[]> R;
     public HU HU;
     public IAutoMap AM;
     public Finale F;

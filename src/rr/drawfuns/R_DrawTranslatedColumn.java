@@ -4,11 +4,11 @@ import i.IDoomSystem;
 import static m.fixed_t.FRACBITS;
 
 public final class R_DrawTranslatedColumn
-        extends DoomColumnFunction<byte[]> {
+        extends DoomColumnFunction<byte[],short[]> {
             
     public R_DrawTranslatedColumn(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-            byte[] screen, IDoomSystem I) {
+            int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+            short[] screen, IDoomSystem I) {
         super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
         this.flags=DcFlags.TRANSLATED;
     }
@@ -21,7 +21,7 @@ public final class R_DrawTranslatedColumn
         final int fracstep;
         final int dc_source_ofs = dcvars.dc_source_ofs;
         final byte[] dc_source = dcvars.dc_source;
-        final byte[] dc_colormap = dcvars.dc_colormap;
+        final short[] dc_colormap = dcvars.dc_colormap;
         final byte[] dc_translation = dcvars.dc_translation;
 
         count = dcvars.dc_yh - dcvars.dc_yl;
