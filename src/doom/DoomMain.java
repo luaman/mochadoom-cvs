@@ -97,7 +97,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.1 2011/11/14 00:27:11 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.2 2011/11/18 21:38:21 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -123,7 +123,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.1 2011/11/14 00:27:11 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.2 2011/11/18 21:38:21 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -2328,7 +2328,7 @@ public void ScreenShot ()
 {
     int     i;
     short[]  linear;
-    String format=new String("DOOM%c%c%c%c.png");
+    String format=new String("DOOM%d%d%d%d.png");
     String lbmname = null;
     
     // munge planar buffer to linear
@@ -2337,16 +2337,16 @@ public void ScreenShot ()
 
     // find a file name to save it to
     
-    char[] digit=new char[4];
+    int[] digit=new int[4];
     
     for (i=0 ; i<=9999 ; i++)
     {
-    digit[0] = (char) (i/1000 + '0');
-    digit[1] = (char) (i/100 + '0');
-    digit[2] = (char) (i/10 + '0');
-    digit[3] =  (char) (i%10 + '0');
+    digit[0] = ((i/1000 )%10);
+    digit[1] =  ((i/100)%10);
+    digit[2] =  ((i/10)%10);
+    digit[3] =  (i%10);
     lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
-    if (!C2JUtils.testWriteAccess(lbmname))
+    if (!C2JUtils.testReadAccess(lbmname))
         break;  // file doesn't exist
     }
     if (i==10000)
@@ -4220,6 +4220,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.2  2011/11/18 21:38:21  velktron
+//Obviously uses 16-bit stuff.
+//
 //Revision 1.101.2.1  2011/11/14 00:27:11  velktron
 //A barely functional HiColor branch. Most stuff broken. DO NOT USE
 //
