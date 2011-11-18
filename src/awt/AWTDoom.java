@@ -119,7 +119,7 @@ public class AWTDoom extends DoomFrame<short[]> {
     		if (D) System.err.println("Setting gamma "+level);
     		V.setUsegamma(level);
     		screen=V.getCurrentScreen(); // Refresh screen after change.
-    		RAWSCREEN=(short[]) V.getScreen(DoomVideoRenderer.SCREEN_FG);
+    		RAWSCREEN=V.getScreen(DoomVideoRenderer.SCREEN_FG);
     	}
         
         @Override
@@ -130,6 +130,9 @@ public class AWTDoom extends DoomFrame<short[]> {
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.14.2.2  2011/11/18 21:38:30  velktron
+//Uses 16-bit stuff.
+//
 //Revision 1.14.2.1  2011/11/14 00:27:11  velktron
 //A barely functional HiColor branch. Most stuff broken. DO NOT USE
 //
