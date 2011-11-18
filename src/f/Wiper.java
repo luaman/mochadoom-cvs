@@ -5,7 +5,7 @@ import doom.DoomMain;
 
 public class Wiper extends AbstractWiper<short[]> {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.17.2.1 2011/11/14 00:27:11 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.17.2.2 2011/11/18 21:36:07 velktron Exp $";
     
     protected wipefun[] wipes;
     
@@ -16,10 +16,8 @@ public class Wiper extends AbstractWiper<short[]> {
         new wipe_initMelt(), new wipe_doMelt(), new wipe_exitMelt()
         };
     }
-
-
-
-    /** They sure have an obsession with shit...this is supposed to do some
+    
+    /** Those guys sure have an obsession with shit...this is supposed to do some
      * lame-ass transpose.
      * 
      * @param array
@@ -40,9 +38,10 @@ public class Wiper extends AbstractWiper<short[]> {
         dest = new short[width*height];
 
         for(y=0;y<height;y++)
-        for(x=0;x<width;x++)
-            dest[y*width+x]=array[x*height+y];
-
+        for(x=0;x<width;x++){
+            dest[x*height+y] = array[y*width+x];
+            //dest[(1+x)*height+y] = array[y*width+(1+x)];
+        }
         System.arraycopy(dest, 0, array, 0, width*height);
 
         //Z_Free(dest);
@@ -88,7 +87,7 @@ public class Wiper extends AbstractWiper<short[]> {
             if (newval < e[pe])
                 w[pw] = e[pe];
             else
-                w[pw] = (short) newval;
+                w[pw] = (byte) newval;
             changed = true;
             }
             else if (w[pw] < e[pe])
@@ -97,7 +96,7 @@ public class Wiper extends AbstractWiper<short[]> {
             if (newval > e[pe])
                 w[pw] = e[pe];
             else
-                w[pw] = (short) newval;
+                w[pw] = (byte) newval;
             changed = true;
             }
         }
