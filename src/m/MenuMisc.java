@@ -4,6 +4,7 @@ import i.DoomSystem;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferShort;
+import java.awt.image.DataBufferUShort;
 import java.awt.image.Raster;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -32,7 +33,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.28.2.1 2011/11/14 00:27:11 velktron Exp $
+// $Id: MenuMisc.java,v 1.28.2.2 2011/11/18 21:37:59 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -56,7 +57,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.28.2.1 2011/11/14 00:27:11 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.28.2.2 2011/11/18 21:37:59 velktron Exp $";
 
     public static String defaultfile;
     public static String basedefault="default.cfg";
@@ -409,11 +410,11 @@ public abstract class MenuMisc{
 			int width, int height) {
 		
 		BufferedImage buf=new BufferedImage(width,height,BufferedImage.TYPE_USHORT_555_RGB);
-		DataBufferShort sh=(DataBufferShort) buf.getRaster().getDataBuffer();
+		DataBufferUShort sh=(DataBufferUShort) buf.getRaster().getDataBuffer();
 		short[] shd=sh.getData();
 		System.arraycopy(linear,0,shd,0,Math.min(linear.length,shd.length));
 		try {
-			ImageIO.write(buf, "PNG",new File("imagename"));
+			ImageIO.write(buf, "PNG",new File(imagename));
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -425,6 +426,9 @@ public abstract class MenuMisc{
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.28.2.2  2011/11/18 21:37:59  velktron
+// Saves PNGs now.
+//
 // Revision 1.28.2.1  2011/11/14 00:27:11  velktron
 // A barely functional HiColor branch. Most stuff broken. DO NOT USE
 //
