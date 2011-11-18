@@ -44,6 +44,8 @@ import static p.mobj_t.MF_SHADOW;
 import static p.mobj_t.MF_TRANSLATION;
 import static p.mobj_t.MF_TRANSSHIFT;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -6186,11 +6188,13 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 		System.out.println("COLORS15 Colormaps: " + colormaps.length);
 
 		byte[] tmp = new byte[length];
+		ByteBuffer bb=ByteBuffer.wrap(tmp);
+		bb.order(ByteOrder.LITTLE_ENDIAN);
 		short[] tmp2=new short[256+(length/2)];
 		W.ReadLump(lump,tmp);
 		
 		for (int i=0;i<length/2;i++){
-			tmp2[i]=(short) ((tmp[1+2*i]<<8)|(0x00FF&tmp[2*i]));
+			tmp2[i]=bb.getShort();
 		}
 		
 
@@ -6198,11 +6202,45 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 			System.arraycopy(tmp2, i * 256, colormaps[i], 0, 256);
 		}
 		
+		/*
+		for (int i = 0; i < colormaps.length; i++) {
+			for (int j=0;j<256;j++)
+				colormaps[i][j]=rgb4444To555(colormaps[i][j]);
+		} */
+		
+		
 		// MAES: blurry effect is hardcoded to this colormap.
 		BLURRY_MAP=colormaps[6];
 		// colormaps = (byte *)( ((int)colormaps + 255)&~0xff);		
 
 		
+	}
+	
+	public static final short rgb4444To555(short rgb){
+		int ri,gi,bi;
+		int bits;
+		
+		// .... .... .... ....
+		// 1111 
+		
+		ri=(0xF000&rgb)>>11;
+		gi=(0x0F00&rgb)>>7;
+		bi=(0x00F0&rgb)>>3;
+		
+		bits=(ri&0x10)>>4;
+		ri=ri+bits;
+
+		bits=(gi&0x10)>>4;
+		gi=gi+bits;
+
+		bits=(bi&0x10)>>4;
+		bi=bi+bits;
+
+		// RGBA 555 packed for NeXT
+		
+		System.out.printf("%x %x\n",rgb,((ri<<10) + (gi<<5) + (bi)));
+		
+		return (short) ((ri<<10) + (gi<<5) + (bi));
 	}
 	
 	protected short[] BLURRY_MAP;
