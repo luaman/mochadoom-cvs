@@ -82,8 +82,8 @@ import i.IDoomSystem;
 				// a pixel that is either one column
 				// left or right of the current one.
 				// Add index from colormap to index.
-				screen[dest] = BLURRY_MAP[0x00FF & screen[dest
-						+ fuzzoffset[fuzzpos]]];
+				screen[dest] = screen[dest
+						+ fuzzoffset[fuzzpos]];
 
 				// Clamp table lookup index.
 				if (++fuzzpos == FUZZTABLE)
@@ -91,18 +91,18 @@ import i.IDoomSystem;
 
 				dest += SCREENWIDTH;				
                 
-				screen[dest] = 
-                        BLURRY_MAP[0x00FF & screen[dest+ fuzzoffset[fuzzpos]]];
+				screen[dest] = screen[dest
+										+ fuzzoffset[fuzzpos]];
                 if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                 dest += SCREENWIDTH;
                 
-                screen[dest] = 
-                        BLURRY_MAP[0x00FF & screen[dest+ fuzzoffset[fuzzpos]]];
+				screen[dest] = screen[dest
+										+ fuzzoffset[fuzzpos]];
                 if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                 dest += SCREENWIDTH;
                 
-                screen[dest] = 
-                        BLURRY_MAP[0x00FF & screen[dest+ fuzzoffset[fuzzpos]]];
+				screen[dest] = screen[dest
+										+ fuzzoffset[fuzzpos]];
                 if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                 dest += SCREENWIDTH;
 				
@@ -114,8 +114,8 @@ import i.IDoomSystem;
 	                // a pixel that is either one column
 	                // left or right of the current one.
 	                // Add index from colormap to index.
-	                screen[dest] = BLURRY_MAP[0x00FF & screen[dest
-	                        + fuzzoffset[fuzzpos]]];
+					screen[dest] = screen[dest
+											+ fuzzoffset[fuzzpos]];
 
 	                // Clamp table lookup index.
 	                if (++fuzzpos == FUZZTABLE)

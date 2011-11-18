@@ -82,8 +82,8 @@ public final class R_DrawFuzzColumnLow
             // a pixel that is either one column
             // left or right of the current one.
             // Add index from colormap to index.
-            screen[dest] =
-                BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+			screen[dest] = screen[dest
+									+ fuzzoffset[fuzzpos]];
             screen[dest2] = screen[dest];
 
             // Ironically, "low detail" fuzziness was not really low-detail,
@@ -97,19 +97,22 @@ public final class R_DrawFuzzColumnLow
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
             
-            screen[dest] = BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+			screen[dest] = screen[dest
+									+ fuzzoffset[fuzzpos]];
             screen[dest2] = screen[dest];
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
                 
-            screen[dest] = BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+			screen[dest] = screen[dest
+									+ fuzzoffset[fuzzpos]];
             screen[dest2] = screen[dest];
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
 
-            screen[dest] = BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+			screen[dest] = screen[dest
+									+ fuzzoffset[fuzzpos]];
             screen[dest2] = screen[dest];
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
             dest += SCREENWIDTH;
@@ -118,8 +121,8 @@ public final class R_DrawFuzzColumnLow
         
         if (count>0)
         do {
-            screen[dest] =
-                BLURRY_MAP[0x00FF & screen[dest + fuzzoffset[fuzzpos]]];
+			screen[dest] = screen[dest
+									+ fuzzoffset[fuzzpos]];
             screen[dest2] = screen[dest];
             
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
