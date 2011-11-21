@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.57 2011/11/09 19:07:40 velktron Exp $
+// $Id: WadLoader.java,v 1.58 2011/11/21 10:02:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -26,7 +26,6 @@ package w;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -308,15 +307,14 @@ public class WadLoader implements IWadLoader {
 	            maxsize=lumpinfo[i].position+lumpinfo[i].size;
 	        }
 	    }
-	    
-        // TODO Auto-generated method stub
-        return maxsize;
+
+	    return maxsize;
     }
 
     /* (non-Javadoc)
 	 * @see w.IWadLoader#Reload()
 	 */
-	@SuppressWarnings("null")
+	
 	public void Reload() throws Exception {
 		wadinfo_t header = new wadinfo_t();
 		int lumpcount;
@@ -663,7 +661,7 @@ public class WadLoader implements IWadLoader {
 				handle = InputStreamSugar.createInputStreamFromURI(this.reloadname,null,0);
 			} catch (Exception e) {
 				e.printStackTrace();
-				I.Error("W_ReadLump: couldn't open %s", reloadname);
+				I.Error("W_ReadLump: couldn't open resource %s", reloadname);
 			}
 		} else
 			handle = l.handle;
@@ -712,7 +710,7 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 */
 	
-	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what) {
+	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class<?> what) {
 		// byte* ptr;
 
 		if (lump >= numlumps) {
@@ -803,7 +801,7 @@ public class WadLoader implements IWadLoader {
 	
 	@Deprecated
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
-			Class what) throws IOException {
+			Class<?> what) throws IOException {
 
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);
@@ -1010,7 +1008,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
 	 */
-	public CacheableDoomObject CacheLumpName(String name, int tag, Class what) {
+	public CacheableDoomObject CacheLumpName(String name, int tag, Class<?> what) {
 		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
 				what);
 	}
@@ -1167,10 +1165,6 @@ public class WadLoader implements IWadLoader {
 	public void finalize(){
 		CloseAllHandles();
 	}
-
-	public static final int ns_global=0;
-	public static final int ns_flats=1;
-	public static final int ns_sprites=2;
 	
 	/** 
 	 * Based on Boom's W_CoalesceMarkedResource
@@ -1184,6 +1178,10 @@ public class WadLoader implements IWadLoader {
 	 * for flats.
 	 * 
 	 * killough 4/17/98: add namespace tags
+	 * 
+	 * TODO: Maybe a stack-based approach would work better?
+	 * TODO: as it is, it can't handle certain malformed WADs like
+	 * HellRaiser.
 	 *   
 	 * @param start_marker
 	 * @param end_marker
@@ -1347,6 +1345,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.58  2011/11/21 10:02:52  velktron
+//Added parametrization to reflection-using methods. Cleaneup a bit.
+//
 //Revision 1.57  2011/11/09 19:07:40  velktron
 //Adapted to handling ZIP files
 //
