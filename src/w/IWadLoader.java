@@ -1,11 +1,6 @@
 package w;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import doom.DoomMain;
-import doom.DoomStatus;
-
 import rr.patch_t;
 
 public interface IWadLoader {
