@@ -157,5 +157,26 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     
     K[] getColorMaps();
 
+    /** Get the value corresponding to a base color (0-255).
+     *  Depending on the implementation this might be indexed,
+     *  RGB etc. Use whenever you need "absolute" colors.
+     * 
+     * @return
+     */
+    int getBaseColor(int color);
+    
+    /** Clear any byte-to-short or byte-to-int post or flat caches generated 
+     *  during e.g. extended color blits or OpenGL acceleration.
+     *  
+     *  Good moments to call this function include:
+     *  *After starting a new level.
+     *  *After Menu, Finale, Endlevel screens or Wipers have been deactivated.
+     *  *In general, after anything that might use fixed graphics has completed.
+     *  
+     *  This is necessary because the cache keeps references to 
+     */
+    
+	void clearCaches();
+
     
 }

@@ -8,7 +8,7 @@ import m.BBox;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer16.java,v 1.2.2.2 2011/11/18 21:36:55 velktron Exp $
+// $Id: BufferedRenderer16.java,v 1.2.2.3 2011/11/27 18:19:58 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +22,9 @@ import m.BBox;
 // for more details.
 //
 // $Log: BufferedRenderer16.java,v $
+// Revision 1.2.2.3  2011/11/27 18:19:58  velktron
+// Added cache clearing to keep memory down.
+//
 // Revision 1.2.2.2  2011/11/18 21:36:55  velktron
 // More 16-bit goodness.
 //
@@ -39,7 +42,7 @@ import m.BBox;
 
 public class BufferedRenderer16 extends SoftwareVideoRenderer16 {
 	
-static final String rcsid = "$Id: BufferedRenderer16.java,v 1.2.2.2 2011/11/18 21:36:55 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer16.java,v 1.2.2.3 2011/11/27 18:19:58 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -100,6 +103,10 @@ public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
 		int colors, int stride, int gammalevels) {
 	// TODO Auto-generated method stub
 	
+}
+
+public int getBaseColor(int color){
+	return colormaps[0][color];
 }
 
 }

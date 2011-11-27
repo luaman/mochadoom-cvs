@@ -915,20 +915,25 @@ public abstract class SoftwareVideoRenderer16 implements
 	
 	///// MEGA HACK FOR SUPER-8BIT MODES
 	
-	private HashMap<byte[],short[]> colcache=new HashMap<byte[],short[]>();
+	private HashMap<Integer,short[]> colcache=new HashMap<Integer,short[]>();
 	
 	private final short[] getShortVersion(byte[] data){
-		if (!colcache.containsKey(data)){
-			
+		if (!colcache.containsKey(data.hashCode())){
+			//System.out.printf("Generated cache for %d\n",data.hashCode());
 			short[] stuff=new short[data.length];
 			for (int i=0;i<stuff.length;i++){
 				stuff[i]=colormaps[CMAP_FIXED][0xFF&data[i]];
 			}
-			colcache.put(data,stuff);
+			colcache.put(data.hashCode(),stuff);
 			
 		}
-		return colcache.get(data);
+		return colcache.get(data.hashCode());
 		
+	}
+	
+	@Override
+	public final void clearCaches(){
+		this.colcache.clear();
 	}
 	
 }
