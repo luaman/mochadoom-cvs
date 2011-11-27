@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.34.2.1 2011/11/14 00:27:11 velktron Exp $
+// $Id: Map.java,v 1.34.2.2 2011/11/27 18:19:19 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.34.2.2  2011/11/27 18:19:19  velktron
+// Configurable colors, more parametrizable.
+//
 // Revision 1.34.2.1  2011/11/14 00:27:11  velktron
 // A barely functional HiColor branch. Most stuff broken. DO NOT USE
 //
@@ -180,7 +183,7 @@ DoomVideoRenderer<short[]> V;
 AbstractLevelLoader LL;    
     
     
-public final String rcsid = "$Id: Map.java,v 1.34.2.1 2011/11/14 00:27:11 velktron Exp $";
+public final String rcsid = "$Id: Map.java,v 1.34.2.2 2011/11/27 18:19:19 velktron Exp $";
 
 /*
 #include <stdio.h>
@@ -209,40 +212,12 @@ public final String rcsid = "$Id: Map.java,v 1.34.2.1 2011/11/14 00:27:11 velktr
 
 // For use if I do walls with outsides/insides
 
-public static final int REDS    =   (256-5*16);
-public static final int REDRANGE=   16;
-public static final int BLUES   =   (256-4*16+8);
-public static final int BLUERANGE   =8;
-public static final int GREENS      =(7*16);
-public static final int GREENRANGE  =16;
-public static final int GRAYS       =(6*16);
-public static final int GRAYSRANGE  =16;
-public static final int BROWNS      =(4*16);
-public static final int BROWNRANGE  =16;
-public static final int YELLOWS     =(256-32+7);
-public static final int YELLOWRANGE =1;
-public static final int BLACK       =0;
-public static final int WHITE       =(256-47);
+	public int REDS, BLUES, GREENS, GRAYS, BROWNS, YELLOWS, BLACK, WHITE;
 
-// Automap colors
-public static final int BACKGROUND  =BLACK;
-public static final int YOURCOLORS  =WHITE;
-public static final int YOURRANGE   =0;
-public static final int WALLCOLORS  =REDS;
-public static final int WALLRANGE   =REDRANGE;
-public static final int TSWALLCOLORS=   GRAYS;
-public static final int TSWALLRANGE =GRAYSRANGE;
-public static final int FDWALLCOLORS=   BROWNS;
-public static final int FDWALLRANGE =BROWNRANGE;
-public static final int CDWALLCOLORS=   YELLOWS;
-public static final int CDWALLRANGE =YELLOWRANGE;
-public static final int THINGCOLORS =GREENS;
-public static final int THINGRANGE  =GREENRANGE;
-public static final int SECRETWALLCOLORS =WALLCOLORS;
-public static final int SECRETWALLRANGE =WALLRANGE;
-public static final int GRIDCOLORS  =(GRAYS + GRAYSRANGE/2);
-public static final int GRIDRANGE   =0;
-public static final int XHAIRCOLORS =GRAYS;
+	// Automap colors
+	public int BACKGROUND, YOURCOLORS, WALLCOLORS, TSWALLCOLORS, FDWALLCOLORS,
+			CDWALLCOLORS, THINGCOLORS, SECRETWALLCOLORS, GRIDCOLORS,
+			XHAIRCOLORS;
 
 // drawing stuff
 public static final int FB  =   0;
@@ -286,11 +261,37 @@ public Map(DoomStatus DS) {
     m_paninc=new mpoint_t();
     
     this.plr=DM.players[DM.displayplayer];
+    
 }
 
 @Override
 public void Init(){
     
+	// Use colormap-specific colors to support extended modes.
+	// Moved hardcoding in here. Potentially configurable.
+
+    REDS    =   256-5*16;
+    BLUES   =   256-4*16+8;
+    GREENS      =7*16;
+    GRAYS       =6*16;
+    BROWNS      =4*16;
+    YELLOWS     =256-32+7;
+    BLACK       =0;
+    WHITE       =4;
+    
+    // Automap colors
+    BACKGROUND  =BLACK;
+    YOURCOLORS  =WHITE;
+    WALLCOLORS  =REDS;
+    TSWALLCOLORS=   GRAYS;
+    FDWALLCOLORS=   BROWNS;
+    CDWALLCOLORS=   YELLOWS;
+    THINGCOLORS =GREENS;
+    SECRETWALLCOLORS =WALLCOLORS;
+    GRIDCOLORS  =(GRAYS + GRAYSRANGE/2);
+    XHAIRCOLORS =GRAYS;
+    
+    their_colors = new int[]{ GREENS, GRAYS, BROWNS, REDS };
 }
 
 /** translates between frame-buffer and map distances */
@@ -1233,7 +1234,7 @@ private final  void drawFline
 
     x = fl.ax;
     y = fl.ay;
-    byte c=(byte)color;
+    final short c=(short) color;
     
     if (ax > ay)
     {
@@ -1274,7 +1275,7 @@ private final  void drawFline
 
 /** Hopefully inlined */
 
-private final void PUTDOT(int xx,int yy, byte cc) {
+private final void PUTDOT(int xx,int yy, short cc) {
     fb[(yy)*f_w+(xx)]=(cc);
 }
 
@@ -1357,6 +1358,12 @@ protected  mline_t l=new mline_t();
 private final  void drawWalls()
 {
 
+	final int wallcolor=V.getBaseColor(WALLCOLORS+lightlev);
+	final int fdwallcolor=V.getBaseColor(FDWALLCOLORS+lightlev);
+	final int cdwallcolor=V.getBaseColor(CDWALLCOLORS+lightlev);
+	final int tswallcolor=V.getBaseColor(CDWALLCOLORS+lightlev);
+	final int secretwallcolor=V.getBaseColor(SECRETWALLCOLORS + lightlev);
+	
     for (int i=0;i<LL.numlines;i++)
     {
     l.ax = LL.lines[i].v1x;
@@ -1369,7 +1376,7 @@ private final  void drawWalls()
         continue;
         if (LL.lines[i].backsector==null)
         {
-        drawMline(l, WALLCOLORS+lightlev);
+        drawMline(l, wallcolor);
         }
         else
         {
@@ -1379,19 +1386,19 @@ private final  void drawWalls()
         }
         else if ((LL.lines[i].flags & ML_SECRET)!=0) // secret door
         {
-            if (cheating!=0) drawMline(l, SECRETWALLCOLORS + lightlev);
-            else drawMline(l, WALLCOLORS+lightlev);
+            if (cheating!=0) drawMline(l, secretwallcolor);
+            else drawMline(l, wallcolor);
         }
         else if (LL.lines[i].backsector.floorheight
                != LL.lines[i].frontsector.floorheight) {
-            drawMline(l, FDWALLCOLORS + lightlev); // floor level change
+            drawMline(l, fdwallcolor); // floor level change
         }
         else if (LL.lines[i].backsector.ceilingheight
                != LL.lines[i].frontsector.ceilingheight) {
-            drawMline(l, CDWALLCOLORS+lightlev); // ceiling level change
+            drawMline(l, cdwallcolor); // ceiling level change
         }
         else if (cheating!=0) {
-            drawMline(l, TSWALLCOLORS+lightlev);
+            drawMline(l, tswallcolor);
         }
         }
     }
@@ -1500,7 +1507,7 @@ drawLineCharacter
     }
 }
 
-protected static int  their_colors[] = { GREENS, GRAYS, BROWNS, REDS };
+protected int  their_colors[];
 
 public final  void drawPlayers()
 {
@@ -1516,11 +1523,11 @@ public final  void drawPlayers()
     if (cheating!=0)
         drawLineCharacter
         (cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-          toBAMIndex(plr.mo.angle), WHITE, plr.mo.x, plr.mo.y);
+          toBAMIndex(plr.mo.angle), V.getBaseColor(WHITE), plr.mo.x, plr.mo.y);
     else
         drawLineCharacter
         (player_arrow, NUMPLYRLINES, 0,  toBAMIndex(plr.mo.angle),
-         WHITE, plr.mo.x, plr.mo.y);
+        		V.getBaseColor(WHITE), plr.mo.x, plr.mo.y);
     return;
     }
 
@@ -1542,7 +1549,7 @@ public final  void drawPlayers()
     
     drawLineCharacter
         (player_arrow, NUMPLYRLINES, 0, (int) p.mo.angle,
-         color, p.mo.x, p.mo.y);
+         V.getBaseColor(color), p.mo.x, p.mo.y);
     }
 
 }
@@ -1552,7 +1559,8 @@ public final  void drawThings
   int   colorrange)
 {
     mobj_t t;
-
+    int color= V.getBaseColor(colors+lightlev); // Ain't gonna change
+    
     for (int i=0;i<LL.numsectors;i++)
     {
     // MAES: get first on the list.
@@ -1561,7 +1569,7 @@ public final  void drawThings
     {
         drawLineCharacter
         (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-         16<<FRACBITS, toBAMIndex(t.angle), colors+lightlev, t.x, t.y);
+         16<<FRACBITS, toBAMIndex(t.angle), color, t.x, t.y);
         t = (mobj_t)t.snext;
     }
     }
@@ -1592,7 +1600,7 @@ public final  void drawMarks()
 
 public final  void drawCrosshair(int color)
 {
-    fb[(f_w*(f_h+1))/2] = (byte)color; // single point for now
+    fb[(f_w*(f_h+1))/2] = (short) color; // single point for now
 
 }
 
@@ -1602,12 +1610,12 @@ public final  void Drawer ()
     //System.out.println("Drawing map");
     if (overlay<1) V.FillRect((byte)BACKGROUND,FB,0,0,f_w, f_h); // BACKGROUND
     if (grid)
-    drawGrid(GRIDCOLORS);
+    drawGrid(V.getBaseColor(GRIDCOLORS));
     drawWalls();
     drawPlayers();
     if (cheating==2)
     drawThings(THINGCOLORS, THINGRANGE);
-    drawCrosshair(XHAIRCOLORS);
+    drawCrosshair(V.getBaseColor(XHAIRCOLORS));
 
     drawMarks();
 
