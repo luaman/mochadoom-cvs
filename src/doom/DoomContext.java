@@ -56,7 +56,7 @@ public class DoomContext{
     public Renderer<?,short[]> R;
     public HU HU;
     public IAutoMap AM;
-    public Finale F;
+    public Finale<?> F;
     public EndLevel WI;
     public Wiper WIPE;
     public TextureManager TM;
