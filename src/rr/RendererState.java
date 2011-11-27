@@ -5300,8 +5300,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 		 */
 
 		// This effectively limits the angle to
-		angle = Math.max(FixedDiv(dy, dx), 2048) >> DBITS;
-		// angle=FixedDiv(dy,dx)>>DBITS;
+		// angle = Math.max(FixedDiv(dy, dx), 2048) >> DBITS;
+		angle=(FixedDiv(dy,dx)&0x1FFFF)>>DBITS;
 
 		// Since the division will be 0xFFFF at most, DBITS will restrict
 		// the maximum angle index to 7FF, about 45, so adding ANG90 with
@@ -5575,23 +5575,21 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 		dest = V.getScreen(DoomVideoRenderer.SCREEN_BG);
 		int destPos = 0;
 
-		/* This part actually draws the border itself, without bevels */
-
-		for (y = 0; y < SCREENHEIGHT - DM.ST.getHeight(); y++) {
-			for (x = 0; x < SCREENWIDTH / 64; x++) {
-				// memcpy (dest, src+((y&63)<<6), 64);
-				System.arraycopy(src.data, ((y & 63) << 6), dest, destPos, 64);
-				destPos += 64;
+		/* This part actually draws the border itself, without bevels 
+		 * MAES: improved drawing routine for extended bit-depth compatibility.
+		 */
+	
+		for (y = 0; y < SCREENHEIGHT - DM.ST.getHeight(); y+=64) {
+				
+				int y_maxdraw=Math.min(SCREENHEIGHT - DM.ST.getHeight()-y, 64);
+				
+				// Draw whole blocks.
+				for (x = 0; x < SCREENWIDTH; x+=64) {
+					int x_maxdraw=Math.min(SCREENWIDTH-x, 64);
+					V.DrawBlock(x, y, DoomVideoRenderer.SCREEN_BG, x_maxdraw,y_maxdraw,
+							src.data);
+				}
 			}
-
-			if ((SCREENWIDTH & 63) != 0) {
-				// memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
-				System.arraycopy(src.data, ((y & 63) << 6), dest, destPos,
-						SCREENWIDTH & 63);
-
-				destPos += (SCREENWIDTH & 63);
-			}
-		}
 
 		patch = (patch_t) W.CachePatchName("BRDR_T", PU_CACHE);
 
@@ -6184,8 +6182,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 		lump = W.GetNumForName("COLORS15");
 		length = W.LumpLength(lump);
 		// Allow space for one extra colormap, to use as invuln.
-		colormaps = new short[1+(length / 512)][256];
-		System.out.println("COLORS15 Colormaps: " + colormaps.length);
+		//colormaps = new short[1+(length / 512)][256];
+
 
 		byte[] tmp = new byte[length];
 		ByteBuffer bb=ByteBuffer.wrap(tmp);
@@ -6197,10 +6195,14 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 			tmp2[i]=bb.getShort();
 		}
 		
-
+		V.setColorMaps(tmp2, LIGHTLEVELS+2);
+		colormaps=V.getColorMaps();
+		System.out.println("COLORS15 Colormaps: " + colormaps.length);
+		
+		/*
 		for (int i = 0; i < colormaps.length; i++) {
 			System.arraycopy(tmp2, i * 256, colormaps[i], 0, 256);
-		}
+		}*/
 		
 		/*
 		for (int i = 0; i < colormaps.length; i++) {
@@ -6214,33 +6216,6 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 		// colormaps = (byte *)( ((int)colormaps + 255)&~0xff);		
 
 		
-	}
-	
-	public static final short rgb4444To555(short rgb){
-		int ri,gi,bi;
-		int bits;
-		
-		// .... .... .... ....
-		// 1111 
-		
-		ri=(0xF000&rgb)>>11;
-		gi=(0x0F00&rgb)>>7;
-		bi=(0x00F0&rgb)>>3;
-		
-		bits=(ri&0x10)>>4;
-		ri=ri+bits;
-
-		bits=(gi&0x10)>>4;
-		gi=gi+bits;
-
-		bits=(bi&0x10)>>4;
-		bi=bi+bits;
-
-		// RGBA 555 packed for NeXT
-		
-		System.out.printf("%x %x\n",rgb,((ri<<10) + (gi<<5) + (bi)));
-		
-		return (short) ((ri<<10) + (gi<<5) + (bi));
 	}
 	
 	protected short[] BLURRY_MAP;
