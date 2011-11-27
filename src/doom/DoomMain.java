@@ -97,7 +97,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.2 2011/11/18 21:38:21 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.3 2011/11/27 18:20:31 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -123,7 +123,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.2 2011/11/18 21:38:21 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.3 2011/11/27 18:20:31 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1146,6 +1146,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         System.out.print ("R_Init: Init DOOM refresh daemon - ");
         R.Init ();
+        
+        System.out.print ("AM_Init: Init Automap colors - ");
+        AM.Init (); // Called here to set up configurable colors.
 
         System.out.print ("\nP_Init: Init Playloop state.\n");
         P.Init ();
@@ -3209,7 +3212,7 @@ public void ScreenShot ()
         //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
         // it seems to fit perfectly here
         status_holders.add(this.WI = new EndLevel(this));    
-        status_holders.add(this.F = new Finale(this));
+        status_holders.add(this.F = new Finale<short[]>(this));
         
         // TODO: find out if we have requests for a specific resolution,
         // and try honouring them as closely as possible.       
@@ -4220,6 +4223,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.3  2011/11/27 18:20:31  velktron
+//Parametrizable Finale, AM.Init().
+//
 //Revision 1.101.2.2  2011/11/18 21:38:21  velktron
 //Obviously uses 16-bit stuff.
 //
