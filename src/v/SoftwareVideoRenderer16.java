@@ -10,6 +10,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.HashMap;
 
 import javax.imageio.ImageIO;
 
@@ -44,6 +47,13 @@ public abstract class SoftwareVideoRenderer16 implements
 	 * level. To go beyond 8 bit displays, these must be extended
 	 */
 	protected final short[][] screens = new short[5][];
+	
+	/** Colormaps are now part of the base software renderer. This 
+	 *  allows some flexibility over manipulating them.
+	 */
+	
+	protected short[][] colormaps;
+	protected static final int CMAP_FIXED=0;
 
 	// MAES: maybe this should be a bbox?
 
@@ -182,6 +192,7 @@ public abstract class SoftwareVideoRenderer16 implements
 			// column = (column_t *)((byte *)patch +
 			// LONG(patch->columnofs[col]));
 			column = patch.columns[col];
+			final short[] data=getShortVersion(column.data);
 			// For each post...
 			for (int i = 0; i < column.posts; i++) {
 				// Get pointer to post offset.
@@ -199,7 +210,7 @@ public abstract class SoftwareVideoRenderer16 implements
 
 				// These lengths are already correct.
 				for (int j = 0; j < column.postlen[i]; j++) {
-					dest[destPos] = column.data[ptr++];
+					dest[destPos] = data[ptr++];
 					destPos += this.width;
 				}
 			}
@@ -223,6 +234,7 @@ public abstract class SoftwareVideoRenderer16 implements
 		}
 
 		column_t column;
+		short[] data;
 		int desttop;
 		final short[] dest = screens[scrn];
 		int w;
@@ -259,6 +271,8 @@ public abstract class SoftwareVideoRenderer16 implements
 				// column = (column_t *)((byte *)patch +
 				// LONG(patch->columnofs[col]));
 				column = patch.columns[col];
+				data=this.getShortVersion(column.data);
+				
 				// For each post...
 				for (int i = 0; i < column.posts; i++) {
 					// Get pointer to post offset.
@@ -276,7 +290,7 @@ public abstract class SoftwareVideoRenderer16 implements
 
 					// These lengths are already correct.
 					for (int j = 0; j < column.postlen[i]; j++) {
-						dest[destPos] = column.data[ptr++];
+						dest[destPos] = data[ptr++];
 						dest[destPos + 1] = dest[destPos];
 						destPos += n * this.width;
 					}
@@ -288,10 +302,9 @@ public abstract class SoftwareVideoRenderer16 implements
 
 			{
 
-				// This points at a "column" object.
-				// column = (column_t *)((byte *)patch +
-				// LONG(patch->columnofs[col]));
 				column = patch.columns[col];
+				data=this.getShortVersion(column.data);
+				
 				// For each post...
 				for (int i = 0; i < column.posts; i++) {
 					// Get pointer to post offset.
@@ -309,7 +322,7 @@ public abstract class SoftwareVideoRenderer16 implements
 
 					// These lengths are already correct.
 					for (int j = 0; j < column.postlen[i]; j++) {
-						dest[destPos] = column.data[ptr++];
+						dest[destPos] = data[ptr++];
 						dest[destPos + 1] = dest[destPos];
 						dest[destPos + 2] = dest[destPos];
 						destPos += n * this.width;
@@ -323,10 +336,9 @@ public abstract class SoftwareVideoRenderer16 implements
 
 			{
 
-				// This points at a "column" object.
-				// column = (column_t *)((byte *)patch +
-				// LONG(patch->columnofs[col]));
 				column = patch.columns[col];
+				data=this.getShortVersion(column.data);
+				
 				// For each post...
 				for (int i = 0; i < column.posts; i++) {
 					// Get pointer to post offset.
@@ -344,7 +356,7 @@ public abstract class SoftwareVideoRenderer16 implements
 
 					// These lengths are already correct.
 					for (int j = 0; j < column.postlen[i]; j++) {
-						dest[destPos] = column.data[ptr++];
+						dest[destPos] = data[ptr++];
 						dest[destPos + 1] = dest[destPos];
 						dest[destPos + 2] = dest[destPos];
 						dest[destPos + 3] = dest[destPos];
@@ -580,6 +592,7 @@ public abstract class SoftwareVideoRenderer16 implements
 			// column = (column_t *) ((byte *) patch + LONG(patch.columnofs[col
 			// >> FRACBITS]));
 			column = patch.columns[col / colfrac];
+			final short[] data=getShortVersion(column.data);
 
 			int destPos;
 			int ptr = 0;
@@ -602,7 +615,7 @@ public abstract class SoftwareVideoRenderer16 implements
 					// ofs = 0;
 					// while (count-- > 0)
 					for (int j = 0; j < column.postlen[i] * dupy; j++) {
-						dest[destPos] = column.data[ptrOfs + ptr / rowfrac];
+						dest[destPos] = data[ptrOfs + ptr / rowfrac];
 						destPos += this.width;
 
 						ptr++;
@@ -618,10 +631,17 @@ public abstract class SoftwareVideoRenderer16 implements
 
 	@Override
 	public final void DrawBlock(int x, int y, int scrn, int width, int height,
-			short[] src) {
-		// This is "screens[scrn]"
-		short[] dest = screens[scrn];
+			byte[] src) {
+		DrawBlock(x,y,scrn,width,height,src,0);
+	}
 
+	@Override
+	public final void DrawBlock(int x, int y, int scrn, int width, int height,
+			byte[] src,int offset) {
+		// This is "screens[scrn]"
+		final short[] dest = screens[scrn];
+		final short[] data=getShortVersion(src);
+		
 		if (doRangeCheck(x, y, scrn)) {
 			I.Error("Bad V_DrawBlock");
 		}
@@ -630,15 +650,18 @@ public abstract class SoftwareVideoRenderer16 implements
 
 		int destPos = /* screens[scrn] + */y * this.width + x;
 		// MAES: making an assumption here. A BIIIIG one.
-		int srcPos = 0;
+		int srcPos = offset;
 		while ((height--) > 0) {
-			// memcpy (dest, src, width);
-			System.arraycopy(src, srcPos, dest, destPos, width);
+			// A real dog. It's good that this ain't used
+			// so often.
+			for (int xx=0;xx<width;xx++)
+				dest[destPos+xx]=data[srcPos+xx];
+				//System.arraycopy(src, srcPos, dest, destPos, width);
 			srcPos += width;
 			destPos += this.width;
 		}
 	}
-
+	
 	/**
 	 * V_GetBlock Gets a linear block of pixels from the view buffer.
 	 */
@@ -676,10 +699,12 @@ public abstract class SoftwareVideoRenderer16 implements
 		column_t column;
 		int source;
 		final short[] dest;
+		final short[] data;
 		int desttop;
 		final int scale = vs.getScalingX();
 
 		column = patch.columns[col];
+		data=this.getShortVersion(column.data);
 		desttop = x * scale; // Scale X position.
 		dest = screens[screen];
 		// step through the posts in a column
@@ -702,11 +727,11 @@ public abstract class SoftwareVideoRenderer16 implements
 			for (int kl = 0; kl < scale; kl++) {
 				int destPos = desttop + (delta + kl) * SCREENWIDTH;
 				for (int j = 0; j < column.postlen[i]; j++) {
-					final byte data = column.data[source++];
+					final short datap = data[source++];
 					// replicate each column's pixel horizontally and
 					// vertically.
 					for (int k = 0; k < scale; k++)
-						dest[destPos + k] = data;
+						dest[destPos + k] = datap;
 					destPos += scale * SCREENWIDTH;
 				}
 				source = startsource;
@@ -825,4 +850,85 @@ public abstract class SoftwareVideoRenderer16 implements
 			destPos += this.width;
 		}
 	}
+	
+	public final void setColorMaps(short[] stuff, int num){
+		// For HiCOlor, load COLORS15 lump
+
+		this.colormaps=new short[num][256];
+		
+		for (int i = 0; i < colormaps.length; i++) {
+			System.arraycopy(stuff, i * 256, colormaps[i], 0, 256);
+		}
+	}
+	
+	public final void setColorMaps(int[] stuff, int num){
+		// For HiCOlor, load COLORS15 lump
+
+		this.colormaps=new short[num][256];
+		
+		for (int i = 0; i < colormaps.length; i++) {
+			for (int j=0;j<256;j++)
+				colormaps[i][j]=rgb888To555(stuff[i*256+j]);
+		}
+	}
+	
+	public short[][] getColorMaps(){
+		return colormaps;
+	}
+	
+	private static final short rgb4444To555(short rgb){
+		int ri,gi,bi;
+		int bits;
+		
+		// .... .... .... ....
+		// 1111 
+		
+		ri=(0xF000&rgb)>>11;
+		gi=(0x0F00&rgb)>>7;
+		bi=(0x00F0&rgb)>>3;
+		
+		bits=(ri&0x10)>>4;
+		ri=ri+bits;
+
+		bits=(gi&0x10)>>4;
+		gi=gi+bits;
+
+		bits=(bi&0x10)>>4;
+		bi=bi+bits;
+
+		// RGBA 555 packed for NeXT
+		
+		System.out.printf("%x %x\n",rgb,((ri<<10) + (gi<<5) + (bi)));
+		
+		return (short) ((ri<<10) + (gi<<5) + (bi));
+	}
+	
+	private static final short rgb888To555(int rgb){
+		int ri,gi,bi;
+		
+		ri=(0xFF0000&rgb)>>19;
+		gi=(0x00FF00&rgb)>>11;
+		bi=(0x0000FF&rgb)>>3;
+	
+		return (short) ((ri<<10) + (gi<<5) + (bi));
+	}
+	
+	///// MEGA HACK FOR SUPER-8BIT MODES
+	
+	private HashMap<byte[],short[]> colcache=new HashMap<byte[],short[]>();
+	
+	private final short[] getShortVersion(byte[] data){
+		if (!colcache.containsKey(data)){
+			
+			short[] stuff=new short[data.length];
+			for (int i=0;i<stuff.length;i++){
+				stuff[i]=colormaps[CMAP_FIXED][0xFF&data[i]];
+			}
+			colcache.put(data,stuff);
+			
+		}
+		return colcache.get(data);
+		
+	}
+	
 }
