@@ -69,8 +69,12 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     
     // Draw a linear block of pixels into the view buffer.
     public void DrawBlock(int x, int y, int scrn, int width, int height,
-            K src);
+            byte[] src);
 
+    // Draw a linear block of pixels into the view buffer.
+    public void DrawBlock(int x, int y, int scrn, int width, int height,
+            byte[] src,int offset);
+    
     // Reads a linear block of pixels into the view buffer.
     public void GetBlock(int x, int y, int scrn, int width, int height,
             K dest);
@@ -146,5 +150,12 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     void setCurrentScreen(int screen);
 
     void FillRect(int color, int screen, int x, int y, int width, int height);
+    
+    void setColorMaps(int[] colormaps, int num);
+
+    void setColorMaps(short[] colormaps,int num);
+    
+    K[] getColorMaps();
+
     
 }
