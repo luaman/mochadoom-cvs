@@ -6175,8 +6175,10 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 	 * @throws IOException
 	 */
 	protected void InitColormaps() throws IOException {
-		int lump, length;
-
+		
+	    /*
+	    int lump, length;
+		
 
 		// For HiCOlor, load COLORS15 lump
 		lump = W.GetNumForName("COLORS15");
@@ -6196,6 +6198,7 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 		}
 		
 		V.setColorMaps(tmp2, LIGHTLEVELS+2);
+		*/
 		colormaps=V.getColorMaps();
 		System.out.println("COLORS15 Colormaps: " + colormaps.length);
 		
