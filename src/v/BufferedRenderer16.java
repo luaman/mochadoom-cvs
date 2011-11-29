@@ -8,7 +8,7 @@ import m.BBox;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer16.java,v 1.2.2.3 2011/11/27 18:19:58 velktron Exp $
+// $Id: BufferedRenderer16.java,v 1.2.2.4 2011/11/29 12:45:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,6 +22,9 @@ import m.BBox;
 // for more details.
 //
 // $Log: BufferedRenderer16.java,v $
+// Revision 1.2.2.4  2011/11/29 12:45:29  velktron
+// Restored palette and gamma effects. They do work, but display hysteresis.
+//
 // Revision 1.2.2.3  2011/11/27 18:19:58  velktron
 // Added cache clearing to keep memory down.
 //
@@ -42,7 +45,7 @@ import m.BBox;
 
 public class BufferedRenderer16 extends SoftwareVideoRenderer16 {
 	
-static final String rcsid = "$Id: BufferedRenderer16.java,v 1.2.2.3 2011/11/27 18:19:58 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer16.java,v 1.2.2.4 2011/11/29 12:45:29 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -81,6 +84,17 @@ public final void setScreen(int index, int width, int height){
 }
 
 public void setPalette(int palette){
+    this.usepalette=palette%maxpalettes;
+
+    // Invalidate cached graphics, otherwise older colormaps
+    // will persist.
+    this.clearCaches();
+
+    
+    // Tint the current set of colormaps.
+    getCachedCmap(palette);
+
+    
 	//this.currentpal=palette%maxpalettes;
 	this.currentscreen=this.screenbuffer[0];
 	
@@ -88,9 +102,14 @@ public void setPalette(int palette){
 
 @Override
 public void setUsegamma(int gamma) {
-	//this.usegamma=gamma%maxgammas;
-	// Changing gamma also "fixes" the screens!
-	this.setCurrentScreen(0);
+	this.usegamma=gamma%maxgammas;
+
+   // Invalidate palette cache.
+    super.clearPalettes();
+
+	
+	// Re-synthesize current palette.
+	setPalette(usepalette);
 }
 
 public void setCurrentScreen(int screen){
@@ -99,14 +118,43 @@ public void setCurrentScreen(int screen){
 }
 
 @Override
-public void createPalettes(byte[] paldata, short[][] gammadata, int palettes,
-		int colors, int stride, int gammalevels) {
-	// TODO Auto-generated method stub
-	
+protected final void specificPaletteCreation(byte[] paldata,
+        short[][] gammadata, 
+        final int palettes, 
+        final int colors,
+        final int stride,
+        final int gammalevels){
+
+      System.out.printf("Enough data for %d palettes",maxpalettes);
+      System.out.printf("Enough data for %d gamma levels",maxgammas);
+      
+      this.palettes=new int[maxgammas*maxpalettes][];
+      
+      for (int z=0;z<maxgammas;z++){
+          
+          // For each palette
+          for (int y=0;y<maxpalettes;y++){
+              this.palettes[z*maxpalettes+y]=new int[colors];
+              
+              for (int x=0;x<colors;x++){
+                  int r=gammadata[z][0xFF&paldata[y*colors*stride+stride*x]]; // R
+                  int g=gammadata[z][0xFF&paldata[1+y*colors*stride+stride*x]]; // G
+                  int b=gammadata[z][0xFF&paldata[2+y*colors*stride+stride*x]]; // B
+                  int color=0xFF000000|r<<16|g<<8|b;
+                  this.palettes[z*maxpalettes+y][x]=color;
+                }
+            }
+      }
+      
+      // Set base colormap
+      
+      cmap_base=PaletteGenerator.RF_BuildLights15(this.palettes[0], NUMLIGHTS);
+      cmap_work=PaletteGenerator.RF_BuildLights15(this.palettes[0], NUMLIGHTS);
+
 }
 
 public int getBaseColor(int color){
-	return colormaps[0][color];
+	return cmap_work[0][color];
 }
 
 }
