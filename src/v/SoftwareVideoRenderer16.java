@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.imageio.ImageIO;
@@ -29,7 +30,7 @@ public abstract class SoftwareVideoRenderer16 implements
 
 	IDoomSystem I;
 	Image currentscreen;
-
+	
 	public Image getCurrentScreen() {
 		return currentscreen;
 	}
@@ -50,11 +51,25 @@ public abstract class SoftwareVideoRenderer16 implements
 	
 	/** Colormaps are now part of the base software renderer. This 
 	 *  allows some flexibility over manipulating them.
+	 *  
+	 *  Use base as immutable, use work for applying effects.
+	 *  
 	 */
 	
-	protected short[][] colormaps;
+	protected short[][] cmap_base,cmap_work;
+	
+	/** PLAYPAL-read palettes, used to build dynamic color maps 
+	 *  Use [z*maxpalettes+y] form, where z=gamme, y=palette
+	 * */
+	
+	protected int[][] palettes;
+	
+	// Used for static graphics
 	protected static final int CMAP_FIXED=0;
-
+	
+	// Number of static colormaps. Actually 33, if you count the invuln one.
+	protected static final int NUMLIGHTS=32;
+	
 	// MAES: maybe this should be a bbox?
 
 	public BBox dirtybox = new BBox();
@@ -805,9 +820,73 @@ public abstract class SoftwareVideoRenderer16 implements
 		this.SCREENWIDTH = vs.getScreenWidth();
 	}
 
+	/** Built-in method for recovering from palette disasters.
+	   * Uses PaletteGenerator class to generate Doom's palettes with only the data of
+	   * the first palette.
+	   * 
+	   */
+	private final void paletteRecovery() {
+	    createPalettes(PaletteGenerator.generatePalette(PaletteGenerator.playpal, 256,PaletteGenerator.tints), GammaTables.gammatables, 14, 256, 3, 5);
+	    
+	}
+
+	/** Internal method for setting up palettes (and gamma tables)
+	 * 
+	 */
+
+	public void createPalettes(byte[] paldata, short[][] gammadata, final int palettes, final int colors, final int stride,final int gammalevels){
+	    
+	    // Sanity check on supplied data length. If there is not enough data to create the specified palettes,
+	    // their number will be limited.
+	    
+	    if (paldata!=null)  // As many as are likely contained
+	        maxpalettes=paldata.length/(colors*stride);
+	    else
+	        maxpalettes=0; // Do some default action on null palette.
+
+	    if (gammadata!=null)    // As many as are likely contained
+	        maxgammas=gammadata.length;
+	    else
+	        maxgammas=0; // Do some default action on null gamma tables.
+	    
+	    if (maxgammas==0){
+	        gammadata=GammaTables.gammatables;
+	        maxgammas=GammaTables.gammatables.length;
+	    }
+	    
+
+	    // Enough data for all palettes. 
+	    // Enough data for all palettes. 
+	    if (maxpalettes>0 && maxgammas>0)
+	            specificPaletteCreation(paldata,gammadata,palettes,colors,stride,gammalevels);
+	         else 
+	             paletteRecovery();
+	          
+	      }
+	
+	/** Override this in extending classes to perform specific actions depending on the
+	 *  type of renderer. It's better not to assign a default action, nor make assumptions
+	 *  on the underlying types of actual palettes
+	 * 
+	 * @param paldata
+	 * @param gammadata
+	 * @param palettes
+	 * @param colors
+	 * @param stride
+	 * @param gammalevels
+	 */
+
+	protected abstract void specificPaletteCreation(byte[] paldata,
+	        short[][] gammadata, 
+	        final int palettes, 
+	        final int colors,
+	        final int stride,
+	        final int gammalevels);
+	
+	
 	/**
-	 * Clear automap frame buffer or fi MAES: optimized for efficiency, seen the
-	 * lack of a proper "memset" in Java.
+	 * Clear automap frame buffer or fill solid color
+	 * MAES: optimized for efficiency, seen the lack of a proper "memset" in Java.
 	 * 
 	 */
 
@@ -854,75 +933,43 @@ public abstract class SoftwareVideoRenderer16 implements
 	public final void setColorMaps(short[] stuff, int num){
 		// For HiCOlor, load COLORS15 lump
 
-		this.colormaps=new short[num][256];
+		this.cmap_base=new short[num][256];		
+		this.cmap_work=new short[num][256];       
 		
-		for (int i = 0; i < colormaps.length; i++) {
-			System.arraycopy(stuff, i * 256, colormaps[i], 0, 256);
+		for (int i = 0; i < cmap_base.length; i++) {
+			System.arraycopy(stuff, i * 256, cmap_base[i], 0, 256);
+			System.arraycopy(stuff, i * 256, cmap_work[i], 0, 256);
 		}
 	}
 	
 	public final void setColorMaps(int[] stuff, int num){
 		// For HiCOlor, load COLORS15 lump
 
-		this.colormaps=new short[num][256];
+        this.cmap_base=new short[num][256];     
+        this.cmap_work=new short[num][256];    
 		
-		for (int i = 0; i < colormaps.length; i++) {
-			for (int j=0;j<256;j++)
-				colormaps[i][j]=rgb888To555(stuff[i*256+j]);
+		for (int i = 0; i < cmap_base.length; i++) {
+			for (int j=0;j<256;j++){
+			    cmap_base[i][j]=PaletteGenerator.rgb888to555(stuff[i*256+j]);
+			    cmap_work[i][j]=cmap_base[i][j];
+			}
 		}
 	}
 	
 	public short[][] getColorMaps(){
-		return colormaps;
-	}
-	
-	private static final short rgb4444To555(short rgb){
-		int ri,gi,bi;
-		int bits;
-		
-		// .... .... .... ....
-		// 1111 
-		
-		ri=(0xF000&rgb)>>11;
-		gi=(0x0F00&rgb)>>7;
-		bi=(0x00F0&rgb)>>3;
-		
-		bits=(ri&0x10)>>4;
-		ri=ri+bits;
-
-		bits=(gi&0x10)>>4;
-		gi=gi+bits;
-
-		bits=(bi&0x10)>>4;
-		bi=bi+bits;
-
-		// RGBA 555 packed for NeXT
-		
-		System.out.printf("%x %x\n",rgb,((ri<<10) + (gi<<5) + (bi)));
-		
-		return (short) ((ri<<10) + (gi<<5) + (bi));
-	}
-	
-	private static final short rgb888To555(int rgb){
-		int ri,gi,bi;
-		
-		ri=(0xFF0000&rgb)>>19;
-		gi=(0x00FF00&rgb)>>11;
-		bi=(0x0000FF&rgb)>>3;
-	
-		return (short) ((ri<<10) + (gi<<5) + (bi));
+		return cmap_work;
 	}
 	
 	///// MEGA HACK FOR SUPER-8BIT MODES
 	
-	private HashMap<Integer,short[]> colcache=new HashMap<Integer,short[]>();
+	private final HashMap<Integer,short[]> colcache=new HashMap<Integer,short[]>();
 	
 	private final short[] getShortVersion(byte[] data){
 		if (!colcache.containsKey(data.hashCode())){
 			//System.out.printf("Generated cache for %d\n",data.hashCode());
 			short[] stuff=new short[data.length];
 			for (int i=0;i<stuff.length;i++){
-				stuff[i]=colormaps[CMAP_FIXED][0xFF&data[i]];
+				stuff[i]=cmap_work[CMAP_FIXED][0xFF&data[i]];
 			}
 			colcache.put(data.hashCode(),stuff);
 			
@@ -935,5 +982,46 @@ public abstract class SoftwareVideoRenderer16 implements
 	public final void clearCaches(){
 		this.colcache.clear();
 	}
+	
+	///// MODIFIED COLORMAP CACHING //////////
+	
+	private final HashMap<Integer,short[][]> cmapcache=new HashMap<Integer,short[][]>();
+	
+	/** Cache colormaps in order to avoid expensive re-computations 
+	 *  Invalidate if gamma is changed. Changes are applied on-the-fly
+	 *  to working_colormap.
+	 * 
+	 * */
+	
+	   protected final void getCachedCmap(int palette){
+	       
+	        short[][] stuff=cmapcache.get(palette);	       
+	        
+	        if (stuff==null){
+	            // Generate the full range of colormap for a given palette effect	            
+	            
+	            stuff=
+	            PaletteGenerator.RF_BuildLights15(palettes[usegamma*maxpalettes+usepalette], NUMLIGHTS);
+	            
+	            /* No further tinting necessary?
+	            for (int i=0;i<32;i++){
+	                PaletteGenerator.tintColormap(
+	                    colormap_original[i],
+	                    stuff[i],256,
+	                    PaletteGenerator.tints[palette%14]
+	                    );
+	            } */
+	            cmapcache.put(palette,stuff);	            
+	        }
+	        
+	        // Use fast arraycopy to copy data to working colormap.
+	        for (int i = 0; i < stuff.length; i++) {
+	            System.arraycopy(stuff[i], 0, cmap_work[i], 0, 256);
+	        }	        
+	    }
+	   
+	    protected final void clearPalettes(){
+	        this.cmapcache.clear();
+	    }
 	
 }
