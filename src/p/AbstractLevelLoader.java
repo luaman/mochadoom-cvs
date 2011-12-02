@@ -5,6 +5,11 @@ import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MAPBLOCKUNITS;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.PU_LEVEL;
+import static data.Limits.MAXRADIUS;
+import static m.BBox.BOXBOTTOM;
+import static m.BBox.BOXLEFT;
+import static m.BBox.BOXRIGHT;
+import static m.BBox.BOXTOP;
 import static m.fixed_t.FRACBITS;
 import static p.mobj_t.MF_NOBLOCKMAP;
 import static p.mobj_t.MF_NOSECTOR;
@@ -169,8 +174,8 @@ public abstract class AbstractLevelLoader
     public void SetThingPosition(mobj_t thing) {
         final subsector_t ss;
         final sector_t sec;
-        final int blockx;
-        final int blocky;
+        int blockx;
+        int blocky;
         final mobj_t link;
 
         // link into subsector
@@ -193,9 +198,9 @@ public abstract class AbstractLevelLoader
         // link into blockmap
         if (!flags(thing.flags, MF_NOBLOCKMAP)) {
             // inert things don't need to be in blockmap
-            blockx = (thing.x - bmaporgx) >> MAPBLOCKSHIFT;
-            blocky = (thing.y - bmaporgy) >> MAPBLOCKSHIFT;
-
+            blockx = getSafeBlockX(thing.x - bmaporgx);
+            blocky = getSafeBlockY(thing.y - bmaporgy);
+            
             // Valid block?
             if (blockx >= 0 && blockx < bmapwidth && blocky >= 0
                     && blocky < bmapheight) {
@@ -280,8 +285,9 @@ public abstract class AbstractLevelLoader
      * @param blockno
      * @param lineno
      */
-    protected void AddBlockLine(linelist_t[] lists, int[] count,
+    private final void AddBlockLine(linelist_t[] lists, int[] count,
             boolean[] done, int blockno, int lineno) {
+        long a=System.nanoTime();
         linelist_t l;
 
         if (done[blockno])
@@ -293,8 +299,13 @@ public abstract class AbstractLevelLoader
         lists[blockno] = l;
         count[blockno]++;
         done[blockno] = true;
+        long b=System.nanoTime();
+        
+        total+=(b-a);
     }
 
+    long total=0;
+    
     /**
      * Actually construct the blockmap lump from the level data This finds the
      * intersection of each linedef with the column and row lines at the left
@@ -573,6 +584,7 @@ public abstract class AbstractLevelLoader
         long b = System.nanoTime();
 
         System.err.printf("Blockmap generated in %f sec\n", (b - a) / 1e9);
+        System.err.printf("Time spend in AddBlockLine : %f sec\n", total / 1e9);
     }
 
     // jff 10/6/98
@@ -756,6 +768,19 @@ public abstract class AbstractLevelLoader
     // orphaned ones from the blockmap.
     protected boolean[] used_lines;
 
+    // MAES: extensions to support 512x512 blockmaps.
+    // They represent the maximum negative number which represents
+    // a positive offset, otherwise they are left at -257, which
+    // never triggers a check.
+    // If a blockmap index is ever LE than either, then
+    // its actual value is to be interpreted as 0x01FF&x.
+    // Full 512x512 blockmaps get this value set to -1.
+    // A 511x511 blockmap would still have a valid negative number
+    // e.g. -1..510, so they would be set to -2
+    
+    public int blockmapxneg=-257;
+    public int blockmapyneg=-257;
+
     /**
      * Returns an int[] array with orgx, orgy, and number of blocks. Order is:
      * orgx,orgy,bckx,bcky
@@ -848,5 +873,30 @@ public abstract class AbstractLevelLoader
         // Maes: purely academic. Most maps are well above 0.68
         // System.out.printf("Reject table density: %f",rejectDensity());
     }
+    
+    /** Gets the proper blockmap block for a given X 16.16 Coordinate, sanitized
+     *  for 512-wide blockmaps. 
+     * 
+     * @param blockx
+     * @return
+     */
 
+    public final int getSafeBlockX(int blockx){
+        blockx>>=MAPBLOCKSHIFT;
+        return (blockx<=this.blockmapxneg)?blockx&0x1FF:blockx;
+    }
+
+    /** Gets the proper blockmap block for a given Y 16.16 Coordinate, sanitized
+     *  for 512-wide blockmaps. 
+     * 
+     * @param blocky
+     * @return     */
+
+    
+    public final int getSafeBlockY(int blocky){
+        blocky>>=MAPBLOCKSHIFT;
+        return (blocky<=this.blockmapyneg)?blocky&0x1FF:blocky;
+    }
+
+    
 }
