@@ -3291,10 +3291,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         numspechit = 0;
         
         // stomp on any things contacted
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+        xl = LL.getSafeBlockX(tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS);
+        xh = LL.getSafeBlockX(tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS);
+        yl = LL.getSafeBlockY(tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS);
+        yh = LL.getSafeBlockY(tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS);
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
@@ -3392,10 +3392,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         // because mobj_ts are grouped into mapblocks
         // based on their origin point, and can overlap
         // into adjacent blocks by up to MAXRADIUS units.
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+        xl = LL.getSafeBlockX(tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS);
+        xh = LL.getSafeBlockX(tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS);
+        yl = LL.getSafeBlockY(tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS);
+        yh = LL.getSafeBlockY(tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS);
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
@@ -3403,11 +3403,20 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
             return false;
         
         // check lines
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy)>>MAPBLOCKSHIFT;
+        xl = LL.getSafeBlockX(tmbbox[BOXLEFT] - LL.bmaporgx);
+        xh = LL.getSafeBlockX(tmbbox[BOXRIGHT] - LL.bmaporgx);
+        yl = LL.getSafeBlockY(tmbbox[BOXBOTTOM] - LL.bmaporgy);
+        yh = LL.getSafeBlockY(tmbbox[BOXTOP] - LL.bmaporgy);
 
+        // Maes's quick and dirty blockmap extension hack
+        // E.g. for an extension of 511 blocks, max negative is -1.
+        // A full 512x512 blockmap doesn't have negative indexes.
+        
+        if (xl<=LL.blockmapxneg) xl=0x1FF&xl;         // Broke width boundary
+        if (xh<=LL.blockmapxneg) xh=0x1FF&xh;    // Broke width boundary
+        if (yl<=LL.blockmapyneg) yl=0x1FF&yl;        // Broke height boundary
+        if (yh<=LL.blockmapyneg) yh=0x1FF&yh;   // Broke height boundary     
+       
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
             if (!BlockLinesIterator (bx,by,CheckLine))
@@ -4424,10 +4433,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         int dist; // fixed_t
         
         dist = (damage+MAXRADIUS)<<FRACBITS;
-        yh = (spot.y + dist - LL.bmaporgy)>>MAPBLOCKSHIFT;
-        yl = (spot.y - dist - LL.bmaporgy)>>MAPBLOCKSHIFT;
-        xh = (spot.x + dist - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        xl = (spot.x - dist - LL.bmaporgx)>>MAPBLOCKSHIFT;
+        yh = LL.getSafeBlockY(spot.y + dist - LL.bmaporgy);
+        yl = LL.getSafeBlockY(spot.y - dist - LL.bmaporgy);
+        xh = LL.getSafeBlockX(spot.x + dist - LL.bmaporgx);
+        xl = LL.getSafeBlockX(spot.x - dist - LL.bmaporgx);
         bombspot = spot;
         bombsource = source;
         bombdamage = damage;
@@ -4573,14 +4582,14 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
      x1 -= LL.bmaporgx;
      y1 -= LL.bmaporgy;
-     xt1 = x1>>MAPBLOCKSHIFT;
-     yt1 = y1>>MAPBLOCKSHIFT;
+     xt1 = LL.getSafeBlockX(x1);
+     yt1 = LL.getSafeBlockY(y1);
 
      x2 -= LL.bmaporgx;
      y2 -= LL.bmaporgy;
-     xt2 = x2>>MAPBLOCKSHIFT;
-     yt2 = y2>>MAPBLOCKSHIFT;
-
+     xt2 = LL.getSafeBlockX(x2);
+     yt2 = LL.getSafeBlockY(y2);
+             
      if (xt2 > xt1)
      {
      mapxstep = 1;
