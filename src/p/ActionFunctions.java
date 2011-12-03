@@ -1405,10 +1405,10 @@ public class ActionFunctions implements DoomStatusAware{
         A.VileCheck.viletryy =
             actor.y + actor.info.speed*yspeed[actor.movedir];
 
-        xl = (A.VileCheck.viletryx - LL.bmaporgx - MAXRADIUS*2)>>MAPBLOCKSHIFT;
-        xh = (A.VileCheck.viletryx - LL.bmaporgx + MAXRADIUS*2)>>MAPBLOCKSHIFT;
-        yl = (A.VileCheck.viletryy - LL.bmaporgy - MAXRADIUS*2)>>MAPBLOCKSHIFT;
-        yh = (A.VileCheck.viletryy - LL.bmaporgy + MAXRADIUS*2)>>MAPBLOCKSHIFT;
+        xl = LL.getSafeBlockX(A.VileCheck.viletryx - LL.bmaporgx - MAXRADIUS*2);
+        xh = LL.getSafeBlockX(A.VileCheck.viletryx - LL.bmaporgx + MAXRADIUS*2);
+        yl = LL.getSafeBlockY(A.VileCheck.viletryy - LL.bmaporgy - MAXRADIUS*2);
+        yh = LL.getSafeBlockY(A.VileCheck.viletryy - LL.bmaporgy + MAXRADIUS*2);
         
         A.VileCheck.vileobj = actor;
         for (bx=xl ; bx<=xh ; bx++)
