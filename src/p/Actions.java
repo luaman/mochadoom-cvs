@@ -1,5 +1,6 @@
 package p;
 
+import m.FixedFloat;
 import defines.*;
 import static p.ChaseDirections.*;
 import static p.DoorDefines.*;
@@ -4549,7 +4550,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
    // 	System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , " +y2);
      int xt1,yt1;
      int xt2, yt2;
-     
+     long _x1, _x2, _y1, _y2;    
      int xstep,ystep;
      
      int partial;
@@ -4580,27 +4581,35 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      trace.dx = x2 - x1;
      trace.dy = y2 - y1;
 
+     _x1 = (long)x1 - LL.bmaporgx;
+     _y1 = (long)y1 - LL.bmaporgy;
      x1 -= LL.bmaporgx;
      y1 -= LL.bmaporgy;
-     xt1 = LL.getSafeBlockX(x1);
-     yt1 = LL.getSafeBlockY(y1);
+     xt1 = LL.getSafeBlockX(_x1);
+     yt1 = LL.getSafeBlockY(_y1);
 
+     _x2 = (long)x2 - LL.bmaporgx;
+     _y2 = (long)y2 - LL.bmaporgy;
      x2 -= LL.bmaporgx;
      y2 -= LL.bmaporgy;
-     xt2 = LL.getSafeBlockX(x2);
-     yt2 = LL.getSafeBlockY(y2);
-             
+     
+     
+     xt2 = LL.getSafeBlockX(_x2);
+     yt2 = LL.getSafeBlockY(_y2);
+
+    // System.out.printf("Block: %d %d %d %d\n",xt1,yt1,xt2,yt2);
+     
      if (xt2 > xt1)
      {
      mapxstep = 1;
      partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
-     ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
+     ystep = FixedDiv ((int)(y2-y1),Math.abs((int)(x2-x1)));
      }
      else if (xt2 < xt1)
      {
      mapxstep = -1;
      partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
-     ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
+     ystep = FixedDiv ((int)(y2-y1),Math.abs((int)(x2-x1)));
      }
      else
      {
@@ -4609,20 +4618,20 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      ystep = 256*FRACUNIT;
      }   
 
-     yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
+     yintercept = (int) ((_y1>>MAPBTOFRAC) + FixedMul (partial, ystep));
 
      
      if (yt2 > yt1)
      {
      mapystep = 1;
      partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
-     xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
+     xstep = FixedDiv ((int)(x2-x1),Math.abs((int)(y2-y1)));
      }
      else if (yt2 < yt1)
      {
      mapystep = -1;
      partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
-     xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
+     xstep = FixedDiv ((int)(x2-x1),Math.abs((int)(y2-y1)));
      }
      else
      {
@@ -4630,7 +4639,9 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      partial = FRACUNIT;
      xstep = 256*FRACUNIT;
      }   
-     xintercept = (x1>>MAPBTOFRAC) + FixedMul (partial, xstep);
+     xintercept = (int) ((_x1>>MAPBTOFRAC) + FixedMul (partial, xstep));
+     
+    // System.out.printf("xstep %d ystep %d partial %d xintercept %d yintercept %d\n",xstep,ystep,partial,xintercept,yintercept);
      
      // Step through map blocks.
      // Count is present to prevent a round off error
