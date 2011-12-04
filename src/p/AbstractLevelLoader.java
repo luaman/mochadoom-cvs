@@ -15,6 +15,7 @@ import static p.mobj_t.MF_NOBLOCKMAP;
 import static p.mobj_t.MF_NOSECTOR;
 import static utils.C2JUtils.flags;
 import m.BBox;
+import m.FixedFloat;
 import i.IDoomSystem;
 import rr.Renderer;
 import rr.TextureManager;
@@ -886,6 +887,19 @@ public abstract class AbstractLevelLoader
         return (blockx<=this.blockmapxneg)?blockx&0x1FF:blockx;
     }
 
+    public final int getSafeBlockX(long blockx){
+    	// Interpret as positive
+    	//System.out.printf("blockx %f %d\n",(double)blockx/65535.0,bmapwidth);
+    	if (blockx>0){
+    		blockx>>>=MAPBLOCKSHIFT;
+    		return (int) blockx;
+    		}
+    	else {
+    		blockx>>=MAPBLOCKSHIFT;
+    		return (int) blockx;    		
+    	}
+    }
+    
     /** Gets the proper blockmap block for a given Y 16.16 Coordinate, sanitized
      *  for 512-wide blockmaps. 
      * 
@@ -897,6 +911,23 @@ public abstract class AbstractLevelLoader
         blocky>>=MAPBLOCKSHIFT;
         return (blocky<=this.blockmapyneg)?blocky&0x1FF:blocky;
     }
+    
+    public final int getSafeBlockY(long blocky){
+    	
+
+    	
+    	// Interpret as positive
+    	//System.out.printf("blocky %f %d\n",(double)blocky/65535.0,bmapheight);
+    	if (blocky>0){
+    		blocky>>>=MAPBLOCKSHIFT;
+    		return (int) blocky;
+    		}
+    	else {
+    		blocky>>=MAPBLOCKSHIFT;
+    		return (int) blocky;    		
+    	}
+    }
+
 
     
 }
