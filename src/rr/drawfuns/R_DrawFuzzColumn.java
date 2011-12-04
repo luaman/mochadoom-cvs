@@ -82,8 +82,9 @@ import i.IDoomSystem;
 				// a pixel that is either one column
 				// left or right of the current one.
 				// Add index from colormap to index.
-				screen[dest] = screen[dest
-						+ fuzzoffset[fuzzpos]];
+
+				screen[dest] = fuzzMix(screen[dest
+										+ fuzzoffset[fuzzpos]]);
 
 				// Clamp table lookup index.
 				if (++fuzzpos == FUZZTABLE)
@@ -91,18 +92,18 @@ import i.IDoomSystem;
 
 				dest += SCREENWIDTH;				
                 
-				screen[dest] = screen[dest
-										+ fuzzoffset[fuzzpos]];
+				screen[dest] = fuzzMix(screen[dest
+										+ fuzzoffset[fuzzpos]]);
                 if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                 dest += SCREENWIDTH;
-                
-				screen[dest] = screen[dest
-										+ fuzzoffset[fuzzpos]];
+
+				screen[dest] = fuzzMix(screen[dest
+										+ fuzzoffset[fuzzpos]]);
                 if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                 dest += SCREENWIDTH;
-                
-				screen[dest] = screen[dest
-										+ fuzzoffset[fuzzpos]];
+
+				screen[dest] = fuzzMix(screen[dest
+										+ fuzzoffset[fuzzpos]]);
                 if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
                 dest += SCREENWIDTH;
 				
@@ -125,6 +126,15 @@ import i.IDoomSystem;
 	            } while (count-- > 0);
 			
 		}
+        
+        private final short fuzzMix(short rgb){
+        	// super-fast half-brite trick
+        	// 3DEF and >> 1: ok hue, but too dark
+        	// 7BDC, no shift:  good compromise
+        	// 7398, no shift: results in too obvious tinting.
+        	return (short) (rgb&0x7BDC);
+        	
+        }
 
 
 	}
