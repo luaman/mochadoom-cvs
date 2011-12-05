@@ -4545,71 +4545,76 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      * Returns true if the traverser function returns true
      * for all lines.
      */
-    boolean PathTraverse ( int x1,int y1,int x2,int y2,int flags,PTR_InterceptFunc trav)
-    {
-   // 	System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , " +y2);
-     int xt1,yt1;
-     int xt2, yt2;
-     long _x1, _x2, _y1, _y2;    
-     int xstep,ystep;
-     
-     int partial;
-     
-     int xintercept, yintercept;
-     
-     int     mapx;
-     int     mapy;
-     
-     int     mapxstep;
-     int     mapystep;
+	private final boolean PathTraverse(int x1, int y1, int x2, int y2, int flags,
+			PTR_InterceptFunc trav) {
+		// System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , "
+		// +y2);
+		final int xt1, yt1;
+		final int xt2, yt2;
+		final long _x1, _x2, _y1, _y2;
+		final int mapx1, mapy1;
+		final int xstep, ystep;
 
-     int     count;
-         
-     earlyout = flags(flags ,PT_EARLYOUT);
-         
-     R.increaseValidCount(1);
-     intercept_p = 0;
-     
-     if ( ((x1-LL.bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
-     x1 += FRACUNIT; // don't side exactly on a line
-     
-     if ( ((y1-LL.bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
-     y1 += FRACUNIT; // don't side exactly on a line
+		int partial;
 
-     trace.x = x1;
-     trace.y = y1;
-     trace.dx = x2 - x1;
-     trace.dy = y2 - y1;
+		int xintercept, yintercept;
 
-     _x1 = (long)x1 - LL.bmaporgx;
-     _y1 = (long)y1 - LL.bmaporgy;
-     x1 -= LL.bmaporgx;
-     y1 -= LL.bmaporgy;
-     xt1 = LL.getSafeBlockX(_x1);
-     yt1 = LL.getSafeBlockY(_y1);
+		int mapx;
+		int mapy;
 
-     _x2 = (long)x2 - LL.bmaporgx;
-     _y2 = (long)y2 - LL.bmaporgy;
-     x2 -= LL.bmaporgx;
-     y2 -= LL.bmaporgy;
-     
-     
-     xt2 = LL.getSafeBlockX(_x2);
-     yt2 = LL.getSafeBlockY(_y2);
+		int mapxstep;
+		int mapystep;
 
-    // System.out.printf("Block: %d %d %d %d\n",xt1,yt1,xt2,yt2);
-     
+		int count;
+
+		earlyout = flags(flags, PT_EARLYOUT);
+
+		R.increaseValidCount(1);
+		intercept_p = 0;
+
+		if (((x1 - LL.bmaporgx) & (MAPBLOCKSIZE - 1)) == 0)
+			x1 += FRACUNIT; // don't side exactly on a line
+
+		if (((y1 - LL.bmaporgy) & (MAPBLOCKSIZE - 1)) == 0)
+			y1 += FRACUNIT; // don't side exactly on a line
+
+		trace.x = x1;
+		trace.y = y1;
+		trace.dx = x2 - x1;
+		trace.dy = y2 - y1;
+
+		// Code developed in common with entryway
+		// for prBoom+
+		
+		_x1 = (long) x1 - LL.bmaporgx;
+		_y1 = (long) y1 - LL.bmaporgy;
+		xt1 = (int) (_x1 >> MAPBLOCKSHIFT);
+		yt1 = (int) (_y1 >> MAPBLOCKSHIFT);
+
+		mapx1 = (int) (_x1 >> MAPBTOFRAC);
+		mapy1 = (int) (_y1 >> MAPBTOFRAC);
+
+		_x2 = (long) x2 - LL.bmaporgx;
+		_y2 = (long) y2 - LL.bmaporgy;
+		xt2 = (int) (_x2 >> MAPBLOCKSHIFT);
+		yt2 = (int) (_y2 >> MAPBLOCKSHIFT);
+
+		x1 -= LL.bmaporgx;
+		y1 -= LL.bmaporgy;
+		x2 -= LL.bmaporgx;
+		y2 -= LL.bmaporgy;
+		
      if (xt2 > xt1)
      {
      mapxstep = 1;
-     partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
-     ystep = FixedDiv ((int)(y2-y1),Math.abs((int)(x2-x1)));
+     partial = FRACUNIT - (mapx1&(FRACUNIT-1));
+     ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
      }
      else if (xt2 < xt1)
      {
      mapxstep = -1;
-     partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
-     ystep = FixedDiv ((int)(y2-y1),Math.abs((int)(x2-x1)));
+     partial = mapx1&(FRACUNIT-1);
+     ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
      }
      else
      {
@@ -4618,20 +4623,20 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      ystep = 256*FRACUNIT;
      }   
 
-     yintercept = (int) ((_y1>>MAPBTOFRAC) + FixedMul (partial, ystep));
+     yintercept = (int) (mapy1 + FixedMul (partial, ystep));
 
      
      if (yt2 > yt1)
      {
      mapystep = 1;
-     partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
-     xstep = FixedDiv ((int)(x2-x1),Math.abs((int)(y2-y1)));
+     partial = FRACUNIT - (mapy1&(FRACUNIT-1));
+     xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else if (yt2 < yt1)
      {
      mapystep = -1;
-     partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
-     xstep = FixedDiv ((int)(x2-x1),Math.abs((int)(y2-y1)));
+     partial = mapy1&(FRACUNIT-1);
+     xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else
      {
@@ -4639,9 +4644,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      partial = FRACUNIT;
      xstep = 256*FRACUNIT;
      }   
-     xintercept = (int) ((_x1>>MAPBTOFRAC) + FixedMul (partial, xstep));
-     
-    // System.out.printf("xstep %d ystep %d partial %d xintercept %d yintercept %d\n",xstep,ystep,partial,xintercept,yintercept);
+     xintercept = (int) (mapx1 + FixedMul (partial, xstep));
      
      // Step through map blocks.
      // Count is present to prevent a round off error
@@ -4671,7 +4674,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      
      boolean changeX = (yintercept >> FRACBITS) == mapy;
      boolean changeY = (xintercept >> FRACBITS) == mapx;
-     if (changeX) // _D_ there is a rare case when changeX and changeY are both true, that is why I modified this section
+     if (changeX)
      {
          yintercept += ystep;
          mapx += mapxstep;
