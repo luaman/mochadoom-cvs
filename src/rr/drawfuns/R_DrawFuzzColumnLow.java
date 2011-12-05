@@ -97,22 +97,22 @@ public final class R_DrawFuzzColumnLow
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
             
-			screen[dest] = screen[dest
-									+ fuzzoffset[fuzzpos]];
+            screen[dest] = fuzzMix(screen[dest
+                                          + fuzzoffset[fuzzpos]]);
             screen[dest2] = screen[dest];
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
                 
-			screen[dest] = screen[dest
-									+ fuzzoffset[fuzzpos]];
+            screen[dest] = fuzzMix(screen[dest
+                                          + fuzzoffset[fuzzpos]]);
             screen[dest2] = screen[dest];
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
 
-			screen[dest] = screen[dest
-									+ fuzzoffset[fuzzpos]];
+            screen[dest] = fuzzMix(screen[dest
+                                          + fuzzoffset[fuzzpos]]);
             screen[dest2] = screen[dest];
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
             dest += SCREENWIDTH;
@@ -121,8 +121,8 @@ public final class R_DrawFuzzColumnLow
         
         if (count>0)
         do {
-			screen[dest] = screen[dest
-									+ fuzzoffset[fuzzpos]];
+            screen[dest] = fuzzMix(screen[dest
+                                          + fuzzoffset[fuzzpos]]);
             screen[dest2] = screen[dest];
             
             if (++fuzzpos == FUZZTABLE) fuzzpos = 0;
@@ -130,6 +130,16 @@ public final class R_DrawFuzzColumnLow
             dest += SCREENWIDTH;
             dest2 += SCREENWIDTH;
         } while (count-- != 0);
+        
+    }
+    
+    private final short fuzzMix(short rgb){
+        // super-fast half-brite trick
+        // 3DEF and >> 1: ok hue, but too dark
+        // 7BDE, no shift:  good compromise
+        // 739C, no shift: results in too obvious tinting.
+        
+        return (short) (rgb&0x7BDE);
         
     }
 }

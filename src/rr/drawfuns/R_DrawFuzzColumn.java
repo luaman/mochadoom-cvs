@@ -111,12 +111,8 @@ import i.IDoomSystem;
 			
 			if (count>0)
 	         do {
-	                // Lookup framebuffer, and retrieve
-	                // a pixel that is either one column
-	                // left or right of the current one.
-	                // Add index from colormap to index.
-					screen[dest] = screen[dest
-											+ fuzzoffset[fuzzpos]];
+	                screen[dest] = fuzzMix(screen[dest
+	                                              + fuzzoffset[fuzzpos]]);
 
 	                // Clamp table lookup index.
 	                if (++fuzzpos == FUZZTABLE)
@@ -128,12 +124,11 @@ import i.IDoomSystem;
 		}
         
         private final short fuzzMix(short rgb){
-        	// super-fast half-brite trick
-        	// 3DEF and >> 1: ok hue, but too dark
-        	// 7BDC, no shift:  good compromise
-        	// 7398, no shift: results in too obvious tinting.
-        	return (short) (rgb&0x7BDC);
-        	
+            // super-fast half-brite trick
+            // 3DEF and >> 1: ok hue, but too dark
+            // 7BDE, no shift:  good compromise
+            // 739C, no shift: results in too obvious tinting.         
+            return (short) (rgb&0x6739);        	
         }
 
 
