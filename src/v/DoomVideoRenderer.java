@@ -46,9 +46,6 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     public void CopyRect(int srcx, int srcy, int srcscrn, int width,
             int height, int destx, int desty, int destscrn);
     
-    public void FillRect(int srcx, int srcy, int width,
-            int height,int destscrn);
-
     public void DrawPatch(int x, int y, int scrn, patch_t patch);
     
     public void DrawPatchFlipped ( int      x,   int        y,    int       scrn,  patch_t  patch );
@@ -69,8 +66,12 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     
     // Draw a linear block of pixels into the view buffer.
     public void DrawBlock(int x, int y, int scrn, int width, int height,
-            K src);
+            byte[] src);
 
+    // Draw a linear block of pixels into the view buffer.
+    public void DrawBlock(int x, int y, int scrn, int width, int height,
+            byte[] src,int offset);
+    
     // Reads a linear block of pixels into the view buffer.
     public void GetBlock(int x, int y, int scrn, int width, int height,
             K dest);
@@ -146,5 +147,33 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     void setCurrentScreen(int screen);
 
     void FillRect(byte color, int screen, int x, int y, int width, int height);
+    
+    void setColorMaps(int[] colormaps, int num);
+
+    void setColorMaps(short[] colormaps,int num);
+    
+    K[] getColorMaps();
+
+    /** Get the value corresponding to a base color (0-255).
+     *  Depending on the implementation this might be indexed,
+     *  RGB etc. Use whenever you need "absolute" colors.
+     * 
+     * @return
+     */
+    int getBaseColor(int color);
+    
+    /** Clear any byte-to-short or byte-to-int post or flat caches generated 
+     *  during e.g. extended color blits or OpenGL acceleration.
+     *  
+     *  Good moments to call this function include:
+     *  *After starting a new level.
+     *  *After Menu, Finale, Endlevel screens or Wipers have been deactivated.
+     *  *In general, after anything that might use fixed graphics has completed.
+     *  
+     *  This is necessary because the cache keeps references to 
+     */
+    
+	void clearCaches();
+
     
 }

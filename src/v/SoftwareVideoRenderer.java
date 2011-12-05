@@ -132,43 +132,7 @@ public abstract class SoftwareVideoRenderer
       }
 
   }
-  
-  /**
-   *  V_Fillrect 
-   */
-  @Override
-  public void FillRect(int srcx, int srcy, int width,
-          int height,int destscrn){
-      // These are pointers inside an array.
-	  final byte[]  dest=screens[destscrn]; 
-
-      if  (RANGECHECK) {
-          if (srcx<0
-                  ||srcx+width >this.width
-                  || srcy<0
-                  || srcy+height>SCREENHEIGHT 
-                  || destscrn>4)
-          {
-              I.Error ("Bad V_FillRect");
-          }
-      } 
-      this.MarkRect (srcx, srcy, width, height); 
-
-
-      // MAES: these were pointers to a specific position inside the screen.
-      int srcPos = this.width*srcy+srcx; 
-
-      for ( ; height>0 ; height--) 
-      { 
-    	  for (int i=0;i<width;i++){
-          dest[srcPos+i]=0;
-    	  }
-          //memcpy (dest, src, width); 
-          srcPos += this.width; 
-      }
-
-  }
-  
+    
   /** V_DrawPatch
    * Masks a column based masked pic to the screen. 
    *  desttop, dest and source were byte*
@@ -689,7 +653,30 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
       srcPos += width; 
       destPos += this.width; 
       } 
-  } 
+  }
+  
+  @Override
+  public final void DrawBlock(int x, int y, int scrn, int width, int height,
+          byte[] src,int offset) {
+      // This is "screens[scrn]"
+      final byte[] dest = screens[scrn];
+      final byte[] data=src;
+      
+      if (doRangeCheck(x, y, scrn)) {
+          I.Error("Bad V_DrawBlock");
+      }
+
+      this.MarkRect(x, y, width, height);
+
+      int destPos = /* screens[scrn] + */y * this.width + x;
+      // MAES: making an assumption here. A BIIIIG one.
+      int srcPos = offset;
+      while ((height--) > 0) {
+              System.arraycopy(src, srcPos, dest, destPos, width);
+          srcPos += width;
+          destPos += this.width;
+      }
+  }
 
    
 
@@ -936,6 +923,18 @@ protected byte[] scanline;
 
 @Override
 public final void FillRect(byte color,int screen, int x,int y,int width, int height) {
+    
+    if  (RANGECHECK) {
+        if (x<0
+                ||x+width >this.width
+                || y<0
+                || y+height>SCREENHEIGHT 
+                || screen>4)
+        {
+            I.Error ("Bad V_FillRect");
+        }
+    }
+    
     byte[] arr=screens[screen];
     
     // Do a "per scanline" copy. 
@@ -951,8 +950,29 @@ public final void FillRect(byte color,int screen, int x,int y,int width, int hei
         }
 }
 
+public final int getBaseColor(int color){
+    return color;
+}
 
+public final void clearCaches(){
+    // Does nothing for indexed.
+}
 
+/** Should return colormaps, if you ever move their management in here.
+ * 
+ */
+
+public final byte[][] getColorMaps(){
+    return null;
+}
+
+public void setColorMaps(int[] colormaps, int num){
+    // Dummy
+}
+
+public void setColorMaps(short[] colormaps,int num){
+    // Dummy
+}
 
 
 }
