@@ -1598,7 +1598,7 @@ public class ActionFunctions implements DoomStatusAware{
         A_FaceTarget (actor);
 
         fog = A.SpawnMobj (actor.target.x,
-                   actor.target.x,
+                   actor.target.y,
                    actor.target.z, mobjtype_t.MT_FIRE);
         
         actor.tracer = fog;
