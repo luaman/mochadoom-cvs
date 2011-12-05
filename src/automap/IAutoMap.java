@@ -10,7 +10,24 @@ public interface IAutoMap extends IVideoScaleAware, DoomStatusAware{
     public final int AM_MSGENTERED= (AM_MSGHEADER | ('e'<<8));
     public final int AM_MSGEXITED= (AM_MSGHEADER | ('x'<<8));
 
-
+    // Color ranges for automap. Actual colors are bit-depth dependent.
+    
+    public final int REDRANGE= 16;
+    public final int BLUERANGE   =8;
+    public final int GREENRANGE  =16;
+    public final int GRAYSRANGE  =16;
+    public final int BROWNRANGE  =16;
+    public final int YELLOWRANGE =1;
+    
+    public final int YOURRANGE   =0;
+    public final int WALLRANGE   =REDRANGE;
+    public final int TSWALLRANGE =GRAYSRANGE;
+    public final int FDWALLRANGE =BROWNRANGE;
+    public final int CDWALLRANGE =YELLOWRANGE;
+    public final int THINGRANGE  =GREENRANGE;
+    public final int SECRETWALLRANGE =WALLRANGE;
+    public final int GRIDRANGE   =0;
+    
     // Called by main loop.
     public boolean Responder (event_t ev);
 
