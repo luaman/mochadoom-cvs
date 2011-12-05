@@ -12,8 +12,8 @@ import i.IDoomSystem;
 		
 	    public R_DrawFuzzColumn(int SCREENWIDTH, int SCREENHEIGHT,
                 int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
-                short[] screen, IDoomSystem I,short[] BLURRY_MAP) {
-            super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I,BLURRY_MAP);
+                short[] screen, IDoomSystem I) {
+            super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
         
             this.flags=DcFlags.FUZZY;
         
@@ -128,7 +128,7 @@ import i.IDoomSystem;
             // 3DEF and >> 1: ok hue, but too dark
             // 7BDE, no shift:  good compromise
             // 739C, no shift: results in too obvious tinting.         
-            return (short) (rgb&0x6739);        	
+            return (short) (rgb&0x7BDE);        	
         }
 
 

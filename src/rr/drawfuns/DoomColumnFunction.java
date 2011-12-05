@@ -17,8 +17,6 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
     protected ColVars<T,V> dcvars;
     protected final V screen;
     protected final IDoomSystem I;
-    /** Only for fuzzy functions. It's ok to leave it null if not used */
-    protected final V BLURRY_MAP; 
     protected final int[] ylookup;
     protected final int[] columnofs;
     protected int flags;
@@ -32,21 +30,8 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
         this.dcvars = dcvars;
         this.screen = screen;
         this.I=I;
-        this.BLURRY_MAP=null;
     }
-    
-    public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
-            int[] columnofs,ColVars<T,V> dcvars, V screen,IDoomSystem I,V BLURRY_MAP) {
-        SCREENWIDTH = sCREENWIDTH;
-        SCREENHEIGHT = sCREENHEIGHT;
-        this.ylookup=ylookup;
-        this.columnofs=columnofs;
-        this.dcvars = dcvars;
-        this.screen = screen;
-        this.I=I;
-        this.BLURRY_MAP=BLURRY_MAP;
-    }
-    
+
     protected final void performRangeCheck(){
         if (dcvars.dc_x >= SCREENWIDTH || dcvars.dc_yl < 0 || dcvars.dc_yh >= SCREENHEIGHT)
             I.Error("R_DrawColumn: %d to %d at %d", dcvars.dc_yl, dcvars.dc_yh, dcvars.dc_x);

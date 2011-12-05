@@ -11,9 +11,8 @@ public final class R_DrawFuzzColumnLow
 
     public R_DrawFuzzColumnLow(int SCREENWIDTH, int SCREENHEIGHT,
             int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
-            short[] screen, IDoomSystem I, short[] BLURRY_MAP) {
-        super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I,
-                BLURRY_MAP);
+            short[] screen, IDoomSystem I) {
+        super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
         
         this.flags=DcFlags.LOW_DETAIL|DcFlags.FUZZY;
 
