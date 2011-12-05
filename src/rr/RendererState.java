@@ -5561,7 +5561,6 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 	
 	public void FillBackScreen() {
 		flat_t src;
-		byte[] dest;
 		int x;
 		int y;
 		patch_t patch;
@@ -5584,26 +5583,22 @@ public abstract class RendererState implements Renderer<byte[]>, ILimitResettabl
 
 		/* This is a flat we're reading here */
 		src = (flat_t) (W.CacheLumpName(name, PU_CACHE, flat_t.class));
-		dest = V.getScreen(DoomVideoRenderer.SCREEN_BG);
-		int destPos = 0;
 
-		/* This part actually draws the border itself, without bevels */
-
-		for (y = 0; y < SCREENHEIGHT - DM.ST.getHeight(); y++) {
-			for (x = 0; x < SCREENWIDTH / 64; x++) {
-				// memcpy (dest, src+((y&63)<<6), 64);
-				System.arraycopy(src.data, ((y & 63) << 6), dest, destPos, 64);
-				destPos += 64;
+		/* This part actually draws the border itself, without bevels 
+		 * MAES: improved drawing routine for extended bit-depth compatibility.
+		 */
+	
+		for (y = 0; y < SCREENHEIGHT - DM.ST.getHeight(); y+=64) {
+				
+				int y_maxdraw=Math.min(SCREENHEIGHT - DM.ST.getHeight()-y, 64);
+				
+				// Draw whole blocks.
+				for (x = 0; x < SCREENWIDTH; x+=64) {
+					int x_maxdraw=Math.min(SCREENWIDTH-x, 64);
+					V.DrawBlock(x, y, DoomVideoRenderer.SCREEN_BG, x_maxdraw,y_maxdraw,
+							src.data);
+				}
 			}
-
-			if ((SCREENWIDTH & 63) != 0) {
-				// memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
-				System.arraycopy(src.data, ((y & 63) << 6), dest, destPos,
-						SCREENWIDTH & 63);
-
-				destPos += (SCREENWIDTH & 63);
-			}
-		}
 
 		patch = (patch_t) W.CachePatchName("BRDR_T", PU_CACHE);
 
