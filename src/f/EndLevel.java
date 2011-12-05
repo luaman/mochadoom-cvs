@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.8 2011/11/01 19:02:57 velktron Exp $
+// $Id: EndLevel.java,v 1.9 2011/12/05 12:56:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,12 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.9  2011/12/05 12:56:37  velktron
+// Merge with HiColor
+//
+// Revision 1.8.2.1  2011/11/27 18:18:34  velktron
+// Use cacheClear() on deactivation.
+//
 // Revision 1.8  2011/11/01 19:02:57  velktron
 // Using screen number constants
 //
@@ -652,6 +658,7 @@ protected void drawTime
 protected void End()
 {
 	state=endlevel_state.JustShutOff;
+	V.clearCaches();
     unloadData();
 }
 
