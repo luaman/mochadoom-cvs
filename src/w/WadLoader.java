@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.58 2011/11/21 10:02:52 velktron Exp $
+// $Id: WadLoader.java,v 1.59 2011/12/05 12:31:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -25,7 +25,9 @@
 package w;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -177,8 +179,6 @@ public class WadLoader implements IWadLoader {
 		// If not "WAD" then we check for single lumps.
 		if (!C2JUtils.checkForExtension(checkname,"wad")) {
 		    
-		    
-
 		    fileinfo[0] = singleinfo;
 			singleinfo.filepos = 0;
 			singleinfo.size = InputStreamSugar.getSizeEstimate(handle,wadinfo.entry);
@@ -205,7 +205,10 @@ public class WadLoader implements IWadLoader {
 		    // MAES: 25/10/11: In retrospect, this solution, while functional, was
 		    // inelegant and limited.
 		    
-			header.read(new DataInputStream(new BufferedInputStream( handle)));			
+		    DataInputStream dis=new DataInputStream(handle);
+		    
+		    // Read header in one go. Usually doesn't cause trouble?
+			header.read(dis);			
 			
 			if (header.identification.compareTo("IWAD") != 0) {
 				// Homebrew levels?
@@ -220,13 +223,27 @@ public class WadLoader implements IWadLoader {
 			// Init everything:
 			fileinfo = C2JUtils.createArrayOfObjects(filelump_t.class,(int)length);
 			
+			dis.close();
+			
 			handle=InputStreamSugar.streamSeek(handle,header.infotableofs,wadinfo.maxsize,uri,entry,type);
 			
+			// FIX: sometimes reading from zip files doesn't work well, so we pre-cache the TOC
+			byte[] TOC=new byte[(int) (length*filelump_t.sizeof())];
+			
+			int read=0;
+			while (read<TOC.length){ 
+			 // Make sure we have all of the TOC, sometimes ZipInputStream "misses" bytes.
+			 // when wrapped.
+			    read+=handle.read(TOC,read,TOC.length-read);
+			    }
+			
+			ByteArrayInputStream bais=new ByteArrayInputStream(TOC);
 			
 			// MAES: we can't read raw structs here, and even less BLOCKS of
 			// structs.
 
-			DoomIO.readObjectArray(new DataInputStream(handle),fileinfo, (int) length);
+			dis=new DataInputStream(bais);
+			DoomIO.readObjectArray(dis,fileinfo, (int) length);
 
 			numlumps += header.numlumps;
 			wadinfo.maxsize=estimateWadSize(header,lumpinfo);
@@ -1345,6 +1362,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.59  2011/12/05 12:31:34  velktron
+//Merged zip handling fix from HiColor
+//
 //Revision 1.58  2011/11/21 10:02:52  velktron
 //Added parametrization to reflection-using methods. Cleaneup a bit.
 //
