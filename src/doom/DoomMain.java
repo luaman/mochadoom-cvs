@@ -104,7 +104,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101 2011/11/06 17:35:38 velktron Exp $
+// $Id: DoomMain.java,v 1.102 2011/12/05 12:33:52 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -130,7 +130,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101 2011/11/06 17:35:38 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.102 2011/12/05 12:33:52 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1153,6 +1153,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         System.out.print ("R_Init: Init DOOM refresh daemon - ");
         R.Init ();
+        
+        System.out.print ("AM_Init: Init Automap colors - ");
+        AM.Init (); // Called here to set up configurable colors.
 
         System.out.print ("\nP_Init: Init Playloop state.\n");
         P.Init ();
@@ -4228,6 +4231,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.102  2011/12/05 12:33:52  velktron
+//Added AutoMap parametrization.
+//
 //Revision 1.101  2011/11/06 17:35:38  velktron
 //Fixed %i printf modifiers.
 //
