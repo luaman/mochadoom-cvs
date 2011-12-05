@@ -660,7 +660,6 @@ public void DrawScaledPatch(int x, int y, int scrn, IVideoScale VSI, patch_t pat
           byte[] src,int offset) {
       // This is "screens[scrn]"
       final byte[] dest = screens[scrn];
-      final byte[] data=src;
       
       if (doRangeCheck(x, y, scrn)) {
           I.Error("Bad V_DrawBlock");
