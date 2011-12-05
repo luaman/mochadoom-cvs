@@ -1287,8 +1287,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 	        maskedcolfunclow=new R_DrawColumnBoomLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
 
             // Fuzzy columns. These are also masked.
-	        fuzzcolfunc=fuzzcolfunchi=new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
-	        fuzzcolfunclow=new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+	        fuzzcolfunc=fuzzcolfunchi=new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        fuzzcolfunclow=new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
 
 	        // Translated columns are usually sprites-only.
             transcolfunc=transcolhigh=new R_DrawTranslatedColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
@@ -6215,7 +6215,9 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 		
 		
 		// MAES: blurry effect is hardcoded to this colormap.
-		BLURRY_MAP=colormaps[6];
+		// Pointless, since we don't use indexes. Instead, a half-brite
+		// processing works just fine.
+		BLURRY_MAP=colormaps[0];
 		// colormaps = (byte *)( ((int)colormaps + 255)&~0xff);		
 
 		
@@ -6472,8 +6474,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
         DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
         
         // Fuzzy columns. These are also masked.
-        DrawFuzzColumn=new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
-        DrawFuzzColumnLow=new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+        DrawFuzzColumn=new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+        DrawFuzzColumnLow=new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
         
         // Regular draw for solid columns/walls. Full optimizations.
         DrawColumn=new R_DrawColumnBoomOpt(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
