@@ -193,9 +193,9 @@ public abstract class AbstractLevelLoader
         // link into blockmap
         if (!flags(thing.flags, MF_NOBLOCKMAP)) {
             // inert things don't need to be in blockmap
-            blockx = (thing.x - bmaporgx) >> MAPBLOCKSHIFT;
-            blocky = (thing.y - bmaporgy) >> MAPBLOCKSHIFT;
-
+            blockx = getSafeBlockX(thing.x - bmaporgx);
+            blocky = getSafeBlockY(thing.y - bmaporgy);
+            
             // Valid block?
             if (blockx >= 0 && blockx < bmapwidth && blocky >= 0
                     && blocky < bmapheight) {
@@ -756,6 +756,19 @@ public abstract class AbstractLevelLoader
     // orphaned ones from the blockmap.
     protected boolean[] used_lines;
 
+    // MAES: extensions to support 512x512 blockmaps.
+    // They represent the maximum negative number which represents
+    // a positive offset, otherwise they are left at -257, which
+    // never triggers a check.
+    // If a blockmap index is ever LE than either, then
+    // its actual value is to be interpreted as 0x01FF&x.
+    // Full 512x512 blockmaps get this value set to -1.
+    // A 511x511 blockmap would still have a valid negative number
+    // e.g. -1..510, so they would be set to -2
+    
+    public int blockmapxneg=-257;
+    public int blockmapyneg=-257;
+
     /**
      * Returns an int[] array with orgx, orgy, and number of blocks. Order is:
      * orgx,orgy,bckx,bcky
@@ -848,5 +861,41 @@ public abstract class AbstractLevelLoader
         // Maes: purely academic. Most maps are well above 0.68
         // System.out.printf("Reject table density: %f",rejectDensity());
     }
+    
+    /** Gets the proper blockmap block for a given X 16.16 Coordinate, sanitized
+     *  for 512-wide blockmaps. 
+     * 
+     * @param blockx
+     * @return
+     */
 
+    public final int getSafeBlockX(int blockx){
+        blockx>>=MAPBLOCKSHIFT;
+        return (blockx<=this.blockmapxneg)?blockx&0x1FF:blockx;
+    }
+    
+    public final int getSafeBlockX(long blockx){
+        blockx>>=MAPBLOCKSHIFT;
+        return (int) ((blockx<=this.blockmapxneg)?blockx&0x1FF:blockx);
+    }
+    
+    /** Gets the proper blockmap block for a given Y 16.16 Coordinate, sanitized
+     *  for 512-wide blockmaps. 
+     * 
+     * @param blocky
+     * @return     */
+
+    
+    public final int getSafeBlockY(int blocky){
+        blocky>>=MAPBLOCKSHIFT;
+        return (blocky<=this.blockmapyneg)?blocky&0x1FF:blocky;
+    }
+    
+    public final int getSafeBlockY(long blocky){
+        blocky>>=MAPBLOCKSHIFT;
+        return (int) ((blocky<=this.blockmapyneg)?blocky&0x1FF:blocky);
+    }
+
+
+    
 }

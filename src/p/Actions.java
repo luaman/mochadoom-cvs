@@ -3291,10 +3291,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         numspechit = 0;
         
         // stomp on any things contacted
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+        xl = LL.getSafeBlockX(tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS);
+        xh = LL.getSafeBlockX(tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS);
+        yl = LL.getSafeBlockY(tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS);
+        yh = LL.getSafeBlockY(tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS);
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
@@ -3392,10 +3392,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         // because mobj_ts are grouped into mapblocks
         // based on their origin point, and can overlap
         // into adjacent blocks by up to MAXRADIUS units.
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
+        xl = LL.getSafeBlockX(tmbbox[BOXLEFT] - LL.bmaporgx - MAXRADIUS);
+        xh = LL.getSafeBlockX(tmbbox[BOXRIGHT] - LL.bmaporgx + MAXRADIUS);
+        yl = LL.getSafeBlockY(tmbbox[BOXBOTTOM] - LL.bmaporgy - MAXRADIUS);
+        yh = LL.getSafeBlockY(tmbbox[BOXTOP] - LL.bmaporgy + MAXRADIUS);
 
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
@@ -3403,11 +3403,20 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
             return false;
         
         // check lines
-        xl = (tmbbox[BOXLEFT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        xh = (tmbbox[BOXRIGHT] - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        yl = (tmbbox[BOXBOTTOM] - LL.bmaporgy)>>MAPBLOCKSHIFT;
-        yh = (tmbbox[BOXTOP] - LL.bmaporgy)>>MAPBLOCKSHIFT;
+        xl = LL.getSafeBlockX(tmbbox[BOXLEFT] - LL.bmaporgx);
+        xh = LL.getSafeBlockX(tmbbox[BOXRIGHT] - LL.bmaporgx);
+        yl = LL.getSafeBlockY(tmbbox[BOXBOTTOM] - LL.bmaporgy);
+        yh = LL.getSafeBlockY(tmbbox[BOXTOP] - LL.bmaporgy);
 
+        // Maes's quick and dirty blockmap extension hack
+        // E.g. for an extension of 511 blocks, max negative is -1.
+        // A full 512x512 blockmap doesn't have negative indexes.
+        
+        if (xl<=LL.blockmapxneg) xl=0x1FF&xl;         // Broke width boundary
+        if (xh<=LL.blockmapxneg) xh=0x1FF&xh;    // Broke width boundary
+        if (yl<=LL.blockmapyneg) yl=0x1FF&yl;        // Broke height boundary
+        if (yh<=LL.blockmapyneg) yh=0x1FF&yh;   // Broke height boundary     
+       
         for (bx=xl ; bx<=xh ; bx++)
         for (by=yl ; by<=yh ; by++)
             if (!BlockLinesIterator (bx,by,CheckLine))
@@ -4424,10 +4433,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         int dist; // fixed_t
         
         dist = (damage+MAXRADIUS)<<FRACBITS;
-        yh = (spot.y + dist - LL.bmaporgy)>>MAPBLOCKSHIFT;
-        yl = (spot.y - dist - LL.bmaporgy)>>MAPBLOCKSHIFT;
-        xh = (spot.x + dist - LL.bmaporgx)>>MAPBLOCKSHIFT;
-        xl = (spot.x - dist - LL.bmaporgx)>>MAPBLOCKSHIFT;
+        yh = LL.getSafeBlockY(spot.y + dist - LL.bmaporgy);
+        yl = LL.getSafeBlockY(spot.y - dist - LL.bmaporgy);
+        xh = LL.getSafeBlockX(spot.x + dist - LL.bmaporgx);
+        xl = LL.getSafeBlockX(spot.x - dist - LL.bmaporgx);
         bombspot = spot;
         bombsource = source;
         bombdamage = damage;
@@ -4535,62 +4544,75 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      * Returns true if the traverser function returns true
      * for all lines.
      */
-    boolean PathTraverse ( int x1,int y1,int x2,int y2,int flags,PTR_InterceptFunc trav)
-    {
-   // 	System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , " +y2);
-     int xt1,yt1;
-     int xt2, yt2;
-     
-     int xstep,ystep;
-     
-     int partial;
-     
-     int xintercept, yintercept;
-     
-     int     mapx;
-     int     mapy;
-     
-     int     mapxstep;
-     int     mapystep;
+	private final boolean PathTraverse(int x1, int y1, int x2, int y2, int flags,
+			PTR_InterceptFunc trav) {
+		// System.out.println("Pathtraverse "+x1+" , " +y1+" to "+x2 +" , "
+		// +y2);
+		final int xt1, yt1;
+		final int xt2, yt2;
+		final long _x1, _x2, _y1, _y2;
+		final int mapx1, mapy1;
+		final int xstep, ystep;
 
-     int     count;
-         
-     earlyout = flags(flags ,PT_EARLYOUT);
-         
-     R.increaseValidCount(1);
-     intercept_p = 0;
-     
-     if ( ((x1-LL.bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
-     x1 += FRACUNIT; // don't side exactly on a line
-     
-     if ( ((y1-LL.bmaporgy)&(MAPBLOCKSIZE-1)) == 0)
-     y1 += FRACUNIT; // don't side exactly on a line
+		int partial;
 
-     trace.x = x1;
-     trace.y = y1;
-     trace.dx = x2 - x1;
-     trace.dy = y2 - y1;
+		int xintercept, yintercept;
 
-     x1 -= LL.bmaporgx;
-     y1 -= LL.bmaporgy;
-     xt1 = x1>>MAPBLOCKSHIFT;
-     yt1 = y1>>MAPBLOCKSHIFT;
+		int mapx;
+		int mapy;
 
-     x2 -= LL.bmaporgx;
-     y2 -= LL.bmaporgy;
-     xt2 = x2>>MAPBLOCKSHIFT;
-     yt2 = y2>>MAPBLOCKSHIFT;
+		int mapxstep;
+		int mapystep;
 
+		int count;
+
+		earlyout = flags(flags, PT_EARLYOUT);
+
+		R.increaseValidCount(1);
+		intercept_p = 0;
+
+		if (((x1 - LL.bmaporgx) & (MAPBLOCKSIZE - 1)) == 0)
+			x1 += FRACUNIT; // don't side exactly on a line
+
+		if (((y1 - LL.bmaporgy) & (MAPBLOCKSIZE - 1)) == 0)
+			y1 += FRACUNIT; // don't side exactly on a line
+
+		trace.x = x1;
+		trace.y = y1;
+		trace.dx = x2 - x1;
+		trace.dy = y2 - y1;
+
+		// Code developed in common with entryway
+		// for prBoom+
+		
+		_x1 = (long) x1 - LL.bmaporgx;
+		_y1 = (long) y1 - LL.bmaporgy;
+		xt1 = (int) (_x1 >> MAPBLOCKSHIFT);
+		yt1 = (int) (_y1 >> MAPBLOCKSHIFT);
+
+		mapx1 = (int) (_x1 >> MAPBTOFRAC);
+		mapy1 = (int) (_y1 >> MAPBTOFRAC);
+
+		_x2 = (long) x2 - LL.bmaporgx;
+		_y2 = (long) y2 - LL.bmaporgy;
+		xt2 = (int) (_x2 >> MAPBLOCKSHIFT);
+		yt2 = (int) (_y2 >> MAPBLOCKSHIFT);
+
+		x1 -= LL.bmaporgx;
+		y1 -= LL.bmaporgy;
+		x2 -= LL.bmaporgx;
+		y2 -= LL.bmaporgy;
+		
      if (xt2 > xt1)
      {
      mapxstep = 1;
-     partial = FRACUNIT - ((x1>>MAPBTOFRAC)&(FRACUNIT-1));
+     partial = FRACUNIT - (mapx1&(FRACUNIT-1));
      ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
      }
      else if (xt2 < xt1)
      {
      mapxstep = -1;
-     partial = (x1>>MAPBTOFRAC)&(FRACUNIT-1);
+     partial = mapx1&(FRACUNIT-1);
      ystep = FixedDiv (y2-y1,Math.abs(x2-x1));
      }
      else
@@ -4600,19 +4622,19 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      ystep = 256*FRACUNIT;
      }   
 
-     yintercept = (y1>>MAPBTOFRAC) + FixedMul (partial, ystep);
+     yintercept = (int) (mapy1 + FixedMul (partial, ystep));
 
      
      if (yt2 > yt1)
      {
      mapystep = 1;
-     partial = FRACUNIT - ((y1>>MAPBTOFRAC)&(FRACUNIT-1));
+     partial = FRACUNIT - (mapy1&(FRACUNIT-1));
      xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else if (yt2 < yt1)
      {
      mapystep = -1;
-     partial = (y1>>MAPBTOFRAC)&(FRACUNIT-1);
+     partial = mapy1&(FRACUNIT-1);
      xstep = FixedDiv (x2-x1,Math.abs(y2-y1));
      }
      else
@@ -4621,7 +4643,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      partial = FRACUNIT;
      xstep = 256*FRACUNIT;
      }   
-     xintercept = (x1>>MAPBTOFRAC) + FixedMul (partial, xstep);
+     xintercept = (int) (mapx1 + FixedMul (partial, xstep));
      
      // Step through map blocks.
      // Count is present to prevent a round off error
@@ -4651,7 +4673,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      
      boolean changeX = (yintercept >> FRACBITS) == mapy;
      boolean changeY = (xintercept >> FRACBITS) == mapx;
-     if (changeX) // _D_ there is a rare case when changeX and changeY are both true, that is why I modified this section
+     if (changeX)
      {
          yintercept += ystep;
          mapx += mapxstep;

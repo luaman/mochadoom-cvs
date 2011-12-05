@@ -1732,6 +1732,15 @@ public class BoomLevelLoader
                 blockmaplump[i] = blockmaplump[i + 4];
         }
 
+        
+        // MAES: set blockmapxneg and blockmapyneg
+        // E.g. for a full 512x512 map, they should be both
+        // -1. For a 257*257, they should be both -255 etc.
+        if (bmapwidth>255)
+            blockmapxneg= bmapwidth-512;
+        if (bmapheight>255)
+            blockmapyneg= bmapheight-512;
+        
         blockmap = blockmaplump;
 
     }
@@ -1839,23 +1848,19 @@ public class BoomLevelLoader
             }
 
             // adjust bounding box to map blocks
-            block =
-                (bbox[BOXTOP] - bmaporgy + Limits.MAXRADIUS) >> MAPBLOCKSHIFT;
+            block =getSafeBlockY(bbox[BOXTOP] - bmaporgy + Limits.MAXRADIUS);
             block = block >= bmapheight ? bmapheight - 1 : block;
             sector.blockbox[BOXTOP] = block;
 
-            block =
-                (bbox[BOXBOTTOM] - bmaporgy - Limits.MAXRADIUS) >> MAPBLOCKSHIFT;
+            block =getSafeBlockY(bbox[BOXBOTTOM] - bmaporgy - Limits.MAXRADIUS);
             block = block < 0 ? 0 : block;
             sector.blockbox[BOXBOTTOM] = block;
 
-            block =
-                (bbox[BOXRIGHT] - bmaporgx + Limits.MAXRADIUS) >> MAPBLOCKSHIFT;
+            block =getSafeBlockX(bbox[BOXRIGHT] - bmaporgx + Limits.MAXRADIUS);
             block = block >= bmapwidth ? bmapwidth - 1 : block;
             sector.blockbox[BOXRIGHT] = block;
 
-            block =
-                (bbox[BOXLEFT] - bmaporgx - Limits.MAXRADIUS) >> MAPBLOCKSHIFT;
+            block =getSafeBlockX(bbox[BOXLEFT] - bmaporgx - Limits.MAXRADIUS);
             block = block < 0 ? 0 : block;
             sector.blockbox[BOXLEFT] = block;
         }

@@ -329,8 +329,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      */
 
     public void UnsetThingPosition(mobj_t thing) {
-        int blockx;
-        int blocky;
+        final int blockx;
+        final int blocky;
 
         if (!flags(thing.flags, MF_NOSECTOR)) {
             // inert things don't need to be in blockmap?
@@ -353,9 +353,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (thing.bprev != null)
                 ((mobj_t) thing.bprev).bnext = thing.bnext;
             else {
-                blockx = (thing.x - LL.bmaporgx) >> MAPBLOCKSHIFT;
-                blocky = (thing.y - LL.bmaporgy) >> MAPBLOCKSHIFT;
-
+                blockx = LL.getSafeBlockX(thing.x - LL.bmaporgx);
+                blocky = LL.getSafeBlockY(thing.y - LL.bmaporgy);
+                
                 if (blockx >= 0 && blockx < LL.bmapwidth && blocky >= 0
                         && blocky < LL.bmapheight) {
                     LL.blocklinks[blocky * LL.bmapwidth + blockx] =
