@@ -371,6 +371,10 @@ public class PaletteGenerator {
         return (short) ((ri<<10) + (gi<<5) + bi);
     }
     
+    public static final short getRGB555(int rgb){
+        return getRGB555(getRed(rgb),getGreen(rgb),getBlue(rgb));
+    }
+    
     /**RF_BuildLights lifted from dcolors.c
      * 
      * Used to compute extended-color colormaps even in absence of the
@@ -414,20 +418,64 @@ public class PaletteGenerator {
     
     private static final void BuildSpecials15 (short[] stuff, int[] palette)
     {
-        int     c,gray;
-        float   red, green, blue;;
+        int     c,gray,best;
+        int   red, green, blue;;
 
         for (c=0;c<256;c++)
         {
-            red = (float) (getRed(palette[c]) / 256.0);
-            green = (float) (getGreen(palette[c]) / 256.0);
-            blue = (float) (getBlue(palette[c]) / 256.0);
+            red = getRed(palette[c]);
+            green = getGreen(palette[c]);
+            blue = getBlue(palette[c]);
 
-            gray = (int) (255*(1.0-(red*0.299 + green*0.587 + blue*0.144)));            
+            gray = (int) (255*(1.0-((float)red*0.299/256.0 + 
+            						(float)green*0.587/256.0 +
+            						(float)blue*0.144/256.0)));            
             
-            stuff[c] = getRGB555(gray,gray,gray);
+            // We are not done. Because of the grayscaling, the all-white cmap
+            
+            best=palette[BestColor(gray,gray,gray,palette,0,255)];
+            stuff[c] = getRGB555(best);
+            
         }
+        
+
+        // will lack tinting.
+        
+        
     }
+    
+    public static final int BestColor (int r, int g, int b, int[] palette, int rangel, int rangeh)
+	{
+		int	i;
+		long	dr, dg, db;
+		long	bestdistortion, distortion;
+		int	bestcolor;
+		int	pal;
+
+	//
+	// let any color go to 0 as a last resort
+	//
+		bestdistortion = ( (long)r*r + (long)g*g + (long)b*b )*2;
+		bestcolor = 0;
+
+		for (i=rangel ; i<= rangeh ; i++)
+		{
+			dr = r - getRed(palette[i]);
+			dg = g - getGreen(palette[i]);
+			db = b - getBlue(palette[i]);
+			distortion = dr*dr + dg*dg + db*db;
+			if (distortion < bestdistortion)
+			{
+				if (distortion==0)
+					return i;		// perfect match
+
+				bestdistortion = distortion;
+				bestcolor = i;
+			}
+		}
+
+		return bestcolor;
+	}
     
     /** Variation that produces true-color lightmaps
      * 
