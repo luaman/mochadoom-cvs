@@ -16,7 +16,7 @@ import static m.BBox.BOXLEFT;
 import static m.BBox.BOXRIGHT;
 import static m.BBox.BOXTOP;
 import static m.fixed_t.*;
-import static utils.C2JUtils.flags;
+import static utils.C2JUtils.eval;
 import defines.slopetype_t;
 import doom.thinker_t;
 
@@ -244,7 +244,7 @@ public class line_t
      */
 
     public sector_t getNextSector(sector_t sec) {
-        if (!flags(flags, ML_TWOSIDED))
+        if (!eval(flags& ML_TWOSIDED))
             return null;
 
         if (frontsector == sec)
