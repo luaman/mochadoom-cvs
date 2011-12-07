@@ -301,12 +301,11 @@ public class PaletteGenerator {
     
     public static final short rgb888to555(int rgb) {
         int ri, gi, bi;
+        ri = (0xF80000 & rgb) >> 9;
+        gi = (0x00F800 & rgb) >> 6;
+        bi = (0x0000F8 & rgb) >> 3;
 
-        ri = (0xFF0000 & rgb) >> 19;
-        gi = (0x00FF00 & rgb) >> 11;
-        bi = (0x0000FF & rgb) >> 3;
-
-        return (short) ((ri << 10) + (gi << 5) + (bi));
+        return (short) (ri + gi+bi);
     }
 
     /** Get packed RGB_555 word from individual 8-bit RGB components. 
@@ -360,11 +359,11 @@ public class PaletteGenerator {
     public static final short getRGB555(int red,int green,int blue){
         int ri,gi,bi;
         
-        ri = (((red+4)>255?255:red+4))>>3;
+        ri = (red+4)>>3;
         ri = ri > 31 ? 31 : ri;
-        gi = (((green+4)>255?255:green+4))>>3;
+        gi = (green+4)>>3;
         gi = gi > 31 ? 31 : gi;
-        bi = (((blue+4)>255?255:blue+4))>>3;
+        bi = (blue+4)>>3;
         bi = bi > 31 ? 31 : bi;
 
         // RGB555 for HiColor
@@ -416,18 +415,54 @@ public class PaletteGenerator {
     {
         int     c,gray;
         float   red, green, blue;;
-
+        
         for (c=0;c<256;c++)
         {
-            red = (float) (getRed(palette[c]) / 256.0);
-            green = (float) (getGreen(palette[c]) / 256.0);
-            blue = (float) (getBlue(palette[c]) / 256.0);
+            red = getRed(palette[c]);
+            green = getGreen(palette[c]);
+            blue = getBlue(palette[c]);
 
-            gray = (int) (255*(1.0-(red*0.299 + green*0.587 + blue*0.144)));            
+            gray = (int) (255*(1.0-((float)(red*0.299)/256.0 + 
+            						(float)(green*0.587)/256.0 +
+            						(float)(blue*0.144)/256.0)));            
             
-            stuff[c] = getRGB555(gray,gray,gray);
+            // We are not done. Because of the grayscaling, the all-white cmap
+            
+            stuff[c]=rgb888to555(palette[BestColor(gray,gray,gray,palette,0,255)]);
         }
     }
+    
+    public static final int BestColor (int r, int g, int b, int[] palette, int rangel, int rangeh)
+	{
+		int	i;
+		long	dr, dg, db;
+		long	bestdistortion, distortion;
+		int	bestcolor;
+
+	//
+	// let any color go to 0 as a last resort
+	//
+		bestdistortion = (long) (r*r + g*g + b*b );
+		bestcolor = 0;
+
+		for (i=rangel ; i<= rangeh ; i++)
+		{
+			dr = r - getRed(palette[i]);
+			dg = g - getGreen(palette[i]);
+			db = b - getBlue(palette[i]);
+			distortion = (long) (dr*dr + dg*dg + db*db );
+			if (distortion < bestdistortion)
+			{
+				if (distortion==0)
+					return i;		// perfect match
+
+				bestdistortion = distortion;
+				bestcolor = i;
+			}
+		}
+
+		return bestcolor;
+	}
     
     /** Variation that produces true-color lightmaps
      * 
