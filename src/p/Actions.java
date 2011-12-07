@@ -26,11 +26,9 @@ import static data.Defines.USERANGE;
 import static data.Defines.VIEWHEIGHT;
 import static data.Defines.pw_invulnerability;
 import static data.Limits.CEILSPEED;
-import static data.Limits.MAXBUTTONS;
 import static data.Limits.MAXCEILINGS;
 import static data.Limits.MAXINT;
 import static data.Limits.MAXMOVE;
-import static data.Limits.MAXPLATS;
 import static data.Limits.MAXPLAYERS;
 import static data.Limits.MAXRADIUS;
 import static data.Limits.MAXSPECIALCROSS;
@@ -135,7 +133,7 @@ public class Actions extends UnifiedGameMap {
                     ceiling.topheight,
                     false,1,ceiling.direction);
           
-          if (!flags(DM.leveltime,7))
+          if (!eval(DM.leveltime&7))
           {
               switch(ceiling.type)
               {
@@ -158,7 +156,7 @@ public class Actions extends UnifiedGameMap {
               break;
               
                 case silentCrushAndRaise:
-              ; // TODO:((mobj_t *)&ceiling.sector.soundorg, sfx_pstop);
+                    S.StartSound(ceiling.sector.soundorg, sfxenum_t.sfx_pstop);
                 case fastCrushAndRaise:
                 case crushAndRaise:
               ceiling.direction = -1;
@@ -178,7 +176,7 @@ public class Actions extends UnifiedGameMap {
                     ceiling.bottomheight,
                     ceiling.crush,1,ceiling.direction);
           
-          if (!flags(DM.leveltime,7))
+          if (!eval(DM.leveltime&7))
           {
               switch(ceiling.type)
               {
@@ -312,7 +310,7 @@ public class Actions extends UnifiedGameMap {
                     floor.floordestheight,
                     floor.crush,0,floor.direction);
           
-          if (!flags(DM.leveltime,7))
+          if (!eval(DM.leveltime&7))
               
         	  S.StartSound(floor.sector.soundorg,  sfxenum_t.sfx_stnmov);
           
@@ -460,7 +458,7 @@ public class Actions extends UnifiedGameMap {
           s2 = s1.lines[0].getNextSector(s1);
           for (i = 0;i < s2.linecount;i++)
           {
-              if ((!flags(s2.lines[i].flags , ML_TWOSIDED)) ||
+              if ((!eval(s2.lines[i].flags & ML_TWOSIDED)) ||
               (s2.lines[i].backsector == s1))
               continue;
               s3 = s2.lines[i].backsector;
@@ -776,7 +774,7 @@ public class Actions extends UnifiedGameMap {
               ok = false;
               for (i = 0;i < sec.linecount;i++)
               {
-              if ( !flags((sec.lines[i]).flags , ML_TWOSIDED) )
+              if ( !eval((sec.lines[i]).flags & ML_TWOSIDED) )
                   continue;
                           
               tsec = (sec.lines[i]).frontsector;
@@ -1327,7 +1325,7 @@ public class Actions extends UnifiedGameMap {
         if (!try_ok)
         {
         // open any specials
-        if (flags(actor.flags , MF_FLOAT) && floatok)
+        if (eval(actor.flags & MF_FLOAT) && floatok)
         {
             // must adjust height
             if (actor.z < tmfloorz)
@@ -1361,18 +1359,18 @@ public class Actions extends UnifiedGameMap {
         }
         
         
-        if (! flags(actor.flags , MF_FLOAT) )   
+        if (! eval(actor.flags & MF_FLOAT) )   
         actor.z = actor.floorz;
         return true; 
     }
 
+    //dirtype
+    private int d1,d2;
+    
     void NewChaseDir (mobj_t actor)
     {
         // fixed_t
-        int deltax,deltay;
-        
-        //dirtype
-        int   d[]=new int[3];
+        int deltax,deltay;        
         
         int     tdir;
         int   olddir;
@@ -1389,22 +1387,22 @@ public class Actions extends UnifiedGameMap {
         deltay = actor.target.y - actor.y;
 
         if (deltax>10*FRACUNIT)
-        d[1]= DI_EAST;
+        d1= DI_EAST;
         else if (deltax<-10*FRACUNIT)
-        d[1]= DI_WEST;
+        d1= DI_WEST;
         else
-        d[1]=DI_NODIR;
+        d1=DI_NODIR;
 
         if (deltay<-10*FRACUNIT)
-        d[2]= DI_SOUTH;
+        d2= DI_SOUTH;
         else if (deltay>10*FRACUNIT)
-        d[2]= DI_NORTH;
+        d2= DI_NORTH;
         else
-        d[2]=DI_NODIR;
+        d2=DI_NODIR;
 
         // try direct route
-        if (d[1] != DI_NODIR
-        && d[2] != DI_NODIR)
+        if (d1 != DI_NODIR
+        && d2 != DI_NODIR)
         {
         actor.movedir = diags[(eval(deltay<0)<<1)+eval(deltax>0)];
         if (actor.movedir != turnaround && TryWalk(actor))
@@ -1415,19 +1413,19 @@ public class Actions extends UnifiedGameMap {
         if (RND.P_Random() > 200
         ||  Math.abs(deltay)>Math.abs(deltax))
         {
-        tdir=d[1];
-        d[1]=d[2];
-        d[2]=tdir;
+        tdir=d1;
+        d1=d2;
+        d2=tdir;
         }
 
-        if (d[1]==turnaround)
-        d[1]=DI_NODIR;
-        if (d[2]==turnaround)
-        d[2]=DI_NODIR;
+        if (d1==turnaround)
+        d1=DI_NODIR;
+        if (d2==turnaround)
+        d2=DI_NODIR;
         
-        if (d[1]!=DI_NODIR)
+        if (d1!=DI_NODIR)
         {
-        actor.movedir = d[1];
+        actor.movedir = d1;
         if (TryWalk(actor))
         {
             // either moved forward or attacked
@@ -1435,9 +1433,9 @@ public class Actions extends UnifiedGameMap {
         }
         }
 
-        if (d[2]!=DI_NODIR)
+        if (d2!=DI_NODIR)
         {
-        actor.movedir =d[2];
+        actor.movedir =d2;
 
         if (TryWalk(actor))
             return;
@@ -1454,7 +1452,7 @@ public class Actions extends UnifiedGameMap {
         }
 
         // randomly determine direction of search
-        if (flags(RND.P_Random(),1))   
+        if (eval(RND.P_Random()&1))   
         {
         for ( tdir=DI_EAST;
               tdir<=DI_SOUTHEAST;
@@ -1555,7 +1553,7 @@ S.StartSound(mo, sfxenum_t.sfx_telept);
 mthing = mobj.spawnpoint;
 
 // spawn it
-if (flags(mobj.info.flags , MF_SPAWNCEILING))
+if (eval(mobj.info.flags & MF_SPAWNCEILING))
 z = ONCEILINGZ;
 else
 z = ONFLOORZ;
@@ -1565,7 +1563,7 @@ mo = SpawnMobj (x,y,z, mobj.type);
 mo.spawnpoint = mobj.spawnpoint;  
 mo.angle = ANG45 * (mthing.angle/45);
 
-if (flags(mthing.options , MTF_AMBUSH))
+if (eval(mthing.options & MTF_AMBUSH))
 mo.flags |= MF_AMBUSH;
 
 mo.reactiontime = 18;
@@ -1687,7 +1685,7 @@ if (mthing.type == mobjinfo[i].doomednum)
 }
 
 // spawn it
-if (flags(mobjinfo[i].flags ,MF_SPAWNCEILING))
+if (eval(mobjinfo[i].flags &MF_SPAWNCEILING))
 z = ONCEILINGZ;
 else
 z = ONFLOORZ;
@@ -1817,7 +1815,7 @@ return null;
 }
 
 // check for apropriate skill level
-if (!DM.netgame && flags(mthing.options , 16) )
+if (!DM.netgame && eval(mthing.options & 16) )
 return null;
   
 if (DM.gameskill == skill_t.sk_baby)
@@ -1827,7 +1825,7 @@ bit = 4;
 else
 bit = 1<<(DM.gameskill.ordinal()-1);
 
-if (!flags(mthing.options , bit) )
+if (!eval(mthing.options & bit) )
 return null;
 
 // find which type to spawn
@@ -1847,13 +1845,13 @@ System.err.printf ("P_SpawnMapThing: Unknown type %d at (%d, %d)",
 }
   
 // don't spawn keycards and players in deathmatch
-if (DM.deathmatch && flags(mobjinfo[i].flags , MF_NOTDMATCH))
+if (DM.deathmatch && eval(mobjinfo[i].flags & MF_NOTDMATCH))
 return null;
   
 // don't spawn any monsters if -nomonsters
 if (DM.nomonsters
 && ( i == mobjtype_t.MT_SKULL.ordinal()
-   || flags(mobjinfo[i].flags , MF_COUNTKILL)) )
+   || eval(mobjinfo[i].flags & MF_COUNTKILL)) )
 {
 return null;
 }
@@ -1862,7 +1860,7 @@ return null;
 x = mthing.x << FRACBITS;
 y = mthing.y << FRACBITS;
 
-if (flags(mobjinfo[i].flags , MF_SPAWNCEILING))
+if (eval(mobjinfo[i].flags & MF_SPAWNCEILING))
 z = ONCEILINGZ;
 else
 z = ONFLOORZ;
@@ -1872,13 +1870,13 @@ mobj.spawnpoint.copyFrom(mthing);
 
 if (mobj.tics > 0)
 mobj.tics = 1 + (RND.P_Random () % mobj.tics);
-if (flags(mobj.flags , MF_COUNTKILL))
+if (eval(mobj.flags & MF_COUNTKILL))
 DM.totalkills++;
-if (flags(mobj.flags , MF_COUNTITEM))
+if (eval(mobj.flags & MF_COUNTITEM))
 DM.totalitems++;
   
 mobj.angle = ANG45 * (mthing.angle/45);
-if (flags(mthing.options , MTF_AMBUSH))
+if (eval(mthing.options & MTF_AMBUSH))
 mobj.flags |= MF_AMBUSH;
 
 return mobj;
@@ -1971,7 +1969,7 @@ th.target = source;    // where it came from
 an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y)&BITS32;  
 
 // fuzzy player
-if (flags(dest.flags , MF_SHADOW))
+if (eval(dest.flags & MF_SHADOW))
 an += (RND.P_Random()-RND.P_Random())<<20; 
 
 th.angle = an&BITS32;
@@ -2073,13 +2071,13 @@ CheckMissileSpawn (th);
         int thrust; // fixed_t
         int     temp;
         
-        if ( !flags(target.flags, MF_SHOOTABLE))
+        if ( !eval(target.flags& MF_SHOOTABLE))
         return; // shouldn't happen...
             
         if (target.health <= 0)
         return;
 
-        if ( flags(target.flags , MF_SKULLFLY ))
+        if ( eval(target.flags & MF_SKULLFLY ))
         {
         target.momx = target.momy = target.momz = 0;
         }
@@ -2093,7 +2091,7 @@ CheckMissileSpawn (th);
         // inflict thrust and push the victim out of reach,
         // thus kick away unless using the chainsaw.
         if ((inflictor !=null)
-        && !flags(target.flags, MF_NOCLIP)
+        && !eval(target.flags& MF_NOCLIP)
         && (source==null
             || source.player==null
             || source.player.readyweapon != weapontype_t.wp_chainsaw))
@@ -2109,7 +2107,7 @@ CheckMissileSpawn (th);
         if ( (damage < 40)
              && (damage > target.health)
              && (target.z - inflictor.z > 64*FRACUNIT)
-             && flags(RND.P_Random(),1) )
+             && eval(RND.P_Random()&1) )
         {
             ang += ANG180;
             thrust *= 4;
@@ -2134,7 +2132,7 @@ CheckMissileSpawn (th);
         // Below certain threshold,
         // ignore damage in GOD mode, or with INVUL power.
         if ( damage < 1000
-             && ( flags(player.cheats,player_t.CF_GODMODE))
+             && ( eval(player.cheats&player_t.CF_GODMODE))
               || player.powers[pw_invulnerability]!=0 ) 
         {
             return;
@@ -2181,7 +2179,7 @@ CheckMissileSpawn (th);
         }
 
         if ( (RND.P_Random () < target.info.painchance)
-         && !flags(target.flags,MF_SKULLFLY) )
+         && !eval(target.flags&MF_SKULLFLY) )
         {
         target.flags |= MF_JUSTHIT;    // fight back!
         
@@ -2916,7 +2914,7 @@ mobj_t  thing )
             {
             li = (line_t) in.d();
             
-            if ( !flags(li.flags , ML_TWOSIDED) )
+            if ( !eval(li.flags & ML_TWOSIDED) )
                 return false;       // stop
             
             // Crosses a two sided line.
@@ -2954,7 +2952,7 @@ mobj_t  thing )
             if (th == shootthing)
             return true;            // can't shoot self
             
-            if (!flags(th.flags,MF_SHOOTABLE))
+            if (!eval(th.flags&MF_SHOOTABLE))
             return true;            // corpse or something
 
             // check angles to see if the thing can be aimed at
@@ -3004,7 +3002,7 @@ mobj_t  thing )
         if (li.special!=0)
             ShootSpecialLine (shootthing, li);
 
-        if ( !flags(li.flags, ML_TWOSIDED) ) 
+        if ( !eval(li.flags& ML_TWOSIDED) ) 
             return gotoHitLine(in, li);
 
         // crosses a two sided line
@@ -3036,7 +3034,7 @@ mobj_t  thing )
     if (th == shootthing)
         return true;        // can't shoot self
 
-    if (!flags(th.flags,MF_SHOOTABLE))
+    if (!eval(th.flags&MF_SHOOTABLE))
         return true;        // corpse or something
 
     // check angles to see if the thing can be aimed at
@@ -3062,7 +3060,7 @@ mobj_t  thing )
 
     // Spawn bullet puffs or blod spots,
     // depending on target type.
-    if (flags(((mobj_t)in.d()).flags , MF_NOBLOOD))
+    if (eval(((mobj_t)in.d()).flags & MF_NOBLOOD))
         SpawnPuff (x,y,z);
     else
         SpawnBlood (x,y,z, la_damage);
@@ -3120,7 +3118,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
             
         li = (line_t) in.d();
         
-        if ( ! flags(li.flags ,ML_TWOSIDED) )
+        if ( ! eval(li.flags &ML_TWOSIDED) )
         {
         if (li.PointOnLineSide (slidemo.x, slidemo.y))
         {
@@ -3384,7 +3382,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         R.increaseValidCount(1);
         numspechit = 0;
 
-        if ( flags(tmflags ,MF_NOCLIP ))
+        if ( eval(tmflags &MF_NOCLIP ))
         return true;
         
         // Check things first, possibly picking things up.
@@ -3448,22 +3446,22 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         if (!CheckPosition (thing, x, y))
         return false;       // solid wall or thing
         
-        if ( !flags(thing.flags, MF_NOCLIP) )
+        if ( !eval(thing.flags& MF_NOCLIP) )
         {
         if (tmceilingz - tmfloorz < thing.height)
             return false;   // doesn't fit
 
         floatok = true;
         
-        if ( !flags(thing.flags,MF_TELEPORT) 
+        if ( !eval(thing.flags&MF_TELEPORT) 
              &&tmceilingz - thing.z < thing.height)
             return false;   // mobj must lower itself to fit
 
-        if ( !flags(thing.flags,MF_TELEPORT)
+        if ( !eval(thing.flags&MF_TELEPORT)
              && tmfloorz - thing.z > 24*FRACUNIT )
             return false;   // too big a step up
 
-        if ( !flags(thing.flags,(MF_DROPOFF|MF_FLOAT))
+        if ( !eval(thing.flags&(MF_DROPOFF|MF_FLOAT))
              && tmfloorz - tmdropoffz > 24*FRACUNIT )
             return false;   // don't stand over a dropoff
         }
@@ -3482,7 +3480,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         LL.SetThingPosition (thing);
         
         // if any special lines were hit, do the effect
-        if (! flags(thing.flags,(MF_TELEPORT|MF_NOCLIP)) )
+        if (! eval(thing.flags&(MF_TELEPORT|MF_NOCLIP)) )
         {
         while (numspechit-->0)
         {
@@ -3591,13 +3589,12 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         
         side = ld.PointOnLineSide (slidemo.x, slidemo.y);
         
-        lineangle = R.PointToAngle2 (0,0, ld.dx, ld.dy)&BITS32;
+        lineangle = R.PointToAngle2 (0,0, ld.dx, ld.dy);
 
         if (side == true)
         lineangle += ANG180;
-        lineangle&=BITS32;
 
-        moveangle = R.PointToAngle2 (0,0, tmxmove, tmymove)&BITS32;
+        moveangle = R.PointToAngle2 (0,0, tmxmove, tmymove);
         deltaangle = (moveangle-lineangle)&BITS32;
 
         if (deltaangle > ANG180)
@@ -3633,9 +3630,8 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
             
         slidemo = mo;
         hitcount = 0;
-        boolean retry=true;
         
-      while(retry){
+      do {
         if (++hitcount == 3) {
             // goto stairstep
             if (!TryMove (mo, mo.x, mo.y + mo.momy))
@@ -3718,9 +3714,9 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
         mo.momx = tmxmove;
         mo.momy = tmymove;
-            
-        retry=!TryMove (mo, mo.x+tmxmove, mo.y+tmymove);
-        }
+        
+          }
+        while (!TryMove (mo, mo.x+tmxmove, mo.y+tmymove));
     }
 
     //
@@ -3787,7 +3783,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       {   // try to slide along it
       SlideMove (mo);
       }
-      else if (flags(mo.flags , MF_MISSILE))
+      else if (eval(mo.flags & MF_MISSILE))
       {
       // explode a missile
       if (ceilingline!=null &&
@@ -3808,20 +3804,20 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     } while ((xmove | ymove)!=0);
 
     // slow down
-    if (player!=null && flags(player.cheats , player_t.CF_NOMOMENTUM))
+    if (player!=null && eval(player.cheats & player_t.CF_NOMOMENTUM))
     {
     // debug option for no sliding at all
     mo.momx = mo.momy = 0;
     return;
     }
 
-    if (flags(mo.flags , (MF_MISSILE | MF_SKULLFLY)) )
+    if (eval(mo.flags & (MF_MISSILE | MF_SKULLFLY)) )
     return;     // no friction for missiles ever
       
     if (mo.z > mo.floorz)
     return;     // no friction when airborne
 
-    if (flags(mo.flags , MF_CORPSE))
+    if (eval(mo.flags & MF_CORPSE))
     {
     // do not stop sliding
     //  if halfway off a step with some momentum
@@ -4028,7 +4024,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         if (thing.player==/*!=*/null)
         {
        // never open secret doors
-       if (flags(line.flags, ML_SECRET))
+       if (eval(line.flags& ML_SECRET))
            return false;
        
        switch(line.special)
@@ -4653,13 +4649,13 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      
      for (count = 0 ; count < 64 ; count++)
      {
-     if (flags(flags ,PT_ADDLINES))
+     if (eval(flags &PT_ADDLINES))
      {
          if (!BlockLinesIterator (mapx, mapy,AddLineIntercepts))
          return false;   // early out
      }
      
-     if (flags(flags ,PT_ADDTHINGS))
+     if (eval(flags &PT_ADDTHINGS))
      {
          if (!BlockThingsIterator (mapx, mapy,AddThingIntercepts))
          return false;   // early out
@@ -5122,7 +5118,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       if (plat.type == plattype_e.raiseAndChange
           || plat.type == plattype_e.raiseToNearestAndChange)
       {
-          if (!flags(DM.leveltime,7))
+          if (!eval(DM.leveltime&7))
           S.StartSound(plat.sector.soundorg, sfxenum_t.sfx_stnmov);
       }
       
@@ -5300,7 +5296,7 @@ class PIT_VileCheck  implements PIT_MobjFunction {
     int     maxdist;
     boolean check;
     
-    if (!flags(thing.flags ,MF_CORPSE) )
+    if (!eval(thing.flags &MF_CORPSE) )
     return true;    // not a monster
     
     if (thing.tics != -1)
@@ -5359,7 +5355,7 @@ public boolean invoke (mobj_t   thing)
     }
 
     // crunch dropped items
-    if (flags(thing.flags, MF_DROPPED))
+    if (eval(thing.flags& MF_DROPPED))
     {
     A.RemoveMobj (thing);
     
@@ -5367,7 +5363,7 @@ public boolean invoke (mobj_t   thing)
     return true;        
     }
 
-    if (! flags(thing.flags , MF_SHOOTABLE) )
+    if (! eval(thing.flags & MF_SHOOTABLE) )
     {
     // assume it is bloody gibs or something
     return true;            
@@ -5375,7 +5371,7 @@ public boolean invoke (mobj_t   thing)
     
     nofit = true;
 
-    if (crushchange && !flags(DM.leveltime,3) )
+    if (crushchange && !eval(DM.leveltime&3) )
     {
     A.DamageMobj( thing,null,null,10);
 
@@ -5424,12 +5420,12 @@ protected class PIT_CheckLine implements PIT_LineFunction {
     if (ld.backsector==null)
     return false;       // one sided line
         
-    if (!flags(tmthing.flags, MF_MISSILE) )
+    if (!eval(tmthing.flags& MF_MISSILE) )
     {
-    if ( flags(ld.flags, ML_BLOCKING) )
+    if ( eval(ld.flags& ML_BLOCKING) )
         return false;   // explicitly blocking everything
 
-    if ( (tmthing.player==null) && flags(ld.flags, ML_BLOCKMONSTERS ))
+    if ( (tmthing.player==null) && eval(ld.flags& ML_BLOCKMONSTERS ))
         return false;   // block monsters only
     }
 
@@ -5505,7 +5501,7 @@ private class PIT_CheckThing  implements PIT_MobjFunction {
 
     
     // missiles can hit other things
-    if (flags(tmthing.flags , MF_MISSILE))
+    if (eval(tmthing.flags & MF_MISSILE))
     {
     // see if it went over / under
     if (tmthing.z > thing.z + thing.height)
@@ -5530,10 +5526,10 @@ private class PIT_CheckThing  implements PIT_MobjFunction {
         }
     }
     
-    if (! flags(thing.flags ,MF_SHOOTABLE) )
+    if (! eval(thing.flags &MF_SHOOTABLE) )
     {
         // didn't do any damage
-        return !flags(thing.flags , MF_SOLID);   
+        return !eval(thing.flags & MF_SOLID);   
     }
     
     // damage / explode
@@ -5545,10 +5541,10 @@ private class PIT_CheckThing  implements PIT_MobjFunction {
     }
     
     // check for special pickup
-    if (flags(thing.flags , MF_SPECIAL))
+    if (eval(thing.flags & MF_SPECIAL))
     {
-    solid = flags(thing.flags,MF_SOLID);
-    if (flags(tmflags,MF_PICKUP))
+    solid = eval(thing.flags&MF_SOLID);
+    if (eval(tmflags&MF_PICKUP))
     {
         // can remove thing
         A.TouchSpecialThing (thing, tmthing);
@@ -5556,7 +5552,7 @@ private class PIT_CheckThing  implements PIT_MobjFunction {
     return !solid;
     }
     
-    return !flags(thing.flags ,MF_SOLID);
+    return !eval(thing.flags &MF_SOLID);
 }
 
 }
@@ -5572,7 +5568,7 @@ private class PIT_RadiusAttack implements PIT_MobjFunction {
 {
     int dx,dy,dist; // fixed_t
     
-    if (!flags(thing.flags , MF_SHOOTABLE) )
+    if (!eval(thing.flags & MF_SHOOTABLE) )
     return true;
 
     // Boss spider and cyborg

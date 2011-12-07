@@ -819,7 +819,7 @@ public class ActionFunctions implements DoomStatusAware{
 	    public void invoke(mobj_t  mobj){
 			// momentum movement
 			if (mobj.momx != 0 || mobj.momy != 0
-					|| (flags(mobj.flags, MF_SKULLFLY))) {
+					|| (eval(mobj.flags& MF_SKULLFLY))) {
 				A.XYMovement(mobj);
 
 				// FIXME: decent NOP/NULL/Nil function pointer please.
@@ -847,7 +847,7 @@ public class ActionFunctions implements DoomStatusAware{
 						return; // freed itself
 			} else {
 				// check for nightmare respawn
-				if (!flags(mobj.flags, MF_COUNTKILL))
+				if (!eval(mobj.flags& MF_COUNTKILL))
 					return;
 
 				if (!DS.respawnmonsters)
@@ -858,7 +858,7 @@ public class ActionFunctions implements DoomStatusAware{
 				if (mobj.movecount < 12 * 35)
 					return;
 
-				if (flags(DS.leveltime, 31))
+				if (eval(DS.leveltime& 31))
 					return;
 
 				if (RND.P_Random() > 4)
@@ -1033,7 +1033,7 @@ public class ActionFunctions implements DoomStatusAware{
                         actor.target.x,
                         actor.target.y)&BITS32;
         
-        if (flags(actor.target.flags , MF_SHADOW))
+        if (eval(actor.target.flags & MF_SHADOW))
         actor.angle += (RND.P_Random()-RND.P_Random())<<21;
         actor.angle&=BITS32;
     	}
@@ -1283,7 +1283,7 @@ public class ActionFunctions implements DoomStatusAware{
         mobj_t  dest;
         mobj_t  th;
             
-        if (flags(DS.gametic ,3))
+        if (eval(DS.gametic &3))
         return;
         
         // spawn a puff of smoke behind the rocket      
@@ -1598,7 +1598,7 @@ public class ActionFunctions implements DoomStatusAware{
         A_FaceTarget (actor);
 
         fog = A.SpawnMobj (actor.target.x,
-                   actor.target.x,
+                   actor.target.y,
                    actor.target.z, mobjtype_t.MT_FIRE);
         
         actor.tracer = fog;
@@ -1926,7 +1926,7 @@ public class ActionFunctions implements DoomStatusAware{
         
         // check for fire
         //  the missile launcher and bfg do not auto fire
-        if (flags(player.cmd.buttons , BT_ATTACK))
+        if (eval(player.cmd.buttons & BT_ATTACK))
         {
         if ( !player.attackdown
              || (player.readyweapon != weapontype_t.wp_missile
@@ -1988,7 +1988,7 @@ public class ActionFunctions implements DoomStatusAware{
         
         // check for fire
         //  (if a weaponchange is pending, let it go through instead)
-        if ( flags(player.cmd.buttons , BT_ATTACK) 
+        if ( eval(player.cmd.buttons & BT_ATTACK) 
          && player.pendingweapon == weapontype_t.wp_nochange
          && eval(player.health[0]))
         {
@@ -2499,11 +2499,11 @@ public class ActionFunctions implements DoomStatusAware{
         targ = actor.subsector.sector.soundtarget;
 
         if (targ!=null
-        && flags(targ.flags, MF_SHOOTABLE) )
+        && eval(targ.flags& MF_SHOOTABLE) )
         {
         actor.target = targ;
 
-        if ( flags(actor.flags,MF_AMBUSH ))
+        if ( eval(actor.flags&MF_AMBUSH ))
         {
             seeyou= (EN.CheckSight (actor, actor.target));              
         } else
@@ -2860,7 +2860,7 @@ public class ActionFunctions implements DoomStatusAware{
                           actor.target.x,
                           actor.target.y)&BITS32;
           
-          if (flags(actor.target.flags , MF_SHADOW))
+          if (eval(actor.target.flags & MF_SHADOW))
           actor.angle += (RND.P_Random()-RND.P_Random())<<21;
           actor.angle&=BITS32;
       }
@@ -2904,12 +2904,14 @@ public class ActionFunctions implements DoomStatusAware{
                   actor.angle -= ANG45;
               else if (delta < 0)
                   actor.angle += ANG45;
+              
+              actor.angle&=BITS32;
           }
 
           
           
           if (actor.target==null
-                  || !flags(actor.target.flags,MF_SHOOTABLE))
+                  || !eval(actor.target.flags&MF_SHOOTABLE))
           {
               // look for a new target
               if (EN.LookForPlayers(actor,true))
@@ -2920,7 +2922,7 @@ public class ActionFunctions implements DoomStatusAware{
           }
 
           // do not attack twice in a row
-          if (flags(actor.flags , MF_JUSTATTACKED))
+          if (eval(actor.flags & MF_JUSTATTACKED))
           {
               actor.flags &= ~MF_JUSTATTACKED;
               if (DS.gameskill != skill_t.sk_nightmare && !DS.fastparm)

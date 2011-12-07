@@ -2,7 +2,6 @@ package p;
 
 import static rr.line_t.*;
 import static data.Defines.ITEMQUESIZE;
-import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MELEERANGE;
 import static data.Defines.NF_SUBSECTOR;
 import static data.Defines.NUMAMMO;
@@ -80,8 +79,6 @@ import static p.mobj_t.MF_NOBLOCKMAP;
 import static p.mobj_t.MF_NOSECTOR;
 import static p.mobj_t.MF_SPECIAL;
 import static utils.C2JUtils.eval;
-import static utils.C2JUtils.flags;
-
 import java.util.Arrays;
 
 import hu.HU;
@@ -260,7 +257,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      */
     
     protected boolean twoSided(int sector, int line) {
-        return flags((LL.sectors[sector].lines[line]).flags, ML_TWOSIDED);
+        return eval((LL.sectors[sector].lines[line]).flags& ML_TWOSIDED);
     }
 
     /**
@@ -332,7 +329,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         final int blockx;
         final int blocky;
 
-        if (!flags(thing.flags, MF_NOSECTOR)) {
+        if (!eval(thing.flags& MF_NOSECTOR)) {
             // inert things don't need to be in blockmap?
             // unlink from subsector
             if (thing.snext != null)
@@ -344,7 +341,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 thing.subsector.sector.thinglist = (mobj_t) thing.snext;
         }
 
-        if (!flags(thing.flags, MF_NOBLOCKMAP)) {
+        if (!eval(thing.flags& MF_NOBLOCKMAP)) {
             // inert things don't need to be in blockmap
             // unlink from block map
             if (thing.bnext != null)
@@ -640,7 +637,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             bitnum = 1 << (pnum & 7);
 
             // Check in REJECT table.
-            if (flags(LL.rejectmatrix[bytenum], bitnum)) {
+            if (eval(LL.rejectmatrix[bytenum]& bitnum)) {
                 See.sightcounts[0]++;
 
                 // can't possibly be connected
@@ -1107,7 +1104,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                 // stop because it is not two sided anyway
                 // might do this after updating validcount?
-                if (!flags(line.flags, ML_TWOSIDED))
+                if (!eval(line.flags& ML_TWOSIDED))
                     return false;
 
                 // crosses a two sided line
@@ -1166,7 +1163,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             node_t bsp;
             int side;
 
-            if (flags(bspnum, NF_SUBSECTOR)) {
+            if (eval(bspnum& NF_SUBSECTOR)) {
                 if (bspnum == -1)
                     return CrossSubsector(0);
                 else
@@ -1835,7 +1832,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     int iquetail;
 
     public void RemoveMobj(mobj_t mobj) {
-        if (flags(mobj.flags, MF_SPECIAL) && !flags(mobj.flags, MF_DROPPED)
+        if (eval(mobj.flags& MF_SPECIAL) && !eval(mobj.flags& MF_DROPPED)
                 && (mobj.type != mobjtype_t.MT_INV)
                 && (mobj.type != mobjtype_t.MT_INS)) {
             itemrespawnque[iquehead] = mobj.spawnpoint;
