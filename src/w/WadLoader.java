@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.57.2.1 2011/12/05 12:05:13 velktron Exp $
+// $Id: WadLoader.java,v 1.57.2.2 2011/12/08 00:40:40 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1287,6 +1287,8 @@ public class WadLoader implements IWadLoader {
 	  
 	public final static boolean IsMarker(String marker, String name)
 	{
+		// Safeguard against nameless marker lumps e.g. in Galaxia.wad
+		if (name==null || name.length()==0) return false;
 	  boolean result= name.equalsIgnoreCase(marker) ||
 	    // doubled first character test for single-character prefixes only
 	    // FF_* is valid alias for F_*, but HI_* should not allow HHI_*
@@ -1363,6 +1365,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.57.2.2  2011/12/08 00:40:40  velktron
+//Fix for Galaxia.wad nameless lumps.
+//
 //Revision 1.57.2.1  2011/12/05 12:05:13  velktron
 //Fixed a vexing bug with ZIP file header & TOC reading.
 //
