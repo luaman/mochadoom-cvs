@@ -290,7 +290,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         sector_t front;
         sector_t back;
 
-        if (linedef.sidenum[1] == -1) {
+        if (linedef.sidenum[1] == line_t.NO_INDEX) {
             // single sided line
             openrange = 0;
             return;
