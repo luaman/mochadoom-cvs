@@ -26,8 +26,10 @@ public class line_t
         implements Interceptable, IReadableDoomObject, IPackableDoomObject,
         Resettable {
 
+    public static final char NO_INDEX=0xFFFF;
+    
     public line_t() {
-        sidenum = new short[2];
+        sidenum = new char[2];
         bbox = new int[4];
         slopetype = slopetype_t.ST_HORIZONTAL;
     }
@@ -48,9 +50,9 @@ public class line_t
     public short flags, special, tag;
 
     /**
-     * Visual appearance: SideDefs. sidenum[1] will be -1 if one sided
+     * Visual appearance: SideDefs. sidenum[1] will be 0xFFFF if one sided
      */
-    public short[] sidenum;
+    public char[] sidenum;
 
     /**
      * Neat. Another bounding box, for the extent of the LineDef. MAES: make
@@ -285,7 +287,7 @@ public class line_t
         v1x = v1y = v2x = v2y = 0;
         dx = dy = 0;
         flags = special = tag = 0;
-        Arrays.fill(sidenum, (short) 0);
+        Arrays.fill(sidenum, (char) 0);
         Arrays.fill(bbox, 0);
         slopetype = slopetype_t.ST_HORIZONTAL;
         frontsector = backsector = null;
