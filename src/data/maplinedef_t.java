@@ -13,12 +13,12 @@ import w.DoomBuffer;
 public class maplinedef_t implements CacheableDoomObject{
 
     public maplinedef_t() {
-        this.sidenum = new short[2];
+        this.sidenum = new char[2];
     }
 
-    public short v1;
+    public char v1;
 
-    public short v2;
+    public char v2;
 
     public short flags;
 
@@ -26,8 +26,8 @@ public class maplinedef_t implements CacheableDoomObject{
 
     public short tag;
 
-    /** sidenum[1] will be -1 if one sided */
-    public short[] sidenum;
+    /** sidenum[1] will be 0xFFFF if one sided */
+    public char[] sidenum;
 
     public static int sizeOf() {
         return 14;
@@ -37,11 +37,11 @@ public class maplinedef_t implements CacheableDoomObject{
     public void unpack(ByteBuffer buf)
             throws IOException {
     buf.order(ByteOrder.LITTLE_ENDIAN);
-    this.v1 = buf.getShort();
-    this.v2 = buf.getShort();
+    this.v1 = buf.getChar();
+    this.v2 = buf.getChar();
     this.flags = buf.getShort();
     this.special = buf.getShort();
     this.tag = buf.getShort();
-    DoomBuffer.readShortArray(buf, this.sidenum, 2);
+    DoomBuffer.readCharArray(buf, this.sidenum, 2);
     }
 }
