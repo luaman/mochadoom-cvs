@@ -97,7 +97,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.3 2011/11/27 18:20:31 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.4 2012/04/05 12:55:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -123,7 +123,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.3 2011/11/27 18:20:31 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.4 2012/04/05 12:55:26 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3017,17 +3017,24 @@ public void ScreenShot ()
     public void DoPlayDemo () 
     { 
 
-        skill_t skill; 
+        skill_t skill;
+        boolean fail=false;
         int             i, episode, map; 
 
         gameaction = gameaction_t.ga_nothing;
         // MAES: Yeah, it's OO all the way now, baby ;-)
+        try {
         demobuffer = (IDoomDemo) W.CacheLumpName(defdemoname.toUpperCase(), PU_STATIC,VanillaDoomDemo.class);
+        } catch (Exception e){
+            fail=true;
+        }
+        
+        fail=(demobuffer.getSkill()==null);
 
-        if (demobuffer.getVersion()!= VERSION)
+        if (fail || demobuffer.getVersion()!= VERSION)
         {
             System.err.println("Demo is from a different game version!\n");
-            System.err.println("Read "+demobuffer.getVersion());
+            System.err.println("Version code read: "+demobuffer.getVersion());
             gameaction = gameaction_t.ga_nothing;
             return;
         }
@@ -4223,6 +4230,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.4  2012/04/05 12:55:26  velktron
+//Demo safeguards.
+//
 //Revision 1.101.2.3  2011/11/27 18:20:31  velktron
 //Parametrizable Finale, AM.Init().
 //
