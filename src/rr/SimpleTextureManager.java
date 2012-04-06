@@ -15,6 +15,8 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
+
 import p.AbstractLevelLoader;
 import doom.DoomStatus;
 import w.DoomBuffer;
@@ -166,80 +168,47 @@ public class SimpleTextureManager
     
     public void InitTextures () throws IOException
     {
-        maptexture_t   mtexture=new maptexture_t();
-        texture_t      texture;
-        mappatch_t[]     mpatch;
-        texpatch_t[]    patch;
-
-        ByteBuffer        maptex, maptex2, maptex1;
-        
-        String        name;
-        ByteBuffer       names;
-        int       name_p;
-        
-        int[]        patchlookup;
-        
-        int         totalwidth;
-        int         nummappatches;
-        int         offset;
-        int         maxoff;
-        int         maxoff2;
-        int         numtextures1;
-        int         numtextures2;
-
-        int        directory;
-        
-        int         temp1;
-        int         temp2;
-        int         temp3;
-
-        
+        // This drives the rest
+        maptexture_t mtexture = new maptexture_t();
+        texture_t texture;
+        mappatch_t[] mpatch;
+        texpatch_t[] patch;
+        ByteBuffer[] maptex = new ByteBuffer[texturelumps.length];
+        String name;
+        ByteBuffer names;
+        int name_p;
+        int[] patchlookup;
+        int totalwidth;
+        int nummappatches;
+        int offset;
+        int[] maxoff = new int[texturelumps.length];
+        final int numtextures;
+        int[] _numtextures = new int[texturelumps.length];
+        int directory = 0;     
+        int texset=TEXTURE1;
         // Load the patch names from pnames.lmp.
         //name[8] = 0;    
-        names = W.CacheLumpName ("PNAMES", PU_STATIC).getBuffer();
-        names.order(ByteOrder.LITTLE_ENDIAN);
-        
-        // Number of patches.
-        names.rewind();
-        nummappatches = names.getInt();
-        
-        patchlookup = new int[nummappatches];
-        
-        for (int i=0 ; i<nummappatches ; i++)
-        {
-        // Get a size limited string;
-        name=DoomBuffer.getNullTerminatedString(names, 8).toUpperCase();
-        patchlookup[i] = W.CheckNumForName (name);
-        }
-        
-        names=null;
+        patchlookup=loadPatchNames("PNAMES");
         
         // Load the map texture definitions from textures.lmp.
         // The data is contained in one or two lumps,
         //  TEXTURE1 for shareware, plus TEXTURE2 for commercial.
-        maptex = maptex1 = W.CacheLumpName ("TEXTURE1", PU_STATIC).getBuffer();
-        maptex.rewind();
-        maptex.order(ByteOrder.LITTLE_ENDIAN);
-        numtextures1 = maptex.getInt();
-        maxoff = W.LumpLength (W.GetNumForName ("TEXTURE1"));
-        directory = 1;
         
-        if (W.CheckNumForName ("TEXTURE2") != -1)
-        {
-        maptex2 = W.CacheLumpName ("TEXTURE2", PU_STATIC).getBuffer();
-        maptex2.order(ByteOrder.LITTLE_ENDIAN);
-        maptex2.rewind();
-        numtextures2 = maptex2.getInt();
-        maxoff2 = W.LumpLength (W.GetNumForName ("TEXTURE2"));
-        }
-        else
-        {
-        maptex2 = null;
-        numtextures2 = 0;
-        maxoff2 = 0;
+        for (int i=0;i<texturelumps.length;i++){
+            String TEXTUREx=texturelumps[i];
+            if (W.CheckNumForName (TEXTUREx) != -1){
+            maptex[i] = W.CacheLumpName (TEXTUREx, PU_STATIC).getBuffer();
+            maptex[i].rewind();
+            maptex[i].order(ByteOrder.LITTLE_ENDIAN);
+            _numtextures[i] = maptex[i].getInt();
+            maxoff[i] = W.LumpLength (W.GetNumForName (TEXTUREx));
+            if (i==0) directory = 1;
+            else directory=0;
+            }
         }
         
-        numtextures = numtextures1 + numtextures2;
+        // Total number of textures.
+        numtextures = _numtextures[0] + _numtextures[1];
         
         textures = new texture_t[numtextures];
         // MAES: Texture hashtable.          
@@ -256,7 +225,6 @@ public class SimpleTextureManager
         totalwidth = 0;
         
         //  Really complex printing shit...
-
         System.out.print("[");
         for (int i=0 ; i<numtextures ; i++,directory++)
         {
@@ -264,23 +232,24 @@ public class SimpleTextureManager
         if ((i&63)==0)
             System.out.print ('.');
 
-        if (i == numtextures1)
+        if (i == _numtextures[TEXTURE1])
         {
             // Start looking in second texture file.
-            maptex = maptex2;
-            maxoff = maxoff2;
+            texset=TEXTURE2;
             directory = 1; // offset "1" inside maptex buffer
             //System.err.print("Starting looking into TEXTURE2\n");
         }
         //System.out.print("Directory "+directory);
-        offset = maptex.getInt(directory*4);
-        if (offset > maxoff)
+        
+        offset = maptex[texset].getInt(directory*4);
+        
+        if (offset > maxoff[texset])
             I.Error("R_InitTextures: bad texture directory");
        // System.err.printf("offset %d\n",offset);
         
-        maptex.position(offset);
+        maptex[texset].position(offset);
         // Read "maptexture", which is the on-disk form.
-        mtexture.unpack(maptex);
+        mtexture.unpack(maptex[texset]);
         //System.err.println(mtexture.name+ " @"+offset);
 
         // MAES: the HashTable only needs to know the correct names.
@@ -291,15 +260,13 @@ public class SimpleTextureManager
         textures[i].copyFromMapTexture(mtexture);
         texture = textures[i];
         
-        
-        //System.out.println("Patches: "+textures[i].patchcount);
-        
         // However we do need to correct the "patch.patch" field through the patchlookup
         mpatch = mtexture.patches;
         patch = texture.patches;
-
+        
         for (int j=0 ; j<texture.patchcount ; j++)
         {
+            System.err.printf("Texture %d name %s patch %d lookup %d\n",i,mtexture.name,j,mpatch[j].patch);
             patch[j].patch = patchlookup[mpatch[j].patch];
             if (patch[j].patch == -1)
             {
@@ -322,10 +289,6 @@ public class SimpleTextureManager
             
         totalwidth += texture.width;
         }
-
-        maptex1=null;
-        if (maptex2!=null)
-        maptex2=null;
         
         // Precalculate whatever possible.  
         for (int i=0 ; i<numtextures ; i++)
@@ -338,6 +301,29 @@ public class SimpleTextureManager
             texturetranslation[i] = i;
     }
     
+    private int[] loadPatchNames(String pnames) throws IOException {
+        int[] patchlookup;
+        int nummappatches;
+        String name;
+        
+        ByteBuffer names = W.CacheLumpName (pnames, PU_STATIC).getBuffer();        
+        names.order(ByteOrder.LITTLE_ENDIAN);
+        
+        // Number of patches.
+        names.rewind();
+        nummappatches = names.getInt();        
+        patchlookup = new int[nummappatches];
+        
+        for (int i=0 ; i<nummappatches ; i++)
+        {
+        // Get a size limited string;
+        name=DoomBuffer.getNullTerminatedString(names, 8).toUpperCase();
+        patchlookup[i] = W.CheckNumForName (name);
+        }
+        
+        return patchlookup;
+    }
+
     private patch_t retrievePatchSafe(int lump){
         
         // If this is a known troublesome lump, get it from the cache.
@@ -1189,4 +1175,22 @@ public class SimpleTextureManager
 	
 	HashMap<Integer,byte[][]> roguePatches= new HashMap<Integer,byte[][]> ();
     
+	class TextureDirectoryEntry implements Comparable<TextureDirectoryEntry>{
+	    /** Where an entry starts within the TEXTUREx lump */
+	    int offset;
+	    /** Its implicit position as indicated by the directory's ordering */
+	    int entry;
+	    /** Its MAXIMUM possible length, depending on what follows it. 
+	     *  Not trivial to compute without thoroughtly examining the entire lump */
+	    int length;
+	    
+	    /** Entries are ranked according to actual offset */
+        @Override
+        public int compareTo(TextureDirectoryEntry o) {
+            if (this.offset<o.offset) return -1;
+            if (this.offset==o.offset) return 0;
+            return 1;
+        }
+	 }
+	
 }
