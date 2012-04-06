@@ -36,7 +36,12 @@ public class maptexture_t implements CacheableDoomObject{
         width=buf.getShort();
         height=buf.getShort();
         buf.getInt(); // read a dummy integer for obsolete columndirectory.
-        patchcount=buf.getShort();
+        patchcount=buf.getShort();        
+        
+        // Simple sanity check.
+        if (patchcount>=(buf.capacity()-buf.position())/mappatch_t.size()){
+            patchcount=0;
+        }
         patches=new mappatch_t[patchcount];
         C2JUtils.initArrayOfObjects(patches,mappatch_t.class);
         DoomBuffer.readObjectArray(buf, patches, patchcount);
