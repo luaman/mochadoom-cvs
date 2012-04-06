@@ -12,6 +12,11 @@ import java.io.IOException;
 
 public interface TextureManager {
 
+    public final static String[] texturelumps={"TEXTURE1","TEXTURE2"};
+    public final static int NUMTEXLUMPS=texturelumps.length;
+    public final static int TEXTURE1=0;
+    public final static int TEXTURE2=1;
+    
 	int TextureNumForName(String texname);
 	
 	
