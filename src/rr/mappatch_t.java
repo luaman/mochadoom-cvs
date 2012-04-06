@@ -30,8 +30,11 @@ public class mappatch_t implements CacheableDoomObject {
         originy=buf.getShort();
         patch=buf.getShort();
         stepdir=buf.getShort();
-        colormap=buf.getShort();
-        
+        colormap=buf.getShort();        
+    }
+
+    public static final int size() {
+        return 10;
     }
      
      
