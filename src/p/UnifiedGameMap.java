@@ -98,6 +98,7 @@ import st.StatusBar;
 import utils.C2JUtils;
 import w.IWadLoader;
 import automap.IAutoMap;
+import data.Limits;
 import data.mapthing_t;
 import data.mobjtype_t;
 import data.state_t;
@@ -1245,14 +1246,10 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // SPECIAL SPAWNING
     //
 
-    //
-
-
-
     class Specials {
         public static final int ok = 0, crushed = 1, pastdest = 2;
 
-        protected line_t[] linespeciallist = new line_t[2048/*MAXLINEANIMS*10*/];
+        protected line_t[] linespeciallist = new line_t[Limits.MAXLINEANIMS];
         public short numlinespecials;
         
         /**
@@ -1353,6 +1350,11 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             }
         }
 
+        protected final void resizeLinesSpecialList() {
+        	linespeciallist=C2JUtils.resize(linespeciallist[0],linespeciallist,linespeciallist.length*2);
+            }   
+        
+        
     }
 
     class Switches {
