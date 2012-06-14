@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.57.2.2 2011/12/08 00:40:40 velktron Exp $
+// $Id: WadLoader.java,v 1.57.2.3 2012/06/14 22:38:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -640,7 +640,7 @@ public class WadLoader implements IWadLoader {
 	public final byte[] ReadLump(int lump){
 	    lumpinfo_t l=lumpinfo[lump];
 	    byte[] buf=new byte[(int) l.size];
-	    ReadLump(lump, buf);
+	    ReadLump(lump, buf,0);
 	    return buf;
 	    
 	}
@@ -660,7 +660,7 @@ public class WadLoader implements IWadLoader {
 	@Override
 	public final void ReadLump(int lump, byte[] buf, int offset) {
 		int c=0;
-		lumpinfo_t l; // Maes: was *..probably not array.
+		lumpinfo_t l;
 		InputStream handle = null;
 
 		if (lump >= this.numlumps) {
@@ -669,8 +669,6 @@ public class WadLoader implements IWadLoader {
 		}
 
 		l = lumpinfo[lump];
-
-		// ??? I_BeginRead ();
 
 		if (l.handle == null) {
 			// reloadable file, so use open / read / close
@@ -707,11 +705,14 @@ public class WadLoader implements IWadLoader {
 				handle.close();
 			else
 			    l.handle=handle;
+	
+			I.BeginRead ();
 			
 			return;
 			
 			// ??? I_EndRead ();
 		} catch (Exception e) {
+			e.printStackTrace();
 			I.Error("W_ReadLump: could not read lump " + lump);
 			e.printStackTrace();
 			return;
@@ -729,8 +730,7 @@ public class WadLoader implements IWadLoader {
 	 */
 	
 	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what) {
-		// byte* ptr;
-
+		
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);
 		}
@@ -1000,7 +1000,6 @@ public class WadLoader implements IWadLoader {
 	 */
 
 	public patch_t CachePatchName(String name) {
-
 		return (patch_t) this.CacheLumpNum(this.GetNumForName(name), PU_CACHE,
 				patch_t.class);
 
@@ -1365,6 +1364,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.57.2.3  2012/06/14 22:38:20  velktron
+//Uses new disk flasher.
+//
 //Revision 1.57.2.2  2011/12/08 00:40:40  velktron
 //Fix for Galaxia.wad nameless lumps.
 //
