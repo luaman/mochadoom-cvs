@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.14 2011/10/24 02:11:27 velktron Exp $
+// $Id: DoomSystem.java,v 1.14.2.1 2012/06/14 22:38:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.14.2.1  2012/06/14 22:38:06  velktron
+// Update to handle new disk flasher
+//
 // Revision 1.14  2011/10/24 02:11:27  velktron
 // Stream compliancy
 //
@@ -182,6 +185,12 @@ public void WaitVBL(int count)
 @Override
 public void BeginRead()
 {
+	if (DM.DD!=null)
+	   if (!DM.DD.isReading()) {
+		   // Set 8 tick reading time
+		   DM.DD.setReading(8);
+	   }
+	   	
 }
 
 @Override
