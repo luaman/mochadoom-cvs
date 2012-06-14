@@ -5,6 +5,7 @@ import f.EndLevel;
 import f.Finale;
 import f.Wiper;
 import hu.HU;
+import i.IDiskDrawer;
 import i.IDoomSystem;
 import i.DoomVideoInterface;
 import m.IDoomMenu;
@@ -63,4 +64,5 @@ public class DoomContext{
     public ISpriteManager SM;
     public ICommandLineManager CM;
     public ITicker TICK; 
+    public IDiskDrawer DD;
 }
