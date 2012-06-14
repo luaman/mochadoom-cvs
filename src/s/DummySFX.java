@@ -5,9 +5,9 @@ import data.sfxinfo_t;
 public class DummySFX implements ISound {
 
 	@Override
-	public void InitSound() {
-		// TODO Auto-generated method stub
-
+	public boolean InitSound() {
+		// Dummy is super-reliable ;-)
+		return true;
 	}
 
 	@Override
