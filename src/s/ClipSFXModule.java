@@ -75,7 +75,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
 
 
 	@Override
-	public void InitSound() {
+	public boolean InitSound() {
         // Secure and configure sound device first.
         System.err.println("I_InitSound: ");
 
@@ -89,6 +89,7 @@ public class ClipSFXModule extends AbstractSoundDriver{
         System.err.print(" pre-cached all sound data\n");
         // Finished initialization.
         System.err.print("I_InitSound: sound module ready\n");
+        return true;
 
     }
 

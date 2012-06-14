@@ -145,7 +145,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     protected Thread SOUNDTHREAD;
 
     @Override
-    public void InitSound() {
+    public boolean InitSound() {
 
         // Secure and configure sound device first.
         System.err.println("I_InitSound: ");
@@ -161,14 +161,19 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
             try {
                 line = (SourceDataLine) AudioSystem.getSourceDataLine(format);
                 line.open(format, AUDIOLINE_BUFFER);
-            } catch (Exception e) {
+            }	catch (Exception e) {
                 e.printStackTrace();
                 System.err.print("Could not play signed 16 data\n");
+                return false;
             }
 
-        if (line != null)
+        if (line != null) {
             System.err.print(" configured audio device\n");
-        line.start();
+            line.start();
+        } else {
+        	 System.err.print(" could not configure audio device\n");
+        	 return false;
+        }
 
         SOUNDSRV = new PlaybackServer(line);
         SOUNDTHREAD = new Thread(SOUNDSRV);
@@ -179,8 +184,6 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         MIXTHREAD.setDaemon(true);
         MIXTHREAD.start();
         
-        
-        
         // Initialize external data (all sounds) at start, keep static.
         System.err.print("I_InitSound: ");
 
@@ -190,6 +193,8 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
         // Finished initialization.
         System.err.print("I_InitSound: sound module ready\n");
+        
+        return true;
 
     }
 

@@ -7,7 +7,7 @@ import static data.Defines.TICRATE;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: ISound.java,v 1.12 2011/10/24 02:30:27 velktron Exp $
+// $Id: ISound.java,v 1.12.2.1 2012/06/14 22:41:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -74,8 +74,13 @@ public interface ISound {
 	public static final int AUDIOLINE_BUFFER=2*BUFFER_CHUNKS*MIXBUFFERSIZE;
 	public static final int SOUND_PERIOD = 1000/SND_FRAME_RATE; // in ms
 	
-	// Init at program start...
-	void InitSound();
+	/** Init at program start. Return false if device invalid,
+	 *  so that caller can decide best course of action. 
+	 *  The suggested one is to swap the sound "driver" for a dummy.
+	 *  
+	 * @return
+	 */
+	boolean InitSound();
 
 	// ... update sound buffer and audio device at runtime...
 	void UpdateSound();
@@ -127,6 +132,9 @@ public interface ISound {
 //-----------------------------------------------------------------------------
 //
 // $Log: ISound.java,v $
+// Revision 1.12.2.1  2012/06/14 22:41:20  velktron
+// InitSound returns success status.
+//
 // Revision 1.12  2011/10/24 02:30:27  velktron
 // 5 buffers better than 3?
 //

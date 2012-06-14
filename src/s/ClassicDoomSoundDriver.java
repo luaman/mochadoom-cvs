@@ -297,7 +297,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     protected Thread SOUNDTHREAD;
 
     @Override
-    public void InitSound() {
+    public boolean InitSound() {
 
         int i;
 
@@ -318,11 +318,16 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.print("Could not play signed 16 data\n");
+                return false;
             }
 
-        if (line != null)
+        if (line != null) {
             System.err.print(" configured audio device\n");
-        line.start();
+            line.start();
+        } else {
+        	 System.err.print(" could not configure audio device\n");
+        	 return false;
+        }
 
         // This was here only for debugging purposes
         /*
@@ -362,6 +367,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         // Finished initialization.
         System.err.print("I_InitSound: sound module ready\n");
 
+        return true;
     }
 
     @Override
