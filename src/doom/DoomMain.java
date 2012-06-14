@@ -1,5 +1,6 @@
 package doom;
 
+import i.DiskDrawer;
 import i.DoomStatusAware;
 import i.DoomSystem;
 import i.Strings;
@@ -97,7 +98,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.4 2012/04/05 12:55:26 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.5 2012/06/14 22:45:33 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -123,7 +124,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.4 2012/04/05 12:55:26 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.5 2012/06/14 22:45:33 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -233,10 +234,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 break;
             if (automapactive)
                 AM.Drawer ();
-            if (wipe || (!R.isFullHeight() && fullscreen) )
-                redrawsbar = true;
-            if (inhelpscreensstate && !inhelpscreens)
-                redrawsbar = true;              // just put away the help screen
+            if (wipe || (!R.isFullHeight() && fullscreen) ||
+            		(inhelpscreensstate && !inhelpscreens)
+            		|| (DD.justDoneReading()))
+                redrawsbar = true; // just put away the help screen
             ST.Drawer (R.isFullHeight(), redrawsbar );
             fullscreen = R.isFullHeight();
             break;
@@ -311,7 +312,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         M.Drawer ();          // menu is drawn even on top of everything
         NetUpdate ();         // send out any new accumulation
 
-
+        // Disk access goes after everything.
+        DD.Drawer();
+        
         // normal update
         if (!wipe)
         {
@@ -765,11 +768,18 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
 
 
-    //
-    // D_DoomMain
-    //
-    @SuppressWarnings("deprecation")
-	public void Start () throws IOException
+    /**
+     * D_DoomMain
+     *
+     * Completes the job started by Init, which only created the
+     * instances of the various stuff and registered the "status aware" 
+     * stuff. Here everything priority-critical is 
+     * called and created in more detail.
+     *
+     *
+     */
+
+	public void Start() throws IOException
     {
         int             p;
         StringBuffer file=new StringBuffer();
@@ -1074,8 +1084,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         VI=new AWTDoom(this,(DoomVideoRenderer<short[]>) V);
 
         VI.InitGraphics();
-        
-        
 
         // MAES: Before we begin calling the various Init() stuff,
         // we need to make sure that objects that support the IVideoScaleAware
@@ -1096,16 +1104,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Iff additonal PWAD files are used, print modified banner
         
         if (modifiedgame)
-        /*{
-
-            System.out.print (Strings.MODIFIED_GAME);
-            try {
-                System.in.read();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } */
-
         // Generate WAD loading alert. Abort upon denial.
         if (!I.GenerateAlert(Strings.MODIFIED_GAME_TITLE,Strings.MODIFIED_GAME_DIALOG)) {
         	  W.CloseAllHandles();
@@ -1189,15 +1187,20 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
             }
         
-        if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
+        // Check for sound init failure and revert to dummy
+        if (!ISND.InitSound()){
+        	 System.err.println ("S_InitSound: failed. Reverting to dummy...\n");
+        	this.ISND=new DummySFX();
+        }
+        
+        if (!(CM.CheckParmBool("-nosound") || (ISND instanceof DummySFX)))// Obviously, nomusic && nosfx = nosound.
         	this.S=new AbstractDoomAudio(this,numChannels);
         else
-        	// Saves a lot of distance calculations, if we're not to output
-        	// any sound at all.
+        	// Saves a lot of distance calculations, 
+        	// if we're not to output any sound at all.
             // TODO: create a Dummy that can handle music alone.
         	this.S=new DummySoundDriver();
         
-        ISND.InitSound();
         IMUS.InitMusic();
         S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
 
@@ -1285,6 +1288,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             DoomLoop ();  // never returns
         }
 
+        
+        // NOW it's safe to init the disk reader.
+        DD.Init();
+        
         DoomLoop ();  // never returns
     }
 
@@ -1341,9 +1348,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         videoScaleChildren.add(this.ST);
         // Even the video renderer needs some initialization?
         videoScaleChildren.add(this.V);
-        // Even the video renderer needs some initialization?
+        // wiper
         videoScaleChildren.add(this.WI);
-
+        // disk drawer
+        videoScaleChildren.add(this.DD);
+        
         for(IVideoScaleAware i:videoScaleChildren){
             if (i!=null){
                 i.setVideoScale(this.vs);
@@ -2610,17 +2619,18 @@ public void ScreenShot ()
 
             header.read(f);
             f.close();
-            
-            f=new DataInputStream(new FileInputStream(savename)); 
-
+    
             // skip the description field 
             vcheck.append("version ");
             vcheck.append(VERSION);
 
-            if (vcheck.toString().compareTo(header.getVersion())!=0) 
-                return;             // bad version 
+            if (vcheck.toString().compareTo(header.getVersion())!=0) {
+            	f.close();
+            	return; // bad version
+            }
 
-
+            // Ok so far, reopen stream.
+            f=new DataInputStream(new BufferedInputStream(new FileInputStream(savename)));        
             gameskill = header.getGameskill(); 
             gameepisode = header.getGameepisode(); 
             gamemap = header.getGamemap(); 
@@ -2632,6 +2642,7 @@ public void ScreenShot ()
             
             if (gameaction == gameaction_t.ga_failure) {
             	// failure to load. Abort.
+            	f.close();
             	return;
             }
 
@@ -2693,9 +2704,7 @@ public void ScreenShot ()
      IDoomSaveGameHeader header=new VanillaDSGHeader();
      IDoomSaveGame dsg=new VanillaDSG();
      dsg.updateStatus(this.DM);
-     int     length; 
-     int     i; 
-
+     
      if (eval(CM.CheckParm("-cdrom"))) {
          build.append("c:\\doomdata\\");
          build.append(SAVEGAMENAME);
@@ -3235,6 +3244,11 @@ public void ScreenShot ()
 
         status_holders.add((DoomStatusAware) this.I);
         status_holders.add((DoomStatusAware) this.V);
+        
+        // Disk access visualizer
+        
+        status_holders.add((DoomStatusAware) (this.DD=new DiskDrawer(this,DiskDrawer.STDISK)));
+        
         updateStatusHolders(this);
 
 
@@ -4230,6 +4244,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.5  2012/06/14 22:45:33  velktron
+//Added flashing disk stuff.
+//
 //Revision 1.101.2.4  2012/04/05 12:55:26  velktron
 //Demo safeguards.
 //
