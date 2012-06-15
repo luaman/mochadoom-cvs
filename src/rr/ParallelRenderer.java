@@ -34,68 +34,15 @@ import doom.player_t;
  */
 
 public class ParallelRenderer
-        extends RendererState {
-
-    // //////// PARALLEL OBJECTS /////////////
-    private final int NUMWALLTHREADS;
-
-    private final int NUMMASKEDTHREADS;
-    
-    private int NUMFLOORTHREADS;
-
-    private Executor tp;
-
-    private Runnable[] vpw;
-    
-    private MaskedWorker[] maskedworkers;
-
-    private CyclicBarrier drawsegsbarrier;
-    private CyclicBarrier visplanebarrier;
-    private CyclicBarrier maskedbarrier;
-
-    /**
-     * Stored wall rendering instructions. They can be at most 3*SCREENWIDTH (if
-     * there are low, mid and high textures on every column of the screen)
-     * Remember to init them and set screen and ylookup for all of them. Their
-     * max number is static and work partitioning can be done in any way, as
-     * long as you keep track of how many there are in any given frame. This
-     * value is stored inside RWIcount. TODO: there are cases when more than
-     * 3*SCREENWIDTH instructions need to be stored. therefore we really need a
-     * resizeable array here, but ArrayList is way too slow for our needs.
-     * Storing a whole wall is not an option, as, once again, a wall may have a
-     * variable number of columns and an irregular height profile -> we'd need
-     * to look into visplanes ugh...
-     */
-
-    private ColVars<byte[],short[]>[] RWI,RMI;
-
-    /**
-     * Increment this as you submit RWI to the "queue". Remember to reset to 0
-     * when you have drawn everything!
-     */
-    private int RWIcount = 0, RMIcount=0;
-
-    private RenderWallExecutor[] RWIExec;
-    
-    private RenderMaskedExecutor[] RMIExec;
-
-    private static final boolean DEBUG = false;
+        extends AbstractParallelRenderer {
 
     public ParallelRenderer(DoomMain DM, int wallthread, int floorthreads,int nummaskedthreads) {
-        super(DM);
+        super(DM, wallthread, floorthreads,nummaskedthreads);
 
-        this.MyThings=new ParallelThings2();
+        this.MyThings=new ParallelThings();
         this.MySegs = new ParallelSegs();
         this.MyPlanes = new ParallelPlanes();
-
-        this.NUMWALLTHREADS = wallthread;
-        this.NUMFLOORTHREADS = floorthreads;
-        this.NUMMASKEDTHREADS = nummaskedthreads;
         
-    	smp_composite=new boolean[nummaskedthreads];// = false;
-    	smp_lasttex=new int[nummaskedthreads];// = -1;
-    	smp_lastlump=new int[nummaskedthreads];// = -1;
-    	smp_lastpatch=new patch_t[nummaskedthreads];;// = null;
         
     }
 
@@ -108,10 +55,19 @@ public class ParallelRenderer
         this(DM, 1, 1,2);
     }
 
-    private void initializeParallelStuff() {
-        // Prepare parallel stuff
+    @Override
+    protected void InitParallelStuff() {
+
+        // This actually only creates the necessary arrays and
+        // barriers. Things aren't "wired" yet.
+        
+        // Using "render wall instruction" subsystem
         RWIExec = new RenderWallExecutor[NUMWALLTHREADS];
-        RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];        
+        
+        // Using masked sprites
+        RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];
+        
+        // Using
         vpw = new Runnable[NUMFLOORTHREADS];
         maskedworkers=new MaskedWorker[NUMMASKEDTHREADS];
         
@@ -128,231 +84,30 @@ public class ParallelRenderer
 
         
         RWIcount = 0;
+        
+        InitRWISubsystem();
+        InitRMISubsystem();
+        InitPlaneWorkers();
+        InitMaskedWorkers();
+
+        
+        // If using masked threads, set these too.
+        
+        smp_composite=new boolean[NUMMASKEDTHREADS];// = false;
+        smp_lasttex=new int[NUMMASKEDTHREADS];// = -1;
+        smp_lastlump=new int[NUMMASKEDTHREADS];// = -1;
+        smp_lastpatch=new patch_t[NUMMASKEDTHREADS];// = null;
+
+        
     }
 
-    private final class ParallelSegs
-            extends SegDrawer {
-
-        public ParallelSegs() {
-            super();
-        }
-
-        /**
-         * Parallel version. Since there's so much crap to take into account
-         * when rendering, the number of walls to render is unknown a-priori and
-         * the BSP trasversal itself is not worth parallelizing, it makes more
-         * sense to store "rendering instructions" as quickly as the BSP can be
-         * transversed, and then execute those in parallel. Also saves on having
-         * to duplicate way too much status.
-         */
-
-        @Override
-        protected final void CompleteColumn() {
-
-            // Don't wait to go over
-            if (RWIcount >= RWI.length) {
-                ResizeRWIBuffer();
-            }
-
-            // A deep copy is still necessary, as dc
-            RWI[RWIcount].copyFrom(dcvars);
-
-            // We only need to point to the next one in the list.
-            RWIcount++;
-        }
-
-    }
-
-    protected final class ParallelPlanes
-            extends PlaneDrawer {
-
-        /**
-         * R_DrawPlanes At the end of each frame. This also means that visplanes
-         * must have been set BEFORE we called this function. Therefore, look
-         * for errors behind.
-         * 
-         * @throws IOException
-         */
-        public void DrawPlanes() {
-            if (DEBUG)
-                System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "
-                        + lastvisplane);
-
-            if (RANGECHECK) {
-                if (ds_p > MAXDRAWSEGS)
-                    I.Error("R_DrawPlanes: drawsegs overflow (%d)", ds_p);
-
-                if (lastvisplane > MAXVISPLANES)
-                    I.Error(" R_DrawPlanes: visplane overflow (%d)",
-                        lastvisplane);
-
-                if (lastopening > MAXOPENINGS)
-                    I.Error("R_DrawPlanes: opening overflow (%d)", lastopening);
-            }
-
-            // vpw[0].setRange(0,lastvisplane/2);
-            // vpw[1].setRange(lastvisplane/2,lastvisplane);
-
-            for (int i = 0; i < NUMFLOORTHREADS; i++)
-                tp.execute(vpw[i]);
-        }
-
-    } // End Plane class
-
-    /** Overrides only the terminal drawing methods from things, 
-     * using a mechanism very similar to column-based wall threading.
-     * It's not very efficient, since some of the really heavy parts 
-     * (such as visibility priority) are still done serially, and actually do 
-     * take up a lot of the actual rendering time, and the number of columns generated 
-     * is REALLY enormous (100K+ for something like nuts.wad), and the thing chokes 
-     * on synchronization, more than anything.
-     *  
-     *  The only appropriate thing to do would be to have a per-vissprite 
-     *  renderer, which would actually move much of the brunt work away from 
-     *  the main thread.
-     *  
-     *  Some interesting benchmarks on nuts.wad timedemo:
-     *  Normal things serial renderer: 60-62 fps
-     *  "Dummy" completeColumns: 72 fps
-     *  "Dummy" things renderer without final drawing: 80 fps
-     *  "Dummy" things renderer without ANY calculations: 90 fps. 
-     *  
-     *  This means that even a complete parallelization will likely have 
-     *  a quite limited impact.
-     *  
-     * @author velktron
-     *
-     */
     
-    protected final class ParallelThings extends AbstractThings{
-        
-    	@Override
-    	public void DrawMasked(){
-    		super.DrawMasked();
-    		RenderRMIPipeline();
-    		
-    		try {
-				maskedbarrier.await();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (BrokenBarrierException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-    	}
-    	
-        @Override
-        public void completeColumn(){
-            
-                if (detailshift==1)
-                    flags=DcFlags.LOW_DETAIL;
-                // Don't wait to go over
-                if (RMIcount >= RMI.length) {
-                    ResizeRMIBuffer();
-                }
 
-                // A deep copy is still necessary, as well as setting dc_flags
-                RMI[RMIcount].copyFrom(maskedcvars,colfunc.getFlags());
-
-                // We only need to point to the next one in the list.
-                RMIcount++;
-        }
-        
-        int flags;
-        
-    }  
     
-    protected final class ParallelThings2 extends AbstractThings {
-        
-        
-        public ParallelThings2(){
-            
-        }
-        
-         @Override
-         public void DrawMasked() {
-
-             VIS.SortVisSprites();
-
-             for (int i=0;i<maskedworkers.length;i++){
-                 tp.execute(maskedworkers[i]);                   
-             }
-             
-             try {
-                 maskedbarrier.await();
-             } catch (InterruptedException e) {
-                 // TODO Auto-generated catch block
-                 e.printStackTrace();
-             } catch (BrokenBarrierException e) {
-                 // TODO Auto-generated catch block
-                 e.printStackTrace();
-             }
-             
-         }
-         
-         @Override
-         public void completeColumn() {
-             // Does nothing. Dummy.
-         }
-         
-         @Override
-         public void setPspriteScale(int scale){
-             for (int i=0;i<maskedworkers.length;i++)
-                 maskedworkers[i].setPspriteScale(scale);                
-         }
-         
-         @Override
-         public void setPspriteIscale(int scale){
-             for (int i=0;i<maskedworkers.length;i++)
-                 maskedworkers[i].setPspriteIscale(scale);                
-         }
-         
-    }
     
     // ///////////////// Generic rendering methods /////////////////////
 
-    /**
-     * R_InitRWISubsystem Initialize RWIs and RWI Executors. Pegs them to the
-     * RWI, ylookup and screen[0].
-     */
-
-    private void InitRWISubsystem() {
-        // CATCH: this must be executed AFTER screen is set, and
-        // AFTER we initialize the RWI themselves,
-        // before V is set (right?)
-        for (int i = 0; i < NUMWALLTHREADS; i++) {
-            RWIExec[i] =
-                new RenderWallExecutor(SCREENWIDTH, SCREENHEIGHT, columnofs,
-                        ylookup, screen, RWI, drawsegsbarrier);
-            
-            detailaware.add(RWIExec[i]);
-        }
-    }
- 
-    private void InitRMISubsystem() {
-    for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-        // Each masked executor gets its own set of column functions.
-        
-        RMIExec[i] =
-            new RenderMaskedExecutor(SCREENWIDTH, SCREENHEIGHT, columnofs,
-                    ylookup, screen, RMI, maskedbarrier,
-                    // Regular masked columns
-                    new R_DrawColumnBoom(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
-                    new R_DrawColumnBoomLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
-                    
-                    // Fuzzy columns
-                    new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP),
-                    new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP),
-
-                    // Translated columns
-                    new R_DrawTranslatedColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I),
-                    new R_DrawTranslatedColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I)
-                    );
-            
-        detailaware.add(RMIExec[i]);
-    	}
-    }
+  
     
     private void InitPlaneWorkers(){
         for (int i = 0; i < NUMFLOORTHREADS; i++) {
@@ -365,78 +120,9 @@ public class ParallelRenderer
         }
     }
     
-    private void InitMaskedWorkers(){
-        for (int i=0;i<NUMMASKEDTHREADS;i++){
-            maskedworkers[i]=new MaskedWorker(i,SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, NUMMASKEDTHREADS,  screen,maskedbarrier);
-            detailaware.add(maskedworkers[i]);
-            // "Peg" to sprite manager.
-            maskedworkers[i].cacheSpriteManager(SM);
-        }
-
-    }
-
-    /**
-     * Resizes RWI buffer, updates executors. Sorry for the hackish
-     * implementation but ArrayList and pretty much everything in Collections is
-     * way too slow for what we're trying to accomplish.
-     */
-
-    private void ResizeRWIBuffer() {
-        ColVars<byte[],short[]> fake = new ColVars<byte[],short[]>();
-
-        // Bye bye, old RWI.
-        RWI = C2JUtils.resize(fake, RWI, RWI.length * 2);
-
-        for (int i = 0; i < NUMWALLTHREADS; i++) {
-            RWIExec[i].updateRWI(RWI);            
-        	}
-        //System.err.println("RWI Buffer resized. Actual capacity " + RWI.length);
-    }
     
-    private void ResizeRMIBuffer() {
-        ColVars<byte[],short[]> fake = new ColVars<byte[],short[]>();
-        ColVars<byte[],short[]>[] tmp =
-            C2JUtils.createArrayOfObjects(fake, RMI.length * 2);
-        System.arraycopy(RMI, 0, tmp, 0, RMI.length);
-
-        // Bye bye, old RMI.
-        RMI = tmp;
-
-          for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-            RMIExec[i].updateRMI(RMI);
-        }
-        
-        System.err.println("RMI Buffer resized. Actual capacity " + RMI.length);
-    }
-
-    private void RenderRWIPipeline() {
-
-        for (int i = 0; i < NUMWALLTHREADS; i++) {
-
-            RWIExec[i].setRange((i * RWIcount) / NUMWALLTHREADS,
-                ((i + 1) * RWIcount) / NUMWALLTHREADS);
-            // RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
-            tp.execute(RWIExec[i]);
-        }
-
-        // System.out.println("RWI count"+RWIcount);
-        RWIcount = 0;
-    }
     
-    private void RenderRMIPipeline() {
-
-        for (int i = 0; i < NUMMASKEDTHREADS; i++) {
-
-            RMIExec[i].setRange((i*this.SCREENWIDTH)/ NUMMASKEDTHREADS,
-                ((i + 1) * this.SCREENWIDTH) / NUMMASKEDTHREADS);
-            RMIExec[i].setRMIEnd(RMIcount);
-            // RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
-            tp.execute(RMIExec[i]);
-        }
-
-        // System.out.println("RWI count"+RWIcount);
-        RMIcount = 0;
-    }
+   
 
     // /////////////////////// The actual rendering calls
     // ///////////////////////
@@ -553,11 +239,8 @@ public class ParallelRenderer
         System.out.print("\nR_InitDrawingFunctions: ");
         R_InitDrawingFunctions();
 
-        System.out.print("\nR_InitRWISubsystem: ");
-        InitRWISubsystem();
-        InitRMISubsystem();
-        InitPlaneWorkers();
-        InitMaskedWorkers();
+        System.out.print("\nR_InitParallelStuff: ");
+        InitParallelStuff();
 
         System.out.print("\nR_InitTranMap: ");
         R_InitTranMap(0);
@@ -572,7 +255,7 @@ public class ParallelRenderer
         RWI = C2JUtils.createArrayOfObjects(fake, SCREENWIDTH * 3);
         // Be MUCH more generous with this one.
         RMI = C2JUtils.createArrayOfObjects(fake, SCREENWIDTH * 6);
-        initializeParallelStuff();
+
     }
 
 }
