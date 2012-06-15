@@ -78,7 +78,6 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 			long[] xtoviewangle,
 			int[] ylookup,
 			visplane_t[] visplanes,
-			byte[][] walllights,
 			CyclicBarrier barrier){
 		this.id=id;
 		this.GC=gc;
@@ -365,6 +364,9 @@ public class RenderSegExecutor implements Runnable, IVideoScaleAware,IDetailAwar
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.12.2.2  2012/06/15 14:44:09  velktron
+// Doesn't need walllights?
+//
 // Revision 1.12.2.1  2011/11/14 00:27:11  velktron
 // A barely functional HiColor branch. Most stuff broken. DO NOT USE
 //
