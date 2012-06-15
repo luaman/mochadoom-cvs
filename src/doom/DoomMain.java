@@ -49,6 +49,8 @@ import static g.Keys.*;
 import static data.Defines.NORMALUNIX;
 import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
+import rr.ParallelRenderer;
+import rr.ParallelRenderer2;
 import rr.SimpleTextureManager;
 import rr.SpriteManager;
 import rr.UnifiedRenderer;
@@ -98,7 +100,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.5 2012/06/14 22:45:33 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.6 2012/06/15 14:41:47 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -124,7 +126,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.5 2012/06/14 22:45:33 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.6 2012/06/15 14:41:47 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1230,6 +1232,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             RecordDemo (CM.getArgv(p+1));
             autostart = true;
         }
+        
+        // NOW it's safe to init the disk reader.
+        DD.Init();
 
         // MAES: at this point everything should be set and initialized, so it's
         // time to make the players aware of the general status of Doom.
@@ -1289,8 +1294,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         }
 
         
-        // NOW it's safe to init the disk reader.
-        DD.Init();
         
         DoomLoop ();  // never returns
     }
@@ -3270,7 +3273,6 @@ public void ScreenShot ()
         if (eval(CM.CheckParm("-serialrenderer"))){
             this.R=new UnifiedRenderer(this);    
         } else 
-/*
             // Parallel. Either with default values (2,1) or user-specified.
             if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
                 int p = CM.CheckParm ("-parallelrenderer");
@@ -3306,12 +3308,12 @@ public void ScreenShot ()
                     if  (CM.CheckParmBool("-parallelrenderer"))
                         this.R=new ParallelRenderer(this,walls,floors,masked);
                     else
-                        this.R=new ParallelRenderer2(this,walls,floors);
+                        this.R=new ParallelRenderer2(this,walls,floors,masked);
                 }
-            } else {*/
+            } else {
                 // Force serial
                 this.R=new UnifiedRenderer(this);   
-            //}
+            }
     }
 
 
@@ -4244,6 +4246,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.6  2012/06/15 14:41:47  velktron
+//Fixed Disk Drawer init position -now works with demos.
+//
 //Revision 1.101.2.5  2012/06/14 22:45:33  velktron
 //Added flashing disk stuff.
 //
