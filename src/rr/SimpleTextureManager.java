@@ -177,7 +177,7 @@ public class SimpleTextureManager
         int offset;
         int[] maxoff = new int[texturelumps.length];
         int[] _numtextures = new int[texturelumps.length];
-        int directory = 0;     
+        int directory = 1;
         int texset=TEXTURE1;
         // Load the patch names from pnames.lmp.
         //name[8] = 0;    
@@ -195,8 +195,6 @@ public class SimpleTextureManager
             maptex[i].order(ByteOrder.LITTLE_ENDIAN);
             _numtextures[i] = maptex[i].getInt();
             maxoff[i] = W.LumpLength (W.GetNumForName (TEXTUREx));
-            if (i==0) directory = 1;
-            else directory=0;
             }
         }
         
@@ -232,18 +230,15 @@ public class SimpleTextureManager
             directory = 1; // offset "1" inside maptex buffer
             //System.err.print("Starting looking into TEXTURE2\n");
         }
-        //System.out.print("Directory "+directory);
         
-        offset = maptex[texset].getInt(directory*4);
+        offset = maptex[texset].getInt(directory<<2);
         
         if (offset > maxoff[texset])
             I.Error("R_InitTextures: bad texture directory");
-       // System.err.printf("offset %d\n",offset);
         
         maptex[texset].position(offset);
         // Read "maptexture", which is the on-disk form.
         mtexture.unpack(maptex[texset]);
-        //System.err.println(mtexture.name+ " @"+offset);
 
         // MAES: the HashTable only needs to know the correct names.
         TextureCache.put(mtexture.name.toUpperCase(), new Integer(i));
