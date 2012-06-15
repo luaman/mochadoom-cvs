@@ -260,7 +260,7 @@ public class SimpleTextureManager
         
         for (int j=0 ; j<texture.patchcount ; j++)
         {
-            System.err.printf("Texture %d name %s patch %d lookup %d\n",i,mtexture.name,j,mpatch[j].patch);
+            //System.err.printf("Texture %d name %s patch %d lookup %d\n",i,mtexture.name,j,mpatch[j].patch);
             patch[j].patch = patchlookup[mpatch[j].patch];
             if (patch[j].patch == -1)
             {
