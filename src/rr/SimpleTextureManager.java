@@ -15,8 +15,6 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
-
 import p.AbstractLevelLoader;
 import doom.DoomStatus;
 import w.DoomBuffer;
@@ -174,12 +172,8 @@ public class SimpleTextureManager
         mappatch_t[] mpatch;
         texpatch_t[] patch;
         ByteBuffer[] maptex = new ByteBuffer[texturelumps.length];
-        String name;
-        ByteBuffer names;
-        int name_p;
         int[] patchlookup;
         int totalwidth;
-        int nummappatches;
         int offset;
         int[] maxoff = new int[texturelumps.length];
         final int numtextures;
@@ -475,8 +469,7 @@ public class SimpleTextureManager
      * from the patches and each column is cached. This method is "lazy"
      * aka it's only called when a cached/composite texture is needed.
      * 
-     * TODO: support masked textures. This should NOT be required, but
-     * will result in crashes in Java, unless we're safeguarded.
+     * @param texnum
      * 
      */
     
@@ -551,6 +544,28 @@ public class SimpleTextureManager
         }
     }
     
+    /**
+     * R_GenerateMaskedComposite
+     * 
+     * Generates a "masked composite texture": the result is a MASKED texture
+     * (with see-thru holes), but this time  multiple patches can be used to 
+     * assemble it, unlike standard Doom where this is not allowed.
+     *  
+     * Called only if a request for a texture in the general purpose GetColumn 
+     * method (used only for masked renders) turns out not to be pointing to a standard 
+     * cached texture, nor to a disk lump(which is the standard Doom way of indicating a 
+     * composite single patch texture) but to a cached one which, however, is composite.
+     * 
+     * Confusing, huh?
+     * 
+     * Normally, this results in a disaster, as the masked rendering methods 
+     * don't expect cached/composite textures at all, and you get all sorts of nasty
+     * tutti frutti and medusa effects. Not anymore ;-) 
+     * 
+     * @param texnum
+     * 
+     */
+    
     @Override
     public void GenerateMaskedComposite(int texnum) {
         byte[][] block;
@@ -568,7 +583,7 @@ public class SimpleTextureManager
         texture = textures[texnum];
 
         // MAES: we don't want to save a solid block this time. Will only use
-        // for synthesis.
+        // it for synthesis.
 
         block = new byte[texture.width][texture.height];
         pixmap = new boolean[texture.width][texture.height]; // True values = solid
@@ -613,7 +628,7 @@ public class SimpleTextureManager
 
         }
         
-        // TODO Patch drawn on cache, synthesize patch_t using it. 
+        // Patch drawn on cache, synthesize patch_t using it. 
         this.patchcomposite[texnum]=MultiPatchSynthesizer.synthesize(this.CheckTextureNameForNum(texnum),block, pixmap,texture.width,texture.height);
     }
     
@@ -765,7 +780,7 @@ public class SimpleTextureManager
         // priority, so its usefulness as an absolute end-index for regular flats
         // is dodgy at best. Gotta love the inconsistent mundo hacks!
         
-        int lastflatlump=W.GetNumForName(LUMPEND);
+        //int lastflatlump=W.GetNumForName(LUMPEND);
         
 		// 
         int lump=firstflat;
@@ -1172,6 +1187,7 @@ public class SimpleTextureManager
 
 	int lastrogue=-1;
 	byte[][] rogue;
+	
 	
 	HashMap<Integer,byte[][]> roguePatches= new HashMap<Integer,byte[][]> ();
     
