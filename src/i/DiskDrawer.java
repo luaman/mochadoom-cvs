@@ -57,7 +57,7 @@ public class DiskDrawer implements IDiskDrawer,DoomStatusAware {
 
 	@Override
 	public void setReading(int reading) {
-		System.out.println(timer=reading);
+		timer=reading;
 	}
 
 	@Override
