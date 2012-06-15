@@ -176,7 +176,6 @@ public class SimpleTextureManager
         int totalwidth;
         int offset;
         int[] maxoff = new int[texturelumps.length];
-        final int numtextures;
         int[] _numtextures = new int[texturelumps.length];
         int directory = 0;     
         int texset=TEXTURE1;
@@ -1145,11 +1144,11 @@ public class SimpleTextureManager
      * @param column
      * @return raw, 0-pointed column data.
      */    
-    public byte[] getRogueColumn(int lump, int column) {
+    public synchronized byte[] getRogueColumn(int lump, int column) {
 		
 		// If previously requested, speed up gathering.
 		//if (lastrogue==lump)
-//			return rogue[column];
+        //	return rogue[column];
 		
 		// Not contained? Generate.
 		if (!roguePatches.containsKey(lump))
