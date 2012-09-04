@@ -139,6 +139,7 @@ public class SimpleTextureManager
         /** Hash table used for fast texture lookup */
 
         Hashtable<String, Integer> TextureCache;
+        private Object li_namespace_;
         
         
         /**
@@ -289,6 +290,14 @@ public class SimpleTextureManager
             texturetranslation[i] = i;
     }
     
+    /** Assigns proper lumpnum to patch names. Check whether flats and patches of the same name coexist.
+     *  If yes, priority should go to patches. Otherwise, it's a "flats on walls" case.
+     * 
+     * @param pnames
+     * @return
+     * @throws IOException
+     */
+    
     private int[] loadPatchNames(String pnames) throws IOException {
         int[] patchlookup;
         int nummappatches;
@@ -306,7 +315,22 @@ public class SimpleTextureManager
         {
         // Get a size limited string;
         name=DoomBuffer.getNullTerminatedString(names, 8).toUpperCase();
-        patchlookup[i] = W.CheckNumForName (name);
+        
+        // Resolve clashes
+        int[] stuff= W.CheckNumsForName (name);
+        
+        // Move backwards.
+        for (int k=0;k<stuff.length;k++){
+            
+            // Prefer non-flat, with priority
+            if (W.GetLumpInfo(stuff[k]).namespace != li_namespace.ns_flats) {
+                patchlookup[i]=stuff[k];
+                break;            
+            }            
+             
+            // Suck it down :-/
+            patchlookup[i]=stuff[k];
+        }
         }
         
         return patchlookup;
@@ -350,7 +374,7 @@ public class SimpleTextureManager
         texture_t      texture;
         short[]       patchcount; //Keeps track of how many patches overlap a column.
         texpatch_t[]     patch;  
-        patch_t        realpatch;
+        patch_t        realpatch = null;
         int         x;
         int         x1;
         int         x2;
@@ -433,6 +457,7 @@ public class SimpleTextureManager
         if (patchcount[x]==0)
         {
             // TODO: somehow handle this. 
+            System.err.print (realpatch.width);
             System.err.print ("R_GenerateLookup: column without a patch ("+texture.name+")\n");
             //return;
         }
@@ -446,11 +471,12 @@ public class SimpleTextureManager
             collump[x] = -1;    
             colofs[x] = (char) texturecompositesize[texnum];
             
+            /* Do we really mind?
             if (texturecompositesize[texnum] > 0x10000-texture.height)
             {
-            I.Error ("R_GenerateLookup: texture %i is >64k",
-                 texnum);
-            }
+            I.Error ("R_GenerateLookup: texture no %d (%s) is >64k",
+                 texnum,textures[texnum].name);
+            } */
             
             texturecompositesize[texnum] += texture.height;
         }
