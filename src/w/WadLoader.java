@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.57.2.3 2012/06/14 22:38:20 velktron Exp $
+// $Id: WadLoader.java,v 1.57.2.4 2012/09/04 15:08:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1148,6 +1148,33 @@ public class WadLoader implements IWadLoader {
 		return -1;
 	}
 
+	   /* (non-Javadoc)
+     * @see w.IWadLoader#CheckNumForName(java.lang.String)
+     */
+    public int[] CheckNumsForName(String name)
+
+    {
+        
+        list.clear();
+        
+        // Dumb search, no chained hashtables I'm afraid :-/
+        // Move backwards, so list is compiled with more recent ones first.
+        for (int i=numlumps-1;i>=0;i--){
+            if (name.compareToIgnoreCase(lumpinfo[i].name)==0) list.add(i);
+        }
+        
+        final int num=list.size();
+        int[] result=new int[num];
+        for (int i=0;i<num;i++){
+            result[i]=list.get(i);
+        }
+    
+        // Might be empty/null, so check that out.
+        return result;
+    }
+    
+    private final ArrayList<Integer> list=new ArrayList<Integer>();
+	
 	@Override
 	public lumpinfo_t GetLumpInfo(int i) {
 		return this.lumpinfo[i];
@@ -1364,6 +1391,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.57.2.4  2012/09/04 15:08:34  velktron
+//New GetNumsForName function.
+//
 //Revision 1.57.2.3  2012/06/14 22:38:20  velktron
 //Uses new disk flasher.
 //

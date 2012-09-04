@@ -192,6 +192,15 @@ public interface IWadLoader {
 	public abstract String GetNameForLump(int lump);
 
 	public abstract int CheckNumForName(String name/* , int namespace */);
+	
+	/** Return ALL possible results for a given name, in order to resolve name clashes without
+	 *  using namespaces
+	 *  
+	 * @param name
+	 * @return
+	 */
+	
+	public abstract int[] CheckNumsForName(String name);
 
 	public abstract lumpinfo_t GetLumpInfo(int i);
 
