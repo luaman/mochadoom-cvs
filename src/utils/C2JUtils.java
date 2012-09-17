@@ -522,15 +522,30 @@ public final class C2JUtils {
         int firstq = s.indexOf(c);
         int lastq = s.lastIndexOf(c);
         // Indexes valid?
-        if (firstq != -1 && lastq != -1) {
-            if (firstq < lastq) {
-                // Unquote string.
+        if (isQuoted(s,c))
                 return s.substring(firstq + 1, lastq);
-            }
-        }
+        
         return null;
     }
 
+    public static final boolean isQuoted(String s, char c) {
+
+        int q1 = s.indexOf(c);
+        int q2 = s.lastIndexOf(c);
+        char c1,c2;
+        
+        // Indexes valid?
+        if (q1 != -1 && q2 != -1) {
+            if (q1 < q2) {
+                c1=s.charAt(q1);
+                c2=s.charAt(q2);
+                return (c1==c2);
+            }
+        }
+        
+        return false;
+    }
+    
     public static final String unquoteIfQuoted(String s, char c) {
 
         String tmp = unquote(s, c);
