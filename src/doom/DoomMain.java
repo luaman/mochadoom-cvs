@@ -31,6 +31,7 @@ import hu.HU;
 import m.Menu;
 import m.MenuMisc;
 import m.DoomRandom;
+import m.VarsManager;
 import static doom.NetConsts.*;
 import static doom.englsh.*;
 import data.Tables;
@@ -100,7 +101,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.6 2012/06/15 14:41:47 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.7 2012/09/17 16:07:07 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -126,7 +127,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.6 2012/06/15 14:41:47 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.7 2012/09/17 16:07:07 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -641,6 +642,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             if (!eval(home))
                 I.Error("Please set $HOME to your home directory");
         }
+        
         basedefault=home+"/.doomrc";   
 
         // None found, using current.
@@ -1052,7 +1054,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
 
         System.out.print ("M_LoadDefaults: Load system defaults.\n");
-        MenuMisc.LoadDefaults (this);              // load before initing other systems
+        
+        // load before initing other systems, but don't apply them yet.        
+        VM.LoadDefaults (DM.getDefaultFile());
+        
 
         System.out.print ("Z_Init: Init zone memory allocation daemon. \n");
         // DUMMY: Z_Init ();
@@ -1098,6 +1103,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Since we're at it, let's update everything, it's easy!
         
         this.updateStatusHolders(this);
+        
+        // Update variables and stuff NOW.
+        this.update();
 
         // Check for -file in shareware
         CheckForPWADSInShareware();
@@ -1219,8 +1227,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         p = CM.CheckParm ("-statcopy");
         if (eval(p) && p<CM.getArgc()-1)
         {
-
-            // TODO: statcopy = (void*)atoi(myargv[p+1]);
+            // TODO: this should be chained to a logger
+            //statcopy = CM.getArgv(p+1);
             System.out.print ("External statistics registered.\n");
         }
 
@@ -1978,21 +1986,25 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             return false;   // always let key up events filter down 
 
         case ev_mouse:
-
+            // Ignore them at the responder level
+            if (use_mouse){
             mousebuttons(0, ev.data1 & 1); 
             mousebuttons(1, ev.data1 & 2); 
             mousebuttons(2, ev.data1 & 4);
             mousex = ev.data2*(mouseSensitivity+5)/10; 
-            mousey = ev.data3*(mouseSensitivity+5)/10; 
+            mousey = ev.data3*(mouseSensitivity+5)/10;
+            }
             return true;    // eat events 
 
-        case ev_joystick: 
+        case ev_joystick:
+            if (use_joystick){
             joybuttons(0, ev.data1 & 1); 
             joybuttons(1, ev.data1 & 2); 
             joybuttons(2,ev.data1 & 4); 
             joybuttons(3,ev.data1 & 8); 
             joyxmove = ev.data2; 
             joyymove = ev.data3; 
+            }
             return true;    // eat events 
 
         default: 
@@ -2981,21 +2993,13 @@ public void ScreenShot ()
      */ 
     public void RecordDemo (String name) 
     { 
-        int             i; 
-        // int             maxsize;
 
         StringBuffer buf=new StringBuffer();
         usergame = false; 
         buf.append(name); 
         buf.append(".lmp");
         demoname=buf.toString();
-        // maxsize = 0x20000;
-        i = CM.CheckParm ("-maxdemo");
-        // if (i!=0 && i<CM.getArgc()-1)
-        // maxsize = Integer.parseInt(myargv[i+1])*1024;
         demobuffer = new VanillaDoomDemo(); 
-        //demoend = maxsize;
-
         demorecording = true; 
     } 
 
@@ -3112,10 +3116,11 @@ public void ScreenShot ()
             // killough -- added fps information and made it work for longer demos:
             long realtics=endtime-starttime;    
             
-            MenuMisc.SaveDefaults(this);
+            this.commit();
+            VM.SaveDefaults(DM.getDefaultFile());
             I.Error ("timed %d gametics in %d realtics = %f frames per second",gametic 
                 , realtics, gametic*(double)(TICRATE)/realtics); 
-        } 
+        }
 
         if (demoplayback) 
         {
@@ -3179,7 +3184,7 @@ public void ScreenShot ()
      *  
      *  FIXME: Probably I should add a sort of deferred status update?
      * 
-     * */
+     */
 
     public void Init(){
        
@@ -3191,6 +3196,8 @@ public void ScreenShot ()
         this.DM=this;
         this.DG = this;
         this.DGN=this; // DoomMain also handles its own Game Networking.
+        // Handles variables and settings.
+        this.VM=new VarsManager();
              
         // Set ticker. It is a shared status object, but not a holder itself.
         if (eval(CM.CheckParm("-millis"))){
@@ -4246,6 +4253,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.7  2012/09/17 16:07:07  velktron
+//Using all-new system.
+//
 //Revision 1.101.2.6  2012/06/15 14:41:47  velktron
 //Fixed Disk Drawer init position -now works with demos.
 //
