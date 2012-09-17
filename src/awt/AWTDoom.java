@@ -103,7 +103,7 @@ public class AWTDoom extends DoomFrame<short[]> {
             {
             //frames*=35;
             for (i=0 ; i<frames*2 ; i+=2)
-                RAWSCREEN[ (height-1)*width + i] = (byte) 0xff;
+                RAWSCREEN[ (height-1)*width + i] = (short) 0xffff;
             for ( ; i<20*2 ; i+=2)
                 RAWSCREEN[ (height-1)*width + i] = 0x0;
             frames=0;
@@ -130,6 +130,9 @@ public class AWTDoom extends DoomFrame<short[]> {
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.14.2.3  2012/09/17 15:57:07  velktron
+//Moved common code to DoomFrame
+//
 //Revision 1.14.2.2  2011/11/18 21:38:30  velktron
 //Uses 16-bit stuff.
 //

@@ -61,21 +61,7 @@ public class SwingDoom extends DoomFrame<byte[]> {
         
         Point center;
         Rectangle rect;
-        
-        /** Modified update method: no context needs to passed.
-         *  Will render only internal screens.
-         * 
-         */
-        public void paint(Graphics g) {
-           // Techdemo v1.3: Mac OSX fix, compatible with Windows and Linux.
-           // Should probably run just once. Overhead is minimal
-           // compared to actually DRAWING the stuff.
-           if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();
-           V.update();
-           //voli.getGraphics().drawImage(bi,0,0,null);
-           g2d.drawImage(screen,0,0,this);
-           
-        }
+
         
         public String processEvents(){
             StringBuffer tmp=new StringBuffer();
@@ -95,41 +81,6 @@ public class SwingDoom extends DoomFrame<byte[]> {
         										 InputEvent.META_MASK+
         										 InputEvent.WINDOW_EVENT_MASK+
         										 InputEvent.WINDOW_FOCUS_EVENT_MASK);
-
-	/**
-	 * I_SetPalette
-	 * 
-	 * IMPORTANT: unlike an actual "on the fly" palette-shifting
-	 * system, here we must pass an index to the actual palette 
-	 * (0-31), as limitations of AWT prevent loading new palettes 
-	 * on-the-fly without a significant overhead.
-	 * 
-	 * The actual palettes and fixed IndexColorModels are created 
-	 * upon graphics initialization and cannot be changed (however
-	 * they can be switched between), unless I switch to an explicit 
-	 * INT_RGB canvas, which however has only 80% performence 
-	 * of a BYTE_INDEXED one.
-	 *  
-	 *  So, actually, we just switch to the proper BufferedImage
-	 *  for display (the raster data is shared, which allows
-	 *  this hack to work with minimal overhead).
-	 *  
-	 *  
-	 */
-	
-	@Override
-	public void SetPalette (int palette)
-	{
-		V.setPalette(palette);
-		this.screen=V.getCurrentScreen();      
-	}
-	
-	public void SetGamma(int level){
-		if (D) System.err.println("Setting gamma "+level);
-		V.setUsegamma(level);
-		screen=V.getCurrentScreen(); // Refresh screen after change.
-		RAWSCREEN=V.getScreen(DoomVideoRenderer.SCREEN_FG);
-	}
 	
 
 	@Override
@@ -177,15 +128,19 @@ public class SwingDoom extends DoomFrame<byte[]> {
 	    //this.getInputContext().selectInputMethod(java.util.Locale.US);
 		
 	}
-
+	
     @Override
     public void ReadScreen(byte[] scr) {
         System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
         }
 
+
 }
 
 //$Log: SwingDoom.java,v $
+//Revision 1.2.2.1  2012/09/17 15:57:07  velktron
+//Moved common code to DoomFrame
+//
 //Revision 1.2  2011/11/01 19:03:10  velktron
 //Using screen number constants
 //
