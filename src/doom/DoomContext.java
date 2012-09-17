@@ -10,6 +10,7 @@ import i.IDoomSystem;
 import i.DoomVideoInterface;
 import m.IDoomMenu;
 import m.IRandom;
+import m.IVariablesManager;
 import p.AbstractLevelLoader;
 import p.Actions;
 import rr.ISpriteManager;
@@ -65,4 +66,5 @@ public class DoomContext{
     public ICommandLineManager CM;
     public ITicker TICK; 
     public IDiskDrawer DD;
+    public IVariablesManager VM;
 }
