@@ -429,7 +429,7 @@ public class PaletteGenerator {
 
             gray = (int) (255*(1.0-((float)red*0.299/256.0 + 
             						(float)green*0.587/256.0 +
-            						(float)blue*0.144/256.0)));            
+            						(float)blue*0.114/256.0)));            
             
             // We are not done. Because of the grayscaling, the all-white cmap
             
