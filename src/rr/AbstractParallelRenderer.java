@@ -580,10 +580,10 @@ public abstract class AbstractParallelRenderer
             spanstop=new int [sCREENWIDTH];
             vpw_dsvars=new SpanVars<byte[],short[]>();
             vpw_dcvars=new ColVars<byte[],short[]>();
-            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_spanfunclow=new R_DrawSpanLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
-            vpw_skyfunclow=new R_DrawColumnBoomOptLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunclow=new R_DrawColumnBoomOptLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
             this.NUMFLOORTHREADS=NUMFLOORTHREADS;
         }
 
@@ -942,10 +942,10 @@ public abstract class AbstractParallelRenderer
             spanstop=new int [sCREENHEIGHT];
             vpw_dsvars=new SpanVars<byte[],short[]>();
             vpw_dcvars=new ColVars<byte[],short[]>();
-            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_spanfunclow=new R_DrawSpanLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
-            vpw_skyfunclow=new R_DrawColumnBoomOptLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunclow=new R_DrawColumnBoomOptLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
             this.NUMFLOORTHREADS=NUMFLOORTHREADS;
         }
         
@@ -1294,7 +1294,7 @@ public abstract class AbstractParallelRenderer
         // before V is set (right?)
         for (int i = 0; i < NUMWALLTHREADS; i++) {
             RWIExec[i] =
-                new RenderWallExecutor(SCREENWIDTH, SCREENHEIGHT, columnofs,
+                new RenderWallExecutor.HiColor(SCREENWIDTH, SCREENHEIGHT, columnofs,
                         ylookup, screen, RWI, drawsegsbarrier);
             
             detailaware.add(RWIExec[i]);
@@ -1327,14 +1327,14 @@ public abstract class AbstractParallelRenderer
      * load per-wall, rather than per-screen portion. Requires careful concurrency considerations.
      * 
      */
-    protected RenderSegInstruction[] RSI;
+    protected RenderSegInstruction<short[]>[] RSI;
 
     /** Increment this as you submit RSIs to the "queue". Remember to reset to 0 when you have drawn everything!
      * 
      */
     protected int RSIcount=0;
 
-    protected RenderSegExecutor[] RSIExec;
+    protected RenderSegExecutor<byte[],short[]>[] RSIExec;
 
     /**
      * R_InitRSISubsystem
@@ -1350,7 +1350,7 @@ public abstract class AbstractParallelRenderer
         
         //offsets=new int[NUMWALLTHREADS];
         for (int i=0;i<NUMWALLTHREADS;i++){
-            RSIExec[i]=new RenderSegExecutor(
+            RSIExec[i]=new RenderSegExecutor.HiColor(
                 SCREENWIDTH,
                 SCREENHEIGHT,
                 i,

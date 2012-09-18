@@ -98,7 +98,7 @@ import rr.drawfuns.*;
  * 
  */
 
-public abstract class RendererState implements Renderer<byte[],short[]>, ILimitResettable, IGetColumn {
+public abstract class RendererState implements Renderer<byte[],short[]>, ILimitResettable, IGetColumn<byte[]> {
 
 	protected static final boolean DEBUG = false;
 	protected static final boolean DEBUG2 = false;
@@ -5815,7 +5815,7 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 	    
         // Span functions. Common to all renderers unless overriden
         // or unused e.g. parallel renderers ignore them.
-        DrawSpan=new R_DrawSpanUnrolled(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+        DrawSpan=new R_DrawSpanUnrolled.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
         DrawSpanLow=new R_DrawSpanLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
         
         
@@ -5829,8 +5829,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
         DrawFuzzColumnLow=new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
         
         // Regular draw for solid columns/walls. Full optimizations.
-        DrawColumn=new R_DrawColumnBoomOpt(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
-        DrawColumnLow=new R_DrawColumnBoomOptLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+        DrawColumn=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+        DrawColumnLow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
         
         // Non-optimized stuff for masked.
         DrawColumnMasked=new R_DrawColumnBoom(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
@@ -5841,8 +5841,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
         
         // Skies use their own. This is done in order not to stomp parallel threads.
         
-        DrawColumnSkies=new R_DrawColumnBoomOpt(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
-        DrawColumnSkiesLow=new R_DrawColumnBoomOptLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+        DrawColumnSkies=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+        DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
 	}
 
 	// //////////////////////////// LIMIT RESETTING //////////////////
