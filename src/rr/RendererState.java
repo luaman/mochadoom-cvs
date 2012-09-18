@@ -1287,8 +1287,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
 	        maskedcolfunclow=new R_DrawColumnBoomLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
 
             // Fuzzy columns. These are also masked.
-	        fuzzcolfunc=fuzzcolfunchi=new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	        fuzzcolfunclow=new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        fuzzcolfunc=fuzzcolfunchi=new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        fuzzcolfunclow=new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
 
 	        // Translated columns are usually sprites-only.
             transcolfunc=transcolhigh=new R_DrawTranslatedColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
@@ -5825,8 +5825,8 @@ public abstract class RendererState implements Renderer<byte[],short[]>, ILimitR
         DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
         
         // Fuzzy columns. These are also masked.
-        DrawFuzzColumn=new R_DrawFuzzColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-        DrawFuzzColumnLow=new R_DrawFuzzColumnLow(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+        DrawFuzzColumn=new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+        DrawFuzzColumnLow=new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
         
         // Regular draw for solid columns/walls. Full optimizations.
         DrawColumn=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);

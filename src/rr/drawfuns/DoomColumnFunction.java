@@ -19,6 +19,7 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
     protected final IDoomSystem I;
     protected final int[] ylookup;
     protected final int[] columnofs;
+    protected T BLURRY_MAP;
     protected int flags;
     
     public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
@@ -30,6 +31,19 @@ public abstract class DoomColumnFunction<T,V> implements ColumnFunction<T,V>{
         this.dcvars = dcvars;
         this.screen = screen;
         this.I=I;
+        this.BLURRY_MAP=null;
+    }
+    
+    public DoomColumnFunction(int sCREENWIDTH, int sCREENHEIGHT,int[] ylookup,
+            int[] columnofs, ColVars<T,V> dcvars, V screen,IDoomSystem I,T BLURRY_MAP) {
+        SCREENWIDTH = sCREENWIDTH;
+        SCREENHEIGHT = sCREENHEIGHT;
+        this.ylookup=ylookup;
+        this.columnofs=columnofs;
+        this.dcvars = dcvars;
+        this.screen = screen;
+        this.I=I;
+        this.BLURRY_MAP=BLURRY_MAP;
     }
 
     protected final void performRangeCheck(){
