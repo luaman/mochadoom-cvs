@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.31 2011/11/01 22:17:46 velktron Exp $
+// $Id: HU.java,v 1.31.2.1 2012/09/19 17:43:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -48,7 +48,7 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.31 2011/11/01 22:17:46 velktron Exp $";
+        "$Id: HU.java,v 1.31.2.1 2012/09/19 17:43:06 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
@@ -1177,22 +1177,22 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
             // and the text must either need updating or refreshing
             // (because of a recent change back from the automap)
 
-            if (!DM.automapactive && (R.viewwindowx != 0)
+            if (!DM.automapactive && (R.view.windowx != 0)
                     && (this.needsupdate > 0)) {
                 lh = this.f[0].height + 1;
 
                 for (int y = this.y, yoffset = y * SCREENWIDTH; y < this.y + lh; y++, yoffset +=
                     SCREENWIDTH) {
                     // Stuff is probably in am_map??
-                    if (y < R.viewwindowy
-                            || y >= R.viewwindowy + R.viewheight)
+                    if (y < R.view.windowy
+                            || y >= R.view.windowy + R.view.height)
                         R.VideoErase(yoffset, SCREENWIDTH); // erase entire
                     // line
                     else {
-                        R.VideoErase(yoffset, R.viewwindowx); // erase left
+                        R.VideoErase(yoffset, R.view.windowx); // erase left
                         // border
-                        R.VideoErase(yoffset + R.viewwindowx + R.viewwidth,
-                            R.viewwindowx);
+                        R.VideoErase(yoffset + R.view.windowx + R.view.width,
+                            R.view.windowx);
                         // erase right border
                     }
                 }
@@ -1245,6 +1245,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 }
 
 //$Log: HU.java,v $
+//Revision 1.31.2.1  2012/09/19 17:43:06  velktron
+//Aware of new ViewVars structure.
+//
 //Revision 1.31  2011/11/01 22:17:46  velktron
 //Cleaned up a bit, implements IHeadsUp
 //
