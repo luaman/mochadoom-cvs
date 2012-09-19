@@ -101,7 +101,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.7 2012/09/17 16:07:07 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.8 2012/09/19 17:42:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -127,7 +127,7 @@ import static utils.C2JUtils.*;
 
 public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.7 2012/09/17 16:07:07 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.8 2012/09/19 17:42:16 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3278,7 +3278,7 @@ public void ScreenShot ()
     protected void selectRenderer() {
         // Serial or parallel renderer (serial is default, but can be forced)
         if (eval(CM.CheckParm("-serialrenderer"))){
-            this.R=new UnifiedRenderer(this);    
+            this.R=new UnifiedRenderer.HiColor(this);    
         } else 
             // Parallel. Either with default values (2,1) or user-specified.
             if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
@@ -3319,7 +3319,7 @@ public void ScreenShot ()
                 }
             } else {
                 // Force serial
-                this.R=new UnifiedRenderer(this);   
+                this.R=new UnifiedRenderer.HiColor(this);   
             }
     }
 
@@ -4253,6 +4253,9 @@ public void ScreenShot ()
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.8  2012/09/19 17:42:16  velktron
+//Using HiColor builder (for now). Dual-funcitonality is near....
+//
 //Revision 1.101.2.7  2012/09/17 16:07:07  velktron
 //Using all-new system.
 //
