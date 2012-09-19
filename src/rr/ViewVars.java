@@ -5,6 +5,7 @@ import static data.Tables.ANG270;
 import static data.Tables.ANG90;
 import static data.Tables.SlopeDiv;
 import static data.Tables.tantoangle;
+import utils.C2JUtils;
 import doom.player_t;
 
 public class ViewVars {
@@ -39,12 +40,27 @@ public class ViewVars {
 
     protected player_t player;
 
+    /** Heretic/freeview stuff? */
+
+	protected int lookdir;
+    
     // 0 = high, 1 = low. Normally only the menu and the interface can change
     // that.
     protected int detailshift;
     
-
-
+	protected int WEAPONADJUST;
+	protected int BOBADJUST;
+	
+	/**
+	 * constant arrays used for psprite clipping and initializing clipping
+	 */
+	protected short[] negonearray; // MAES: in scaling
+	protected short[] screenheightarray;// MAES: in scaling
+	
+	protected final void initNegOneArray(int screenwidth){
+	       C2JUtils.memset(negonearray, (short)-1,screenwidth);
+		}
+    
     protected final long PointToAngle(int x, int y) {
         // MAES: note how we don't use &BITS32 here. That is because
         // we know that the maximum possible value of tantoangle is angle

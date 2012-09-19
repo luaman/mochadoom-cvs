@@ -620,7 +620,7 @@ public class SimpleTextureManager
         // For each patch in the texture...
         for (int i = 0; i < texture.patchcount; i++) {
 
-            realpatch = W.CachePatchNum(patch[i].patch, PU_CACHE);
+            realpatch = W.CachePatchNum(patch[i].patch);
             x1 = patch[i].originx;
             x2 = x1 + realpatch.width;
 

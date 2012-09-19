@@ -1,7 +1,6 @@
 package rr;
 
-import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FRACUNIT;
+import static rr.Lights.*;
 
 import java.io.IOException;
 import rr.drawfuns.ColVars;

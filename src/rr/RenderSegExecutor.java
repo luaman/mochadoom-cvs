@@ -2,7 +2,7 @@ package rr;
 
 import static data.Tables.finetangent;
 import static m.fixed_t.*;
-import static rr.RendererState.*;
+import static rr.Lights.*;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -400,6 +400,9 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.12.2.4  2012/09/19 21:45:41  velktron
+// More extensions...
+//
 // Revision 1.12.2.3  2012/09/18 16:11:50  velktron
 // Started new "all in one" approach for unifying Indexed, HiColor and (future) TrueColor branches.
 //

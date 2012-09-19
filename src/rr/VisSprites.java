@@ -10,10 +10,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.mobj_t.MF_SHADOW;
-import static rr.Renderer.LIGHTLEVELS;
-import static rr.Renderer.LIGHTSEGSHIFT;
-import static rr.Renderer.LIGHTSCALESHIFT;
-import static rr.Renderer.MAXLIGHTSCALE;
+import static rr.Lights.*;
 import static rr.Renderer.MINZ;
 
 import i.IDoomSystem;

@@ -24,5 +24,11 @@ public class Colormaps<V> {
     public V fixedcolormap;
     /** Use in conjunction with fixedcolormap[] */
     public int pfixedcolormap;
-    // lighttable_t[][] walllights;
+	
+	/**
+	 * Color tables for different players, translate a limited part to another
+	 * (color ramps used for suit colors).
+	 */
+
+	public byte[][] translationtables;
 }

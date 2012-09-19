@@ -14,11 +14,9 @@ import static data.Defines.SIL_TOP;
 import static data.Defines.pw_invisibility;
 import static data.Limits.MAXHEIGHT;
 import static data.Limits.MAXSEGS;
-import static data.Limits.MAXVISSPRITES;
 import static data.Limits.MAXWIDTH;
 import static data.Tables.ANG180;
 import static data.Tables.ANG270;
-import static data.Tables.ANG45;
 import static data.Tables.ANG90;
 import static data.Tables.ANGLETOFINESHIFT;
 import static data.Tables.BITS32;
@@ -40,18 +38,13 @@ import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
-import static p.mobj_t.MF_SHADOW;
 import static p.mobj_t.MF_TRANSLATION;
 import static p.mobj_t.MF_TRANSSHIFT;
+import static rr.Lights.*;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
 import m.IDoomMenu;
 import m.MenuMisc;
 import p.AbstractLevelLoader;
@@ -61,9 +54,6 @@ import p.pspdef_t;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.DoomSpanFunction;
-import rr.drawfuns.R_DrawColumnBoomOpt;
-import rr.drawfuns.R_DrawSpanLow;
-import rr.drawfuns.R_DrawSpanUnrolled;
 import rr.drawfuns.SpanVars;
 import i.IDoomSystem;
 import utils.C2JUtils;
@@ -80,7 +70,6 @@ import doom.IDoomGameNetworking;
 import doom.player_t;
 import doom.think_t;
 import doom.thinker_t;
-import rr.drawfuns.*;
 
 /**
  * Most shared -essential- status information, methods and classes related to
@@ -98,7 +87,7 @@ import rr.drawfuns.*;
  * 
  */
 
-public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitResettable, IGetColumn<byte[]> {
+public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitResettable, IGetColumn<byte[]>,IGetSmpColumn<byte[]> {
 
 	protected static final boolean DEBUG = false;
 	protected static final boolean DEBUG2 = false;
@@ -126,6 +115,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	public ViewVars view;
 	protected Lights<V> lights;
 	protected Colormaps<V> colormap;
+	protected SegVars seg_vars;
 
 	// Rendering subsystems that are detailshift-aware
 	
@@ -153,7 +143,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 	// initially.
 	protected int MAXVISPLANES = Limits.MAXVISPLANES;
-	protected int MAXDRAWSEGS = Limits.MAXDRAWSEGS;
+
 
 	/** visplane_t*, treat as indexes into visplanes */
 	protected int lastvisplane, floorplane, ceilingplane;
@@ -220,14 +210,14 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		lights.extralight = player.extralight;
 
 		view.z = player.viewz;
-		lookdir=(int) player.lookdir;
+		view.lookdir=(int) player.lookdir;
 		int tempCentery;
 		
 		// MAES: hacks based on Heretic. Weapon movement needs to be compensated
 		if (setblocks==11)
-			tempCentery= (view.height/2)+(int)(lookdir*SCREEN_MUL*setblocks)/11;
+			tempCentery= (view.height/2)+(int)(view.lookdir*SCREEN_MUL*setblocks)/11;
 		else
-			tempCentery =  (view.height/2)+(int)(lookdir*SCREEN_MUL*setblocks)/10;
+			tempCentery =  (view.height/2)+(int)(view.lookdir*SCREEN_MUL*setblocks)/10;
 		
 		if(view.centery != tempCentery)
 		{			
@@ -264,7 +254,6 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		validcount++;
 	}
 
-	protected int lookdir;
 	
 	/**
 	 * R_SetupFrame for a particular actor.
@@ -460,10 +449,11 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		  // These don't change between implementations, yet.		  
 		  this.MyBSP=new BSP();
 		  this.view=new ViewVars();
+		  this.seg_vars=new SegVars();
 		  this.detailaware=new ArrayList<IDetailAware>();
 		  
 		  // Initialize array of minus ones for sprite clipping
-          InitNegOneArray();
+          view.initNegOneArray(SCREENWIDTH);
 		
 		  // Set rendering functions only after screen sizes 
 		  // and stuff have been set.		
@@ -474,9 +464,6 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		visplanes = C2JUtils.resize(visplanes[0], visplanes, visplanes.length*2);
 	}
 
-	protected final void ResizeDrawsegs() {
-		drawsegs = C2JUtils.resize(drawsegs[0], drawsegs, drawsegs.length*2);
-	}
 
 	@Override
 	public void updateStatus(DoomStatus DC) {
@@ -493,18 +480,9 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	        this.VIS.updateStatus(this);
 	}
 
-	// ////////////////////////////// THINGS ////////////////////////////////
+	//////////////////////////////// THINGS ////////////////////////////////
 
-	//protected V[] spritelights;
 
-	protected int WEAPONADJUST;
-	protected int BOBADJUST;
-
-	/**
-	 * constant arrays used for psprite clipping and initializing clipping
-	 */
-	protected short[] negonearray; // MAES: in scaling
-	protected short[] screenheightarray;// MAES: in scaling
 
 	/** Refresh of things, i.e. objects represented by sprites.
 	 *  This abstract class is the base for all implementations, and contains
@@ -586,7 +564,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 			// At this point, the view angle (and patch) has already been
 			// chosen. Go back.
-			patch = W.CachePatchNum(vis.patch + SM.getFirstSpriteLump(), PU_CACHE);
+			patch = W.CachePatchNum(vis.patch + SM.getFirstSpriteLump());
 			
 			
 			maskedcvars.dc_colormap = vis.colormap;
@@ -596,7 +574,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 				colfunc = fuzzcolfunc;
 			} else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
 				colfunc = transcolfunc;
-				maskedcvars.dc_translation = translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
+				maskedcvars.dc_translation = colormap.translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
 			}
 
 			maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;
@@ -763,7 +741,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			flip = (boolean) (sprframe.flip[0] != 0);
 
 			// calculate edges of the shape. tx is expressed in "view units".
-			tx = (int) (FixedMul(psp.sx, BOBADJUST) - WEAPONADJUST);
+			tx = (int) (FixedMul(psp.sx, view.BOBADJUST) - view.WEAPONADJUST);
 
 			tx -= spriteoffset[lump];
 
@@ -785,7 +763,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			// store information in a vissprite ?
 			vis = avis;
 			vis.mobjflags = 0;
-			vis.texturemid = ((BASEYCENTER+lookdir) << FRACBITS) + FRACUNIT / 2
+			vis.texturemid = ((BASEYCENTER+view.lookdir) << FRACBITS) + FRACUNIT / 2
 					- (psp.sy - spritetopoffset[lump]);
 			vis.x1 = x1 < 0 ? 0 : x1;
 			vis.x2 = x2 >= view.width ? view.width - 1 : x2;
@@ -873,9 +851,9 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			    lights.spritelights = lights.scalelight[lightnum];
 
 			// clip to screen bounds
-			mfloorclip = screenheightarray;
+			mfloorclip = view.screenheightarray;
 			p_mfloorclip = 0;
-			mceilingclip = negonearray;
+			mceilingclip = view.negonearray;
 			p_mceilingclip = 0;
 
 			// add all active psprites
@@ -918,10 +896,10 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			// Scan drawsegs from end to start for obscuring segs.
 			// The first drawseg that has a greater scale
 			// is the clip seg.
-			for (ds = ds_p - 1; ds >= 0; ds--) {
+			for (ds = seg_vars.ds_p - 1; ds >= 0; ds--) {
 				// determine if the drawseg obscures the sprite
 				// System.out.println("Drawseg "+ds+"of "+(ds_p-1));
-				dss = drawsegs[ds];
+				dss = seg_vars.drawsegs[ds];
 				if (dss.x1 > spr.x2
 						|| dss.x2 < spr.x1
 						|| ((dss.silhouette == 0) && (dss
@@ -1078,8 +1056,8 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			}
 
 			// render any remaining masked mid textures
-			for (ds = ds_p - 1; ds >= 0; ds--) {
-				dss = drawsegs[ds];
+			for (ds = seg_vars.ds_p - 1; ds >= 0; ds--) {
+				dss = seg_vars.drawsegs[ds];
 				if (!dss.nullMaskedTextureCol())
 					RenderMaskedSegRange(dss, dss.x1, dss.x2);
 			}
@@ -1240,7 +1218,12 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
         
 	}	   	
 	
-	
+	/** The sectors of the line currently being considered */
+	protected sector_t frontsector, backsector;
+
+	protected seg_t curline;
+	protected side_t sidedef;
+	protected line_t linedef;
 	
 	protected final class BSP {
 
@@ -1254,15 +1237,6 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 		}
 
-		/**
-		 * R_ClearDrawSegs
-		 * 
-		 * The drawseg list is reset by pointing back at 0.
-		 * 
-		 */
-		public void ClearDrawSegs() {
-			ds_p = 0;
-		}
 
 		/**
 		 * R_ClipSolidWallSegment
@@ -1947,11 +1921,11 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	            rw_midtexturemid, rw_toptexturemid, rw_bottomtexturemid;
 		
 		public void resetLimits() {
-			drawseg_t[] tmp = new drawseg_t[MAXDRAWSEGS];
-			System.arraycopy(drawsegs, 0, tmp, 0, MAXDRAWSEGS);
+			drawseg_t[] tmp = new drawseg_t[seg_vars.MAXDRAWSEGS];
+			System.arraycopy(seg_vars.drawsegs, 0, tmp, 0, seg_vars.MAXDRAWSEGS);
 
 			// Now, that was quite a haircut!.
-			drawsegs = tmp;
+			seg_vars.drawsegs = tmp;
 
 			// System.out.println("Drawseg buffer cut back to original limit of "+MAXDRAWSEGS);
 		}
@@ -1983,15 +1957,15 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			drawseg_t seg;
 
 			// don't overflow and crash
-			if (ds_p == drawsegs.length)
-				ResizeDrawsegs();
+			if (seg_vars.ds_p == seg_vars.drawsegs.length)
+				seg_vars.ResizeDrawsegs();
 
 			if (RANGECHECK) {
 				if (start >= view.width || start > stop)
 					I.Error("Bad R_RenderWallRange: %d to %d", start, stop);
 			}
 
-			seg = drawsegs[ds_p];
+			seg = seg_vars.drawsegs[seg_vars.ds_p];
 
 			sidedef = curline.sidedef;
 			linedef = curline.linedef;
@@ -2084,8 +2058,8 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 				rw_midtexturemid += sidedef.rowoffset;
 
 				seg.silhouette = SIL_BOTH;
-				seg.setSprTopClip(screenheightarray, 0);
-				seg.setSprBottomClip(negonearray, 0);
+				seg.setSprTopClip(view.screenheightarray, 0);
+				seg.setSprBottomClip(view.negonearray, 0);
 				seg.bsilheight = Integer.MAX_VALUE;
 				seg.tsilheight = Integer.MIN_VALUE;
 			} else {
@@ -2113,13 +2087,13 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 				}
 
 				if (backsector.ceilingheight <= frontsector.floorheight) {
-					seg.setSprBottomClip(negonearray, 0);
+					seg.setSprBottomClip(view.negonearray, 0);
 					seg.bsilheight = Integer.MAX_VALUE;
 					seg.silhouette |= SIL_BOTTOM;
 				}
 
 				if (backsector.floorheight >= frontsector.ceilingheight) {
-					seg.setSprTopClip(screenheightarray, 0);
+					seg.setSprTopClip(view.screenheightarray, 0);
 					seg.tsilheight = Integer.MIN_VALUE;
 					seg.silhouette |= SIL_TOP;
 				}
@@ -2338,7 +2312,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 				seg.silhouette |= SIL_BOTTOM;
 				seg.bsilheight = Integer.MAX_VALUE;
 			}
-			ds_p++;
+			seg_vars.ds_p++;
 		}
 
 		/**
@@ -2550,8 +2524,8 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 		public SegDrawer() {
 			col = new column_t();
-			drawsegs = new drawseg_t[MAXDRAWSEGS];
-			C2JUtils.initArrayOfObjects(drawsegs);
+			seg_vars.drawsegs = new drawseg_t[seg_vars.MAXDRAWSEGS];
+			C2JUtils.initArrayOfObjects(seg_vars.drawsegs);
 		}
 
 		/**
@@ -3137,9 +3111,9 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	          int         angle;
 	                      
 	      if (RANGECHECK){
-	          if (ds_p > MAXDRAWSEGS)
+	          if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS)
 	          I.Error("R_DrawPlanes: drawsegs overflow (%d)",
-	              ds_p );
+	        		  seg_vars.ds_p );
 	          
 	          if (lastvisplane > MAXVISPLANES)
 	              I.Error(" R_DrawPlanes: visplane overflow (%d)",
@@ -3270,13 +3244,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	/** Used for spans */
 	
 	protected SpanVars<byte[],V> dsvars;
-	
-	/**
-	 * Color tables for different players, translate a limited part to another
-	 * (color ramps used for suit colors).
-	 */
 
-	protected byte[][] translationtables;
 
 	/**
 	 * e6y: wide-res Borrowed from PrBoom+;
@@ -3539,19 +3507,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	protected short[] maskedtexturecol;
 	protected int pmaskedtexturecol = 0;
 
-	// /// FROM BSP /////////
 
-	/** pointer to drawsegs */
-	protected int ds_p;
-
-	protected drawseg_t[] drawsegs;
-
-	/** The sectors of the line currently being considered */
-	protected sector_t frontsector, backsector;
-
-	protected seg_t curline;
-	protected side_t sidedef;
-	protected line_t linedef;
 
 	////////////////// COLUMN AND SPAN FUNCTIONS    //////////////
 
@@ -3706,12 +3662,12 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		MyThings.setPspriteIscale((int) (FRACUNIT * (SCREENWIDTH / (view.width * (float) SCREEN_MUL))));
 		MyPlanes.setSkyScale((int) (FRACUNIT * (SCREENWIDTH / (view.width * (float) SCREEN_MUL))));
 
-		BOBADJUST = (int) (this.vs.getSafeScaling() << 15);
-		WEAPONADJUST = (int) ((SCREENWIDTH / (2 * SCREEN_MUL)) * FRACUNIT);
+		view.BOBADJUST = (int) (this.vs.getSafeScaling() << 15);
+		view.WEAPONADJUST = (int) ((SCREENWIDTH / (2 * SCREEN_MUL)) * FRACUNIT);
 
 		// thing clipping
 		for (i = 0; i < view.width; i++)
-			screenheightarray[i] = (short) view.height;
+			view.screenheightarray[i] = (short) view.height;
 
 		// planes
 		for (i = 0; i < view.height; i++) {			
@@ -4243,7 +4199,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			// That is, to the ONE column exactly.{
 			// If the caller needs access to a raw column, we must point 3 bytes
 			// "ahead".
-			lastpatch = W.CachePatchNum(lump, PU_CACHE);
+			lastpatch = W.CachePatchNum(lump);
 			lasttex = tex;
 			lastlump=lump;
 			composite=false;
@@ -4346,7 +4302,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			// That is, to the ONE column exactly.{
 			// If the caller needs access to a raw column, we must point 3 bytes
 			// "ahead".
-			smp_lastpatch[id] = W.CachePatchNum(lump, PU_CACHE);
+			smp_lastpatch[id] = W.CachePatchNum(lump);
 			smp_lasttex[id] = tex;
 			smp_lastlump[id]=lump;
 			smp_composite[id]=false;
@@ -4410,9 +4366,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 	protected int spritememory;
 	
-	protected final void InitNegOneArray(){
-	       C2JUtils.memset(negonearray, (short)-1,SCREENWIDTH);
-	}
+
 	
 	/**
 	 * To be called right after PrecacheLevel from SetupLevel in LevelLoader.
@@ -4472,7 +4426,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		
 		// translationtables = Z_Malloc (256*3+255, PU_STATIC, 0);
 		// translationtables = (byte *)(( (int)translationtables + 255 )& ~255);
-		translationtables = new byte[TR_COLORS][256];
+		byte[][] translationtables=colormap.translationtables = new byte[TR_COLORS][256];
 
 		// translate just the 16 green colors
 		for (i = 0; i < 256; i++) {
@@ -4586,14 +4540,12 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		BLANKCACHEDHEIGHT = new int[SCREENHEIGHT];
 
 
-		negonearray = new short[SCREENWIDTH]; // MAES: in scaling
-		screenheightarray = new short[SCREENWIDTH];// MAES: in scaling
+		view.negonearray = new short[SCREENWIDTH]; // MAES: in scaling
+		view.screenheightarray = new short[SCREENWIDTH];// MAES: in scaling
 		xtoviewangle = new long[SCREENWIDTH + 1];
 		
 		MAXOPENINGS = SCREENWIDTH * 64;
 
-		negonearray = new short[SCREENWIDTH];
-		screenheightarray = new short[SCREENWIDTH];
 		openings = new short[MAXOPENINGS];
 		// Initialize children objects\
 		MySegs.setVideoScale(vs);
@@ -4639,7 +4591,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 	  // Clear buffers. 
 	  MyBSP.ClearClipSegs ();
-	  MyBSP.ClearDrawSegs ();
+	  seg_vars.ClearDrawSegs ();
 	  MyPlanes.ClearPlanes ();
 	  MySegs.ClearClips();
 	  VIS.ClearSprites ();
