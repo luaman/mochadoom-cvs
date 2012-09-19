@@ -30,7 +30,7 @@ public abstract class VisSprites<T,V> implements IVisSpriteManagement<V>{
     
     protected IDoomSystem I;
     protected ISpriteManager SM;
-    protected ViewStatus view;
+    protected ViewVars view;
     protected Lights<V> lights;
     protected Colormaps<V> colormap;
     protected RendererState<V> R;
