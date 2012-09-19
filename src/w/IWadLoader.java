@@ -172,11 +172,11 @@ public interface IWadLoader {
 	/**
 	 * Specific method for loading cached patches by number.
 	 * 
-	 * @param name
+	 * @param num
 	 * @return
 	 */
 
-	public abstract patch_t CachePatchNum(int num, int tag);
+	public abstract patch_t CachePatchNum(int num);
 
 	public abstract Object CacheLumpName(String name, int tag, Class what);
 

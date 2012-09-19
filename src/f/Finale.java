@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.26.2.1 2011/11/27 16:47:45 velktron Exp $
+// $Id: Finale.java,v 1.26.2.2 2012/09/19 21:47:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,7 +62,7 @@ import doom.gameaction_t;
 
 public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 
-	public static final String rcsid = "$Id: Finale.java,v 1.26.2.1 2011/11/27 16:47:45 velktron Exp $";
+	public static final String rcsid = "$Id: Finale.java,v 1.26.2.2 2012/09/19 21:47:03 velktron Exp $";
 
 	IDoomGame DG;
 	DoomStatus DS;
@@ -609,7 +609,7 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		// flip=false;
 		// lump=0;
 
-		patch = W.CachePatchNum(lump + SM.getFirstSpriteLump(), PU_CACHE);
+		patch = W.CachePatchNum(lump + SM.getFirstSpriteLump());
 
 		if (flip)
 			V.DrawScaledPatch(160, 170, 0 | DoomVideoRenderer.V_FLIPPEDPATCH,

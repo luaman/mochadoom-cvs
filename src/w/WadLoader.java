@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.57.2.4 2012/09/04 15:08:34 velktron Exp $
+// $Id: WadLoader.java,v 1.57.2.5 2012/09/19 21:46:46 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -1018,8 +1018,8 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchNum(int, int)
 	 */
 
-	public patch_t CachePatchNum(int num, int tag) {
-		return (patch_t) this.CacheLumpNum(num, tag, patch_t.class);
+	public patch_t CachePatchNum(int num) {
+		return (patch_t) this.CacheLumpNum(num, PU_CACHE, patch_t.class);
 	}
 
 	/* (non-Javadoc)
@@ -1391,6 +1391,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.57.2.5  2012/09/19 21:46:46  velktron
+//Simpler call for getPATCH
+//
 //Revision 1.57.2.4  2012/09/04 15:08:34  velktron
 //New GetNumsForName function.
 //
