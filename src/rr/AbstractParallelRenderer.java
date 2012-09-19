@@ -42,8 +42,8 @@ import utils.C2JUtils;
  *
  */
 
-public abstract class AbstractParallelRenderer
-        extends RendererState {
+public abstract class AbstractParallelRenderer<V>
+        extends RendererState<V> {
 
     public AbstractParallelRenderer(DoomStatus DS, int wallthread,
             int floorthreads, int nummaskedthreads) {
@@ -74,7 +74,7 @@ public abstract class AbstractParallelRenderer
 
     protected Runnable[] vpw;
 
-    protected MaskedWorker[] maskedworkers;
+    protected MaskedWorker<V>[] maskedworkers;
 
     protected CyclicBarrier drawsegsbarrier;
 
@@ -131,7 +131,7 @@ public abstract class AbstractParallelRenderer
         @Override
         public void completeColumn() {
 
-            if (detailshift == 1)
+            if (view.detailshift == 1)
                 flags = DcFlags.LOW_DETAIL;
             // Don't wait to go over
             if (RMIcount >= RMI.length) {
@@ -261,8 +261,8 @@ public abstract class AbstractParallelRenderer
                         + lastvisplane);
 
             if (RANGECHECK) {
-                if (ds_p > MAXDRAWSEGS)
-                    I.Error("R_DrawPlanes: drawsegs overflow (%d)", ds_p);
+                if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS)
+                    I.Error("R_DrawPlanes: drawsegs overflow (%d)", seg_vars.ds_p);
 
                 if (lastvisplane > MAXVISPLANES)
                     I.Error(" R_DrawPlanes: visplane overflow (%d)",
@@ -368,7 +368,7 @@ public abstract class AbstractParallelRenderer
                     dcvars.dc_source = GetCachedColumn(midtexture,texturecolumn);
                     dc_m=dcvars.dc_source_ofs;
                     // single sided line
-                    ceilingclip[rw_x] = (short) viewheight;
+                    ceilingclip[rw_x] = (short) view.height;
                     floorclip[rw_x] = -1;
                 }
                 else
@@ -446,8 +446,8 @@ public abstract class AbstractParallelRenderer
                 ResizeRSIBuffer();
             }
 
-            RenderSegInstruction rsi=RSI[RSIcount];
-            rsi.centery=centery;
+            RenderSegInstruction<V> rsi=RSI[RSIcount];
+            rsi.centery=view.centery;
             rsi.bottomfrac=bottomfrac;
             rsi.bottomstep=bottomstep;
             rsi.bottomtexture=bottomtexture;
@@ -472,8 +472,8 @@ public abstract class AbstractParallelRenderer
             rsi.topfrac=topfrac;
             rsi.topstep=topstep;
             rsi.toptexture=toptexture;
-            rsi.walllights=walllights;
-            rsi.viewheight=viewheight;
+            rsi.walllights=colormap.walllights;
+            rsi.viewheight=view.height;
             //rsi.floorplane=floorplane;
             //rsi.ceilingplane=ceilingplane;
             RSIcount++;
@@ -507,9 +507,9 @@ public abstract class AbstractParallelRenderer
 
 
             if (RANGECHECK){
-                if (ds_p > MAXDRAWSEGS)
+                if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS)
                     I.Error("R_DrawPlanes: drawsegs overflow (%i)",
-                            ds_p );
+                    		seg_vars.ds_p );
 
                 if (lastvisplane > MAXVISPLANES)
                     I.Error(" R_DrawPlanes: visplane overflow (%i)",
@@ -555,14 +555,14 @@ public abstract class AbstractParallelRenderer
         private int[] cachedystep;
         private int[] distscale;
         private int[] yslope;
-        private final SpanVars<byte[],short[]> vpw_dsvars;
-        private final ColVars<byte[],short[]> vpw_dcvars;
-        private DoomSpanFunction<byte[],short[]> vpw_spanfunc;
-        private DoomColumnFunction<byte[],short[]> vpw_skyfunc;
-        private final DoomSpanFunction<byte[],short[]> vpw_spanfunchi;
-        private final DoomSpanFunction<byte[],short[]> vpw_spanfunclow;
-        private final DoomColumnFunction<byte[],short[]> vpw_skyfunchi;
-        private final DoomColumnFunction<byte[],short[]> vpw_skyfunclow;
+        private final SpanVars<byte[],V> vpw_dsvars;
+        private final ColVars<byte[],V> vpw_dcvars;
+        private DoomSpanFunction<byte[],V> vpw_spanfunc;
+        private DoomColumnFunction<byte[],V> vpw_skyfunc;
+        private final DoomSpanFunction<byte[],V> vpw_spanfunchi;
+        private final DoomSpanFunction<byte[],V> vpw_spanfunclow;
+        private final DoomColumnFunction<byte[],V> vpw_skyfunchi;
+        private final DoomColumnFunction<byte[],V> vpw_skyfunclow;
         private visplane_t pln;
         
         public VisplaneWorker2(int id,int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
@@ -581,7 +581,7 @@ public abstract class AbstractParallelRenderer
             vpw_dsvars=new SpanVars<byte[],short[]>();
             vpw_dcvars=new ColVars<byte[],short[]>();
             vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_spanfunclow=new R_DrawSpanLow(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_spanfunclow=new R_DrawSpanLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
             vpw_skyfunclow=new R_DrawColumnBoomOptLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
             this.NUMFLOORTHREADS=NUMFLOORTHREADS;
@@ -602,8 +602,8 @@ public abstract class AbstractParallelRenderer
             vpw_basexscale=MyPlanes.getBaseXScale();
             vpw_baseyscale=MyPlanes.getBaseYScale();
             
-            startvp=((id*viewwidth)/NUMFLOORTHREADS);
-            endvp=(((id+1)*viewwidth)/NUMFLOORTHREADS);
+            startvp=((id*view.width)/NUMFLOORTHREADS);
+            endvp=(((id+1)*view.width)/NUMFLOORTHREADS);
             
             // TODO: find a better way to split work. As it is, it's very uneven
             // and merged visplanes in particular are utterly dire.
@@ -631,12 +631,12 @@ public abstract class AbstractParallelRenderer
                  // being drawn, after all, are they?
                  int skytexture=TexMan.getSkyTexture();
                  // MAES: these must be updated to keep up with screen size changes.
-                 vpw_dcvars.viewheight=viewheight;
-                 vpw_dcvars.centery=centery;
+                 vpw_dcvars.viewheight=view.height;
+                 vpw_dcvars.centery=view.centery;
                  vpw_dcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;                 
-                 vpw_dcvars.dc_iscale = MyPlanes.getSkyScale()>>detailshift;
+                 vpw_dcvars.dc_iscale = MyPlanes.getSkyScale()>>view.detailshift;
                  
-                 vpw_dcvars.dc_colormap = colormaps[0];
+                 vpw_dcvars.dc_colormap = colormap.colormaps[0];
                  vpw_dcvars.dc_texturemid = TexMan.getSkyTextureMid();
                  for (x=minx ; x <= maxx ; x++)
                  {
@@ -646,7 +646,7 @@ public abstract class AbstractParallelRenderer
                  
                  if (vpw_dcvars.dc_yl <= vpw_dcvars.dc_yh)
                  {
-                     angle = (int) (addAngles(viewangle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
+                     angle = (int) (addAngles(view.angle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
                      vpw_dcvars.dc_x = x;
                      vpw_dcvars.dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
                      vpw_dcvars.dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
@@ -1274,7 +1274,7 @@ public abstract class AbstractParallelRenderer
     
     /** Array of "wall" (actually, column) instructions */
     
-    protected ColVars<byte[], short[]>[] RWI;
+    protected ColVars<byte[], V>[] RWI;
     
     /**
      * Increment this as you submit RWIs to the "queue". Remember to reset to 0
@@ -1327,14 +1327,14 @@ public abstract class AbstractParallelRenderer
      * load per-wall, rather than per-screen portion. Requires careful concurrency considerations.
      * 
      */
-    protected RenderSegInstruction<short[]>[] RSI;
+    protected RenderSegInstruction<V>[] RSI;
 
     /** Increment this as you submit RSIs to the "queue". Remember to reset to 0 when you have drawn everything!
      * 
      */
     protected int RSIcount=0;
 
-    protected RenderSegExecutor<byte[],short[]>[] RSIExec;
+    protected RenderSegExecutor<byte[],V>[] RSIExec;
 
     /**
      * R_InitRSISubsystem
@@ -1422,7 +1422,7 @@ public abstract class AbstractParallelRenderer
      *  between threads on a column-basis.
      */
 
-    protected ColVars<byte[], short[]>[] RMI;
+    protected ColVars<byte[], V>[] RMI;
 
     /**
      * Increment this as you submit RMIs to the "queue". Remember to reset to 0
