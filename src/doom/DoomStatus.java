@@ -4,14 +4,20 @@ import static data.Defines.*;
 import static g.Keys.*;
 import static data.Limits.*;
 import java.io.OutputStreamWriter;
+
+import automap.IAutoMap;
 import m.IUseVariables;
 import m.IVariablesManager;
 import m.Settings;
 import p.mobj_t;
+import rr.Renderer;
 import utils.C2JUtils;
+import v.DoomVideoRenderer;
 import data.mapthing_t;
 import defines.*;
 import demo.IDoomDemo;
+import f.Finale;
+import f.Wiper;
 
 /**
  * We need globally shared data structures, for defining the global state
@@ -23,7 +29,7 @@ import demo.IDoomDemo;
  * document where everything is supposed to come from/reside.
  */
 
-public class DoomStatus extends DoomContext implements IUseVariables {
+public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVariables {
 
 	public static final int	BGCOLOR=		7;
 	public static final int	FGCOLOR		=8;
@@ -346,7 +352,21 @@ public class DoomStatus extends DoomContext implements IUseVariables {
         }
         
     }
+    
+    public abstract void Init();
 
+    // Fields used for selecting variable BPP implementations.
+    
+    protected abstract Finale<V> selectFinale();
+    
+    protected abstract DoomVideoRenderer<V> selectVideoRenderer();
+    
+    protected abstract Renderer<T,V> selectRenderer();
+    
+    protected abstract Wiper<T,V> selectWiper();
+    
+    protected abstract IAutoMap<T,V> selectAutoMap();
+    
     // MAES: Fields specific to DoomGame. A lot of them were
     // duplicated/externalized
     // in d_game.c and d_game.h, so it makes sense adopting a more unified
@@ -665,6 +685,9 @@ public class DoomStatus extends DoomContext implements IUseVariables {
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.34.2.2  2012/09/20 14:25:13  velktron
+// Unified DOOM!!!
+//
 // Revision 1.34.2.1  2012/09/17 16:06:52  velktron
 // Now handling updates of all variables, though those specific to some subsystems should probably be moved???
 //
