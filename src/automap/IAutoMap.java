@@ -4,7 +4,7 @@ import i.DoomStatusAware;
 import v.IVideoScaleAware;
 import doom.event_t;
 
-public interface IAutoMap extends IVideoScaleAware, DoomStatusAware{
+public interface IAutoMap<T,V> extends IVideoScaleAware, DoomStatusAware{
  // Used by ST StatusBar stuff.
     public final int AM_MSGHEADER =(('a'<<24)+('m'<<16));
     public final int AM_MSGENTERED= (AM_MSGHEADER | ('e'<<8));
