@@ -13,4 +13,6 @@ public class SpanVars<T,V> {
     public int ds_x2;
     public int ds_x1;
     public int ds_ystep;
+    
+    public DoomSpanFunction<T,V>  spanfunc;
 }
