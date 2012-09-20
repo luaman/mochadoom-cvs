@@ -65,6 +65,7 @@ public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware{
 	
 	public boolean isFullScreen();
 
+	public TextureManager getTextureManager();
     
 	
 	//public subsector_t PointInSubsector(int x, int y);

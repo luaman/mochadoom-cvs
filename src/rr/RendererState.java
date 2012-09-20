@@ -43,7 +43,6 @@ import static p.mobj_t.MF_TRANSSHIFT;
 import static rr.Lights.*;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
 import m.IDoomMenu;
 import m.MenuMisc;
@@ -55,6 +54,7 @@ import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.DoomSpanFunction;
 import rr.drawfuns.SpanVars;
+import rr.parallel.IGetSmpColumn;
 import i.IDoomSystem;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
@@ -62,7 +62,6 @@ import v.IVideoScale;
 import v.IVideoScaleAware;
 import w.IWadLoader;
 import data.Defines;
-import data.Limits;
 import data.Tables;
 import doom.DoomMain;
 import doom.DoomStatus;
@@ -91,8 +90,6 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 	protected static final boolean DEBUG = false;
 	protected static final boolean DEBUG2 = false;
-	// HACK: An all zeroes array used for fast clearing of certain visplanes.
-	protected int[] BLANKCACHEDHEIGHT;
 
 	
 	/////////////////////// STATUS ////////////////////////
@@ -100,22 +97,22 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	protected DoomMain DM;
 	protected IDoomGameNetworking DGN;
 	protected AbstractLevelLoader LL;
-	protected IWadLoader W;
 	protected ISegDrawer MySegs;
 	protected IDoomMenu Menu;
 	protected BSP MyBSP;
-	protected PlaneDrawer MyPlanes;
+	protected PlaneDrawer<byte[],V> MyPlanes;
 	protected IMaskedDrawer MyThings;
-	protected ISpriteManager SM;
-	protected IVisSpriteManagement<V> VIS;
-	protected DoomVideoRenderer<V> V;
-	protected UnifiedGameMap P;
-	protected IDoomSystem I;
+    protected DoomVideoRenderer<V> V;
+    protected UnifiedGameMap P;
+    public IWadLoader W;
+	public ISpriteManager SM;
+	public IVisSpriteManagement<V> VIS;
+	public IDoomSystem I;
 	protected TextureManager TexMan;
 	public ViewVars view;
-	protected Lights<V> lights;
-	protected Colormaps<V> colormap;
-	protected SegVars seg_vars;
+	public Lights<V> lights;
+	public Colormaps<V> colormap;
+	public SegVars seg_vars;
 
 	// Rendering subsystems that are detailshift-aware
 	
@@ -139,24 +136,6 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 
 
-	// /// FROM PLANES //////
-
-	// initially.
-	protected int MAXVISPLANES = Limits.MAXVISPLANES;
-
-
-	/** visplane_t*, treat as indexes into visplanes */
-	protected int lastvisplane, floorplane, ceilingplane;
-
-	protected visplane_t[] visplanes = new visplane_t[MAXVISPLANES];
-
-	/**
-	 * openings is supposed to show where "openings" in visplanes start and end
-	 * e.g. due to sprites, windows etc.
-	 */
-	protected short[] openings;
-	/** Maes: this is supposed to be a pointer inside openings */
-	protected int lastopening;// =new Short((short) 0);
 
 	/**
 	 * Increment every time a check is made For some reason, this needs to be
@@ -279,170 +258,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		validcount++;
 	}
 
-	/**
-	 * R_FindPlane
-	 * 
-	 * Checks whether a visplane with the specified height, picnum and light
-	 * level exists among those already created. This looks like a half-assed
-	 * attempt at reusing already existing visplanes, rather than creating new
-	 * ones. The tricky part is understanding what happens if one DOESN'T exist.
-	 * Called only from within R_Subsector (so while we're still trasversing
-	 * stuff).
-	 * 
-	 * @param height
-	 *            (fixed_t)
-	 * @param picnum
-	 * @param lightlevel
-	 * @return was visplane_t*, returns index into visplanes[]
-	 */
-
-	protected final int FindPlane(int height, int picnum, int lightlevel) {
-		// System.out.println("\tChecking for visplane merging...");
-		int check = 0; // visplane_t*
-		visplane_t chk = null;
-
-		if (picnum == TexMan.getSkyFlatNum()) {
-			height = 0; // all skys map together
-			lightlevel = 0;
-		}
-
-		chk = visplanes[0];
-
-		// Find visplane with the desired attributes
-		for (check = 0; check < lastvisplane; check++) {
-
-			chk = visplanes[check];
-			if (height == chk.height && picnum == chk.picnum
-					&& lightlevel == chk.lightlevel) {
-				// Found a visplane with the desired specs.
-				break;
-			}
-		}
-
-		if (check < lastvisplane) {
-			return check;
-		}
-
-		// Found a visplane, but we can't add anymore.
-		if (lastvisplane == visplanes.length) {
-			// I.Error ("R_FindPlane: no more visplanes");
-			ResizeVisplanes();
-
-		}
-
-		/*
-		 * FIXED: we need to add this post-fix here because of the way the
-		 * original was structured (pointer hacks, too lengthy to explain). We
-		 * need to make sure that when no visplane is found a "failed check"
-		 * will actually result in a pointer to the next "free" visplane, and
-		 * that we always have a valid pointer to visplane 0, even if the loop
-		 * never ran. This fixes the "blinking visplane bug", which manifested
-		 * itself when sector lighting effects changed the light level
-		 */
-
-		chk = visplanes[check];
-		// Add a visplane
-		lastvisplane++;
-		chk.height = height;
-		chk.picnum = picnum;
-		chk.lightlevel = lightlevel;
-		chk.minx = SCREENWIDTH;
-		chk.maxx = -1;
-		// memset (chk.top,0xff,sizeof(chk.top));
-		chk.clearTop();
-
-		return check;
-	}
-
-	/**
-	 * A hashtable used to retrieve planes with particular attributes faster
-	 * -hopefully-. The planes are still stored in the visplane array for
-	 * convenience, but we can search them in the hashtable too -as a bonus, we
-	 * can reuse previously created planes that match newer ones-.
-	 */
-	Hashtable<visplane_t, Integer> planehash = new Hashtable<visplane_t, Integer>(
-			128);
-	visplane_t check = new visplane_t();
-
-	protected final int FindPlane2(int height, int picnum, int lightlevel) {
-		// System.out.println("\tChecking for visplane merging...");
-		// int check=0; // visplane_t*
-		visplane_t chk = null;
-		Integer checknum;
-
-		if (picnum == TexMan.getSkyFlatNum()) {
-			height = 0; // all skys map together
-			lightlevel = 0;
-		}
-
-		// Try and find this.
-		check.lightlevel = lightlevel;
-		check.picnum = picnum;
-		check.height = height;
-		check.updateHashCode();
-
-		/*
-		 * chk=visplanes[0];
-		 * 
-		 * // Find visplane with the desired attributes for (check=0;
-		 * check<lastvisplane; check++) {
-		 * 
-		 * chk=visplanes[check]; if (height == chk.height && picnum ==
-		 * chk.picnum && lightlevel ==chk.lightlevel) { // Found a visplane with
-		 * the desired specs. break; } }
-		 */
-
-		checknum = planehash.get(check);
-
-		// Something found, get it.
-
-		if (!(checknum == null)) {
-
-			// Visplane exists and is within those allocated in the current tic.
-			if (checknum < lastvisplane) {
-				return checknum;
-			}
-
-			// Found a visplane, but we can't add anymore.
-			// Resize right away. This shouldn't take too long.
-			if (lastvisplane == MAXVISPLANES) {
-				// I.Error ("R_FindPlane: no more visplanes");
-				ResizeVisplanes();
-			}
-		}
-
-		/*
-		 * FIXED: we need to add this post-fix here because of the way the
-		 * original was structured (pointer hacks, too lengthy to explain). We
-		 * need to make sure that when no visplane is found a "failed check"
-		 * will actually result in a pointer to the next "free" visplane, and
-		 * that we always have a valid pointer to visplane 0, even if the loop
-		 * never ran. This fixes the "blinking visplane bug", which manifested
-		 * itself when sector lighting effects changed the light level
-		 */
-
-		// We found a visplane (possibly one allocated on a previous tic)
-		// but we can't link directly to it, we need to copy its data
-		// around.
-
-		checknum = new Integer(Math.max(0, lastvisplane));
-
-		chk = visplanes[checknum];
-		// Add a visplane
-		lastvisplane++;
-		chk.height = height;
-		chk.picnum = picnum;
-		chk.lightlevel = lightlevel;
-		chk.minx = SCREENWIDTH;
-		chk.maxx = -1;
-		chk.updateHashCode();
-		planehash.put(chk, checknum);
-		// memset (chk.top,0xff,sizeof(chk.top));
-		chk.clearTop();
-
-		return checknum;
-	}
-
+	
 	public RendererState(DoomStatus DS){
 		  this.updateStatus(DS);
 		
@@ -451,6 +267,8 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		  this.view=new ViewVars();
 		  this.seg_vars=new SegVars();
 		  this.detailaware=new ArrayList<IDetailAware>();
+		  // It's better to construct this here
+		  this.TexMan=new SimpleTextureManager(DS);
 		  
 		  // Initialize array of minus ones for sprite clipping
           view.initNegOneArray(SCREENWIDTH);
@@ -458,11 +276,6 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		  // Set rendering functions only after screen sizes 
 		  // and stuff have been set.		
 		}
-	
-	protected final void ResizeVisplanes() {
-		// Bye bye, old visplanes.
-		visplanes = C2JUtils.resize(visplanes[0], visplanes, visplanes.length*2);
-	}
 
 
 	@Override
@@ -1771,22 +1584,22 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 				System.out
 						.println("Trying to find an existing FLOOR visplane...");
 			if (frontsector.floorheight < view.z) {
-				floorplane = FindPlane(frontsector.floorheight,
+				MyPlanes.floorplane = MyPlanes.FindPlane(frontsector.floorheight,
 						frontsector.floorpic, frontsector.lightlevel);
 			} else
 				// FIXME: unclear what would happen with a null visplane used
 				// It's never checked explicitly for either condition, just
 				// called straight.
-				floorplane = -1; // in lieu of NULL
+			    MyPlanes.floorplane = -1; // in lieu of NULL
 
 			// System.out.println("Trying to find an existing CEILING visplane...");
 
 			if (frontsector.ceilingheight > view.z
 					|| frontsector.ceilingpic == TexMan.getSkyFlatNum()) {
-				ceilingplane = FindPlane(frontsector.ceilingheight,
+			    MyPlanes.ceilingplane = MyPlanes.FindPlane(frontsector.ceilingheight,
 						frontsector.ceilingpic, frontsector.lightlevel);
 			} else
-				ceilingplane = -1; // In lieu of NULL. Will bomb if actually
+			    MyPlanes.ceilingplane = -1; // In lieu of NULL. Will bomb if actually
 									// used.
 
 			VIS.AddSprites(frontsector);
@@ -2166,10 +1979,10 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 				if (sidedef.midtexture != 0) {
 					// masked midtexture
 					maskedtexture = true;
-					maskedtexturecol = openings;
-					pmaskedtexturecol = lastopening - rw_x;
+					maskedtexturecol = MyPlanes.openings;
+					pmaskedtexturecol = MyPlanes.lastopening - rw_x;
 					seg.setMaskedTextureCol(maskedtexturecol, pmaskedtexturecol);
-					lastopening += rw_stopx - rw_x;
+					MyPlanes.lastopening += rw_stopx - rw_x;
 				}
 			}
 
@@ -2268,14 +2081,14 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			// render it
 			if (markceiling) {
 				// System.out.println("Markceiling");
-				ceilingplane = MyPlanes.CheckPlane(ceilingplane, rw_x,
+				MyPlanes.ceilingplane = MyPlanes.CheckPlane(MyPlanes.ceilingplane, rw_x,
 						rw_stopx - 1);
 			}
 
 			if (markfloor) {
 				// System.out.println("Markfloor");
-				floorplane = MyPlanes
-						.CheckPlane(floorplane, rw_x, rw_stopx - 1);
+			    MyPlanes.floorplane = MyPlanes
+						.CheckPlane(MyPlanes.floorplane, rw_x, rw_stopx - 1);
 			}
 
 			RenderSegLoop();
@@ -2287,21 +2100,21 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 					&& seg.nullSprTopClip()) {
 
 				// memcpy (lastopening, ceilingclip+start, 2*(rw_stopx-start));
-				System.arraycopy(ceilingclip, start, openings, lastopening,
+				System.arraycopy(ceilingclip, start, MyPlanes.openings, MyPlanes.lastopening,
 						rw_stopx - start);
 
-				seg.setSprTopClip(openings, lastopening - start);
+				seg.setSprTopClip(MyPlanes.openings, MyPlanes.lastopening - start);
 				// seg.setSprTopClipPointer();
-				lastopening += rw_stopx - start;
+				MyPlanes.lastopening += rw_stopx - start;
 			}
 			// no floor clipping?
 			if ((C2JUtils.flags(seg.silhouette, SIL_BOTTOM) || maskedtexture)
 					&& seg.nullSprBottomClip()) {
 				// memcpy (lastopening, floorclip+start, 2*(rw_stopx-start));
-				System.arraycopy(floorclip, start, openings, lastopening,
+				System.arraycopy(floorclip, start, MyPlanes.openings, MyPlanes.lastopening,
 						rw_stopx - start);
-				seg.setSprBottomClip(openings, lastopening - start);
-				lastopening += rw_stopx - start;
+				seg.setSprBottomClip(MyPlanes.openings, MyPlanes.lastopening - start);
+				MyPlanes.lastopening += rw_stopx - start;
 			}
 
 			if (maskedtexture && C2JUtils.flags(seg.silhouette, SIL_TOP)) {
@@ -2359,8 +2172,8 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 						bottom = floorclip[rw_x] - 1;
 
 					if (top <= bottom) {
-						visplanes[ceilingplane].setTop(rw_x, (char) top);
-						visplanes[ceilingplane].setBottom(rw_x, (char) bottom);
+						MyPlanes.visplanes[MyPlanes.ceilingplane].setTop(rw_x, (char) top);
+						MyPlanes.visplanes[MyPlanes.ceilingplane].setBottom(rw_x, (char) bottom);
 					}
 				}
 
@@ -2377,8 +2190,8 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 					if (top <= ceilingclip[rw_x])
 						top = ceilingclip[rw_x] + 1;
 					if (top <= bottom) {
-						visplanes[floorplane].setTop(rw_x, (char) top);
-						visplanes[floorplane].setBottom(rw_x, (char) bottom);
+					    MyPlanes.visplanes[MyPlanes.floorplane].setTop(rw_x, (char) top);
+					    MyPlanes.visplanes[MyPlanes.floorplane].setBottom(rw_x, (char) bottom);
 					}
 				}
 
@@ -2625,6 +2438,10 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		void setSkyScale(int skyscale);
 		
 		int getSkyScale();
+		
+		int FindPlane(int height, int picnum, int lightlevel);
+
+        void ResizeVisplanes();
 	}
 	
 	protected interface ISegDrawer extends IVideoScaleAware,ILimitResettable{
@@ -2668,427 +2485,15 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
     }
 
     
-	public abstract class PlaneDrawer implements IPlaneDrawer{
-
-		// protected planefunction_t floorfunc;
-		// protected planefunction_t ceilingfunc;
-
-		protected final boolean RANGECHECK = false;
-
-		protected int skyscale;
-		
-		//
-		// spanstart holds the start of a plane span
-		// initialized to 0 at start
-		//
-		protected int[] spanstart, spanstop;
-
-		//
-		// texture mapping
-		//
-		protected V[] planezlight; // The distance lighting effect you see
-		/** To treat as fixed_t */
-		protected int planeheight;
-		/** To treat at fixed_t */
-		protected int[] yslope;
-		/** To treat as fixed_t */
-		protected int[] distscale;
-		/** To treat as fixed_t */
-		protected int basexscale, baseyscale;
-
-		/** To treat as fixed_t */
-		protected int[] cachedheight, cacheddistance, cachedxstep, cachedystep;
-
-		/**
-		 * Call only after visplanes have been properly resized for resolution.
-		 * In case of dynamic resolution changes, the old ones should just be
-		 * discarded, as they would be nonsensical.
-		 */
-
-		protected void initVisplanes() {
-			C2JUtils.initArrayOfObjects(visplanes);
-			}
-
-		/**
-		 * R_CheckPlane
-		 * 
-		 * Called from within StoreWallRange
-		 * 
-		 * Presumably decides if a visplane should be split or not?
-		 * 
-		 */
-
-		public int CheckPlane(int index, int start, int stop) {
-
-			if (DEBUG2)
-				System.out.println("Checkplane " + index + " between " + start
-						+ " and " + stop);
-
-			// Interval ?
-			int intrl;
-			int intrh;
-
-			// Union?
-			int unionl;
-			int unionh;
-			// OK, so we check out ONE particular visplane.
-			visplane_t pl = visplanes[index];
-
-			if (DEBUG2)
-				System.out.println("Checking out plane " + pl);
-
-			int x;
-
-			// If start is smaller than the plane's min...
-			//
-			// start minx maxx stop
-			// | | | |
-			// --------PPPPPPPPPPPPPP-----------
-			//
-			//
-			if (start < pl.minx) {
-				intrl = pl.minx;
-				unionl = start;
-				// Then we will have this:
-				//
-				// unionl intrl maxx stop
-				// | | | |
-				// --------PPPPPPPPPPPPPP-----------
-				//
-
-			} else {
-				unionl = pl.minx;
-				intrl = start;
-
-				// else we will have this:
-				//
-				// union1 intrl maxx stop
-				// | | | |
-				// --------PPPPPPPPPPPPPP-----------
-				//
-				// unionl comes before intrl in any case.
-				//
-				//
-			}
-
-			// Same as before, for for stop and maxx.
-			// This time, intrh comes before unionh.
-			//
-
-			if (stop > pl.maxx) {
-				intrh = pl.maxx;
-				unionh = stop;
-			} else {
-				unionh = pl.maxx;
-				intrh = stop;
-			}
-
-			// An interval is now defined, which is entirely contained in the
-			// visplane.
-			//
-
-			// If the value FF is NOT stored ANYWWHERE inside it, we bail out
-			// early
-			for (x = intrl; x <= intrh; x++)
-				if (pl.getTop(x) != Character.MAX_VALUE)
-					break;
-
-			// This can only occur if the loop above completes,
-			// else the visplane we were checking has non-visible/clipped
-			// portions within that range: we must split.
-
-			if (x > intrh) {
-				// Merge the visplane
-				pl.minx = unionl;
-				pl.maxx = unionh;
-				// System.out.println("Plane modified as follows "+pl);
-				// use the same one
-				return index;
-			}
-
-			// SPLIT: make a new visplane at "last" position, copying materials
-			// and light.
-
-			if (lastvisplane == visplanes.length) {
-				//  visplane overflows could occur at this point.
-				ResizeVisplanes();
-			}
-
-			visplanes[lastvisplane].height = pl.height;
-			visplanes[lastvisplane].picnum = pl.picnum;
-			visplanes[lastvisplane].lightlevel = pl.lightlevel;
-
-			pl = visplanes[lastvisplane++];
-			pl.minx = start;
-			pl.maxx = stop;
-
-			// memset (pl.top,0xff,sizeof(pl.top));
-			pl.clearTop();
-
-			// return pl;
-
-			// System.out.println("New plane created: "+pl);
-			return lastvisplane - 1;
-		}
-
-		/**
-		 * R_ClearPlanes At begining of frame.
-		 * 
-		 */
-
-		@Override
-		public void ClearPlanes() {
-			int angle;
-
-			/*
-			 * View planes are cleared at the beginning of every plane, by
-			 * setting them "just outside" the borders of the screen (-1 and
-			 * viewheight).
-			 */
-
-			// Point to #1 in visplane list? OK... ?!
-			lastvisplane = 0;
-
-			// We point back to the first opening of the list openings[0],
-			// again.
-			lastopening = 0;
-
-			// texture calculation
-			System.arraycopy(BLANKCACHEDHEIGHT, 0, cachedheight, 0,
-					BLANKCACHEDHEIGHT.length);
-
-			// left to right mapping
-			// FIXME: If viewangle is ever < ANG90, you're fucked. How can this
-			// be prevented?
-			// Answer: 32-bit unsigned are supposed to roll over. You can & with
-			// 0xFFFFFFFFL.
-			angle = (int) Tables.toBAMIndex(view.angle - ANG90);
-
-			// scale will be unit scale at SCREENWIDTH/2 distance
-			basexscale = FixedDiv(finecosine[angle], view.centerxfrac);
-			baseyscale = -FixedDiv(finesine[angle], view.centerxfrac);
-		}
-
-
-
-		/**
-		 * R_MapPlane
-		 * 
-		 * Called only by R_MakeSpans.
-		 * 
-		 * This is where the actual span drawing function is called.
-		 * 
-		 * Uses global vars: planeheight ds_source -> flat data has already been
-		 * set. basexscale -> actual drawing angle and position is computed from
-		 * these baseyscale viewx viewy
-		 * 
-		 * BASIC PRIMITIVE
-		 */
-
-		public void MapPlane(int y, int x1, int x2) {
-			// MAES: angle_t
-			int angle;
-			// fixed_t
-			int distance;
-			int length;
-			int index;
-
-			if (RANGECHECK) {
-			    rangeCheck(x1,x2,y);
-			}
-
-			if (planeheight != cachedheight[y]) {
-				cachedheight[y] = planeheight;
-				distance = cacheddistance[y] = FixedMul(planeheight, yslope[y]);
-				dsvars.ds_xstep = cachedxstep[y] = FixedMul(distance, basexscale);
-				dsvars.ds_ystep = cachedystep[y] = FixedMul(distance, baseyscale);
-			} else {
-				distance = cacheddistance[y];
-				dsvars.ds_xstep = cachedxstep[y];
-				dsvars.ds_ystep = cachedystep[y];
-			}
-
-			length = FixedMul(distance, distscale[x1]);
-			angle = (int) (((view.angle + xtoviewangle[x1]) & BITS32) >>> ANGLETOFINESHIFT);
-			dsvars.ds_xfrac = view.x + FixedMul(finecosine[angle], length);
-			dsvars.ds_yfrac = -view.y - FixedMul(finesine[angle], length);
-
-			if (colormap.fixedcolormap != null)
-			    dsvars.ds_colormap = colormap.fixedcolormap;
-			else {
-				index = distance >>> LIGHTZSHIFT;
-
-				if (index >= MAXLIGHTZ)
-					index = MAXLIGHTZ - 1;
-
-				dsvars.ds_colormap = planezlight[index];
-			}
-
-			dsvars.ds_y = y;
-			dsvars.ds_x1 = x1;
-			dsvars.ds_x2 = x2;
-
-			// high or low detail
-			spanfunc.invoke();
-		}
-
-		protected final void rangeCheck(int x1,int x2,int y) {
-            if (x2 < x1 || x1 < 0 || x2 >= view.width || y > view.height)
-                I.Error("%s: %d, %d at %d",this.getClass().getName(), x1, x2, y);
-            }
-            
-        /**
-		 * R_MakeSpans
-		 * 
-		 * Called only by DrawPlanes. If you wondered where the actual
-		 * boundaries for the visplane flood-fill are laid out, this is it.
-		 * 
-		 * The system of coords seems to be defining a sort of cone.
-		 * 
-		 * 
-		 * @param x
-		 *            Horizontal position
-		 * @param t1
-		 *            Top-left y coord?
-		 * @param b1
-		 *            Bottom-left y coord?
-		 * @param t2
-		 *            Top-right y coord ?
-		 * @param b2
-		 *            Bottom-right y coord ?
-		 * 
-		 */
-
-		protected void MakeSpans(int x, int t1, int b1, int t2, int b2) {
-
-			// If t1 = [sentinel value] then this part won't be executed.
-			while (t1 < t2 && t1 <= b1) {
-				this.MapPlane(t1, spanstart[t1], x - 1);
-				t1++;
-			}
-			while (b1 > b2 && b1 >= t1) {
-				this.MapPlane(b1, spanstart[b1], x - 1);
-				b1--;
-			}
-
-			// So...if t1 for some reason is < t2, we increase t2 AND store the
-			// current x
-			// at spanstart [t2] :-S
-			while (t2 < t1 && t2 <= b2) {
-				// System.out.println("Increasing t2");
-				spanstart[t2] = x;
-				t2++;
-			}
-
-			// So...if t1 for some reason b2 > b1, we decrease b2 AND store the
-			// current x
-			// at spanstart [t2] :-S
-
-			while (b2 > b1 && b2 >= t2) {
-				// System.out.println("Decreasing b2");
-				spanstart[b2] = x;
-				b2--;
-			}
-		}
-
-		/**
-		 * R_InitPlanes Only at game startup.
-		 */
-
-		public void InitPlanes() {
-			// Doh!
-		}
-
-		// //////////////////////////VIDEO SCALE STUFF
-		// ////////////////////////////////
-
-		protected int SCREENWIDTH;
-		protected int SCREENHEIGHT;
-		protected IVideoScale vs;
-
-		@Override
-		public void setVideoScale(IVideoScale vs) {
-			this.vs = vs;
-		}
-
-		@Override
-		public void initScaling() {
-			this.SCREENHEIGHT = vs.getScreenHeight();
-			this.SCREENWIDTH = vs.getScreenWidth();
-
-			// Pre-scale stuff.
-
-			spanstart = new int[SCREENHEIGHT];
-			spanstop = new int[SCREENHEIGHT];
-			yslope = new int[SCREENHEIGHT];
-			distscale = new int[SCREENWIDTH];
-			cachedheight = new int[SCREENHEIGHT];
-			cacheddistance = new int[SCREENHEIGHT];
-			cachedxstep = new int[SCREENHEIGHT];
-			cachedystep = new int[SCREENHEIGHT];
-
-			// HACK: visplanes are initialized globally.
-			visplane_t.setVideoScale(vs);
-			visplane_t.initScaling();
-			initVisplanes();
-
-		}
-
-		// ///////////// VARIOUS BORING GETTERS ////////////////////
-
-		@Override
-		public int[] getCachedHeight() {
-			return this.cachedheight;
-		}
-
-		@Override
-		public int[] getCachedDistance() {
-			return this.cacheddistance;
-		}
-
-		@Override
-		public int[] getCachedXStep() {
-			return cachedxstep;
-		}
-
-		@Override
-		public int[] getCachedYStep() {
-			return cachedystep;
-		}
-
-		@Override
-		public int[] getDistScale() {
-			return distscale;
-		}
-
-		@Override
-		public int[] getYslope() {
-			return yslope;
-		}
-
-		@Override
-		public int getBaseXScale() {
-			return basexscale;
-		}
-
-		@Override
-		public int getBaseYScale() {
-			return baseyscale;
-		}
-
-		@Override
-		public int getSkyScale(){
-		    return skyscale;
-		}
-		
-        public void setSkyScale(int i) {
-            skyscale=i;
-            
-        }
-	}
 	
-	protected final class Planes extends PlaneDrawer{
+	
+	protected final class Planes extends PlaneDrawer<byte[],V>{
 	     
+	    
+	       public Planes(RendererState<V> R){
+	           super(R);
+	       }
+	    
 	      /**
 	       * R_DrawPlanes
 	       * At the end of each frame.
@@ -3234,6 +2639,10 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	/** General purpose. Used for solid walls and as an intermediary for threading */
 	
 	protected ColVars<byte[],V> dcvars;
+
+   /** Used for spans */
+    
+    protected SpanVars<byte[],V> dsvars;
 	
 	// Used for sky drawer, to avoid clashing with shared dcvars
 	protected ColVars<byte[],V> skydcvars;
@@ -3241,9 +2650,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 	// Used by parallel renderers to finish up some business
 	protected ColVars<byte[],V> maskedcvars;
 	
-	/** Used for spans */
-	
-	protected SpanVars<byte[],V> dsvars;
+
 
 
 	/**
@@ -3511,31 +2918,29 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 
 	////////////////// COLUMN AND SPAN FUNCTIONS    //////////////
 
-	protected DoomColumnFunction<byte[],short[]> colfunc;
-	protected DoomColumnFunction<byte[],short[]>  basecolfunc;
-	protected DoomColumnFunction<byte[],short[]>  maskedcolfunc;
-	protected DoomColumnFunction<byte[],short[]>  fuzzcolfunc;
-	protected DoomColumnFunction<byte[],short[]>  transcolfunc;
-	protected DoomColumnFunction<byte[],short[]>  glasscolfunc;
-	protected DoomColumnFunction<byte[],short[]>  playercolfunc;
-	protected DoomColumnFunction<byte[],short[]> skycolfunc;
-	protected DoomSpanFunction<byte[],short[]>  spanfunc;
-
-	protected DoomColumnFunction<byte[],short[]>  DrawTranslatedColumn;
-	protected DoomColumnFunction<byte[],short[]>  DrawTranslatedColumnLow;
-	protected DoomColumnFunction<byte[],short[]>  DrawColumnPlayer;
-	protected DoomColumnFunction<byte[],short[]>  DrawColumnSkies;
-	protected DoomColumnFunction<byte[],short[]>  DrawColumnSkiesLow;
-	protected DoomColumnFunction<byte[],short[]>  DrawFuzzColumn;
-	protected DoomColumnFunction<byte[],short[]>  DrawFuzzColumnLow;
-	protected DoomColumnFunction<byte[],short[]>  DrawColumn;
-	protected DoomColumnFunction<byte[],short[]>  DrawColumnLow;	
-	protected DoomColumnFunction<byte[],short[]>  DrawColumnMasked;
-	protected DoomColumnFunction<byte[],short[]>  DrawColumnMaskedLow;
-	protected DoomColumnFunction<byte[],short[]>  DrawTLColumn;
+	protected DoomColumnFunction<byte[],V> colfunc;
+	protected DoomColumnFunction<byte[],V>  basecolfunc;
+	protected DoomColumnFunction<byte[],V>  maskedcolfunc;
+	protected DoomColumnFunction<byte[],V>  fuzzcolfunc;
+	protected DoomColumnFunction<byte[],V>  transcolfunc;
+	protected DoomColumnFunction<byte[],V>  glasscolfunc;
+	protected DoomColumnFunction<byte[],V>  playercolfunc;
+	protected DoomColumnFunction<byte[],V> skycolfunc;
+	protected DoomColumnFunction<byte[],V>  DrawTranslatedColumn;
+	protected DoomColumnFunction<byte[],V>  DrawTranslatedColumnLow;
+	protected DoomColumnFunction<byte[],V>  DrawColumnPlayer;
+	protected DoomColumnFunction<byte[],V>  DrawColumnSkies;
+	protected DoomColumnFunction<byte[],V>  DrawColumnSkiesLow;
+	protected DoomColumnFunction<byte[],V>  DrawFuzzColumn;
+	protected DoomColumnFunction<byte[],V>  DrawFuzzColumnLow;
+	protected DoomColumnFunction<byte[],V>  DrawColumn;
+	protected DoomColumnFunction<byte[],V>  DrawColumnLow;	
+	protected DoomColumnFunction<byte[],V>  DrawColumnMasked;
+	protected DoomColumnFunction<byte[],V>  DrawColumnMaskedLow;
+	protected DoomColumnFunction<byte[],V>  DrawTLColumn;
 
 	/** to be set in UnifiedRenderer */
-	protected DoomSpanFunction<byte[],short[]> DrawSpan, DrawSpanLow;
+	protected DoomSpanFunction<byte[],V> DrawSpan, DrawSpanLow;
 
 	//////////////// r_draw methods //////////////
 
@@ -3636,7 +3041,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			glasscolfunc = DrawTLColumn;
 			playercolfunc = DrawColumnPlayer;
 			skycolfunc= DrawColumnSkies;
-			spanfunc = DrawSpan;
+			dsvars.spanfunc = DrawSpan;
 		} else {
 			// Low detail
 			colfunc = basecolfunc = DrawColumnLow;
@@ -3646,7 +3051,7 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 			glasscolfunc = DrawTLColumn;
 			playercolfunc = DrawColumnMaskedLow;
 			skycolfunc= DrawColumnSkiesLow;
-			spanfunc = DrawSpanLow;
+			dsvars.spanfunc = DrawSpanLow;
 
 		}
 
@@ -4517,7 +3922,11 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
         return view.height;
     }
 
-	
+	@Override
+    public TextureManager getTextureManager(){
+        return TexMan;
+    }
+    
 	////////////////VIDEO SCALE STUFF ///////////////////////
 
 	protected int SCREENWIDTH;
@@ -4537,16 +3946,15 @@ public abstract class RendererState<V> implements Renderer<byte[],V>, ILimitRese
 		this.SCREEN_MUL = vs.getScreenMul();
 
 		// Pre-scale stuff.
-		BLANKCACHEDHEIGHT = new int[SCREENHEIGHT];
-
-
+		MyPlanes.BLANKCACHEDHEIGHT = new int[SCREENHEIGHT];
 		view.negonearray = new short[SCREENWIDTH]; // MAES: in scaling
 		view.screenheightarray = new short[SCREENWIDTH];// MAES: in scaling
-		xtoviewangle = new long[SCREENWIDTH + 1];
+		// Mirror in view
+		view.xtoviewangle=xtoviewangle = new long[SCREENWIDTH + 1];
 		
 		MAXOPENINGS = SCREENWIDTH * 64;
 
-		openings = new short[MAXOPENINGS];
+		MyPlanes.openings = new short[MAXOPENINGS];
 		// Initialize children objects\
 		MySegs.setVideoScale(vs);
 		MyPlanes.setVideoScale(vs);

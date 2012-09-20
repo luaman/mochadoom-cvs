@@ -6,12 +6,12 @@ import utils.C2JUtils;
 public class SegVars {
 	// /// FROM BSP /////////
 	
-	protected int MAXDRAWSEGS = Limits.MAXDRAWSEGS;
+    public int MAXDRAWSEGS = Limits.MAXDRAWSEGS;
 
 	/** pointer to drawsegs */
-	protected int ds_p;
+    public int ds_p;
 
-	protected drawseg_t[] drawsegs;
+    public drawseg_t[] drawsegs;
 
 
 
@@ -25,7 +25,7 @@ public class SegVars {
 		ds_p = 0;
 	}
 
-	protected final void ResizeDrawsegs() {
+	public final void ResizeDrawsegs() {
 		drawsegs = C2JUtils.resize(drawsegs[0], drawsegs, drawsegs.length*2);
 	}
 }

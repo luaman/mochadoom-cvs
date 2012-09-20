@@ -28,40 +28,43 @@ public class ViewVars {
     public int centerxfrac, centeryfrac, projection;
 
     /** fixed_t */
-    protected int x, y, z;
+    public int x, y, z;
 
     // MAES: an exception to strict type safety. These are used only in here,
     // anyway (?) and have no special functions.
     // Plus I must use them as indexes. angle_t
-    protected long angle;
+    public long angle;
 
     /** fixed */
-    protected int cos, sin;
+    public int cos, sin;
 
-    protected player_t player;
+    public player_t player;
 
     /** Heretic/freeview stuff? */
 
-	protected int lookdir;
+    public int lookdir;
     
     // 0 = high, 1 = low. Normally only the menu and the interface can change
     // that.
-    protected int detailshift;
+    public int detailshift;
     
-	protected int WEAPONADJUST;
-	protected int BOBADJUST;
+    public int WEAPONADJUST;
+    public int BOBADJUST;
 	
 	/**
 	 * constant arrays used for psprite clipping and initializing clipping
 	 */
-	protected short[] negonearray; // MAES: in scaling
-	protected short[] screenheightarray;// MAES: in scaling
+    public short[] negonearray; // MAES: in scaling
+    public short[] screenheightarray;// MAES: in scaling
+    
+    /** Mirrors the one in renderer... */
+    public long[] xtoviewangle;
 	
-	protected final void initNegOneArray(int screenwidth){
+    public final void initNegOneArray(int screenwidth){
 	       C2JUtils.memset(negonearray, (short)-1,screenwidth);
 		}
     
-    protected final long PointToAngle(int x, int y) {
+    public final long PointToAngle(int x, int y) {
         // MAES: note how we don't use &BITS32 here. That is because
         // we know that the maximum possible value of tantoangle is angle
         // This way, we are actually working with vectors emanating

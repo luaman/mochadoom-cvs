@@ -28,7 +28,7 @@ public abstract class UnifiedRenderer< V>
         super(DS);
         this.MyThings = new Things();
         this.MySegs = new Segs();
-        this.MyPlanes = new Planes();
+        
     }
 
     private final class Segs
@@ -164,10 +164,18 @@ public abstract class UnifiedRenderer< V>
         public HiColor(DoomMain DM) {            
             super(DM);
             
+            dcvars=new ColVars<byte[],short[]>();            
+            dsvars=new SpanVars<byte[],short[]>();
+            
             // Init any video-output dependant stuff            
             this.lights=new Lights<short[]>();
             this.colormap=new Colormaps<short[]>();
             this.VIS=new VisSprites.HiColor(this);
+            
+
+            // Planes must go here, because they depend on all of the above crap
+            this.MyPlanes = new Planes(this);
+            
             
             // Init light levels
             lights.scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
@@ -225,12 +233,10 @@ public abstract class UnifiedRenderer< V>
         
         protected void R_InitDrawingFunctions(){
             
-            dcvars=new ColVars<byte[],short[]>();       
+            
             maskedcvars=new ColVars<byte[],short[]>();
             //maskedcvars.dc_translation=translationtables[0];
             skydcvars=new ColVars<byte[],short[]>();
-            
-            dsvars=new SpanVars<byte[],short[]>();
             
             // Span functions. Common to all renderers unless overriden
             // or unused e.g. parallel renderers ignore them.
@@ -266,6 +272,108 @@ public abstract class UnifiedRenderer< V>
 
     }       
                        
+            public static final class Indexed
+            extends UnifiedRenderer<byte[]> {
+
+        public Indexed(DoomMain DM) {            
+            super(DM);
+            
+            dcvars=new ColVars<byte[],byte[]>();            
+            dsvars=new SpanVars<byte[],byte[]>();
+            
+            // Init any video-output dependant stuff            
+            this.lights=new Lights<byte[]>();
+            this.colormap=new Colormaps<byte[]>();
+            this.VIS=new VisSprites.Indexed(this);
+            
+
+            // Planes must go here, because they depend on all of the above crap
+            this.MyPlanes = new Planes(this);
+            
+            
+            // Init light levels
+            lights.scalelight = new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
+            lights.scalelightfixed = new byte[MAXLIGHTSCALE][];
+            lights.zlight = new byte[LIGHTLEVELS][MAXLIGHTZ][];
+            
+            // Temporary vissprite
+            avis=new vissprite_t<byte[]>();
+        }
+
+        /**
+         * R_InitColormaps
+         * 
+         * @throws IOException
+         */
+        protected void InitColormaps() throws IOException {
+            int lump, length;
+
+            // Load in the light tables,
+            // 256 byte align tables.
+            lump = W.GetNumForName("COLORMAP");
+            length = W.LumpLength(lump) + 256;
+            colormap.colormaps = new byte[(length / 256)][256];
+            System.out.println("Colormaps: " + colormap.colormaps.length);
+
+            byte[] tmp = new byte[length];
+            W.ReadLump(lump,tmp);
+
+            for (int i = 0; i < colormap.colormaps.length; i++) {
+                System.arraycopy(tmp, i * 256, colormap.colormaps[i], 0, 256);
+            }
+            
+            // MAES: blurry effect is hardcoded to this colormap.
+            BLURRY_MAP=colormap.colormaps[6];
+            // colormaps = (byte *)( ((int)colormaps + 255)&~0xff);     
+
+            
+        }
+        
+        /** Initializes the various drawing functions. They are all "pegged" to the
+         *  same dcvars/dsvars object. Any initializations of e.g. parallel renderers
+         *  and their supporting subsystems should occur here. 
+         */
+        
+        protected void R_InitDrawingFunctions(){
+            
+            
+            maskedcvars=new ColVars<byte[],byte[]>();
+            //maskedcvars.dc_translation=translationtables[0];
+            skydcvars=new ColVars<byte[],byte[]>();
+            
+            // Span functions. Common to all renderers unless overriden
+            // or unused e.g. parallel renderers ignore them.
+            DrawSpan=new R_DrawSpanUnrolled.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpanLow=new R_DrawSpanLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            
+            
+            // Translated columns are usually sprites-only.
+            DrawTranslatedColumn=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            //DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Fuzzy columns. These are also masked.
+            DrawFuzzColumn=new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            
+            // Regular draw for solid columns/walls. Full optimizations.
+            DrawColumn=new R_DrawColumnBoomOpt.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            DrawColumnLow=new R_DrawColumnBoomOptLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            
+            // Non-optimized stuff for masked.
+            DrawColumnMasked=new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawColumnMaskedLow=new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Player uses masked
+            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
+            
+            // Skies use their own. This is done in order not to stomp parallel threads.
+            
+            DrawColumnSkies=new R_DrawColumnBoomOpt.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+        }
+
+    }       
           
 
 }
