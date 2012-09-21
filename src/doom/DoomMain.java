@@ -52,13 +52,14 @@ import static g.Keys.*;
 import static data.Defines.NORMALUNIX;
 import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
-import rr.ParallelRenderer;
-import rr.ParallelRenderer2;
 import rr.Renderer;
 import rr.SimpleTextureManager;
 import rr.SpriteManager;
 import rr.UnifiedRenderer;
+import rr.ViewVars;
 import rr.subsector_t;
+import rr.parallel.ParallelRenderer;
+import rr.parallel.ParallelRenderer2;
 import s.AbstractDoomAudio;
 import s.ClassicDoomSoundDriver;
 import s.ClipSFXModule;
@@ -105,7 +106,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.9 2012/09/20 14:25:13 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.10 2012/09/21 16:17:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -131,7 +132,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.9 2012/09/20 14:25:13 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.10 2012/09/21 16:17:25 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -264,9 +265,10 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
         // draw the view directly
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
-        	if (flashing_hom)
-                V.FillRect((byte) (gametic%256),0,R.getViewWindowX(),R.getViewWindowY(),
-                    R.getScaledViewWidth(),R.getScaledViewHeight());
+        	if (flashing_hom){
+                V.FillRect((byte) (gametic%256),0,view.getViewWindowX(),view.getViewWindowY(),
+                    view.getScaledViewWidth(),view.getScaledViewHeight());
+        	    }
             R.RenderPlayerView (players[displayplayer]);
         	}
 
@@ -309,8 +311,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             if (automapactive)
                 y = 4;
             else
-                y = R.getViewWindowY()+4;
-            V.DrawPatchDirect(R.getViewWindowX()+(R.getScaledViewWidth()-68)/2,
+                y = view.getViewWindowY()+4;
+            V.DrawPatchDirect(view.getViewWindowX()+(view.getScaledViewWidth()-68)/2,
                 y,0,W.CachePatchName ("M_PAUSE", PU_CACHE));
         }
 
@@ -386,8 +388,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 e.printStackTrace();
             }
         }
-
-        //AM.Start(); //_D_: not suposed to be here, see linuxdoom source
+        
+        view=R.getView();
+        
         while (true)
         {
             // frame syncronous IO operations
@@ -429,8 +432,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
              
         }
     }
-
-
+    
+    // To keep an "eye" on the renderer.
+    protected ViewVars view;
 
     //
     //  DEMO LOOP
@@ -4420,6 +4424,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.10  2012/09/21 16:17:25  velktron
+//More generic.
+//
 //Revision 1.101.2.9  2012/09/20 14:25:13  velktron
 //Unified DOOM!!!
 //
