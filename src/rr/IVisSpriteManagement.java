@@ -10,7 +10,7 @@ package rr;
  */
 
 
-public interface IVisSpriteManagement<V> extends ILimitResettable {
+public interface IVisSpriteManagement<T,V> extends ILimitResettable {
     
     void AddSprites(sector_t sec);
     
@@ -26,6 +26,6 @@ public interface IVisSpriteManagement<V> extends ILimitResettable {
 
     void ClearSprites();
     
-    void updateStatus(RendererState<V> R);
+    void updateStatus(RendererState<T,V> R);
     
 }

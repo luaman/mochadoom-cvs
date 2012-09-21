@@ -1,7 +1,6 @@
 package rr;
 
-import static rr.Lights.*;
-
+import static rr.LightsAndColors.*;
 import java.io.IOException;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.R_DrawColumnBoom;
@@ -22,20 +21,20 @@ import doom.DoomMain;
 import doom.DoomStatus;
 
 public abstract class UnifiedRenderer< V>
-        extends RendererState<V> {
+        extends RendererState<byte[],V> {
 
-    public UnifiedRenderer(DoomStatus DS) {
+    public UnifiedRenderer(DoomStatus<byte[],V> DS) {
         super(DS);
         this.MyThings = new Things();
-        this.MySegs = new Segs();
-        
+        // Segments need to see visplanes.
+        this.MySegs = new Segs(this);
     }
 
     private final class Segs
             extends SegDrawer {
 
-        public Segs() {
-            super();
+        public Segs(Renderer<?, ?> R) {
+            super(R);
         }
 
         /** For serial version, just complete the call */
@@ -161,15 +160,14 @@ public abstract class UnifiedRenderer< V>
     public static final class HiColor
             extends UnifiedRenderer<short[]> {
 
-        public HiColor(DoomMain DM) {            
+        public HiColor(DoomStatus<byte[],short[]> DM) {            
             super(DM);
             
             dcvars=new ColVars<byte[],short[]>();            
             dsvars=new SpanVars<byte[],short[]>();
             
             // Init any video-output dependant stuff            
-            this.lights=new Lights<short[]>();
-            this.colormap=new Colormaps<short[]>();
+            this.colormaps=new LightsAndColors<short[]>();
             this.VIS=new VisSprites.HiColor(this);
             
 
@@ -178,9 +176,9 @@ public abstract class UnifiedRenderer< V>
             
             
             // Init light levels
-            lights.scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
-            lights.scalelightfixed = new short[MAXLIGHTSCALE][];
-            lights.zlight = new short[LIGHTLEVELS][MAXLIGHTZ][];
+            colormaps.scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
+            colormaps.scalelightfixed = new short[MAXLIGHTSCALE][];
+            colormaps.zlight = new short[LIGHTLEVELS][MAXLIGHTZ][];
             
             // Temporary vissprite
             avis=new vissprite_t<short[]>();
@@ -205,8 +203,8 @@ public abstract class UnifiedRenderer< V>
              * i=0;i<length/2;i++){ tmp2[i]=bb.getShort(); }
              * V.setColorMaps(tmp2, LIGHTLEVELS+2);
              */
-            colormap.colormaps = V.getColorMaps();
-            System.out.println("COLORS15 Colormaps: " + colormap.colormaps.length);
+            colormaps.colormaps = V.getColorMaps();
+            System.out.println("COLORS15 Colormaps: " + colormaps.colormaps.length);
 
             /*
              * for (int i = 0; i < colormaps.length; i++) {
@@ -275,15 +273,14 @@ public abstract class UnifiedRenderer< V>
             public static final class Indexed
             extends UnifiedRenderer<byte[]> {
 
-        public Indexed(DoomMain DM) {            
+        public Indexed(DoomStatus<byte[],byte[]> DM) {            
             super(DM);
             
             dcvars=new ColVars<byte[],byte[]>();            
             dsvars=new SpanVars<byte[],byte[]>();
             
             // Init any video-output dependant stuff            
-            this.lights=new Lights<byte[]>();
-            this.colormap=new Colormaps<byte[]>();
+            this.colormaps=new LightsAndColors<byte[]>();
             this.VIS=new VisSprites.Indexed(this);
             
 
@@ -292,9 +289,9 @@ public abstract class UnifiedRenderer< V>
             
             
             // Init light levels
-            lights.scalelight = new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
-            lights.scalelightfixed = new byte[MAXLIGHTSCALE][];
-            lights.zlight = new byte[LIGHTLEVELS][MAXLIGHTZ][];
+            colormaps.scalelight = new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
+            colormaps.scalelightfixed = new byte[MAXLIGHTSCALE][];
+            colormaps.zlight = new byte[LIGHTLEVELS][MAXLIGHTZ][];
             
             // Temporary vissprite
             avis=new vissprite_t<byte[]>();
@@ -312,18 +309,18 @@ public abstract class UnifiedRenderer< V>
             // 256 byte align tables.
             lump = W.GetNumForName("COLORMAP");
             length = W.LumpLength(lump) + 256;
-            colormap.colormaps = new byte[(length / 256)][256];
-            System.out.println("Colormaps: " + colormap.colormaps.length);
+            colormaps.colormaps = new byte[(length / 256)][256];
+            System.out.println("Colormaps: " + colormaps.colormaps.length);
 
             byte[] tmp = new byte[length];
             W.ReadLump(lump,tmp);
 
-            for (int i = 0; i < colormap.colormaps.length; i++) {
-                System.arraycopy(tmp, i * 256, colormap.colormaps[i], 0, 256);
+            for (int i = 0; i < colormaps.colormaps.length; i++) {
+                System.arraycopy(tmp, i * 256, colormaps.colormaps[i], 0, 256);
             }
             
             // MAES: blurry effect is hardcoded to this colormap.
-            BLURRY_MAP=colormap.colormaps[6];
+            BLURRY_MAP=colormaps.colormaps[6];
             // colormaps = (byte *)( ((int)colormaps + 255)&~0xff);     
 
             

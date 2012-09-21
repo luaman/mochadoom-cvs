@@ -32,12 +32,12 @@ import w.lumpinfo_t;
  */
 
 public class SimpleTextureManager
-        implements TextureManager {
+        implements TextureManager<byte[]> {
     
     IWadLoader W;
     IDoomSystem I;
     AbstractLevelLoader LL;
-    DoomStatus DM;
+    DoomStatus<?,?> DM;
     
     //
     // Graphics.
@@ -52,10 +52,9 @@ public class SimpleTextureManager
     protected int     numflats;
     /** HACK */
     protected flat_t[] flats;
-
     
-    protected int     firstpatch;
-    protected int     lastpatch;
+    //protected int     firstpatch;
+    //protected int     lastpatch;
     protected int     numpatches;
 
 
@@ -100,7 +99,7 @@ public class SimpleTextureManager
     // This is also in DM, but one is enough, really.
     protected int skytexture,skytexturemid,skyflatnum;
     
-    public SimpleTextureManager(DoomStatus DC) {
+    public SimpleTextureManager(DoomStatus<?,?> DC) {
         this.DM=DC;
         this.W=DM.W;
         this.I=DM.I;
@@ -139,8 +138,6 @@ public class SimpleTextureManager
         /** Hash table used for fast texture lookup */
 
         Hashtable<String, Integer> TextureCache;
-        private Object li_namespace_;
-        
         
         /**
          * R_TextureNumForName
@@ -1228,5 +1225,199 @@ public class SimpleTextureManager
             return 1;
         }
 	 }
+
+    @Override
+    public byte[] getSafeFlat(int flatnum) {
+        byte[] flat= ((flat_t)W.CacheLumpNum(getFlatTranslation(flatnum),
+            PU_STATIC,flat_t.class)).data;
+
+        if (flat.length<4096){
+            System.arraycopy(flat, 0,safepatch,0,flat.length);
+            return safepatch;
+        }
+        
+        return flat;
+    }
 	
+    private final byte[] safepatch=new byte[4096];
+    
+    // COLUMN GETTING METHODS. No idea why those had to be in the renderer...
+    
+    /**
+     * Special version of GetColumn meant to be called concurrently by different
+     * seg rendering threads, identfiex by index. This serves to avoid stomping
+     * on mutual cached textures and causing crashes.
+     * 
+     */
+
+    public byte[] GetSmpColumn(int tex, int col, int id) {
+        int lump,ofs;
+
+        col &= getTexturewidthmask(tex);
+        lump = getTextureColumnLump(tex, col);
+        ofs = getTextureColumnOfs(tex, col);
+
+        // It's always 0 for this kind of access.
+
+        // Speed-increasing trick: speed up repeated accesses to the same
+        // texture or patch, if they come from the same lump
+        
+        if (tex == smp_lasttex[id] && lump == smp_lastlump[id]) {
+            if (composite)
+                return smp_lastpatch[id].columns[col].data;
+            else
+                return smp_lastpatch[id].columns[ofs].data;
+            }
+
+        // If pointing inside a non-zero, positive lump, then it's not a
+        // composite texture. Read it from disk.
+        if (lump > 0) {
+            // This will actually return a pointer to a patch's columns.
+            // That is, to the ONE column exactly.{
+            // If the caller needs access to a raw column, we must point 3 bytes
+            // "ahead".
+            smp_lastpatch[id] = W.CachePatchNum(lump);
+            smp_lasttex[id] = tex;
+            smp_lastlump[id]=lump;
+            smp_composite[id]=false;
+            // If the column was a disk lump, use ofs.
+            return smp_lastpatch[id].columns[ofs].data;
+        }
+        
+        // Problem. Composite texture requested as if it was masked
+        // but it doesn't yet exist. Create it.
+        if (getMaskedComposite(tex) == null){
+            System.err.printf("Forced generation of composite %s\n",CheckTextureNameForNum(tex),smp_composite[id],col,ofs);
+            GenerateMaskedComposite(tex);
+            System.err.printf("Composite patch %s %d\n",getMaskedComposite(tex).name,getMaskedComposite(tex).columns.length);
+        }
+        
+        // Last resort. 
+        smp_lastpatch[id] = getMaskedComposite(tex);
+        smp_lasttex[id]=tex;
+        smp_composite[id]=true;
+        smp_lastlump[id]=0;
+        
+        return lastpatch.columns[col].data;
+    }
+
+    // False: disk-mirrored patch. True: improper "transparent composite".
+    protected boolean[] smp_composite;// = false;
+    protected int[] smp_lasttex;// = -1;
+    protected int[] smp_lastlump;// = -1;
+    protected patch_t[] smp_lastpatch;// = null;
+    
+///////////////////////// TEXTURE MANAGEMENT /////////////////////////
+
+    /**
+     * R_GetColumn original version: returns raw pointers to byte-based column
+     * data. Works for both masked and unmasked columns, but is not
+     * tutti-frutti-safe.
+     * 
+     * Use GetCachedColumn instead, if rendering non-masked stuff, which is also
+     * faster.
+     * 
+     * @throws IOException
+     * 
+     * 
+     */
+
+    public byte[] GetColumn(int tex, int col) {
+        int lump,ofs;
+
+        col &= getTexturewidthmask(tex);
+        lump = getTextureColumnLump(tex, col);
+        ofs = getTextureColumnOfs(tex, col);
+
+        // It's always 0 for this kind of access.
+
+        // Speed-increasing trick: speed up repeated accesses to the same
+        // texture or patch, if they come from the same lump
+        
+        if (tex == lasttex && lump == lastlump) {
+            if (composite)
+                return lastpatch.columns[col].data;
+            else
+                return lastpatch.columns[ofs].data;
+            }
+
+        // If pointing inside a non-zero, positive lump, then it's not a
+        // composite texture. Read it from disk.
+        if (lump > 0) {
+            // This will actually return a pointer to a patch's columns.
+            // That is, to the ONE column exactly.{
+            // If the caller needs access to a raw column, we must point 3 bytes
+            // "ahead".
+            lastpatch = W.CachePatchNum(lump);
+            lasttex = tex;
+            lastlump=lump;
+            composite=false;
+            // If the column was a disk lump, use ofs.
+            return lastpatch.columns[ofs].data;
+        }
+        
+        // Problem. Composite texture requested as if it was masked
+        // but it doesn't yet exist. Create it.
+        if (getMaskedComposite(tex) == null){
+            System.err.printf("Forced generation of composite %s\n",CheckTextureNameForNum(tex),composite,col,ofs);
+            GenerateMaskedComposite(tex);
+            System.err.printf("Composite patch %s %d\n",getMaskedComposite(tex).name,getMaskedComposite(tex).columns.length);
+        }
+        
+        // Last resort. 
+        lastpatch = getMaskedComposite(tex);
+        lasttex=tex;
+        composite=true;
+        lastlump=0;
+        
+        return lastpatch.columns[col].data;
+    }
+
+    // False: disk-mirrored patch. True: improper "transparent composite".
+    private boolean composite = false;
+    private int lasttex = -1;
+    private int lastlump = -1;
+    private patch_t lastpatch = null;
+
+    
+    
+    /**
+     * R_GetColumn variation which is tutti-frutti proof. It only returns cached
+     * columns, and even pre-caches single-patch textures intead of trashing the
+     * WAD manager (should be faster, in theory).
+     * 
+     * Cannot be used for drawing masked textures, use classic GetColumn
+     * instead.
+     * 
+     * 
+     * @throws IOException
+     */
+    @Override
+    public final byte[] GetCachedColumn(int tex, int col) {
+        int lump, ofs;
+
+        col &= getTexturewidthmask(tex);
+        lump = getTextureColumnLump(tex, col);
+        ofs = getTextureColumnOfs(tex, col);
+
+        // In the case of cached columns, this is always 0.
+        // Done externally, for now.
+        //dcvars.dc_source_ofs = 0;
+
+        // If pointing inside a non-zero, positive lump, then it's not a
+        // composite texture.
+        // Read from disk, and safeguard vs tutti frutti.
+        if (lump > 0) {
+            // This will actually return a pointer to a patch's columns.
+            return getRogueColumn(lump, ofs);
+        }
+
+        // Texture should be composite, but it doesn't yet exist. Create it.
+        if (getTextureComposite(tex) == null)
+            GenerateComposite(tex);
+
+        return getTextureComposite(tex, col);
+    }
+
+    
 }

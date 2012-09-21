@@ -2,11 +2,14 @@ package rr;
 
 import static data.Tables.FINEANGLES;
 import static m.fixed_t.FRACUNIT;
+import rr.drawfuns.SpanVars;
 import i.DoomStatusAware;
+import i.IDoomSystem;
 import v.IVideoScaleAware;
+import w.IWadLoader;
 import doom.player_t;
 
-public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware{
+public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware<T,V>{
 	
 
 
@@ -54,18 +57,34 @@ public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware{
 	public void resetLimits();
 
 	public boolean getSetSizeNeeded();
-
-	public int getViewWindowX();
-
-	public int getViewWindowY();
-	
-	public int getScaledViewWidth();
-
-	public int getScaledViewHeight();
 	
 	public boolean isFullScreen();
 
-	public TextureManager getTextureManager();
+	// Isolation methods
+	
+	public TextureManager<T> getTextureManager();
+	
+	public PlaneDrawer<T,V> getPlaneDrawer();
+
+    public ViewVars getView();
+
+    public SpanVars<T, V> getDSVars();
+
+    public LightsAndColors<V> getColorMap();
+
+    public IDoomSystem getDoomSystem();
+    
+    public IWadLoader getWadLoader();
+
+    /** Use this to "peg" visplane drawers (even parallel ones) to
+     *  the same set of visplane variables.
+     *  
+     * @return
+     */
+    
+    public Visplanes getVPVars();
+
+    SegVars getSegVars();
     
 	
 	//public subsector_t PointInSubsector(int x, int y);

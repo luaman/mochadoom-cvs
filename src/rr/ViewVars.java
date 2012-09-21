@@ -129,4 +129,20 @@ public class ViewVars {
         // return 0;
     }
     
+    public final int getViewWindowX(){
+        return windowx;
+    }
+
+    public final int getViewWindowY(){
+        return windowy;
+    }
+        
+    public final int getScaledViewWidth(){
+        return scaledwidth;
+    }
+
+    public final int getScaledViewHeight() {
+        return height;
+    }
+
 }

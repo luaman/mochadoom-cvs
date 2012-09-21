@@ -10,7 +10,7 @@ import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
 import static p.mobj_t.MF_SHADOW;
-import static rr.Lights.*;
+import static rr.LightsAndColors.*;
 import static rr.Renderer.MINZ;
 
 import i.IDoomSystem;
@@ -20,7 +20,7 @@ import java.util.Arrays;
 import p.mobj_t;
 import utils.C2JUtils;
 
-public abstract class VisSprites<T,V> implements IVisSpriteManagement<V>{
+public abstract class VisSprites<T,V> implements IVisSpriteManagement<T,V>{
     
     private final static boolean DEBUG=false;
     private final static boolean RANGECHECK=false;
@@ -28,27 +28,25 @@ public abstract class VisSprites<T,V> implements IVisSpriteManagement<V>{
     protected IDoomSystem I;
     protected ISpriteManager SM;
     protected ViewVars view;
-    protected Lights<V> lights;
-    protected Colormaps<V> colormap;
-    protected RendererState<V> R;
+    protected LightsAndColors<V> colormaps;
+    protected RendererState<T,V> R;
     
-    public VisSprites(RendererState<V> R){
+    public VisSprites(RendererState<T,V> R){
         updateStatus(R);
     }
     
-    public void updateStatus(RendererState<V> R){
+    public void updateStatus(RendererState<T,V> R){
         this.R=R;
         this.view=R.view;
-        this.lights=R.lights;
         this.I=R.I;
         this.SM=R.SM;
-        this.colormap=R.colormap;
+        this.colormaps=R.colormaps;
         
     }
     
     public static final class HiColor extends VisSprites<byte[],short[]>{
          
-         public HiColor(RendererState<short[]> R){
+         public HiColor(RendererState<byte[],short[]> R){
                 super(R);
                 vissprite_t<short[]> tmp=new vissprite_t<short[]>();
                 vissprites=C2JUtils.createArrayOfObjects(tmp,MAXVISSPRITES);
@@ -72,7 +70,7 @@ public abstract class VisSprites<T,V> implements IVisSpriteManagement<V>{
     
        public static final class Indexed extends VisSprites<byte[],byte[]>{
              
-           public Indexed(RendererState<byte[]> R){
+           public Indexed(RendererState<byte[],byte[]> R){
                    super(R);
                     vissprite_t<byte[]> tmp=new vissprite_t<byte[]>();
                     vissprites=C2JUtils.createArrayOfObjects(tmp,MAXVISSPRITES);
@@ -128,14 +126,14 @@ public abstract class VisSprites<T,V> implements IVisSpriteManagement<V>{
         // Well, now it will be done.
         sec.validcount = R.getValidCount();
 
-        lightnum = (sec.lightlevel >> LIGHTSEGSHIFT) + lights.extralight;
+        lightnum = (sec.lightlevel >> LIGHTSEGSHIFT) + colormaps.extralight;
 
         if (lightnum < 0)
-            lights.spritelights = lights.scalelight[0];
+            colormaps.spritelights = colormaps.scalelight[0];
         else if (lightnum >= LIGHTLEVELS)
-            lights.spritelights = lights.scalelight[LIGHTLEVELS - 1];
+            colormaps.spritelights = colormaps.scalelight[LIGHTLEVELS - 1];
         else
-            lights.spritelights = lights.scalelight[lightnum];
+            colormaps.spritelights = colormaps.scalelight[lightnum];
 
         // Handle all things in sector.
         for (thing = sec.thinglist; thing != null; thing = (mobj_t) thing.snext)
@@ -266,13 +264,13 @@ public abstract class VisSprites<T,V> implements IVisSpriteManagement<V>{
         if ((thing.flags & MF_SHADOW) != 0) {
             // shadow draw
             vis.colormap = null;
-        } else if (colormap.fixedcolormap != null) {
+        } else if (colormaps.fixedcolormap != null) {
             // fixed map
-            vis.colormap = (V) colormap.fixedcolormap;
+            vis.colormap = (V) colormaps.fixedcolormap;
             // vis.pcolormap=0;
         } else if ((thing.frame & FF_FULLBRIGHT) != 0) {
             // full bright
-            vis.colormap = (V) colormap.colormaps[0];
+            vis.colormap = (V) colormaps.colormaps[0];
             // vis.pcolormap=0;
         }
 
@@ -283,7 +281,7 @@ public abstract class VisSprites<T,V> implements IVisSpriteManagement<V>{
             if (index >= MAXLIGHTSCALE)
                 index = MAXLIGHTSCALE - 1;
 
-            vis.colormap = lights.spritelights[index];
+            vis.colormap = colormaps.spritelights[index];
             // vis.pcolormap=index;
         }
     }

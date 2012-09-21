@@ -7,8 +7,8 @@ package rr;
  *
  */
 
-public interface IGetColumn<T> {
+public interface IGetCachedColumn<T> {
 
-	T GetColumn(int tex, int col);
+	T GetCachedColumn(int tex, int col);
 
 }

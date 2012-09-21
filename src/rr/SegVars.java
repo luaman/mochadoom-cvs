@@ -13,6 +13,8 @@ public class SegVars {
 
     public drawseg_t[] drawsegs;
 
+    public short[] maskedtexturecol;
+    public int pmaskedtexturecol = 0;
 
 
 	/**
