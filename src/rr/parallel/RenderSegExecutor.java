@@ -2,7 +2,7 @@ package rr.parallel;
 
 import static data.Tables.finetangent;
 import static m.fixed_t.*;
-import static rr.Lights.*;
+import static rr.LightsAndColors.*;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -51,8 +51,7 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 	// This needs to be set by the partitioner.
     protected int rw_start, rw_end,rsiend;
 	// These need to be set on creation, and are unchangeable.
-	protected final IGetColumn<T> GC;
-	protected final TextureManager TM;
+	protected final TextureManager<T> TexMan;
 	protected final CyclicBarrier barrier;
 	protected RenderSegInstruction<V>[] RSI;
 	protected final long[] xtoviewangle;
@@ -71,8 +70,7 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 	protected ColVars<T,V> dcvars;
 	
 	public RenderSegExecutor(int SCREENWIDTH, int SCREENHEIGHT,int id,V screen, 
-			IGetColumn  gc,
-			TextureManager texman,
+			TextureManager<T> texman,
 			RenderSegInstruction<V>[] RSI,
 			short[] BLANKCEILINGCLIP,
 			short[] BLANKFLOORCLIP,
@@ -84,8 +82,7 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 			visplane_t[] visplanes,
 			CyclicBarrier barrier){
 		this.id=id;
-		this.GC=gc;
-		this.TM=texman;
+		this.TexMan=texman;
 		this.RSI=RSI;
 		this.barrier=barrier;		
 		this.ceilingclip=ceilingclip;
@@ -189,10 +186,10 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
                  // single sided line
                  dcvars.dc_yl = yl;
                  dcvars.dc_yh = yh;
-                 dcvars.dc_texheight = TM.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
+                 dcvars.dc_texheight = TexMan.getTextureheight(rsi.midtexture)>>FRACBITS; // killough
                  dcvars.dc_texturemid = rsi.rw_midtexturemid;    
-                 dcvars.dc_source = GC.GetCachedColumn(rsi.midtexture,texturecolumn);
-                 //dc_source_ofs=0;
+                 dcvars.dc_source = TexMan.GetCachedColumn(rsi.midtexture,texturecolumn);
+                 dcvars.dc_source_ofs=0;
                  colfunc.invoke();
                  ceilingclip[rw_x] = (short) rsi.viewheight;
                  floorclip[rw_x] = -1;
@@ -214,8 +211,8 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
                      dcvars.dc_yl = yl;
                      dcvars.dc_yh = mid;
                      dcvars.dc_texturemid = rsi.rw_toptexturemid;
-                     dcvars.dc_texheight=TM.getTextureheight(rsi.toptexture)>>FRACBITS;
-                     dcvars.dc_source = GC.GetCachedColumn(rsi.toptexture,texturecolumn);
+                     dcvars.dc_texheight=TexMan.getTextureheight(rsi.toptexture)>>FRACBITS;
+                     dcvars.dc_source = TexMan.GetCachedColumn(rsi.toptexture,texturecolumn);
                      //dc_source_ofs=0;
                      colfunc.invoke();
                      ceilingclip[rw_x] = (short) mid;
@@ -245,8 +242,8 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
                      dcvars.dc_yl = mid;
                      dcvars.dc_yh = yh;
                      dcvars.dc_texturemid = rsi.rw_bottomtexturemid;
-                     dcvars.dc_texheight=TM.getTextureheight(rsi.bottomtexture)>>FRACBITS;
-                     dcvars.dc_source = GC.GetCachedColumn(rsi.bottomtexture,texturecolumn);
+                     dcvars.dc_texheight=TexMan.getTextureheight(rsi.bottomtexture)>>FRACBITS;
+                     dcvars.dc_source = TexMan.GetCachedColumn(rsi.bottomtexture,texturecolumn);
                      // dc_source_ofs=0;
                      colfunc.invoke();
                      floorclip[rw_x] = (short) mid;
@@ -370,12 +367,12 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 	public static final class HiColor extends RenderSegExecutor<byte[],short[]>{
 
         public HiColor(int SCREENWIDTH, int SCREENHEIGHT, int id,
-                short[] screen, IGetColumn<byte[]> gc, TextureManager texman,
+                short[] screen, TextureManager<byte[]> texman,
                 RenderSegInstruction<short[]>[] RSI, short[] BLANKCEILINGCLIP,
                 short[] BLANKFLOORCLIP, short[] ceilingclip, short[] floorclip,
                 int[] columnofs, long[] xtoviewangle, int[] ylookup,
                 visplane_t[] visplanes, CyclicBarrier barrier) {
-            super(SCREENWIDTH, SCREENHEIGHT, id, screen, gc, texman, RSI, BLANKCEILINGCLIP,
+            super(SCREENWIDTH, SCREENHEIGHT, id, screen, texman, RSI, BLANKCEILINGCLIP,
                     BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
                     ylookup, visplanes, barrier);
             dcvars=new ColVars<byte[],short[]>();
@@ -387,12 +384,12 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 	public static final class Indexed extends RenderSegExecutor<byte[],byte[]>{
 
         public Indexed(int SCREENWIDTH, int SCREENHEIGHT, int id,
-                byte[] screen, IGetColumn<byte[]> gc, TextureManager texman,
+                byte[] screen, IGetColumn<byte[]> gc, TextureManager<byte[]> texman,
                 RenderSegInstruction<byte[]>[] RSI, short[] BLANKCEILINGCLIP,
                 short[] BLANKFLOORCLIP, short[] ceilingclip, short[] floorclip,
                 int[] columnofs, long[] xtoviewangle, int[] ylookup,
                 visplane_t[] visplanes, CyclicBarrier barrier) {
-            super(SCREENWIDTH, SCREENHEIGHT, id, screen, gc, texman, RSI, BLANKCEILINGCLIP,
+            super(SCREENWIDTH, SCREENHEIGHT, id, screen, texman, RSI, BLANKCEILINGCLIP,
                     BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
                     ylookup, visplanes, barrier);
             dcvars=new ColVars<byte[],byte[]>();
@@ -404,6 +401,9 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.1.2.2  2012/09/21 16:18:29  velktron
+// More progress...but no cigar, yet.
+//
 // Revision 1.1.2.1  2012/09/20 14:20:10  velktron
 // Parallel stuff in their own package (STILL BROKEN)
 //

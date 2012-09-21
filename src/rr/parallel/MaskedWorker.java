@@ -8,12 +8,12 @@ import java.util.concurrent.CyclicBarrier;
 import doom.player_t;
 
 import p.pspdef_t;
-import static rr.Lights.*;
-import rr.Colormaps;
+import static rr.LightsAndColors.*;
+import rr.LightsAndColors;
 import rr.IDetailAware;
 import rr.ISpriteManager;
 import rr.IVisSpriteManagement;
-import rr.Lights;
+import rr.Renderer;
 import rr.RendererState;
 import rr.SegVars;
 import rr.TextureManager;
@@ -46,7 +46,7 @@ import static data.Defines.SIL_BOTTOM;
 import static data.Defines.SIL_TOP;
 import static rr.Renderer.BASEYCENTER;
 
-public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
+public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings implements Runnable, IDetailAware{
     
     private final static boolean DEBUG=false;
     private final static boolean RANGECHECK=false;
@@ -55,56 +55,54 @@ public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
     protected final int id;
     protected final int numthreads;
     protected final ViewVars view;
-    protected final Colormaps<V> colormap;
-    protected final Lights<V> lights;
+    protected final LightsAndColors<V> colormap;
     protected final ISpriteManager SM;
-    protected final TextureManager TexMan;
+    protected final TextureManager<T> TexMan;
     protected final IDoomSystem I;
     protected final SegVars seg_vars;
     protected final IWadLoader W;
-    protected final IVisSpriteManagement<V> VIS;
+    protected final IVisSpriteManagement<T,V> VIS;
     protected final IGetSmpColumn<V> GSC;
     
-    protected DoomColumnFunction<byte[],V> colfunc;
-    protected DoomColumnFunction<byte[],V> transcolfunc;
-    protected DoomColumnFunction<byte[],V> maskedcolfunc;
-    protected DoomColumnFunction<byte[],V> fuzzcolfunc;
-    protected DoomColumnFunction<byte[],V> playercolfunc;
-    protected DoomColumnFunction<byte[],V> maskedcolfunchi;
-    protected DoomColumnFunction<byte[],V> maskedcolfunclow;
-    protected DoomColumnFunction<byte[],V> fuzzcolfunchi;
-    protected DoomColumnFunction<byte[],V> fuzzcolfunclow;
-    protected DoomColumnFunction<byte[],V> transcolhigh;
-    protected DoomColumnFunction<byte[],V> transcollow;
+    protected DoomColumnFunction<T,V> colfunc;
+    protected DoomColumnFunction<T,V> transcolfunc;
+    protected DoomColumnFunction<T,V> maskedcolfunc;
+    protected DoomColumnFunction<T,V> fuzzcolfunc;
+    protected DoomColumnFunction<T,V> playercolfunc;
+    protected DoomColumnFunction<T,V> maskedcolfunchi;
+    protected DoomColumnFunction<T,V> maskedcolfunclow;
+    protected DoomColumnFunction<T,V> fuzzcolfunchi;
+    protected DoomColumnFunction<T,V> fuzzcolfunclow;
+    protected DoomColumnFunction<T,V> transcolhigh;
+    protected DoomColumnFunction<T,V> transcollow;
     
-    protected ColVars<byte[],V> maskedcvars;
+    protected ColVars<T,V> maskedcvars;
     
     // MAES: Scale to SCREENWIDTH
     private final short[] clipbot;
     private final short[] cliptop;
     
     @SuppressWarnings("unchecked")
-	public MaskedWorker(RendererState<V> R,int id,int SCREENWIDTH, int SCREENHEIGHT,int numthreads,CyclicBarrier barrier){
+	public MaskedWorker(Renderer<T,V> R,int id,int SCREENWIDTH, int SCREENHEIGHT,int numthreads,CyclicBarrier barrier){
         this.id=id;
         this.numthreads=numthreads;
         this.barrier=barrier;
         this.clipbot=new short[SCREENWIDTH];
         this.cliptop=new short[SCREENWIDTH];
-        this.view=R.view;
-        this.seg_vars=R.seg_vars;
-        this.lights=R.lights;
-        this.colormap=R.colormap;
-        this.W=R.W;
-        this.TexMan=R.TexMan;
-        this.SM=R.SM;
-        this.I=R.I; 
-        this.VIS=R.VIS;
-        this.GSC=(IGetSmpColumn<V>) R;
+        this.view=R.getView();
+        this.seg_vars=R.getSegVars();
+        this.colormap=R.getColorMap();
+        //this.W=R.W;
+        this.TexMan=R.getTextureManager();
+        //this.SM=R.SM;
+        //this.I=R.I; 
+        //this.VIS=R.VIS;
+        //this.GSC=(IGetSmpColumn<V>) R;
         }
     
-    public static final class HiColor extends MaskedWorker<short[]>{
+    public static final class HiColor extends MaskedWorker<byte[],short[]>{
 
-		public HiColor(RendererState<short[]> R,int id, int SCREENWIDTH, int SCREENHEIGHT,
+		public HiColor(Renderer<byte[],short[]> R,int id, int SCREENWIDTH, int SCREENHEIGHT,
 				int[] ylookup, int[] columnofs, int numthreads, short[] screen,
 				CyclicBarrier barrier) {
 			super(R,id, SCREENWIDTH, SCREENHEIGHT,numthreads, barrier);
@@ -139,16 +137,8 @@ public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
     protected int pmaskedtexturecol;
     protected short[] maskedtexturecol;
     
-    protected int spryscale;
-    protected int sprtopscreen;
-    protected short[] mfloorclip;
-    protected int p_mfloorclip;
-    protected short[] mceilingclip;
-    protected int p_mceilingclip;
+
     
-    protected sector_t frontsector;
-    protected sector_t backsector;
-    protected seg_t curline;
     
     public void cacheSpriteManager(ISpriteManager SM){
           this.spritewidth=SM.getSpriteWidth();
@@ -188,7 +178,7 @@ public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
             colfunc = fuzzcolfunc;
         } else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
             colfunc = transcolfunc;
-            maskedcvars.dc_translation = colormap.translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
+            maskedcvars.dc_translation = (T) colormap.translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
         }
 
         maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;
@@ -254,7 +244,7 @@ public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
         backsector = curline.backsector;
         texnum = TexMan.getTextureTranslation(curline.sidedef.midtexture);
         // System.out.print(" for texture "+textures[texnum].name+"\n:");
-        lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT) + lights.extralight;
+        lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT) + colormap.extralight;
 
         if (curline.v1y == curline.v2y)
             lightnum--;
@@ -262,8 +252,8 @@ public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
             lightnum++;
 
         // Killough code.
-        colormap.walllights = lightnum >= LIGHTLEVELS ? lights.scalelight[LIGHTLEVELS - 1]
-                : lightnum < 0 ? lights.scalelight[0] : lights.scalelight[lightnum];
+        colormap.walllights = lightnum >= LIGHTLEVELS ? colormap.scalelight[LIGHTLEVELS - 1]
+                : lightnum < 0 ? colormap.scalelight[0] : colormap.scalelight[lightnum];
 
         // Get the list
         maskedtexturecol = ds.getMaskedTextureColList();
@@ -427,7 +417,7 @@ public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
             // vis.pcolormap=0;
         } else {
             // local light
-            vis.colormap = lights.spritelights[MAXLIGHTSCALE - 1];
+            vis.colormap = colormap.spritelights[MAXLIGHTSCALE - 1];
         }
 
         //System.out.printf("Weapon draw from %d to %d\n",vis.x1,vis.x2);
@@ -452,14 +442,14 @@ public abstract class MaskedWorker<V> implements Runnable, IDetailAware{
 
         // get light level
         lightnum = (view.player.mo.subsector.sector.lightlevel >> LIGHTSEGSHIFT)
-                + lights.extralight;
+                + colormap.extralight;
 
         if (lightnum < 0)
-            lights.spritelights = lights.scalelight[0];
+            colormap.spritelights = colormap.scalelight[0];
         else if (lightnum >= LIGHTLEVELS)
-        	lights.spritelights = lights.scalelight[LIGHTLEVELS - 1];
+            colormap.spritelights = colormap.scalelight[LIGHTLEVELS - 1];
         else
-        	lights.spritelights = lights.scalelight[lightnum];
+            colormap.spritelights = colormap.scalelight[lightnum];
 
         // clip to screen bounds
         mfloorclip = view.screenheightarray;

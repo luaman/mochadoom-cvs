@@ -10,7 +10,6 @@ import static data.Tables.finesine;
 import static data.Tables.finetangent;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
-import static rr.Lights.*;
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -20,10 +19,11 @@ import data.Tables;
 import doom.DoomStatus;
 
 import rr.IDetailAware;
+import rr.PlaneDrawer;
+import rr.Renderer;
 import rr.RendererState;
 import rr.flat_t;
 import rr.visplane_t;
-import rr.RendererState.PlaneDrawer;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DcFlags;
 import rr.drawfuns.DoomColumnFunction;
@@ -48,10 +48,10 @@ import utils.C2JUtils;
  *
  */
 
-public abstract class AbstractParallelRenderer<V>
-        extends RendererState<V> {
+public abstract class AbstractParallelRenderer<T,V>
+        extends RendererState<T,V> {
 
-    public AbstractParallelRenderer(DoomStatus DS, int wallthread,
+    public AbstractParallelRenderer(DoomStatus<T,V> DS, int wallthread,
             int floorthreads, int nummaskedthreads) {
         super(DS);
         this.NUMWALLTHREADS = wallthread;
@@ -61,7 +61,7 @@ public abstract class AbstractParallelRenderer<V>
         
     }
 
-    public AbstractParallelRenderer(DoomStatus DS, int wallthread,
+    public AbstractParallelRenderer(DoomStatus<T,V> DS, int wallthread,
             int floorthreads) {
         super(DS);
         this.NUMWALLTHREADS = wallthread;
@@ -221,9 +221,8 @@ public abstract class AbstractParallelRenderer<V>
     protected final class ParallelSegs
             extends SegDrawer {
 
-        public ParallelSegs() {
-            super();
-        }
+        public ParallelSegs(Renderer<?, ?> R) {
+            super(R);        }
 
         /**
          * Parallel version. Since there's so much crap to take into account
@@ -251,8 +250,12 @@ public abstract class AbstractParallelRenderer<V>
 
     }
 
-    protected final class ParallelPlanes
-            extends PlaneDrawer {
+    protected final class ParallelPlanes<T,V>
+            extends PlaneDrawer<T,V> {
+
+        protected ParallelPlanes(Renderer<T, V> R) {
+            super(R);
+        }
 
         /**
          * R_DrawPlanes At the end of each frame. This also means that visplanes
@@ -262,20 +265,9 @@ public abstract class AbstractParallelRenderer<V>
          * @throws IOException
          */
         public void DrawPlanes() {
-            if (DEBUG)
-                System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "
-                        + lastvisplane);
 
             if (RANGECHECK) {
-                if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS)
-                    I.Error("R_DrawPlanes: drawsegs overflow (%d)", seg_vars.ds_p);
-
-                if (lastvisplane > MAXVISPLANES)
-                    I.Error(" R_DrawPlanes: visplane overflow (%d)",
-                        lastvisplane);
-
-                if (lastopening > MAXOPENINGS)
-                    I.Error("R_DrawPlanes: opening overflow (%d)", lastopening);
+                rangeCheckErrors();
             }
 
             // vpw[0].setRange(0,lastvisplane/2);
@@ -289,29 +281,24 @@ public abstract class AbstractParallelRenderer<V>
 
     protected final class ParallelSegs2 extends SegDrawer{
 
-        public ParallelSegs2(){
-            super();
-        }     
+
+        public ParallelSegs2(Renderer<?, ?> R) {
+            super(R);
+        }
 
         @Override
         protected void RenderSegLoop () 
         {
-            int     angle; // angle_t
-            //int     index;
-            int         yl; // low
-            int         yh; // hight
-            int         mid;
-            int     texturecolumn=0; // fixed_t
-            int         top;
-            int         bottom;
-            int dc_b=0, dc_m=0,dc_t = 0;
 
             // Generate Seg rendering instruction BEFORE the looping start
             // and anything is modified. The loop will be repeated in the
             // threads, but without marking ceilings/floors etc.
             GenerateRSI();
+            
+            // I think it's EXACTLY the same.
+            super.RenderSegLoop();
 
-            for ( ; rw_x < rw_stopx ; rw_x++)
+/*            for ( ; rw_x < rw_stopx ; rw_x++)
             {
                 // mark floor / ceiling areas
                 yl = (topfrac+HEIGHTUNIT-1)>>HEIGHTBITS;
@@ -330,8 +317,8 @@ public abstract class AbstractParallelRenderer<V>
 
                 if (top <= bottom)
                 {
-                    visplanes[ceilingplane].setTop(rw_x,(char) top);
-                    visplanes[ceilingplane].setBottom(rw_x, (char) bottom);
+                    vp_vars.visplanes[vp_vars.ceilingplane].setTop(rw_x,(char) top);
+                    vp_vars.visplanes[vp_vars.ceilingplane].setBottom(rw_x, (char) bottom);
                 }
             }
 
@@ -443,7 +430,7 @@ public abstract class AbstractParallelRenderer<V>
                 topfrac += topstep;
                 bottomfrac += bottomstep;
             }
-
+    */
         }
 
         protected final void GenerateRSI(){
@@ -478,7 +465,7 @@ public abstract class AbstractParallelRenderer<V>
             rsi.topfrac=topfrac;
             rsi.topstep=topstep;
             rsi.toptexture=toptexture;
-            rsi.walllights=colormap.walllights;
+            rsi.walllights=colormaps.walllights;
             rsi.viewheight=view.height;
             //rsi.floorplane=floorplane;
             //rsi.ceilingplane=ceilingplane;
@@ -496,7 +483,11 @@ public abstract class AbstractParallelRenderer<V>
 
     }
 
-    protected final class ParallelPlanes2 extends PlaneDrawer{
+    protected final class ParallelPlanes2<T,V> extends PlaneDrawer<T,V>{
+
+        protected ParallelPlanes2(Renderer<T, V> R) {
+            super(R);
+        }
 
         /**
          * R_DrawPlanes
@@ -509,23 +500,10 @@ public abstract class AbstractParallelRenderer<V>
          */
         public void DrawPlanes () 
         {
-            if(DEBUG) System.out.println(" >>>>>>>>>>>>>>>>>>>>>   DrawPlanes: "+ lastvisplane);
-
 
             if (RANGECHECK){
-                if (seg_vars.ds_p > seg_vars.MAXDRAWSEGS)
-                    I.Error("R_DrawPlanes: drawsegs overflow (%i)",
-                    		seg_vars.ds_p );
-
-                if (lastvisplane > MAXVISPLANES)
-                    I.Error(" R_DrawPlanes: visplane overflow (%i)",
-                            lastvisplane);
-
-                if (lastopening  > MAXOPENINGS)
-                    I.Error( "R_DrawPlanes: opening overflow (%i)",
-                            lastopening );
+                rangeCheckErrors();
             }
-
 
             //      vpw[0].setRange(0,lastvisplane/2);
             //      vpw[1].setRange(lastvisplane/2,lastvisplane);
@@ -536,371 +514,7 @@ public abstract class AbstractParallelRenderer<V>
 
     } // End Plane class
     
-    /** Visplane worker which shares work in an equal screen-portions strategy.
-     * 
-     * More balanced, but requires careful synchronization to avoid overdrawing and
-     * stomping.
-     *  
-     *  
-     * @author vepitrop.
-     *
-     */
-    
-    protected class VisplaneWorker2 implements Runnable,IDetailAware{
-
-        private final int id;
-        private final int NUMFLOORTHREADS;
-        private int startvp;  
-        private int endvp;
-        private int vpw_planeheight;
-        private V[] vpw_planezlight;
-        private int vpw_basexscale,vpw_baseyscale;
-        private int[] cachedheight;
-        private int[] cacheddistance;
-        private int[] cachedxstep;
-        private int[] cachedystep;
-        private int[] distscale;
-        private int[] yslope;
-        private final SpanVars<byte[],V> vpw_dsvars;
-        private final ColVars<byte[],V> vpw_dcvars;
-        private DoomSpanFunction<byte[],V> vpw_spanfunc;
-        private DoomColumnFunction<byte[],V> vpw_skyfunc;
-        private final DoomSpanFunction<byte[],V> vpw_spanfunchi;
-        private final DoomSpanFunction<byte[],V> vpw_spanfunclow;
-        private final DoomColumnFunction<byte[],V> vpw_skyfunchi;
-        private final DoomColumnFunction<byte[],V> vpw_skyfunclow;
-        private visplane_t pln;
-        
-        public VisplaneWorker2(int id,int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
-                int[] ylookup, short[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
-            this.barrier=visplanebarrier;
-            this.id=id;
-            // Alias to those of Planes.
-            cachedheight=MyPlanes.getCachedHeight();
-            cacheddistance=MyPlanes.getCachedDistance();
-            cachedxstep=MyPlanes.getCachedXStep();
-            cachedystep=MyPlanes.getCachedYStep();
-            distscale=MyPlanes.getDistScale();
-            yslope=MyPlanes.getYslope();
-            spanstart=new int[sCREENWIDTH];
-            spanstop=new int [sCREENWIDTH];
-            vpw_dsvars=new SpanVars<byte[],short[]>();
-            vpw_dcvars=new ColVars<byte[],short[]>();
-            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_spanfunclow=new R_DrawSpanLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
-            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
-            vpw_skyfunclow=new R_DrawColumnBoomOptLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
-            this.NUMFLOORTHREADS=NUMFLOORTHREADS;
-        }
-
-        @Override
-        public void run() {
-            pln=null; //visplane_t
-            // These must override the global ones
-
-            int         light;
-            int         x;
-            int         stop;
-            int         angle;
-            int minx,maxx;
-            
-            // Now it's a good moment to set them.
-            vpw_basexscale=MyPlanes.getBaseXScale();
-            vpw_baseyscale=MyPlanes.getBaseYScale();
-            
-            startvp=((id*view.width)/NUMFLOORTHREADS);
-            endvp=(((id+1)*view.width)/NUMFLOORTHREADS);
-            
-            // TODO: find a better way to split work. As it is, it's very uneven
-            // and merged visplanes in particular are utterly dire.
-            
-             for (int pl= 0; pl <lastvisplane; pl++) {
-                 pln=visplanes[pl];
-                // System.out.println(id +" : "+ pl);
-
-            // Trivial rejection.
-             if ((pln.minx > endvp) || (pln.maxx <startvp)) 
-                     continue;
-
-             // Reject non-visible  
-             if (pln.minx > pln.maxx)
-                 continue;
-
-             // Trim to zone
-             minx=Math.max(pln.minx,startvp);
-             maxx=Math.min(pln.maxx,endvp);
-             
-             // sky flat
-             if (pln.picnum == TexMan.getSkyFlatNum() )
-             {
-                 // Cache skytexture stuff here. They aren't going to change while
-                 // being drawn, after all, are they?
-                 int skytexture=TexMan.getSkyTexture();
-                 // MAES: these must be updated to keep up with screen size changes.
-                 vpw_dcvars.viewheight=view.height;
-                 vpw_dcvars.centery=view.centery;
-                 vpw_dcvars.dc_texheight=TexMan.getTextureheight(skytexture)>>FRACBITS;                 
-                 vpw_dcvars.dc_iscale = MyPlanes.getSkyScale()>>view.detailshift;
-                 
-                 vpw_dcvars.dc_colormap = colormap.colormaps[0];
-                 vpw_dcvars.dc_texturemid = TexMan.getSkyTextureMid();
-                 for (x=minx ; x <= maxx ; x++)
-                 {
-               
-                     vpw_dcvars.dc_yl = pln.getTop(x);
-                     vpw_dcvars.dc_yh = pln.getBottom(x);
-                 
-                 if (vpw_dcvars.dc_yl <= vpw_dcvars.dc_yh)
-                 {
-                     angle = (int) (addAngles(view.angle, xtoviewangle[x])>>>ANGLETOSKYSHIFT);
-                     vpw_dcvars.dc_x = x;
-                     vpw_dcvars.dc_texheight=TexMan.getTextureheight(TexMan.getSkyTexture())>>FRACBITS;
-                     vpw_dcvars.dc_source = GetCachedColumn(TexMan.getSkyTexture(), angle);
-                     vpw_skyfunc.invoke();
-                 }
-                 }
-                 continue;
-             }
-             
-             // regular flat
-             vpw_dsvars.ds_source = ((flat_t)W.CacheLumpNum(TexMan.getFlatTranslation(pln.picnum),
-                            PU_STATIC,flat_t.class)).data;
-             
-             
-             if (vpw_dsvars.ds_source.length<4096){
-                 System.err.println("vpw_ds_source size <4096 ");
-                 new Exception().printStackTrace();
-             }
-             
-             vpw_planeheight = Math.abs(pln.height-view.z);
-             light = (pln.lightlevel >>> LIGHTSEGSHIFT)+lights.extralight;
-
-             if (light >= LIGHTLEVELS)
-                 light = LIGHTLEVELS-1;
-
-             if (light < 0)
-                 light = 0;
-
-             vpw_planezlight = lights.zlight[light];
-
-             // Some tinkering required to make sure visplanes
-             // don't end prematurely on each other's stop markers
-             
-             char value=pln.getTop(maxx+1);
-             if (!isMarker(value)) { // is it a marker?
-                    value|=visplane_t.SENTINEL; // Mark it so.
-                    value&=visplane_t.THREADIDCLEAR; //clear id bits
-                    value|=(id<<visplane_t.THREADIDSHIFT); // set our own id.
-                    } // Otherwise, it was set by another thread.
-                      // Leave it be.
-             
-             pln.setTop(maxx+1,value);
-             
-             value=pln.getTop(minx-1);
-             if (!isMarker(value)) { // is it a marker?
-                    value|=visplane_t.SENTINEL; // Mark it so.
-                    value&=visplane_t.THREADIDCLEAR; //clear id bits
-                    value|=(id<<visplane_t.THREADIDSHIFT); // set our own id.
-                    } // Otherwise, it was set by another thread.
-                      // Leave it be.
-             
-             pln.setTop(minx-1, value);
-             
-             stop = maxx+1;
-             
-             for (x=minx ; x<= stop ; x++) {
-              MakeSpans(x,pln.getTop(x-1),
-                 pln.getBottom(x-1),
-                 pln.getTop(x),
-                 pln.getBottom(x));
-                }
-             
-             }
-             // We're done, wait.
-
-                try {
-                    barrier.await();
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                } catch (BrokenBarrierException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-
-         }
-            
-        private final boolean isMarker(int t1){
-            return ((t1&visplane_t.SENTINEL)!=0);
-            }
-        
-        private final int decodeID(int t1){
-            return (t1&visplane_t.THREADIDBITS)>>visplane_t.THREADIDSHIFT;
-            }
-        
-        private final int decodeValue(int t1){
-            return t1&visplane_t.THREADVALUEBITS;
-            }
-        
-        public void setDetail(int detailshift) {
-            if (detailshift == 0){
-                vpw_spanfunc = vpw_spanfunchi;
-                vpw_skyfunc= vpw_skyfunchi;
-            }
-            else{
-                vpw_spanfunc = vpw_spanfunclow;
-                vpw_skyfunc =vpw_skyfunclow;
-            }
-        }
-        
-        /**
-         * R_MakeSpans
-         * 
-         * Called only by DrawPlanes.
-         * If you wondered where the actual boundaries for the visplane
-         * flood-fill are laid out, this is it.
-         * 
-         * The system of coords seems to be defining a sort of cone.          
-         *          
-         * 
-         * @param x Horizontal position
-         * @param t1 Top-left y coord?
-         * @param b1 Bottom-left y coord?
-         * @param t2 Top-right y coord ?
-         * @param b2 Bottom-right y coord ?
-         * 
-         */
-
-          private final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
-          
-              // Top 1 sentinel encountered.
-              if (isMarker(t1))
-                  if (decodeID(t1)!=id) // We didn't put it here.
-                      t1=decodeValue(t1);
-
-            // Top 2 sentinel encountered.
-              if (isMarker(t2))
-                  if (decodeID(t2)!=id)
-                      t2=decodeValue(t2);
-                  
-              // If t1 = [sentinel value] then this part won't be executed.
-              while (t1 < t2 && t1 <= b1) {
-                  this.MapPlane(t1, spanstart[t1], x - 1);
-                  t1++;
-              }
-              while (b1 > b2 && b1 >= t1) {
-                  this.MapPlane(b1, spanstart[b1], x - 1);
-                  b1--;
-              }
-
-              // So...if t1 for some reason is < t2, we increase t2 AND store the current x
-              // at spanstart [t2] :-S
-              while (t2 < t1 && t2 <= b2) {
-                  //System.out.println("Increasing t2");
-                  spanstart[t2] = x;
-                  t2++;
-              }
-
-              // So...if t1 for some reason b2 > b1, we decrease b2 AND store the current x
-              // at spanstart [t2] :-S
-
-              while (b2 > b1 && b2 >= t2) {
-                  //System.out.println("Decreasing b2");
-                  spanstart[b2] = x;
-                  b2--;
-              }
-          }
-          
-          /**
-           * R_MapPlane
-           *
-           * Called only by R_MakeSpans.
-           * 
-           * This is where the actual span drawing function is called.
-           * 
-           * Uses global vars:
-           * planeheight
-           *  ds_source -> flat data has already been set.
-           *  basexscale -> actual drawing angle and position is computed from these
-           *  baseyscale
-           *  viewx
-           *  viewy
-           *
-           * BASIC PRIMITIVE
-           */
-          
-          private void
-          MapPlane
-          ( int       y,
-            int       x1,
-            int       x2 )
-          {
-              // MAES: angle_t
-              int angle;
-              // fixed_t
-              int distance;
-              int length;
-              int index;
-              
-          if (RANGECHECK){
-              if (x2 < x1
-              || x1<0
-              || x2>=view.width
-              || y>view.height)
-              {
-              I.Error ("R_MapPlane: %d, %d at %d",x1,x2,y);
-              }
-          }
-
-              if (vpw_planeheight != cachedheight[y])
-              {
-              cachedheight[y] = vpw_planeheight;
-              distance = cacheddistance[y] = FixedMul (vpw_planeheight , yslope[y]);
-              vpw_dsvars.ds_xstep = cachedxstep[y] = FixedMul (distance,vpw_basexscale);
-              vpw_dsvars.ds_ystep = cachedystep[y] = FixedMul (distance,vpw_baseyscale);
-              }
-              else
-              {
-              distance = cacheddistance[y];
-              vpw_dsvars.ds_xstep = cachedxstep[y];
-              vpw_dsvars.ds_ystep = cachedystep[y];
-              }
-              
-              length = FixedMul (distance,distscale[x1]);
-              angle = (int)(((view.angle +xtoviewangle[x1])&BITS32)>>>ANGLETOFINESHIFT);
-              vpw_dsvars.ds_xfrac = view.x + FixedMul(finecosine[angle], length);
-              vpw_dsvars.ds_yfrac = -view.y - FixedMul(finesine[angle], length);
-
-              if (colormap.fixedcolormap!=null)
-                  vpw_dsvars.ds_colormap = colormap.fixedcolormap;
-              else
-              {
-              index = distance >>> LIGHTZSHIFT;
-              
-              if (index >= MAXLIGHTZ )
-                  index = MAXLIGHTZ-1;
-
-              vpw_dsvars.ds_colormap = vpw_planezlight[index];
-              }
-              
-              vpw_dsvars.ds_y = y;
-              vpw_dsvars.ds_x1 = x1;
-              vpw_dsvars.ds_x2 = x2;
-
-              // high or low detail
-              if (view.detailshift==0)
-                  vpw_spanfunc.invoke();
-              else
-                  vpw_spanfunclow.invoke();         
-          }
-          
-          
-          // Private to each thread.
-          int[]           spanstart;
-          int[]           spanstop;
-          CyclicBarrier barrier;
-          
-      }
+  
     
     
 
@@ -945,11 +559,11 @@ public abstract class AbstractParallelRenderer<V>
      */
     
     
-    protected RenderWallExecutor<byte[],V>[] RWIExec;
+    protected RenderWallExecutor<T,V>[] RWIExec;
     
     /** Array of "wall" (actually, column) instructions */
     
-    protected ColVars<byte[], V>[] RWI;
+    protected ColVars<T, V>[] RWI;
     
     /**
      * Increment this as you submit RWIs to the "queue". Remember to reset to 0
@@ -963,7 +577,10 @@ public abstract class AbstractParallelRenderer<V>
      * RWI, ylookup and screen[0].
      */
 
-    protected void InitRWISubsystem() {
+    protected abstract void InitRWISubsystem();
+    
+    /*
+    {
         // CATCH: this must be executed AFTER screen is set, and
         // AFTER we initialize the RWI themselves,
         // before V is set (right?)
@@ -975,6 +592,7 @@ public abstract class AbstractParallelRenderer<V>
             detailaware.add(RWIExec[i]);
         }
     }
+    */
  
    
     
@@ -984,7 +602,9 @@ public abstract class AbstractParallelRenderer<V>
      * way too slow for what we're trying to accomplish.
      */
 
-    protected void ResizeRWIBuffer() {
+    protected abstract void ResizeRWIBuffer();
+    /*
+    {
         ColVars<byte[], V> fake = new ColVars<byte[], V>();
 
         // Bye bye, old RWI.
@@ -995,7 +615,7 @@ public abstract class AbstractParallelRenderer<V>
         }
         // System.err.println("RWI Buffer resized. Actual capacity " +
         // RWI.length);
-    }
+    }*/
     
     /** RenderSeg subsystem. Similar concept to RWI, but stores "Render Seg Instructions" instead.
      * More complex to build, but potentially faster in some situations, as it allows distributing
@@ -1018,7 +638,10 @@ public abstract class AbstractParallelRenderer<V>
      * Pegs them to the RSI, ylookup and screen[0].
      */
 
-    protected void InitRSISubsystem() {
+    protected abstract void InitRSISubsystem();
+    
+    /*
+    {
         // CATCH: this must be executed AFTER screen is set, and
         // AFTER we initialize the RWI themselves,
         // before V is set (right?) 
@@ -1056,6 +679,7 @@ public abstract class AbstractParallelRenderer<V>
             detailaware.add((IDetailAware) vpw[i]);
         }
     }
+    */
 
     /** Resizes RWI buffer, updates executors. Sorry for the hackish implementation
      *  but ArrayList and pretty much everything in Collections is way too slow
@@ -1097,7 +721,7 @@ public abstract class AbstractParallelRenderer<V>
      *  between threads on a column-basis.
      */
 
-    protected ColVars<byte[], V>[] RMI;
+    protected ColVars<T, V>[] RMI;
 
     /**
      * Increment this as you submit RMIs to the "queue". Remember to reset to 0
@@ -1111,7 +735,10 @@ public abstract class AbstractParallelRenderer<V>
     
     /** Creates RMI Executors */
     
-    protected void InitRMISubsystem() {
+    protected abstract void InitRMISubsystem();
+    
+    /*
+    {
         for (int i = 0; i < NUMMASKEDTHREADS; i++) {
             // Each masked executor gets its own set of column functions.
             
@@ -1134,10 +761,12 @@ public abstract class AbstractParallelRenderer<V>
             detailaware.add(RMIExec[i]);
             }
         }
+    */
+    
     
     protected void ResizeRMIBuffer() {
-        ColVars<byte[], V> fake = new ColVars<byte[], V>();
-        ColVars<byte[], V>[] tmp =
+        ColVars<T, V> fake = new ColVars<T, V>();
+        ColVars<T, V>[] tmp =
             C2JUtils.createArrayOfObjects(fake, RMI.length * 2);
         System.arraycopy(RMI, 0, tmp, 0, RMI.length);
 
@@ -1158,5 +787,29 @@ public abstract class AbstractParallelRenderer<V>
      */
     protected abstract void InitParallelStuff();
 
+    protected void RenderRMIPipeline() {
+
+        for (int i = 0; i < NUMMASKEDTHREADS; i++) {
+
+            RMIExec[i].setRange((i * this.SCREENWIDTH) / NUMMASKEDTHREADS,
+                ((i + 1) * this.SCREENWIDTH) / NUMMASKEDTHREADS);
+            RMIExec[i].setRMIEnd(RMIcount);
+            // RWIExec[i].setRange(i%NUMWALLTHREADS,RWIcount,NUMWALLTHREADS);
+            tp.execute(RMIExec[i]);
+        }
+
+        // System.out.println("RWI count"+RWIcount);
+        RMIcount = 0;
+    }
+
+    protected void InitMaskedWorkers() {
+        for (int i = 0; i < NUMMASKEDTHREADS; i++) {
+            maskedworkers[i] =
+                new MaskedWorker(i, SCREENWIDTH, SCREENHEIGHT, ylookup,
+                        columnofs, NUMMASKEDTHREADS, screen, maskedbarrier);
+            detailaware.add(maskedworkers[i]);
+            // "Peg" to sprite manager.
+            maskedworkers[i].cacheSpriteManager(SM);
+        }
     
 }

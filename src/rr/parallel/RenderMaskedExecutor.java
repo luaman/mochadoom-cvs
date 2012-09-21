@@ -1,5 +1,7 @@
 package rr.parallel;
 
+import i.IDoomSystem;
+
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
@@ -7,56 +9,49 @@ import rr.IDetailAware;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DcFlags;
 import rr.drawfuns.DoomColumnFunction;
-
-import rr.drawfuns.R_DrawColumnBoomOpt;
-import rr.drawfuns.R_DrawColumnBoomOptLow;
+import rr.drawfuns.R_DrawColumnBoom;
+import rr.drawfuns.R_DrawColumnBoomLow;
+import rr.drawfuns.R_DrawFuzzColumn;
+import rr.drawfuns.R_DrawFuzzColumnLow;
+import rr.drawfuns.R_DrawTranslatedColumn;
+import rr.drawfuns.R_DrawTranslatedColumnLow;
 
 /**
  * This is what actual executes the RenderWallInstruction. Essentially it's a
  * self-contained column rendering function.
  * 
+ * Note: this one scales "cleanly" to generics, doesn't need HiColor/Indexed hacks.
+ * 
  * @author admin
  */
 
-public class RenderMaskedExecutor
+public abstract class RenderMaskedExecutor<T,V>
         implements Runnable,IDetailAware {
 
-    private CyclicBarrier barrier;
+    protected CyclicBarrier barrier;
 
-    private ColVars<byte[],short[]>[] RMI;
+    protected ColVars<T,V>[] RMI;
     
-    private int rmiend;
+    protected int rmiend;
 
-    private boolean lowdetail=false;
+    protected boolean lowdetail=false;
     
-    private int start, end;
+    protected int start, end;
 
-    private final DoomColumnFunction<byte[],short[]> colfunchi, colfunclow;
-    private final DoomColumnFunction<byte[],short[]> fuzzfunchi, fuzzfunclow;
-    private final DoomColumnFunction<byte[],short[]> transfunchi, transfunclow;
+    protected DoomColumnFunction<T,V> colfunchi, colfunclow;
+    protected DoomColumnFunction<T,V> fuzzfunchi, fuzzfunclow;
+    protected DoomColumnFunction<T,V> transfunchi, transfunclow;
     
-    private DoomColumnFunction<byte[],short[]> colfunc;
+    protected DoomColumnFunction<T,V> colfunc;
 
-    public RenderMaskedExecutor(int SCREENWIDTH, int SCREENHEIGHT,
-            int[] columnofs, int[] ylookup, short[] screen,
-            ColVars<byte[],short[]>[] RMI, CyclicBarrier barrier,
-            DoomColumnFunction<byte[],short[]> colfunc,
-            DoomColumnFunction<byte[],short[]> colfunclo,
-            DoomColumnFunction<byte[],short[]> fuzzfunc,
-            DoomColumnFunction<byte[],short[]> fuzzfunclo,
-            DoomColumnFunction<byte[],short[]> transfunc,
-            DoomColumnFunction<byte[],short[]> transfunclo
+    public RenderMaskedExecutor(int SCREENWIDTH, int SCREENHEIGHT,            
+            ColVars<T,V>[] RMI, CyclicBarrier barrier
             ) {
         this.RMI = RMI;
         this.barrier = barrier;
         this.SCREENWIDTH = SCREENWIDTH;
         this.SCREENHEIGHT = SCREENHEIGHT;
-        this.colfunc =  colfunchi = colfunc;
-        this.fuzzfunchi=fuzzfunc;
-        this.colfunclow = colfunclo;
-        this.fuzzfunclow =fuzzfunclo;
-        this.transfunchi=transfunc;
-        this.transfunclow=transfunclo;
+
     }
 
     public void setRange(int start, int end) {
@@ -119,7 +114,7 @@ public class RenderMaskedExecutor
         this.rmiend=rmiend;
     }         
 
-    public void updateRMI(ColVars<byte[],short[]>[] RMI) {
+    public void updateRMI(ColVars<T,V>[] RMI) {
         this.RMI = RMI;
 
     }
@@ -136,5 +131,51 @@ public class RenderMaskedExecutor
      * this.SCREENHEIGHT=vs.getScreenHeight();
      * this.SCREENWIDTH=vs.getScreenWidth(); }
      */
+    
+    public static final class HiColor extends RenderMaskedExecutor<byte[],short[]>{
 
+        public HiColor(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
+                int[] ylookup, short[] screen, ColVars<byte[], short[]>[] RMI,
+                CyclicBarrier barrier,ColVars<byte[],short[]> maskedcvars,IDoomSystem I) {
+            super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
+            
+            // Regular masked columns
+            this.colfunc = new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.colfunclow = new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Fuzzy columns
+            this.fuzzfunchi= new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.fuzzfunclow =new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+
+            // Translated columns
+            this.transfunchi=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.transfunclow= new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+
+        }
+        
+    }
+    
+    public static final class Indexed extends RenderMaskedExecutor<byte[],byte[]>{
+
+        public Indexed(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
+                int[] ylookup, byte[] screen, ColVars<byte[], byte[]>[] RMI,
+                CyclicBarrier barrier,ColVars<byte[],byte[]> maskedcvars,IDoomSystem I,byte[] BLURRY_MAP) {
+            super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
+            
+            // Regular masked columns
+            this.colfunc = new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.colfunclow = new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Fuzzy columns
+            this.fuzzfunchi= new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            this.fuzzfunclow =new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+
+            // Translated columns
+            this.transfunchi=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.transfunclow= new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+
+        }
+        
+    }
+    
 }
