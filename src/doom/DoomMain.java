@@ -107,7 +107,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.103 2012/09/24 17:16:22 velktron Exp $
+// $Id: DoomMain.java,v 1.104 2012/09/24 22:36:49 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -133,7 +133,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.103 2012/09/24 17:16:22 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.104 2012/09/24 22:36:49 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -267,7 +267,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         // draw the view directly
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
         	if (flashing_hom){
-                V.FillRect((byte) (gametic%256),0,view.getViewWindowX(),view.getViewWindowY(),
+                V.FillRect(gametic%256,0,view.getViewWindowX(),view.getViewWindowY(),
                     view.getScaledViewWidth(),view.getScaledViewHeight());
         	    }
             R.RenderPlayerView (players[displayplayer]);
@@ -4553,6 +4553,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.104  2012/09/24 22:36:49  velktron
+//Fixed HOM detection.
+//
 //Revision 1.103  2012/09/24 17:16:22  velktron
 //Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //
