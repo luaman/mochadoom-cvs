@@ -69,7 +69,7 @@ public class DoomContext<T,V>{
     public IMusic IMUS;
     public DoomVideoInterface<V> VI;
     public AbstractStatusBar ST;
-    public DoomVideoRenderer<V> V;
+    public DoomVideoRenderer<T,V> V;
     public DoomSystemNetworking DNI;
     public IDoomGameNetworking DGN;
     public AbstractLevelLoader LL;
@@ -78,8 +78,8 @@ public class DoomContext<T,V>{
     public Renderer<T,V> R;
     public HU HU;
     public IAutoMap<T,V> AM;
-    public Finale<V> F;
-    public EndLevel WI;
+    public Finale<T> F;
+    public EndLevel<T,V> WI;
     public Wiper<T,V> WIPE;
     public TextureManager<T> TM;
     public ISpriteManager SM;

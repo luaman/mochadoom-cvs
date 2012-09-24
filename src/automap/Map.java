@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.34.2.3 2012/09/20 14:06:43 velktron Exp $
+// $Id: Map.java,v 1.34.2.4 2012/09/24 16:58:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.34.2.4  2012/09/24 16:58:06  velktron
+// TrueColor, Generics.
+//
 // Revision 1.34.2.3  2012/09/20 14:06:43  velktron
 // Generic automap
 //
@@ -195,12 +198,12 @@ public abstract class Map<T, V>
 
     DoomMain<T, V> DM;
 
-    DoomVideoRenderer<V> V;
+    DoomVideoRenderer<T,V> V;
 
     AbstractLevelLoader LL;
 
     public final String rcsid =
-        "$Id: Map.java,v 1.34.2.3 2012/09/20 14:06:43 velktron Exp $";
+        "$Id: Map.java,v 1.34.2.4 2012/09/24 16:58:06 velktron Exp $";
 
     // For use if I do walls with outsides/insides
 
@@ -1555,11 +1558,11 @@ public abstract class Map<T, V>
     }
 
     @Override
-    public void updateStatus(DoomStatus DC) {
-        this.V = DC.V;
+    public void updateStatus(DoomStatus<?,?> DC) {
+        this.V = (DoomVideoRenderer<T, V>) DC.V;
         this.W = DC.W;
         this.LL = DC.LL;
-        this.DM = DC.DM;
+        this.DM = (DoomMain<T, V>) DC.DM;
         this.ST = DC.ST;
     }
 
@@ -1614,6 +1617,22 @@ public abstract class Map<T, V>
 
         protected final void drawCrosshair(int color) {
             fb[(f_w * (f_h + 1)) / 2] = (byte) color; // single point for now
+        }
+    }
+            
+     public static final class TrueColor
+            extends Map<byte[], int[]> {
+
+        public TrueColor(DoomStatus<byte[], int[]> DS) {
+            super(DS);
+        }
+
+        protected final void PUTDOT(int xx, int yy, int cc) {
+            fb[(yy) * f_w + (xx)] = (int) (cc);
+        }
+
+        protected final void drawCrosshair(int color) {
+            fb[(f_w * (f_h + 1)) / 2] = (int) color; // single point for now
         }
     }
 

@@ -46,7 +46,7 @@ public abstract class AWTDoom<V> extends DoomFrame<V> {
 		 * 
 		 */
      
-        public AWTDoom(DoomMain<byte[],V> DM, DoomVideoRenderer<V> V) {
+        public AWTDoom(DoomMain<?,V> DM, DoomVideoRenderer<?,V> V) {
       		super(DM, V);
       		drawhere=new Canvas();
         // Don't do anything yet until InitGraphics is called.
@@ -85,7 +85,7 @@ public static final class HiColor extends AWTDoom<short[]>{
      */
     private static final long serialVersionUID = 1L;
 
-    public HiColor(DoomMain<byte[], short[]> DM, DoomVideoRenderer<short[]> V) {
+    public HiColor(DoomMain<?, short[]> DM, DoomVideoRenderer<?,short[]> V) {
         super(DM, V);
     }
 
@@ -148,7 +148,7 @@ public static final class Indexed extends AWTDoom<byte[]>{
      */
     private static final long serialVersionUID = 1L;
 
-    public Indexed(DoomMain<byte[], byte[]> DM, DoomVideoRenderer<byte[]> V) {
+    public Indexed(DoomMain<?,byte[]> DM, DoomVideoRenderer<?,byte[]> V) {
         super(DM, V);
     }
 
@@ -204,9 +204,75 @@ public static final class Indexed extends AWTDoom<byte[]>{
     }
 }
 
+public static final class TrueColor extends AWTDoom<int[]>{
+    
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+    public TrueColor(DoomMain<?, int[]> DM, DoomVideoRenderer<?,int[]> V) {
+        super(DM, V);
+    }
+
+    @Override
+    public void ReadScreen(int[] scr) {
+        System.arraycopy(this.RAWSCREEN, 0, scr, 0, RAWSCREEN.length);
+        }
+    
+    @Override
+    public void FinishUpdate() {
+        int     tics;
+        int     i;
+        
+        // draws little dots on the bottom of the screen
+        /*if (true)
+        {
+
+        i = I.GetTime();
+        tics = i - lasttic;
+        lasttic = i;
+        if (tics > 20) tics = 20;
+        if (tics < 1) tics = 1;
+
+        for (i=0 ; i<tics*2 ; i+=2)
+            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = (byte) 0xff;
+        for ( ; i<20*2 ; i+=2)
+            RAWSCREEN[ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
+        
+        } */
+
+        if (true)
+        {
+
+        i = TICK.GetTime();
+        tics = i - lasttic;
+        lasttic = i;
+        if (tics<1) 
+            frames++;
+        else
+        {
+        //frames*=35;
+        for (i=0 ; i<frames*2 ; i+=2)
+            RAWSCREEN[ (height-1)*width + i] = (short) 0xffff;
+        for ( ; i<20*2 ; i+=2)
+            RAWSCREEN[ (height-1)*width + i] = 0x0;
+        frames=0;
+        }
+        }
+
+        this.update(null);
+        //this.getInputContext().selectInputMethod(java.util.Locale.US);
+        
+    }
+}
+
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.14.2.5  2012/09/24 16:58:06  velktron
+//TrueColor, Generics.
+//
 //Revision 1.14.2.4  2012/09/20 14:06:58  velktron
 //Generic AWTDoom
 //

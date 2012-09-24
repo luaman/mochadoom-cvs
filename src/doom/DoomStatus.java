@@ -357,9 +357,9 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 
     // Fields used for selecting variable BPP implementations.
     
-    protected abstract Finale<V> selectFinale();
+    protected abstract Finale<T> selectFinale();
     
-    protected abstract DoomVideoRenderer<V> selectVideoRenderer();
+    protected abstract DoomVideoRenderer<T,V> selectVideoRenderer();
     
     protected abstract Renderer<T,V> selectRenderer();
     
@@ -685,6 +685,9 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.34.2.3  2012/09/24 16:58:06  velktron
+// TrueColor, Generics.
+//
 // Revision 1.34.2.2  2012/09/20 14:25:13  velktron
 // Unified DOOM!!!
 //

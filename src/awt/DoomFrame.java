@@ -30,11 +30,11 @@ import doom.event_t;
 
 /** Common code for Doom's video frames */
 
-public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface<K> {
+public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
-    protected K RAWSCREEN;
+    protected V RAWSCREEN;
     
-    public DoomFrame(DoomMain DM,DoomVideoRenderer<K> V) {
+    public DoomFrame(DoomMain<?,V> DM,DoomVideoRenderer<?,V> V) {
     	this.DM=DM;
     	this.CM=DM.CM;
     	this.TICK=DM.TICK;
@@ -59,10 +59,10 @@ public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface<
 	protected static final boolean D=false;
 	
 	// Must be aware of "Doom" so we can pass it event messages inside a crude queue.
-	public DoomMain DM;            // Must be aware of general status.
+	public DoomMain<?,V> DM;            // Must be aware of general status.
 	public ICommandLineManager CM; // Must be aware of command line interface.
 	protected IDoomSystem I;         // Must be aware of some other shit like event handler
-	protected DoomVideoRenderer<K> V;    // Must have a video renderer....
+	protected DoomVideoRenderer<?,V> V;    // Must have a video renderer....
 	protected ITicker TICK;          // Must be aware of the ticker/
 	protected MochaEvents eventhandler; // Separate event handler a la _D_.
 	                               // However I won't make it fully "eternity like" yet

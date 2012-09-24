@@ -84,6 +84,7 @@ import timing.NanoTicker;
 import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.BufferedRenderer16;
+import v.BufferedRenderer32;
 import v.DoomVideoRenderer;
 import v.GammaTables;
 import v.IVideoScale;
@@ -106,7 +107,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.101.2.10 2012/09/21 16:17:25 velktron Exp $
+// $Id: DoomMain.java,v 1.101.2.11 2012/09/24 16:58:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -132,7 +133,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.10 2012/09/21 16:17:25 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.101.2.11 2012/09/24 16:58:06 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -3130,7 +3131,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
    
     
-    protected void updateStatusHolders(DoomStatus DS){
+    protected void updateStatusHolders(DoomStatus<T,V> DS){
         for (DoomStatusAware dsa : status_holders){
             dsa.updateStatus(DS);
         }
@@ -4176,11 +4177,11 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             return new Map.HiColor(this);
         }
         
-        protected final Finale<short[]> selectFinale(){
-            return new Finale<short[]>(this);
+        protected final Finale<byte[]> selectFinale(){
+            return new Finale<byte[]>(this);
         }
         
-        protected final DoomVideoRenderer<short[]> selectVideoRenderer(){
+        protected final DoomVideoRenderer<byte[],short[]> selectVideoRenderer(){
             return new BufferedRenderer16(SCREENWIDTH,SCREENHEIGHT);
         }
         
@@ -4308,7 +4309,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             return new Finale<byte[]>(this);
         }
         
-        protected final DoomVideoRenderer<byte[]> selectVideoRenderer(){
+        protected final DoomVideoRenderer<byte[],byte[]> selectVideoRenderer(){
             return new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
         }
         
@@ -4413,17 +4414,148 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
            I.Error ("M_ScreenShot: Couldn't create a PNG");
 
            // save the pcx file
-           MenuMisc.WritePCXfile (lbmname, linear,
-                 SCREENWIDTH, SCREENHEIGHT,new byte[256]);
+           MenuMisc.WritePNGfile(lbmname, linear,
+                 SCREENWIDTH, SCREENHEIGHT,V.getPalette());
 
            players[consoleplayer].message = "screen shot";
        }
         
     }
+ 
+    public static final class TrueColor extends DoomMain<byte[], int[]>{
+        
+        public TrueColor(){
+            super();
+        }
+        
+        protected IAutoMap<byte[], int[]> selectAutoMap() {
+            return new Map.TrueColor(this);
+        }
+        
+        protected final Finale<byte[]> selectFinale(){
+            return new Finale<byte[]>(this);
+        }
+        
+        protected final DoomVideoRenderer<byte[],int[]> selectVideoRenderer(){
+            return new BufferedRenderer32(SCREENWIDTH,SCREENHEIGHT);
+        }
+        
+        protected final DoomVideoInterface<int[]> selectVideoInterface(){
+            return new AWTDoom.TrueColor(this,V);
+        }
+        
+        protected final Wiper<byte[],int[]> selectWiper(){
+            return new Wiper.TrueColor(this);
+        }
+        
+        protected final Renderer<byte[],int[]> selectRenderer() {
+            // Serial or parallel renderer (serial is default, but can be forced)
+            if (eval(CM.CheckParm("-serialrenderer"))){
+                return new UnifiedRenderer.TrueColor(this);    
+            } else 
+                // Parallel. Either with default values (2,1) or user-specified.
+                if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
+                    int p = CM.CheckParm ("-parallelrenderer");
+                    if (p<1) p=CM.CheckParm("-parallelrenderer2");
+                    
+                    if (p < CM.getArgc()-1)
+                    {
+                        // Next THREE args must be numbers.
+                        int walls=1, floors=1,masked=2;
+                        startmap = Integer.parseInt(CM.getArgv(p+1));
+                        // Try parsing walls.
+                        try {
+                            walls=Integer.parseInt(CM.getArgv(p+1));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // Try parsing floors. If wall succeeded, but floors
+                        // not, it will default to 1.
+                        try {
+                            floors=Integer.parseInt(CM.getArgv(p+2));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+                        
+                        try {
+                            masked=Integer.parseInt(CM.getArgv(p+3));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // In the worst case, we will use the defaults.
+                        if  (CM.CheckParmBool("-parallelrenderer"))
+                            // TODO: temporarily disabled
+                            return new UnifiedRenderer.TrueColor(this);   
+                       //     return (Renderer<byte[], short[]>) new ParallelRenderer(this,walls,floors,masked);
+                       // else
+                       //     return (Renderer<byte[], short[]>) new ParallelRenderer2(this,walls,floors,masked);
+                    }
+                } else {
+                    // Force serial
+                    return new UnifiedRenderer.TrueColor(this);   
+                }
+            
+            return null;
+        }
+
+        /**
+        *  M_Screenshot
+        *  
+        *  Currently saves PCX screenshots, and only in devparm.
+        *  Very oldschool ;-)
+        *  
+        *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
+        *  messages, option to save as either PCX or PNG. Also, request
+        *  current palette from VI (otherwise gamma settings and palette effects
+        *  don't show up).
+        *  
+        */
+
+       public void ScreenShot ()
+       {
+           int     i;
+           int[]  linear;
+           String format=new String("DOOM%d%d%d%d.png");
+           String lbmname = null;
+           
+           // munge planar buffer to linear
+           linear = (int[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
+           VI.ReadScreen (linear);
+
+           // find a file name to save it to
+           
+           int[] digit=new int[4];
+           
+           for (i=0 ; i<=9999 ; i++)
+           {
+           digit[0] = ((i/1000 )%10);
+           digit[1] =  ((i/100)%10);
+           digit[2] =  ((i/10)%10);
+           digit[3] =  (i%10);
+           lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
+           if (!C2JUtils.testReadAccess(lbmname))
+               break;  // file doesn't exist
+           }
+           if (i==10000)
+           I.Error ("M_ScreenShot: Couldn't create a PNG");
+
+           // save the pcx file
+           MenuMisc.WritePNGfile (lbmname, linear,
+                 SCREENWIDTH, SCREENHEIGHT);
+
+           players[consoleplayer].message = "screen shot";
+       }
+
+    }
     
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.101.2.11  2012/09/24 16:58:06  velktron
+//TrueColor, Generics.
+//
 //Revision 1.101.2.10  2012/09/21 16:17:25  velktron
 //More generic.
 //
