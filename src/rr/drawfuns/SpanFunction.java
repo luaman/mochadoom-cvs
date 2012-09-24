@@ -6,9 +6,9 @@ package rr.drawfuns;
  *
  */
 
-public interface SpanFunction<T> {
+public interface SpanFunction<T,V> {
     public void invoke();
     
-	public void invoke(SpanVars<T> dsvars);
+	public void invoke(SpanVars<T,V> dsvars);
 
 }

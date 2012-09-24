@@ -21,7 +21,6 @@ import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
 import s.IDoomSound;
-import st.IDoomStatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.IWadLoader;
@@ -45,19 +44,17 @@ public abstract class AbstractLevelLoader
 
     // ///////////////// Status objects ///////////////////
 
-    IDoomStatusBar ST;
-
     IDoomSystem I;
 
     IWadLoader W;
 
-    DoomStatus DM;
+    DoomStatus<?,?> DM;
 
-    DoomVideoRenderer<?> V;
+    DoomVideoRenderer<?,?> V;
 
-    Renderer<?> R;
+    Renderer<?,?> R;
 
-    TextureManager TM;
+    TextureManager<?> TM;
 
     Actions P;
 
@@ -144,12 +141,12 @@ public abstract class AbstractLevelLoader
 
     protected mapthing_t[] playerstarts = new mapthing_t[Limits.MAXPLAYERS];
 
-    public AbstractLevelLoader(DoomStatus DC) {
+    public AbstractLevelLoader(DoomStatus<?,?> DC) {
         this.updateStatus(DC);
     }
 
     @Override
-    public void updateStatus(DoomStatus DC) {
+    public void updateStatus(DoomStatus<?,?> DC) {
         this.W = DC.W;
         this.DM = DC;
         this.P = DC.P;
@@ -169,8 +166,8 @@ public abstract class AbstractLevelLoader
     public void SetThingPosition(mobj_t thing) {
         final subsector_t ss;
         final sector_t sec;
-        final int blockx;
-        final int blocky;
+        int blockx;
+        int blocky;
         final mobj_t link;
 
         // link into subsector
@@ -280,8 +277,9 @@ public abstract class AbstractLevelLoader
      * @param blockno
      * @param lineno
      */
-    protected void AddBlockLine(linelist_t[] lists, int[] count,
+    private final void AddBlockLine(linelist_t[] lists, int[] count,
             boolean[] done, int blockno, int lineno) {
+        long a=System.nanoTime();
         linelist_t l;
 
         if (done[blockno])
@@ -293,8 +291,13 @@ public abstract class AbstractLevelLoader
         lists[blockno] = l;
         count[blockno]++;
         done[blockno] = true;
+        long b=System.nanoTime();
+        
+        total+=(b-a);
     }
 
+    long total=0;
+    
     /**
      * Actually construct the blockmap lump from the level data This finds the
      * intersection of each linedef with the column and row lines at the left
@@ -573,6 +576,7 @@ public abstract class AbstractLevelLoader
         long b = System.nanoTime();
 
         System.err.printf("Blockmap generated in %f sec\n", (b - a) / 1e9);
+        System.err.printf("Time spend in AddBlockLine : %f sec\n", total / 1e9);
     }
 
     // jff 10/6/98

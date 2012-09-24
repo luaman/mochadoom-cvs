@@ -1,7 +1,9 @@
 package doom;
 
+import i.DiskDrawer;
 import i.DoomStatusAware;
 import i.DoomSystem;
+import i.DoomVideoInterface;
 import i.Strings;
 
 import java.io.BufferedInputStream;
@@ -20,8 +22,8 @@ import n.DummyNetworkDriver;
 import static data.dstrings.*;
 import p.Actions;
 import p.BoomLevelLoader;
-import p.LevelLoader;
 import p.mobj_t;
+import automap.IAutoMap;
 import automap.Map;
 import awt.AWTDoom;
 import f.EndLevel;
@@ -31,6 +33,7 @@ import hu.HU;
 import m.Menu;
 import m.MenuMisc;
 import m.DoomRandom;
+import m.VarsManager;
 import static doom.NetConsts.*;
 import static doom.englsh.*;
 import data.Tables;
@@ -49,12 +52,14 @@ import static g.Keys.*;
 import static data.Defines.NORMALUNIX;
 import static data.Defines.PU_STATIC;
 import static data.Defines.VERSION;
-import rr.ParallelRenderer;
-import rr.ParallelRenderer2;
+import rr.Renderer;
 import rr.SimpleTextureManager;
 import rr.SpriteManager;
 import rr.UnifiedRenderer;
+import rr.ViewVars;
 import rr.subsector_t;
+import rr.parallel.ParallelRenderer;
+import rr.parallel.ParallelRenderer2;
 import s.AbstractDoomAudio;
 import s.ClassicDoomSoundDriver;
 import s.ClipSFXModule;
@@ -78,14 +83,13 @@ import timing.MilliTicker;
 import timing.NanoTicker;
 import utils.C2JUtils;
 import v.BufferedRenderer;
+import v.BufferedRenderer16;
+import v.BufferedRenderer32;
 import v.DoomVideoRenderer;
 import v.GammaTables;
-import v.HiColorRenderer555;
-import v.HiColorRenderer565;
 import v.IVideoScale;
 import v.IVideoScaleAware;
 import v.PaletteGenerator;
-import v.TrueColorRenderer;
 //import v.VideoScaleInfo;
 import v.VisualSettings;
 import w.DoomBuffer;
@@ -97,14 +101,13 @@ import static data.dstrings.SAVEGAMENAME;
 import static data.info.mobjinfo;
 import static data.info.states;
 import static m.fixed_t.FRACBITS;
-import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.MAPFRACUNIT;
 import static utils.C2JUtils.*;
 
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.102 2011/12/05 12:33:52 velktron Exp $
+// $Id: DoomMain.java,v 1.103 2012/09/24 17:16:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -128,9 +131,9 @@ import static utils.C2JUtils.*;
 //
 //-----------------------------------------------------------------------------
 
-public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
+public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.102 2011/12/05 12:33:52 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.103 2012/09/24 17:16:22 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -240,10 +243,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 break;
             if (automapactive)
                 AM.Drawer ();
-            if (wipe || (!R.isFullHeight() && fullscreen) )
-                redrawsbar = true;
-            if (inhelpscreensstate && !inhelpscreens)
-                redrawsbar = true;              // just put away the help screen
+            if (wipe || (!R.isFullHeight() && fullscreen) ||
+            		(inhelpscreensstate && !inhelpscreens)
+            		|| (DD.justDoneReading()))
+                redrawsbar = true; // just put away the help screen
             ST.Drawer (R.isFullHeight(), redrawsbar );
             fullscreen = R.isFullHeight();
             break;
@@ -263,9 +266,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
         // draw the view directly
         if (gamestate == gamestate_t.GS_LEVEL && !automapactive && eval(gametic)){
-        	if (flashing_hom)
-                V.FillRect((byte) (gametic%256),0,R.getViewWindowX(),R.getViewWindowY(),
-                    R.getScaledViewWidth(),R.getScaledViewHeight());
+        	if (flashing_hom){
+                V.FillRect((byte) (gametic%256),0,view.getViewWindowX(),view.getViewWindowY(),
+                    view.getScaledViewWidth(),view.getScaledViewHeight());
+        	    }
             R.RenderPlayerView (players[displayplayer]);
         	}
 
@@ -308,8 +312,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             if (automapactive)
                 y = 4;
             else
-                y = R.getViewWindowY()+4;
-            V.DrawPatchDirect(R.getViewWindowX()+(R.getScaledViewWidth()-68)/2,
+                y = view.getViewWindowY()+4;
+            V.DrawPatchDirect(view.getViewWindowX()+(view.getScaledViewWidth()-68)/2,
                 y,0,W.CachePatchName ("M_PAUSE", PU_CACHE));
         }
 
@@ -318,7 +322,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         M.Drawer ();          // menu is drawn even on top of everything
         NetUpdate ();         // send out any new accumulation
 
-
+        // Disk access goes after everything.
+        DD.Drawer();
+        
         // normal update
         if (!wipe)
         {
@@ -383,8 +389,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
                 e.printStackTrace();
             }
         }
-
-        //AM.Start(); //_D_: not suposed to be here, see linuxdoom source
+        
+        view=R.getView();
+        
         while (true)
         {
             // frame syncronous IO operations
@@ -426,8 +433,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
              
         }
     }
-
-
+    
+    // To keep an "eye" on the renderer.
+    protected ViewVars view;
 
     //
     //  DEMO LOOP
@@ -643,6 +651,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             if (!eval(home))
                 I.Error("Please set $HOME to your home directory");
         }
+        
         basedefault=home+"/.doomrc";   
 
         // None found, using current.
@@ -772,11 +781,18 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
 
 
-    //
-    // D_DoomMain
-    //
-    @SuppressWarnings("deprecation")
-	public void Start () throws IOException
+    /**
+     * D_DoomMain
+     *
+     * Completes the job started by Init, which only created the
+     * instances of the various stuff and registered the "status aware" 
+     * stuff. Here everything priority-critical is 
+     * called and created in more detail.
+     *
+     *
+     */
+
+	public void Start() throws IOException
     {
         int             p;
         StringBuffer file=new StringBuffer();
@@ -1047,7 +1063,10 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         
 
         System.out.print ("M_LoadDefaults: Load system defaults.\n");
-        MenuMisc.LoadDefaults (this);              // load before initing other systems
+        
+        // load before initing other systems, but don't apply them yet.        
+        VM.LoadDefaults (DM.getDefaultFile());
+        
 
         System.out.print ("Z_Init: Init zone memory allocation daemon. \n");
         // DUMMY: Z_Init ();
@@ -1078,11 +1097,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         W.InjectLumpNum(pallump,new DoomBuffer(ByteBuffer.wrap(pal)));
         // set it, create it, but don't make it visible yet.
         
-        VI=new AWTDoom(this,(DoomVideoRenderer<byte[]>) V);
+        VI=selectVideoInterface();
 
         VI.InitGraphics();
-        
-        
 
         // MAES: Before we begin calling the various Init() stuff,
         // we need to make sure that objects that support the IVideoScaleAware
@@ -1095,6 +1112,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Since we're at it, let's update everything, it's easy!
         
         this.updateStatusHolders(this);
+        
+        // Update variables and stuff NOW.
+        this.update();
 
         // Check for -file in shareware
         CheckForPWADSInShareware();
@@ -1103,16 +1123,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         // Iff additonal PWAD files are used, print modified banner
         
         if (modifiedgame)
-        /*{
-
-            System.out.print (Strings.MODIFIED_GAME);
-            try {
-                System.in.read();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        } */
-
         // Generate WAD loading alert. Abort upon denial.
         if (!I.GenerateAlert(Strings.MODIFIED_GAME_TITLE,Strings.MODIFIED_GAME_DIALOG)) {
         	  W.CloseAllHandles();
@@ -1196,15 +1206,20 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 
             }
         
-        if (!CM.CheckParmBool("-nosound"))// Obviously, nomusic && nosfx = nosound.
+        // Check for sound init failure and revert to dummy
+        if (!ISND.InitSound()){
+        	 System.err.println ("S_InitSound: failed. Reverting to dummy...\n");
+        	this.ISND=new DummySFX();
+        }
+        
+        if (!(CM.CheckParmBool("-nosound") || (ISND instanceof DummySFX)))// Obviously, nomusic && nosfx = nosound.
         	this.S=new AbstractDoomAudio(this,numChannels);
         else
-        	// Saves a lot of distance calculations, if we're not to output
-        	// any sound at all.
+        	// Saves a lot of distance calculations, 
+        	// if we're not to output any sound at all.
             // TODO: create a Dummy that can handle music alone.
         	this.S=new DummySoundDriver();
         
-        ISND.InitSound();
         IMUS.InitMusic();
         S.Init (snd_SfxVolume *8, snd_MusicVolume *8 );
 
@@ -1221,8 +1236,8 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         p = CM.CheckParm ("-statcopy");
         if (eval(p) && p<CM.getArgc()-1)
         {
-
-            // TODO: statcopy = (void*)atoi(myargv[p+1]);
+            // TODO: this should be chained to a logger
+            //statcopy = CM.getArgv(p+1);
             System.out.print ("External statistics registered.\n");
         }
 
@@ -1234,6 +1249,9 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             RecordDemo (CM.getArgv(p+1));
             autostart = true;
         }
+        
+        // NOW it's safe to init the disk reader.
+        DD.Init();
 
         // MAES: at this point everything should be set and initialized, so it's
         // time to make the players aware of the general status of Doom.
@@ -1292,11 +1310,16 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             DoomLoop ();  // never returns
         }
 
+        
+        
         DoomLoop ();  // never returns
     }
 
 
-    private int parseAsMapXX(String argv) {
+	protected abstract DoomVideoInterface<V> selectVideoInterface();
+
+
+    protected int parseAsMapXX(String argv) {
     	
     	if (argv.length()!=5) return -1; // Nah.
     	if (argv.toLowerCase().lastIndexOf("map")!=0) return -1; // Meh.
@@ -1310,7 +1333,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
 		return map;
 	}
 
-    private int parseAsExMx(String argv) {
+    protected int parseAsExMx(String argv) {
     	
     	if (argv.length()!=4) return -1; // Nah.
     	if (argv.toLowerCase().lastIndexOf("e")!=0) return -1; // Meh.
@@ -1348,9 +1371,11 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         videoScaleChildren.add(this.ST);
         // Even the video renderer needs some initialization?
         videoScaleChildren.add(this.V);
-        // Even the video renderer needs some initialization?
+        // wiper
         videoScaleChildren.add(this.WI);
-
+        // disk drawer
+        videoScaleChildren.add(this.DD);
+        
         for(IVideoScaleAware i:videoScaleChildren){
             if (i!=null){
                 i.setVideoScale(this.vs);
@@ -1973,21 +1998,25 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
             return false;   // always let key up events filter down 
 
         case ev_mouse:
-
+            // Ignore them at the responder level
+            if (use_mouse){
             mousebuttons(0, ev.data1 & 1); 
             mousebuttons(1, ev.data1 & 2); 
             mousebuttons(2, ev.data1 & 4);
             mousex = ev.data2*(mouseSensitivity+5)/10; 
-            mousey = ev.data3*(mouseSensitivity+5)/10; 
+            mousey = ev.data3*(mouseSensitivity+5)/10;
+            }
             return true;    // eat events 
 
-        case ev_joystick: 
+        case ev_joystick:
+            if (use_joystick){
             joybuttons(0, ev.data1 & 1); 
             joybuttons(1, ev.data1 & 2); 
             joybuttons(2,ev.data1 & 4); 
             joybuttons(3,ev.data1 & 8); 
             joyxmove = ev.data2; 
             joyymove = ev.data3; 
+            }
             return true;    // eat events 
 
         default: 
@@ -2171,7 +2200,7 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
      *
      */
 
-    private void InitPlayer (int player) 
+    protected void InitPlayer (int player) 
     { 
         player_t   p; 
 
@@ -2321,57 +2350,6 @@ public class DoomMain extends DoomStatus implements IDoomGameNetworking, IDoomGa
         } 
     } 
 
-/**
- *  M_Screenshot
- *  
- *  Currently saves PCX screenshots, and only in devparm.
- *  Very oldschool ;-)
- *  
- *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
- *  messages, option to save as either PCX or PNG. Also, request
- *  current palette from VI (otherwise gamma settings and palette effects
- *  don't show up).
- *  
- */
-
-public void ScreenShot ()
-{
-    int     i;
-    byte[]  linear;
-    String format=new String("DOOM%c%c%c%c.pcx");
-    String lbmname = null;
-    
-    // munge planar buffer to linear
-    linear = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
-    VI.ReadScreen (linear);
-
-    // find a file name to save it to
-    
-    char[] digit=new char[4];
-    
-    for (i=0 ; i<=9999 ; i++)
-    {
-    digit[0] = (char) (i/1000 + '0');
-    digit[1] = (char) (i/100 + '0');
-    digit[2] = (char) (i/10 + '0');
-    digit[3] =  (char) (i%10 + '0');
-    lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
-    if (!C2JUtils.testWriteAccess(lbmname))
-        break;  // file doesn't exist
-    }
-    if (i==10000)
-    I.Error ("M_ScreenShot: Couldn't create a PCX");
-
-    // save the pcx file
-    MenuMisc.WritePCXfile (lbmname, linear,
-          SCREENWIDTH, SCREENHEIGHT,
-          W.CacheLumpNameAsRawBytes ("PLAYPAL",PU_CACHE));
-
-    players[consoleplayer].message = "screen shot";
-}
-
-
-
     /** DOOM Par Times [4][10] */
     final int[][] pars = 
     { 
@@ -2414,7 +2392,7 @@ public void ScreenShot ()
         gameaction =  gameaction_t.ga_completed; 
     } 
 
-    private void DoCompleted () 
+    protected void DoCompleted () 
     { 
         int             i; 
 
@@ -2618,17 +2596,18 @@ public void ScreenShot ()
 
             header.read(f);
             f.close();
-            
-            f=new DataInputStream(new FileInputStream(savename)); 
-
+    
             // skip the description field 
             vcheck.append("version ");
             vcheck.append(VERSION);
 
-            if (vcheck.toString().compareTo(header.getVersion())!=0) 
-                return;             // bad version 
+            if (vcheck.toString().compareTo(header.getVersion())!=0) {
+            	f.close();
+            	return; // bad version
+            }
 
-
+            // Ok so far, reopen stream.
+            f=new DataInputStream(new BufferedInputStream(new FileInputStream(savename)));        
             gameskill = header.getGameskill(); 
             gameepisode = header.getGameepisode(); 
             gamemap = header.getGamemap(); 
@@ -2640,6 +2619,7 @@ public void ScreenShot ()
             
             if (gameaction == gameaction_t.ga_failure) {
             	// failure to load. Abort.
+            	f.close();
             	return;
             }
 
@@ -2690,7 +2670,7 @@ public void ScreenShot ()
         sendsave = true; 
     } 
 
-    private void DoSaveGame () 
+    protected void DoSaveGame () 
     { 
      
         try{
@@ -2701,9 +2681,7 @@ public void ScreenShot ()
      IDoomSaveGameHeader header=new VanillaDSGHeader();
      IDoomSaveGame dsg=new VanillaDSG();
      dsg.updateStatus(this.DM);
-     int     length; 
-     int     i; 
-
+     
      if (eval(CM.CheckParm("-cdrom"))) {
          build.append("c:\\doomdata\\");
          build.append(SAVEGAMENAME);
@@ -2908,7 +2886,7 @@ public void ScreenShot ()
         if (!DoLoadLevel ()) levelLoadFailure();
     } 
 
-    private void levelLoadFailure(){
+    protected void levelLoadFailure(){
     	boolean endgame=I.GenerateAlert(Strings.LEVEL_FAILURE_TITLE, Strings.LEVEL_FAILURE_CAUSE);
     	
     	if (endgame){         	// Initiate endgame
@@ -2977,21 +2955,13 @@ public void ScreenShot ()
      */ 
     public void RecordDemo (String name) 
     { 
-        int             i; 
-        // int             maxsize;
 
         StringBuffer buf=new StringBuffer();
         usergame = false; 
         buf.append(name); 
         buf.append(".lmp");
         demoname=buf.toString();
-        // maxsize = 0x20000;
-        i = CM.CheckParm ("-maxdemo");
-        // if (i!=0 && i<CM.getArgc()-1)
-        // maxsize = Integer.parseInt(myargv[i+1])*1024;
         demobuffer = new VanillaDoomDemo(); 
-        //demoend = maxsize;
-
         demorecording = true; 
     } 
 
@@ -3025,17 +2995,24 @@ public void ScreenShot ()
     public void DoPlayDemo () 
     { 
 
-        skill_t skill; 
+        skill_t skill;
+        boolean fail=false;
         int             i, episode, map; 
 
         gameaction = gameaction_t.ga_nothing;
         // MAES: Yeah, it's OO all the way now, baby ;-)
+        try {
         demobuffer = (IDoomDemo) W.CacheLumpName(defdemoname.toUpperCase(), PU_STATIC,VanillaDoomDemo.class);
+        } catch (Exception e){
+            fail=true;
+        }
+        
+        fail=(demobuffer.getSkill()==null);
 
-        if (demobuffer.getVersion()!= VERSION)
+        if (fail || demobuffer.getVersion()!= VERSION)
         {
             System.err.println("Demo is from a different game version!\n");
-            System.err.println("Read "+demobuffer.getVersion());
+            System.err.println("Version code read: "+demobuffer.getVersion());
             gameaction = gameaction_t.ga_nothing;
             return;
         }
@@ -3101,10 +3078,11 @@ public void ScreenShot ()
             // killough -- added fps information and made it work for longer demos:
             long realtics=endtime-starttime;    
             
-            MenuMisc.SaveDefaults(this);
+            this.commit();
+            VM.SaveDefaults(DM.getDefaultFile());
             I.Error ("timed %d gametics in %d realtics = %f frames per second",gametic 
                 , realtics, gametic*(double)(TICRATE)/realtics); 
-        } 
+        }
 
         if (demoplayback) 
         {
@@ -3139,109 +3117,21 @@ public void ScreenShot ()
     } 
 
     /** This should always be available for real timing */
-    private ITicker RealTime;
+    protected ITicker RealTime;
     
     public DoomMain(){
         // Init game status...
         super();
         C2JUtils.initArrayOfObjects(events,event_t.class);
         this.I=new DoomSystem();
-        //_D_: this needed to be removed, and isnt here in the linuxdoom source
-        // this is because some variables are null at this point so we cant init the doomsystem yet
-        //I.Init();
         gamestate=gamestate_t.GS_DEMOSCREEN;        
         
         this.RealTime=new MilliTicker();
     }
 
-    /**
-     * Since this is a fully OO implementation, we need a way to create
-     * the instances of the Refresh daemon, the Playloop, the Wadloader 
-     * etc. which however are now completely independent of each other
-     * (well, ALMOST), and are typically only passed context when 
-     * instantiated.
-     * 
-     *  If you instantiate one too early, it will have null context.
-     *  
-     *  The trick is to construct objects in the correct order. Some of
-     *  them have Init() methods which are NOT yet safe to call.
-     *  
-     *  FIXME: Probably I should add a sort of deferred status update?
-     * 
-     * */
-
-    public void Init(){
-       
-        // The various objects that need to "sense" the global status
-        // end up here. This allows one-call updates.
-        status_holders=new ArrayList<DoomStatusAware>();
-        
-        // Doommain is both "main" and handles most of the game status.
-        this.DM=this;
-        this.DG = this;
-        this.DGN=this; // DoomMain also handles its own Game Networking.
-             
-        // Set ticker. It is a shared status object, but not a holder itself.
-        if (eval(CM.CheckParm("-millis"))){
-
-            TICK=new MilliTicker();
-        }
-        else if (eval(CM.CheckParm("-fasttic"))){
-            TICK=new FastTicker();
-        } else {
-            TICK=new NanoTicker();
-        }
-        
-        // Network "driver"
-        status_holders.add((DoomStatusAware) (this.DNI=new DummyNetworkDriver(this)));
-        
-        // Random number generator, but we can have others too.
-        this.RND=new DoomRandom();
-        
-        // Sound can be left until later, in Start
-
-        this.W=new WadLoader(this.I); // The wadloader is a "weak" status holder.
-        status_holders.add(this.WIPE=new Wiper(this));   
-
-        // Then the menu...
-        status_holders.add(this.HU=new HU(this));
-        status_holders.add(this.M=new Menu(this));
-        status_holders.add(this.LL=new BoomLevelLoader(this));
-        
-        // This will set R.
-        selectRenderer();
-        status_holders.add(this.R);
-        status_holders.add((this.P=new Actions(this)));
-        status_holders.add(this.ST=new StatusBar(this));
-        status_holders.add(this.AM=new Map(this)); // Call Init later.
-        this.TM=new SimpleTextureManager(this);
-        this.SM=new SpriteManager(this);
-
-        //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
-        // it seems to fit perfectly here
-        status_holders.add(this.WI = new EndLevel(this));    
-        status_holders.add(this.F = new Finale(this));
-        
-        // TODO: find out if we have requests for a specific resolution,
-        // and try honouring them as closely as possible.       
-
-        // 23/5/2011: Experimental dynamic resolution subsystem
-        vs=VisualSettings.parse(CM);
-        
-        // Initializing actually sets drawing positions, constants,
-        // etc. for main. Children will be set later in Start().
-        this.initScaling();
-        
-        this.V=new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
-
-        status_holders.add((DoomStatusAware) this.I);
-        status_holders.add((DoomStatusAware) this.V);
-        updateStatusHolders(this);
-
-
-    }
+   
     
-    private void updateStatusHolders(DoomStatus DS){
+    protected void updateStatusHolders(DoomStatus<T,V> DS){
         for (DoomStatusAware dsa : status_holders){
             dsa.updateStatus(DS);
         }
@@ -3250,57 +3140,9 @@ public void ScreenShot ()
     /** A list with objects that do hold status and need to be aware of 
      *  it.
      */
-    private List<DoomStatusAware> status_holders;
+    protected List<DoomStatusAware> status_holders;
 
-    protected void selectRenderer() {
-        // Serial or parallel renderer (serial is default, but can be forced)
-        if (eval(CM.CheckParm("-serialrenderer"))){
-            this.R=new UnifiedRenderer(this);    
-        } else 
-
-            // Parallel. Either with default values (2,1) or user-specified.
-            if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
-                int p = CM.CheckParm ("-parallelrenderer");
-                if (p<1) p=CM.CheckParm("-parallelrenderer2");
-                
-                if (p < CM.getArgc()-1)
-                {
-                    // Next THREE args must be numbers.
-                    int walls=1, floors=1,masked=2;
-                    startmap = Integer.parseInt(CM.getArgv(p+1));
-                    // Try parsing walls.
-                    try {
-                        walls=Integer.parseInt(CM.getArgv(p+1));
-                    } catch (Exception e){
-                        // OK, move on anyway.
-                    }
-
-                    // Try parsing floors. If wall succeeded, but floors
-                    // not, it will default to 1.
-                    try {
-                        floors=Integer.parseInt(CM.getArgv(p+2));
-                    } catch (Exception e){
-                        // OK, move on anyway.
-                    }
-                    
-                    try {
-                        masked=Integer.parseInt(CM.getArgv(p+3));
-                    } catch (Exception e){
-                        // OK, move on anyway.
-                    }
-
-                    // In the worst case, we will use the defaults.
-                    if  (CM.CheckParmBool("-parallelrenderer"))
-                        this.R=new ParallelRenderer(this,walls,floors,masked);
-                    else
-                        this.R=new ParallelRenderer2(this,walls,floors);
-                }
-            } else {
-                // Force serial
-                this.R=new UnifiedRenderer(this);   
-            }
-    }
-
+ 
 
 
     /* Since it's so intimately tied, it's less troublesome to merge the "main" and "network"
@@ -3312,7 +3154,7 @@ public void ScreenShot ()
     /** To be initialized by the DoomNetworkingInterface via a setter */
     //private  doomcom_t   doomcom;   
     //private  doomdata_t  netbuffer;      // points inside doomcom
-    private StringBuilder sb=new StringBuilder();
+    protected StringBuilder sb=new StringBuilder();
 
 
     //
@@ -3339,7 +3181,7 @@ public void ScreenShot ()
     int             maketic;
     int     lastnettic;
     int     skiptics;
-    private int     ticdup;
+    protected int     ticdup;
 
 
     public int getTicdup() {
@@ -3717,7 +3559,7 @@ public void ScreenShot ()
         }
     }
 
-    private void logger(OutputStreamWriter debugfile, String string) {
+    protected void logger(OutputStreamWriter debugfile, String string) {
     		try {
 				debugfile.write(string);
 			} catch (IOException e) {
@@ -4227,216 +4069,499 @@ public void ScreenShot ()
         }
         return false;
     }
+    
+    /**
+     * Since this is a fully OO implementation, we need a way to create
+     * the instances of the Refresh daemon, the Playloop, the Wadloader 
+     * etc. which however are now completely independent of each other
+     * (well, ALMOST), and are typically only passed context when 
+     * instantiated.
+     * 
+     *  If you instantiate one too early, it will have null context.
+     *  
+     *  The trick is to construct objects in the correct order. Some of
+     *  them have Init() methods which are NOT yet safe to call.
+     *  
+     *  FIXME: Probably I should add a sort of deferred status update?
+     * 
+     */
 
+    public void Init(){
+       
+        // The various objects that need to "sense" the global status
+        // end up here. This allows one-call updates.
+        status_holders=new ArrayList<DoomStatusAware>();
+        
+        // Doommain is both "main" and handles most of the game status.
+        this.DM=this;
+        this.DG = this;
+        this.DGN=this; // DoomMain also handles its own Game Networking.
+        // Handles variables and settings.
+        this.VM=new VarsManager();
+             
+        // Set ticker. It is a shared status object, but not a holder itself.
+        if (eval(CM.CheckParm("-millis"))){
+
+            TICK=new MilliTicker();
+        }
+        else if (eval(CM.CheckParm("-fasttic"))){
+            TICK=new FastTicker();
+        } else {
+            TICK=new NanoTicker();
+        }
+        
+        // Network "driver"
+        status_holders.add((DoomStatusAware) (this.DNI=new DummyNetworkDriver(this)));
+        
+        // Random number generator, but we can have others too.
+        this.RND=new DoomRandom();
+        
+        // Sound can be left until later, in Start
+
+        this.W=new WadLoader(this.I); // The wadloader is a "weak" status holder.
+        status_holders.add(this.WIPE=selectWiper());   
+
+        // Then the menu...
+        status_holders.add(this.HU=new HU(this));
+        status_holders.add(this.M=new Menu(this));
+        status_holders.add(this.LL=new BoomLevelLoader(this));
+        
+        // This will set R.
+        this.R= selectRenderer();
+        status_holders.add(this.R);
+        status_holders.add((this.P=new Actions(this)));
+        status_holders.add(this.ST=new StatusBar(this));
+        status_holders.add(this.AM=selectAutoMap()); // Call Init later.
+        // Let the renderer pick its own. It makes linking easier.
+        this.TM=R.getTextureManager();
+        this.SM=new SpriteManager(this);
+
+        //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
+        // it seems to fit perfectly here
+        status_holders.add(this.WI = new EndLevel(this));    
+        status_holders.add(this.F = selectFinale());
+        
+        // TODO: find out if we have requests for a specific resolution,
+        // and try honouring them as closely as possible.       
+
+        // 23/5/2011: Experimental dynamic resolution subsystem
+        vs=VisualSettings.parse(CM);
+        
+        // Initializing actually sets drawing positions, constants,
+        // etc. for main. Children will be set later in Start().
+        this.initScaling();
+        
+        this.V=selectVideoRenderer();
+
+        status_holders.add((DoomStatusAware) this.I);
+        status_holders.add((DoomStatusAware) this.V);
+        
+        // Disk access visualizer
+        
+        status_holders.add((DoomStatusAware) (this.DD=new DiskDrawer(this,DiskDrawer.STDISK)));
+        
+        updateStatusHolders(this);
+
+
+    }
+    
+
+
+    public static final class HiColor extends DoomMain<byte[], short[]>{
+    
+        public HiColor(){
+            super();
+        }
+        
+        protected IAutoMap<byte[], short[]> selectAutoMap() {
+            return new Map.HiColor(this);
+        }
+        
+        protected final Finale<byte[]> selectFinale(){
+            return new Finale<byte[]>(this);
+        }
+        
+        protected final DoomVideoRenderer<byte[],short[]> selectVideoRenderer(){
+            return new BufferedRenderer16(SCREENWIDTH,SCREENHEIGHT);
+        }
+        
+        protected final DoomVideoInterface<short[]> selectVideoInterface(){
+            return new AWTDoom.HiColor(this,V);
+        }
+        
+        protected final Wiper<byte[],short[]> selectWiper(){
+            return new Wiper.HiColor(this);
+        }
+        
+        protected final Renderer<byte[],short[]> selectRenderer() {
+            // Serial or parallel renderer (serial is default, but can be forced)
+            if (eval(CM.CheckParm("-serialrenderer"))){
+                return new UnifiedRenderer.HiColor(this);    
+            } else 
+                // Parallel. Either with default values (2,1) or user-specified.
+                if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
+                    int p = CM.CheckParm ("-parallelrenderer");
+                    if (p<1) p=CM.CheckParm("-parallelrenderer2");
+                    
+                    if (p < CM.getArgc()-1)
+                    {
+                        // Next THREE args must be numbers.
+                        int walls=1, floors=1,masked=2;
+                        startmap = Integer.parseInt(CM.getArgv(p+1));
+                        // Try parsing walls.
+                        try {
+                            walls=Integer.parseInt(CM.getArgv(p+1));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // Try parsing floors. If wall succeeded, but floors
+                        // not, it will default to 1.
+                        try {
+                            floors=Integer.parseInt(CM.getArgv(p+2));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+                        
+                        try {
+                            masked=Integer.parseInt(CM.getArgv(p+3));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // In the worst case, we will use the defaults.
+                        if  (CM.CheckParmBool("-parallelrenderer"))
+                            // TODO: temporarily disabled
+                            return new UnifiedRenderer.HiColor(this);   
+                       //     return (Renderer<byte[], short[]>) new ParallelRenderer(this,walls,floors,masked);
+                       // else
+                       //     return (Renderer<byte[], short[]>) new ParallelRenderer2(this,walls,floors,masked);
+                    }
+                } else {
+                    // Force serial
+                    return new UnifiedRenderer.HiColor(this);   
+                }
+            
+            return null;
+        }
+
+        /**
+        *  M_Screenshot
+        *  
+        *  Currently saves PCX screenshots, and only in devparm.
+        *  Very oldschool ;-)
+        *  
+        *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
+        *  messages, option to save as either PCX or PNG. Also, request
+        *  current palette from VI (otherwise gamma settings and palette effects
+        *  don't show up).
+        *  
+        */
+
+       public void ScreenShot ()
+       {
+           int     i;
+           short[]  linear;
+           String format=new String("DOOM%d%d%d%d.png");
+           String lbmname = null;
+           
+           // munge planar buffer to linear
+           linear = (short[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
+           VI.ReadScreen (linear);
+
+           // find a file name to save it to
+           
+           int[] digit=new int[4];
+           
+           for (i=0 ; i<=9999 ; i++)
+           {
+           digit[0] = ((i/1000 )%10);
+           digit[1] =  ((i/100)%10);
+           digit[2] =  ((i/10)%10);
+           digit[3] =  (i%10);
+           lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
+           if (!C2JUtils.testReadAccess(lbmname))
+               break;  // file doesn't exist
+           }
+           if (i==10000)
+           I.Error ("M_ScreenShot: Couldn't create a PNG");
+
+           // save the pcx file
+           MenuMisc.WritePNGfile (lbmname, linear,
+                 SCREENWIDTH, SCREENHEIGHT);
+
+           players[consoleplayer].message = "screen shot";
+       }
+
+    }
+    
+    public static final class Indexed extends DoomMain<byte[], byte[]>{
+        
+        public Indexed(){
+            super();
+        }
+        
+        protected IAutoMap<byte[], byte[]> selectAutoMap() {
+            return new Map.Indexed(this);
+        }
+        
+        protected final Finale<byte[]> selectFinale(){
+            return new Finale<byte[]>(this);
+        }
+        
+        protected final DoomVideoRenderer<byte[],byte[]> selectVideoRenderer(){
+            return new BufferedRenderer(SCREENWIDTH,SCREENHEIGHT);
+        }
+        
+        protected final DoomVideoInterface<byte[]> selectVideoInterface(){
+            return new AWTDoom.Indexed(this,V);
+        }
+        
+        protected final Wiper<byte[],byte[]> selectWiper(){
+            return new Wiper.Indexed(this);
+        }        
+        protected final Renderer<byte[],byte[]> selectRenderer() {
+            // Serial or parallel renderer (serial is default, but can be forced)
+            if (eval(CM.CheckParm("-serialrenderer"))){
+                return new UnifiedRenderer.Indexed(this);    
+            } else 
+                // Parallel. Either with default values (2,1) or user-specified.
+                if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
+                    int p = CM.CheckParm ("-parallelrenderer");
+                    if (p<1) p=CM.CheckParm("-parallelrenderer2");
+                    
+                    if (p < CM.getArgc()-1)
+                    {
+                        // Next THREE args must be numbers.
+                        int walls=1, floors=1,masked=2;
+                        startmap = Integer.parseInt(CM.getArgv(p+1));
+                        // Try parsing walls.
+                        try {
+                            walls=Integer.parseInt(CM.getArgv(p+1));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // Try parsing floors. If wall succeeded, but floors
+                        // not, it will default to 1.
+                        try {
+                            floors=Integer.parseInt(CM.getArgv(p+2));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+                        
+                        try {
+                            masked=Integer.parseInt(CM.getArgv(p+3));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // In the worst case, we will use the defaults.
+                        if  (CM.CheckParmBool("-parallelrenderer"))                            
+                            // TODO: temporarily disabled
+                            return new UnifiedRenderer.Indexed(this);   
+                            //return new ParallelRenderer(this,walls,floors,masked);
+                        //else
+                          //  return new ParallelRenderer2(this,walls,floors,masked);
+                    }
+                } else {
+                    // Force serial
+                    return new UnifiedRenderer.Indexed(this);   
+                }
+            
+            return null;
+        }
+
+        /**
+        *  M_Screenshot
+        *  
+        *  Currently saves PCX screenshots, and only in devparm.
+        *  Very oldschool ;-)
+        *  
+        *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
+        *  messages, option to save as either PCX or PNG. Also, request
+        *  current palette from VI (otherwise gamma settings and palette effects
+        *  don't show up).
+        *  
+        */
+
+       public void ScreenShot ()
+       {
+           int     i;
+           byte[]  linear;
+           String format=new String("DOOM%d%d%d%d.png");
+           String lbmname = null;
+           
+           // munge planar buffer to linear
+           linear = (byte[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
+           VI.ReadScreen (linear);
+
+           // find a file name to save it to
+           
+           int[] digit=new int[4];
+           
+           for (i=0 ; i<=9999 ; i++)
+           {
+           digit[0] = ((i/1000 )%10);
+           digit[1] =  ((i/100)%10);
+           digit[2] =  ((i/10)%10);
+           digit[3] =  (i%10);
+           lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
+           if (!C2JUtils.testReadAccess(lbmname))
+               break;  // file doesn't exist
+           }
+           if (i==10000)
+           I.Error ("M_ScreenShot: Couldn't create a PNG");
+
+           // save the pcx file
+           MenuMisc.WritePNGfile(lbmname, linear,
+                 SCREENWIDTH, SCREENHEIGHT,V.getPalette());
+
+           players[consoleplayer].message = "screen shot";
+       }
+        
+    }
+ 
+    public static final class TrueColor extends DoomMain<byte[], int[]>{
+        
+        public TrueColor(){
+            super();
+        }
+        
+        protected IAutoMap<byte[], int[]> selectAutoMap() {
+            return new Map.TrueColor(this);
+        }
+        
+        protected final Finale<byte[]> selectFinale(){
+            return new Finale<byte[]>(this);
+        }
+        
+        protected final DoomVideoRenderer<byte[],int[]> selectVideoRenderer(){
+            return new BufferedRenderer32(SCREENWIDTH,SCREENHEIGHT);
+        }
+        
+        protected final DoomVideoInterface<int[]> selectVideoInterface(){
+            return new AWTDoom.TrueColor(this,V);
+        }
+        
+        protected final Wiper<byte[],int[]> selectWiper(){
+            return new Wiper.TrueColor(this);
+        }
+        
+        protected final Renderer<byte[],int[]> selectRenderer() {
+            // Serial or parallel renderer (serial is default, but can be forced)
+            if (eval(CM.CheckParm("-serialrenderer"))){
+                return new UnifiedRenderer.TrueColor(this);    
+            } else 
+                // Parallel. Either with default values (2,1) or user-specified.
+                if (CM.CheckParmBool("-parallelrenderer")||CM.CheckParmBool("-parallelrenderer2")){        
+                    int p = CM.CheckParm ("-parallelrenderer");
+                    if (p<1) p=CM.CheckParm("-parallelrenderer2");
+                    
+                    if (p < CM.getArgc()-1)
+                    {
+                        // Next THREE args must be numbers.
+                        int walls=1, floors=1,masked=2;
+                        startmap = Integer.parseInt(CM.getArgv(p+1));
+                        // Try parsing walls.
+                        try {
+                            walls=Integer.parseInt(CM.getArgv(p+1));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // Try parsing floors. If wall succeeded, but floors
+                        // not, it will default to 1.
+                        try {
+                            floors=Integer.parseInt(CM.getArgv(p+2));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+                        
+                        try {
+                            masked=Integer.parseInt(CM.getArgv(p+3));
+                        } catch (Exception e){
+                            // OK, move on anyway.
+                        }
+
+                        // In the worst case, we will use the defaults.
+                        if  (CM.CheckParmBool("-parallelrenderer"))
+                            // TODO: temporarily disabled
+                            return new UnifiedRenderer.TrueColor(this);   
+                       //     return (Renderer<byte[], short[]>) new ParallelRenderer(this,walls,floors,masked);
+                       // else
+                       //     return (Renderer<byte[], short[]>) new ParallelRenderer2(this,walls,floors,masked);
+                    }
+                } else {
+                    // Force serial
+                    return new UnifiedRenderer.TrueColor(this);   
+                }
+            
+            return null;
+        }
+
+        /**
+        *  M_Screenshot
+        *  
+        *  Currently saves PCX screenshots, and only in devparm.
+        *  Very oldschool ;-)
+        *  
+        *  TODO: add non-devparm hotkey for screenshots, sequential screenshot
+        *  messages, option to save as either PCX or PNG. Also, request
+        *  current palette from VI (otherwise gamma settings and palette effects
+        *  don't show up).
+        *  
+        */
+
+       public void ScreenShot ()
+       {
+           int     i;
+           int[]  linear;
+           String format=new String("DOOM%d%d%d%d.png");
+           String lbmname = null;
+           
+           // munge planar buffer to linear
+           linear = (int[]) V.getScreen(DoomVideoRenderer.SCREEN_WS);
+           VI.ReadScreen (linear);
+
+           // find a file name to save it to
+           
+           int[] digit=new int[4];
+           
+           for (i=0 ; i<=9999 ; i++)
+           {
+           digit[0] = ((i/1000 )%10);
+           digit[1] =  ((i/100)%10);
+           digit[2] =  ((i/10)%10);
+           digit[3] =  (i%10);
+           lbmname=String.format(format, digit[0],digit[1],digit[2],digit[3]);
+           if (!C2JUtils.testReadAccess(lbmname))
+               break;  // file doesn't exist
+           }
+           if (i==10000)
+           I.Error ("M_ScreenShot: Couldn't create a PNG");
+
+           // save the pcx file
+           MenuMisc.WritePNGfile (lbmname, linear,
+                 SCREENWIDTH, SCREENHEIGHT);
+
+           players[consoleplayer].message = "screen shot";
+       }
+
+    }
+    
 }
 
 //$Log: DoomMain.java,v $
-//Revision 1.102  2011/12/05 12:33:52  velktron
-//Added AutoMap parametrization.
+//Revision 1.103  2012/09/24 17:16:22  velktron
+//Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //
-//Revision 1.101  2011/11/06 17:35:38  velktron
-//Fixed %i printf modifiers.
+//Revision 1.101.2.11  2012/09/24 16:58:06  velktron
+//TrueColor, Generics.
 //
-//Revision 1.100  2011/11/04 20:24:10  velktron
-//Using 3-parameter parallel renderers.
+//Revision 1.101.2.10  2012/09/21 16:17:25  velktron
+//More generic.
 //
-//Revision 1.99  2011/11/03 21:23:25  velktron
-//Using testReadAccess now
+//Revision 1.101.2.9  2012/09/20 14:25:13  velktron
+//Unified DOOM!!!
 //
-//Revision 1.98  2011/11/03 15:45:34  velktron
-//Adapted to using ISpriteManager
-//
-//Revision 1.97  2011/11/01 23:53:26  velktron
-//-verbose
-//
-//Revision 1.96  2011/11/01 23:48:31  velktron
-//Added tnthom stuff
-//
-//Revision 1.95  2011/11/01 19:02:35  velktron
-//Allow selection of 2nd parallel renderer
-//
-//Revision 1.94  2011/10/25 19:52:47  velktron
-//Using TIC_MUL and MAPFRACUNIT for speed scaling. Also buffered I/O and other stuff.
-//
-//Revision 1.93  2011/10/24 02:30:51  velktron
-//Fixed palette copying.
-//
-//Revision 1.92  2011/10/24 02:11:27  velktron
-//Stream compliancy
-//
-//Revision 1.91  2011/10/23 22:59:56  velktron
-//Added full PLAYPAL safeguard, generic compliance.
-//
-//Revision 1.90  2011/10/23 18:19:08  velktron
-//loaddemo safeguard, generic compliance
-//
-//Revision 1.89  2011/10/11 21:07:39  velktron
-//up-to-date DoomMain
-//
-//Revision 1.88  2011/10/07 16:01:26  velktron
-//Added freelook stuff, using Keys.
-//
-//Revision 1.87  2011/10/02 14:22:33  velktron
-//Added new ga_failure state.
-//
-//Revision 1.86  2011/09/29 17:27:36  velktron
-//Uses GenerateAlert
-//
-//Revision 1.85  2011/09/29 13:30:38  velktron
-//Uses IDoomMenu and AbstractLevelLoader
-//
-//Revision 1.84  2011/08/23 16:19:37  velktron
-//Got rid of Z remnants.
-//
-//Revision 1.83  2011/08/22 14:35:50  velktron
-//Now using "super" sound driver as default.
-//
-//Revision 1.82  2011/08/01 07:35:54  velktron
-//Fixed broken -speakersound selector.
-//
-//Revision 1.81  2011/07/31 21:50:17  velktron
-//Added modified game popup.
-//
-//Revision 1.80  2011/07/28 18:53:43  velktron
-//Dumbed down CAPS_LOCK interception due to problems in getting a reliable cross-platform, reasonably simple way of polling the state. Will have to do with toggle detection.
-//
-//Revision 1.79  2011/07/28 17:07:04  velktron
-//Added always run hack.
-//
-//Revision 1.78  2011/07/28 13:48:33  velktron
-//Added proper sound driver command line selectors.
-//
-//Revision 1.77  2011/07/18 21:45:00  velktron
-//Sound driver changes. -nosound loads Dummy instead of Abstract (saves CPU cycles).
-//
-//Revision 1.76  2011/07/17 12:43:18  velktron
-//Merged in finnw's Ultimate Doom par times fixes, locking keys method.
-//
-//Revision 1.75  2011/07/15 13:56:55  velktron
-//Screenshots functional (with devparm, in PCX format).
-//
-//Revision 1.74  2011/07/13 16:38:42  velktron
-//Sound updates through wipe fixed.
-//
-//Revision 1.73  2011/07/05 13:27:58  velktron
-//Added more solid Ultimate Doom detection.
-//
-//Revision 1.72  2011/06/23 15:43:01  velktron
-//Palette defaulting mechanism in place.
-//
-//Revision 1.71  2011/06/14 20:59:47  velktron
-//Channel settings now read from default.cfg. Changes in sound creation order.
-//
-//Revision 1.70  2011/06/14 10:06:37  velktron
-//-nosound -> - nomusic
-//
-//Revision 1.69  2011/06/14 10:01:13  velktron
-//Removed use of DummySoundDriver, used SFX/Music dummies for nosound.
-//
-//Revision 1.68  2011/06/12 21:55:18  velktron
-//Defaulting/testing new sound "drivers"
-//
-//Revision 1.67  2011/06/10 17:03:26  velktron
-//We don't need to be so verbose anymore ;-)
-//
-//Revision 1.66  2011/06/08 17:43:29  velktron
-//VI -> V
-//
-//Revision 1.65  2011/06/08 17:41:57  velktron
-//Added VI to list of status holders.
-//
-//Revision 1.64  2011/06/04 11:05:09  velktron
-//Added use of _D_'s sound system. Consider VERY experimental for now.
-//
-//Revision 1.63  2011/06/02 14:54:53  velktron
-//MochaEvents is default. IZone connector for IWadloader.
-//
-//Revision 1.62  2011/06/01 17:40:17  velktron
-//Techdemo v1.4a level. Default novert and experimental mochaevents interface.
-//
-//Revision 1.61  2011/06/01 17:35:56  velktron
-//Techdemo v1.4a level. Default novert and experimental mochaevents interface.
-//
-//Revision 1.60  2011/06/01 00:46:15  velktron
-//-keycode debug.
-//
-//Revision 1.59  2011/06/01 00:37:59  velktron
-//Changed default keys to WASD.
-//
-//Revision 1.58  2011/06/01 00:08:07  velktron
-//Added +map command line parameter.
-//
-//Revision 1.57  2011/05/31 22:43:18  velktron
-//Added support for quoted IWAD and PWAD args.
-//
-//Revision 1.56  2011/05/31 21:45:51  velktron
-//Added XBLA version as explicitly supported.
-//
-//Revision 1.55  2011/05/31 17:10:57  velktron
-//Fixed demo autostart
-//
-//Revision 1.54  2011/05/31 16:26:10  velktron
-//Sprite buffer reset.
-//
-//Revision 1.53  2011/05/30 15:50:58  velktron
-//Status holders and -fastdemo introduced.
-//
-//Revision 1.52  2011/05/30 02:26:29  velktron
-//DOOMWADDIR message.
-//
-//Revision 1.51  2011/05/29 22:15:32  velktron
-//Introduced IRandom interface.
-//
-//Revision 1.50  2011/05/29 21:07:09  velktron
-//Added FORCED and PAINFUL event clearing!
-//
-//Revision 1.49  2011/05/27 19:44:39  velktron
-//More fooling around with savegames.
-//
-//Revision 1.48  2011/05/27 13:26:56  velktron
-//A slightly better, though not perfect, way to handle input, partially based on_D_'s work.
-//
-//Revision 1.47  2011/05/26 17:52:52  velktron
-//Several fixes. Pause bug, added more command-line options, started saving subsystem.
-//
-//Revision 1.46  2011/05/25 18:46:24  velktron
-//Implemented event_t pooling/reuse.
-//
-//Revision 1.45  2011/05/25 17:56:52  velktron
-//Introduced some fixes for mousebuttons etc.
-//
-//Revision 1.44  2011/05/23 17:00:23  velktron
-//Migrated to VideoScaleInfo, DoomMain now is IGN.
-//
-//Revision 1.43  2011/05/22 21:10:38  velktron
-//Fixed an INCREDIBLY stupid bug in the wiper code, which prevented it from working correctly all this time -_-
-//
-//Revision 1.42  2011/05/21 16:58:38  velktron
-//Added automatic detection of Ultimate Doom in doom.wad file.
-//
-//Revision 1.41  2011/05/21 14:40:56  velktron
-//Hid gamemode behind specific getters.
-//
-//Revision 1.40  2011/05/20 14:49:01  velktron
-//Added more DoomGame compliance, implemented loading savegames.
-//
-//Revision 1.39  2011/05/17 16:54:34  velktron
-//Now adaptiveness/throttling works
-//
-//Revision 1.38  2011/05/13 18:26:42  velktron
-//Added demo reset feature.
-//
-//Revision 1.37  2011/05/13 17:43:02  velktron
-//Improved demo handling, aka they actually do work (sort of).
-//
-//Revision 1.36  2011/05/13 11:15:09  velktron
-//Demo preliminaries
-//
-//Revision 1.35  2011/05/11 14:09:40  velktron
-//Implements IDoomGame
-//
-//Revision 1.34  2011/05/10 19:10:37  velktron
-//Some crazy and wild stuff.
-//
-//Revision 1.33  2011/05/06 14:00:54  velktron
-//More of _D_'s changes committed.

@@ -1356,6 +1356,7 @@ public class Menu extends AbstractDoomMenu {
     //
     public void ClearMenus() {
         DM.menuactive = false;
+        V.clearCaches();
         // MAES: was commented out :-/
         //if (!DM.netgame && DM.usergame && DM.paused)
         //    DM.setPaused(true);

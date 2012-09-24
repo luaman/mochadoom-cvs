@@ -24,7 +24,7 @@ import timing.MilliTicker;
 import m.IDoomMenu;
 import m.Menu;
 import m.DoomRandom;
-import v.BufferedRenderer;
+import v.BufferedRenderer16;
 import v.DoomVideoRenderer;
 import v.GammaTables;
 import v.IVideoScale;
@@ -43,7 +43,7 @@ import doom.wbstartstruct_t;
 
 public class AWTRenderViewTester {
 
-    static IVideoScale VSI=new VideoScaleInfo(4.0f);
+    static IVideoScale VSI=new VideoScaleInfo(3.0f);
     
     public static void main(String[] argv) {
         try {
@@ -53,14 +53,14 @@ public class AWTRenderViewTester {
     // Create a Wad file loader.
     
     WadLoader W=new WadLoader();
-    W.InitMultipleFiles(new String[] {"doom1.wad"});
+    W.InitMultipleFiles(new String[] {"doom1.wad","COLORS15.lmp"});
     
     System.out.println("Total lumps read: "+W.numlumps);
 
     // Read the palette.
     DoomBuffer palette = W.CacheLumpName("PLAYPAL", PU_STATIC);
     // Create a video renderer
-    DoomVideoRenderer<byte[]> V=new BufferedRenderer(VSI.getScreenWidth(),VSI.getScreenHeight());
+    DoomVideoRenderer<short[]> V=new BufferedRenderer16(VSI.getScreenWidth(),VSI.getScreenHeight());
     V.setVideoScale(VSI);
     V.initScaling();
     V.Init();
@@ -79,7 +79,7 @@ public class AWTRenderViewTester {
     DM.DGN=new DummyNetworkHandler();
     
     // Create the frame.
-    AWTDoom frame = new AWTDoom(DM,(DoomVideoRenderer<byte[]>) V);
+    AWTDoom frame = new AWTDoom(DM,(DoomVideoRenderer<short[]>) V);
     frame.InitGraphics();
     DM.I=I;
     DM.VI=frame;

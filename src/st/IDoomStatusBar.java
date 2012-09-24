@@ -2,7 +2,7 @@ package st;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: IDoomStatusBar.java,v 1.3 2011/07/28 10:29:46 velktron Exp $
+// $Id: IDoomStatusBar.java,v 1.4 2012/09/24 17:16:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,11 +23,11 @@ package st;
 //
 //-----------------------------------------------------------------------------
 
+import i.DoomStatusAware;
 import v.IVideoScaleAware;
-import doom.DoomStatus;
 import doom.event_t;
 
-public interface IDoomStatusBar extends IVideoScaleAware{
+public interface IDoomStatusBar extends IVideoScaleAware,DoomStatusAware{
 
     
     
@@ -63,9 +63,6 @@ public interface IDoomStatusBar extends IVideoScaleAware{
      */
     public int getHeight();
     
-    /** HACK: replicates status update here for stupid reasons */
-    public void updateStatus(DoomStatus DS);
-
     /** Forces a full refresh for reasons not handled otherwise, e.g. after full-page
      *  draws of help screens, which normally don't trigger a complete redraw even if
      *  they should, really.

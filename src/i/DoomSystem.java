@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.14 2011/10/24 02:11:27 velktron Exp $
+// $Id: DoomSystem.java,v 1.15 2012/09/24 17:16:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,15 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.15  2012/09/24 17:16:22  velktron
+// Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
+//
+// Revision 1.14.2.2  2012/09/17 15:57:53  velktron
+// Aware of IVariablesManager
+//
+// Revision 1.14.2.1  2012/06/14 22:38:06  velktron
+// Update to handle new disk flasher
+//
 // Revision 1.14  2011/10/24 02:11:27  velktron
 // Stream compliancy
 //
@@ -152,7 +161,8 @@ public void Quit ()
 }
  DM.ISND.ShutdownSound();
  DM.IMUS.ShutdownMusic();
- MenuMisc.SaveDefaults(DM);
+ DM.commit();
+ DM.VM.SaveDefaults(DM.getDefaultFile());
  DM.VI.ShutdownGraphics();
  System.exit(0);
 }
@@ -182,6 +192,12 @@ public void WaitVBL(int count)
 @Override
 public void BeginRead()
 {
+	if (DM.DD!=null)
+	   if (!DM.DD.isReading()) {
+		   // Set 8 tick reading time
+		   DM.DD.setReading(8);
+	   }
+	   	
 }
 
 @Override

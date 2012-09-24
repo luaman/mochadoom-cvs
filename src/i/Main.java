@@ -10,7 +10,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.10 2011/10/24 02:11:27 velktron Exp $
+//$Id: Main.java,v 1.11 2012/09/24 17:16:22 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -25,6 +25,15 @@ import doom.ICommandLineManager;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.11  2012/09/24 17:16:22  velktron
+//Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
+//
+//Revision 1.10.2.2  2012/09/24 16:57:43  velktron
+//Addressed generics warnings.
+//
+//Revision 1.10.2.1  2012/09/20 14:18:06  velktron
+//NEW and ENHANCED dual-function main!!!
+//
 //Revision 1.10  2011/10/24 02:11:27  velktron
 //Stream compliancy
 //
@@ -70,24 +79,41 @@ import doom.ICommandLineManager;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.10 2011/10/24 02:11:27 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.11 2012/09/24 17:16:22 velktron Exp $";
 
     public static void main(String[] argv) throws IOException{
 
-    	
-    	  // These are the most essential
-          DoomMain D=new DoomMain();
-  
+    	//  First, get the command line parameters.
+            ICommandLineManager CM=new CommandLine(argv);
+        
+          BppMode bpp=BppMode.Indexed;
+            
+          if (CM.CheckParmBool("-hicolor")) bpp=BppMode.HiColor;
+              else
+          if (CM.CheckParmBool("-truecolor")) bpp=BppMode.TrueColor;
           
-          ICommandLineManager CM=new CommandLine(argv);
+          // Here he create DOOM
+          DoomMain<?, ?> DM=null;
           
-          // 
-          D.setCommandLineArgs(CM);
-          
-          // Create AWT frame, but don't start it yet.
-          D.Init();
+          switch(bpp){
+          case Indexed:
+              System.out.println("Indexed 8-bit mode selected...");
+              DM=new DoomMain.Indexed();
+              break;
+          case HiColor:
+              System.out.println("HiColor (Alpha) 16-bit mode selected...");
+              DM=new DoomMain.HiColor();
+              break;
+          case TrueColor:
+              System.out.println("TrueColor (extended colormaps) 24-bit mode selected...");
+              DM=new DoomMain.TrueColor();
+              break;
 
-          D.Start ();
+          }    
+
+          DM.setCommandLineArgs(CM);
+          DM.Init();
+          DM.Start();
 
           return;
         } 

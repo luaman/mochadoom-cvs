@@ -4,6 +4,7 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.KeyEventDispatcher;
@@ -29,9 +30,11 @@ import doom.event_t;
 
 /** Common code for Doom's video frames */
 
-public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface {
+public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
-    public DoomFrame(DoomMain DM,DoomVideoRenderer<K> V) {
+    protected V RAWSCREEN;
+    
+    public DoomFrame(DoomMain<?,V> DM,DoomVideoRenderer<?,V> V) {
     	this.DM=DM;
     	this.CM=DM.CM;
     	this.TICK=DM.TICK;
@@ -56,12 +59,11 @@ public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface 
 	protected static final boolean D=false;
 	
 	// Must be aware of "Doom" so we can pass it event messages inside a crude queue.
-	public DoomMain DM;            // Must be aware of general status.
+	public DoomMain<?,V> DM;            // Must be aware of general status.
 	public ICommandLineManager CM; // Must be aware of command line interface.
 	protected IDoomSystem I;         // Must be aware of some other shit like event handler
-	protected DoomVideoRenderer<K> V;    // Must have a video renderer....
+	protected DoomVideoRenderer<?,V> V;    // Must have a video renderer....
 	protected ITicker TICK;          // Must be aware of the ticker/
-	protected K RAWSCREEN;	   // RAW SCREEN DATA. Get from the Video Renderer.
 	protected MochaEvents eventhandler; // Separate event handler a la _D_.
 	                               // However I won't make it fully "eternity like" yet
 	                               // also because it works quite flakey on Linux.
@@ -100,26 +102,15 @@ public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface 
     }
     
 
-	/**
-	 * I_SetPalette
-	 * 
-	 * IMPORTANT: unlike an actual "on the fly" palette-shifting
-	 * system, here we must pass an index to the actual palette 
-	 * (0-31), as limitations of AWT prevent loading new palettes 
-	 * on-the-fly without a significant overhead.
-	 * 
-	 * The actual palettes and fixed IndexColorModels are created 
-	 * upon graphics initialization and cannot be changed (however
-	 * they can be switched between), unless I switch to an explicit 
-	 * INT_RGB canvas, which however has only 80% performence 
-	 * of a BYTE_INDEXED one.
-	 *  
-	 *  So, actually, we just switch to the proper BufferedImage
-	 *  for display (the raster data is shared, which allows
-	 *  this hack to work with minimal overhead).
-	 *  
-	 *  
-	 */
+    /**
+     * I_SetPalette
+     * 
+     * Any bit-depth specific palette manipulation is performed by 
+     * the VideoRenderer. It can range from simple (paintjob) to
+     * complex (multiple BufferedImages with locked data bits...ugh!
+     * 
+     *@param palette index (normally between 0-14).
+     */
 	
 	@Override
 	public void SetPalette (int palette)
@@ -312,6 +303,29 @@ public abstract class DoomFrame<K> extends JFrame implements DoomVideoInterface 
 		
 	}
 
+	   
+    public void SetGamma(int level){
+        if (D) System.err.println("Setting gamma "+level);
+        V.setUsegamma(level);
+        screen=V.getCurrentScreen(); // Refresh screen after change.
+        RAWSCREEN=V.getScreen(DoomVideoRenderer.SCREEN_FG);
+    }
+    
+    
+    /** Modified update method: no context needs to passed.
+     *  Will render only internal screens. Common between AWT 
+     *  and Swing
+     * 
+     */
+    public void paint(Graphics g) {
+       // Techdemo v1.3: Mac OSX fix, compatible with Windows and Linux.
+       // Should probably run just once. Overhead is minimal
+       // compared to actually DRAWING the stuff.
+       if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();
+       V.update();
+       //voli.getGraphics().drawImage(bi,0,0,null);
+       g2d.drawImage(screen,0,0,this);
+       
+    }
 
-	
 }

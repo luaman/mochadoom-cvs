@@ -1,6 +1,5 @@
 package p;
 
-import static m.fixed_t.FRACUNIT;
 import static m.fixed_t.MAPFRACUNIT;
 import static data.Defines.TIC_MUL;
 

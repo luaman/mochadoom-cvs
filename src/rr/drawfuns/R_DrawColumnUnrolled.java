@@ -9,7 +9,7 @@ import i.IDoomSystem;
 	 * 
 	 */
 
-	public final class R_DrawColumnUnrolled extends DoomColumnFunction<byte[]> {
+	public final class R_DrawColumnUnrolled extends DoomColumnFunction<byte[],short[]> {
 
 		/*
 		 * That's shit, doesn't help. private final int
@@ -23,15 +23,15 @@ import i.IDoomSystem;
 		 */
 
 		public R_DrawColumnUnrolled(int SCREENWIDTH, int SCREENHEIGHT,
-	            int[] ylookup, int[] columnofs, ColVars<byte[]> dcvars,
-	            byte[] screen, IDoomSystem I) {
+	            int[] ylookup, int[] columnofs, ColVars<byte[],short[]> dcvars,
+	            short[] screen, IDoomSystem I) {
 	        super(SCREENWIDTH, SCREENHEIGHT, ylookup, columnofs, dcvars, screen, I);
 	    }
 
         public void invoke() {
 			int count,dest;
 			final byte[] source;			
-			final byte[] colormap;
+			final short[] colormap;
 			final int dc_source_ofs=dcvars.dc_source_ofs;
 
 			// These are all "unsigned". Watch out for bit shifts!

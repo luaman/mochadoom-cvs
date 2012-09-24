@@ -2896,7 +2896,7 @@ mobj_t  thing )
     
     protected final void ResizeSpechits() {
         spechit=C2JUtils.resize(spechit[0],spechit,spechit.length*2);
-        }    
+        }
     
 ////////////////// PTR Traverse Interception Functions ///////////////////////    
     public class PTR_AimTraverse implements PTR_InterceptFunc{ 
@@ -4562,7 +4562,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
 		int count;
 
-		earlyout = flags(flags, PT_EARLYOUT);
+		earlyout = eval(flags& PT_EARLYOUT);
 
 		R.increaseValidCount(1);
 		intercept_p = 0;
@@ -5075,6 +5075,9 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       {
         case 48:
           // EFFECT FIRSTCOL SCROLL+
+          // Maes 6/4/2012: removed length limit.
+          if (SPECS.numlinespecials==SPECS.linespeciallist.length)
+        	  SPECS.resizeLinesSpecialList();
           SPECS.linespeciallist[SPECS.numlinespecials] = LL.lines[i];
           SPECS.numlinespecials++;
           break;
@@ -5201,15 +5204,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 	  
   }
 
-  public Actions() {
-      this(new DoomStatus());
-    // Dummy used only for special testing
-  }
-
-
-
-
-//
+  //
   // P_RunThinkers
   //
   public void RunThinkers() {

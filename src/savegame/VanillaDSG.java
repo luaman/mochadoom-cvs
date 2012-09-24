@@ -202,7 +202,7 @@ protected void ArchiveWorld () throws IOException
 
   for (j=0 ; j<2 ; j++)
   {
-      if (li.sidenum[j] == -1)
+      if (li.sidenum[j] == line_t.NO_INDEX)
       continue;
       si = LL.sides[li.sidenum[j]];
       si.pack(buffer);
@@ -256,7 +256,7 @@ protected final void UnArchiveWorld () throws IOException
     //  System.out.print(li.sidenum[j]);
     //  if (j<2) System.out.print(",");
    //   System.out.printf("Skipped sidenum %d for line %d\n",j,i);
-      if (li.sidenum[j] == -1){
+      if (li.sidenum[j] == line_t.NO_INDEX){
   //        System.out.printf("Skipped sidenum %d for line %d\n",j,i);
       continue;
       }

@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.10 2011/12/05 12:57:23 velktron Exp $
+// $Id: EndLevel.java,v 1.11 2012/09/24 17:16:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,6 +15,109 @@ package f;
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
+//
+// $Log: EndLevel.java,v $
+// Revision 1.11  2012/09/24 17:16:23  velktron
+// Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
+//
+// Revision 1.8.2.2  2012/09/24 16:57:43  velktron
+// Addressed generics warnings.
+//
+// Revision 1.8.2.1  2011/11/27 18:18:34  velktron
+// Use cacheClear() on deactivation.
+//
+// Revision 1.8  2011/11/01 19:02:57  velktron
+// Using screen number constants
+//
+// Revision 1.7  2011/10/23 18:11:32  velktron
+// Generic compliance for DoomVideoInterface
+//
+// Revision 1.6  2011/08/23 16:13:53  velktron
+// Got rid of Z remnants.
+//
+// Revision 1.5  2011/07/31 21:49:38  velktron
+// Changed endlevel drawer's behavior to be closer to prBoom+'s. Allows using 1994TU.WAD while backwards compatible.
+//
+// Revision 1.4  2011/06/02 14:56:48  velktron
+// imports
+//
+// Revision 1.3  2011/06/02 14:53:21  velktron
+// Moved Endlevel constants to AbstractEndLevel
+//
+// Revision 1.2  2011/06/02 14:14:28  velktron
+// Implemented endlevel unloading of graphics, changed state enum.
+//
+// Revision 1.1  2011/06/02 14:00:48  velktron
+// Moved Endlevel stuff  to f, where it makes more sense.
+//
+// Revision 1.18  2011/05/31 12:25:14  velktron
+// Endlevel -mostly- scaled correctly.
+//
+// Revision 1.17  2011/05/29 22:15:32  velktron
+// Introduced IRandom interface.
+//
+// Revision 1.16  2011/05/24 17:54:02  velktron
+// Defaults tester
+//
+// Revision 1.15  2011/05/23 17:00:39  velktron
+// Got rid of verbosity
+//
+// Revision 1.14  2011/05/21 16:53:24  velktron
+// Adapted to use new gamemode system.
+//
+// Revision 1.13  2011/05/18 16:58:04  velktron
+// Changed to DoomStatus
+//
+// Revision 1.12  2011/05/17 16:52:19  velktron
+// Switched to DoomStatus
+//
+// Revision 1.11  2011/05/11 14:12:08  velktron
+// Interfaced with DoomGame
+//
+// Revision 1.10  2011/05/10 10:39:18  velktron
+// Semi-playable Techdemo v1.3 milestone
+//
+// Revision 1.9  2011/05/06 14:00:54  velktron
+// More of _D_'s changes committed.
+//
+// Revision 1.8  2011/02/11 00:11:13  velktron
+// A MUCH needed update to v1.3.
+//
+// Revision 1.7  2010/12/20 17:15:08  velktron
+// Made the renderer more OO -> TextureManager and other changes as well.
+//
+// Revision 1.6  2010/11/12 13:37:25  velktron
+// Rationalized the LUT system - now it's 100% procedurally generated.
+//
+// Revision 1.5  2010/09/23 07:31:11  velktron
+// fuck
+//
+// Revision 1.4  2010/09/02 15:56:54  velktron
+// Bulk of unified renderer copyediting done.
+//
+// Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
+//
+// Revision 1.3  2010/08/23 14:36:08  velktron
+// Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
+//
+// Revision 1.2  2010/08/13 14:06:36  velktron
+// Endlevel screen fully functional!
+//
+// Revision 1.1  2010/07/06 16:32:38  velktron
+// Threw some work in WI, now EndLevel. YEAH THERE'S GONNA BE A SEPARATE EndLevel OBJECT THAT'S HOW PIMP THE PROJECT IS!!!!11!!!
+//
+// Revision 1.1  2010/06/30 08:58:51  velktron
+// Let's see if this stuff will finally commit....
+//
+//
+// Most stuff is still  being worked on. For a good place to start and get an idea of what is being done, I suggest checking out the "testers" package.
+//
+// Revision 1.1  2010/06/29 11:07:34  velktron
+// Release often, release early they say...
+//
+// Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete, and there's still mixed C code in there. I suggest you load everything up in Eclpise and see what gives from there.
+//
+// A good place to start is the testers/ directory, where you  can get an idea of how a few of the implemented stuff works.
 //
 //
 // DESCRIPTION:
@@ -51,12 +154,12 @@ import w.animenum_t;
  *
  */
 
-public class EndLevel extends AbstractEndLevel {
+public class EndLevel<T,V> extends AbstractEndLevel {
 
     ////////////////// STATUS ///////////////////
-    private DoomMain DS;
+    private DoomMain<?,?> DS;
     private IDoomGame DG;
-    private DoomVideoRenderer<?> V;
+    private DoomVideoRenderer<?,?> V;
     private IDoomSound S;
     private IWadLoader W;
     private IDoomStatusBar ST;
@@ -207,7 +310,7 @@ patch_t[]		num=new patch_t[10];
 // UNUSED  unsigned char *background=0;
 
 
-public EndLevel(DoomStatus DC) {
+public EndLevel(DoomStatus<T,V> DC) {
     this.updateStatus(DC);
    
     // _D_: commented this, otherwise something didn't work
@@ -1825,106 +1928,3 @@ public void initScaling() {
 }
 
 }
-
-//$Log: EndLevel.java,v $
-//Revision 1.10  2011/12/05 12:57:23  velktron
-//Move logging at the back. Jesus.
-//
-//Revision 1.9  2011/12/05 12:56:37  velktron
-//Merge with HiColor
-//
-//Revision 1.8.2.1  2011/11/27 18:18:34  velktron
-//Use cacheClear() on deactivation.
-//
-//Revision 1.8  2011/11/01 19:02:57  velktron
-//Using screen number constants
-//
-//Revision 1.7  2011/10/23 18:11:32  velktron
-//Generic compliance for DoomVideoInterface
-//
-//Revision 1.6  2011/08/23 16:13:53  velktron
-//Got rid of Z remnants.
-//
-//Revision 1.5  2011/07/31 21:49:38  velktron
-//Changed endlevel drawer's behavior to be closer to prBoom+'s. Allows using 1994TU.WAD while backwards compatible.
-//
-//Revision 1.4  2011/06/02 14:56:48  velktron
-//imports
-//
-//Revision 1.3  2011/06/02 14:53:21  velktron
-//Moved Endlevel constants to AbstractEndLevel
-//
-//Revision 1.2  2011/06/02 14:14:28  velktron
-//Implemented endlevel unloading of graphics, changed state enum.
-//
-//Revision 1.1  2011/06/02 14:00:48  velktron
-//Moved Endlevel stuff  to f, where it makes more sense.
-//
-//Revision 1.18  2011/05/31 12:25:14  velktron
-//Endlevel -mostly- scaled correctly.
-//
-//Revision 1.17  2011/05/29 22:15:32  velktron
-//Introduced IRandom interface.
-//
-//Revision 1.16  2011/05/24 17:54:02  velktron
-//Defaults tester
-//
-//Revision 1.15  2011/05/23 17:00:39  velktron
-//Got rid of verbosity
-//
-//Revision 1.14  2011/05/21 16:53:24  velktron
-//Adapted to use new gamemode system.
-//
-//Revision 1.13  2011/05/18 16:58:04  velktron
-//Changed to DoomStatus
-//
-//Revision 1.12  2011/05/17 16:52:19  velktron
-//Switched to DoomStatus
-//
-//Revision 1.11  2011/05/11 14:12:08  velktron
-//Interfaced with DoomGame
-//
-//Revision 1.10  2011/05/10 10:39:18  velktron
-//Semi-playable Techdemo v1.3 milestone
-//
-//Revision 1.9  2011/05/06 14:00:54  velktron
-//More of _D_'s changes committed.
-//
-//Revision 1.8  2011/02/11 00:11:13  velktron
-//A MUCH needed update to v1.3.
-//
-//Revision 1.7  2010/12/20 17:15:08  velktron
-//Made the renderer more OO -> TextureManager and other changes as well.
-//
-//Revision 1.6  2010/11/12 13:37:25  velktron
-//Rationalized the LUT system - now it's 100% procedurally generated.
-//
-//Revision 1.5  2010/09/23 07:31:11  velktron
-//fuck
-//
-//Revision 1.4  2010/09/02 15:56:54  velktron
-//Bulk of unified renderer copyediting done.
-//
-//Some changes like e.g. global separate limits class and instance methods for seg_t and node_t introduced.
-//
-//Revision 1.3  2010/08/23 14:36:08  velktron
-//Menu mostly working, implemented Killough's fast hash-based GetNumForName, although it can probably be finetuned even more.
-//
-//Revision 1.2  2010/08/13 14:06:36  velktron
-//Endlevel screen fully functional!
-//
-//Revision 1.1  2010/07/06 16:32:38  velktron
-//Threw some work in WI, now EndLevel. YEAH THERE'S GONNA BE A SEPARATE EndLevel OBJECT THAT'S HOW PIMP THE PROJECT IS!!!!11!!!
-//
-//Revision 1.1  2010/06/30 08:58:51  velktron
-//Let's see if this stuff will finally commit....
-//
-//
-//Most stuff is still  being worked on. For a good place to start and get an idea of what is being done, I suggest checking out the "testers" package.
-//
-//Revision 1.1  2010/06/29 11:07:34  velktron
-//Release often, release early they say...
-//
-//Commiting ALL stuff done so far. A lot of stuff is still broken/incomplete, and there's still mixed C code in there. I suggest you load everything up in Eclpise and see what gives from there.
-//
-//A good place to start is the testers/ directory, where you  can get an idea of how a few of the implemented stuff works.

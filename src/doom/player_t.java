@@ -68,7 +68,7 @@ public class player_t /*extends mobj_t */
     private DoomStatus DS;
     private IDoomGame DG;
     private Actions P;
-    private Renderer<?> R;
+    private Renderer<?,?> R;
     private IRandom RND;
     private IDoomSystem I;
     private IDoomSound S;

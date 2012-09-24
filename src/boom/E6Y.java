@@ -55,7 +55,7 @@ public static final int S_CANT_GL_ARB_MULTISAMPLEFACTOR=  0x20000000;
 public static final int  GL_COMBINE_ARB  =  0x8570;
 public static final int GL_RGB_SCALE_ARB = 0x8573;
 
-public static final short NO_INDEX =-1;
+public static final char NO_INDEX =0xFFFF;
 
 public static final float FOV_CORRECTION_FACTOR= 1.13776f;
 public static final int FOV90 =90;

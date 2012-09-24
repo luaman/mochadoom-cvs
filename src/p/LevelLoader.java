@@ -39,7 +39,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.43 2011/11/03 15:19:51 velktron Exp $
+// $Id: LevelLoader.java,v 1.44 2012/09/24 17:16:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,10 +61,10 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.43 2011/11/03 15:19:51 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.44 2012/09/24 17:16:23 velktron Exp $";
 
 
-public LevelLoader(DoomStatus DC) {
+public LevelLoader(DoomStatus<?,?> DC) {
 		super(DC);
 		// Traditional loader sets limit.
 		deathmatchstarts=new mapthing_t[MAX_DEATHMATCH_STARTS];
@@ -132,7 +132,7 @@ public LevelLoader(DoomStatus DC) {
       li.frontsector = sides[ldef.sidenum[side]].sector;
       if (flags(ldef.flags,ML_TWOSIDED)){
     	  // MAES: Fix double sided without back side. E.g. Linedef 16103 in Europe.wad
-    	  if (ldef.sidenum[side^1]!=-1)
+    	  if (ldef.sidenum[side^1]!=line_t.NO_INDEX)
           li.backsector = sides[ldef.sidenum[side^1]].sector;
           // Fix two-sided with no back side.
     	  //else {
@@ -365,8 +365,8 @@ public LevelLoader(DoomStatus DC) {
       ld.flags = mld.flags;
       ld.special = mld.special;
       ld.tag = mld.tag;
-      v1 = ld.v1 = vertexes[mld.v1];
-      v2 = ld.v2 = vertexes[mld.v2];
+      v1 = ld.v1 = vertexes[(char)mld.v1];
+      v2 = ld.v2 = vertexes[(char)mld.v2];
       ld.dx = v2.x - v1.x;
       ld.dy = v2.y - v1.y;
       // Map value semantics.
@@ -411,14 +411,14 @@ public LevelLoader(DoomStatus DC) {
       
       // Sanity check for two-sided without two valid sides.      
       if (flags(ld.flags,ML_TWOSIDED)) {
-    	  if ((ld.sidenum[0] == -1) || (ld.sidenum[1] == -1)){
+    	  if ((ld.sidenum[0] == line_t.NO_INDEX) || (ld.sidenum[1] == line_t.NO_INDEX)){
     	  // Well, dat ain't so tu-sided now, ey esse?
     	  ld.flags^=ML_TWOSIDED; 
     	  }
       }
 
       // Front side defined without a valid frontsector.
-      if (ld.sidenum[0] != -1){
+      if (ld.sidenum[0] != line_t.NO_INDEX){
           ld.frontsector = sides[ld.sidenum[0]].sector;
           if (ld.frontsector==null){ // // Still null? Bad map. Map to dummy.
         	  ld.frontsector=dummy_sector;
@@ -429,7 +429,7 @@ public LevelLoader(DoomStatus DC) {
           ld.frontsector = null;
 
       // back side defined without a valid backsector.
-      if (ld.sidenum[1] != -1){
+      if (ld.sidenum[1] != line_t.NO_INDEX){
           ld.backsector = sides[ld.sidenum[1]].sector;
           if (ld.backsector==null){ // Still null? Bad map. Map to dummy.
         	  ld.backsector=dummy_sector;
@@ -831,6 +831,15 @@ public LevelLoader(DoomStatus DC) {
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.44  2012/09/24 17:16:23  velktron
+//Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
+//
+//Revision 1.43.2.2  2012/09/24 16:57:16  velktron
+//Addressed generics warnings.
+//
+//Revision 1.43.2.1  2012/03/26 09:53:44  velktron
+//Use line_t.NO_INDEX for good measure, when possible.
+//
 //Revision 1.43  2011/11/03 15:19:51  velktron
 //Adapted to using ISpriteManager
 //

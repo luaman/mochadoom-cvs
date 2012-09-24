@@ -46,11 +46,29 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
      }
      
 	 public void unpack(ByteBuffer b){
-	 
-     int demo_p = b.position();
-     int len=b.remaining();
-     version=b.get();		 
-     skill = skill_t.values()[b.get()]; 
+	     
+	     // Just the Header info for vanilla should be 13 bytes.
+	     // 1 byte at the end is the end-demo marker
+	     // So valid vanilla demos should have sizes that
+	     // fit the formula 14+4n, since each vanilla 
+	     // demo ticcmd_t is 4 bytes.
+	     int lens=(b.limit()-13)/4;	     
+	     boolean vanilla=(b.limit()==(14+4*lens));
+	     
+	     // Minimum valid vanilla demo should be 14 bytes...in theory.
+     if (b.limit()<14) {
+         // Use skill==null as an indicator that loading didn't go well.
+         skill=null;
+         return;
+     }
+     
+     version=b.get();		
+     
+     try {
+     skill = skill_t.values()[b.get()];
+     } catch (Exception e){
+         skill=null;
+     }
      episode = b.get(); 
      map = b.get(); 
      deathmatch = b.get()!=0;
@@ -64,14 +82,6 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
      for (int i=0 ; i<MAXPLAYERS ; i++) 
      playeringame[i] = b.get()!=0;
      
-     // Total Header info for vanilla should be 13 bytes.
-     // 1 byte at the end is the end-demo marker
-     // So valid vanilla demos should have sizes that
-     // fit the formula 14+4n, since each vanilla 
-     // demo ticcmd_t is 4 bytes.
-     int lens=(b.limit()-b.position()-1)/4;
-     
-     boolean vanilla=(b.limit()==(14+4*lens));
      
      this.commands=new VanillaTiccmd[lens];
      C2JUtils.initArrayOfObjects(this.commands, VanillaTiccmd.class);
@@ -79,8 +89,8 @@ public class VanillaDoomDemo implements IDoomDemo,CacheableDoomObject{
      try {
 		DoomBuffer.readObjectArray(b, this.commands, lens);
 	} catch (IOException e) {
-		// TODO Auto-generated catch block
-		e.printStackTrace();
+	    skill=null;
+	    return;
 	}
 
      }

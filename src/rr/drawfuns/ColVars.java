@@ -7,7 +7,7 @@ package rr.drawfuns;
  *  
  */
 
-public class ColVars<T> {    
+public class ColVars<T,V> {    
     /** when passing dc_source around, also set this */
     public T dc_source;
     public int dc_source_ofs;
@@ -40,11 +40,11 @@ public class ColVars<T> {
      * is debatable.
      */
     
-    public T dc_colormap;
+    public V dc_colormap;
 
     /** Copies all BUT flags */
     
-    public final void copyFrom(ColVars<T> dcvars) {
+    public final void copyFrom(ColVars<T,V> dcvars) {
         this.dc_source=dcvars.dc_source;
         this.dc_colormap=dcvars.dc_colormap;
         this.dc_source_ofs=dcvars.dc_source_ofs;
@@ -59,7 +59,7 @@ public class ColVars<T> {
     }
     
     /** Assigns specific flags */
-    public void copyFrom(ColVars<T> dcvars,int flags) {
+    public void copyFrom(ColVars<T,V> dcvars,int flags) {
         this.copyFrom(dcvars);
         this.dc_flags=flags;
     }

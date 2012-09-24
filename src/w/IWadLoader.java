@@ -1,6 +1,11 @@
 package w;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import doom.DoomMain;
+import doom.DoomStatus;
+
 import rr.patch_t;
 
 public interface IWadLoader {
@@ -11,6 +16,7 @@ public interface IWadLoader {
 	 * 
 	 * @throws Exception
 	 */
+	@SuppressWarnings("null")
 	public abstract void Reload() throws Exception;
 
 	/**
@@ -92,14 +98,14 @@ public interface IWadLoader {
 	 * generic DoomBuffer object is left in the lump cache and returned.
 	 */
 	public abstract CacheableDoomObject CacheLumpNum(int lump, int tag,
-			Class<?> what);
+			Class what);
 
 	// MAES 24/8/2011: superseded by auto-allocating version with proper 
 	// container-based caching.
 
 	@Deprecated
 	public abstract void CacheLumpNumIntoArray(int lump, int tag,
-			Object[] array, Class<?> what) throws IOException;
+			Object[] array, Class what) throws IOException;
 
 	/**
 	 * Return a cached lump based on its name, as raw bytes, no matter what.
@@ -166,13 +172,13 @@ public interface IWadLoader {
 	/**
 	 * Specific method for loading cached patches by number.
 	 * 
-	 * @param name
+	 * @param num
 	 * @return
 	 */
 
-	public abstract patch_t CachePatchNum(int num, int tag);
+	public abstract patch_t CachePatchNum(int num);
 
-	public abstract Object CacheLumpName(String name, int tag, Class<?> what);
+	public abstract Object CacheLumpName(String name, int tag, Class what);
 
 	/** A lump with size 0 is a marker. This means that it
 	 *  can/must be skipped, and if we want actual data we must
@@ -186,6 +192,15 @@ public interface IWadLoader {
 	public abstract String GetNameForLump(int lump);
 
 	public abstract int CheckNumForName(String name/* , int namespace */);
+	
+	/** Return ALL possible results for a given name, in order to resolve name clashes without
+	 *  using namespaces
+	 *  
+	 * @param name
+	 * @return
+	 */
+	
+	public abstract int[] CheckNumsForName(String name);
 
 	public abstract lumpinfo_t GetLumpInfo(int i);
 

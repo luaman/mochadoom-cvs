@@ -83,7 +83,7 @@ import static boom.Compatibility.*;
 public class BoomLevelLoader
         extends AbstractLevelLoader {
 
-    public BoomLevelLoader(DoomStatus DC) {
+    public BoomLevelLoader(DoomStatus<?,?> DC) {
         super(DC);
         // TODO Auto-generated constructor stub
     }
@@ -1439,7 +1439,7 @@ public class BoomLevelLoader
 
                 for (j = 0; j < 2; j++) {
                     if (ld.sidenum[j] != NO_INDEX && ld.sidenum[j] >= numsides) {
-                        ld.sidenum[j] = (short) NO_INDEX;
+                        ld.sidenum[j] = NO_INDEX;
                         System.err
                                 .printf(
                                     "P_LoadLineDefs: linedef %d has out-of-range sidedef number\n",

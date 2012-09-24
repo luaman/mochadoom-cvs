@@ -8,7 +8,7 @@ import v.IVideoScaleAware;
 import i.DoomStatusAware;
 import i.DoomVideoInterface;
 
-public abstract class AbstractWiper implements IWiper, DoomStatusAware, IVideoScaleAware{
+public abstract class AbstractWiper<T,V> implements IWiper, DoomStatusAware, IVideoScaleAware{
     
     //
     //                           SCREEN WIPE PACKAGE
@@ -32,9 +32,9 @@ public abstract class AbstractWiper implements IWiper, DoomStatusAware, IVideoSc
     /** when false, stop the wipe */
     protected volatile boolean  go = false;
 
-    protected byte[]    wipe_scr_start;
-    protected byte[]    wipe_scr_end;
-    protected byte[]    wipe_scr;
+    protected V    wipe_scr_start;
+    protected V    wipe_scr_end;
+    protected V    wipe_scr;
     
 ////////////////////////////VIDEO SCALE STUFF ////////////////////////////////
 
@@ -60,15 +60,17 @@ public abstract class AbstractWiper implements IWiper, DoomStatusAware, IVideoSc
 
     ///////////////////// STATUS /////////////////////
 
-    public void updateStatus(DoomStatus DS){
+    @SuppressWarnings("unchecked")
+    @Override
+    public void updateStatus(DoomStatus<?,?> DS){
     this.RND=DS.RND;
-    this.V=DS.V;
-    this.VI=DS.VI;
+    this.V=(DoomVideoRenderer<T, V>) DS.V;
+    this.VI=(DoomVideoInterface<V>) DS.VI;
     }
     
     IRandom RND;
-    DoomVideoRenderer V;
-    DoomVideoInterface VI;
+    DoomVideoRenderer<T,V> V;
+    DoomVideoInterface<V> VI;
 
     
 }

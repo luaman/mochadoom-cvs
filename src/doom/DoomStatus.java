@@ -3,15 +3,22 @@ package doom;
 import static data.Defines.*;
 import static g.Keys.*;
 import static data.Limits.*;
-
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
+import automap.IAutoMap;
+import m.IUseVariables;
+import m.IVariablesManager;
+import m.Settings;
 import p.mobj_t;
+import rr.Renderer;
 import utils.C2JUtils;
+import v.DoomVideoRenderer;
 import data.mapthing_t;
 import defines.*;
 import demo.IDoomDemo;
+import f.Finale;
+import f.Wiper;
+
 /**
  * We need globally shared data structures, for defining the global state
  * variables. MAES: in pure OO style, this should be a global "Doom state"
@@ -22,7 +29,7 @@ import demo.IDoomDemo;
  * document where everything is supposed to come from/reside.
  */
 
-public class DoomStatus extends DoomContext {
+public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVariables {
 
 	public static final int	BGCOLOR=		7;
 	public static final int	FGCOLOR		=8;
@@ -277,14 +284,9 @@ public class DoomStatus extends DoomContext {
     //
 
     // File handling stuff.
-   // public char[] basedefault = new char[1024];
-
-    /** primary wad file */
-    String		wadfile;
-    /**  directory of development maps */
-    String		mapdir;           
-    /** default file */
-    String basedefault;      
+    /** Normally this is default.cfg, might be .doomrc on lunix??? */
+    
+    public static String basedefault="default.cfg";      
     
     public OutputStreamWriter debugfile;
 
@@ -350,7 +352,21 @@ public class DoomStatus extends DoomContext {
         }
         
     }
+    
+    public abstract void Init();
 
+    // Fields used for selecting variable BPP implementations.
+    
+    protected abstract Finale<T> selectFinale();
+    
+    protected abstract DoomVideoRenderer<T,V> selectVideoRenderer();
+    
+    protected abstract Renderer<T,V> selectRenderer();
+    
+    protected abstract Wiper<T,V> selectWiper();
+    
+    protected abstract IAutoMap<T,V> selectAutoMap();
+    
     // MAES: Fields specific to DoomGame. A lot of them were
     // duplicated/externalized
     // in d_game.c and d_game.h, so it makes sense adopting a more unified
@@ -512,7 +528,7 @@ public class DoomStatus extends DoomContext {
 
     protected mobj_t[] bodyque = new mobj_t[BODYQUESIZE];
 
-    public byte[] statcopy; // for statistics driver
+    public String statcopy; // for statistics driver
 
     
     
@@ -520,7 +536,7 @@ public class DoomStatus extends DoomContext {
      *  ignore mouse input?
      */
     
-    public boolean use_mouse;
+    public boolean use_mouse,use_joystick;
     
     
     /** More prBoom+ stuff. Used mostly for code uhm..reuse, rather
@@ -537,11 +553,150 @@ public class DoomStatus extends DoomContext {
     	this.wminfo=new wbstartstruct_t();
     	initNetGameStuff();
     }
+
+    @Override
+    public void registerVariableManager(IVariablesManager manager) {
+        this.VM=manager;        
+    }
+
+    @Override
+    public void update() {
+
+           this.snd_SfxVolume=VM.getSetting(Settings.sfx_volume).getInteger();
+           this.snd_MusicVolume=VM.getSetting(Settings.music_volume).getInteger();
+           this.alwaysrun=VM.getSetting(Settings.alwaysrun).getBoolean();
+                     
+          
+           // Keys...
+           this.key_right=VM.getSetting(Settings.key_right).getChar();
+           this.key_left=VM.getSetting(Settings.key_left).getChar();
+           this.key_up=VM.getSetting(Settings.key_up).getChar();
+           this.key_down=VM.getSetting(Settings.key_down).getChar();
+           this.key_strafeleft=VM.getSetting(Settings.key_strafeleft).getChar();
+           this.key_straferight=VM.getSetting(Settings.key_straferight).getChar();
+           this.key_fire=VM.getSetting(Settings.key_fire).getChar();
+           this.key_use=VM.getSetting(Settings.key_use).getChar();
+           this.key_strafe=VM.getSetting(Settings.key_strafe).getChar();
+           this.key_speed=VM.getSetting(Settings.key_speed).getChar();
+           
+
+           // Mouse buttons
+           this.use_mouse=VM.getSetting(Settings.use_mouse).getBoolean();
+           this.mousebfire=VM.getSetting(Settings.mouseb_fire).getInteger();
+           this.mousebstrafe=VM.getSetting(Settings.mouseb_strafe).getInteger();
+           this.mousebforward=VM.getSetting(Settings.mouseb_forward).getInteger();
+           
+           // Joystick
+
+           this.use_joystick=VM.getSetting(Settings.use_joystick).getBoolean();
+           this.joybfire=VM.getSetting(Settings.joyb_fire).getInteger();
+           this.joybstrafe=VM.getSetting(Settings.joyb_strafe).getInteger();
+           this.joybuse=VM.getSetting(Settings.joyb_use).getInteger();
+           this.joybspeed=VM.getSetting(Settings.joyb_speed).getInteger();
+
+           // Sound
+           this.numChannels=VM.getSetting(Settings.snd_channels).getInteger();
+
+           // Video...so you should wait until video renderer is active.           
+           this.V.setUsegamma(VM.getSetting(Settings.usegamma).getInteger());
+           
+           // These should really be handled by the menu.
+           this.M.setShowMessages(VM.getSetting(Settings.show_messages).getBoolean());
+           this.M.setScreenBlocks(VM.getSetting(Settings.screenblocks).getInteger());
+
+           // These should be handled by the HU
+
+           for (int i=0;i<=9;i++){
+               
+           String chatmacro=String.format("chatmacro%d",i);
+           this.HU.setChatMacro(i,VM.getSetting(chatmacro).toString());
+           }
+        }
+
+    @Override
+    public void commit() {
+        VM.putSetting(Settings.sfx_volume,this.snd_SfxVolume);
+        VM.putSetting(Settings.music_volume,this.snd_MusicVolume);
+        VM.putSetting(Settings.alwaysrun, this.alwaysrun);
+       
+       
+        // Keys...
+        VM.putSetting(Settings.key_right,this.key_right);
+        VM.putSetting(Settings.key_left,this.key_left);
+        VM.putSetting(Settings.key_up,this.key_up);
+        VM.putSetting(Settings.key_down,this.key_down);
+        VM.putSetting(Settings.key_strafeleft,this.key_strafeleft);
+        VM.putSetting(Settings.key_straferight,this.key_straferight);
+        VM.putSetting(Settings.key_fire,this.key_fire);
+        VM.putSetting(Settings.key_use,this.key_use);
+        VM.putSetting(Settings.key_strafe,this.key_strafe);
+        VM.putSetting(Settings.key_speed,this.key_speed);
+        
+
+        // Mouse buttons
+        VM.putSetting(Settings.use_mouse,this.use_mouse);
+        VM.putSetting(Settings.mouseb_fire,this.mousebfire);
+        VM.putSetting(Settings.mouseb_strafe,this.mousebstrafe);
+        VM.putSetting(Settings.mouseb_forward,this.mousebforward);
+        
+        // Joystick
+
+        VM.putSetting(Settings.use_joystick,this.use_joystick);
+        VM.putSetting(Settings.joyb_fire,this.joybfire);
+        VM.putSetting(Settings.joyb_strafe,this.joybstrafe);
+        VM.putSetting(Settings.joyb_use,this.joybuse);
+        VM.putSetting(Settings.joyb_speed,this.joybspeed);
+
+        // Sound
+        VM.putSetting(Settings.snd_channels,this.numChannels);
+        
+        // Video...         
+        VM.putSetting(Settings.usegamma,V.getUsegamma());
+        
+        // These should really be handled by the menu.
+        VM.putSetting(Settings.show_messages,this.M.getShowMessages());
+        VM.putSetting(Settings.screenblocks,this.M.getScreenBlocks());
+        
+        // These should be handled by the HU
+
+        for (int i=0;i<=9;i++){
+            
+        String chatmacro=String.format("chatmacro%d",i);
+        VM.putSetting(chatmacro,this.HU.chat_macros[i]);
+        }
+        
+    }
+    
+
+    public String getDefaultFile(){
+    // check for a custom default file
+
+    int i = CM.CheckParm("-config");
+    if ((i>0) && i<CM.getArgc()-1)
+    {
+        return CM.getArgv(i+1);
+        //System.out.printf("   default file: %s\n",defaultfile);
+    }
+    else
+        return basedefault;
+    }
     
 
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.35  2012/09/24 17:16:22  velktron
+// Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
+//
+// Revision 1.34.2.3  2012/09/24 16:58:06  velktron
+// TrueColor, Generics.
+//
+// Revision 1.34.2.2  2012/09/20 14:25:13  velktron
+// Unified DOOM!!!
+//
+// Revision 1.34.2.1  2012/09/17 16:06:52  velktron
+// Now handling updates of all variables, though those specific to some subsystems should probably be moved???
+//
 // Revision 1.34  2011/11/01 23:48:10  velktron
 // Added tnthom stuff.
 //

@@ -32,12 +32,12 @@ import w.lumpinfo_t;
  */
 
 public class SimpleTextureManager
-        implements TextureManager {
+        implements TextureManager<byte[]> {
     
     IWadLoader W;
     IDoomSystem I;
     AbstractLevelLoader LL;
-    DoomStatus DM;
+    DoomStatus<?,?> DM;
     
     //
     // Graphics.
@@ -52,10 +52,9 @@ public class SimpleTextureManager
     protected int     numflats;
     /** HACK */
     protected flat_t[] flats;
-
     
-    protected int     firstpatch;
-    protected int     lastpatch;
+    //protected int     firstpatch;
+    //protected int     lastpatch;
     protected int     numpatches;
 
 
@@ -100,7 +99,7 @@ public class SimpleTextureManager
     // This is also in DM, but one is enough, really.
     protected int skytexture,skytexturemid,skyflatnum;
     
-    public SimpleTextureManager(DoomStatus DC) {
+    public SimpleTextureManager(DoomStatus<?,?> DC) {
         this.DM=DC;
         this.W=DM.W;
         this.I=DM.I;
@@ -140,7 +139,6 @@ public class SimpleTextureManager
 
         Hashtable<String, Integer> TextureCache;
         
-        
         /**
          * R_TextureNumForName
          * Calls R_CheckTextureNumForName,
@@ -166,80 +164,40 @@ public class SimpleTextureManager
     
     public void InitTextures () throws IOException
     {
-        maptexture_t   mtexture=new maptexture_t();
-        texture_t      texture;
-        mappatch_t[]     mpatch;
-        texpatch_t[]    patch;
-
-        ByteBuffer        maptex, maptex2, maptex1;
-        
-        String        name;
-        ByteBuffer       names;
-        int       name_p;
-        
-        int[]        patchlookup;
-        
-        int         totalwidth;
-        int         nummappatches;
-        int         offset;
-        int         maxoff;
-        int         maxoff2;
-        int         numtextures1;
-        int         numtextures2;
-
-        int        directory;
-        
-        int         temp1;
-        int         temp2;
-        int         temp3;
-
-        
+        // This drives the rest
+        maptexture_t mtexture = new maptexture_t();
+        texture_t texture;
+        mappatch_t[] mpatch;
+        texpatch_t[] patch;
+        ByteBuffer[] maptex = new ByteBuffer[texturelumps.length];
+        int[] patchlookup;
+        int totalwidth;
+        int offset;
+        int[] maxoff = new int[texturelumps.length];
+        int[] _numtextures = new int[texturelumps.length];
+        int directory = 1;
+        int texset=TEXTURE1;
         // Load the patch names from pnames.lmp.
         //name[8] = 0;    
-        names = W.CacheLumpName ("PNAMES", PU_STATIC).getBuffer();
-        names.order(ByteOrder.LITTLE_ENDIAN);
-        
-        // Number of patches.
-        names.rewind();
-        nummappatches = names.getInt();
-        
-        patchlookup = new int[nummappatches];
-        
-        for (int i=0 ; i<nummappatches ; i++)
-        {
-        // Get a size limited string;
-        name=DoomBuffer.getNullTerminatedString(names, 8).toUpperCase();
-        patchlookup[i] = W.CheckNumForName (name);
-        }
-        
-        names=null;
+        patchlookup=loadPatchNames("PNAMES");
         
         // Load the map texture definitions from textures.lmp.
         // The data is contained in one or two lumps,
         //  TEXTURE1 for shareware, plus TEXTURE2 for commercial.
-        maptex = maptex1 = W.CacheLumpName ("TEXTURE1", PU_STATIC).getBuffer();
-        maptex.rewind();
-        maptex.order(ByteOrder.LITTLE_ENDIAN);
-        numtextures1 = maptex.getInt();
-        maxoff = W.LumpLength (W.GetNumForName ("TEXTURE1"));
-        directory = 1;
         
-        if (W.CheckNumForName ("TEXTURE2") != -1)
-        {
-        maptex2 = W.CacheLumpName ("TEXTURE2", PU_STATIC).getBuffer();
-        maptex2.order(ByteOrder.LITTLE_ENDIAN);
-        maptex2.rewind();
-        numtextures2 = maptex2.getInt();
-        maxoff2 = W.LumpLength (W.GetNumForName ("TEXTURE2"));
-        }
-        else
-        {
-        maptex2 = null;
-        numtextures2 = 0;
-        maxoff2 = 0;
+        for (int i=0;i<texturelumps.length;i++){
+            String TEXTUREx=texturelumps[i];
+            if (W.CheckNumForName (TEXTUREx) != -1){
+            maptex[i] = W.CacheLumpName (TEXTUREx, PU_STATIC).getBuffer();
+            maptex[i].rewind();
+            maptex[i].order(ByteOrder.LITTLE_ENDIAN);
+            _numtextures[i] = maptex[i].getInt();
+            maxoff[i] = W.LumpLength (W.GetNumForName (TEXTUREx));
+            }
         }
         
-        numtextures = numtextures1 + numtextures2;
+        // Total number of textures.
+        numtextures = _numtextures[0] + _numtextures[1];
         
         textures = new texture_t[numtextures];
         // MAES: Texture hashtable.          
@@ -256,7 +214,6 @@ public class SimpleTextureManager
         totalwidth = 0;
         
         //  Really complex printing shit...
-
         System.out.print("[");
         for (int i=0 ; i<numtextures ; i++,directory++)
         {
@@ -264,24 +221,22 @@ public class SimpleTextureManager
         if ((i&63)==0)
             System.out.print ('.');
 
-        if (i == numtextures1)
+        if (i == _numtextures[TEXTURE1])
         {
             // Start looking in second texture file.
-            maptex = maptex2;
-            maxoff = maxoff2;
+            texset=TEXTURE2;
             directory = 1; // offset "1" inside maptex buffer
             //System.err.print("Starting looking into TEXTURE2\n");
         }
-        //System.out.print("Directory "+directory);
-        offset = maptex.getInt(directory*4);
-        if (offset > maxoff)
-            I.Error("R_InitTextures: bad texture directory");
-       // System.err.printf("offset %d\n",offset);
         
-        maptex.position(offset);
+        offset = maptex[texset].getInt(directory<<2);
+        
+        if (offset > maxoff[texset])
+            I.Error("R_InitTextures: bad texture directory");
+        
+        maptex[texset].position(offset);
         // Read "maptexture", which is the on-disk form.
-        mtexture.unpack(maptex);
-        //System.err.println(mtexture.name+ " @"+offset);
+        mtexture.unpack(maptex[texset]);
 
         // MAES: the HashTable only needs to know the correct names.
         TextureCache.put(mtexture.name.toUpperCase(), new Integer(i));
@@ -291,15 +246,13 @@ public class SimpleTextureManager
         textures[i].copyFromMapTexture(mtexture);
         texture = textures[i];
         
-        
-        //System.out.println("Patches: "+textures[i].patchcount);
-        
         // However we do need to correct the "patch.patch" field through the patchlookup
         mpatch = mtexture.patches;
         patch = texture.patches;
-
+        
         for (int j=0 ; j<texture.patchcount ; j++)
         {
+            //System.err.printf("Texture %d name %s patch %d lookup %d\n",i,mtexture.name,j,mpatch[j].patch);
             patch[j].patch = patchlookup[mpatch[j].patch];
             if (patch[j].patch == -1)
             {
@@ -322,10 +275,6 @@ public class SimpleTextureManager
             
         totalwidth += texture.width;
         }
-
-        maptex1=null;
-        if (maptex2!=null)
-        maptex2=null;
         
         // Precalculate whatever possible.  
         for (int i=0 ; i<numtextures ; i++)
@@ -338,6 +287,52 @@ public class SimpleTextureManager
             texturetranslation[i] = i;
     }
     
+    /** Assigns proper lumpnum to patch names. Check whether flats and patches of the same name coexist.
+     *  If yes, priority should go to patches. Otherwise, it's a "flats on walls" case.
+     * 
+     * @param pnames
+     * @return
+     * @throws IOException
+     */
+    
+    private int[] loadPatchNames(String pnames) throws IOException {
+        int[] patchlookup;
+        int nummappatches;
+        String name;
+        
+        ByteBuffer names = W.CacheLumpName (pnames, PU_STATIC).getBuffer();        
+        names.order(ByteOrder.LITTLE_ENDIAN);
+        
+        // Number of patches.
+        names.rewind();
+        nummappatches = names.getInt();        
+        patchlookup = new int[nummappatches];
+        
+        for (int i=0 ; i<nummappatches ; i++)
+        {
+        // Get a size limited string;
+        name=DoomBuffer.getNullTerminatedString(names, 8).toUpperCase();
+        
+        // Resolve clashes
+        int[] stuff= W.CheckNumsForName (name);
+        
+        // Move backwards.
+        for (int k=0;k<stuff.length;k++){
+            
+            // Prefer non-flat, with priority
+            if (W.GetLumpInfo(stuff[k]).namespace != li_namespace.ns_flats) {
+                patchlookup[i]=stuff[k];
+                break;            
+            }            
+             
+            // Suck it down :-/
+            patchlookup[i]=stuff[k];
+        }
+        }
+        
+        return patchlookup;
+    }
+
     private patch_t retrievePatchSafe(int lump){
         
         // If this is a known troublesome lump, get it from the cache.
@@ -376,7 +371,7 @@ public class SimpleTextureManager
         texture_t      texture;
         short[]       patchcount; //Keeps track of how many patches overlap a column.
         texpatch_t[]     patch;  
-        patch_t        realpatch;
+        patch_t        realpatch = null;
         int         x;
         int         x1;
         int         x2;
@@ -459,6 +454,7 @@ public class SimpleTextureManager
         if (patchcount[x]==0)
         {
             // TODO: somehow handle this. 
+            System.err.print (realpatch.width);
             System.err.print ("R_GenerateLookup: column without a patch ("+texture.name+")\n");
             //return;
         }
@@ -472,11 +468,12 @@ public class SimpleTextureManager
             collump[x] = -1;    
             colofs[x] = (char) texturecompositesize[texnum];
             
+            /* Do we really mind?
             if (texturecompositesize[texnum] > 0x10000-texture.height)
             {
-            I.Error ("R_GenerateLookup: texture %i is >64k",
-                 texnum);
-            }
+            I.Error ("R_GenerateLookup: texture no %d (%s) is >64k",
+                 texnum,textures[texnum].name);
+            } */
             
             texturecompositesize[texnum] += texture.height;
         }
@@ -489,8 +486,7 @@ public class SimpleTextureManager
      * from the patches and each column is cached. This method is "lazy"
      * aka it's only called when a cached/composite texture is needed.
      * 
-     * TODO: support masked textures. This should NOT be required, but
-     * will result in crashes in Java, unless we're safeguarded.
+     * @param texnum
      * 
      */
     
@@ -565,6 +561,28 @@ public class SimpleTextureManager
         }
     }
     
+    /**
+     * R_GenerateMaskedComposite
+     * 
+     * Generates a "masked composite texture": the result is a MASKED texture
+     * (with see-thru holes), but this time  multiple patches can be used to 
+     * assemble it, unlike standard Doom where this is not allowed.
+     *  
+     * Called only if a request for a texture in the general purpose GetColumn 
+     * method (used only for masked renders) turns out not to be pointing to a standard 
+     * cached texture, nor to a disk lump(which is the standard Doom way of indicating a 
+     * composite single patch texture) but to a cached one which, however, is composite.
+     * 
+     * Confusing, huh?
+     * 
+     * Normally, this results in a disaster, as the masked rendering methods 
+     * don't expect cached/composite textures at all, and you get all sorts of nasty
+     * tutti frutti and medusa effects. Not anymore ;-) 
+     * 
+     * @param texnum
+     * 
+     */
+    
     @Override
     public void GenerateMaskedComposite(int texnum) {
         byte[][] block;
@@ -582,7 +600,7 @@ public class SimpleTextureManager
         texture = textures[texnum];
 
         // MAES: we don't want to save a solid block this time. Will only use
-        // for synthesis.
+        // it for synthesis.
 
         block = new byte[texture.width][texture.height];
         pixmap = new boolean[texture.width][texture.height]; // True values = solid
@@ -599,7 +617,7 @@ public class SimpleTextureManager
         // For each patch in the texture...
         for (int i = 0; i < texture.patchcount; i++) {
 
-            realpatch = W.CachePatchNum(patch[i].patch, PU_CACHE);
+            realpatch = W.CachePatchNum(patch[i].patch);
             x1 = patch[i].originx;
             x2 = x1 + realpatch.width;
 
@@ -627,7 +645,7 @@ public class SimpleTextureManager
 
         }
         
-        // TODO Patch drawn on cache, synthesize patch_t using it. 
+        // Patch drawn on cache, synthesize patch_t using it. 
         this.patchcomposite[texnum]=MultiPatchSynthesizer.synthesize(this.CheckTextureNameForNum(texnum),block, pixmap,texture.width,texture.height);
     }
     
@@ -779,7 +797,7 @@ public class SimpleTextureManager
         // priority, so its usefulness as an absolute end-index for regular flats
         // is dodgy at best. Gotta love the inconsistent mundo hacks!
         
-        int lastflatlump=W.GetNumForName(LUMPEND);
+        //int lastflatlump=W.GetNumForName(LUMPEND);
         
 		// 
         int lump=firstflat;
@@ -1144,11 +1162,11 @@ public class SimpleTextureManager
      * @param column
      * @return raw, 0-pointed column data.
      */    
-    public byte[] getRogueColumn(int lump, int column) {
+    public synchronized byte[] getRogueColumn(int lump, int column) {
 		
 		// If previously requested, speed up gathering.
 		//if (lastrogue==lump)
-//			return rogue[column];
+        //	return rogue[column];
 		
 		// Not contained? Generate.
 		if (!roguePatches.containsKey(lump))
@@ -1187,6 +1205,219 @@ public class SimpleTextureManager
 	int lastrogue=-1;
 	byte[][] rogue;
 	
+	
 	HashMap<Integer,byte[][]> roguePatches= new HashMap<Integer,byte[][]> ();
+    
+	class TextureDirectoryEntry implements Comparable<TextureDirectoryEntry>{
+	    /** Where an entry starts within the TEXTUREx lump */
+	    int offset;
+	    /** Its implicit position as indicated by the directory's ordering */
+	    int entry;
+	    /** Its MAXIMUM possible length, depending on what follows it. 
+	     *  Not trivial to compute without thoroughtly examining the entire lump */
+	    int length;
+	    
+	    /** Entries are ranked according to actual offset */
+        @Override
+        public int compareTo(TextureDirectoryEntry o) {
+            if (this.offset<o.offset) return -1;
+            if (this.offset==o.offset) return 0;
+            return 1;
+        }
+	 }
+
+    @Override
+    public byte[] getSafeFlat(int flatnum) {
+        byte[] flat= ((flat_t)W.CacheLumpNum(getFlatTranslation(flatnum),
+            PU_STATIC,flat_t.class)).data;
+
+        if (flat.length<4096){
+            System.arraycopy(flat, 0,safepatch,0,flat.length);
+            return safepatch;
+        }
+        
+        return flat;
+    }
+	
+    private final byte[] safepatch=new byte[4096];
+    
+    // COLUMN GETTING METHODS. No idea why those had to be in the renderer...
+    
+    /**
+     * Special version of GetColumn meant to be called concurrently by different
+     * seg rendering threads, identfiex by index. This serves to avoid stomping
+     * on mutual cached textures and causing crashes.
+     * 
+     */
+
+    public byte[] GetSmpColumn(int tex, int col, int id) {
+        int lump,ofs;
+
+        col &= getTexturewidthmask(tex);
+        lump = getTextureColumnLump(tex, col);
+        ofs = getTextureColumnOfs(tex, col);
+
+        // It's always 0 for this kind of access.
+
+        // Speed-increasing trick: speed up repeated accesses to the same
+        // texture or patch, if they come from the same lump
+        
+        if (tex == smp_lasttex[id] && lump == smp_lastlump[id]) {
+            if (composite)
+                return smp_lastpatch[id].columns[col].data;
+            else
+                return smp_lastpatch[id].columns[ofs].data;
+            }
+
+        // If pointing inside a non-zero, positive lump, then it's not a
+        // composite texture. Read it from disk.
+        if (lump > 0) {
+            // This will actually return a pointer to a patch's columns.
+            // That is, to the ONE column exactly.{
+            // If the caller needs access to a raw column, we must point 3 bytes
+            // "ahead".
+            smp_lastpatch[id] = W.CachePatchNum(lump);
+            smp_lasttex[id] = tex;
+            smp_lastlump[id]=lump;
+            smp_composite[id]=false;
+            // If the column was a disk lump, use ofs.
+            return smp_lastpatch[id].columns[ofs].data;
+        }
+        
+        // Problem. Composite texture requested as if it was masked
+        // but it doesn't yet exist. Create it.
+        if (getMaskedComposite(tex) == null){
+            System.err.printf("Forced generation of composite %s\n",CheckTextureNameForNum(tex),smp_composite[id],col,ofs);
+            GenerateMaskedComposite(tex);
+            System.err.printf("Composite patch %s %d\n",getMaskedComposite(tex).name,getMaskedComposite(tex).columns.length);
+        }
+        
+        // Last resort. 
+        smp_lastpatch[id] = getMaskedComposite(tex);
+        smp_lasttex[id]=tex;
+        smp_composite[id]=true;
+        smp_lastlump[id]=0;
+        
+        return lastpatch.columns[col].data;
+    }
+
+    // False: disk-mirrored patch. True: improper "transparent composite".
+    protected boolean[] smp_composite;// = false;
+    protected int[] smp_lasttex;// = -1;
+    protected int[] smp_lastlump;// = -1;
+    protected patch_t[] smp_lastpatch;// = null;
+    
+///////////////////////// TEXTURE MANAGEMENT /////////////////////////
+
+    /**
+     * R_GetColumn original version: returns raw pointers to byte-based column
+     * data. Works for both masked and unmasked columns, but is not
+     * tutti-frutti-safe.
+     * 
+     * Use GetCachedColumn instead, if rendering non-masked stuff, which is also
+     * faster.
+     * 
+     * @throws IOException
+     * 
+     * 
+     */
+
+    public byte[] GetColumn(int tex, int col) {
+        int lump,ofs;
+
+        col &= getTexturewidthmask(tex);
+        lump = getTextureColumnLump(tex, col);
+        ofs = getTextureColumnOfs(tex, col);
+
+        // It's always 0 for this kind of access.
+
+        // Speed-increasing trick: speed up repeated accesses to the same
+        // texture or patch, if they come from the same lump
+        
+        if (tex == lasttex && lump == lastlump) {
+            if (composite)
+                return lastpatch.columns[col].data;
+            else
+                return lastpatch.columns[ofs].data;
+            }
+
+        // If pointing inside a non-zero, positive lump, then it's not a
+        // composite texture. Read it from disk.
+        if (lump > 0) {
+            // This will actually return a pointer to a patch's columns.
+            // That is, to the ONE column exactly.{
+            // If the caller needs access to a raw column, we must point 3 bytes
+            // "ahead".
+            lastpatch = W.CachePatchNum(lump);
+            lasttex = tex;
+            lastlump=lump;
+            composite=false;
+            // If the column was a disk lump, use ofs.
+            return lastpatch.columns[ofs].data;
+        }
+        
+        // Problem. Composite texture requested as if it was masked
+        // but it doesn't yet exist. Create it.
+        if (getMaskedComposite(tex) == null){
+            System.err.printf("Forced generation of composite %s\n",CheckTextureNameForNum(tex),composite,col,ofs);
+            GenerateMaskedComposite(tex);
+            System.err.printf("Composite patch %s %d\n",getMaskedComposite(tex).name,getMaskedComposite(tex).columns.length);
+        }
+        
+        // Last resort. 
+        lastpatch = getMaskedComposite(tex);
+        lasttex=tex;
+        composite=true;
+        lastlump=0;
+        
+        return lastpatch.columns[col].data;
+    }
+
+    // False: disk-mirrored patch. True: improper "transparent composite".
+    private boolean composite = false;
+    private int lasttex = -1;
+    private int lastlump = -1;
+    private patch_t lastpatch = null;
+
+    
+    
+    /**
+     * R_GetColumn variation which is tutti-frutti proof. It only returns cached
+     * columns, and even pre-caches single-patch textures intead of trashing the
+     * WAD manager (should be faster, in theory).
+     * 
+     * Cannot be used for drawing masked textures, use classic GetColumn
+     * instead.
+     * 
+     * 
+     * @throws IOException
+     */
+    @Override
+    public final byte[] GetCachedColumn(int tex, int col) {
+        int lump, ofs;
+
+        col &= getTexturewidthmask(tex);
+        lump = getTextureColumnLump(tex, col);
+        ofs = getTextureColumnOfs(tex, col);
+
+        // In the case of cached columns, this is always 0.
+        // Done externally, for now.
+        //dcvars.dc_source_ofs = 0;
+
+        // If pointing inside a non-zero, positive lump, then it's not a
+        // composite texture.
+        // Read from disk, and safeguard vs tutti frutti.
+        if (lump > 0) {
+            // This will actually return a pointer to a patch's columns.
+            return getRogueColumn(lump, ofs);
+        }
+
+        // Texture should be composite, but it doesn't yet exist. Create it.
+        if (getTextureComposite(tex) == null)
+            GenerateComposite(tex);
+
+        return getTextureComposite(tex, col);
+    }
+
     
 }

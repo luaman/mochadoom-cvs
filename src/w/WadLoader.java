@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.59 2011/12/05 12:31:34 velktron Exp $
+// $Id: WadLoader.java,v 1.60 2012/09/24 17:16:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -324,14 +324,15 @@ public class WadLoader implements IWadLoader {
 	            maxsize=lumpinfo[i].position+lumpinfo[i].size;
 	        }
 	    }
-
-	    return maxsize;
+	    
+        // TODO Auto-generated method stub
+        return maxsize;
     }
 
     /* (non-Javadoc)
 	 * @see w.IWadLoader#Reload()
 	 */
-	
+	@SuppressWarnings("null")
 	public void Reload() throws Exception {
 		wadinfo_t header = new wadinfo_t();
 		int lumpcount;
@@ -639,7 +640,7 @@ public class WadLoader implements IWadLoader {
 	public final byte[] ReadLump(int lump){
 	    lumpinfo_t l=lumpinfo[lump];
 	    byte[] buf=new byte[(int) l.size];
-	    ReadLump(lump, buf);
+	    ReadLump(lump, buf,0);
 	    return buf;
 	    
 	}
@@ -659,7 +660,7 @@ public class WadLoader implements IWadLoader {
 	@Override
 	public final void ReadLump(int lump, byte[] buf, int offset) {
 		int c=0;
-		lumpinfo_t l; // Maes: was *..probably not array.
+		lumpinfo_t l;
 		InputStream handle = null;
 
 		if (lump >= this.numlumps) {
@@ -669,8 +670,6 @@ public class WadLoader implements IWadLoader {
 
 		l = lumpinfo[lump];
 
-		// ??? I_BeginRead ();
-
 		if (l.handle == null) {
 			// reloadable file, so use open / read / close
 			try {
@@ -678,7 +677,7 @@ public class WadLoader implements IWadLoader {
 				handle = InputStreamSugar.createInputStreamFromURI(this.reloadname,null,0);
 			} catch (Exception e) {
 				e.printStackTrace();
-				I.Error("W_ReadLump: couldn't open resource %s", reloadname);
+				I.Error("W_ReadLump: couldn't open %s", reloadname);
 			}
 		} else
 			handle = l.handle;
@@ -706,11 +705,14 @@ public class WadLoader implements IWadLoader {
 				handle.close();
 			else
 			    l.handle=handle;
+	
+			I.BeginRead ();
 			
 			return;
 			
 			// ??? I_EndRead ();
 		} catch (Exception e) {
+			e.printStackTrace();
 			I.Error("W_ReadLump: could not read lump " + lump);
 			e.printStackTrace();
 			return;
@@ -727,9 +729,8 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 */
 	
-	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class<?> what) {
-		// byte* ptr;
-
+	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what) {
+		
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);
 		}
@@ -818,7 +819,7 @@ public class WadLoader implements IWadLoader {
 	
 	@Deprecated
 	public void CacheLumpNumIntoArray(int lump, int tag, Object[] array,
-			Class<?> what) throws IOException {
+			Class what) throws IOException {
 
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);
@@ -999,7 +1000,6 @@ public class WadLoader implements IWadLoader {
 	 */
 
 	public patch_t CachePatchName(String name) {
-
 		return (patch_t) this.CacheLumpNum(this.GetNumForName(name), PU_CACHE,
 				patch_t.class);
 
@@ -1018,14 +1018,14 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#CachePatchNum(int, int)
 	 */
 
-	public patch_t CachePatchNum(int num, int tag) {
-		return (patch_t) this.CacheLumpNum(num, tag, patch_t.class);
+	public patch_t CachePatchNum(int num) {
+		return (patch_t) this.CacheLumpNum(num, PU_CACHE, patch_t.class);
 	}
 
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
 	 */
-	public CacheableDoomObject CacheLumpName(String name, int tag, Class<?> what) {
+	public CacheableDoomObject CacheLumpName(String name, int tag, Class what) {
 		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
 				what);
 	}
@@ -1148,6 +1148,33 @@ public class WadLoader implements IWadLoader {
 		return -1;
 	}
 
+	   /* (non-Javadoc)
+     * @see w.IWadLoader#CheckNumForName(java.lang.String)
+     */
+    public int[] CheckNumsForName(String name)
+
+    {
+        
+        list.clear();
+        
+        // Dumb search, no chained hashtables I'm afraid :-/
+        // Move backwards, so list is compiled with more recent ones first.
+        for (int i=numlumps-1;i>=0;i--){
+            if (name.compareToIgnoreCase(lumpinfo[i].name)==0) list.add(i);
+        }
+        
+        final int num=list.size();
+        int[] result=new int[num];
+        for (int i=0;i<num;i++){
+            result[i]=list.get(i);
+        }
+    
+        // Might be empty/null, so check that out.
+        return result;
+    }
+    
+    private final ArrayList<Integer> list=new ArrayList<Integer>();
+	
 	@Override
 	public lumpinfo_t GetLumpInfo(int i) {
 		return this.lumpinfo[i];
@@ -1182,6 +1209,10 @@ public class WadLoader implements IWadLoader {
 	public void finalize(){
 		CloseAllHandles();
 	}
+
+	public static final int ns_global=0;
+	public static final int ns_flats=1;
+	public static final int ns_sprites=2;
 	
 	/** 
 	 * Based on Boom's W_CoalesceMarkedResource
@@ -1195,10 +1226,6 @@ public class WadLoader implements IWadLoader {
 	 * for flats.
 	 * 
 	 * killough 4/17/98: add namespace tags
-	 * 
-	 * TODO: Maybe a stack-based approach would work better?
-	 * TODO: as it is, it can't handle certain malformed WADs like
-	 * HellRaiser.
 	 *   
 	 * @param start_marker
 	 * @param end_marker
@@ -1286,6 +1313,8 @@ public class WadLoader implements IWadLoader {
 	  
 	public final static boolean IsMarker(String marker, String name)
 	{
+		// Safeguard against nameless marker lumps e.g. in Galaxia.wad
+		if (name==null || name.length()==0) return false;
 	  boolean result= name.equalsIgnoreCase(marker) ||
 	    // doubled first character test for single-character prefixes only
 	    // FF_* is valid alias for F_*, but HI_* should not allow HHI_*
@@ -1362,11 +1391,23 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
-//Revision 1.59  2011/12/05 12:31:34  velktron
-//Merged zip handling fix from HiColor
+//Revision 1.60  2012/09/24 17:16:22  velktron
+//Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //
-//Revision 1.58  2011/11/21 10:02:52  velktron
-//Added parametrization to reflection-using methods. Cleaneup a bit.
+//Revision 1.57.2.5  2012/09/19 21:46:46  velktron
+//Simpler call for getPATCH
+//
+//Revision 1.57.2.4  2012/09/04 15:08:34  velktron
+//New GetNumsForName function.
+//
+//Revision 1.57.2.3  2012/06/14 22:38:20  velktron
+//Uses new disk flasher.
+//
+//Revision 1.57.2.2  2011/12/08 00:40:40  velktron
+//Fix for Galaxia.wad nameless lumps.
+//
+//Revision 1.57.2.1  2011/12/05 12:05:13  velktron
+//Fixed a vexing bug with ZIP file header & TOC reading.
 //
 //Revision 1.57  2011/11/09 19:07:40  velktron
 //Adapted to handling ZIP files

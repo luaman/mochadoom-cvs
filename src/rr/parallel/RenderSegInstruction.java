@@ -1,4 +1,4 @@
-package rr;
+package rr.parallel;
 
 /** This is all the information needed to draw a particular SEG.
  * It's quite a lot, actually, but much better than in testing
@@ -6,7 +6,7 @@ package rr;
  *  
  */
 
-public class RenderSegInstruction {    
+public class RenderSegInstruction<V> {    
 	public int     rw_x,rw_stopx;
 	public int toptexture,midtexture,bottomtexture;
 	public int  pixhigh,pixlow,pixhighstep,pixlowstep,
@@ -17,7 +17,7 @@ public class RenderSegInstruction {
 	public int     rw_offset,rw_distance,rw_scale,
 	rw_scalestep,rw_midtexturemid,rw_toptexturemid,rw_bottomtexturemid;
 	public int viewheight;
-	byte[][] walllights;
+	V[] walllights;
 	public int centery;
 
 }
