@@ -2,14 +2,14 @@ package v;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
 import java.awt.image.DataBufferUShort;
-import static rr.LightsAndColors.LIGHTLEVELS;
 import m.BBox;
 
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer16.java,v 1.2.2.5 2012/09/24 16:56:06 velktron Exp $
+// $Id: BufferedRenderer32.java,v 1.1.2.1 2012/09/24 16:56:06 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,8 +22,8 @@ import m.BBox;
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log: BufferedRenderer16.java,v $
-// Revision 1.2.2.5  2012/09/24 16:56:06  velktron
+// $Log: BufferedRenderer32.java,v $
+// Revision 1.1.2.1  2012/09/24 16:56:06  velktron
 // New hierarchy, less code repetition.
 //
 // Revision 1.2.2.4  2011/11/29 12:45:29  velktron
@@ -47,15 +47,15 @@ import m.BBox;
  * 
  */
 
-public class BufferedRenderer16 extends SoftwareVideoRenderer16 {
+public class BufferedRenderer32 extends SoftwareVideoRenderer32 {
 	
-static final String rcsid = "$Id: BufferedRenderer16.java,v 1.2.2.5 2012/09/24 16:56:06 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer32.java,v 1.1.2.1 2012/09/24 16:56:06 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
 public BufferedImage[] screenbuffer=new BufferedImage[5];
 
-public BufferedRenderer16(int w, int h) {
+public BufferedRenderer32(int w, int h) {
     super(w,h);
 }
 
@@ -81,9 +81,9 @@ public final void Init ()
 public final void setScreen(int index, int width, int height){
 
 	if (screens[index]==null){
-		screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_USHORT_555_RGB);
+		screenbuffer[index]=new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
     
-    	screens[index]=((DataBufferUShort)screenbuffer[index].getRaster().getDataBuffer()).getData();
+    	screens[index]=((DataBufferInt)screenbuffer[index].getRaster().getDataBuffer()).getData();
 		}
 }
 
@@ -152,8 +152,8 @@ protected final void specificPaletteCreation(byte[] paldata,
       
       // Set base colormap
       
-      cmap_base=PaletteGenerator.RF_BuildLights15(this.palettes[0], NUMLIGHTS);
-      cmap_work=PaletteGenerator.RF_BuildLights15(this.palettes[0], NUMLIGHTS);
+      cmap_base=PaletteGenerator.RF_BuildLights24(this.palettes[0], NUMLIGHTS);
+      cmap_work=PaletteGenerator.RF_BuildLights24(this.palettes[0], NUMLIGHTS);
 
 }
 

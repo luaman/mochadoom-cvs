@@ -1,5 +1,7 @@
 package v;
 
+import java.awt.Color;
+
 /**
  * Palette generation failsafe. Uses only data from the first palette, and
  * generates the rest by tinting according to the Doom wiki specs. Uses info
@@ -444,6 +446,34 @@ public class PaletteGenerator {
         
     }
     
+    private static final void BuildSpecials24 (int[] stuff, int[] palette)
+    {
+        int     c,gray,best;
+        int   red, green, blue;;
+
+        for (c=0;c<256;c++)
+        {
+            red = getRed(palette[c]);
+            green = getGreen(palette[c]);
+            blue = getBlue(palette[c]);
+
+            gray = (int) (255*(1.0-((float)red*0.299/256.0 + 
+                                    (float)green*0.587/256.0 +
+                                    (float)blue*0.114/256.0)));            
+            
+            // We are not done. Because of the grayscaling, the all-white cmap
+            
+            //best=palette[BestColor(gray,gray,gray,palette,0,255)];
+            stuff[c] = new Color(gray,gray,gray).getRGB();
+            
+        }
+        
+
+        // will lack tinting.
+        
+        
+    }
+    
     public static final int BestColor (int r, int g, int b, int[] palette, int rangel, int rangeh)
 	{
 		int	i;
@@ -488,7 +518,7 @@ public class PaletteGenerator {
     {
         int     l,c;
         int     red,green,blue;
-        int[][] stuff=new int[NUMLIGHTS][256];
+        int[][] stuff=new int[NUMLIGHTS+1][256];
 
         for (l=0;l<NUMLIGHTS;l++)
         {
@@ -503,9 +533,11 @@ public class PaletteGenerator {
                 blue = (blue*(NUMLIGHTS-l)+NUMLIGHTS/2)/NUMLIGHTS;
 
                 // Full-quality truecolor.
-                stuff[l][c] = getARGB(red,green,blue);
+                stuff[l][c] = new Color(red,green,blue).getRGB();
             }
         }
+        
+        BuildSpecials24(stuff[NUMLIGHTS],palette); 
         
         return stuff;
     }

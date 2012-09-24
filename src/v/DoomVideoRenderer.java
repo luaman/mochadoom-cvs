@@ -19,7 +19,7 @@ import rr.patch_t;
  *
  */
 
-public interface DoomVideoRenderer<K> extends IVideoScaleAware {
+public interface DoomVideoRenderer<T,V> extends IVideoScaleAware {
     
     //flags hacked in scrn (not supported by all functions (see src))
     // Added by _D_. Unsure if I should use VSI objects instead, as they
@@ -69,19 +69,19 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
     
     // Draw a linear block of pixels into the view buffer.
     public void DrawBlock(int x, int y, int scrn, int width, int height,
-            byte[] src);
+            T src);
 
     // Draw a linear block of pixels into the view buffer.
     public void DrawBlock(int x, int y, int scrn, int width, int height,
-            byte[] src,int offset);
+            T src,int offset);
     
     // Reads a linear block of pixels into the view buffer.
     public void GetBlock(int x, int y, int scrn, int width, int height,
-            K dest);
+            V dest);
 
     public void MarkRect(int x, int y, int width, int height);
 
-    public K getScreen(int index);
+    public V getScreen(int index);
     
     public void setScreen(int index, int width, int height);
     
@@ -151,11 +151,7 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
 
     void FillRect(int color, int screen, int x, int y, int width, int height);
     
-    void setColorMaps(int[] colormaps, int num);
-
-    void setColorMaps(short[] colormaps,int num);
-    
-    K[] getColorMaps();
+    V[] getColorMaps();
 
     /** Get the value corresponding to a base color (0-255).
      *  Depending on the implementation this might be indexed,
@@ -177,6 +173,10 @@ public interface DoomVideoRenderer<K> extends IVideoScaleAware {
      */
     
 	void clearCaches();
+	
+	/** Return current palette. Only works for 8-bit renderer, others return null */	
+	
+	IndexColorModel getPalette();
 
     
 }

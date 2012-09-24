@@ -10,9 +10,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
 import java.util.HashMap;
 
 import javax.imageio.ImageIO;
@@ -25,122 +22,22 @@ import rr.column_t;
 import rr.patch_t;
 import utils.C2JUtils;
 
-public abstract class SoftwareVideoRenderer16 implements
-		DoomVideoRenderer<short[]>, IVideoScaleAware, DoomStatusAware {
+public abstract class SoftwareVideoRenderer16 extends SoftwareVideoRenderer<byte[],short[]> {
 
-	IDoomSystem I;
-	Image currentscreen;
-	
-	public Image getCurrentScreen() {
-		return currentscreen;
-	}
 
-	public final void updateStatus(DoomStatus DM) {
-		this.I = DM.I;
-	}
-
-	protected int width;
-	protected int height;
-
-	/**
-	 * Each screen is [SCREENWIDTH*SCREENHEIGHT]; This is what the various
-	 * modules (menu, automap, renderer etc.) get to manipulate at the pixel
-	 * level. To go beyond 8 bit displays, these must be extended
-	 */
-	protected final short[][] screens = new short[5][];
-	
-	/** Colormaps are now part of the base software renderer. This 
-	 *  allows some flexibility over manipulating them.
-	 *  
-	 *  Use base as immutable, use work for applying effects.
-	 *  
-	 */
-	
-	protected short[][] cmap_base,cmap_work;
-	
-	/** PLAYPAL-read palettes, used to build dynamic color maps 
-	 *  Use [z*maxpalettes+y] form, where z=gamme, y=palette
-	 * */
-	
-	protected int[][] palettes;
-	
-	// Used for static graphics
-	protected static final int CMAP_FIXED=0;
-	
-	// Number of static colormaps. Actually 33, if you count the invuln one.
-	protected static final int NUMLIGHTS=32;
-	
 	// MAES: maybe this should be a bbox?
 
 	public BBox dirtybox = new BBox();
 
 	public SoftwareVideoRenderer16() {
 		// Defaults
-		width = SCREENWIDTH;
-		height = SCREENHEIGHT;
+	    super();
+		screens = new short[5][];
 	}
 
 	public SoftwareVideoRenderer16(int w, int h) {
-		// Defaults
-		width = w;
-		height = h;
-	}
-
-	protected int usegamma = 0;
-	protected int usepalette = 0;
-	protected int maxpalettes;
-	protected int maxgammas;
-	protected int currentpal;
-	protected int currentgamma;
-	protected int usescreen = 0;
-
-	public final int getUsegamma() {
-		return usegamma;
-	}
-
-	/**
-	 * V_Markrect: Apparently, video.c had its own "dirtybox" bbox, and this was
-	 * a crude method for expanding it.
-	 * 
-	 */
-
-	public final void MarkRect(int x, int y, int width, int height) {
-		dirtybox.AddToBox(x, y);
-		dirtybox.AddToBox(x + width - 1, y + height - 1);
-	}
-
-	/**
-	 * V_CopyRect
-	 */
-
-	public final void CopyRect(int srcx, int srcy, int srcscrn, int width,
-			int height, int destx, int desty, int destscrn) {
-		// These are pointers inside an array.
-		final short[] src = screens[srcscrn];
-		final short[] dest = screens[destscrn];
-
-		if (RANGECHECK) {
-			if (srcx < 0 || srcx + width > this.width || srcy < 0
-					|| srcy + height > SCREENHEIGHT || destx < 0
-					|| destx + width > this.width || desty < 0
-					|| desty + height > SCREENHEIGHT || srcscrn > 4
-					|| destscrn > 4) {
-				I.Error("Bad V_CopyRect");
-			}
-		}
-		this.MarkRect(destx, desty, width, height);
-
-		// MAES: these were pointers to a specific position inside the screen.
-		int srcPos = this.width * srcy + srcx;
-		int destPos = this.width * desty + destx;
-
-		for (; height > 0; height--) {
-			System.arraycopy(src, srcPos, dest, destPos, width);
-			// memcpy (dest, src, width);
-			srcPos += this.width;
-			destPos += this.width;
-		}
-
+		super(w,h);
+		screens = new short[5][];
 	}
 
 	/**
@@ -437,21 +334,6 @@ public abstract class SoftwareVideoRenderer16 implements
 
 	}
 
-	protected final boolean doRangeCheck(int x, int y, patch_t patch, int scrn) {
-		return (x < 0 || x + patch.width > this.width || y < 0
-				|| y + patch.height > this.height || scrn > 4);
-	}
-
-	protected final boolean doRangeCheck(int x, int y, int scrn) {
-		return (x < 0 || x > this.width || y < 0 || y > this.height || scrn > 4);
-	}
-
-	public void DrawPatchSolidScaled(int x, int y, int scrn, IVideoScale vs,
-			patch_t patch) {
-		this.DrawPatchSolidScaled(x, y, vs.getScalingX(), vs.getScalingY(),
-				scrn, patch);
-	}
-
 	/**
 	 * V_DrawPatchFlipped Masks a column based masked pic to the screen. Flips
 	 * horizontally, e.g. to mirror face.
@@ -677,30 +559,6 @@ public abstract class SoftwareVideoRenderer16 implements
 		}
 	}
 	
-	/**
-	 * V_GetBlock Gets a linear block of pixels from the view buffer.
-	 */
-
-	public final void GetBlock(int x, int y, int scrn, int width, int height,
-			final byte[] dest) {
-		final short[] src = screens[scrn];
-
-		if (RANGECHECK) {
-			if (doRangeCheck(x, y, scrn)) {
-				I.Error("Bad V_DrawBlock");
-			}
-
-		}
-		int srcPos = y * this.width + x;
-		int destPos = 0;
-
-		while ((height--) > 0) {
-			System.arraycopy(src, srcPos, dest, destPos, width);
-			// memcpy (dest, src, width);
-			srcPos += width;
-			destPos += this.width;
-		}
-	}
 
 	/**
 	 * Replaces DrawPatchCol for bunny scrolled in Finale.
@@ -754,23 +612,6 @@ public abstract class SoftwareVideoRenderer16 implements
 		}
 	}
 
-	public final int getHeight() {
-		return this.height;
-	}
-
-	public final int getWidth() {
-		return this.width;
-	}
-
-	public final void DrawPatchDirect(int x, int y, int scrn, patch_t patch) {
-		this.DrawPatch(x, y, scrn, patch);
-
-	}
-
-	public final short[] getScreen(int index) {
-		return screens[index];
-	}
-
 	public void setScreen(int index, int width, int height) {
 		this.screens[index] = new short[width * height];
 	}
@@ -793,43 +634,7 @@ public abstract class SoftwareVideoRenderer16 implements
 
 	}
 
-	public void setCurrentScreen(int screen) {
-		this.usescreen = screen;
-	}
-
-	public void update() {
-		// Override only if there's something else to be done, e.g. map palette
-		// to truecolor buffer
-	}
-
-	// //////////////////////////VIDEO SCALE STUFF
-	// ////////////////////////////////
-
-	protected int SCREENWIDTH = 320;
-	protected int SCREENHEIGHT = 200;
-	protected IVideoScale vs;
-
-	@Override
-	public void setVideoScale(IVideoScale vs) {
-		this.vs = vs;
-	}
-
-	@Override
-	public void initScaling() {
-		this.SCREENHEIGHT = vs.getScreenHeight();
-		this.SCREENWIDTH = vs.getScreenWidth();
-	}
-
-	/** Built-in method for recovering from palette disasters.
-	   * Uses PaletteGenerator class to generate Doom's palettes with only the data of
-	   * the first palette.
-	   * 
-	   */
-	private final void paletteRecovery() {
-	    createPalettes(PaletteGenerator.generatePalette(PaletteGenerator.playpal, 256,PaletteGenerator.tints), GammaTables.gammatables, 14, 256, 3, 5);
-	    
-	}
-
+	
 	/** Internal method for setting up palettes (and gamma tables)
 	 * 
 	 */
