@@ -119,7 +119,7 @@ import doom.weapontype_t;
 public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     
     
-    public UnifiedGameMap(DoomStatus DS){
+    public UnifiedGameMap(DoomStatus<?,?> DS){
         this.SW=new Switches();
         this.LEV=new Lights();
         this.SPECS=new Specials();
@@ -150,17 +150,17 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
     IWadLoader W;
 
-    IAutoMap AM;
+    IAutoMap<?,?> AM;
 
     IRandom RND;
 
     Renderer<?,?> R;
     
-    TextureManager TM;
+    TextureManager<?> TM;
 
     AbstractLevelLoader LL;
 
-    DoomMain DM;
+    DoomMain<?,?> DM;
 
     IDoomGame DG;
     
@@ -175,7 +175,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     ISpriteManager SM;
 
     @Override
-    public void updateStatus(DoomStatus DC) {
+    public void updateStatus(DoomStatus<?,?> DC) {
             this.I=DC.I;
             this.DG=DC.DG;
             this.S=DC.S;

@@ -3,7 +3,7 @@ package f;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: EndLevel.java,v 1.8.2.1 2011/11/27 18:18:34 velktron Exp $
+// $Id: EndLevel.java,v 1.8.2.2 2012/09/24 16:57:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -17,6 +17,9 @@ package f;
 // for more details.
 //
 // $Log: EndLevel.java,v $
+// Revision 1.8.2.2  2012/09/24 16:57:43  velktron
+// Addressed generics warnings.
+//
 // Revision 1.8.2.1  2011/11/27 18:18:34  velktron
 // Use cacheClear() on deactivation.
 //
@@ -148,12 +151,12 @@ import w.animenum_t;
  *
  */
 
-public class EndLevel extends AbstractEndLevel {
+public class EndLevel<T,V> extends AbstractEndLevel {
 
     ////////////////// STATUS ///////////////////
-    private DoomMain DS;
+    private DoomMain<?,?> DS;
     private IDoomGame DG;
-    private DoomVideoRenderer<?> V;
+    private DoomVideoRenderer<?,?> V;
     private IDoomSound S;
     private IWadLoader W;
     private IDoomStatusBar ST;
@@ -304,7 +307,7 @@ patch_t[]		num=new patch_t[10];
 // UNUSED  unsigned char *background=0;
 
 
-public EndLevel(DoomStatus DC) {
+public EndLevel(DoomStatus<T,V> DC) {
     this.updateStatus(DC);
    
     // _D_: commented this, otherwise something didn't work

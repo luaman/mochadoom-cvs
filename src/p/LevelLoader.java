@@ -39,7 +39,7 @@ import doom.DoomStatus;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: LevelLoader.java,v 1.43.2.1 2012/03/26 09:53:44 velktron Exp $
+// $Id: LevelLoader.java,v 1.43.2.2 2012/09/24 16:57:16 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -61,10 +61,10 @@ import doom.DoomStatus;
 
 public class LevelLoader extends AbstractLevelLoader{
 
-public static final String  rcsid = "$Id: LevelLoader.java,v 1.43.2.1 2012/03/26 09:53:44 velktron Exp $";
+public static final String  rcsid = "$Id: LevelLoader.java,v 1.43.2.2 2012/09/24 16:57:16 velktron Exp $";
 
 
-public LevelLoader(DoomStatus DC) {
+public LevelLoader(DoomStatus<?,?> DC) {
 		super(DC);
 		// Traditional loader sets limit.
 		deathmatchstarts=new mapthing_t[MAX_DEATHMATCH_STARTS];
@@ -831,6 +831,9 @@ public LevelLoader(DoomStatus DC) {
 }
 
 //$Log: LevelLoader.java,v $
+//Revision 1.43.2.2  2012/09/24 16:57:16  velktron
+//Addressed generics warnings.
+//
 //Revision 1.43.2.1  2012/03/26 09:53:44  velktron
 //Use line_t.NO_INDEX for good measure, when possible.
 //

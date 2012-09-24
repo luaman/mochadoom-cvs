@@ -3,7 +3,10 @@ package m;
 import i.DoomSystem;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferInt;
 import java.awt.image.DataBufferUShort;
+import java.awt.image.IndexColorModel;
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -21,7 +24,7 @@ import w.IWritableDoomObject;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: MenuMisc.java,v 1.28.2.3 2012/09/17 15:58:58 velktron Exp $
+// $Id: MenuMisc.java,v 1.28.2.4 2012/09/24 16:57:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -45,7 +48,7 @@ import w.IWritableDoomObject;
 
 public abstract class MenuMisc{
 
-    public static final String rcsid = "$Id: MenuMisc.java,v 1.28.2.3 2012/09/17 15:58:58 velktron Exp $";
+    public static final String rcsid = "$Id: MenuMisc.java,v 1.28.2.4 2012/09/24 16:57:43 velktron Exp $";
   
     //
     // SCREEN SHOTS
@@ -228,9 +231,45 @@ public abstract class MenuMisc{
 		
 	}
 
+	public static void WritePNGfile(String imagename, int[] linear,
+            int width, int height) {
+        
+        BufferedImage buf=new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
+        DataBufferInt sh=(DataBufferInt) buf.getRaster().getDataBuffer();
+        int[] shd=sh.getData();
+        System.arraycopy(linear,0,shd,0,Math.min(linear.length,shd.length));
+        try {
+            ImageIO.write(buf, "PNG",new File(imagename));
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        // TODO Auto-generated method stub
+        
+    }
+	
+	public static void WritePNGfile(String imagename, byte[] linear,
+            int width, int height,IndexColorModel icm) {
+        BufferedImage buf=new BufferedImage(width,height,BufferedImage.TYPE_BYTE_INDEXED,icm);
+        DataBufferByte sh=(DataBufferByte) buf.getRaster().getDataBuffer();
+        byte[] shd=sh.getData();
+        System.arraycopy(linear,0,shd,0,Math.min(linear.length,shd.length));
+        try {
+            ImageIO.write(buf, "PNG",new File(imagename));
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        // TODO Auto-generated method stub
+        
+    }
+	
 }
 
 // $Log: MenuMisc.java,v $
+// Revision 1.28.2.4  2012/09/24 16:57:43  velktron
+// Addressed generics warnings.
+//
 // Revision 1.28.2.3  2012/09/17 15:58:58  velktron
 // Defaults loading & handling moved out to variables management subsystem
 //

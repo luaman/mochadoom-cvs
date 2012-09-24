@@ -21,7 +21,6 @@ import rr.side_t;
 import rr.subsector_t;
 import rr.vertex_t;
 import s.IDoomSound;
-import st.IDoomStatusBar;
 import utils.C2JUtils;
 import v.DoomVideoRenderer;
 import w.IWadLoader;
@@ -45,19 +44,17 @@ public abstract class AbstractLevelLoader
 
     // ///////////////// Status objects ///////////////////
 
-    IDoomStatusBar ST;
-
     IDoomSystem I;
 
     IWadLoader W;
 
-    DoomStatus DM;
+    DoomStatus<?,?> DM;
 
-    DoomVideoRenderer<?> V;
+    DoomVideoRenderer<?,?> V;
 
     Renderer<?,?> R;
 
-    TextureManager TM;
+    TextureManager<?> TM;
 
     Actions P;
 
@@ -144,12 +141,12 @@ public abstract class AbstractLevelLoader
 
     protected mapthing_t[] playerstarts = new mapthing_t[Limits.MAXPLAYERS];
 
-    public AbstractLevelLoader(DoomStatus DC) {
+    public AbstractLevelLoader(DoomStatus<?,?> DC) {
         this.updateStatus(DC);
     }
 
     @Override
-    public void updateStatus(DoomStatus DC) {
+    public void updateStatus(DoomStatus<?,?> DC) {
         this.W = DC.W;
         this.DM = DC;
         this.P = DC.P;

@@ -60,15 +60,16 @@ public abstract class AbstractWiper<T,V> implements IWiper, DoomStatusAware, IVi
 
     ///////////////////// STATUS /////////////////////
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void updateStatus(DoomStatus DS){
+    public void updateStatus(DoomStatus<?,?> DS){
     this.RND=DS.RND;
-    this.V=DS.V;
-    this.VI=DS.VI;
+    this.V=(DoomVideoRenderer<T, V>) DS.V;
+    this.VI=(DoomVideoInterface<V>) DS.VI;
     }
     
     IRandom RND;
-    DoomVideoRenderer<V> V;
+    DoomVideoRenderer<T,V> V;
     DoomVideoInterface<V> VI;
 
     

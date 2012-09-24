@@ -5,7 +5,7 @@ import doom.DoomMain;
 
 public abstract class Wiper<T,V> extends AbstractWiper<T,V> {
 
-    static final String rcsid = "$Id: Wiper.java,v 1.17.2.3 2012/09/20 14:18:25 velktron Exp $";
+    static final String rcsid = "$Id: Wiper.java,v 1.17.2.4 2012/09/24 16:57:43 velktron Exp $";
     
     protected wipefun[] wipes;
     
@@ -293,6 +293,175 @@ public abstract class Wiper<T,V> extends AbstractWiper<T,V> {
             
             byte[] s;//=wipe_scr_end;
             byte[] d=wipe_scr;
+            
+            boolean done = true;
+
+            //width=2;
+
+            while (ticks-->0)
+            {
+            for (int i=0;i<width;i++)
+            {
+                // Column won't start yet.
+                if (y[i]<0)
+                {
+                y[i]++; done = false;
+                }
+                else if (y[i] < height)
+                {
+                    
+                    
+                dy = (y[i] < 16*Y_SCALE) ? y[i]+Y_SCALE : 8*Y_SCALE;
+                if (y[i]+dy >= height) dy = height - y[i];
+                ps = i*height+y[i];// &((short *)wipe_scr_end)[i*height+y[i]];
+                pd = y[i]*width+i;//&((short *)wipe_scr)[y[i]*width+i];
+                idx = 0;
+
+                s=wipe_scr_end;
+                
+
+                
+                // MAES: this part should draw the END SCREEN "behind" the melt.
+                for (int j=dy;j>0;j--)
+                {
+                    d[pd+idx] = s[ps++];
+                    idx += width;
+                }
+                y[i] += dy;
+                s=wipe_scr_start;
+                ps = i*height; //&((short *)wipe_scr_start)[i*height];
+                pd = y[i]*width+i; //&((short *)wipe_scr)[y[i]*width+i];
+                idx = 0;
+
+                // This draws a column shifted by y[i]
+                
+                for (int j=height-y[i];j>0;j--)
+                {
+                    d[pd+idx] = s[ps++];
+                    idx+=width;
+                }
+                done = false;
+                }
+            }
+            }
+
+            return done;
+
+        }
+        }
+    }
+    
+    public static final class TrueColor extends Wiper<byte[],int[]>{
+
+        public TrueColor(DoomMain<byte[], int[]> DC) {
+            super(DC);
+            wipes=new wipefun[]{
+                    new wipe_initColorXForm(), new wipe_doColorXForm(), new wipe_exitColorXForm(),
+                    new wipe_initMelt(), new wipe_doMelt(), new wipe_exitMelt()
+                    };
+        }
+        
+        /** Those guys sure have an obsession with shit...this is supposed to do some
+         * lame-ass transpose.
+         * 
+         * @param array
+         * @param width
+         * @param height
+         */
+        
+        protected final void
+        shittyColMajorXform
+        ( int[]    array,
+          int       width,
+          int       height )
+        {
+            int     x;
+            int     y;
+            int[]  dest;
+
+            dest = new int[width*height];
+
+            for(y=0;y<height;y++)
+            for(x=0;x<width;x++){
+                dest[x*height+y] = array[y*width+x];
+                //dest[(1+x)*height+y] = array[y*width+(1+x)];
+            }
+            System.arraycopy(dest, 0, array, 0, width*height);
+
+            //Z_Free(dest);
+
+        }
+        
+        class wipe_doColorXForm implements wipefun{
+            
+            public boolean
+        invoke
+        ( int   width,
+          int   height,
+          int   ticks )
+        {
+            boolean changed;
+            int[]   w=wipe_scr;
+            int[]   e=wipe_scr_end;
+            int     newval;
+
+            changed = false;
+            int pw =0;// wipe_scr;
+            int pe = 0; //wipe_scr_end;
+            
+            while (pw!=width*height)
+            {
+            if (w[pw] != e[pe])
+            {
+                if (w[pw] > e[pe])
+                {
+                newval = w[pw] - ticks;
+                if (newval < e[pe])
+                    w[pw] = e[pe];
+                else
+                    w[pw] = (byte) newval;
+                changed = true;
+                }
+                else if (w[pw] < e[pe])
+                {
+                newval = w[pw] + ticks;
+                if (newval > e[pe])
+                    w[pw] = e[pe];
+                else
+                    w[pw] = (byte) newval;
+                changed = true;
+                }
+            }
+            pw++;
+            pe++;
+            }
+
+            return !changed;
+
+        }
+        }
+    
+        class wipe_doMelt implements wipefun{
+            public boolean
+            invoke
+        ( int   width,
+          int   height,
+          int   ticks )
+        {
+                
+            //   int w2=2*width;
+            //    int w3=3*width;
+            //    int w4=4*width;
+
+            int     dy;
+            int     idx;
+            
+            // Indexex to short* ?! WTF... 
+            int  ps;
+            int  pd;
+            
+            int[] s;//=wipe_scr_end;
+            int[] d=wipe_scr;
             
             boolean done = true;
 

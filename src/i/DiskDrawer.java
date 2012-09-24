@@ -10,7 +10,7 @@ public class DiskDrawer implements IDiskDrawer,DoomStatusAware {
 
 	private patch_t disk;
 	private IWadLoader W;
-	private DoomVideoRenderer<?> V;
+	private DoomVideoRenderer<?,?> V;
 	private IVideoScale VS;
 	private int timer=0;
 	private String diskname;
@@ -18,7 +18,7 @@ public class DiskDrawer implements IDiskDrawer,DoomStatusAware {
 	public static final String STDISK="STDISK";
 	public static final String STCDROM="STCDROM";
 	
-	public DiskDrawer(DoomStatus DM,String icon){		
+	public DiskDrawer(DoomStatus<?,?> DM,String icon){		
 		this.updateStatus(DM);
 		this.diskname=icon;
 	}
@@ -39,11 +39,10 @@ public class DiskDrawer implements IDiskDrawer,DoomStatusAware {
 	}
 
 	@Override
-	public void updateStatus(DoomStatus DC) {
+	public void updateStatus(DoomStatus<?,?> DC) {
 		this.W=DC.W;
-		this.V=DC.V;
-		
-	}
+		this.V=DC.V;		
+	    }
 
 	@Override
 	public void setVideoScale(IVideoScale vs) {

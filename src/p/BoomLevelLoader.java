@@ -83,7 +83,7 @@ import static boom.Compatibility.*;
 public class BoomLevelLoader
         extends AbstractLevelLoader {
 
-    public BoomLevelLoader(DoomStatus DC) {
+    public BoomLevelLoader(DoomStatus<?,?> DC) {
         super(DC);
         // TODO Auto-generated constructor stub
     }

@@ -3,7 +3,7 @@ package hu;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: HU.java,v 1.31.2.1 2012/09/19 17:43:06 velktron Exp $
+// $Id: HU.java,v 1.31.2.2 2012/09/24 16:57:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -48,18 +48,18 @@ import doom.player_t;
 
 public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     public final static String rcsid =
-        "$Id: HU.java,v 1.31.2.1 2012/09/19 17:43:06 velktron Exp $";
+        "$Id: HU.java,v 1.31.2.2 2012/09/24 16:57:43 velktron Exp $";
 
     // MAES: Status and wad data.
     IWadLoader W;
 
-    DoomMain DM;
+    DoomMain<?,?> DM;
 
     IDoomMenu M;
 
-    RendererState R;
+    RendererState<?,?> R;
     
-    DoomVideoRenderer<?> V;
+    DoomVideoRenderer<?,?> V;
 
     IDoomSound S;
     //
@@ -1212,10 +1212,10 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
     }
 
 	@Override
-	public void updateStatus(DoomStatus DM) {
+	public void updateStatus(DoomStatus<?,?> DM) {
         this.DM = DM.DM;
         this.W = DM.W;
-        this.R = (RendererState) DM.R;
+        this.R = (RendererState<?, ?>) DM.R;
         this.V=DM.V;
         this.S=DM.S;
         this.M=(Menu) DM.M;
@@ -1245,6 +1245,9 @@ public class HU implements DoomStatusAware, IVideoScaleAware, IHeadsUp{
 }
 
 //$Log: HU.java,v $
+//Revision 1.31.2.2  2012/09/24 16:57:43  velktron
+//Addressed generics warnings.
+//
 //Revision 1.31.2.1  2012/09/19 17:43:06  velktron
 //Aware of new ViewVars structure.
 //

@@ -10,7 +10,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.10.2.1 2012/09/20 14:18:06 velktron Exp $
+//$Id: Main.java,v 1.10.2.2 2012/09/24 16:57:43 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -25,6 +25,9 @@ import doom.ICommandLineManager;
 //GNU General Public License for more details.
 //
 //$Log: Main.java,v $
+//Revision 1.10.2.2  2012/09/24 16:57:43  velktron
+//Addressed generics warnings.
+//
 //Revision 1.10.2.1  2012/09/20 14:18:06  velktron
 //NEW and ENHANCED dual-function main!!!
 //
@@ -73,7 +76,7 @@ import doom.ICommandLineManager;
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.10.2.1 2012/09/20 14:18:06 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.10.2.2 2012/09/24 16:57:43 velktron Exp $";
 
     public static void main(String[] argv) throws IOException{
 
@@ -99,7 +102,10 @@ public class Main {
               DM=new DoomMain.HiColor();
               break;
           case TrueColor:
-              return;
+              System.out.println("TrueColor (extended colormaps) 24-bit mode selected...");
+              DM=new DoomMain.TrueColor();
+              break;
+
           }    
 
           DM.setCommandLineArgs(CM);

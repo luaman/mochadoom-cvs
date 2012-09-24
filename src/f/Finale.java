@@ -41,7 +41,7 @@ import doom.gameaction_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Finale.java,v 1.26.2.2 2012/09/19 21:47:03 velktron Exp $
+// $Id: Finale.java,v 1.26.2.3 2012/09/24 16:57:43 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -62,11 +62,11 @@ import doom.gameaction_t;
 
 public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 
-	public static final String rcsid = "$Id: Finale.java,v 1.26.2.2 2012/09/19 21:47:03 velktron Exp $";
+	public static final String rcsid = "$Id: Finale.java,v 1.26.2.3 2012/09/24 16:57:43 velktron Exp $";
 
 	IDoomGame DG;
-	DoomStatus DS;
-	DoomVideoRenderer<T> V;
+	DoomStatus<?,?> DS;
+	DoomVideoRenderer<T,?> V;
 	IDoomSound S;
 	HU HU;
 	IWadLoader W;
@@ -264,9 +264,10 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 	// #include "hu_stuff.h"
 	patch_t[] hu_font;
 
-	public void TextWrite() {
-		byte[] src;
-		T dest;
+	@SuppressWarnings("unchecked")
+    public void TextWrite() {
+		T src;
+		//V dest;
 		int w;
 		int count;
 		char[] ch;
@@ -275,8 +276,8 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 		int cy;
 
 		// erase the entire screen to a tiled background
-		src = ((flat_t) W.CacheLumpName(finaleflat, PU_CACHE, flat_t.class)).data;
-		dest = V.getScreen(DoomVideoRenderer.SCREEN_FG);
+		src = (T)((flat_t) W.CacheLumpName(finaleflat, PU_CACHE, flat_t.class)).data;
+		//dest = V.getScreen(DoomVideoRenderer.SCREEN_FG);
 
 		for (int y = 0; y < SCREENHEIGHT; y+=64) {
 			
@@ -744,12 +745,11 @@ public class Finale<T> implements DoomStatusAware, IVideoScaleAware {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public void updateStatus(DoomStatus DC) {
+	public void updateStatus(DoomStatus<?,?> DC) {
 		this.DG = DC.DG;
 		this.DS = DC.DM;
-		V = (DoomVideoRenderer<T>) DC.V;
+		V = (DoomVideoRenderer<T,?>) DC.V;
 		S = DC.S;
 		HU = DC.HU;
 		W = DC.W;

@@ -5204,15 +5204,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 	  
   }
 
-  public Actions() {
-      this(new DoomStatus());
-    // Dummy used only for special testing
-  }
-
-
-
-
-//
+  //
   // P_RunThinkers
   //
   public void RunThinkers() {

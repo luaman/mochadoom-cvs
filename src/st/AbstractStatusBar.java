@@ -3,7 +3,6 @@ package st;
 import m.IRandom;
 import doom.DoomMain;
 import doom.DoomStatus;
-import i.DoomStatusAware;
 import i.DoomVideoInterface;
 import i.IDoomSystem;
 import rr.Renderer;
@@ -12,28 +11,28 @@ import v.DoomVideoRenderer;
 import v.IVideoScaleAware;
 import w.IWadLoader;
 
-public abstract class AbstractStatusBar implements IDoomStatusBar,DoomStatusAware, IVideoScaleAware{
+public abstract class AbstractStatusBar implements IDoomStatusBar, IVideoScaleAware{
 
 	 // /// STATUS //////////
 
-    protected DoomVideoRenderer<?> V;
+    protected DoomVideoRenderer<?,?> V;
 
     protected IWadLoader W;
 
     protected Renderer<?,?> R;
 
-    protected DoomMain DM;
+    protected DoomMain<?,?> DM;
 
     protected IRandom RND;
     
     protected IDoomSystem I;
     
-    protected DoomVideoInterface VI;
+    protected DoomVideoInterface<?> VI;
 
     protected IDoomSound S;
     
 	@Override
-	public void updateStatus(DoomStatus DC) {
+	public void updateStatus(DoomStatus<?,?> DC) {
         this.DM=DC.DM;
         this.V=DC.V;
         this.W=DC.W;
