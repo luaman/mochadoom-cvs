@@ -196,7 +196,8 @@ public abstract class RendererState<T,V>
         view.y = player.mo.y;
         // viewangle = addAngles(player.mo.angle , viewangleoffset);
         view.angle = player.mo.angle & BITS32;
-        colormaps.extralight = player.extralight;
+        int bumplight=(LBITS-5);
+        colormaps.extralight = player.extralight<<bumplight;
 
         view.z = player.viewz;
         view.lookdir = (int) player.lookdir;
