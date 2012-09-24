@@ -6,14 +6,12 @@ import i.IDoomSystem;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import m.IRandom;
 
-import data.Defines;
 import data.Tables;
 import data.state_t;
 import defines.*;
@@ -26,6 +24,7 @@ import static p.mobj_t.*;
 import p.Actions;
 import p.mobj_t;
 import p.pspdef_t;
+import rr.LightsAndColors;
 import rr.Renderer;
 import rr.sector_t;
 import s.IDoomSound;
@@ -699,7 +698,7 @@ public class player_t /*extends mobj_t */
     }    
    
  // Index of the special effects (INVUL inverse) map.
-public static final int INVERSECOLORMAP		=32;
+public static final int INVERSECOLORMAP		=LightsAndColors.LIGHTLEVELS;
     
 
  
