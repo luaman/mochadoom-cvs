@@ -14,7 +14,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.47 2011/10/25 19:53:03 velktron Exp $
+// $Id: Defines.java,v 1.47.2.1 2012/09/24 16:58:34 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -132,10 +132,6 @@ public static final int SIL_NONE =0;
 public static final int SIL_BOTTOM     =1;
 public static final int SIL_TOP  =       2;
 public static final int SIL_BOTH    =    3;
-
-//Number of diminishing brightness levels.
-//There a 0-31, i.e. 32 LUT in the COLORMAP lump.
-public static final int  NUMCOLORMAPS   =     32;
 
 //SKY, store the number for name.
 static public final String SKYFLATNAME  ="F_SKY1";
@@ -324,6 +320,6 @@ public static final int SAVESTRINGSIZE = 24;
 
  
 static final String
-rcsid = "$Id: Defines.java,v 1.47 2011/10/25 19:53:03 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.47.2.1 2012/09/24 16:58:34 velktron Exp $";
 }
 
