@@ -3,7 +3,7 @@ package automap;
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: Map.java,v 1.36 2012/09/24 17:16:23 velktron Exp $
+// $Id: Map.java,v 1.37 2012/09/24 22:36:28 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,6 +20,9 @@ package automap;
 //
 //
 // $Log: Map.java,v $
+// Revision 1.37  2012/09/24 22:36:28  velktron
+// Map get color
+//
 // Revision 1.36  2012/09/24 17:16:23  velktron
 // Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //
@@ -206,7 +209,7 @@ public abstract class Map<T, V>
     AbstractLevelLoader LL;
 
     public final String rcsid =
-        "$Id: Map.java,v 1.36 2012/09/24 17:16:23 velktron Exp $";
+        "$Id: Map.java,v 1.37 2012/09/24 22:36:28 velktron Exp $";
 
     // For use if I do walls with outsides/insides
 
@@ -1226,7 +1229,7 @@ public abstract class Map<T, V>
 
         x = fl.ax;
         y = fl.ay;
-        final short c = (short) color;
+        final int c = color;
 
         if (ax > ay) {
             d = ay - ax / 2;
@@ -1545,7 +1548,7 @@ public abstract class Map<T, V>
             return;
         // System.out.println("Drawing map");
         if (overlay < 1)
-            V.FillRect((byte) BACKGROUND, FB, 0, 0, f_w, f_h); // BACKGROUND
+            V.FillRect(BACKGROUND, FB, 0, 0, f_w, f_h); // BACKGROUND
         if (grid)
             drawGrid(V.getBaseColor(GRIDCOLORS));
         drawWalls();
