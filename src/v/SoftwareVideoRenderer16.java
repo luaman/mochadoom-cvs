@@ -704,9 +704,11 @@ public abstract class SoftwareVideoRenderer16 extends SoftwareVideoRenderer<byte
 		int fromIndex = x + y * SCREENWIDTH;
 		int toIndex = x + (y + height - 1) * SCREENWIDTH;
 
+		final short c=(short) getBaseColor(color);
+		
 		// First scanline.
 		for (int i = 0; i < width; i++)
-			arr[fromIndex + i] = (short) color;
+			arr[fromIndex + i] = c;
 
 		for (; fromIndex < toIndex; fromIndex += SCREENWIDTH) {
 			System.arraycopy(arr, fromIndex, arr, fromIndex + SCREENWIDTH,

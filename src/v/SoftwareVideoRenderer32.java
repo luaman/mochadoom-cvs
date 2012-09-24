@@ -697,6 +697,7 @@ public abstract class SoftwareVideoRenderer32 extends SoftwareVideoRenderer<byte
     public final void FillRect(int color, int screen, int x, int y, int width,
             int height) {
         int[] arr = screens[screen];
+        final int c=getBaseColor(color);
 
         // Do a "per scanline" copy.
         int fromIndex = x + y * SCREENWIDTH;
@@ -704,7 +705,7 @@ public abstract class SoftwareVideoRenderer32 extends SoftwareVideoRenderer<byte
 
         // First scanline.
         for (int i = 0; i < width; i++)
-            arr[fromIndex + i] = (short) color;
+            arr[fromIndex + i] = c;
 
         for (; fromIndex < toIndex; fromIndex += SCREENWIDTH) {
             System.arraycopy(arr, fromIndex, arr, fromIndex + SCREENWIDTH,
