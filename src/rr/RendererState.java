@@ -5,7 +5,6 @@ import static data.Defines.ANGLETOSKYSHIFT;
 import static data.Defines.FF_FRAMEMASK;
 import static data.Defines.FF_FULLBRIGHT;
 import static data.Defines.NF_SUBSECTOR;
-import static data.Defines.NUMCOLORMAPS;
 import static data.Defines.PU_CACHE;
 import static data.Defines.SIL_BOTH;
 import static data.Defines.SIL_BOTTOM;
@@ -107,7 +106,7 @@ public abstract class RendererState<T,V>
 
     protected IMaskedDrawer MyThings;
 
-    protected DoomVideoRenderer<V> V;
+    protected DoomVideoRenderer<T,V> V;
 
     protected UnifiedGameMap P;
 
@@ -294,16 +293,17 @@ public abstract class RendererState<T,V>
         // and stuff have been set.
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void updateStatus(DoomStatus<T,V> DC) {
-        this.DM = DC.DM;
+    public void updateStatus(DoomStatus<?,?> DC) {
+        this.DM = (DoomMain<T, V>) DC.DM;
         this.DGN = DC.DGN;
         this.LL = DC.LL;
         this.W = DC.W;
         this.P = DC.P;
         // We must also connect screen to V. Don't forget it. Do it in Init(),
         // OK?
-        this.V = DC.V;
+        this.V = (DoomVideoRenderer<T, V>) DC.V;
         this.SM = DC.SM;
         this.I = DC.I;
         if (VIS != null)
@@ -3158,7 +3158,7 @@ public abstract class RendererState<T,V>
             for (x = 0; x < SCREENWIDTH; x += 64) {
                 int x_maxdraw = Math.min(SCREENWIDTH - x, 64);
                 V.DrawBlock(x, y, DoomVideoRenderer.SCREEN_BG, x_maxdraw,
-                    y_maxdraw, src.data);
+                    y_maxdraw, (T)src.data);
             }
         }
 

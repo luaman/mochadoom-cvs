@@ -9,7 +9,7 @@ import v.IVideoScaleAware;
 import w.IWadLoader;
 import doom.player_t;
 
-public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware<T,V>{
+public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware{
 	
 
 

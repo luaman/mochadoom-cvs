@@ -60,7 +60,7 @@ public abstract class UnifiedRenderer< V>
         // C2JUtils.initArrayOfObjects(drawsegs);
 
         // DON'T FORGET ABOUT MEEEEEE!!!11!!!
-        this.screen = V.getScreen(DoomVideoRenderer.SCREEN_FG);
+        this.screen = this.V.getScreen(DoomVideoRenderer.SCREEN_FG);
 
         System.out.print("\nR_InitData");
         InitData();
@@ -372,5 +372,117 @@ public abstract class UnifiedRenderer< V>
 
     }       
           
+            public static final class TrueColor
+            extends UnifiedRenderer<int[]> {
+
+        public TrueColor(DoomStatus<byte[],int[]> DM) {            
+            super(DM);
+            
+            dcvars=new ColVars<byte[],int[]>();            
+            dsvars=new SpanVars<byte[],int[]>();
+            
+            // Init any video-output dependant stuff            
+            this.colormaps=new LightsAndColors<int[]>();
+            this.VIS=new VisSprites.TrueColor(this);
+            
+
+            // Planes must go here, because they depend on all of the above crap
+            this.MyPlanes = new Planes(this);
+            
+            
+            // Init light levels
+            colormaps.scalelight = new int[LIGHTLEVELS][MAXLIGHTSCALE][];
+            colormaps.scalelightfixed = new int[MAXLIGHTSCALE][];
+            colormaps.zlight = new int[LIGHTLEVELS][MAXLIGHTZ][];
+            
+            // Temporary vissprite
+            avis=new vissprite_t<int[]>();
+        }
+
+        /**
+         * R_InitColormaps This is VERY different for hicolor.
+         * 
+         * @throws IOException
+         */
+        protected void InitColormaps()
+                throws IOException {
+
+            /*
+             * int lump, length; // For HiCOlor, load COLORS15 lump lump =
+             * W.GetNumForName("COLORS15"); length = W.LumpLength(lump); //
+             * Allow space for one extra colormap, to use as invuln. //colormaps
+             * = new short[1+(length / 512)][256]; byte[] tmp = new
+             * byte[length]; ByteBuffer bb=ByteBuffer.wrap(tmp);
+             * bb.order(ByteOrder.LITTLE_ENDIAN); short[] tmp2=new
+             * short[256+(length/2)]; W.ReadLump(lump,tmp); for (int
+             * i=0;i<length/2;i++){ tmp2[i]=bb.getShort(); }
+             * V.setColorMaps(tmp2, LIGHTLEVELS+2);
+             */
+            colormaps.colormaps = V.getColorMaps();
+            System.out.println("COLORS32 Colormaps: " + colormaps.colormaps.length);
+
+            /*
+             * for (int i = 0; i < colormaps.length; i++) {
+             * System.arraycopy(tmp2, i * 256, colormaps[i], 0, 256); }
+             */
+
+            /*
+             * for (int i = 0; i < colormaps.length; i++) { for (int
+             * j=0;j<256;j++) colormaps[i][j]=rgb4444To555(colormaps[i][j]); }
+             */
+
+            // MAES: blurry effect is hardcoded to this colormap.
+            // Pointless, since we don't use indexes. Instead, a half-brite
+            // processing works just fine.
+            BLURRY_MAP = null;// colormaps[0];
+            // colormaps = (byte *)( ((int)colormaps + 255)&~0xff);
+
+        }
+        
+        /** Initializes the various drawing functions. They are all "pegged" to the
+         *  same dcvars/dsvars object. Any initializations of e.g. parallel renderers
+         *  and their supporting subsystems should occur here. 
+         */
+        
+        protected void R_InitDrawingFunctions(){
+            
+            
+            maskedcvars=new ColVars<byte[],int[]>();
+            //maskedcvars.dc_translation=translationtables[0];
+            skydcvars=new ColVars<byte[],int[]>();
+            
+            // Span functions. Common to all renderers unless overriden
+            // or unused e.g. parallel renderers ignore them.
+            DrawSpan=new R_DrawSpanUnrolled.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpanLow=new R_DrawSpanLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            
+            
+            // Translated columns are usually sprites-only.
+            DrawTranslatedColumn=new R_DrawTranslatedColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            //DrawTLColumn=new R_DrawTLColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Fuzzy columns. These are also masked.
+            DrawFuzzColumn=new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Regular draw for solid columns/walls. Full optimizations.
+            DrawColumn=new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            DrawColumnLow=new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            
+            // Non-optimized stuff for masked.
+            DrawColumnMasked=new R_DrawColumnBoom.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawColumnMaskedLow=new R_DrawColumnBoomLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Player uses masked
+            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
+            
+            // Skies use their own. This is done in order not to stomp parallel threads.
+            
+            DrawColumnSkies=new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+        }
+
+    }       
 
 }
