@@ -1,5 +1,8 @@
 package rr;
 
+import i.BppMode;
+import i.Main;
+
 /**
  *   Combined colormap and light LUTs.
  *   Used for z-depth cuing per column/row,
@@ -34,7 +37,7 @@ public class LightsAndColors<V> {
 	
 	
 	/** Bits representing color levels. 5 for 32. */
-	public static final int LBITS= 8;
+	public static final int LBITS;
 	
     /**
      * These two are tied by an inverse relationship. E.g. 256 levels, 0 shift
@@ -48,14 +51,16 @@ public class LightsAndColors<V> {
      */
 	
 	 
-    public static final int LIGHTLEVELS = 1<<LBITS, LIGHTSEGSHIFT = 8-LBITS;
-
+    public static final int LIGHTLEVELS;
+    public static final int LIGHTSEGSHIFT;
+    
+    
   /** Number of diminishing brightness levels.
      There a 0-31, i.e. 32 LUT in the COLORMAP lump. 
      TODO: how can those be distinct from the light levels???
      */    
     
-  public static final int  NUMCOLORMAPS   =     LIGHTLEVELS;
+  public static final int  NUMCOLORMAPS;
 
     
     // These are a bit more tricky to figure out though.
@@ -66,24 +71,23 @@ public class LightsAndColors<V> {
      *  Normally set to 48 (32 +16???)
      */
     
-    public static final int MAXLIGHTSCALE = LIGHTLEVELS+LIGHTLEVELS/2;
+    public static final int MAXLIGHTSCALE;
     
     /** Used to scale brightness of walls and sprites. Their "scale" is shifted by
      *  this amount, and this results in an index, which is capped by MAXLIGHTSCALE.
      *  Normally it's 12 for 32 levels, so 11 for 64, 10 for 128, ans 9 for 256.
      *  
      */
-    public static final int LIGHTSCALESHIFT = 17-LBITS;
+    public static final int LIGHTSCALESHIFT;
     
     /** This one seems arbitrary. Will auto-fit to 128 possible levels? */
     public static final int MAXLIGHTZ = 256;
     
-    /** Normally 20, applied to distance. Assuming the maximum is 32K units
-     * (31 usable bits), then a shift of 20 will leave you with 15. This is further
-     * capped to 128.
+    /** Normally 20 for 32 colormaps, applied to distance.
+     * Formula: 25-LBITS
      *  
      */
-    public static final int LIGHTZSHIFT = 17;
+    public static final int LIGHTZSHIFT;
 
     public V[][] scalelight;
     public V[] scalelightfixed;
@@ -92,4 +96,30 @@ public class LightsAndColors<V> {
 
     // bumped light from gun blasts
     public int extralight;
+    
+    static {
+
+        // Horrible hack.
+        
+        switch (Main.bpp){
+        case Indexed:
+        case HiColor:
+            LBITS=5;
+            break;
+        case TrueColor:
+            LBITS=8;
+            break;
+        default:
+            LBITS=5;
+            break;
+        }
+        
+        LIGHTLEVELS = 1<<LBITS;
+        LIGHTSEGSHIFT = 8-LBITS;
+        NUMCOLORMAPS=     LIGHTLEVELS;
+        MAXLIGHTSCALE = LIGHTLEVELS+LIGHTLEVELS/2;
+        LIGHTSCALESHIFT = 17-LBITS;
+        LIGHTZSHIFT=25-LBITS;
+    }
+    
 }
