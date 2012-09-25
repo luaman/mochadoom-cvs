@@ -1,14 +1,26 @@
 package p;
 
-/** source animation definition
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import w.CacheableDoomObject;
+import w.DoomBuffer;
+
+/**
+ * Source animation definition. Made readable for compatibility with Boom's
+ * SWANTBLS system. 
  * 
- * @author admin
- *
+ * @author velktron
  */
-public class animdef_t {
+public class animdef_t
+        implements CacheableDoomObject {
 
+    public animdef_t() {
 
-public animdef_t(boolean istexture, String endname, String startname,
+    }
+
+    public animdef_t(boolean istexture, String endname, String startname,
             int speed) {
         super();
         this.istexture = istexture;
@@ -16,26 +28,41 @@ public animdef_t(boolean istexture, String endname, String startname,
         this.startname = startname;
         this.speed = speed;
     }
-public boolean istexture;  // if false, it is a flat
-public String  endname; // MAES: used to be char[9].
-public String  startname; // MAES: used to be char[9].
-public int     speed;
 
-public String toString(){
-	sb.setLength(0);
-	sb.append("animdef_t");	
-	sb.append(" texture ");
-	sb.append(istexture);
-	sb.append(" start ");
-	sb.append(startname);
-	sb.append(" end ");
-	sb.append(endname);
-	sb.append(" speed " );
-	sb.append(speed);
-	return sb.toString();
-	
-}
+    
+    /** if false, it is a flat, and will NOT be used as a texture. Unless you
+     *  use "flats on walls functionality of course. */
+    public boolean istexture;
 
-private static StringBuilder sb=new StringBuilder();
+    /** The END name and START name of a texture, given in this order when reading a lump 
+     *  The animation system is agnostic to the actual names of of the "in-between" 
+     *  frames, it's purely pointer based, and only the start/end are constant. It only
+     *  counts the actual number of existing textures during initialization time.
+     * 
+     */
+    
+    public String endname,startname;
+
+    public int speed;
+
+    public String toString() {
+        return String.format("%s %s %s %d", istexture, startname, endname,
+            speed);
+    }
+
+    @Override
+    public void unpack(ByteBuffer buf)
+            throws IOException {
+        // Like most Doom structs...
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        this.istexture = (buf.get() != 0);
+        this.startname = DoomBuffer.getNullTerminatedString(buf, 9);
+        this.endname = DoomBuffer.getNullTerminatedString(buf, 9);
+        this.speed = buf.getInt();
+    }
+
+    public static int size() {
+        return 23;
+    }
 
 }
