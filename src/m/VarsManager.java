@@ -146,7 +146,7 @@ public class VarsManager implements IVariablesManager {
 
                         // All var names should be lower case.
                         name=name.toLowerCase();
-                        System.out.printf("NAME: %s VALUE: %s\n",name,value);
+                        //System.out.printf("NAME: %s VALUE: %s\n",name,value);
 
                         // Everything read from the file should be marked
                         // as "persistent". There are no "unknown" settings. 
