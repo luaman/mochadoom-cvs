@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.60 2012/09/24 17:16:22 velktron Exp $
+// $Id: WadLoader.java,v 1.61 2012/09/25 16:33:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -60,6 +60,7 @@ public class WadLoader implements IWadLoader {
 	        lumpinfo = new lumpinfo_t[0];
 	        zone= new Hashtable<CacheableDoomObject, Integer>();
 	        wadfiles=new ArrayList<wadfile_info_t>();
+	        this.I=new DummySystem();
 	    }
 	
 	
@@ -1391,6 +1392,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.61  2012/09/25 16:33:36  velktron
+//Dummy Doomsystem for easy testing.
+//
 //Revision 1.60  2012/09/24 17:16:22  velktron
 //Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //
