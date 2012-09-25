@@ -196,7 +196,14 @@ public abstract class RendererState<T,V>
         view.y = player.mo.y;
         // viewangle = addAngles(player.mo.angle , viewangleoffset);
         view.angle = player.mo.angle & BITS32;
-        int bumplight=(LBITS-5);
+        // With 32 colormaps, a bump of 1 or 2 is normal.
+        // With more than 32, it should be obviously higher.
+        
+        int bumplight=Math.max(LBITS-5,0);
+        // Be a bit more generous, otherwise the effect is not
+        // as evident with truecolor maps.
+        bumplight+=(bumplight>0)?1:0;
+        
         colormaps.extralight = player.extralight<<bumplight;
 
         view.z = player.viewz;
