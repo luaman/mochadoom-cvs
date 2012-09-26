@@ -1,40 +1,27 @@
 package rr.parallel;
 
-import i.IDoomSystem;
-
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
-import doom.player_t;
-
 import p.pspdef_t;
 import static rr.LightsAndColors.*;
-import rr.LightsAndColors;
+import rr.AbstractThings;
 import rr.IDetailAware;
-import rr.ISpriteManager;
-import rr.IVisSpriteManagement;
 import rr.Renderer;
-import rr.RendererState;
-import rr.SegVars;
-import rr.TextureManager;
-import rr.ViewVars;
 import rr.column_t;
 import rr.drawseg_t;
 import rr.patch_t;
-import rr.sector_t;
-import rr.seg_t;
 import rr.spritedef_t;
 import rr.spriteframe_t;
 import rr.vissprite_t;
+import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;
-import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomLow;
 import rr.drawfuns.R_DrawFuzzColumn;
 import rr.drawfuns.R_DrawFuzzColumnLow;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
-import w.IWadLoader;
 import static p.mobj_t.MF_TRANSLATION;
 import static p.mobj_t.MF_TRANSSHIFT;
 import static m.fixed_t.*;
@@ -42,11 +29,18 @@ import static rr.line_t.*;
 import static data.Defines.FF_FRAMEMASK;
 import static data.Defines.FF_FULLBRIGHT;
 import static data.Defines.pw_invisibility;
-import static data.Defines.SIL_BOTTOM;
-import static data.Defines.SIL_TOP;
-import static rr.Renderer.BASEYCENTER;
 
-public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings implements Runnable, IDetailAware{
+/** A "Masked Worker" draws sprites in a split-screen strategy. Used by 
+ * ParallelRenderer2. Each Masked Worker is essentially a complete Things
+ * drawer, and reuses much of the serial methods.
+ * 
+ * @author velktron
+ *
+ * @param <T>
+ * @param <V>
+ */
+
+public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements Runnable, IDetailAware{
     
     private final static boolean DEBUG=false;
     private final static boolean RANGECHECK=false;
@@ -54,51 +48,23 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
     protected final CyclicBarrier barrier;
     protected final int id;
     protected final int numthreads;
-    protected final ViewVars view;
-    protected final LightsAndColors<V> colormap;
-    protected final ISpriteManager SM;
-    protected final TextureManager<T> TexMan;
-    protected final IDoomSystem I;
-    protected final SegVars seg_vars;
-    protected final IWadLoader W;
-    protected final IVisSpriteManagement<T,V> VIS;
-    protected final IGetSmpColumn<V> GSC;
-    
-    protected DoomColumnFunction<T,V> colfunc;
-    protected DoomColumnFunction<T,V> transcolfunc;
-    protected DoomColumnFunction<T,V> maskedcolfunc;
-    protected DoomColumnFunction<T,V> fuzzcolfunc;
-    protected DoomColumnFunction<T,V> playercolfunc;
-    protected DoomColumnFunction<T,V> maskedcolfunchi;
-    protected DoomColumnFunction<T,V> maskedcolfunclow;
-    protected DoomColumnFunction<T,V> fuzzcolfunchi;
-    protected DoomColumnFunction<T,V> fuzzcolfunclow;
-    protected DoomColumnFunction<T,V> transcolhigh;
-    protected DoomColumnFunction<T,V> transcollow;
     
     protected ColVars<T,V> maskedcvars;
-    
-    // MAES: Scale to SCREENWIDTH
-    private final short[] clipbot;
-    private final short[] cliptop;
-    
-    @SuppressWarnings("unchecked")
+   
 	public MaskedWorker(Renderer<T,V> R,int id,int SCREENWIDTH, int SCREENHEIGHT,int numthreads,CyclicBarrier barrier){
-        this.id=id;
+	    super(R);
+	    // Workers have their own set, not a "pegged" one.
+	    this.colfuncshi=new ColFuncs<T,V>();
+	    this.colfuncslow=new ColFuncs<T,V>();
+	    this.maskedcvars=new ColVars<T,V>();
+	    this.id=id;
         this.numthreads=numthreads;
-        this.barrier=barrier;
-        this.clipbot=new short[SCREENWIDTH];
-        this.cliptop=new short[SCREENWIDTH];
-        this.view=R.getView();
-        this.seg_vars=R.getSegVars();
-        this.colormap=R.getColorMap();
-        //this.W=R.W;
-        this.TexMan=R.getTextureManager();
-        //this.SM=R.SM;
-        //this.I=R.I; 
-        //this.VIS=R.VIS;
-        //this.GSC=(IGetSmpColumn<V>) R;
+        this.barrier=barrier;        
         }
+	
+	public final void completeColumn(){
+	    // Does nothing. Shuts up inheritance
+	}
     
     public static final class HiColor extends MaskedWorker<byte[],short[]>{
 
@@ -106,50 +72,79 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
 				int[] ylookup, int[] columnofs, int numthreads, short[] screen,
 				CyclicBarrier barrier) {
 			super(R,id, SCREENWIDTH, SCREENHEIGHT,numthreads, barrier);
-	        maskedcvars=new ColVars<byte[],short[]>();
+
 	        // Non-optimized stuff for masked.
-	        playercolfunc=colfunc=maskedcolfunc=maskedcolfunchi=new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	        maskedcolfunclow=new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+			colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncslow.masked=new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
 
 	        // Fuzzy columns. These are also masked.
-	        fuzzcolfunc=fuzzcolfunchi=new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	        fuzzcolfunclow=new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncshi.fuzz=new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncslow.fuzz=new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
 
 	        // Translated columns are usually sprites-only.
-	        transcolfunc=transcolhigh=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	        transcollow=new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-	  
-	        avis=new vissprite_t<short[]>();
+	        colfuncshi.trans=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        colfuncslow.trans=new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+	        
+	        colfuncs=colfuncshi;
+
 		}
     	
     }
     
+    public static final class Indexed extends MaskedWorker<byte[],byte[]>{
+
+        public Indexed(Renderer<byte[],byte[]> R,int id, int SCREENWIDTH, int SCREENHEIGHT,
+                int[] ylookup, int[] columnofs, int numthreads, byte[] screen,
+                CyclicBarrier barrier,byte[] BLURRY_MAP) {
+            super(R,id, SCREENWIDTH, SCREENHEIGHT,numthreads, barrier);
+            colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.masked=new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+
+            // Fuzzy columns. These are also masked.
+            colfuncshi.fuzz=new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            colfuncslow.fuzz=new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+
+            // Translated columns are usually sprites-only.
+            colfuncshi.trans=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.trans=new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            colfuncs=colfuncshi;
+        }
+        
+    }
+    
+    public static final class TrueColor extends MaskedWorker<byte[],int[]>{
+
+        public TrueColor(Renderer<byte[],int[]> R,int id, int SCREENWIDTH, int SCREENHEIGHT,
+                int[] ylookup, int[] columnofs, int numthreads, int[] screen,
+                CyclicBarrier barrier) {
+            super(R,id, SCREENWIDTH, SCREENHEIGHT,numthreads, barrier);
+
+            // Non-optimized stuff for masked.
+            colfuncshi.base=colfuncshi.main=colfuncshi.masked=new R_DrawColumnBoom.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.masked=new R_DrawColumnBoomLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+
+            // Fuzzy columns. These are also masked.
+            colfuncshi.fuzz=new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.fuzz=new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+
+            // Translated columns are usually sprites-only.
+            colfuncshi.trans=new R_DrawTranslatedColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            colfuncslow.trans=new R_DrawTranslatedColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            colfuncs=colfuncshi;
+
+        }
+        
+    }
+    
     protected int startx, endx;
     
-    // Cache those you get from the sprite manager
-    protected int[] spritewidth, spriteoffset, spritetopoffset;
-    
-    /** fixed_t */
-    protected int pspritescale, pspriteiscale;
-    
-    // Used for masked segs. Use private for each thread.
-    protected int rw_scalestep;
-    protected int pmaskedtexturecol;
-    protected short[] maskedtexturecol;
-    
-
-    
-    
-    public void cacheSpriteManager(ISpriteManager SM){
-          this.spritewidth=SM.getSpriteWidth();
-            this.spriteoffset=SM.getSpriteOffset();
-            this.spritetopoffset=SM.getSpriteTopOffset();
-    }
-
     /**
      * R_DrawVisSprite mfloorclip and mceilingclip should also be set.
      * 
-     * Sprites are actually drawn here.
+     * Sprites are actually drawn here. Obviously overrides the serial
+     * method, and only draws a portion of the sprite.
      * 
      * 
      */
@@ -175,10 +170,10 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
         // colfunc=glasscolfunc;
         if (maskedcvars.dc_colormap == null) {
             // NULL colormap = shadow draw
-            colfunc = fuzzcolfunc;
+            colfunc = colfuncs.fuzz;
         } else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
-            colfunc = transcolfunc;
-            maskedcvars.dc_translation = (T) colormap.translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
+            colfunc = colfuncs.trans;
+            maskedcvars.dc_translation = (T) colormaps.translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
         }
 
         maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;
@@ -206,7 +201,7 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
             DrawMaskedColumn(column);
         }
 
-        colfunc = maskedcolfunc;
+        colfunc = colfuncs.masked;
     }
 
     /**
@@ -239,21 +234,21 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
         // Use different light tables
         // for horizontal / vertical / diagonal. Diagonal?
         // OPTIMIZE: get rid of LIGHTSEGSHIFT globally
-        curline = ds.curline;
-        frontsector = curline.frontsector;
-        backsector = curline.backsector;
-        texnum = TexMan.getTextureTranslation(curline.sidedef.midtexture);
+        MyBSP.curline = ds.curline;
+        frontsector = MyBSP.curline.frontsector;
+        backsector = MyBSP.curline.backsector;
+        texnum = TexMan.getTextureTranslation(MyBSP.curline.sidedef.midtexture);
         // System.out.print(" for texture "+textures[texnum].name+"\n:");
-        lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT) + colormap.extralight;
+        lightnum = (frontsector.lightlevel >> LIGHTSEGSHIFT) + colormaps.extralight;
 
-        if (curline.v1y == curline.v2y)
+        if (MyBSP.curline.v1y == MyBSP.curline.v2y)
             lightnum--;
-        else if (curline.v1x == curline.v2x)
+        else if (MyBSP.curline.v1x == MyBSP.curline.v2x)
             lightnum++;
 
         // Killough code.
-        colormap.walllights = lightnum >= LIGHTLEVELS ? colormap.scalelight[LIGHTLEVELS - 1]
-                : lightnum < 0 ? colormap.scalelight[0] : colormap.scalelight[lightnum];
+        colormaps.walllights = lightnum >= LIGHTLEVELS ? colormaps.scalelight[LIGHTLEVELS - 1]
+                : lightnum < 0 ? colormaps.scalelight[0] : colormaps.scalelight[lightnum];
 
         // Get the list
         maskedtexturecol = ds.getMaskedTextureColList();
@@ -269,7 +264,7 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
         mceilingclip = ds.getSprTopClipList();
         p_mceilingclip = ds.getSprTopClipPointer();
         // find positioning
-        if ((curline.linedef.flags & ML_DONTPEGBOTTOM) != 0) {
+        if ((MyBSP.curline.linedef.flags & ML_DONTPEGBOTTOM) != 0) {
             maskedcvars.dc_texturemid = frontsector.floorheight > backsector.floorheight ? frontsector.floorheight
                     : backsector.floorheight;
             maskedcvars.dc_texturemid = maskedcvars.dc_texturemid + TexMan.getTextureheight(texnum)
@@ -279,10 +274,10 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
                     : backsector.ceilingheight;
             maskedcvars.dc_texturemid = maskedcvars.dc_texturemid - view.z;
         }
-        maskedcvars.dc_texturemid += curline.sidedef.rowoffset;
+        maskedcvars.dc_texturemid += MyBSP.curline.sidedef.rowoffset;
 
-        if (colormap.fixedcolormap != null)
-            maskedcvars.dc_colormap = colormap.fixedcolormap;
+        if (colormaps.fixedcolormap != null)
+            maskedcvars.dc_colormap = colormaps.fixedcolormap;
 
         // Texture height must be set at this point. This will trigger
         // tiling. For sprites, it should be set to 0.
@@ -292,13 +287,13 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
         for (maskedcvars.dc_x = x1; maskedcvars.dc_x <= x2; maskedcvars.dc_x++) {
             // calculate lighting
             if (maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x] != Short.MAX_VALUE) {
-                if (colormap.fixedcolormap == null) {
+                if (colormaps.fixedcolormap == null) {
                     index = spryscale >>> LIGHTSCALESHIFT;
 
                     if (index >= MAXLIGHTSCALE)
                         index = MAXLIGHTSCALE - 1;
 
-                    maskedcvars.dc_colormap = colormap.walllights[index];
+                    maskedcvars.dc_colormap = colormaps.walllights[index];
                 }
 
                 sprtopscreen = view.centeryfrac
@@ -306,8 +301,8 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
                 maskedcvars.dc_iscale = (int) (0xffffffffL / spryscale);
 
                 // draw the texture
-                byte[] data = (byte[]) GSC.GetSmpColumn(texnum,
-                        maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x],id);// -3);
+                column_t data = TexMan.GetSmpColumn(texnum,
+                        maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x],id);
                 
                 DrawMaskedColumn(data);
                 maskedtexturecol[pmaskedtexturecol + maskedcvars.dc_x] = Short.MAX_VALUE;
@@ -322,6 +317,8 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
      * 
      * Draws a "player sprite" with slighly different rules than normal
      * sprites. This is actually a PITA, at best :-/
+     * 
+     * Also different than normal implementation.
      * 
      */
 
@@ -407,186 +404,24 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
             // shadow draw
             vis.colormap = null;
 
-        } else if (colormap.fixedcolormap != null) {
+        } else if (colormaps.fixedcolormap != null) {
             // fixed color
-            vis.colormap = colormap.fixedcolormap;
+            vis.colormap = colormaps.fixedcolormap;
             // vis.pcolormap=0;
         } else if ((psp.state.frame & FF_FULLBRIGHT) != 0) {
             // full bright
-            vis.colormap = colormap.colormaps[0];
+            vis.colormap = colormaps.colormaps[0];
             // vis.pcolormap=0;
         } else {
             // local light
-            vis.colormap = colormap.spritelights[MAXLIGHTSCALE - 1];
+            vis.colormap = colormaps.spritelights[MAXLIGHTSCALE - 1];
         }
 
         //System.out.printf("Weapon draw from %d to %d\n",vis.x1,vis.x2);
         DrawVisSprite(vis);
     }
     
-    /** used inside DrawPSprite, better make this static */
-    protected vissprite_t<V> avis;
-
-    /**
-     * R_DrawPlayerSprites
-     * 
-     * This is where stuff like guns is drawn...right?
-     * 
-     * 
-     * */
-
-    protected final void DrawPlayerSprites() {
-        int i;
-        int lightnum;
-        pspdef_t psp;
-
-        // get light level
-        lightnum = (view.player.mo.subsector.sector.lightlevel >> LIGHTSEGSHIFT)
-                + colormap.extralight;
-
-        if (lightnum < 0)
-            colormap.spritelights = colormap.scalelight[0];
-        else if (lightnum >= LIGHTLEVELS)
-            colormap.spritelights = colormap.scalelight[LIGHTLEVELS - 1];
-        else
-            colormap.spritelights = colormap.scalelight[lightnum];
-
-        // clip to screen bounds
-        mfloorclip = view.screenheightarray;
-        p_mfloorclip = 0;
-        mceilingclip = view.negonearray;
-        p_mceilingclip = 0;
-
-        // add all active psprites
-        // MAES 25/5/2011 Fixed another stupid bug that prevented
-        // PSP from actually being updated. This in turn uncovered
-        // other bugs in the way psp and state were treated, and the way
-        // flash states were set. It should be OK now.
-        for (i = 0; i < player_t.NUMPSPRITES; i++) {
-            psp = view.player.psprites[i];
-            if (psp.state != null && psp.state.id != 0) {
-                DrawPSprite(psp);
-            }
-        }
-    }
-
-
-    /**
-     * R_DrawSprite
-     */
-
-    protected final void DrawSprite(vissprite_t<V> spr) {
-        int ds;
-        drawseg_t dss;
-
-        int x;
-        int r1;
-        int r2;
-        int scale; // fixed
-        int lowscale; // fixed
-        int silhouette;
-
-        // Trivially outside. Don't bother computing anything for it.
-        //if (spr.x1>=endx || spr.x2<=startx) return;
-        
-        // Trimmed boundaries. Only do masked seg computations on these.
-        int sprx1=spr.x1;//Math.max(startx,spr.x1);
-        int sprx2=spr.x2;//Math.min(endx,spr.x2);
-        
-        
-        // Trim bounds if necessary.
-        for (x = sprx1; x <=  sprx2; x++)
-            clipbot[x] = cliptop[x] = -2;
-
-        // Scan drawsegs from end to start for obscuring segs.
-        // The first drawseg that has a greater scale
-        // is the clip seg.
-        // We can do that without interefering, since we'll limit to our portions.
-        for (ds = seg_vars.ds_p - 1; ds >= 0; ds--) {
-            // determine if the drawseg obscures the sprite
-            // System.out.println("Drawseg "+ds+"of "+(ds_p-1));
-            dss = seg_vars.drawsegs[ds];
-            if (dss.x1 > sprx2
-                    || dss.x2 < sprx1
-                    || ((dss.silhouette == 0) && (dss
-                            .nullMaskedTextureCol()))) {
-                // does not cover sprite
-                continue;
-            }
-
-            r1 = dss.x1 < sprx1 ? sprx1 : dss.x1;
-            r2 = dss.x2 > sprx2 ? sprx2 : dss.x2;
-
-            if (dss.scale1 > dss.scale2) {
-                lowscale = dss.scale2;
-                scale = dss.scale1;
-            } else {
-                lowscale = dss.scale1;
-                scale = dss.scale2;
-            }
-
-            if (scale < spr.scale
-                    || (lowscale < spr.scale && (dss.curline
-                            .PointOnSegSide(spr.gx, spr.gy) == 0))) {
-                // masked mid texture?
-                if (!(dss.x1>endx || dss.x2<startx) && !dss.nullMaskedTextureCol())
-                    RenderMaskedSegRange(dss, r1, r2);
-                // seg is behind sprite
-                continue;
-            }
-
-            // clip this piece of the sprite
-            silhouette = dss.silhouette;
-
-            if (spr.gz >= dss.bsilheight)
-                silhouette &= ~SIL_BOTTOM;
-
-            if (spr.gzt <= dss.tsilheight)
-                silhouette &= ~SIL_TOP;
-
-            // BOTTOM clipping
-            if (silhouette == 1) {
-                // bottom sil
-                for (x = r1; x <= r2; x++)
-                    if (clipbot[x] == -2)
-                            clipbot[x] = dss.getSprBottomClip(x);
-
-            } else if (silhouette == 2) {
-                // top sil
-                for (x = r1; x <= r2; x++)
-                    if (cliptop[x] == -2)
-                        cliptop[x] = dss.getSprTopClip(x);
-            } else if (silhouette == 3) {
-                // both
-                for (x = r1; x <= r2; x++) {
-                    if (clipbot[x] == -2)
-                        clipbot[x] = dss.getSprBottomClip(x);
-                    if (cliptop[x] == -2)
-                        cliptop[x] = dss.getSprTopClip(x);
-                }
-            }
-
-        }
-
-        // all clipping has been performed, so draw the sprite
-
-        // check for unclipped columns
-        for (x = sprx1; x <= sprx2; x++) {
-            if (clipbot[x] == -2)
-                clipbot[x] = (short) view.height;
-            // ?? What's this bullshit?
-            if (cliptop[x] == -2)
-                cliptop[x] = -1;
-        }
-
-        mfloorclip = clipbot;
-        p_mfloorclip = 0;
-        mceilingclip = cliptop;
-        p_mceilingclip = 0;
-        // Let DrawVisSprite do the final trimming and biasing.
-        DrawVisSprite(spr);
-    }
-
+    
     /**
      * R_DrawMasked
      * 
@@ -607,7 +442,7 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
 
         // Sprites should already be sorted for distance 
 
-        colfunc = maskedcolfunc; // Sprites use fully-masked capable
+        colfunc = colfuncs.masked; // Sprites use fully-masked capable
                                  // function.
 
         // Update view height
@@ -642,9 +477,9 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
         // but does not draw on side views
         // if (viewangleoffset==0)
 
-        colfunc = playercolfunc;
+        colfunc = colfuncs.player;
         DrawPlayerSprites();
-        colfunc = maskedcolfunc;
+        colfunc = colfuncs.masked;
         
         try {
             barrier.await();
@@ -656,134 +491,6 @@ public abstract class MaskedWorker<T,V> extends RendererState.AbstractThings imp
             e.printStackTrace();
         }
         
-    }
-
-    /**
-     * R_DrawMaskedColumn Used for sprites and masked mid textures. Masked
-     * means: partly transparent, i.e. stored in posts/runs of opaque pixels.
-     * 
-     * NOTE: this version accepts raw bytes, in case you know what you're doing.
-     */
-
-    protected final void DrawMaskedColumn(byte[] column) {
-        int topscreen;
-        int bottomscreen;
-        int basetexturemid; // fixed_t
-        int topdelta;
-        int length;
-
-        basetexturemid = maskedcvars.dc_texturemid;
-        // That's true for the whole column.
-        maskedcvars.dc_source = column;
-        int pointer = 0;
-
-        // for each post...
-        while ((topdelta = 0xFF & column[pointer]) != 0xFF) {
-            // calculate unclipped screen coordinates
-            // for post
-            topscreen = sprtopscreen + spryscale * topdelta;
-            length = 0xff & column[pointer + 1];
-            bottomscreen = topscreen + spryscale * length;
-
-            maskedcvars.dc_yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
-            maskedcvars.dc_yh = (bottomscreen - 1) >> FRACBITS;
-
-            if (maskedcvars.dc_yh >= mfloorclip[p_mfloorclip + maskedcvars.dc_x])
-                maskedcvars.dc_yh = mfloorclip[p_mfloorclip + maskedcvars.dc_x] - 1;
-
-            if (maskedcvars.dc_yl <= mceilingclip[p_mceilingclip + maskedcvars.dc_x])
-                maskedcvars.dc_yl = mceilingclip[p_mceilingclip + maskedcvars.dc_x] + 1;
-
-            // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
-            if (maskedcvars.dc_yl <= maskedcvars.dc_yh && maskedcvars.dc_yh < view.height) {
-                // Set pointer inside column to current post's data
-                // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad}
-                maskedcvars.dc_source_ofs = pointer + 3;
-                maskedcvars.dc_texturemid = basetexturemid - (topdelta << FRACBITS);
-
-                // Drawn by either R_DrawColumn
-                // or (SHADOW) R_DrawFuzzColumn.
-                maskedcvars.dc_texheight=0; // Killough
-
-                colfunc.invoke();
-            }
-            pointer += length + 4;
-        }
-
-        maskedcvars.dc_texturemid = basetexturemid;
-    }
-
-    /**
-     * R_DrawMaskedColumn Used for sprites and masked mid textures. Masked
-     * means: partly transparent, i.e. stored in posts/runs of opaque pixels.
-     * 
-     */
-
-    protected final void DrawMaskedColumn(column_t column) {
-        int topscreen;
-        int bottomscreen;
-        int basetexturemid; // fixed_t
-
-        basetexturemid = maskedcvars.dc_texturemid;
-        // That's true for the whole column.
-        maskedcvars.dc_source = column.data;
-        // dc_source_ofs=0;
-
-        // for each post...
-        for (int i = 0; i < column.posts; i++) {
-            maskedcvars.dc_source_ofs = column.postofs[i];
-            // calculate unclipped screen coordinates
-            // for post
-            topscreen = sprtopscreen + spryscale * column.postdeltas[i];
-            bottomscreen = topscreen + spryscale * column.postlen[i];
-
-            maskedcvars.dc_yl = (topscreen + FRACUNIT - 1) >> FRACBITS;
-        maskedcvars.dc_yh = (bottomscreen - 1) >> FRACBITS;
-
-            if (maskedcvars.dc_yh >= mfloorclip[p_mfloorclip + maskedcvars.dc_x])
-                maskedcvars.dc_yh = mfloorclip[p_mfloorclip + maskedcvars.dc_x] - 1;
-            if (maskedcvars.dc_yl <= mceilingclip[p_mceilingclip + maskedcvars.dc_x])
-                maskedcvars.dc_yl = mceilingclip[p_mceilingclip + maskedcvars.dc_x] + 1;
-
-            // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
-            if (maskedcvars.dc_yl <= maskedcvars.dc_yh && maskedcvars.dc_yh < maskedcvars.viewheight) {
-                
-                // Set pointer inside column to current post's data
-                // Remember, it goes {postlen}{postdelta}{pad}[data]{pad}
-
-                maskedcvars.dc_texturemid = basetexturemid
-                        - (column.postdeltas[i] << FRACBITS);
-
-                // Drawn by either R_DrawColumn or (SHADOW) R_DrawFuzzColumn.
-                colfunc.invoke();
-
-            }
-        }
-
-        maskedcvars.dc_texturemid = basetexturemid;
-    }
-    
-    public final void setPspriteIscale(int i) {
-        pspriteiscale=i;
-        
-    }
-
-    public final void setPspriteScale(int i) {
-        pspritescale=i;            
-    }
-    
-
-    @Override
-    public void setDetail(int detailshift) {
-        if (detailshift==0){
-            this.playercolfunc=this.maskedcolfunc=this.maskedcolfunchi;
-            this.fuzzcolfunc=this.fuzzcolfunchi;
-            this.transcolfunc=this.transcolhigh;
-        } else {                
-            this.playercolfunc=this.maskedcolfunc=this.maskedcolfunclow;
-            this.fuzzcolfunc=this.fuzzcolfunclow;
-            this.transcolfunc=this.transcollow;
-        }
     }
     
 }

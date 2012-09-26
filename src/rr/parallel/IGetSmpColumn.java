@@ -1,5 +1,7 @@
 package rr.parallel;
 
+import rr.column_t;
+
 /** An interface used to ease the use of the GetCachedColumn by part
  *  of parallelized renderers.
  *  
@@ -14,8 +16,8 @@ package rr.parallel;
  * 
  */
 
-public interface IGetSmpColumn<T> {
+public interface IGetSmpColumn {
 
-	T GetSmpColumn(int tex, int col,int id);
+	column_t GetSmpColumn(int tex, int col,int id);
 
 }

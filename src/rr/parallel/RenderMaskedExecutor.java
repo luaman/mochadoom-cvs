@@ -19,10 +19,8 @@ import rr.drawfuns.R_DrawTranslatedColumnLow;
 /**
  * This is what actual executes the RenderWallInstruction. Essentially it's a
  * self-contained column rendering function.
- * 
- * Note: this one scales "cleanly" to generics, doesn't need HiColor/Indexed hacks.
- * 
- * @author admin
+  * 
+ * @author velktron
  */
 
 public abstract class RenderMaskedExecutor<T,V>
@@ -31,7 +29,7 @@ public abstract class RenderMaskedExecutor<T,V>
     protected CyclicBarrier barrier;
 
     protected ColVars<T,V>[] RMI;
-    
+   
     protected int rmiend;
 
     protected boolean lowdetail=false;
@@ -51,7 +49,6 @@ public abstract class RenderMaskedExecutor<T,V>
         this.barrier = barrier;
         this.SCREENWIDTH = SCREENWIDTH;
         this.SCREENHEIGHT = SCREENHEIGHT;
-
     }
 
     public void setRange(int start, int end) {
@@ -97,6 +94,7 @@ public abstract class RenderMaskedExecutor<T,V>
                         colfunc=colfunchi;
                     }
             
+            // No need to set shared DCvars, because it's passed with the arg.
             colfunc.invoke(RMI[i]);
             }
         }
@@ -136,20 +134,20 @@ public abstract class RenderMaskedExecutor<T,V>
 
         public HiColor(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
                 int[] ylookup, short[] screen, ColVars<byte[], short[]>[] RMI,
-                CyclicBarrier barrier,ColVars<byte[],short[]> maskedcvars,IDoomSystem I) {
+                CyclicBarrier barrier,IDoomSystem I) {
             super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
             
             // Regular masked columns
-            this.colfunc = new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            this.colfunclow = new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.colfunc = new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.colfunclow = new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
             
             // Fuzzy columns
-            this.fuzzfunchi= new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            this.fuzzfunclow =new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.fuzzfunchi= new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.fuzzfunclow =new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
 
             // Translated columns
-            this.transfunchi=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            this.transfunclow= new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.transfunchi=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.transfunclow= new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
 
         }
         
@@ -159,20 +157,44 @@ public abstract class RenderMaskedExecutor<T,V>
 
         public Indexed(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
                 int[] ylookup, byte[] screen, ColVars<byte[], byte[]>[] RMI,
-                CyclicBarrier barrier,ColVars<byte[],byte[]> maskedcvars,IDoomSystem I,byte[] BLURRY_MAP) {
+                CyclicBarrier barrier,IDoomSystem I,byte[] BLURRY_MAP) {
             super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
             
             // Regular masked columns
-            this.colfunc = new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            this.colfunclow = new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.colfunc = new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.colfunclow = new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
             
             // Fuzzy columns
-            this.fuzzfunchi= new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
-            this.fuzzfunclow =new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            this.fuzzfunchi= new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I,BLURRY_MAP);
+            this.fuzzfunclow =new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I,BLURRY_MAP);
 
             // Translated columns
-            this.transfunchi=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
-            this.transfunclow= new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            this.transfunchi=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.transfunclow= new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+
+        }
+        
+    }
+    
+    public static final class TrueColor extends RenderMaskedExecutor<byte[],int[]>{
+
+        public TrueColor(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
+                int[] ylookup, int[] screen, ColVars<byte[], int[]>[] RMI,
+                CyclicBarrier barrier,IDoomSystem I) {
+            super(SCREENWIDTH, SCREENHEIGHT,RMI, barrier);
+            
+            // Regular masked columns
+            this.colfunc = new R_DrawColumnBoom.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.colfunclow = new R_DrawColumnBoomLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            
+            // Fuzzy columns
+            this.fuzzfunchi= new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.fuzzfunclow =new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+
+            // Translated columns
+            this.transfunchi=new R_DrawTranslatedColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+            this.transfunclow= new R_DrawTranslatedColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,null,screen,I);
+
 
         }
         
