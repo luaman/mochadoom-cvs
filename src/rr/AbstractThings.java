@@ -767,20 +767,83 @@ public abstract class AbstractThings<T,V>
                 //
                 // results in a negative initial frac number.
 
-                // try {
+                // Drawn by either R_DrawColumn
+                //  or (SHADOW) R_DrawFuzzColumn.
+                
+                // FUN FACT: this was missing and fucked my shit up.
+                maskedcvars.dc_texheight=0; // Killough
+                
                 completeColumn();
-                /*
-                 * } catch (Exception e) { int fracstep=dc_iscale; int frac
-                 * = dc_texturemid + (dc_yl - centery) * fracstep;
-                 * System.err.printf("Problem! %d = %x + (%x - %x) * %x\n",
-                 * frac,dc_texturemid, dc_yl, centery, dc_iscale);
-                 * e.printStackTrace(); }
-                 */
+                 
             }
         }
 
         maskedcvars.dc_texturemid = basetexturemid;
     }
+    
+    /*
+     * R_DrawMaskedColumn
+     * Used for sprites and masked mid textures.
+     * Masked means: partly transparent, i.e. stored
+     *  in posts/runs of opaque pixels.
+     *  
+     *  NOTE: this version accepts raw bytes, in case you  know what you're doing.
+     *  NOTE: this is a legacy function. Do not reactivate unless
+     *  REALLY needed.
+     *
+     */
+/*
+    protected final  void DrawMaskedColumn (byte[] column)
+    {
+        int topscreen;
+        int bottomscreen;
+        int basetexturemid; // fixed_t
+        int topdelta;
+        int length;
+        
+        basetexturemid = dc_texturemid;
+        // That's true for the whole column.
+        dc_source = column;
+        int pointer=0;
+        
+        // for each post...
+        while((topdelta=0xFF&column[pointer])!=0xFF)
+        {
+        // calculate unclipped screen coordinates
+        //  for post
+        topscreen = sprtopscreen + spryscale*topdelta;
+        length=0xff&column[pointer+1];
+        bottomscreen = topscreen + spryscale*length;
+
+        dc_yl = (topscreen+FRACUNIT-1)>>FRACBITS;
+        dc_yh = (bottomscreen-1)>>FRACBITS;
+            
+        if (dc_yh >= mfloorclip[p_mfloorclip+dc_x])
+            dc_yh = mfloorclip[p_mfloorclip+dc_x]-1;
+        
+        if (dc_yl <= mceilingclip[p_mceilingclip+dc_x])
+            dc_yl = mceilingclip[p_mceilingclip+dc_x]+1;
+
+        // killough 3/2/98, 3/27/98: Failsafe against overflow/crash:
+        if (dc_yl <= dc_yh && dc_yh < viewheight)
+        {
+            // Set pointer inside column to current post's data
+            // Rremember, it goes {postlen}{postdelta}{pad}[data]{pad} 
+            dc_source_ofs = pointer+3;
+            dc_texturemid = basetexturemid - (topdelta<<FRACBITS);
+
+            // Drawn by either R_DrawColumn
+            //  or (SHADOW) R_DrawFuzzColumn.
+            dc_texheight=0; // Killough
+                
+            maskedcolfunc.invoke();
+        }
+        pointer+=length + 4;
+        }
+        
+        dc_texturemid = basetexturemid;
+    }
+      */
 
     @Override
     public void setPspriteIscale(int i) {
