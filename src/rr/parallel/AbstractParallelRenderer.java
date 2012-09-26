@@ -1,56 +1,33 @@
 package rr.parallel;
 
-import static data.Defines.ANGLETOSKYSHIFT;
-import static data.Defines.PU_STATIC;
-import static data.Tables.ANGLETOFINESHIFT;
-import static data.Tables.BITS32;
-import static data.Tables.addAngles;
-import static data.Tables.finecosine;
-import static data.Tables.finesine;
 import static data.Tables.finetangent;
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
 import java.io.IOException;
-import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import data.Tables;
 import doom.DoomStatus;
 
-import rr.IDetailAware;
 import rr.PlaneDrawer;
 import rr.Renderer;
 import rr.RendererState;
-import rr.flat_t;
-import rr.visplane_t;
 import rr.drawfuns.ColVars;
-import rr.drawfuns.DcFlags;
-import rr.drawfuns.DoomColumnFunction;
-import rr.drawfuns.DoomSpanFunction;
-import rr.drawfuns.R_DrawColumnBoom;
-import rr.drawfuns.R_DrawColumnBoomLow;
-import rr.drawfuns.R_DrawColumnBoomOpt;
-import rr.drawfuns.R_DrawColumnBoomOptLow;
-import rr.drawfuns.R_DrawFuzzColumn;
-import rr.drawfuns.R_DrawFuzzColumnLow;
-import rr.drawfuns.R_DrawSpanLow;
-import rr.drawfuns.R_DrawSpanUnrolled;
-import rr.drawfuns.R_DrawTranslatedColumn;
-import rr.drawfuns.R_DrawTranslatedColumnLow;
-import rr.drawfuns.SpanVars;
-import rr.parallel.RenderWallExecutor.HiColor;
 import utils.C2JUtils;
 
 /**
- * Features and funcitonality which is common among parallel renderers
+ * Features and functionality which is common among parallel renderers
  * 
  * @author velktron
  */
 
 public abstract class AbstractParallelRenderer<T, V>
-        extends RendererState<T, V> {
+        extends RendererState<T, V> implements RWI.Init<T, V>{
 
     public AbstractParallelRenderer(DoomStatus<T, V> DS, int wallthread,
             int floorthreads, int nummaskedthreads) {
@@ -58,6 +35,11 @@ public abstract class AbstractParallelRenderer<T, V>
         this.NUMWALLTHREADS = wallthread;
         this.NUMFLOORTHREADS = floorthreads;
         this.NUMMASKEDTHREADS = nummaskedthreads;
+        // Prepare the barriers for MAXTHREADS + main thread.
+        drawsegsbarrier = new CyclicBarrier(NUMWALLTHREADS + 1);
+        visplanebarrier = new CyclicBarrier(NUMFLOORTHREADS + 1);        
+        maskedbarrier = new CyclicBarrier(NUMMASKEDTHREADS + 1);
+        tp = Executors.newCachedThreadPool();
 
     }
 
@@ -67,6 +49,11 @@ public abstract class AbstractParallelRenderer<T, V>
         this.NUMWALLTHREADS = wallthread;
         this.NUMFLOORTHREADS = floorthreads;
         this.NUMMASKEDTHREADS = 1;
+        // Prepare the barriers for MAXTHREADS + main thread.
+        drawsegsbarrier = new CyclicBarrier(NUMWALLTHREADS + 1);
+        visplanebarrier = new CyclicBarrier(NUMFLOORTHREADS + 1);        
+        maskedbarrier = new CyclicBarrier(NUMMASKEDTHREADS + 1);
+        tp = Executors.newCachedThreadPool();
     }
 
     // //////// PARALLEL OBJECTS /////////////
@@ -91,7 +78,7 @@ public abstract class AbstractParallelRenderer<T, V>
     protected static final boolean DEBUG = false;
 
     protected final class ParallelSegs
-            extends SegDrawer {
+            extends SegDrawer implements RWI.Get<T,V>{
 
         public ParallelSegs(Renderer<?, ?> R) {
             super(R);
@@ -186,24 +173,41 @@ public abstract class AbstractParallelRenderer<T, V>
             // System.err.println("RWI Buffer resized. Actual capacity " +
             // RWI.length);
         }
-
+        
         /**
          * R_InitRWISubsystem Initialize RWIs and RWI Executors. Pegs them to
          * the RWI, ylookup and screen[0].
          */
 
-        protected void InitRWISubsystem() {
-            // CATCH: this must be executed AFTER screen is set, and
-            // AFTER we initialize the RWI themselves,
-            // before V is set (right?)
-            for (int i = 0; i < NUMWALLTHREADS; i++) {
-                RWIExec[i] =
-                    new RenderWallExecutor<T, V>(SCREENWIDTH, SCREENHEIGHT,
-                            columnofs, ylookup, screen, RWI, drawsegsbarrier);
+        public void initScaling() {
+        	super.initScaling();
+        	ColVars<T,V> fake=new ColVars<T,V>();
+        	RWI=C2JUtils.createArrayOfObjects(fake, 3*SCREENWIDTH);
 
-                detailaware.add(RWIExec[i]);
-            }
         }
+
+		@Override
+		public ColVars<T, V>[] getRWI() {
+			return RWI;
+		}
+
+		@Override
+		public void setExecutors(RenderWallExecutor<T, V>[] RWIExec) {
+			this.RWIExec=RWIExec;
+			
+		}
+		
+		public void sync(){
+			try {
+				drawsegsbarrier.await();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (BrokenBarrierException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
     }
 
     protected final class ParallelPlanes<T, V>
@@ -559,6 +563,11 @@ public abstract class AbstractParallelRenderer<T, V>
      * } }
      */
 
+    public void Init(){
+    	super.Init();
+    	InitParallelStuff();
+    }
+    
     /**
      * Any scaling and implementation-specific stuff to do for parallel stuff
      * should go here. This method is called internally by the public Init().
@@ -566,5 +575,12 @@ public abstract class AbstractParallelRenderer<T, V>
      * called this.
      */
     protected abstract void InitParallelStuff();
-
+    
+    /** Override this in one of the final implementors, if you want it to work */
+    
+    public RenderWallExecutor<T,V>[] InitRWIExecutors(int num,ColVars<T,V>[] RWI){
+    	return null;
+    }
+    RWI.Get<T,V> RWIs;
+    
 }

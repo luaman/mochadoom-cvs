@@ -121,4 +121,21 @@ public class RenderWallExecutor<T,V>
         
     }
     
+    public static final class TrueColor extends RenderWallExecutor<byte[],int[]> {
+
+        public TrueColor(int SCREENWIDTH, int SCREENHEIGHT, int[] columnofs,
+                int[] ylookup, int[] screen,
+                ColVars<byte[], int[]>[] RWI, CyclicBarrier barrier) {
+            super(SCREENWIDTH, SCREENHEIGHT, columnofs, ylookup, screen, RWI, barrier);
+            colfunc =
+                colfunchi =
+                    new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH, SCREENHEIGHT, ylookup,
+                            columnofs, null, screen, null);
+            colfunclow =
+                new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH, SCREENHEIGHT, ylookup,
+                        columnofs, null, screen, null);
+        }
+        
+    }
+    
 }

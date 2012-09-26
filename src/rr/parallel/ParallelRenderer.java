@@ -1,5 +1,9 @@
 package rr.parallel;
 
+import static rr.LightsAndColors.LIGHTLEVELS;
+import static rr.LightsAndColors.MAXLIGHTSCALE;
+import static rr.LightsAndColors.MAXLIGHTZ;
+
 import java.io.IOException;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
@@ -7,13 +11,20 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import rr.IDetailAware;
+import rr.PlaneDrawer;
+import rr.SimpleThings;
 import rr.patch_t;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DcFlags;
 import rr.drawfuns.R_DrawColumnBoom;
 import rr.drawfuns.R_DrawColumnBoomLow;
+import rr.drawfuns.R_DrawColumnBoomOpt;
+import rr.drawfuns.R_DrawColumnBoomOptLow;
 import rr.drawfuns.R_DrawFuzzColumn;
 import rr.drawfuns.R_DrawFuzzColumnLow;
+import rr.drawfuns.R_DrawSpanLow;
+import rr.drawfuns.R_DrawSpanUnrolled;
+import rr.drawfuns.R_DrawTLColumn;
 import rr.drawfuns.R_DrawTranslatedColumn;
 import rr.drawfuns.R_DrawTranslatedColumnLow;
 import utils.C2JUtils;
@@ -41,8 +52,15 @@ public abstract class ParallelRenderer<T, V>
     public ParallelRenderer(DoomMain<T, V> DM, int wallthread,
             int floorthreads, int nummaskedthreads) {
         super(DM, wallthread, floorthreads, nummaskedthreads);
-        this.MySegs = new ParallelSegs(DM.R);
-        this.MyPlanes = new ParallelPlanes<T, V>(DM.R);
+        
+        // Register parallel seg drawer with list of RWI subsystems.
+        ParallelSegs tmp= new ParallelSegs(this);
+        this.MySegs = tmp;
+        RWIs= tmp;
+        
+        this.MyThings =
+                new SimpleThings<T,V>(this);
+        //this.MyPlanes = new Planes(this);// new ParallelPlanes<T, V>(DM.R);
 
     }
 
@@ -55,49 +73,7 @@ public abstract class ParallelRenderer<T, V>
         this(DM, 1, 1, 2);
     }
 
-    /**
-     * R_Init
-     */
 
-    public void Init()
-
-    {
-        // DON'T FORGET ABOUT MEEEEEE!!!11!!!
-        this.screen = V.getScreen(DoomVideoRenderer.SCREEN_FG);
-
-        System.out.print("\nR_InitData");
-        InitData();
-        // InitPointToAngle ();
-        System.out.print("\nR_InitPointToAngle");
-
-        // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
-        System.out.print("\nR_InitTables");
-        InitTables();
-
-        SetViewSize(DM.M.getScreenBlocks(), DM.M.getDetailLevel());
-
-        System.out.print("\nR_InitPlanes");
-        MyPlanes.InitPlanes();
-
-        System.out.print("\nR_InitLightTables");
-        InitLightTables();
-
-        System.out.print("\nR_InitSkyMap: " + TexMan.InitSkyMap());
-
-        System.out.print("\nR_InitTranslationsTables");
-        InitTranslationTables();
-
-        System.out.print("\nR_InitDrawingFunctions: ");
-        R_InitDrawingFunctions();
-
-        System.out.print("\nR_InitParallelStuff: ");
-        InitParallelStuff();
-
-        System.out.print("\nR_InitTranMap: ");
-        R_InitTranMap(0);
-
-        framecount = 0;
-    }
 
     /**
      * R_RenderView As you can guess, this renders the player view of a
@@ -150,16 +126,9 @@ public abstract class ParallelRenderer<T, V>
         MySegs.sync();
         MyPlanes.sync();
 
-        try {
-            drawsegsbarrier.await();
-            visplanebarrier.await();
-        } catch (InterruptedException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        } catch (BrokenBarrierException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
+//            drawsegsbarrier.await();
+//            visplanebarrier.await();
+
 
         MyThings.DrawMasked();
 
@@ -173,14 +142,20 @@ public abstract class ParallelRenderer<T, V>
         DGN.NetUpdate();
     }
 
-    public static class Indexed
+    public static final class Indexed
             extends ParallelRenderer<byte[], byte[]> {
 
         public Indexed(DoomMain<byte[], byte[]> DM, int wallthread,
                 int floorthreads, int nummaskedthreads) {
             super(DM, wallthread, floorthreads, nummaskedthreads);
-            this.MyThings =
-                new ParallelThings.Indexed(this, tp, NUMMASKEDTHREADS);
+
+            // Init light levels
+            colormaps.scalelight = new byte[LIGHTLEVELS][MAXLIGHTSCALE][];
+            colormaps.scalelightfixed = new byte[MAXLIGHTSCALE][];
+            colormaps.zlight = new byte[LIGHTLEVELS][MAXLIGHTZ][];
+            
+            completeInit();
+        
         }
         
         /**
@@ -212,6 +187,42 @@ public abstract class ParallelRenderer<T, V>
             
         }
 
+ protected void R_InitDrawingFunctions(){            
+            
+            // Span functions. Common to all renderers unless overriden
+            // or unused e.g. parallel renderers ignore them.
+            DrawSpan=new R_DrawSpanUnrolled.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpanLow=new R_DrawSpanLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            
+            
+            // Translated columns are usually sprites-only.
+            DrawTranslatedColumn=new R_DrawTranslatedColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+          //  DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Fuzzy columns. These are also masked.
+            DrawFuzzColumn=new R_DrawFuzzColumn.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I,BLURRY_MAP);
+            
+            // Regular draw for solid columns/walls. Full optimizations.
+            DrawColumn=new R_DrawColumnBoomOpt.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            DrawColumnLow=new R_DrawColumnBoomOptLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            
+            // Non-optimized stuff for masked.
+            DrawColumnMasked=new R_DrawColumnBoom.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawColumnMaskedLow=new R_DrawColumnBoomLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Player uses masked
+            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
+            
+            // Skies use their own. This is done in order not to stomp parallel threads.
+            
+            DrawColumnSkies=new R_DrawColumnBoomOpt.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.Indexed(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            
+            super.R_InitDrawingFunctions();
+        }
+        
         protected void InitMaskedWorkers() {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] =
@@ -224,31 +235,58 @@ public abstract class ParallelRenderer<T, V>
             }
         }
 
+		@Override
+		public RenderWallExecutor<byte[], byte[]>[] InitRWIExecutors(
+				int num,ColVars<byte[], byte[]>[] RWI) {
+				RenderWallExecutor<byte[],byte[]>[] tmp=
+						new RenderWallExecutor.Indexed[num];
+				
+				for (int i=0;i<num;i++)
+					tmp[i]=new RenderWallExecutor.Indexed(SCREENWIDTH, SCREENHEIGHT, columnofs, ylookup, screen, RWI, drawsegsbarrier);
+			
+				return tmp;
+		}
+
     }
 
     @Override
     protected void InitParallelStuff() {
 
+
+    	// ...yeah, it works.
+    	if (!(RWIs==null)){ 
+    		ColVars<T,V>[] RWI=RWIs.getRWI();
+    		RenderWallExecutor<T,V>[] RWIExec=InitRWIExecutors(NUMWALLTHREADS,RWI);
+    		RWIs.setExecutors(RWIExec);
+    		
+            for (int i = 0; i < NUMWALLTHREADS; i++) {
+            	
+                detailaware.add(RWIExec[i]);
+            }
+    		}
+    		
+    	
+        // CATCH: this must be executed AFTER screen is set, and
+        // AFTER we initialize the RWI themselves,
+        // before V is set (right?)
+
+    	
         // This actually only creates the necessary arrays and
         // barriers. Things aren't "wired" yet.
 
         // Using "render wall instruction" subsystem
-        RWIExec = new RenderWallExecutor.Indexed[NUMWALLTHREADS];
 
         // Using masked sprites
-        RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];
+       // RMIExec = new RenderMaskedExecutor[NUMMASKEDTHREADS];
 
         // Using
-        vpw = new Runnable[NUMFLOORTHREADS];
-        maskedworkers = new MaskedWorker.Indexed[NUMMASKEDTHREADS];
+        //vpw = new Runnable[NUMFLOORTHREADS];
+        //maskedworkers = new MaskedWorker.Indexed[NUMMASKEDTHREADS];
 
-        tp = Executors.newCachedThreadPool();
-        // Prepare the barrier for MAXTHREADS + main thread.
-        drawsegsbarrier = new CyclicBarrier(NUMWALLTHREADS + 1);
 
-        visplanebarrier = new CyclicBarrier(NUMFLOORTHREADS + 1);
 
-        maskedbarrier = new CyclicBarrier(NUMMASKEDTHREADS + 1);
+
+
 
         // RWIcount = 0;
 
@@ -271,6 +309,10 @@ public abstract class ParallelRenderer<T, V>
 
     @Override
     public void initScaling() {
+    	
+    	super.initScaling();
+    	
+
         /*
          * TODO: relay to dependent objects. super.initScaling();
          * ColVars<byte[],byte[]> fake = new ColVars<byte[],byte[]>(); RWI =
@@ -283,12 +325,17 @@ public abstract class ParallelRenderer<T, V>
 
     protected abstract void InitMaskedWorkers();
 
-    public static class HiColor
+    public static final class HiColor
             extends ParallelRenderer<byte[], short[]> {
 
         public HiColor(DoomMain<byte[], short[]> DM, int wallthread,
                 int floorthreads, int nummaskedthreads) {
             super(DM, wallthread, floorthreads, nummaskedthreads);
+            
+            // Init light levels
+            colormaps.scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
+            colormaps.scalelightfixed = new short[MAXLIGHTSCALE][];
+            colormaps.zlight = new short[LIGHTLEVELS][MAXLIGHTZ][];
         }
 
         protected void InitMaskedWorkers() {
@@ -320,21 +367,128 @@ public abstract class ParallelRenderer<T, V>
             // processing works just fine.
             BLURRY_MAP = null;// colormaps[0];
         }
+        
+        protected void R_InitDrawingFunctions(){            
+            
+            // Span functions. Common to all renderers unless overriden
+            // or unused e.g. parallel renderers ignore them.
+            DrawSpan=new R_DrawSpanUnrolled.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpanLow=new R_DrawSpanLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            
+            
+            // Translated columns are usually sprites-only.
+            DrawTranslatedColumn=new R_DrawTranslatedColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Fuzzy columns. These are also masked.
+            DrawFuzzColumn=new R_DrawFuzzColumn.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Regular draw for solid columns/walls. Full optimizations.
+            DrawColumn=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            DrawColumnLow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            
+            // Non-optimized stuff for masked.
+            DrawColumnMasked=new R_DrawColumnBoom.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawColumnMaskedLow=new R_DrawColumnBoomLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Player uses masked
+            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
+            
+            // Skies use their own. This is done in order not to stomp parallel threads.
+            
+            DrawColumnSkies=new R_DrawColumnBoomOpt.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.HiColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            
+            super.R_InitDrawingFunctions();
+        }
+
+		@Override
+		public RenderWallExecutor<byte[], short[]>[] InitRWIExecutors(
+				int num,ColVars<byte[], short[]>[] RWI) {
+				RenderWallExecutor<byte[],short[]>[] tmp=
+						new RenderWallExecutor.HiColor[num];
+				
+				for (int i=0;i<num;i++)
+					tmp[i]=new RenderWallExecutor.HiColor(SCREENWIDTH, SCREENHEIGHT, columnofs, ylookup, screen, RWI, drawsegsbarrier);
+			
+				return tmp;
+		}
 
     }
 
-    public static class TrueColor
+    public static final class TrueColor
             extends ParallelRenderer<byte[], int[]> {
 
         public TrueColor(DoomMain<byte[], int[]> DM, int wallthread,
                 int floorthreads, int nummaskedthreads) {
             super(DM, wallthread, floorthreads, nummaskedthreads);
+            
+            // Init light levels
+            colormaps.scalelight = new int[LIGHTLEVELS][MAXLIGHTSCALE][];
+            colormaps.scalelightfixed = new int[MAXLIGHTSCALE][];
+            colormaps.zlight = new int[LIGHTLEVELS][MAXLIGHTZ][];
+        }
+        
+  protected void R_InitDrawingFunctions(){            
+            
+            // Span functions. Common to all renderers unless overriden
+            // or unused e.g. parallel renderers ignore them.
+            DrawSpan=new R_DrawSpanUnrolled.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            DrawSpanLow=new R_DrawSpanLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dsvars,screen,I);
+            
+            
+            // Translated columns are usually sprites-only.
+            DrawTranslatedColumn=new R_DrawTranslatedColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawTranslatedColumnLow=new R_DrawTranslatedColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            //DrawTLColumn=new R_DrawTLColumn(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Fuzzy columns. These are also masked.
+            DrawFuzzColumn=new R_DrawFuzzColumn.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawFuzzColumnLow=new R_DrawFuzzColumnLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Regular draw for solid columns/walls. Full optimizations.
+            DrawColumn=new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            DrawColumnLow=new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,dcvars,screen,I);
+            
+            // Non-optimized stuff for masked.
+            DrawColumnMasked=new R_DrawColumnBoom.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            DrawColumnMaskedLow=new R_DrawColumnBoomLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,maskedcvars,screen,I);
+            
+            // Player uses masked
+            DrawColumnPlayer=DrawColumnMasked; // Player normally uses masked.
+            
+            // Skies use their own. This is done in order not to stomp parallel threads.
+            
+            DrawColumnSkies=new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            DrawColumnSkiesLow=new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH,SCREENHEIGHT,ylookup,columnofs,skydcvars,screen,I);
+            
+            super.R_InitDrawingFunctions();
         }
 
+        /**
+         * R_InitColormaps This is VERY different for hicolor.
+         * 
+         * @throws IOException
+         */
+        protected void InitColormaps()
+                throws IOException {
+
+            colormaps.colormaps = V.getColorMaps();
+            System.out.println("COLORS15 Colormaps: "
+                    + colormaps.colormaps.length);
+
+            // MAES: blurry effect is hardcoded to this colormap.
+            // Pointless, since we don't use indexes. Instead, a half-brite
+            // processing works just fine.
+            BLURRY_MAP = null;// colormaps[0];
+        }
+        
         protected void InitMaskedWorkers() {
             for (int i = 0; i < NUMMASKEDTHREADS; i++) {
                 maskedworkers[i] =
-                    new MaskedWorker.TrueColor(i, SCREENWIDTH, SCREENHEIGHT,
+                    new MaskedWorker.TrueColor(this,i, SCREENWIDTH, SCREENHEIGHT,
                             ylookup, columnofs, NUMMASKEDTHREADS, screen,
                             maskedbarrier);
                 detailaware.add(maskedworkers[i]);
@@ -342,6 +496,18 @@ public abstract class ParallelRenderer<T, V>
                 maskedworkers[i].cacheSpriteManager(SM);
             }
         }
+        
+		@Override
+		public RenderWallExecutor<byte[], int[]>[] InitRWIExecutors(
+				int num,ColVars<byte[], int[]>[] RWI) {
+			RenderWallExecutor<byte[],int[]>[] tmp=
+					new RenderWallExecutor.TrueColor[num];
+			
+			for (int i=0;i<num;i++)
+				tmp[i]=new RenderWallExecutor.TrueColor(SCREENWIDTH, SCREENHEIGHT, columnofs, ylookup, screen, RWI, drawsegsbarrier);
+		
+			return tmp;
+		}
 
     }
 

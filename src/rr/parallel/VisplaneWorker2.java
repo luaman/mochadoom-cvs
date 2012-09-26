@@ -15,6 +15,7 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 import rr.PlaneDrawer;
+import rr.Renderer;
 import rr.flat_t;
 import rr.visplane_t;
 import rr.drawfuns.ColVars;
@@ -49,15 +50,14 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
     protected final ColVars<T,V> vpw_dcvars;
     protected DoomSpanFunction<T,V> vpw_spanfunc;
     protected DoomColumnFunction<T,V> vpw_skyfunc;
-    protected final DoomSpanFunction<T,V> vpw_spanfunchi;
-    protected final DoomSpanFunction<T,V> vpw_spanfunclow;
-    protected final DoomColumnFunction<T,V> vpw_skyfunchi;
-    protected final DoomColumnFunction<T,V> vpw_skyfunclow;
+    protected DoomSpanFunction<T,V> vpw_spanfunchi;
+    protected DoomSpanFunction<T,V> vpw_spanfunclow;
+    protected DoomColumnFunction<T,V> vpw_skyfunchi;
+    protected DoomColumnFunction<T,V> vpw_skyfunclow;
     protected visplane_t pln;
     
-    public VisplaneWorker2(int id,int sCREENWIDTH, int sCREENHEIGHT, int[] columnofs,
-            short[] screen,CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
-        super(null);
+    public VisplaneWorker2(Renderer<T,V> R,int id,int sCREENWIDTH, int sCREENHEIGHT, CyclicBarrier visplanebarrier,int NUMFLOORTHREADS) {
+        super(R);
         this.barrier=visplanebarrier;
         this.id=id;
         // Alias to those of Planes.
@@ -68,15 +68,44 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
 
     public static class HiColor extends VisplaneWorker2<byte[],short[]>{
 
-        public HiColor(int id, int sCREENWIDTH, int sCREENHEIGHT,
+        public HiColor(Renderer<byte[],short[]> R,int id, int sCREENWIDTH, int sCREENHEIGHT,
                 int[] columnofs, int[] ylookup, short[] screen,
                 CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
-            super(id, sCREENWIDTH, sCREENHEIGHT, columnofs, ylookup, screen,
-                    visplanebarrier, NUMFLOORTHREADS);
+            super(R,id, sCREENWIDTH, sCREENHEIGHT, visplanebarrier, NUMFLOORTHREADS);
             vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_spanfunclow=new R_DrawSpanLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
             vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
             vpw_skyfunclow=new R_DrawColumnBoomOptLow.HiColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+
+        }
+        
+    }
+    
+    public static class Indexed extends VisplaneWorker2<byte[],byte[]>{
+
+        public Indexed(Renderer<byte[],byte[]> R,int id, int sCREENWIDTH, int sCREENHEIGHT,
+                int[] columnofs, int[] ylookup, byte[] screen,
+                CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
+            super(R,id, sCREENWIDTH, sCREENHEIGHT, visplanebarrier, NUMFLOORTHREADS);
+            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.Indexed(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_spanfunclow=new R_DrawSpanLow.Indexed(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.Indexed(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunclow=new R_DrawColumnBoomOptLow.Indexed(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+
+        }
+        
+    }
+    
+    public static class TrueColor extends VisplaneWorker2<byte[],int[]>{
+
+        public TrueColor(Renderer<byte[],int[]> R,int id, int sCREENWIDTH, int sCREENHEIGHT,
+                int[] columnofs, int[] ylookup, int[] screen,
+                CyclicBarrier visplanebarrier, int NUMFLOORTHREADS) {
+            super(R,id, sCREENWIDTH, sCREENHEIGHT, visplanebarrier, NUMFLOORTHREADS);
+            vpw_spanfunc=vpw_spanfunchi=new R_DrawSpanUnrolled.TrueColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_spanfunclow=new R_DrawSpanLow.TrueColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dsvars,screen,I);
+            vpw_skyfunc=vpw_skyfunchi=new R_DrawColumnBoomOpt.TrueColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
+            vpw_skyfunclow=new R_DrawColumnBoomOptLow.TrueColor(sCREENWIDTH,sCREENHEIGHT,ylookup,columnofs,vpw_dcvars,screen,I);
 
         }
         
@@ -154,7 +183,7 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
          // regular flat
          vpw_dsvars.ds_source = TexMan.getSafeFlat(pln.picnum);
          vpw_planeheight = Math.abs(pln.height-view.z);
-         light = (pln.lightlevel >>> LIGHTSEGSHIFT)+lights.extralight;
+         light = (pln.lightlevel >>> LIGHTSEGSHIFT)+colormap.extralight;
 
          if (light >= LIGHTLEVELS)
              light = LIGHTLEVELS-1;
@@ -162,7 +191,7 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
          if (light < 0)
              light = 0;
 
-         vpw_planezlight = lights.zlight[light];
+         vpw_planezlight = colormap.zlight[light];
 
          // Some tinkering required to make sure visplanes
          // don't end prematurely on each other's stop markers
@@ -252,7 +281,7 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
      * 
      */
 
-      private final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
+      protected final void MakeSpans(int x, int t1, int b1, int t2, int b2) {
       
           // Top 1 sentinel encountered.
           if (isMarker(t1))
@@ -277,7 +306,6 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
           // So...if t1 for some reason is < t2, we increase t2 AND store the current x
           // at spanstart [t2] :-S
           while (t2 < t1 && t2 <= b2) {
-              //System.out.println("Increasing t2");
               spanstart[t2] = x;
               t2++;
           }
@@ -286,7 +314,6 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
           // at spanstart [t2] :-S
 
           while (b2 > b1 && b2 >= t2) {
-              //System.out.println("Decreasing b2");
               spanstart[b2] = x;
               b2--;
           }
@@ -309,7 +336,7 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
        *
        * BASIC PRIMITIVE
        */
-      
+      /* TODO: entirely similar to serial version?
       private void
       MapPlane
       ( int       y,
@@ -374,7 +401,7 @@ public abstract class VisplaneWorker2<T,V> extends PlaneDrawer<T,V> implements R
           else
               vpw_spanfunclow.invoke();         
       }
-      
+      */
       
       // Private to each thread.
       int[]           spanstart;
