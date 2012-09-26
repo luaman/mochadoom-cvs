@@ -107,7 +107,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.105 2012/09/26 15:54:22 velktron Exp $
+// $Id: DoomMain.java,v 1.106 2012/09/26 23:15:20 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -133,7 +133,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.105 2012/09/26 15:54:22 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.106 2012/09/26 23:15:20 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -4232,7 +4232,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                         // In the worst case, we will use the defaults.
                         if  (CM.CheckParmBool("-parallelrenderer"))
                             // TODO: temporarily disabled
-                            return new UnifiedRenderer.HiColor(this);   
+                        	return new ParallelRenderer.HiColor(this,walls,floors,masked);  
                        //     return (Renderer<byte[], short[]>) new ParallelRenderer(this,walls,floors,masked);
                        // else
                        //     return (Renderer<byte[], short[]>) new ParallelRenderer2(this,walls,floors,masked);
@@ -4359,8 +4359,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                         // In the worst case, we will use the defaults.
                         if  (CM.CheckParmBool("-parallelrenderer"))                            
                             // TODO: temporarily disabled
-                            return new UnifiedRenderer.Indexed(this);   
-                            //return new ParallelRenderer(this,walls,floors,masked);
+                            //return new UnifiedRenderer.Indexed(this);   
+                            return new ParallelRenderer.Indexed(this,walls,floors,masked);
                         //else
                           //  return new ParallelRenderer2(this,walls,floors,masked);
                     }
@@ -4487,7 +4487,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                         // In the worst case, we will use the defaults.
                         if  (CM.CheckParmBool("-parallelrenderer"))
                             // TODO: temporarily disabled
-                            return new UnifiedRenderer.TrueColor(this);   
+                        	return new ParallelRenderer.TrueColor(this,walls,floors,masked);   
                        //     return (Renderer<byte[], short[]>) new ParallelRenderer(this,walls,floors,masked);
                        // else
                        //     return (Renderer<byte[], short[]>) new ParallelRenderer2(this,walls,floors,masked);
@@ -4553,6 +4553,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.106  2012/09/26 23:15:20  velktron
+//Parallel renderer restored...sort of.
+//
 //Revision 1.105  2012/09/26 15:54:22  velktron
 //Spritemanager is set up by renderer.
 //
