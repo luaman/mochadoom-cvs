@@ -45,6 +45,17 @@ import rr.drawfuns.ColFuncs;
 import rr.drawfuns.ColVars;
 import rr.drawfuns.DoomColumnFunction;
 import rr.drawfuns.DoomSpanFunction;
+import rr.drawfuns.R_DrawColumnBoom;
+import rr.drawfuns.R_DrawColumnBoomLow;
+import rr.drawfuns.R_DrawColumnBoomOpt;
+import rr.drawfuns.R_DrawColumnBoomOptLow;
+import rr.drawfuns.R_DrawFuzzColumn;
+import rr.drawfuns.R_DrawFuzzColumnLow;
+import rr.drawfuns.R_DrawSpanLow;
+import rr.drawfuns.R_DrawSpanUnrolled;
+import rr.drawfuns.R_DrawTLColumn;
+import rr.drawfuns.R_DrawTranslatedColumn;
+import rr.drawfuns.R_DrawTranslatedColumnLow;
 import rr.drawfuns.SpanVars;
 import i.IDoomSystem;
 import utils.C2JUtils;
@@ -1703,7 +1714,7 @@ public abstract class RendererState<T, V>
         public void setGlobalAngle(long angle) {
             this.rw_angle1 = angle;
         }
-
+        
         public void initScaling() {
             this.floorclip = new short[vs.getScreenWidth()];
             this.ceilingclip = new short[vs.getScreenWidth()];
@@ -2394,7 +2405,6 @@ public abstract class RendererState<T, V>
 
     public void FillBackScreen() {
         flat_t src;
-        V dest;
         int x;
         int y;
         patch_t patch;
@@ -2417,7 +2427,6 @@ public abstract class RendererState<T, V>
 
         /* This is a flat we're reading here */
         src = (flat_t) (W.CacheLumpName(name, PU_CACHE, flat_t.class));
-        dest = V.getScreen(DoomVideoRenderer.SCREEN_BG);
 
         /*
          * This part actually draws the border itself, without bevels MAES:
@@ -2471,6 +2480,51 @@ public abstract class RendererState<T, V>
     }
 
     /**
+     * R_Init
+     */
+
+    public void Init()
+
+    {
+        // Any good reason for this to be here?
+        // drawsegs=new drawseg_t[MAXDRAWSEGS];
+        // C2JUtils.initArrayOfObjects(drawsegs);
+
+        // DON'T FORGET ABOUT MEEEEEE!!!11!!!
+        this.screen = this.V.getScreen(DoomVideoRenderer.SCREEN_FG);
+
+        System.out.print("\nR_InitData");
+        InitData();
+        // InitPointToAngle ();
+        System.out.print("\nR_InitPointToAngle");
+
+        // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
+        System.out.print("\nR_InitTables");
+        InitTables();
+
+        SetViewSize(DM.M.getScreenBlocks(), DM.M.getDetailLevel());
+
+        System.out.print("\nR_InitPlanes");
+        MyPlanes.InitPlanes();
+
+        System.out.print("\nR_InitLightTables");
+        InitLightTables();
+
+        System.out.print("\nR_InitSkyMap: " + TexMan.InitSkyMap());
+
+        System.out.print("\nR_InitTranslationsTables");
+        InitTranslationTables();
+
+        System.out.print("\nR_InitTranMap: ");
+        R_InitTranMap(0);
+
+        System.out.print("\nR_InitDrawingFunctions: ");
+        R_InitDrawingFunctions();
+        
+        framecount = 0;
+    }        
+    
+    /**
      * R_InitBuffer Creates lookup tables that avoid multiplies and other
      * hazzles for getting the framebuffer address of a pixel to draw. MAES:
      * this is "pinned" to screen[0] of a Video Renderer. We will handle this
@@ -2499,8 +2553,6 @@ public abstract class RendererState<T, V>
         for (i = 0; i < height; i++)
             ylookup[i] = /* screens[0] + */(i + view.windowy) * SCREENWIDTH;
     }
-
-    // //////INIT STUFF /////////////////
 
     /**
      * R_InitTextureMapping Not moved into the TextureManager because it's
@@ -2756,6 +2808,15 @@ public abstract class RendererState<T, V>
                 + (a[pa + 2] - b[pb + 2]) * (a[pa + 2] - b[pb + 2]));
     }
 
+    
+    /** Stuff that is trivially initializable, even with generics,
+     *  but is only safe to do after all constructors have completed.
+     */
+    
+    protected final void completeInit(){
+        this.detailaware.add(MyThings);        
+    }
+    
     protected final int findMin(float[] a) {
         int minindex = 0;
         float min = Float.POSITIVE_INFINITY;
