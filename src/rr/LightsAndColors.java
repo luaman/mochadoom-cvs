@@ -10,12 +10,15 @@ import i.Main;
  *   
  * @author velktron
  *
- * @param <V>
+ * @param <V> The data type of the SCREEN
  */
 
 public class LightsAndColors<V> {
     
-    // For HiColor, this is, effectively, a 555 RGB palette.
+    /** For HiColor, these are, effectively, a bunch of 555 RGB palettes,
+     *  for TrueColor they are a bunch of 32-bit ARGB palettes etc.
+     *  Only for indexed they represent index remappings.  
+     */
 
     /** "peg" this to the one from RendererData */
     public V[] colormaps;
@@ -81,7 +84,7 @@ public class LightsAndColors<V> {
     public static final int LIGHTSCALESHIFT;
     
     /** This one seems arbitrary. Will auto-fit to 128 possible levels? */
-    public static final int MAXLIGHTZ = 256;
+    public static final int MAXLIGHTZ;
     
     /** Normally 20 for 32 colormaps, applied to distance.
      * Formula: 25-LBITS
@@ -105,12 +108,15 @@ public class LightsAndColors<V> {
         case Indexed:
         case HiColor:
             LBITS=5;
+            MAXLIGHTZ=128;
             break;
         case TrueColor:
             LBITS=8;
+            MAXLIGHTZ=256;
             break;
         default:
             LBITS=5;
+            MAXLIGHTZ=128;
             break;
         }
         
