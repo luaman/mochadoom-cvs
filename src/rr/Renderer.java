@@ -2,6 +2,8 @@ package rr;
 
 import static data.Tables.FINEANGLES;
 import static m.fixed_t.FRACUNIT;
+import rr.drawfuns.ColFuncs;
+import rr.drawfuns.ColVars;
 import rr.drawfuns.SpanVars;
 import i.DoomStatusAware;
 import i.IDoomSystem;
@@ -17,7 +19,7 @@ public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware{
 	public static final int FIELDOFVIEW = FINEANGLES / 4;
 	
 	public static final int MINZ = (FRACUNIT * 4);
-	public static final int BASEYCENTER = 100;
+
 	
 	public static final int FUZZTABLE = 50;
 	
@@ -84,7 +86,18 @@ public interface Renderer<T,V> extends IVideoScaleAware,DoomStatusAware{
     
     public Visplanes getVPVars();
 
-    SegVars getSegVars();
+    public SegVars getSegVars();
+
+    public ISpriteManager getSpriteManager();
+
+    public BSPVars getBSPVars();
+
+    public IVisSpriteManagement<V> getVisSpriteManager();
+
+    public ColFuncs<T,V> getColFuncsHi();
+    public ColFuncs<T,V> getColFuncsLow();
+
+    public ColVars<T, V> getMaskedDCVars();
     
 	
 	//public subsector_t PointInSubsector(int x, int y);

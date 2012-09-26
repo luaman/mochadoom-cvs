@@ -20,8 +20,16 @@ import java.util.Arrays;
 import p.mobj_t;
 import utils.C2JUtils;
 
-public abstract class VisSprites<T, V>
-        implements IVisSpriteManagement<T, V> {
+/** Visualized sprite manager. Depends on: SpriteManager, DoomSystem,
+ *  Colormaps, Current View.
+ *  
+ * @author velktron
+ *
+ * @param <V>
+ */
+
+public final class VisSprites<V>
+        implements IVisSpriteManagement<V> {
 
     private final static boolean DEBUG = false;
 
@@ -35,90 +43,20 @@ public abstract class VisSprites<T, V>
 
     protected LightsAndColors<V> colormaps;
 
-    protected RendererState<T, V> R;
+    protected RendererState<?, V> R;
 
-    public VisSprites(RendererState<T, V> R) {
+    public VisSprites(RendererState<?, V> R) {
         updateStatus(R);
+        vissprite_t<V> tmp = new vissprite_t<V>();
+        vissprites = C2JUtils.createArrayOfObjects(tmp, MAXVISSPRITES);
     }
 
-    public void updateStatus(RendererState<T, V> R) {
+    public void updateStatus(RendererState<?, V> R) {
         this.R = R;
         this.view = R.view;
         this.I = R.I;
         this.SM = R.SM;
         this.colormaps = R.colormaps;
-
-    }
-
-    public static final class HiColor
-            extends VisSprites<byte[], short[]> {
-
-        public HiColor(RendererState<byte[], short[]> R) {
-            super(R);
-            vissprite_t<short[]> tmp = new vissprite_t<short[]>();
-            vissprites = C2JUtils.createArrayOfObjects(tmp, MAXVISSPRITES);
-            // vsprsortedhead = new vissprite_t();
-            // unsorted = new vissprite_t();
-        }
-
-        public void resetLimits() {
-            vissprite_t<short[]>[] tmp =
-                C2JUtils.createArrayOfObjects(vissprites[0], MAXVISSPRITES);
-            System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
-
-            // Now, that was quite a haircut!.
-            vissprites = tmp;
-
-            // System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
-        }
-
-    }
-
-    public static final class Indexed
-            extends VisSprites<byte[], byte[]> {
-
-        public Indexed(RendererState<byte[], byte[]> R) {
-            super(R);
-            vissprite_t<byte[]> tmp = new vissprite_t<byte[]>();
-            vissprites = C2JUtils.createArrayOfObjects(tmp, MAXVISSPRITES);
-            // vsprsortedhead = new vissprite_t();
-            // unsorted = new vissprite_t();
-        }
-
-        public void resetLimits() {
-            vissprite_t<byte[]>[] tmp =
-                C2JUtils.createArrayOfObjects(vissprites[0], MAXVISSPRITES);
-            System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
-
-            // Now, that was quite a haircut!.
-            vissprites = tmp;
-
-            // System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
-        }
-
-    }
-
-    public static final class TrueColor
-            extends VisSprites<byte[], int[]> {
-
-        public TrueColor(RendererState<byte[], int[]> R) {
-            super(R);
-            vissprite_t<int[]> tmp = new vissprite_t<int[]>();
-            vissprites = C2JUtils.createArrayOfObjects(tmp, MAXVISSPRITES);
-            // vsprsortedhead = new vissprite_t();
-            // unsorted = new vissprite_t();
-        }
-
-        public void resetLimits() {
-            vissprite_t<int[]>[] tmp =
-                C2JUtils.createArrayOfObjects(vissprites[0], MAXVISSPRITES);
-            System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
-
-            // Now, that was quite a haircut!.
-            vissprites = tmp;
-
-            // System.out.println("Vispprite buffer cut back to original limit of "+MAXVISSPRITES);
-        }
 
     }
 
@@ -386,9 +324,11 @@ public abstract class VisSprites<T, V>
         return vissprites;
     }
 
-    @Override
     public void resetLimits() {
-        // TODO Auto-generated method stub
+        vissprite_t<V>[] tmp =
+            C2JUtils.createArrayOfObjects(vissprites[0], MAXVISSPRITES);
+        System.arraycopy(vissprites, 0, tmp, 0, MAXVISSPRITES);
 
-    }
+        // Now, that was quite a haircut!.
+        vissprites = tmp;    }
 }

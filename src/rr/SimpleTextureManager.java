@@ -1245,12 +1245,14 @@ public class SimpleTextureManager
     
     /**
      * Special version of GetColumn meant to be called concurrently by different
-     * seg rendering threads, identfiex by index. This serves to avoid stomping
+     * (MASKED) seg rendering threads, identfiex by index. This serves to avoid stomping
      * on mutual cached textures and causing crashes.
+     * 
+     * Returns column_t, so in theory it could be made data-agnostic.
      * 
      */
 
-    public byte[] GetSmpColumn(int tex, int col, int id) {
+    public column_t GetSmpColumn(int tex, int col, int id) {
         int lump,ofs;
 
         col &= getTexturewidthmask(tex);
@@ -1264,9 +1266,9 @@ public class SimpleTextureManager
         
         if (tex == smp_lasttex[id] && lump == smp_lastlump[id]) {
             if (composite)
-                return smp_lastpatch[id].columns[col].data;
+                return smp_lastpatch[id].columns[col];
             else
-                return smp_lastpatch[id].columns[ofs].data;
+                return smp_lastpatch[id].columns[ofs];
             }
 
         // If pointing inside a non-zero, positive lump, then it's not a
@@ -1281,7 +1283,7 @@ public class SimpleTextureManager
             smp_lastlump[id]=lump;
             smp_composite[id]=false;
             // If the column was a disk lump, use ofs.
-            return smp_lastpatch[id].columns[ofs].data;
+            return smp_lastpatch[id].columns[ofs];
         }
         
         // Problem. Composite texture requested as if it was masked
@@ -1298,7 +1300,7 @@ public class SimpleTextureManager
         smp_composite[id]=true;
         smp_lastlump[id]=0;
         
-        return lastpatch.columns[col].data;
+        return lastpatch.columns[col];
     }
 
     // False: disk-mirrored patch. True: improper "transparent composite".
@@ -1372,6 +1374,71 @@ public class SimpleTextureManager
         
         return lastpatch.columns[col].data;
     }
+    
+    /**
+     * R_GetColumnStruct: returns actual pointers to columns.
+     * Agnostic of the underlying type. 
+     * 
+     * Works for both masked and unmasked columns, but is not
+     * tutti-frutti-safe.
+     * 
+     * Use GetCachedColumn instead, if rendering non-masked stuff, which is also
+     * faster.
+     * 
+     * @throws IOException
+     * 
+     * 
+     */
+
+    @Override
+    public column_t GetColumnStruct(int tex, int col) {
+        int lump,ofs;
+
+        col &= getTexturewidthmask(tex);
+        lump = getTextureColumnLump(tex, col);
+        ofs = getTextureColumnOfs(tex, col);
+
+        // Speed-increasing trick: speed up repeated accesses to the same
+        // texture or patch, if they come from the same lump
+        
+        if (tex == lasttex && lump == lastlump) {
+            if (composite)
+                return lastpatch.columns[col];
+            else
+                return lastpatch.columns[ofs];
+            }
+
+        // If pointing inside a non-zero, positive lump, then it's not a
+        // composite texture. Read it from disk.
+        if (lump > 0) {
+            // This will actually return a pointer to a patch's columns.
+            // That is, to the ONE column exactly.{
+            // If the caller needs access to a raw column, we must point 3 bytes
+            // "ahead".
+            lastpatch = W.CachePatchNum(lump);
+            lasttex = tex;
+            lastlump=lump;
+            composite=false;
+            // If the column was a disk lump, use ofs.
+            return lastpatch.columns[ofs];
+        }
+        
+        // Problem. Composite texture requested as if it was masked
+        // but it doesn't yet exist. Create it.
+        if (getMaskedComposite(tex) == null){
+            System.err.printf("Forced generation of composite %s\n",CheckTextureNameForNum(tex),composite,col,ofs);
+            GenerateMaskedComposite(tex);
+            System.err.printf("Composite patch %s %d\n",getMaskedComposite(tex).name,getMaskedComposite(tex).columns.length);
+        }
+        
+        // Last resort. 
+        lastpatch = getMaskedComposite(tex);
+        lasttex=tex;
+        composite=true;
+        lastlump=0;
+        
+        return lastpatch.columns[col];
+    }
 
     // False: disk-mirrored patch. True: improper "transparent composite".
     private boolean composite = false;
@@ -1417,6 +1484,14 @@ public class SimpleTextureManager
             GenerateComposite(tex);
 
         return getTextureComposite(tex, col);
+    }
+
+    @Override
+    public void setSMPVars(int num_threads) {
+        smp_composite=new boolean[num_threads];// = false;
+        smp_lasttex=new int[num_threads];// = -1;
+        smp_lastlump=new int[num_threads];// = -1;
+        smp_lastpatch=new patch_t[num_threads];// = null;        
     }
 
     

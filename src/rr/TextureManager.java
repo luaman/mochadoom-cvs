@@ -12,7 +12,7 @@ import rr.parallel.IGetSmpColumn;
  *
  */
 
-public interface TextureManager<T> extends IGetColumn<T>, IGetCachedColumn<T>,IGetSmpColumn<T>{
+public interface TextureManager<T> extends IGetColumn<T>, IGetCachedColumn<T>,IGetSmpColumn{
 
     public final static String[] texturelumps={"TEXTURE1","TEXTURE2"};
     public final static int NUMTEXLUMPS=texturelumps.length;
@@ -97,5 +97,11 @@ public interface TextureManager<T> extends IGetColumn<T>, IGetCachedColumn<T>,IG
      */
     
     public T getSafeFlat(int flatnum);
+
+
+    column_t GetColumnStruct(int tex, int col);
+
+
+    void setSMPVars(int nUMMASKEDTHREADS);
     
     }

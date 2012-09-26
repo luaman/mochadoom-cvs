@@ -61,13 +61,6 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
         this.I=R.getDoomSystem();
     }
 
-
-   
-
-  
-
-
-
     /**
      * R_MapPlane
      * 
@@ -133,11 +126,7 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
         if (x2 < x1 || x1 < 0 || x2 >= view.width || y > view.height)
             I.Error("%s: %d, %d at %d",this.getClass().getName(), x1, x2, y);
         }
-    
-
-
-   
-
+  
         
     /**
      * R_MakeSpans
@@ -249,6 +238,10 @@ public abstract class PlaneDrawer<T,V> implements IPlaneDrawer{
     
     public void DrawPlanes(){
         
+    }
+    
+    public void sync(){
+        // Nothing required if serial.
     }
     
     /////////////// VARIOUS BORING GETTERS ////////////////////
