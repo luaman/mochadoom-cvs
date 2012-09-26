@@ -29,17 +29,7 @@ public abstract class UnifiedRenderer<T, V>
         super(DS);
         this.MySegs=new Segs(this);
     }
-    
-    /** Stuff that is trivially initializable, even with generics,
-     *  but is only safe to do after all constructors have completed.
-     */
-    
-    protected final void completeInit(){
 
-
-        this.detailaware.add(MyThings);
-        
-    }
 
     /** A very simple Seg (Wall) drawer, which just completes abstract SegDrawer
      *  by calling the final column functions.
@@ -65,53 +55,9 @@ public abstract class UnifiedRenderer<T, V>
 
     }
 
-    // /////////////////////// The actual rendering calls
-    // ///////////////////////
+    ////////////////// The actual rendering calls ///////////////////////
 
-    /**
-     * R_Init
-     */
-
-    public void Init()
-
-    {
-        // Any good reason for this to be here?
-        // drawsegs=new drawseg_t[MAXDRAWSEGS];
-        // C2JUtils.initArrayOfObjects(drawsegs);
-
-        // DON'T FORGET ABOUT MEEEEEE!!!11!!!
-        this.screen = this.V.getScreen(DoomVideoRenderer.SCREEN_FG);
-
-        System.out.print("\nR_InitData");
-        InitData();
-        // InitPointToAngle ();
-        System.out.print("\nR_InitPointToAngle");
-
-        // ds.DM.viewwidth / ds.viewheight / detailLevel are set by the defaults
-        System.out.print("\nR_InitTables");
-        InitTables();
-
-        SetViewSize(DM.M.getScreenBlocks(), DM.M.getDetailLevel());
-
-        System.out.print("\nR_InitPlanes");
-        MyPlanes.InitPlanes();
-
-        System.out.print("\nR_InitLightTables");
-        InitLightTables();
-
-        System.out.print("\nR_InitSkyMap: " + TexMan.InitSkyMap());
-
-        System.out.print("\nR_InitTranslationsTables");
-        InitTranslationTables();
-
-        System.out.print("\nR_InitTranMap: ");
-        R_InitTranMap(0);
-
-        System.out.print("\nR_InitDrawingFunctions: ");
-        R_InitDrawingFunctions();
-        
-        framecount = 0;
-    }    
+   
 
     public static final class HiColor
             extends UnifiedRenderer<byte[],short[]> {
