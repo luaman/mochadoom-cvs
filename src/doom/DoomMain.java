@@ -107,7 +107,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.104 2012/09/24 22:36:49 velktron Exp $
+// $Id: DoomMain.java,v 1.105 2012/09/26 15:54:22 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -133,7 +133,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.104 2012/09/24 22:36:49 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.105 2012/09/26 15:54:22 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -4134,7 +4134,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         status_holders.add(this.AM=selectAutoMap()); // Call Init later.
         // Let the renderer pick its own. It makes linking easier.
         this.TM=R.getTextureManager();
-        this.SM=new SpriteManager(this);
+        this.SM=R.getSpriteManager();        
 
         //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
         // it seems to fit perfectly here
@@ -4553,6 +4553,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.105  2012/09/26 15:54:22  velktron
+//Spritemanager is set up by renderer.
+//
 //Revision 1.104  2012/09/24 22:36:49  velktron
 //Fixed HOM detection.
 //
