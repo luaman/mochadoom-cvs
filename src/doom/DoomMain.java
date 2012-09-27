@@ -107,7 +107,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.106 2012/09/26 23:15:20 velktron Exp $
+// $Id: DoomMain.java,v 1.107 2012/09/27 16:53:46 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -133,7 +133,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.106 2012/09/26 23:15:20 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.107 2012/09/27 16:53:46 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1280,9 +1280,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             }
             else
             {
-                file.append(SAVEGAMENAME);
-                file.append("%c.dsg");
-                file.append(CM.getArgv(p+1).charAt(0));
+                file.append(String.format("%s%c.dsg",SAVEGAMENAME,
+                    CM.getArgv(p+1).charAt(0)));
 
             }
             LoadGame(file.toString());
@@ -4553,6 +4552,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.107  2012/09/27 16:53:46  velktron
+//Stupid brokeness prevented -loadgame from working.
+//
 //Revision 1.106  2012/09/26 23:15:20  velktron
 //Parallel renderer restored...sort of.
 //
