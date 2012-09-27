@@ -2379,11 +2379,10 @@ public abstract class RendererState<T, V>
         // Calculate the light levels to use
         // for each level / scale combination.
         for (i = 0; i < LIGHTLEVELS; i++) {
-            startmap = ((LIGHTLEVELS - 1 - i) * 2) * NUMCOLORMAPS / LIGHTLEVELS;
+            startmap = ((LIGHTLEVELS-LIGHTBRIGHT-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
             for (j = 0; j < MAXLIGHTSCALE; j++) {
                 level =
-                    startmap - j * SCREENWIDTH
-                            / (view.width << view.detailshift) / DISTMAP;
+                    startmap - j/ DISTMAP;
                 if (level < 0)
                     level = 0;
                 if (level >= NUMCOLORMAPS)
@@ -2638,18 +2637,19 @@ public abstract class RendererState<T, V>
     protected final void InitLightTables() {
         int i;
         int j;
-        int level;
         int startmap;
         int scale;
 
         // Calculate the light levels to use
         // for each level / distance combination.
         for (i = 0; i < LIGHTLEVELS; i++) {
-            startmap = ((LIGHTLEVELS - 1 - i) * 2) * NUMCOLORMAPS / LIGHTLEVELS;
+            startmap = ((LIGHTLEVELS - LIGHTBRIGHT - i) * 2) * NUMCOLORMAPS / LIGHTLEVELS;
             for (j = 0; j < MAXLIGHTZ; j++) {
+                // CPhipps - use 320 here instead of SCREENWIDTH, otherwise hires is
+                //           brighter than normal res
+                
                 scale = FixedDiv((320 / 2 * FRACUNIT), (j + 1) << LIGHTZSHIFT);
-                scale >>= LIGHTSCALESHIFT;
-                level = startmap - scale / DISTMAP;
+                int t, level = startmap - (scale >>= LIGHTSCALESHIFT)/DISTMAP;
 
                 if (level < 0)
                     level = 0;

@@ -86,6 +86,9 @@ public class LightsAndColors<V> {
     /** This one seems arbitrary. Will auto-fit to 128 possible levels? */
     public static final int MAXLIGHTZ;
     
+    
+    public static final int LIGHTBRIGHT;
+    
     /** Normally 20 for 32 colormaps, applied to distance.
      * Formula: 25-LBITS
      *  
@@ -108,23 +111,22 @@ public class LightsAndColors<V> {
         case Indexed:
         case HiColor:
             LBITS=5;
-            MAXLIGHTZ=128;
             break;
         case TrueColor:
             LBITS=8;
-            MAXLIGHTZ=256;
             break;
         default:
-            LBITS=5;
-            MAXLIGHTZ=128;
+            LBITS=5;            
             break;
         }
         
         LIGHTLEVELS = 1<<LBITS;
+        MAXLIGHTZ=LIGHTLEVELS*4;
+        LIGHTBRIGHT= 2;
         LIGHTSEGSHIFT = 8-LBITS;
         NUMCOLORMAPS=     LIGHTLEVELS;
-        MAXLIGHTSCALE = LIGHTLEVELS+LIGHTLEVELS/2;
-        LIGHTSCALESHIFT = 17-LBITS;
+        MAXLIGHTSCALE = 3*LIGHTLEVELS/2;
+        LIGHTSCALESHIFT = 17        -LBITS;
         LIGHTZSHIFT=25-LBITS;
     }
     
