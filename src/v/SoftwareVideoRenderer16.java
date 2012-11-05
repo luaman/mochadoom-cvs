@@ -807,17 +807,14 @@ public abstract class SoftwareVideoRenderer16 extends SoftwareVideoRenderer<byte
 	        if (stuff==null){
 	            // Generate the full range of colormap for a given palette effect	            
 	            
-	            stuff=
-	            PaletteGenerator.RF_BuildLights15(palettes[usegamma*maxpalettes+usepalette], NUMLIGHTS);
-	            
-	            /* No further tinting necessary?
-	            for (int i=0;i<32;i++){
-	                PaletteGenerator.tintColormap(
-	                    colormap_original[i],
-	                    stuff[i],256,
-	                    PaletteGenerator.tints[palette%14]
-	                    );
-	            } */
+	            //stuff=
+	            //PaletteGenerator.RF_BuildLights15(palettes[usegamma*maxpalettes+usepalette], NUMLIGHTS);
+
+	            // Tinting more faithful to the original, thanks to Sodaholic's input.
+                stuff=new short[cmap_base.length][cmap_base[0].length];
+                for (int i = 0; i < stuff.length; i++) 
+                  PaletteGenerator.tintColormap(cmap_base[i], stuff[i], 256, ColorTint.tints[palette%14]);
+
 	            cmapcache.put(palette,stuff);	            
 	        }
 	        

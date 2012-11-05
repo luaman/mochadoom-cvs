@@ -231,7 +231,7 @@ public abstract class SoftwareVideoRenderer<T,V>
    * 
    */
 protected final void paletteRecovery() {
-	createPalettes(PaletteGenerator.generatePalette(PaletteGenerator.playpal, 256,PaletteGenerator.tints), GammaTables.gammatables, 14, 256, 3, 5);
+	createPalettes(PaletteGenerator.generatePalette(PaletteGenerator.playpal, 256,ColorTint.tints), GammaTables.gammatables, 14, 256, 3, 5);
 	
 }
 

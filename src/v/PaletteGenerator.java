@@ -87,38 +87,6 @@ public class PaletteGenerator {
 
     public final static int greypal[] = new int[768];
 
-    private static class ColorTint {
-        public ColorTint(int r, int g, int b, float tint) {
-            super();
-            this.r = r;
-            this.g = g;
-            this.b = b;
-            this.tint = tint;
-        }
-
-        public int r, g, b;
-
-        public float tint;
-    }
-
-    public static final ColorTint[] tints = { new ColorTint(0, 0, 0, .0f), // 0
-                                                                           // Normal
-            new ColorTint(255, 2, 3, 0.11f), // 1 Unused. 11% red tint of
-                                             // RGB(252, 2, 3).
-            new ColorTint(255, 0, 0, 0.22f), // 2
-            new ColorTint(255, 0, 0, 0.33f), // 3
-            new ColorTint(255, 0, 0, 0.44f), // 4
-            new ColorTint(255, 0, 0, 0.55f), // 5
-            new ColorTint(255, 0, 0, 0.66f), // 6
-            new ColorTint(255, 0, 0, 0.77f), // 7
-            new ColorTint(255, 0, 0, 0.88f), // 8
-            new ColorTint(215, 185, 68, 0.12f), // 9
-            new ColorTint(215, 185, 68, 0.25f), // 10
-            new ColorTint(215, 185, 68, 0.375f), // 11
-            new ColorTint(215, 185, 68, 0.50f), // 12
-            new ColorTint(3, 253, 3, 0.125f) // 13
-
-        };
 
     public static byte[] generatePalette(int[] data, int colors,
             ColorTint[] tints) {
@@ -160,14 +128,14 @@ public class PaletteGenerator {
     public static void tintColormap(final int[] original, int[] modified,
             int colors, ColorTint tint) {
 
-        final int[] rgb = new int[3];
-        final int[] rgb2 = new int[3];
+        final int[] rgb = new int[4];
+        final int[] rgb2 = new int[4];
 
         for (int i = 0; i < colors; i++) {
             final int rgba=original[i];
             rgb[0] = getRed(rgba);
             rgb[1] = getGreen(rgba);
-            rgb[2] = getBlue(rgba);
+            rgb[2] = getBlue(rgba);            
 
             tintRGB(tint, rgb, rgb2);
             modified[i] = getARGB(rgb2[0],rgb2[1],rgb2[2]);
@@ -356,7 +324,7 @@ public class PaletteGenerator {
     }
 
     public final static int getARGB(int r,int g, int b){
-        return (r << 16) + (g << 8) + (b);
+        return 0xFF000000+(r << 16) + (g << 8) + (b);
     }
     
     public static final short getRGB555(int red,int green,int blue){
@@ -515,6 +483,34 @@ public class PaletteGenerator {
      */
 
     public static final int[][] RF_BuildLights24 (int[] palette,int NUMLIGHTS)
+    {
+        int     l,c;
+        int     red,green,blue;
+        int[][] stuff=new int[NUMLIGHTS+1][256];
+
+        for (l=0;l<NUMLIGHTS;l++)
+        {
+            for (c=0;c<256;c++)
+            {
+                red = getRed(palette[c]);
+                green = getGreen(palette[c]);
+                blue = getBlue(palette[c]);
+
+                red = (red*(NUMLIGHTS-l)+NUMLIGHTS/2)/NUMLIGHTS;
+                green = (green*(NUMLIGHTS-l)+NUMLIGHTS/2)/NUMLIGHTS;
+                blue = (blue*(NUMLIGHTS-l)+NUMLIGHTS/2)/NUMLIGHTS;
+
+                // Full-quality truecolor.
+                stuff[l][c] = new Color(red,green,blue).getRGB();
+            }
+        }
+        
+        BuildSpecials24(stuff[NUMLIGHTS],palette); 
+        
+        return stuff;
+    }
+    
+    public static final int[][] BuildLights24 (int[] palette,int NUMLIGHTS)
     {
         int     l,c;
         int     red,green,blue;
