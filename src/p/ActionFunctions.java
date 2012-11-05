@@ -428,10 +428,10 @@ public class ActionFunctions implements DoomStatusAware{
 	        	  st.acp1=FatAttack1;
 	        	  break;
 	          case  A_FatAttack2:
-	        	  st.acp1=FatAttack1;
+	        	  st.acp1=FatAttack2;
 	        	  break;
 	          case A_FatAttack3:
-	        	  st.acp1= FatAttack1;
+	        	  st.acp1= FatAttack3;
 	        	  break;
 	          case  A_BossDeath:
 	        	  st.acp1=BossDeath;
@@ -695,10 +695,10 @@ public class ActionFunctions implements DoomStatusAware{
 	        	  st.acp1=FatAttack1;
 	        	  break;
 	          case  A_FatAttack2:
-	        	  st.acp1=FatAttack1;
+	        	  st.acp1=FatAttack2;
 	        	  break;
 	          case A_FatAttack3:
-	        	  st.acp1= FatAttack1;
+	        	  st.acp1= FatAttack3;
 	        	  break;
 	          case  A_BossDeath:
 	        	  st.acp1=BossDeath;
