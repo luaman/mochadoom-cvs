@@ -85,6 +85,7 @@ import utils.C2JUtils;
 import v.BufferedRenderer;
 import v.BufferedRenderer16;
 import v.BufferedRenderer32;
+import v.ColorTint;
 import v.DoomVideoRenderer;
 import v.GammaTables;
 import v.IVideoScale;
@@ -107,7 +108,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.107 2012/09/27 16:53:46 velktron Exp $
+// $Id: DoomMain.java,v 1.108 2012/11/05 17:25:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -133,7 +134,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.107 2012/09/27 16:53:46 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.108 2012/11/05 17:25:29 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -507,7 +508,16 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             else
                 pagetic = 170;
             gamestate = gamestate_t.GS_DEMOSCREEN;
-            pagename = "TITLEPIC";
+            
+            
+            if (W.CheckNumForName("TITLEPIC")!=-1){
+                pagename = "TITLEPIC";    
+            } else {
+                if (W.CheckNumForName("DMENUPIC")!=-1){
+                    pagename = "DMENUPIC";
+                }
+            }
+            
             if ( isCommercial() )
                 S.StartMusic(musicenum_t.mus_dm2ttl);
 
@@ -1085,7 +1095,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         // MAES: FIX for incomplete palette lumps such as those in EGADOOM.
         // Generate the palette programmatically _anyway_
         byte[] pal=PaletteGenerator.generatePalette(PaletteGenerator.playpal,
-        		256, PaletteGenerator.tints);
+        		256, ColorTint.tints);
         // Copy over the one you read from disk...
         int pallump=W.GetNumForName("PLAYPAL");
         byte[] tmppal=W.CacheLumpNumAsRawBytes(pallump, PU_STATIC);
@@ -4552,6 +4562,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.108  2012/11/05 17:25:29  velktron
+//Fixed tinting system according to SodaHolic's advice.
+//
 //Revision 1.107  2012/09/27 16:53:46  velktron
 //Stupid brokeness prevented -loadgame from working.
 //
