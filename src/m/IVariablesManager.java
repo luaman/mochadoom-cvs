@@ -1,7 +1,7 @@
 package m;
 
 public interface IVariablesManager {
-
+    
     /** Does two things: sets a variable, and then calls setme.
      * This way, immediate updates of a single variables user 
      * are possible, avoiding some of the overhead. 
@@ -20,6 +20,8 @@ public interface IVariablesManager {
     
     public DoomSetting getSetting(Settings name);
 
+    public boolean isSettingLiteral(String name,String value);
+    
  /** Creates a new setting, overriding any existing ones.
   *   
   * @param name
@@ -43,5 +45,7 @@ public interface IVariablesManager {
     void LoadDefaults(String defaultfile);
 
     void SaveDefaults(String defaultfile);
+    
+    String getDefaultFile();
     
 }
