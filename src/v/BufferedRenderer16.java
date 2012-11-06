@@ -9,7 +9,7 @@ import m.BBox;
 /* Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: BufferedRenderer16.java,v 1.3 2012/09/24 17:16:23 velktron Exp $
+// $Id: BufferedRenderer16.java,v 1.4 2012/11/06 16:07:00 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,6 +23,9 @@ import m.BBox;
 // for more details.
 //
 // $Log: BufferedRenderer16.java,v $
+// Revision 1.4  2012/11/06 16:07:00  velktron
+// Corrected palette & color generation.
+//
 // Revision 1.3  2012/09/24 17:16:23  velktron
 // Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //
@@ -52,7 +55,7 @@ import m.BBox;
 
 public class BufferedRenderer16 extends SoftwareVideoRenderer16 {
 	
-static final String rcsid = "$Id: BufferedRenderer16.java,v 1.3 2012/09/24 17:16:23 velktron Exp $";
+static final String rcsid = "$Id: BufferedRenderer16.java,v 1.4 2012/11/06 16:07:00 velktron Exp $";
 
 /** Buffered Renderer has a bunch of images "pegged" to the underlying arrays */
 
@@ -135,9 +138,14 @@ protected final void specificPaletteCreation(byte[] paldata,
       System.out.printf("Enough data for %d palettes",maxpalettes);
       System.out.printf("Enough data for %d gamma levels",maxgammas);
       
-      this.palettes=new int[maxgammas*maxpalettes][];
+      //this.palettes=new int[maxpalettes*maxgammas][];
+      this.palettes=new int[maxpalettes][];
       
-      for (int z=0;z<maxgammas;z++){
+      // Apply gammas a-posteriori, not a-priori.
+      // Initial palette can be neutral or based upon "gamma 0",
+      // which is actually a bit biased and distorted
+      
+      for (int z=0;z<1;z++){
           
           // For each palette
           for (int y=0;y<maxpalettes;y++){

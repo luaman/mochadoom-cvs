@@ -811,7 +811,7 @@ public abstract class SoftwareVideoRenderer32 extends SoftwareVideoRenderer<byte
                 // Tinting more faithful to the original, thanks to Sodaholic's input.
                 stuff=new int[cmap_base.length][cmap_base[0].length];
                 for (int i = 0; i < stuff.length; i++) 
-                  PaletteGenerator.tintColormap(cmap_base[i], stuff[i], 256, ColorTint.tints[palette%14]);
+                  PaletteGenerator.tintColormap(cmap_base[i], stuff[i], 256, ColorTint.tints[palette%14],GammaTables.gammatables[usegamma]);
                 cmapcache.put(palette,stuff);               
             }
             
