@@ -49,27 +49,9 @@ public abstract class AWTDoom<V> extends DoomFrame<V> {
         public AWTDoom(DoomMain<?,V> DM, DoomVideoRenderer<?,V> V) {
       		super(DM, V);
       		drawhere=new Canvas();
+      		gelatine=new Canvas();
         // Don't do anything yet until InitGraphics is called.
         }
-        
-
-        
-        /** Modified update method: no context needs to passed.
-         *  Will render only internal screens.
-         * 
-         */
-        public void paint(Graphics g) {
-           // Techdemo v1.3: Mac OSX fix, compatible with Windows and Linux.
-           // Should probably run just once. Overhead is minimal
-           // compared to actually DRAWING the stuff.
-           if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();
-           V.update();
-           //voli.getGraphics().drawImage(bi,0,0,null);
-           g2d.drawImage(screen,0,0,this);
-           
-        }
-        
-        
         
     	public void SetGamma(int level){
     		if (D) System.err.println("Setting gamma "+level);
@@ -270,6 +252,9 @@ public static final class TrueColor extends AWTDoom<int[]>{
 }
 
 //$Log: AWTDoom.java,v $
+//Revision 1.16  2012/11/06 16:04:34  velktron
+//Spiffy new fullscreen switching system.
+//
 //Revision 1.15  2012/09/24 17:16:23  velktron
 //Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //

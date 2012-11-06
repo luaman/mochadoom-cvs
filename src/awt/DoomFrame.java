@@ -4,8 +4,11 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.DisplayMode;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.KeyEventDispatcher;
 import java.awt.KeyboardFocusManager;
@@ -33,22 +36,58 @@ import doom.event_t;
 public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<V> {
 
     protected V RAWSCREEN;
+    // Normally only used in fullscreen mode
+    
+    /** This might differ from the raster's width & height attribute for number of reasons */
+    protected Dimension size;
+    protected DisplayMode oldDisplayMode;
+    protected DisplayMode currentDisplayMode;
+    protected GraphicsDevice device;
+    protected int X_OFF;
+    protected int Y_OFF;    
     
     public DoomFrame(DoomMain<?,V> DM,DoomVideoRenderer<?,V> V) {
+        GraphicsEnvironment env = GraphicsEnvironment.
+        getLocalGraphicsEnvironment();
+        
+        GraphicsDevice[] devices = env.getScreenDevices();
+        
+        // Get device 0, because we're lazy.
+        if (devices!=null)
+            if (devices.length>0)
+                device=devices[0];
+        
     	this.DM=DM;
     	this.CM=DM.CM;
     	this.TICK=DM.TICK;
     	this.I=DM.I;
     	this.V= V;
-        // If these aren't set here, the init code won't size up windows properly.
-    	// Of course, we must have made up our mind about the resolution
-    	// already, at this point (TODO: command line parameters and multiplication
-    	// should be handled BEFORE reaching this point).
-    	this.width=V.getWidth();
-    	this.height=V.getHeight();
-    	this.center=new Point (width/2, height/2);
-    	this.rect=new Rectangle((int)(width/10),(int)(0.1*height/10),9*width/10,9*height/10);
+    	
+        this.width=V.getWidth();
+        this.height=V.getHeight();
+
+    	
+    	// Set those here. If fullscreen isn't used, then they won't change.
+    	// They are necessary for normal initialization, though.
+    	setDefaultDimension(width,height);
+
 	}
+    
+    /** Default window size and center spot. These might change 
+     * upon entering full screen, so don't consider them absolute. 
+     * Due to letterboxing and screen doubling, stretching etc. 
+     * they might be different that the screen buffer (typically,
+     * larger).
+     * 
+     * @param width
+     * @param height
+     */
+    
+    private void setDefaultDimension(int width, int height){
+        this.size=new Dimension(width*multiply,height*multiply);
+        this.center=new Point (X_OFF+size.width/2, Y_OFF+size.height/2);
+    }
+    
 	/**
 	 * 
 	 */
@@ -71,17 +110,18 @@ public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<
 
   	protected Robot robby;
 	protected Canvas drawhere;
+	protected Canvas gelatine;
 	/** This is the actual screen */
     protected Image screen;
     protected int palette=0;
-    protected Dimension size;
     //InputListener in;
     protected Graphics2D g2d;
+    protected Graphics2D gel2d;
     
     protected Point center;
-    protected Rectangle rect;
-    
-    /** Dimensions of the screen buffers */
+        
+    /** Dimensions of the screen buffers. The display however, might differ due 
+     * to e.g. letterboxing */
     protected int width,height;
     protected int multiply=1;
     
@@ -153,10 +193,6 @@ public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<
 		  System.err.println("Input context successfully set to US.");
 	  }
 
-      Dimension size = new Dimension();
-      size.width = this.width * multiply;
-      size.height = height * multiply;
-      
 	  // check for command-line display name
 	  if ( (pnum=CM.CheckParm("-disp"))!=0 ) // suggest parentheses around assignment
 		displayname = CM.getArgv(pnum+1);
@@ -203,19 +239,21 @@ public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<
       //drawhere=new Canvas();
       // MAES: this method works even on "stubborn" Linux distros that 
       // fuck up the window size.
-      drawhere.setPreferredSize(size);
-      drawhere.setBounds(0, 0, drawhere.getWidth()-1,drawhere.getHeight()-1);
-      drawhere.setBackground(Color.black);
+	  setCanvasSize(size);
       
       this.eventhandler=new MochaEvents(DM,drawhere);
       
       // AWT: Add listeners to CANVAS element.
+      // Maybe it should go to the gelatine component?
       drawhere.addKeyListener(eventhandler);
       drawhere.addMouseListener(eventhandler);
       drawhere.addMouseMotionListener(eventhandler);
       addComponentListener(eventhandler);
       addWindowFocusListener(eventhandler);
       addWindowListener(eventhandler);
+      
+      if (DM.VM.getSetting("fullscreen").getBoolean())
+          switchToFullScreen();
       
       
 	  } catch (Exception e){
@@ -249,7 +287,10 @@ public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<
       });
 	  
 	  this.add(drawhere);
+	 // this.add(gelatine);
 	  this.getContentPane().setPreferredSize(drawhere.getPreferredSize());
+	  
+	  // JFrame's size is auto-set here.
 	  this.pack();
 	  this.setVisible(true);
       this.setResizable(false);
@@ -262,7 +303,69 @@ public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<
 	  
 	}
 	
-	@Override
+    private void setCanvasSize(Dimension size) {
+        
+        drawhere.setPreferredSize(size);
+        drawhere.setBounds(0, 0, drawhere.getWidth()-1,drawhere.getHeight()-1);
+        drawhere.setBackground(Color.black);
+
+        gelatine.setPreferredSize(size);
+        gelatine.setBounds(0, 0, drawhere.getWidth()-1,drawhere.getHeight()-1);
+        gelatine.setBackground(Color.black);
+        
+    }
+
+
+    /** FULLSCREEN SWITCH CODE
+     * TODO: it's not enough to do this without also switching the screen's resolution.
+     * Unfortunately, Java only has a handful of options which depend on the OS, driver,
+     * display, JVM etc. and it's not possible to switch to arbitrary resolutions. 
+     * 
+     * Therefore, a "best fit" strategy with centering is used.
+     * 
+     */
+	
+	private void switchToFullScreen() {
+	    boolean isFullScreen = device.isFullScreenSupported();
+	      setUndecorated(isFullScreen);
+	      setResizable(!isFullScreen);
+	      
+	      // In case we need to revert.
+	      oldDisplayMode 
+	      = device.getDisplayMode();
+	      
+	      DisplayModePicker dmp=new DisplayModePicker(device);
+	      
+	      // TODO: what if bit depths are too small?
+	      DisplayMode dm=dmp.pickClosest(width,height);
+	      
+	      int[] xy=dmp.getCentering(width,height, dm);
+	      this.X_OFF=xy[0];
+	      this.Y_OFF=xy[1];
+	      
+	      device.getDisplayModes(); 
+	      
+	      if (isFullScreen) {
+	          // Full-screen mode
+	          device.setFullScreenWindow(this);
+	          if (device.isDisplayChangeSupported())
+	              device.setDisplayMode(dm);
+	          validate();
+	          
+	          Dimension newsize=new Dimension(dm.getWidth(),dm.getHeight());
+	          this.setDefaultDimension(dm.getWidth(),dm.getHeight());
+	          setCanvasSize(newsize);
+	          
+	      } else {
+	          // Windowed mode
+	          pack();
+	          setVisible(true);
+	      }
+        
+    }
+
+
+    @Override
 	public void StartFrame() {
 		// Dummy. Nothing special to do...yet.
 		
@@ -322,9 +425,12 @@ public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<
        // Should probably run just once. Overhead is minimal
        // compared to actually DRAWING the stuff.
        if (g2d==null) g2d = (Graphics2D)drawhere.getGraphics();
+       //if (gel2d==null) gel2d= (Graphics2D)gelatine.getGraphics();
        V.update();
        //voli.getGraphics().drawImage(bi,0,0,null);
-       g2d.drawImage(screen,0,0,this);
+       g2d.drawImage(screen,X_OFF,Y_OFF,this);
+       //gel2d.setColor(new Color(.3f, .4f, .5f, .1f));
+       //gel2d.fillRect(0, 0, this.getWidth(), this.getHeight());
        
     }
 
