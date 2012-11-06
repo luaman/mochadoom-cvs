@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.15 2012/09/24 17:16:22 velktron Exp $
+// $Id: DoomSystem.java,v 1.16 2012/11/06 16:05:29 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.16  2012/11/06 16:05:29  velktron
+// Variables manager now part of Main.
+//
 // Revision 1.15  2012/09/24 17:16:22  velktron
 // Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //
@@ -96,6 +99,8 @@ package i;
 
 import java.io.IOException;
 
+import sun.misc.VM;
+
 import awt.MsgBox;
 import m.MenuMisc;
 import doom.DoomMain;
@@ -162,7 +167,7 @@ public void Quit ()
  DM.ISND.ShutdownSound();
  DM.IMUS.ShutdownMusic();
  DM.commit();
- DM.VM.SaveDefaults(DM.getDefaultFile());
+ DM.VM.SaveDefaults(DM.VM.getDefaultFile());
  DM.VI.ShutdownGraphics();
  System.exit(0);
 }

@@ -2,6 +2,9 @@ package i;
 
 import java.io.IOException;
 
+import m.IVariablesManager;
+import m.VarsManager;
+
 import rr.LightsAndColors;
 
 import v.VideoScaleInfo;
@@ -12,7 +15,7 @@ import doom.ICommandLineManager;
 //Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-//$Id: Main.java,v 1.12 2012/09/25 16:35:38 velktron Exp $
+//$Id: Main.java,v 1.13 2012/11/06 16:05:17 velktron Exp $
 //
 //Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -28,33 +31,46 @@ import doom.ICommandLineManager;
 //
 //
 //DESCRIPTION:
-//Main program, simply calls D_DoomMain high level loop.
+//Main program, simply calls D_DoomMain high level loop after loading 
+//some essential settings and determining what "flavor" we're going to run.
 //
 //-----------------------------------------------------------------------------
 
 
 
 public class Main {
-    static final String rcsid = "$Id: Main.java,v 1.12 2012/09/25 16:35:38 velktron Exp $";
+    static final String rcsid = "$Id: Main.java,v 1.13 2012/11/06 16:05:17 velktron Exp $";
 
     public static BppMode bpp;
     
     public static void main(String[] argv) throws IOException{
 
-    	//  First, get the command line parameters.
-            ICommandLineManager CM=new CommandLine(argv);
+    	  //First, get the command line parameters.
+          ICommandLineManager CLM=new CommandLine(argv);
+            
+          // Handles variables and settings from default.cfg
+          IVariablesManager VM=new VarsManager(CLM);
+          
+          // load before initing other systems, but don't apply them yet.          
+          System.out.print ("M_LoadDefaults: Load system defaults.\n");
+          VM.LoadDefaults (VM.getDefaultFile());
         
           bpp= BppMode.Indexed;
             
-          if (CM.CheckParmBool("-hicolor")) bpp=BppMode.HiColor;
-              else
-          if (CM.CheckParmBool("-truecolor")) bpp=BppMode.TrueColor;
+          if (VM.isSettingLiteral("color_depth","hicolor"))
+              bpp=BppMode.HiColor;
+          if (VM.isSettingLiteral("color_depth","truecolor"))
+              bpp=BppMode.TrueColor;
           
-          // Here he create DOOM
+          if (CLM.CheckParmBool("-hicolor")) bpp=BppMode.HiColor;
+              else
+          if (CLM.CheckParmBool("-truecolor")) bpp=BppMode.TrueColor;
+          
+          
+          
+          // Here we create DOOM
           DoomMain<?, ?> DM=null;
           // Create a dummy. This will force static init to run.
-          //LightsAndColors LAC=new LightsAndColors();
-          
           
           switch(bpp){
           case Indexed:
@@ -72,7 +88,8 @@ public class Main {
 
           }    
 
-          DM.setCommandLineArgs(CM);
+          DM.setCommandLineArgs(CLM);
+          DM.registerVariableManager(VM);
           DM.Init();
           DM.Start();
 
