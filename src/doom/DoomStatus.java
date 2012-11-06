@@ -284,9 +284,6 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     //
 
     // File handling stuff.
-    /** Normally this is default.cfg, might be .doomrc on lunix??? */
-    
-    public static String basedefault="default.cfg";      
     
     public OutputStreamWriter debugfile;
 
@@ -668,23 +665,14 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     }
     
 
-    public String getDefaultFile(){
-    // check for a custom default file
-
-    int i = CM.CheckParm("-config");
-    if ((i>0) && i<CM.getArgc()-1)
-    {
-        return CM.getArgv(i+1);
-        //System.out.printf("   default file: %s\n",defaultfile);
-    }
-    else
-        return basedefault;
-    }
     
 
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.36  2012/11/06 16:04:58  velktron
+// Variables manager less tightly integrated.
+//
 // Revision 1.35  2012/09/24 17:16:22  velktron
 // Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //

@@ -33,6 +33,7 @@ import hu.HU;
 import m.Menu;
 import m.MenuMisc;
 import m.DoomRandom;
+import m.Settings;
 import m.VarsManager;
 import static doom.NetConsts.*;
 import static doom.englsh.*;
@@ -108,7 +109,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.108 2012/11/05 17:25:29 velktron Exp $
+// $Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -134,7 +135,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.108 2012/11/05 17:25:29 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -662,7 +663,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 I.Error("Please set $HOME to your home directory");
         }
         
-        basedefault=home+"/.doomrc";   
+        Settings.basedefault=home+"/.doomrc";   
 
         // None found, using current.
         if (!eval(doomwaddir))
@@ -679,7 +680,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             AddFile (dstrings.DEVDATA+"doom1.wad");
             AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
             AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
-            basedefault=dstrings.DEVDATA+"default.cfg";
+            Settings.basedefault=dstrings.DEVDATA+"default.cfg";
             return (dstrings.DEVDATA+"doom1.wad");
         }
 
@@ -691,7 +692,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             AddFile (dstrings.DEVMAPS+"data_se/texture1.lmp");
             AddFile (dstrings.DEVMAPS+"data_se/texture2.lmp");
             AddFile (dstrings.DEVMAPS+"data_se/pnames.lmp");
-            basedefault=dstrings.DEVDATA+"default.cfg";
+            Settings.basedefault=dstrings.DEVDATA+"default.cfg";
             return (dstrings.DEVDATA+"doom.wad");
         }
 
@@ -709,7 +710,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             AddFile (dstrings.DEVDATA+"doom2.wad");	    
             AddFile (dstrings.DEVMAPS+"cdata/texture1.lmp");
             AddFile (dstrings.DEVMAPS+"cdata/pnames.lmp");
-            basedefault=dstrings.DEVDATA+"default.cfg";
+            Settings.basedefault=dstrings.DEVDATA+"default.cfg";
             return (dstrings.DEVDATA+"doom2.wad");
         }
 
@@ -861,7 +862,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         {
             System.out.println(D_CDROM);
             //System.get("c:\\doomdata",0);
-            System.out.println (basedefault+"c:/doomdata/default.cfg");
+            System.out.println (Settings.basedefault+"c:/doomdata/default.cfg");
         }	
 
         // turbo option
@@ -1070,12 +1071,6 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         // init subsystems
         System.out.print ("V_Init: allocate screens.\n");
         V.Init ();
-        
-
-        System.out.print ("M_LoadDefaults: Load system defaults.\n");
-        
-        // load before initing other systems, but don't apply them yet.        
-        VM.LoadDefaults (DM.getDefaultFile());
         
 
         System.out.print ("Z_Init: Init zone memory allocation daemon. \n");
@@ -3088,7 +3083,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             long realtics=endtime-starttime;    
             
             this.commit();
-            VM.SaveDefaults(DM.getDefaultFile());
+            VM.SaveDefaults(VM.getDefaultFile());
             I.Error ("timed %d gametics in %d realtics = %f frames per second",gametic 
                 , realtics, gametic*(double)(TICRATE)/realtics); 
         }
@@ -4090,8 +4085,6 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      *  
      *  The trick is to construct objects in the correct order. Some of
      *  them have Init() methods which are NOT yet safe to call.
-     *  
-     *  FIXME: Probably I should add a sort of deferred status update?
      * 
      */
 
@@ -4105,8 +4098,6 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         this.DM=this;
         this.DG = this;
         this.DGN=this; // DoomMain also handles its own Game Networking.
-        // Handles variables and settings.
-        this.VM=new VarsManager();
              
         // Set ticker. It is a shared status object, but not a holder itself.
         if (eval(CM.CheckParm("-millis"))){
@@ -4562,6 +4553,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.109  2012/11/06 16:04:58  velktron
+//Variables manager less tightly integrated.
+//
 //Revision 1.108  2012/11/05 17:25:29  velktron
 //Fixed tinting system according to SodaHolic's advice.
 //
