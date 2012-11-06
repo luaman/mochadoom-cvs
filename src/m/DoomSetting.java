@@ -208,5 +208,25 @@ public class DoomSetting implements Comparable<DoomSetting> {
         public String toString(){
             return string_val;
         }
+
+        /** A special setting that returns false, 0 and an empty string, if required.
+         * Simplifies handling of nulls A LOT. So code that relies on specific settings
+         * should be organized to work only on clear positivies (e.g. use a "fullscreen" setting
+         * that must exist and be equal to 1 or true, instead of assuming that a zero/false
+         * value enables it. */
+        
+        public static DoomSetting NULL_SETTING=new DoomSetting("NULL","",false);
+        
+        static {
+            // It's EVERYTHING
+            NULL_SETTING.typeflag=0x1F;
+            NULL_SETTING.string_val="";
+            NULL_SETTING.char_val=0;
+            NULL_SETTING.double_val=0;
+            NULL_SETTING.boolean_val=false;
+            NULL_SETTING.int_val=0;
+            NULL_SETTING.long_val=0;            
+        }
+        
         
     }
