@@ -9,7 +9,7 @@ import s.AudioChunk;
  * doesn't work out so well, with everything "freezing" after 
  * a while */
 
-public class MobjPool extends ObjectQueuePool<mobj_t>
+public class MobjPool extends ObjectPool<mobj_t>
 {
 
 	Actions A;
@@ -23,6 +23,13 @@ public class MobjPool extends ObjectQueuePool<mobj_t>
 
     protected mobj_t create()
     {
+        /*
+        for (int i=0;i<8192;i++){
+            locked.push(new mobj_t(A));
+        }
+        
+        return locked.pop();*/
+        
         return new mobj_t(A);
     }
 

@@ -19,7 +19,6 @@ public abstract class ObjectQueuePool<K>
 	
     public ObjectQueuePool(long expirationTime)
     {
-        this.expirationTime = expirationTime;
         locked = new Stack<K>();
         
     }
@@ -55,7 +54,6 @@ public abstract class ObjectQueuePool<K>
         locked.push(t);
     }
 
-    private long expirationTime;
-    private Stack<K> locked;
+    protected Stack<K> locked;
    // private Hashtable<K,Long> unlocked;
 }

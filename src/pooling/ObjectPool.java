@@ -82,6 +82,6 @@ public abstract class ObjectPool<K>
     }
 
     private long expirationTime;
-    private Hashtable<K,Long> locked;
+    protected Hashtable<K,Long> locked;
     private Hashtable<K,Long> unlocked;
 }
