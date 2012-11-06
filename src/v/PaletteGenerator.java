@@ -123,10 +123,11 @@ public class PaletteGenerator {
      * @param colors
      *        Usually 256.
      * @param tint
+     * @param gamma
      */
 
     public static void tintColormap(final int[] original, int[] modified,
-            int colors, ColorTint tint) {
+            int colors, ColorTint tint,short[] gamma) {
 
         final int[] rgb = new int[4];
         final int[] rgb2 = new int[4];
@@ -138,13 +139,19 @@ public class PaletteGenerator {
             rgb[2] = getBlue(rgba);            
 
             tintRGB(tint, rgb, rgb2);
+            
+            // Apply gamma correction.
+            rgb2[0]=gamma[rgb2[0]];
+            rgb2[1]=gamma[rgb2[1]];
+            rgb2[2]=gamma[rgb2[2]];
+            
             modified[i] = getARGB(rgb2[0],rgb2[1],rgb2[2]);
         }
 
     }
 
     public static void tintColormap(final short[] original, short[] modified,
-            int colors, ColorTint tint) {
+            int colors, ColorTint tint,short[] gamma) {
 
         final int[] rgb = new int[3];
         final int[] rgb2 = new int[3];
@@ -156,6 +163,11 @@ public class PaletteGenerator {
             rgb[2] = getBlue(rgba);
 
             tintRGB(tint, rgb, rgb2);
+            
+            // Apply gamma correction.
+            rgb2[0]=gamma[rgb2[0]];
+            rgb2[1]=gamma[rgb2[1]];
+            rgb2[2]=gamma[rgb2[2]];
             modified[i] = rgb888to555(rgb2[0],rgb2[1],rgb2[2]);
         }
 
@@ -546,7 +558,5 @@ public class PaletteGenerator {
         }
 
     }
-
-    
     
 }
