@@ -61,4 +61,9 @@ public enum Settings {
         }
     
     public String value;
+    
+    /** Normally this is default.cfg, might be .doomrc on lunix??? */
+    
+    public static String basedefault="default.cfg";      
+
 }

@@ -1,6 +1,5 @@
 package m;
 
-import java.awt.event.KeyEvent;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -11,7 +10,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +17,9 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import doom.ICommandLineManager;
+
 import utils.C2JUtils;
-import doom.DoomStatus;
 
 /** Variables manager registers and retrieves variables (or "settings")
  *  For the purposes of Doom, three types will suffice: 
@@ -42,14 +41,19 @@ import doom.DoomStatus;
  *  method of e.g. DoomMain is called, applying whatever changes need 
  *  to be done. Same thing with menus.
  *  
+ *  TODO: a similar system was being planned for the CommandLine manager,
+ *  but never implemented, wtf.... fix now?
+ *  
  */
 
 public class VarsManager implements IVariablesManager {
     
     private final HashMap<String,DoomSetting> settings;
+    private final ICommandLineManager CLM;
     
-    public VarsManager(){
+    public VarsManager(ICommandLineManager CLM){
         this.settings=new HashMap<String,DoomSetting>();
+        this.CLM=CLM;
     }
     
     @Override
@@ -61,7 +65,7 @@ public class VarsManager implements IVariablesManager {
         }
         
         // Good question...what to do here?
-        return null;
+        return DoomSetting.NULL_SETTING;
     }
     
     @Override
@@ -73,8 +77,15 @@ public class VarsManager implements IVariablesManager {
         }
         
         // Good question...what to do here?
-        return null;
+        return DoomSetting.NULL_SETTING;
     }
+    
+    @Override
+    public boolean isSettingLiteral(String name,String value){
+        
+        return getSetting(name).getString().equalsIgnoreCase(value);
+    }
+    
     
     /** Creates a new setting, overriding any existing ones */
 
@@ -232,6 +243,20 @@ public class VarsManager implements IVariablesManager {
             // Well duh....
             return;
         }
+    }
+    
+
+    public String getDefaultFile(){
+    // check for a custom default file
+
+    int i = CLM.CheckParm("-config");
+    if ((i>0) && i<CLM.getArgc()-1)
+    {
+        return CLM.getArgv(i+1);
+        //System.out.printf("   default file: %s\n",defaultfile);
+    }
+    else
+        return Settings.basedefault;
     }
 
     
