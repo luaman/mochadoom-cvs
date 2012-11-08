@@ -112,19 +112,43 @@ public class DSP {
     }
     
     public static byte[] crudeResample(byte[] input,int factor){        
-        byte[] res=new byte[input.length*factor];
-        int k=0;
-        float a,b;
         
-        for (int i=0;i<input.length-1;i++){
-            b=0xFF&input[i];
-            a=(0xFF&input[i+1])-b;
+        if (input==null || input.length<1) return null;
+        
+        final int LEN=input.length;
+        
+        byte[] res=new byte[LEN*factor];
+        int k=0;        
+        float start,end;
+        
+        res[0]=input[0];
+        
+        for (int i=0;i<LEN;i++){
             
-            for (int j=0;j<factor;j++){
-                res[k++]=(byte) (input[i]+((float)j/factor)*a);
-            }
+            if (i==0) 
+                start=127;
+            else
+                start=0xFF&input[i];
             
+            if (i<LEN-1)
+                end=0xFF&input[i+1];
+            else
+                end=127;
+            
+            double slope=(end-start)/factor;
+            
+            res[k]=input[i];
+            //res[k+factor]=input[i+1];
+            
+            for (int j=1;j<factor;j++){
+                double ratio=j/(double)factor;
+                double value=start+slope*ratio;
+                byte bval=(byte)Math.round(value);
+                res[k+j]=bval;
+                }
+            k+=factor;
         }
+        
         return res;
         
     }
