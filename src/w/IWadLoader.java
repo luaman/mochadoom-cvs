@@ -92,13 +92,15 @@ public interface IWadLoader {
 	//
 	public abstract int LumpLength(int lump);
 
-	/**
-	 * W_CacheLumpNum Modified to read a lump as a specific type of
-	 * CacheableDoomObject. If the class is not identified or is null, then a
-	 * generic DoomBuffer object is left in the lump cache and returned.
-	 */
-	public abstract CacheableDoomObject CacheLumpNum(int lump, int tag,
-			Class what);
+
+    /**
+     * W_CacheLumpNum Modified to read a lump as a specific type of
+     * CacheableDoomObject. If the class is not identified or is null, then a
+     * generic DoomBuffer object is left in the lump cache and returned.
+     * @param <T>
+     */
+    public abstract <T> T CacheLumpNum(int lump, int tag,
+            Class<T> what);
 
 	// MAES 24/8/2011: superseded by auto-allocating version with proper 
 	// container-based caching.

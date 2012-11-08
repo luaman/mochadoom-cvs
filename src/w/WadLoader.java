@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.61 2012/09/25 16:33:36 velktron Exp $
+// $Id: WadLoader.java,v 1.62 2012/11/08 17:16:12 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -730,7 +730,8 @@ public class WadLoader implements IWadLoader {
 	 * 
 	 */
 	
-	public CacheableDoomObject CacheLumpNum(int lump, int tag, Class what) {
+	@SuppressWarnings("unchecked")
+    public <T> T CacheLumpNum(int lump, int tag, Class<T> what) {
 		
 		if (lump >= numlumps) {
 			I.Error("W_CacheLumpNum: %i >= numlumps", lump);
@@ -794,10 +795,7 @@ public class WadLoader implements IWadLoader {
 			// Z.ChangeTag (lumpcache[lump],tag);
 		}
 		
-		
-		
-		 
-		return lumpcache[lump];
+		return (T) lumpcache[lump];
 	}
 
 	/** A very useful method when you need to load a lump which can consist
@@ -1392,6 +1390,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.62  2012/11/08 17:16:12  velktron
+//Made GetLumpForNum generic.
+//
 //Revision 1.61  2012/09/25 16:33:36  velktron
 //Dummy Doomsystem for easy testing.
 //
