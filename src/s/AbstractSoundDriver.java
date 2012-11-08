@@ -1,6 +1,7 @@
 package s;
 
 import static data.sounds.S_sfx;
+import m.FixedFloat;
 import data.sfxinfo_t;
 import data.sounds;
 import doom.DoomStatus;
@@ -13,12 +14,24 @@ import doom.DoomStatus;
  */
 
 public abstract class AbstractSoundDriver
-        implements ISound {
+        implements ISoundDriver {
 
     protected final static boolean D = false; // debug
     
-    protected final DoomStatus DS;
+    protected final DoomStatus<?,?> DS;
 
+    /**
+     * The global mixing buffer. Basically, samples from all active internal
+     * channels are modifed and added, and stored in the buffer that is
+     * submitted to the audio device. This is a 16-bit stereo signed PCM
+     * mixbuffer. Memory order is LSB (?) and channel order is L-R-L-R...
+     * 
+     * Not all i
+     * 
+     */
+
+    protected byte[] mixbuffer;// = new byte[MIXBUFFERSIZE];
+    
     protected final int numChannels;
 
     /** The actual lengths of all sound effects. */
@@ -56,7 +69,7 @@ public abstract class AbstractSoundDriver
     // protected final static DataLine.Info info = new DataLine.Info(Clip.class,
     // format);
 
-    public AbstractSoundDriver(DoomStatus DS, int numChannels) {
+    public AbstractSoundDriver(DoomStatus<?,?> DS, int numChannels) {
         this.DS = DS;
         this.numChannels = numChannels;
         channelids = new int[numChannels];
@@ -86,11 +99,22 @@ public abstract class AbstractSoundDriver
      */
 
     protected void generateStepTable(int steptablemid) {
-        for (int i = -128; i < 128; i++)
+        for (int i = -128; i < 128; i++) {
             steptable[steptablemid + i] =
                 (int) (Math.pow(2.0, (i / 64.0)) * 65536.0);
+            //System.out.printf("Pitch %d %d %f\n",i,steptable[steptablemid + i],FixedFloat.toFloat(steptable[steptablemid + i]));
+        }
     }
 
+    /** Read a Doom-format sound effect from disk, leaving it in 8-bit mono format but
+     *  upsampling it to the target sample rate.
+     *  
+     * @param sfxname
+     * @param len
+     * @param index
+     * @return
+     */
+    
     protected byte[] getsfx(String sfxname, int[] len, int index) {
         byte[] sfx;
         byte[] paddedsfx;
@@ -119,35 +143,40 @@ public abstract class AbstractSoundDriver
         else
             sfxlump = DS.W.GetNumForName(name);
 
-        size = DS.W.LumpLength(sfxlump);
-
-        sfx = DS.W.CacheLumpNumAsRawBytes(sfxlump, 0);
+        DMXSound dmx= DS.W.CacheLumpNum(sfxlump, 0, DMXSound.class);
+        
+        // KRUDE
+        if (dmx.speed==SAMPLERATE/2){
+            dmx.data=DSP.crudeResample(dmx.data,2);
+            DSP.filter(dmx.data,SAMPLERATE, SAMPLERATE/4);
+            dmx.datasize*=2;
+            
+        }
+        
+        sfx = dmx.data;
 
         // MAES: A-ha! So that's how they do it.
         // SOund effects are padded to the highest multiple integer of
         // the mixing buffer's size (with silence)
 
         paddedsize =
-            ((size - 8 + (SAMPLECOUNT - 1)) / SAMPLECOUNT) * SAMPLECOUNT;
+            ((dmx.datasize + (SAMPLECOUNT - 1)) / SAMPLECOUNT) * SAMPLECOUNT;
 
         // Allocate from zone memory.
         paddedsfx = new byte[paddedsize];
 
         // Now copy and pad. The first 8 bytes are header info, so we discard
         // them.
-        System.arraycopy(sfx, 8, paddedsfx, 0, size - 8);
+        System.arraycopy(sfx, 0, paddedsfx, 0, dmx.datasize);
 
-        for (i = size - 8; i < paddedsize; i++)
-            paddedsfx[i] = (byte) 127;
-
-        // Hmm....silence?
-        for (i = size - 8; i < paddedsize; i++)
+        // Pad with silence (unsigned)
+        for (i = dmx.datasize; i < paddedsize; i++)
             paddedsfx[i] = (byte) 127;
 
         // Remove the cached lump.
         DS.W.UnlockLumpNum(sfxlump);
 
-        if (D) System.out.printf("SFX %d name %s size %d padded to %d\n", index, S_sfx[index].name, size,paddedsize);
+        if (true) System.out.printf("SFX %d name %s size %d speed %d padded to %d\n", index, S_sfx[index].name, dmx.datasize,dmx.speed,paddedsize);
         // Preserve padded length.
         len[index] = paddedsize;
 
@@ -289,8 +318,31 @@ public abstract class AbstractSoundDriver
     }
 
     /**
-     * This is only the common part of InitSound that caches sound data in
-     * 16-bit, stereo format (used by Audiolines). INTO sfxenum_t.
+     * Initialize 
+     * 
+     * @return
+     */
+    protected  final void initMixBuffer() {
+        for (int i = 0; i < MIXBUFFERSIZE; i += 4) {
+            mixbuffer[i] =
+                (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
+            mixbuffer[i + 1] =
+                (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                        / MIXBUFFERSIZE)) & 0xff);
+            mixbuffer[i + 2] =
+                (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
+            mixbuffer[i + 3] =
+                (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
+                        / MIXBUFFERSIZE)) & 0xff);
+
+        }
+    }
+    
+    /**
+     * Loads samples in 8-bit format, forcibly converts them to the common sampling rate.
+     * Used by.
      */
 
     protected final void initSound8() {
@@ -313,6 +365,9 @@ public abstract class AbstractSoundDriver
     /**
      * This is only the common part of InitSound that caches sound data in
      * 16-bit, stereo format (used by Audiolines). INTO sfxenum_t.
+     * 
+     * Only used by the Clip and David "drivers".
+     * 
      */
 
     protected final void initSound16() {
