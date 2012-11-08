@@ -79,15 +79,6 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
 
 
 
-    /**
-     * The global mixing buffer. Basically, samples from all active internal
-     * channels are modifed and added, and stored in the buffer that is
-     * submitted to the audio device. This is a 16-bit stereo signed PCM
-     * mixbuffer. Memory order is LSB (?) and channel order is L-R-L-R...
-     */
-
-    protected byte[] mixbuffer;// = new byte[MIXBUFFERSIZE];
-
 
     /** These are still defined here to decouple them from the mixer's 
      *  ones, however they serve  more as placeholders/status indicators;
@@ -151,7 +142,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
         System.err.println("I_InitSound: ");
 
         // We only need a single data line.
-        // PCM, signed, 16-bit, stereo, 11025 KHz, 2048 bytes per "frame",
+        // PCM, signed, 16-bit, stereo, 22025 KHz, 2048 bytes per "frame",
         // maximum of 44100/2048 "fps"
         AudioFormat format = new AudioFormat(SAMPLERATE, 16, 2, true, true);
 
@@ -419,7 +410,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
                 // Play back only at most a given number of chunks once you reach
                 // this spot.
                 
-                int atMost=Math.min(ISound.BUFFER_CHUNKS,audiochunks.size());
+                int atMost=Math.min(ISoundDriver.BUFFER_CHUNKS,audiochunks.size());
                 
                 while (atMost-->0){
 
@@ -756,7 +747,7 @@ public class SuperDoomSoundDriver extends AbstractSoundDriver
     	        } else {
     	            silence++;
     	            // MAES: attempt to fix lingering noise error
-    	            if (silence >ISound.BUFFER_CHUNKS){
+    	            if (silence >ISoundDriver.BUFFER_CHUNKS){
     	                line.flush();
     	                silence=0;
     	                }
