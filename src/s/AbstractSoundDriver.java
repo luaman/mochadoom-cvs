@@ -147,9 +147,10 @@ public abstract class AbstractSoundDriver
         
         // KRUDE
         if (dmx.speed==SAMPLERATE/2){
+            // Plain linear interpolation.
             dmx.data=DSP.crudeResample(dmx.data,2);
-            DSP.filter(dmx.data,SAMPLERATE, SAMPLERATE/4);
-            dmx.datasize*=2;
+            //DSP.filter(dmx.data,SAMPLERATE, SAMPLERATE/4);
+            dmx.datasize=dmx.data.length;
             
         }
         
@@ -176,7 +177,7 @@ public abstract class AbstractSoundDriver
         // Remove the cached lump.
         DS.W.UnlockLumpNum(sfxlump);
 
-        if (true) System.out.printf("SFX %d name %s size %d speed %d padded to %d\n", index, S_sfx[index].name, dmx.datasize,dmx.speed,paddedsize);
+        if (D) System.out.printf("SFX %d name %s size %d speed %d padded to %d\n", index, S_sfx[index].name, dmx.datasize,dmx.speed,paddedsize);
         // Preserve padded length.
         len[index] = paddedsize;
 
