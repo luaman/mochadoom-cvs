@@ -28,9 +28,9 @@ import doom.DoomStatus;
 
 public class AbstractDoomAudio implements IDoomSound{
 
-	protected final DoomStatus DS;
+	protected final DoomStatus<?,?> DS;
 	protected final IMusic IMUS;
-	protected final ISound ISND;
+	protected final ISoundDriver ISND;
 
 	protected final int numChannels;
 
@@ -61,7 +61,7 @@ public class AbstractDoomAudio implements IDoomSound{
 
 	protected int nextcleanup;
 
-	public AbstractDoomAudio(DoomStatus DS, int numChannels){
+	public AbstractDoomAudio(DoomStatus<?,?> DS, int numChannels){
 		this.DS = DS;
 		this.numChannels=numChannels;
 		this.channels=new channel_t[numChannels];
