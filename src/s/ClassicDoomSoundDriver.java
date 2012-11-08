@@ -48,7 +48,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     protected HashMap<Integer, byte[]> cachedSounds =
         new HashMap<Integer, byte[]>();
 
-    public ClassicDoomSoundDriver(DoomStatus DS, int numChannels) {
+    public ClassicDoomSoundDriver(DoomStatus<?,?> DS, int numChannels) {
     	super(DS,numChannels);
         channelleftvol_lookup = new int[numChannels][];
         channelrightvol_lookup = new int[numChannels][];
@@ -60,18 +60,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         produce = new Semaphore(1);
         consume = new Semaphore(1);
         produce.drainPermits();
+        mixbuffer= new byte[MIXBUFFERSIZE];
     }
-
-
-
-    /**
-     * The global mixing buffer. Basically, samples from all active internal
-     * channels are modifed and added, and stored in the buffer that is
-     * submitted to the audio device. This is a 16-bit stereo signed PCM
-     * mixbuffer. Memory order is LSB (?) and channel order is L-R-L-R...
-     */
-
-    protected final byte[] mixbuffer = new byte[MIXBUFFERSIZE * 2];
 
     /** The channel step amount... */
     protected final int[] channelstep;
@@ -299,13 +289,11 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
     @Override
     public boolean InitSound() {
 
-        int i;
-
         // Secure and configure sound device first.
-        System.err.println("I_InitSound: ");
+        System.out.println("I_InitSound: ");
 
         // We only need a single data line.
-        // PCM, signed, 16-bit, stereo, 11025 KHz, 2048 bytes per "frame",
+        // PCM, signed, 16-bit, stereo, 22025 KHz, 2048 bytes per "frame",
         // maximum of 44100/2048 "fps"
         AudioFormat format = new AudioFormat(SAMPLERATE, 16, 2, true, true);
 
@@ -348,27 +336,14 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         System.err.print(" pre-cached all sound data\n");
 
         // Now initialize mixbuffer with zero.
-        for (i = 0; i < MIXBUFFERSIZE; i += 4) {
-            mixbuffer[i] =
-                (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
-            mixbuffer[i + 1] =
-                (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff);
-            mixbuffer[i + 2] =
-                (byte) (((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff00) >>> 8);
-            mixbuffer[i + 3] =
-                (byte) ((int) (0x7FFF * Math.sin(1.5 * Math.PI * (double) i
-                        / MIXBUFFERSIZE)) & 0xff);
-
-        }
+        initMixBuffer();
 
         // Finished initialization.
         System.err.print("I_InitSound: sound module ready\n");
 
         return true;
     }
+
 
     @Override
     protected int addsfx(int sfxid, int volume, int step, int seperation) {
@@ -386,10 +361,8 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         
         // Chainsaw troubles.
         // Play these sound effects only one at a time.
-        if (sfxid == sfxenum_t.sfx_sawup.ordinal()
-                || sfxid == sfxenum_t.sfx_sawidl.ordinal()
-                || sfxid == sfxenum_t.sfx_sawful.ordinal()
-                || sfxid == sfxenum_t.sfx_sawhit.ordinal()
+        if ((sfxid >= sfxenum_t.sfx_sawup.ordinal()
+                && sfxid <= sfxenum_t.sfx_sawhit.ordinal())
                 || sfxid == sfxenum_t.sfx_stnmov.ordinal()
                 || sfxid == sfxenum_t.sfx_pistol.ordinal()) {
             // Loop all channels, check.
@@ -472,12 +445,12 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         rightvol = volume - ((volume * seperation * seperation) >> 16);
 
         // Sanity check, clamp volume.
+        // Maes: better to clamp than to crash, no?
 
-        if (rightvol < 0 || rightvol > 127)
-            DS.I.Error("rightvol out of bounds");
-
-        if (leftvol < 0 || leftvol > 127)
-            DS.I.Error("leftvol out of bounds");
+        if (rightvol < 0) rightvol=0;
+        if (rightvol >127) rightvol=127;
+        if (leftvol < 0) leftvol=0;
+        if (leftvol >127) leftvol=127;
 
         // Get the proper lookup table piece
         // for this volume level???
@@ -576,7 +549,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
                 // Play back only at most a given number of chunks once you reach
                 // this spot
                 
-                int atMost=Math.min(ISound.BUFFER_CHUNKS,audiochunks.size());
+                int atMost=Math.min(ISoundDriver.BUFFER_CHUNKS,audiochunks.size());
                 
                 while (atMost-->0){
 
@@ -667,7 +640,7 @@ public class ClassicDoomSoundDriver extends AbstractSoundDriver
         } else {
             silence++;
             // MAES: attempt to fix lingering noise error
-            if (silence >ISound.BUFFER_CHUNKS*5){
+            if (silence >ISoundDriver.BUFFER_CHUNKS*5){
                 line.flush();
                 silence=0;
                 }

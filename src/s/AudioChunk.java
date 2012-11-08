@@ -2,7 +2,7 @@ package s;
 
 public class AudioChunk{
     public AudioChunk() {
-        buffer=new byte[s.ISound.MIXBUFFERSIZE];
+        buffer=new byte[s.ISoundDriver.MIXBUFFERSIZE];
         setStuff(0,0);
         this.free=true;
     }

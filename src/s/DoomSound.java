@@ -13,9 +13,9 @@ class DoomSound extends sfxinfo_t {
 	/** This audio format is the one used by internal samples (16 bit, 11KHz, Stereo) 
      *  for Clips and AudioLines. Sure, it's not general enough... who cares though?
      */
-	public final static AudioFormat DEFAULT_SAMPLES_FORMAT=new AudioFormat(Encoding.PCM_SIGNED, ISound.SAMPLERATE, 16, 2, 4, ISound.SAMPLERATE, true);
+	public final static AudioFormat DEFAULT_SAMPLES_FORMAT=new AudioFormat(Encoding.PCM_SIGNED, ISoundDriver.SAMPLERATE, 16, 2, 4, ISoundDriver.SAMPLERATE, true);
 	
-	public final static AudioFormat DEFAULT_DOOM_FORMAT=new AudioFormat(Encoding.PCM_UNSIGNED, ISound.SAMPLERATE, 8, 1, 1, ISound.SAMPLERATE, true);
+	public final static AudioFormat DEFAULT_DOOM_FORMAT=new AudioFormat(Encoding.PCM_UNSIGNED, ISoundDriver.SAMPLERATE, 8, 1, 1, ISoundDriver.SAMPLERATE, true);
 	
 	
 	public AudioFormat format;

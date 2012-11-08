@@ -501,7 +501,7 @@ public class DavidSFXModule extends AbstractSoundDriver{
 				// Q: how does Doom's sep map to stereo panning?
 				// A: Apparently it's 0-255 L-R.
 				if (bc!=null){
-				float pan= bc.getMinimum()+(bc.getMaximum()-bc.getMinimum())*(float)(sep)/ISound.PANNING_STEPS;
+				float pan= bc.getMinimum()+(bc.getMaximum()-bc.getMinimum())*(float)(sep)/ISoundDriver.PANNING_STEPS;
 				//System.err.printf("Panning %d %f %f %f\n",sep,bc.getMinimum(),bc.getMaximum(),pan);
 				bc.setValue(pan);
 				}

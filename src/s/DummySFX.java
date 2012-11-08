@@ -2,7 +2,7 @@ package s;
 
 import data.sfxinfo_t;
 
-public class DummySFX implements ISound {
+public class DummySFX implements ISoundDriver {
 
 	@Override
 	public boolean InitSound() {

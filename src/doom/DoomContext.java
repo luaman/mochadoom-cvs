@@ -18,7 +18,7 @@ import rr.Renderer;
 import rr.TextureManager;
 import s.IDoomSound;
 import s.IMusic;
-import s.ISound;
+import s.ISoundDriver;
 import st.AbstractStatusBar;
 import timing.ITicker;
 import v.DoomVideoRenderer;
@@ -65,7 +65,7 @@ public class DoomContext<T,V>{
     public IRandom RND;
     public IDoomSystem I;
     public IDoomSound S;
-    public ISound ISND;
+    public ISoundDriver ISND;
     public IMusic IMUS;
     public DoomVideoInterface<V> VI;
     public AbstractStatusBar ST;
