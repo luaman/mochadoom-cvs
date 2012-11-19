@@ -667,7 +667,7 @@ public class player_t /*extends mobj_t */
           case 4:
         // STROBE HURT
         if (!eval(powers[pw_ironfeet])
-            || (RND.P_Random()<5) )
+            || (RND.P_Random(think_t.PlayerInSpecialSector,0)<5) )
         {
             if (!flags(DS.leveltime,0x1f))
             P.DamageMobj (mo, null, null, 20);
@@ -1187,6 +1187,13 @@ SetPsprite
      */
     public void PlayerThink (player_t player)
     {
+    	
+    	  DS.sync( "Plr %d xyzpvv %d,%d,%d,%d,%d (%d,%d,%d) mom=%d,%d h=%d\n",
+    		        player.mo.info.doomednum, player.mo.x, player.mo.y, player.mo.z,
+    		        player.viewheight, player.viewz,
+    		        player.mo.x >> 16, player.mo.y >> 16, player.mo.z >> 16,
+    		        player.mo.momx, player.mo.momy, player.mo.health);
+    	  
      ticcmd_t       cmd;
      weapontype_t    newweapon;
      
