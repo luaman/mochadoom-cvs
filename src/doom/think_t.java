@@ -109,9 +109,30 @@ public enum think_t {
 	T_MoveFloor(1),
 	T_VerticalDoor(1),
 	T_PlatRaise(1), 
-	T_SlidingDoor(1);
+	T_SlidingDoor(1),
+	// The following are dummies that exist only for demo sync debugging
+	DeathMatchSpawnPlayer,
+	PlayerInSpecialSector, 
+	SpawnLightFlash, 
+	SpawnStrobeFlash, 
+	ExplodeMissile,
+	CheckMissileRange,
+	DoPlat,
+	CheckMissileSpawn,
+	DamageMobj, 
+	KillMobj, 
+	NewChaseDir, 
+	P_GunShot, 
+	PIT_ChangeSector, 
+	PIT_CheckThing, 
+	TryWalk, 
+	SpawnBlood, 
+	SpawnMapThing, 
+	SpawnMobj, 
+	SpawnMissile;
+    
 	
-    think_t(){
+	think_t(){
 	    type=0; // Default, but Doom has no "type 0" functions!
 	}
 	
