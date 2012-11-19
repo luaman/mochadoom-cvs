@@ -3,9 +3,17 @@ package doom;
 import static data.Defines.*;
 import static g.Keys.*;
 import static data.Limits.*;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 
 import automap.IAutoMap;
+import m.ISyncLogger;
 import m.IUseVariables;
 import m.IVariablesManager;
 import m.Settings;
@@ -29,7 +37,7 @@ import f.Wiper;
  * document where everything is supposed to come from/reside.
  */
 
-public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVariables {
+public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVariables,ISyncLogger {
 
 	public static final int	BGCOLOR=		7;
 	public static final int	FGCOLOR		=8;
@@ -665,74 +673,33 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
     }
     
 
+    ///// SPECIAL DEMO TOOLING STUFF, INSPIRED BY kb1 /////
     
+    protected PrintWriter syncdebugfile;
 
+    public final boolean DEBUG=true;
+    
+	public void debugStart() throws IOException {
+		// [kb] open the sync debug file
+		// [Maes] does it really have to be in append mode?
+		syncdebugfile = new PrintWriter(new BufferedWriter(new FileWriter(
+				"syncdbg.txt", true)));
+		syncdebugfile.printf("*** Debugging started ***\n");
+	}
+
+	public void debugEnd() {
+		// [kb] be sure to close the file proper on program shutdown
+		syncdebugfile.printf("*** Debugging stopped ***\n");
+		syncdebugfile.close();
+	}
+
+	// [Maes] call this to dispatch arbitrary reports
+	public void sync(String format, Object ... args){
+		syncdebugfile.printf(format, args);
+	}
 }
 
 // $Log: DoomStatus.java,v $
-// Revision 1.36  2012/11/06 16:04:58  velktron
-// Variables manager less tightly integrated.
-//
-// Revision 1.35  2012/09/24 17:16:22  velktron
-// Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
-//
-// Revision 1.34.2.3  2012/09/24 16:58:06  velktron
-// TrueColor, Generics.
-//
-// Revision 1.34.2.2  2012/09/20 14:25:13  velktron
-// Unified DOOM!!!
-//
-// Revision 1.34.2.1  2012/09/17 16:06:52  velktron
-// Now handling updates of all variables, though those specific to some subsystems should probably be moved???
-//
-// Revision 1.34  2011/11/01 23:48:10  velktron
-// Added tnthom stuff.
-//
-// Revision 1.33  2011/10/24 02:11:27  velktron
-// Stream compliancy
-//
-// Revision 1.32  2011/10/07 16:01:16  velktron
-// Added freelook stuff, using Keys.
-//
-// Revision 1.31  2011/09/27 16:01:41  velktron
-// -complevel_t
-//
-// Revision 1.30  2011/09/27 15:54:51  velktron
-// Added some more prBoom+ stuff.
-//
-// Revision 1.29  2011/07/28 17:07:04  velktron
-// Added always run hack.
-//
-// Revision 1.28  2011/07/16 10:57:50  velktron
-// Merged finnw's changes for enabling polling of ?_LOCK keys.
-//
-// Revision 1.27  2011/06/14 20:59:47  velktron
-// Channel settings now read from default.cfg. Changes in sound creation order.
-//
-// Revision 1.26  2011/06/04 11:04:25  velktron
-// Fixed registered/ultimate identification.
-//
-// Revision 1.25  2011/06/01 17:35:56  velktron
-// Techdemo v1.4a level. Default novert and experimental mochaevents interface.
-//
-// Revision 1.24  2011/06/01 00:37:58  velktron
-// Changed default keys to WASD.
-//
-// Revision 1.23  2011/05/31 21:45:51  velktron
-// Added XBLA version as explicitly supported.
-//
-// Revision 1.22  2011/05/30 15:50:42  velktron
-// Changed to work with new Abstract classes
-//
-// Revision 1.21  2011/05/26 17:52:11  velktron
-// Now using ICommandLineManager
-//
-// Revision 1.20  2011/05/26 13:39:52  velktron
-// Now using ICommandLineManager
-//
-// Revision 1.19  2011/05/25 17:56:52  velktron
-// Introduced some fixes for mousebuttons etc.
-//
-// Revision 1.18  2011/05/24 17:44:37  velktron
-// usemouse added for defaults
+// Revision 1.36.2.1  2012/11/19 22:14:58  velktron
+// Implement ISyncLogger
 //
