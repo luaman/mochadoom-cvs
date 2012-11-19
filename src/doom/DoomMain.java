@@ -109,7 +109,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $
+// $Id: DoomMain.java,v 1.109.2.1 2012/11/19 22:15:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -135,7 +135,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.109 2012/11/06 16:04:58 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.109.2.1 2012/11/19 22:15:26 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -808,6 +808,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         int             p;
         StringBuffer file=new StringBuffer();
 
+        DM.debugStart();
+        
         // TODO: This may modify the command line by appending more stuff
         // from an external file. Since it can affect other stuff too,
         // maybe it should be outside of Start() and into i.Main ?
@@ -2290,7 +2292,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
         for (j=0 ; j<20 ; j++) 
         { 
-            i = RND.P_Random() % selections; 
+            i = RND.P_Random(think_t.DeathMatchSpawnPlayer,0) % selections; 
             if (CheckSpot (playernum, deathmatchstarts[i]) ) 
             { 
                 deathmatchstarts[i].type = (short) (playernum+1); 
@@ -4114,7 +4116,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         status_holders.add((DoomStatusAware) (this.DNI=new DummyNetworkDriver(this)));
         
         // Random number generator, but we can have others too.
-        this.RND=new DoomRandom();
+        this.RND=new DoomRandom(this);
         
         // Sound can be left until later, in Start
 
@@ -4553,6 +4555,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.109.2.1  2012/11/19 22:15:26  velktron
+//Inits modified DoomRandom
+//
 //Revision 1.109  2012/11/06 16:04:58  velktron
 //Variables manager less tightly integrated.
 //
