@@ -1,5 +1,6 @@
 package p;
 
+import doom.think_t;
 import m.IRandom;
 import rr.SectorAction;
 
@@ -28,7 +29,7 @@ public class fireflicker_t extends SectorAction{
          if (--count != 0)
              return;
 
-         amount = (RND.P_Random() & 3) * 16;
+         amount = (RND.P_Random(think_t.T_FireFlicker,0) & 3) * 16;
 
          if (sector.lightlevel - amount < minlight)
              sector.lightlevel = (short) minlight;

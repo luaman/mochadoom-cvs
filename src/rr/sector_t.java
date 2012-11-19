@@ -365,7 +365,7 @@ public class sector_t
         this.special = 0;
 
         if (inSync == 0)
-            flash.count = (RND.P_Random() & 7) + 1;
+            flash.count = (RND.P_Random(think_t.SpawnStrobeFlash,0) & 7) + 1;
         else
             flash.count = 1;
     }
@@ -390,7 +390,7 @@ public class sector_t
         flash.minlight = FindMinSurroundingLight(lightlevel);
         flash.maxtime = 64;
         flash.mintime = 7;
-        flash.count = (RND.P_Random() & flash.maxtime) + 1;
+        flash.count = (RND.P_Random(think_t.SpawnLightFlash,0) & flash.maxtime) + 1;
     }
 
     public void SpawnGlowingLight() {

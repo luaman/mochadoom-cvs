@@ -610,7 +610,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (actor.type == mobjtype_t.MT_CYBORG && dist > 160)
                 dist = 160;
 
-            if (RND.P_Random() < dist)
+            if (RND.P_Random(think_t.CheckMissileRange,0) < dist)
                 return false;
 
             return true;
@@ -923,7 +923,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                     plat.wait = 35 * PLATWAIT;
                     // Guaranteed to be 0 or 1.
-                    plat.status = plat_e.values()[RND.P_Random() & 1];
+                    plat.status = plat_e.values()[RND.P_Random(think_t.DoPlat,0) & 1];
 
                     S.StartSound(sec.soundorg,sfxenum_t.sfx_pstart);;
                     break;
@@ -1811,7 +1811,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         // MAES 9/5/2011: using mobj code for that.
         mo.SetMobjState(mobjinfo[mo.type.ordinal()].deathstate);
 
-        mo.tics -= RND.P_Random() & 3;
+        mo.tics -= RND.P_Random(think_t.ExplodeMissile,0) & 3;
 
         if (mo.tics < 1)
             mo.tics = 1;

@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import doom.think_t;
+
 import m.IRandom;
 import rr.SectorAction;
 import w.DoomIO;
@@ -41,10 +43,10 @@ public class lightflash_t extends SectorAction{
 
         if (sector.lightlevel == maxlight) {
             sector.lightlevel = (short)minlight;
-            count = (RND.P_Random() & mintime) + 1;
+            count = (RND.P_Random(think_t.T_LightFlash,0) & mintime) + 1;
         } else {
             sector.lightlevel = (short)maxlight;
-            count = (RND.P_Random() & maxtime) + 1;
+            count = (RND.P_Random(think_t.T_LightFlash,1) & maxtime) + 1;
         }
 
     }

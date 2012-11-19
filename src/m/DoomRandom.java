@@ -1,9 +1,11 @@
 package m;
 
+import doom.think_t;
+
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomRandom.java,v 1.2 2011/05/30 02:24:30 velktron Exp $
+// $Id: DoomRandom.java,v 1.2.10.1 2012/11/19 22:11:36 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -18,6 +20,9 @@ package m;
 // GNU General Public License for more details.
 //
 // $Log: DoomRandom.java,v $
+// Revision 1.2.10.1  2012/11/19 22:11:36  velktron
+// Added demo sync tooling.
+//
 // Revision 1.2  2011/05/30 02:24:30  velktron
 // *** empty log message ***
 //
@@ -94,6 +99,27 @@ public int P_Random ()
     return rndtable[prndindex];
 }
 
+/** [Maes] I'd rather dispatch the call here, than making IRandom aware of
+ * DoomStatus. Replace RND.P_Random calls with DM.P_Random(callerid) etc.
+ * 
+ * Fixme: this could be made into a proper enum
+ * 
+ * @param caller
+ */
+
+public int P_Random(int caller) {
+	int value = P_Random();
+	SLY.sync("PR #%d [%d]=%d\n",caller,prndindex,value);
+	return value;
+}
+
+public int P_Random(think_t caller, int sequence) {
+	int value = P_Random();
+	SLY.sync("PR #%d %s_%d [%d]=%d\n", caller.ordinal(),caller,sequence,
+			prndindex, value);
+	return value;
+}
+
 public int M_Random ()
 {
     rndindex = (rndindex+1)&0xff;
@@ -106,11 +132,19 @@ public void ClearRandom ()
 }
 
 public DoomRandom(){
+	SLY=null;
 }
 
 public int getIndex(){
 	return prndindex;
 }
+
+public DoomRandom(ISyncLogger SLY){
+	this.SLY=SLY;
+}
+
+private final ISyncLogger SLY;
+
 
 }
 
