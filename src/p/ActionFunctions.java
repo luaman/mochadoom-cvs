@@ -815,15 +815,22 @@ public class ActionFunctions implements DoomStatusAware{
 	 */
 	      
 
-	class P_MobjThinker implements ActionType1{
-	    public void invoke(mobj_t  mobj){
+	class P_MobjThinker implements ActionType1 {
+		public void invoke(mobj_t mobj) {
 			// momentum movement
 			if (mobj.momx != 0 || mobj.momy != 0
-					|| (eval(mobj.flags& MF_SKULLFLY))) {
+					|| (eval(mobj.flags & MF_SKULLFLY))) {
+
+				DS.sync("Mobj %d (%d) xyz %d,%d,%d (%d,%d,%d) mom %d,%d h=%d fl=%x\n",
+								mobj.info.doomednum, mobj.type.ordinal(), mobj.x, mobj.y,
+								mobj.z, mobj.x >> 16, mobj.y >> 16,
+								mobj.z >> 16, mobj.momx, mobj.momy,
+								mobj.health, mobj.flags);
+
 				A.XYMovement(mobj);
 
 				// FIXME: decent NOP/NULL/Nil function pointer please.
-				if (mobj.function == think_t.NOP){
+				if (mobj.function == think_t.NOP) {
 					return; // mobj was removed
 				}
 			}
@@ -831,9 +838,9 @@ public class ActionFunctions implements DoomStatusAware{
 				mobj.ZMovement();
 
 				// FIXME: decent NOP/NULL/Nil function pointer please.
-				if (mobj.function == think_t.NOP){
+				if (mobj.function == think_t.NOP) {
 					return; // mobj was removed
-				}	
+				}
 			}
 
 			// cycle through states,
@@ -847,7 +854,7 @@ public class ActionFunctions implements DoomStatusAware{
 						return; // freed itself
 			} else {
 				// check for nightmare respawn
-				if (!eval(mobj.flags& MF_COUNTKILL))
+				if (!eval(mobj.flags & MF_COUNTKILL))
 					return;
 
 				if (!DS.respawnmonsters)
@@ -858,17 +865,17 @@ public class ActionFunctions implements DoomStatusAware{
 				if (mobj.movecount < 12 * 35)
 					return;
 
-				if (eval(DS.leveltime& 31))
+				if (eval(DS.leveltime & 31))
 					return;
 
-				if (RND.P_Random() > 4)
+				if (RND.P_Random(think_t.P_MobjThinker,0) > 4)
 					return;
 
 				A.NightmareRespawn(mobj);
 			}
 		}
 	}
-	
+
 	class T_FireFlicker implements ActionTypeSS{
 
 		@Override
@@ -1034,7 +1041,7 @@ public class ActionFunctions implements DoomStatusAware{
                         actor.target.y)&BITS32;
         
         if (eval(actor.target.flags & MF_SHADOW))
-        actor.angle += (RND.P_Random()-RND.P_Random())<<21;
+        actor.angle += (RND.P_Random(think_t.A_FaceTarget,0)-RND.P_Random(think_t.A_FaceTarget,1))<<21;
         actor.angle&=BITS32;
     	}
     }
@@ -1057,8 +1064,8 @@ public class ActionFunctions implements DoomStatusAware{
         slope = A.AimLineAttack (actor, angle, MISSILERANGE);
 
         S.StartSound(actor, sfxenum_t.sfx_pistol);
-        angle += (RND.P_Random()-RND.P_Random())<<20;
-        damage = ((RND.P_Random()%5)+1)*3;
+        angle += (RND.P_Random(think_t.A_PosAttack,0)-RND.P_Random(think_t.A_PosAttack,1))<<20;
+        damage = ((RND.P_Random(think_t.A_PosAttack,2)%5)+1)*3;
         A.LineAttack (actor, angle, MISSILERANGE, slope, damage);
 	    }
 	}
@@ -1083,8 +1090,8 @@ public class ActionFunctions implements DoomStatusAware{
 
         for (i=0 ; i<3 ; i++)
         {
-        angle = bangle + ((RND.P_Random()-RND.P_Random())<<20);
-        damage = ((RND.P_Random()%5)+1)*3;
+        angle = bangle + ((RND.P_Random(think_t.A_SPosAttack,0)-RND.P_Random(think_t.A_SPosAttack,1))<<20);
+        damage = ((RND.P_Random(think_t.A_SPosAttack,2)%5)+1)*3;
         A.LineAttack (actor, angle, MISSILERANGE, slope, damage);
         }
         }
@@ -1106,8 +1113,8 @@ public class ActionFunctions implements DoomStatusAware{
         bangle = actor.angle;
         slope = A.AimLineAttack (actor, bangle, MISSILERANGE);
 
-        angle = bangle + ((RND.P_Random()-RND.P_Random())<<20);
-        damage = ((RND.P_Random()%5)+1)*3;
+        angle = bangle + ((RND.P_Random(think_t.A_CPosAttack,0)-RND.P_Random(think_t.A_CPosAttack,1))<<20);
+        damage = ((RND.P_Random(think_t.A_CPosAttack,2)%5)+1)*3;
         A.LineAttack (actor, angle, MISSILERANGE, slope, damage);
         }
 	}
@@ -1117,7 +1124,7 @@ public class ActionFunctions implements DoomStatusAware{
         // keep firing unless target got out of sight
         A_FaceTarget (actor);
 
-        if (RND.P_Random () < 40)
+        if (RND.P_Random (think_t.A_CPosRefire,0) < 40)
         return;
 
         if (actor.target==null
@@ -1135,7 +1142,7 @@ public class ActionFunctions implements DoomStatusAware{
         // keep firing unless target got out of sight
         A_FaceTarget (actor);
 
-        if (RND.P_Random () < 10)
+        if (RND.P_Random (think_t.A_SpidRefire,0) < 10)
         return;
 
         if (actor.target==null
@@ -1174,7 +1181,7 @@ public class ActionFunctions implements DoomStatusAware{
         if (A.EN.CheckMeleeRange (actor))
         {
         	S.StartSound(actor, sfxenum_t.sfx_claw);
-        damage = (RND.P_Random()%8+1)*3;
+        damage = (RND.P_Random(think_t.A_TroopAttack,0)%8+1)*3;
         A.DamageMobj (actor.target, actor, actor, damage);
         return;
         }
@@ -1195,7 +1202,7 @@ public class ActionFunctions implements DoomStatusAware{
         A_FaceTarget (actor);
         if (EN.CheckMeleeRange (actor))
         {
-        damage = ((RND.P_Random()%10)+1)*4;
+        damage = ((RND.P_Random(think_t.A_SargAttack,0)%10)+1)*4;
         A.DamageMobj (actor.target, actor, actor, damage);
         }
         }
@@ -1212,7 +1219,7 @@ public class ActionFunctions implements DoomStatusAware{
         A_FaceTarget (actor);
         if (EN.CheckMeleeRange (actor))
         {
-        damage = (RND.P_Random()%6+1)*10;
+        damage = (RND.P_Random(think_t.A_HeadAttack,0)%6+1)*10;
         A.DamageMobj (actor.target, actor, actor, damage);
         return;
         }
@@ -1242,7 +1249,7 @@ public class ActionFunctions implements DoomStatusAware{
         if (EN.CheckMeleeRange (actor))
         {
         	S.StartSound(actor, sfxenum_t.sfx_claw);
-        damage = (RND.P_Random()%8+1)*10;
+        damage = (RND.P_Random(think_t.A_BruisAttack,0)%8+1)*10;
         A.DamageMobj (actor.target, actor, actor, damage);
         return;
         }
@@ -1294,7 +1301,7 @@ public class ActionFunctions implements DoomStatusAware{
                   actor.z, mobjtype_t.MT_SMOKE);
         
         th.momz = MAPFRACUNIT;
-        th.tics -= RND.P_Random()&3;
+        th.tics -= RND.P_Random(think_t.A_Tracer,0)&3;
         if (th.tics < 1)
         th.tics = 1;
         
@@ -1373,7 +1380,7 @@ public class ActionFunctions implements DoomStatusAware{
         
         if (EN.CheckMeleeRange (actor))
         {
-        damage = ((RND.P_Random()%10)+1)*6;
+        damage = ((RND.P_Random(think_t.A_SkelFist,0)%10)+1)*6;
         S.StartSound(actor, sfxenum_t.sfx_skepch);
         A.DamageMobj (actor.target, actor, actor, damage);
         }
@@ -1547,13 +1554,13 @@ public class ActionFunctions implements DoomStatusAware{
         
         for (i=0 ; i<20 ; i++)
         {
-        damage = 5*(RND.P_Random ()%3+1);
+        damage = 5*(RND.P_Random (think_t.A_FireShotgun2,0)%3+1);
         angle = player.mo.angle;
-        angle += (RND.P_Random()-RND.P_Random())<<19;
+        angle += (RND.P_Random(think_t.A_FireShotgun2,1)-RND.P_Random(think_t.A_FireShotgun2,2))<<19;
         A.LineAttack (player.mo,
                   angle,
                   MISSILERANGE,
-                  A.bulletslope + ((RND.P_Random()-RND.P_Random())<<5), damage);
+                  A.bulletslope + ((RND.P_Random(think_t.A_FireShotgun2,3)-RND.P_Random(think_t.A_FireShotgun2,4))<<5), damage);
         }
     }
     }
@@ -1860,12 +1867,12 @@ public class ActionFunctions implements DoomStatusAware{
           case sfx_podth1:
           case sfx_podth2:
           case sfx_podth3:
-        sound = sfxenum_t.sfx_podth1.ordinal() + RND.P_Random ()%3;
+        sound = sfxenum_t.sfx_podth1.ordinal() + RND.P_Random (think_t.A_Scream,0)%3;
         break;
             
           case sfx_bgdth1:
           case sfx_bgdth2:
-        sound = sfxenum_t.sfx_bgdth1.ordinal() + RND.P_Random ()%2;
+        sound = sfxenum_t.sfx_bgdth1.ordinal() + RND.P_Random (think_t.A_Scream,1)%2;
         break;
         
           default:
@@ -2025,7 +2032,7 @@ public class ActionFunctions implements DoomStatusAware{
         int     damage;
         int     slope;
         
-        damage = (RND.P_Random ()%10+1)<<1;
+        damage = (RND.P_Random (think_t.A_Punch,0)%10+1)<<1;
 
         if (eval(player.powers[pw_strength]))    
         damage *= 10;
@@ -2034,7 +2041,7 @@ public class ActionFunctions implements DoomStatusAware{
         //angle = (angle+(RND.P_Random()-RND.P_Random())<<18)/*&BITS32*/;
         // _D_: for some reason, punch didnt work until I change this
         // I think it's because of "+" VS "<<" prioritys...
-        angle += (RND.P_Random()-RND.P_Random())<<18;
+        angle += (RND.P_Random(think_t.A_Punch,1)-RND.P_Random(think_t.A_Punch,2))<<18;
         slope = A.AimLineAttack (player.mo, angle, MELEERANGE);
         A.LineAttack (player.mo, angle, MELEERANGE, slope, damage);
 
@@ -2061,9 +2068,9 @@ public class ActionFunctions implements DoomStatusAware{
         int     damage;
         int     slope;
 
-        damage = 2*(RND.P_Random ()%10+1);
+        damage = 2*(RND.P_Random (think_t.A_Saw,0)%10+1);
         angle = player.mo.angle;
-        angle += (RND.P_Random()-RND.P_Random())<<18;
+        angle += (RND.P_Random(think_t.A_Saw,1)-RND.P_Random(think_t.A_Saw,2))<<18;
         angle&=BITS32;
         
         // use meleerange + 1 se the puff doesn't skip the flash
@@ -2466,7 +2473,7 @@ public class ActionFunctions implements DoomStatusAware{
         
         damage = 0;
         for (j=0;j<15;j++)
-            damage += (RND.P_Random()&7) + 1;
+            damage += (RND.P_Random(think_t.A_BFGSpray,j)&7) + 1;
 
         A.DamageMobj (A.linetarget, mo.target,mo.target, damage);
         }
@@ -2525,12 +2532,12 @@ public class ActionFunctions implements DoomStatusAware{
           case sfx_posit1:
           case sfx_posit2:
           case sfx_posit3:
-            sound = sfxenum_t.sfx_posit1.ordinal()+RND.P_Random()%3;
+            sound = sfxenum_t.sfx_posit1.ordinal()+RND.P_Random(think_t.A_Look,0)%3;
             break;
 
           case sfx_bgsit1:
           case sfx_bgsit2:
-            sound = sfxenum_t.sfx_bgsit1.ordinal()+RND.P_Random()%2;
+            sound = sfxenum_t.sfx_bgsit1.ordinal()+RND.P_Random(think_t.A_Look,1)%2;
             break;
 
           default:
@@ -2673,6 +2680,9 @@ public class ActionFunctions implements DoomStatusAware{
 
 
     class A_BrainScream implements ActionType1{
+    	
+    	final think_t type=think_t.A_BrainScream;
+    	
         public void invoke(mobj_t  mo){ 
         int     x;
         int     y;
@@ -2682,13 +2692,13 @@ public class ActionFunctions implements DoomStatusAware{
         for (x=mo.x - 196*FRACUNIT ; x< mo.x + 320*FRACUNIT ; x+= FRACUNIT*8)
         {
         y = mo.y - 320*FRACUNIT;
-        z = 128 + RND.P_Random()*2*FRACUNIT;
+        z = 128 + RND.P_Random(type,0)*2*FRACUNIT;
         th = A.SpawnMobj (x,y,z, mobjtype_t.MT_ROCKET);
-        th.momz = RND.P_Random()*512;
+        th.momz = RND.P_Random(type,1)*512;
 
         th.SetMobjState (statenum_t.S_BRAINEXPLODE1);
 
-        th.tics -= RND.P_Random()&7;
+        th.tics -= RND.P_Random(type,2)&7;
         if (th.tics < 1)
             th.tics = 1;
         }
@@ -2700,21 +2710,24 @@ public class ActionFunctions implements DoomStatusAware{
 
 
     class A_BrainExplode implements ActionType1{
+    	
+    	think_t type=think_t.A_BrainExplode;
+    	
         public void invoke(mobj_t  mo){ 
         int     x;
         int     y;
         int     z;
         mobj_t  th;
         
-        x = mo.x + (RND.P_Random () - RND.P_Random ())*2048;
+        x = mo.x + (RND.P_Random (type,0) - RND.P_Random (type,1))*2048;
         y = mo.y;
-        z = 128 + RND.P_Random()*2*FRACUNIT;
+        z = 128 + RND.P_Random(type,2)*2*FRACUNIT;
         th = A.SpawnMobj (x,y,z, mobjtype_t.MT_ROCKET);
-        th.momz = RND.P_Random()*512;
+        th.momz = RND.P_Random(type,3)*512;
 
         th.SetMobjState (statenum_t.S_BRAINEXPLODE1);
 
-        th.tics -= RND.P_Random()&7;
+        th.tics -= RND.P_Random(type,4)&7;
         if (th.tics < 1)
         th.tics = 1;
         }
@@ -2785,7 +2798,7 @@ public class ActionFunctions implements DoomStatusAware{
         S.StartSound (fog, sfxenum_t.sfx_telept);
 
         // Randomly select monster to spawn.
-        r = RND.P_Random ();
+        r = RND.P_Random (think_t.A_SpawnFly,0);
 
         // Probability distribution (kind of :),
         // decreasing likelihood.
@@ -2861,7 +2874,7 @@ public class ActionFunctions implements DoomStatusAware{
                           actor.target.y)&BITS32;
           
           if (eval(actor.target.flags & MF_SHADOW))
-          actor.angle += (RND.P_Random()-RND.P_Random())<<21;
+          actor.angle += (RND.P_Random(think_t.A_FaceTarget,0)-RND.P_Random(think_t.A_FaceTarget,1))<<21;
           actor.angle&=BITS32;
       }
       
@@ -2980,7 +2993,7 @@ public class ActionFunctions implements DoomStatusAware{
 
           // make active sound
           if (actor.info.activesound!=null
-                  && RND.P_Random() < 3)
+                  && RND.P_Random(think_t.A_Chase,0) < 3)
           {
               S.StartSound (actor, actor.info.activesound);
           }

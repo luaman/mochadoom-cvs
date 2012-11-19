@@ -1289,11 +1289,11 @@ public class Actions extends UnifiedGameMap {
       long angle;
       int     damage;
       
-      damage = 5*(RND.P_Random ()%3+1);
+      damage = 5*(RND.P_Random (think_t.P_GunShot,0)%3+1);
       angle = mo.angle;
 
       if (!accurate)
-      angle += (RND.P_Random()-RND.P_Random())<<18;
+      angle += (RND.P_Random(think_t.P_GunShot,1)-RND.P_Random(think_t.P_GunShot,2))<<18;
 
       LineAttack (mo, angle, MISSILERANGE, bulletslope, damage);
   }
@@ -1410,7 +1410,7 @@ public class Actions extends UnifiedGameMap {
         }
 
         // try other directions
-        if (RND.P_Random() > 200
+        if (RND.P_Random(think_t.NewChaseDir,0) > 200
         ||  Math.abs(deltay)>Math.abs(deltax))
         {
         tdir=d1;
@@ -1452,7 +1452,7 @@ public class Actions extends UnifiedGameMap {
         }
 
         // randomly determine direction of search
-        if (eval(RND.P_Random()&1))   
+        if (eval(RND.P_Random(think_t.NewChaseDir,1)&1))   
         {
         for ( tdir=DI_EAST;
               tdir<=DI_SOUTHEAST;
@@ -1512,7 +1512,7 @@ public class Actions extends UnifiedGameMap {
         return false;
         }
 
-        actor.movecount = RND.P_Random()&15;
+        actor.movecount = RND.P_Random(think_t.TryWalk,0)&15;
         return true;
     }
 
@@ -1588,6 +1588,8 @@ SpawnMobj
         int   z,
 mobjtype_t    type )
 {
+
+	
 mobj_t mobj;
 state_t    st;
 mobjinfo_t info;
@@ -1599,6 +1601,10 @@ mobjinfo_t info;
 // mobj = mobjpool.checkOut();
 mobj=new mobj_t(this);
 info = mobjinfo[type.ordinal()];
+
+
+DM.sync("Spn %d (%d) xyz %d,%d,%d\n",
+        (int)type.ordinal(), info.doomednum, x, y, z);	
 
 mobj.type = type;
 mobj.info = info;
@@ -1612,7 +1618,7 @@ mobj.health = info.spawnhealth;
 if (DM.gameskill != skill_t.sk_nightmare)
 mobj.reactiontime = info.reactiontime;
 
-mobj.lastlook = RND.P_Random () % MAXPLAYERS;
+mobj.lastlook = RND.P_Random (think_t.SpawnMobj,0) % MAXPLAYERS;
 // do not set the state with P_SetMobjState,
 // because action routines can not be called yet
 st = states[info.spawnstate.ordinal()];
@@ -1869,7 +1875,7 @@ mobj = SpawnMobj (x,y,z, mobjtype_t.values()[i]);
 mobj.spawnpoint.copyFrom(mthing);
 
 if (mobj.tics > 0)
-mobj.tics = 1 + (RND.P_Random () % mobj.tics);
+mobj.tics = 1 + (RND.P_Random (think_t.SpawnMapThing,0) % mobj.tics);
 if (eval(mobj.flags & MF_COUNTKILL))
 DM.totalkills++;
 if (eval(mobj.flags & MF_COUNTITEM))
@@ -1900,10 +1906,10 @@ int       damage )
 {
 mobj_t th;
 
-z += ((RND.P_Random()-RND.P_Random())<<10);
+z += ((RND.P_Random(think_t.SpawnBlood,0)-RND.P_Random(think_t.SpawnBlood,0))<<10);
 th = SpawnMobj (x,y,z, mobjtype_t.MT_BLOOD);
 th.momz = FRACUNIT*2;
-th.tics -= RND.P_Random()&3;
+th.tics -= RND.P_Random(think_t.SpawnBlood,0)&3;
 
 if (th.tics < 1)
 th.tics = 1;
@@ -1930,11 +1936,11 @@ int   z )
 {
 mobj_t th;
 
-z += ((RND.P_Random()-RND.P_Random())<<10);
+z += ((RND.P_Random(think_t.TryWalk,0)-RND.P_Random(think_t.TryWalk,1))<<10);
 
 th = SpawnMobj (x,y,z, mobjtype_t.MT_PUFF);
 th.momz = FRACUNIT;
-th.tics -= RND.P_Random()&3;
+th.tics -= RND.P_Random(think_t.TryWalk,2)&3;
 
 if (th.tics < 1)
 th.tics = 1;
@@ -1970,7 +1976,7 @@ an = R.PointToAngle2 (source.x, source.y, dest.x, dest.y)&BITS32;
 
 // fuzzy player
 if (eval(dest.flags & MF_SHADOW))
-an += (RND.P_Random()-RND.P_Random())<<20; 
+an += (RND.P_Random(think_t.SpawnMissile,0)-RND.P_Random(think_t.SpawnMissile,1))<<20; 
 
 th.angle = an&BITS32;
 //an >>= ANGLETOFINESHIFT;
@@ -2065,6 +2071,23 @@ CheckMissileSpawn (th);
       mobj_t   source,
       int       damage )
     {
+    	
+    	 DM.sync("DamageMobj Targ %d [%d] xyz=%d %d %d\n",
+                  target.type.ordinal(), target.info.doomednum, target.x, target.y, target.z);
+
+    	 if (eval(inflictor))
+    		 DM.sync("DamageMobj Infl %d [%d] xyz=%d %d %d\n",
+                      inflictor.type.ordinal(), inflictor.info.doomednum,
+                      inflictor.x, inflictor.y, inflictor.z);
+
+    	 // [Maes]: there was no "damagetype" variable here. Maybe you meant
+    	 // damage?
+    	 
+    	 if (eval(source))
+    		 DM.sync("DamageMobj Src %d [%d] xyz=%d %d %d dtype %d\n",
+                      source.type.ordinal(), source.info.doomednum,
+                      source.x, source.y, source.z, damage);
+    	
         long    ang; // unsigned
         int     saved;
         player_t   player;
@@ -2107,7 +2130,7 @@ CheckMissileSpawn (th);
         if ( (damage < 40)
              && (damage > target.health)
              && (target.z - inflictor.z > 64*FRACUNIT)
-             && eval(RND.P_Random()&1) )
+             && eval(RND.P_Random(think_t.DamageMobj,0)&1) )
         {
             ang += ANG180;
             thrust *= 4;
@@ -2178,7 +2201,7 @@ CheckMissileSpawn (th);
         return;
         }
 
-        if ( (RND.P_Random () < target.info.painchance)
+        if ( (RND.P_Random (think_t.DamageMobj,1) < target.info.painchance)
          && !eval(target.flags&MF_SKULLFLY) )
         {
         target.flags |= MF_JUSTHIT;    // fight back!
@@ -2211,12 +2234,30 @@ CheckMissileSpawn (th);
     ( mobj_t   source,
       mobj_t   target )
     {
-        mobjtype_t  item;
+     
+    	
+    	// Demo sync stuff...
+        if (source!=null)
+        {
+            DM.sync("KillMobj src %d [%d] xyz=%d %d %d\n",
+                                    source.type.ordinal(), source.info.doomednum,
+                                    source.x, source.y, source.z);
+        }
+
+        DM.sync("KillMobj targ %d [%d] xyz=%d %d %d\n",
+                target.type.ordinal(), target.info.doomednum,
+                target.x, target.y, target.z);
+    	// End demo sync stuff
+        
+        
+    	mobjtype_t  item;
         mobj_t mo;
         
-        // Maes: this seems necessary in order for barrel damage
-        // to propagate inflictors.
-        target.target=source;
+        // [Maes] this seems necessary in order for barrel damage
+        // to propagate inflictors. Obviously, if a normal monster dies and knows
+        // who killed it, it matters little. A barrel, OTOH...
+        // Better leave it commented out for demo compat.
+        // target.target=source;
         
         target.flags &= ~(MF_SHOOTABLE|MF_FLOAT|MF_SKULLFLY);
 
@@ -2228,6 +2269,7 @@ CheckMissileSpawn (th);
 
         if (source!=null && source.player!=null)
         {
+        	
         // count for intermission
         if ((target.flags & MF_COUNTKILL)!=0)
             source.player.killcount++;    
@@ -2273,7 +2315,7 @@ CheckMissileSpawn (th);
         }
         else
             target.SetMobjState (target.info.deathstate);
-        target.tics -= RND.P_Random()&3;
+        target.tics -= RND.P_Random(think_t.KillMobj,0)&3;
 
         if (target.tics < 1)
         target.tics = 1;
@@ -4866,7 +4908,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
     void CheckMissileSpawn (mobj_t th)
     {
-    th.tics -= RND.P_Random()&3;
+    th.tics -= RND.P_Random(think_t.CheckMissileSpawn,0)&3;
     if (th.tics < 1)
     th.tics = 1;
 
@@ -4886,7 +4928,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
   public void Ticker ()
   {
-     int     i;
+     
+	  DM.sync("\n--- TIC %d ---\n", DM.gametic);
+	  
+	  int     i;
      
      // run the tic
      if (DM.paused)
@@ -5375,8 +5420,8 @@ public boolean invoke (mobj_t   thing)
               thing.y,
               thing.z + thing.height/2, mobjtype_t.MT_BLOOD);
     
-    mo.momx = (RND.P_Random() - RND.P_Random ())<<12;
-    mo.momy = (RND.P_Random() - RND.P_Random ())<<12;
+    mo.momx = (RND.P_Random(think_t.PIT_ChangeSector,0) - RND.P_Random (think_t.PIT_ChangeSector,1))<<12;
+    mo.momy = (RND.P_Random(think_t.PIT_ChangeSector,2) - RND.P_Random (think_t.PIT_ChangeSector,3))<<12;
     }
 
     // keep checking (crush other things)   
@@ -5482,7 +5527,7 @@ private class PIT_CheckThing  implements PIT_MobjFunction {
     // check for skulls slamming into things
     if ((tmthing.flags & MF_SKULLFLY)!=0)
     {
-    damage = ((RND.P_Random()%8)+1)*tmthing.info.damage;
+    damage = ((RND.P_Random(think_t.PIT_CheckThing,0)%8)+1)*tmthing.info.damage;
     
     A.DamageMobj (thing, tmthing, tmthing, damage);
     
@@ -5528,7 +5573,7 @@ private class PIT_CheckThing  implements PIT_MobjFunction {
     }
     
     // damage / explode
-    damage = ((RND.P_Random()%8)+1)*tmthing.info.damage;
+    damage = ((RND.P_Random(think_t.PIT_CheckThing,1)%8)+1)*tmthing.info.damage;
     A.DamageMobj (thing, tmthing, tmthing.target, damage);
 
     // don't traverse any more
