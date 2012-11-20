@@ -1274,6 +1274,14 @@ public class Actions extends UnifiedGameMap {
               an -= 2<<26;
               bulletslope = AimLineAttack (mo, an/*&BITS32*/, 16*64*FRACUNIT);
           }
+          
+          // Give it one more try, with freelook
+          if (mo.player.lookdir!=0 && !eval(linetarget)) 
+          {
+              an += 2<<26;
+              an&=BITS32;
+              bulletslope = (mo.player.lookdir<<FRACBITS)/173;
+          }
       }
   }
 
@@ -1995,57 +2003,51 @@ return th;
 * Tries to aim at a nearby monster
 */
 
-public void
-SpawnPlayerMissile
-( mobj_t   source,
-mobjtype_t    type )
-{
-mobj_t th;
-long an; // angle_t
-int x, y, z,slope; // think_t
+    public void SpawnPlayerMissile(mobj_t source, mobjtype_t type) {
+        mobj_t th;
+        long an; // angle_t
+        int x, y, z, slope; // think_t
 
-// see which target is to be aimed at
-an = source.angle;
-slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+        // see which target is to be aimed at
+        an = source.angle;
+        slope = AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-if (linetarget==null)
-{
-an += 1<<26;
-an&=BITS32;
-slope = AimLineAttack (source, an, 16*64*FRACUNIT);
+        if (linetarget == null) {
+            an += 1 << 26;
+            an &= BITS32;
+            slope = AimLineAttack(source, an, 16 * 64 * FRACUNIT);
 
-if (linetarget==null)
-{
-  an -= 2<<26;
-  an&=BITS32;
-  slope = AimLineAttack (source, an, 16*64*FRACUNIT);
-}
+            if (linetarget == null) {
+                an -= 2 << 26;
+                an &= BITS32;
+                slope = AimLineAttack(source, an, 16 * 64 * FRACUNIT);
+            }
 
-if (linetarget==null)
-{
-  an = source.angle;
-  // angle should be "sane"..right?
-  slope = 0;
-}
-}
-  
-x = source.x;
-y = source.y;
-z = source.z + 4*8*FRACUNIT;
+            if (linetarget == null) {
+                an = source.angle & BITS32;
+                // angle should be "sane"..right?
+                // Just this line allows freelook.
+                slope = ((source.player.lookdir)<<FRACBITS)/173;
+            }
+        }
 
-th = SpawnMobj (x,y,z, type);
+        x = source.x;
+        y = source.y;
+        z = source.z + 4 * 8 * FRACUNIT+slope;
 
-if (th.info.seesound!=null)
-	S.StartSound(th, th.info.seesound);
+        th = SpawnMobj(x, y, z, type);
 
-th.target = source;
-th.angle = an;
-th.momx = FixedMul( th.info.speed, finecosine(an));
-th.momy = FixedMul( th.info.speed, finesine( an));
-th.momz = FixedMul( th.info.speed, slope);
+        if (th.info.seesound != null)
+            S.StartSound(th, th.info.seesound);
 
-CheckMissileSpawn (th);
-}
+        th.target = source;
+        th.angle = an;
+        th.momx = FixedMul(th.info.speed, finecosine(an));
+        th.momy = FixedMul(th.info.speed, finesine(an));
+        th.momz = FixedMul(th.info.speed, slope);
+
+        CheckMissileSpawn(th);
+    }
 
     //
     // P_DamageMobj
