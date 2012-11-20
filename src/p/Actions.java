@@ -1507,12 +1507,15 @@ public class Actions extends UnifiedGameMap {
      */
     private boolean TryWalk (mobj_t actor)
     {   
+        DM.sync("Trying to move %s on x: %8x, %8x, %8x\n", actor.type,actor.x,actor.y,actor.z);
+        
         if (!Move (actor))
         {
         return false;
         }
 
-        actor.movecount = RND.P_Random(think_t.TryWalk,0)&15;
+        
+        actor.movecount = RND.P_Random(think_t.TryWalk,actor.type,0)&15;
         return true;
     }
 
