@@ -79,6 +79,7 @@ import static p.mobj_t.MF_NOBLOCKMAP;
 import static p.mobj_t.MF_NOSECTOR;
 import static p.mobj_t.MF_SPECIAL;
 import static utils.C2JUtils.eval;
+import static utils.C2JUtils.flags;
 import java.util.Arrays;
 
 import hu.HU;
@@ -610,7 +611,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             if (actor.type == mobjtype_t.MT_CYBORG && dist > 160)
                 dist = 160;
 
-            if (RND.P_Random(think_t.CheckMissileRange,0) < dist)
+            if (RND.P_Random(think_t.CheckMissileRange,actor.type,0) < dist)
                 return false;
 
             return true;
@@ -663,7 +664,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             See.strace.dy = t2.y - t1.y;
 
             // the head node is the last node output
-            return See.CrossBSPNode(LL.numnodes - 1);
+            boolean result=See.CrossBSPNode(LL.numnodes - 1);
+            if (result) DM.sync("%s sees %s: %s\n", t1.type,t2.type,result);
+            return result;
         }
 
         //
@@ -1105,7 +1108,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                 // stop because it is not two sided anyway
                 // might do this after updating validcount?
-                if (!eval(line.flags& ML_TWOSIDED))
+                if (!flags(line.flags,ML_TWOSIDED))
                     return false;
 
                 // crosses a two sided line
