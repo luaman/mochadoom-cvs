@@ -2,7 +2,7 @@ package p;
 
 import static m.fixed_t.*;
 import rr.line_t;
-
+import static utils.C2JUtils.eval;
 //
 // P_MAPUTL
 //
@@ -103,46 +103,58 @@ public class divline_t {
  	( int	x,
  	  int	y)
  	{
- 	    int	dx; // fixed_t
- 	    int	dy;
- 	    int	left;
- 	    int	right;
+ 	    
+ 	    int left,right;
+ 	    // Boom-style code. Da fack.
+ 	    
+ 	   return
+ 	  (this.dx==0) ? x == this.x ? 2 : x <= this.x ? eval(this.dy > 0) : eval(this.dy < 0) :
+ 	  (this.dy==0) ? (olddemo ? x : y) == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
+ 	  (this.dy==0) ? y == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
+ 	  (right = ((y - this.y) >> FRACBITS) * (this.dx >> FRACBITS)) <
+ 	  (left  = ((x - this.x) >> FRACBITS) * (this.dy >> FRACBITS)) ? 0 :
+ 	  right == left ? 2 : 1;
+ 	    
+ 	    /*
+ 	    int	left,right,dx,dy;
 
  	    if (this.dx==0)
  	    {
- 		if (x==this.x)
- 		    return 2;
- 		
- 		if (x <= this.x)
- 		    return (this.dy > 0)?1:0;
+ 	    if (x==this.x)
+ 	        return 2;
+ 	    
+ 	    if (x <= this.x)
+ 	        return eval(this.dy > 0);
 
- 		return (this.dy < 0)?1:0;
+ 	    return eval(this.y < 0);
  	    }
  	    
  	    if (this.dy==0)
  	    {
- 		if (x==this.y)
- 		    return 2;
+ 	    if (x==this.y)
+ 	        return 2;
 
- 		if (y <= this.y)
- 		    return (this.dx < 0)?1:0;
+ 	    if (y <= this.y)
+ 	        return eval(this.dx < 0);
 
- 		return (this.dx > 0)?1:0;
+ 	    return eval(this.dx > 0);
  	    }
- 		
+ 	    
  	    dx = (x - this.x);
  	    dy = (y - this.y);
 
  	    left =  (this.dy>>FRACBITS) * (dx>>FRACBITS);
  	    right = (dy>>FRACBITS) * (this.dx>>FRACBITS);
- 		
+ 	    
  	    if (right < left)
- 		return 0;	// front side
+ 	    return 0;   // front side
  	    
  	    if (left == right)
- 		return 2;
- 	    return 1;		// back side
+ 	    return 2;
+ 	    return 1;       // back side*/
  	}
+ 	
+ 	private static final boolean olddemo = false;
      
      
  }
