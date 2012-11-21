@@ -817,15 +817,19 @@ public class ActionFunctions implements DoomStatusAware{
 
 	class P_MobjThinker implements ActionType1 {
 		public void invoke(mobj_t mobj) {
+		    		    
+		    if (mobj.momx != 0 || mobj.momy != 0){
+
+                DS.sync("Mobj %d (%d) thingnum = %d xyz %x,%x,%x (%d,%d,%d) mom %d,%d h=%d fl=%x\n",
+                    mobj.info.doomednum, mobj.type.ordinal(), mobj.thingnum, mobj.x, mobj.y,
+                    mobj.z, mobj.x >> 16, mobj.y >> 16, mobj.z >> 16, mobj.momx,
+                    mobj.momy, mobj.health, mobj.flags);
+
+		    }
+		    
 			// momentum movement
 			if (mobj.momx != 0 || mobj.momy != 0
 					|| (eval(mobj.flags & MF_SKULLFLY))) {
-
-				DS.sync("Mobj %d (%d) xyz %d,%d,%d (%d,%d,%d) mom %d,%d h=%d fl=%x\n",
-								mobj.info.doomednum, mobj.type.ordinal(), mobj.x, mobj.y,
-								mobj.z, mobj.x >> 16, mobj.y >> 16,
-								mobj.z >> 16, mobj.momx, mobj.momy,
-								mobj.health, mobj.flags);
 
 				A.XYMovement(mobj);
 
@@ -2957,24 +2961,27 @@ public class ActionFunctions implements DoomStatusAware{
           // check for missile attack
           if (actor.info.missilestate!=statenum_t.S_NULL /*!= null*/) //_D_: this caused a bug where Demon for example were disappearing
           {
+              // Assume that a missile attack is possible
               if (DS.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
                       && !DS.fastparm && actor.movecount!=0)
               {
+                  // Uhm....no.
                   nomissile=true;
               }
               else
                   if (!EN.CheckMissileRange (actor))
-                      nomissile=true;
+                      nomissile=true; // Out of range
 
               if (!nomissile){
+                  // Perform the attack
                   actor.SetMobjState ( actor.info.missilestate);
                   actor.flags |= MF_JUSTATTACKED;
                   return;
               }
           }
 
-          // ?
-          nomissile:
+          // This should be executed always, if not averted by returns.
+          
               // possibly choose another target
               if (DS.netgame
                       && actor.threshold==0

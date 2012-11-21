@@ -1507,7 +1507,7 @@ public class Actions extends UnifiedGameMap {
      */
     private boolean TryWalk (mobj_t actor)
     {   
-        DM.sync("Trying to move %s on x: %8x, %8x, %8x\n", actor.type,actor.x,actor.y,actor.z);
+        if (false) DM.sync("Trying to move %s on x: %8x, %8x, %8x\n", actor.type,actor.x,actor.y,actor.z);
         
         if (!Move (actor))
         {
@@ -1575,6 +1575,9 @@ mo.reactiontime = 18;
 RemoveMobj (mobj);
 }
 
+/** Sync debug */
+protected  int cur_thingnum = 0;
+
 /** P_SpawnMobj
  * 
  * @param x fixed
@@ -1603,6 +1606,7 @@ mobjinfo_t info;
 // job.
 // mobj = mobjpool.checkOut();
 mobj=new mobj_t(this);
+mobj.thingnum=cur_thingnum++;
 info = mobjinfo[type.ordinal()];
 
 
@@ -3483,6 +3487,12 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       int   x,
       int   y )
     {
+        
+        DM.sync(
+            "TryMove xy=%x %x dp=%x, thingnum = %d th=%d [%d] fl %x \n",
+            x, y, thing.z-tmfloorz, thing.thingnum, thing.type.ordinal(),
+            thing.info.doomednum, thing.flags);
+        
         int oldx, oldy; // fixed_t    
         boolean     side, oldside; // both were int
         line_t  ld;
@@ -3772,6 +3782,13 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
     public void XYMovement (mobj_t mo) 
     {
+        
+        DM.sync(
+            "XYMove %d (%d) thingnum = %d xyz %x,%x,%x (%d,%d,%d) mom %d,%d h=%d fl=%x\n",
+            mo.info.doomednum, mo.type.ordinal(), mo.thingnum, mo.x, mo.y,
+            mo.z, mo.x >> 16, mo.y >> 16, mo.z >> 16, mo.momx,
+            mo.momy, mo.health, mo.flags);
+        
     //System.out.println("XYMovement");
     int     ptryx, ptryy; // pointers to fixed_t ???
     player_t   player;

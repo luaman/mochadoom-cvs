@@ -665,7 +665,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
             // the head node is the last node output
             boolean result=See.CrossBSPNode(LL.numnodes - 1);
-            if (result) DM.sync("%s sees %s: %s\n", t1.type,t2.type,result);
+            // if (result) DM.sync("%s sees %s: %s\n", t1.type,t2.type,result);
             return result;
         }
 
