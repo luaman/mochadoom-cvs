@@ -44,7 +44,7 @@ public V colormap;
 /* pointer into colormap
 public int pcolormap; */
 
-public int mobjflags;
+public long mobjflags;
 
 /** visspites are sorted by scale */
 
