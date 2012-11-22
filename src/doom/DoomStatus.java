@@ -683,7 +683,7 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 		// [kb] open the sync debug file
 		// [Maes] does it really have to be in append mode?
 		syncdebugfile = new PrintWriter(new BufferedWriter(new FileWriter(
-				"syncdbg.txt", true)));
+				"syncdbg.txt", false)));
 		syncdebugfile.printf("*** Debugging started ***\n");
 	}
 
@@ -700,6 +700,9 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.36.2.2  2012/11/22 08:17:39  velktron
+// No reason for appending. Quite annoying, I think.
+//
 // Revision 1.36.2.1  2012/11/19 22:14:58  velktron
 // Implement ISyncLogger
 //
