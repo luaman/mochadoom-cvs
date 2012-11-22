@@ -2,7 +2,6 @@ package p;
 
 import static rr.line_t.ML_BLOCKING;
 import static data.Defines.BT_ATTACK;
-import static data.Defines.MAPBLOCKSHIFT;
 import static data.Defines.MELEERANGE;
 import static data.Defines.MISSILERANGE;
 import static data.Defines.PST_DEAD;
@@ -44,7 +43,6 @@ import static p.mobj_t.MF_SHOOTABLE;
 import static p.mobj_t.MF_SKULLFLY;
 import static p.mobj_t.MF_SOLID;
 import static utils.C2JUtils.eval;
-import static utils.C2JUtils.flags;
 import i.DoomStatusAware;
 import p.UnifiedGameMap.Enemies;
 import m.IRandom;
@@ -158,14 +156,14 @@ public class ActionFunctions implements DoomStatusAware{
 		
 	}
 		
-	public ActionFunctions(DoomStatus DS, Enemies EN) {
+	public ActionFunctions(DoomStatus<?,?> DS, Enemies EN) {
 		this();
 		this.EN=EN;     
 		updateStatus(DS);
 	}
 
 	@Override
-	public void updateStatus(DoomStatus DS){
+	public void updateStatus(DoomStatus<?,?> DS){
 		this.A=DS.P;
         this.RND=DS.RND;       
         this.R=DS.R;
@@ -182,7 +180,7 @@ public class ActionFunctions implements DoomStatusAware{
 	protected IDoomSound S;
 	protected Enemies EN;
 	protected AbstractLevelLoader LL;
-	protected DoomStatus DS;
+	protected DoomStatus<?,?> DS;
 	protected IDoomGame DG;
 	protected SlideDoor SL;
 	
@@ -262,15 +260,15 @@ public class ActionFunctions implements DoomStatusAware{
     ActionType1  SpawnFly;
     ActionType1  BrainExplode;
     ActionType1  MobjThinker;
-    ActionTypeSS  FireFlicker;
-    ActionTypeSS  LightFlash;
-	ActionTypeSS StrobeFlash;
-	ActionTypeSS  Glow;
-	ActionTypeSS  MoveCeiling;
-	ActionTypeSS  MoveFloor;
-	ActionTypeSS  VerticalDoor;
-	ActionTypeSS PlatRaise;
-	ActionTypeSS SlidingDoor;
+    ActionTypeSS<?>  FireFlicker;
+    ActionTypeSS<?>  LightFlash;
+	ActionTypeSS<?> StrobeFlash;
+	ActionTypeSS<?>  Glow;
+	ActionTypeSS<?>  MoveCeiling;
+	ActionTypeSS<?>  MoveFloor;
+	ActionTypeSS<?>  VerticalDoor;
+	ActionTypeSS<?> PlatRaise;
+	ActionTypeSS<?> SlidingDoor;
 	
 	/** Wires a state to an actual callback depending on its
 	 *  enum. This eliminates the need to have a giant
@@ -880,78 +878,76 @@ public class ActionFunctions implements DoomStatusAware{
 		}
 	}
 
-	class T_FireFlicker implements ActionTypeSS{
+	class T_FireFlicker implements ActionTypeSS<fireflicker_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((fireflicker_t) a).FireFlicker();
+		public void invoke(fireflicker_t a) {
+			a.FireFlicker();
 			
 		}
 		
 	}
 	
-	class T_LightFlash implements ActionTypeSS{
+	class T_LightFlash implements ActionTypeSS<lightflash_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((lightflash_t) a).LightFlash();			
+		public void invoke(lightflash_t a) {
+			a.LightFlash();			
 		}
 		
 	}
 	
-	class T_StrobeFlash implements ActionTypeSS{
+	class T_StrobeFlash implements ActionTypeSS<strobe_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((strobe_t) a).StrobeFlash();			
+		public void invoke(strobe_t a) {
+			a.StrobeFlash();			
 		}
 		
 	}
 	
-	class T_Glow implements ActionTypeSS{
+	class T_Glow implements ActionTypeSS<glow_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((glow_t) a).Glow();
+		public void invoke(glow_t a) {
+			a.Glow();
 			
 		}
 		
 	}
 	
-	class	T_MoveCeiling implements ActionTypeSS{
+	class	T_MoveCeiling implements ActionTypeSS<ceiling_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.MoveCeiling((ceiling_t) a);
-			
+		public void invoke(ceiling_t a) {
+			A.MoveCeiling(a);			
 		}
 	
 	}
 
-	class T_MoveFloor implements ActionTypeSS{
+	class T_MoveFloor implements ActionTypeSS<floormove_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.MoveFloor((floormove_t) a);			
+		public void invoke(floormove_t a) {
+			A.MoveFloor(a);			
 		}
 	
 	}
 	
-	class	T_VerticalDoor implements ActionTypeSS{
+	class	T_VerticalDoor implements ActionTypeSS<vldoor_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.VerticalDoor((vldoor_t)a);	
+		public void invoke(vldoor_t a) {
+			A.VerticalDoor(a);	
 		}
 	
 	}
 
-	class T_SlidingDoor implements ActionTypeSS {
+	class T_SlidingDoor implements ActionTypeSS<slidedoor_t> {
 
 		@Override
-		public void invoke(Object a) {
+		public void invoke(slidedoor_t door) {
 
-			slidedoor_t door = (slidedoor_t) a;
 			switch (door.status) {
 			case sd_opening:
 				if (door.timer-- == 0) {
@@ -1017,11 +1013,11 @@ public class ActionFunctions implements DoomStatusAware{
 	}
 	
 	
-	class	T_PlatRaise implements ActionTypeSS{
+	class	T_PlatRaise implements ActionTypeSS<plat_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.PlatRaise((plat_t)a);
+		public void invoke(plat_t a) {
+			A.PlatRaise(a);
 		}
 	
 	}
@@ -2893,10 +2889,6 @@ public class ActionFunctions implements DoomStatusAware{
           int     delta;
           boolean nomissile=false; // for the fugly goto
 
-          if (DS.gametic==370 && actor.thingnum==195) {
-        	  System.out.println("Shit will happen...");
-          }
-          
           if (actor.reactiontime!=0)
               actor.reactiontime--;
 
