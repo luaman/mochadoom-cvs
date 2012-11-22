@@ -111,6 +111,7 @@ import doom.DoomMain;
 import doom.DoomStatus;
 import doom.IDoomGame;
 import doom.player_t;
+import doom.th_class;
 import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
@@ -128,6 +129,10 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         this.See=new Sight(); // Didn't initialize that.
         this.EN=new Enemies();
         this.thinkercap=new thinker_t();
+        for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
+            thinkerclasscap[i]=new thinker_t();
+        
+        this.RemoveThinkerDelayed=new P_RemoveThinkerDelayed();
         
         intercepts = new intercept_t[MAXINTERCEPTS];
         C2JUtils.initArrayOfObjects(intercepts,intercept_t.class);
@@ -437,6 +442,36 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
      return true;        // everything was traversed
     }
     
+    protected void UpdateThinker(thinker_t thinker)
+    {
+      thinker_t th;
+      // find the class the thinker belongs to
+
+      th_class cls =
+        thinker.function == think_t.NOP ? th_class.th_delete :
+        thinker.function == think_t.P_MobjThinker &&
+        ((mobj_t) thinker).health > 0 &&
+        (eval((((mobj_t) thinker).flags) & mobj_t.MF_COUNTKILL) ||
+         ((mobj_t) thinker).type == mobjtype_t.MT_SKULL) ?
+        eval((((mobj_t) thinker).flags) & mobj_t.MF_FRIEND) ?
+        th_class.th_friends : th_class.th_enemies : th_class.th_misc;
+
+      {
+        /* Remove from current thread, if in one */
+        if ((th = thinker.cnext)!= null)
+          (th.cprev = thinker.cprev).cnext = th;
+      }
+
+      // Add to appropriate thread
+      th = thinkerclasscap[cls.ordinal()];
+      th.cprev.cnext = thinker;
+      thinker.cnext = th;
+      thinker.cprev = th.cprev;
+      th.cprev = thinker;
+    }
+    
+    protected final thinker_t[] thinkerclasscap=new thinker_t[th_class.NUMTHCLASS];
+    
     protected final void ResizeIntercepts() {
         intercepts=C2JUtils.resize(intercepts[0],intercepts,intercepts.length*2);
     	}    
@@ -583,7 +618,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                         - actor.target.y)
                         - 64 * FRACUNIT;
 
-            if (actor.info.meleestate == null)
+            if (actor.info.meleestate == statenum_t.S_NULL)
                 dist -= 128 * FRACUNIT; // no melee attack, so fire more
 
             dist >>= 16;
@@ -1881,6 +1916,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     	
         // mobjpool.drain();
         
+        for (int i=0; i<th_class.NUMTHCLASS; i++)  // killough 8/29/98: initialize threaded lists
+            thinkerclasscap[i].cprev = thinkerclasscap[i].cnext = thinkerclasscap[i];
+        
     	thinker_t next=thinkercap.next;
     	thinker_t prev=thinkercap.prev;
     	
@@ -1896,12 +1934,22 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     		//System.err.println("Prev link to thinkercap nulled");
     		prev.next=null;
     	}
-
     	
         thinkercap.next = thinkercap;
         thinkercap.prev = thinkercap;
     }
 
+    /** cph 2002/01/13 - iterator for thinker list
+     * WARNING: Do not modify thinkers between calls to this functin
+     */
+    thinker_t NextThinker(thinker_t th, th_class cl)
+    {
+      thinker_t top = thinkerclasscap[cl.ordinal()];
+      if (th==null) th = top;
+      th = cl == th_class.th_all ? th.next : th.cnext;
+      return th == top ? null : th;
+    }
+    
     /**
      * P_AddThinker Adds a new thinker at the end of the list.
      */
@@ -1918,6 +1966,13 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         thinker.next = thinkercap;
         thinker.prev = thinkercap.prev;
         thinkercap.prev = thinker;
+        
+        // killough 8/29/98: set sentinel pointers, and then add to appropriate list
+        thinker.cnext = thinker.cprev = null;
+        UpdateThinker(thinker);
+        
+        // [Maes] seems only used for interpolations
+        //newthinkerpresent = true;
     }
    
     public void ClearPlatsBeforeLoading(){
@@ -1950,8 +2005,24 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     // Deallocation is lazy -- it will not actually be freed
     // until its thinking turn comes up.
     //
+    //
+    // killough 4/25/98:
+    //
+    // Instead of marking the function with -1 value cast to a function pointer,
+    // set the function to P_RemoveThinkerDelayed(), so that later, it will be
+    // removed automatically as part of the thinker process.
+    //
+    
     public void RemoveThinker(thinker_t thinker) {
-        thinker.function = think_t.NOP;
+        //thinker.function = think_t.NOP;
+        // Wire to this special function.
+        thinker.function=think_t.NOP;
+        thinker.acpss = this.RemoveThinkerDelayed;
+        // Remove any type 1 or 2 special functions.
+        thinker.acp1 = null;
+
+        thinker.acp2 = null;
+        
     }
 
     //
@@ -2311,6 +2382,60 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     @Override
     public thinker_t getThinkerCap() {
         return thinkercap;
+    }
+    
+ /**
+  * killough 11/98:
+  *
+  * Make currentthinker external, so that P_RemoveThinkerDelayed
+  * can adjust currentthinker when thinkers self-remove.
+  */
+    
+    protected thinker_t currentthinker;
+    
+    protected final P_RemoveThinkerDelayed RemoveThinkerDelayed; 
+    
+    public class P_RemoveThinkerDelayed implements ActionTypeSS <thinker_t>{
+        
+    @Override
+    public void invoke(thinker_t thinker) {
+        
+        try {
+        System.err.printf("Delete: %s %d<= %s %d => %s %d\n",
+            ((mobj_t)thinker.prev).type,((mobj_t)thinker.prev).thingnum,
+            ((mobj_t)thinker).type,((mobj_t)thinker).thingnum,
+            ((mobj_t)thinker.next).type,((mobj_t)thinker.next).thingnum);
+        } catch (ClassCastException e){
+            
+        }
+        
+        // Unlike Boom, if we reach here it gets zapped anyway
+        //if (!thinker->references)
+        //{
+          { /* Remove from main thinker list */
+            thinker_t next = thinker.next;
+            /* Note that currentthinker is guaranteed to point to us,
+             * and since we're freeing our memory, we had better change that. So
+             * point it to thinker->prev, so the iterator will correctly move on to
+             * thinker->prev->next = thinker->next */
+            (next.prev = currentthinker = thinker.prev).next = next;
+            //thinker.next=thinker.prev=null;
+            try {
+            System.err.printf("Delete: %s %d <==> %s %d\n",
+                ((mobj_t)currentthinker.prev).type,((mobj_t)currentthinker.prev).thingnum,
+                ((mobj_t)currentthinker.next).type,((mobj_t)currentthinker.next).thingnum);
+            } catch (ClassCastException e){
+                
+            }
+            
+          }
+          {
+            /* Remove from current thinker class list */
+            thinker_t th = thinker.cnext;
+            (th.cprev = thinker.cprev).cnext = th;
+            //thinker.cnext=thinker.cprev=null;
+          }
+        }
     }
     
 } // End unified map

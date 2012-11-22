@@ -76,6 +76,7 @@ import data.state_t;
 import data.sounds.sfxenum_t;
 import doom.DoomStatus;
 import doom.player_t;
+import doom.th_class;
 import doom.think_t;
 import doom.thinker_t;
 import doom.weapontype_t;
@@ -2374,14 +2375,11 @@ CheckMissileSpawn (th);
      int oldx, oldy, oldz; // fixed_t
 
      // don't teleport missiles
-     if ((thing.flags & MF_MISSILE)!=0)
-     return 0;       
-
      // Don't teleport if hit back of line,
      //  so you can get out of teleporter.
-     if (side == 1)      
-     return 0;   
 
+     if ((side !=0)||(thing.flags & MF_MISSILE)!=0) 
+     return 0;       
      
      tag = line.tag;
      for (i = 0; i < LL.numsectors; i++)
@@ -2443,6 +2441,44 @@ CheckMissileSpawn (th);
      }
      return 0;
  }
+ 
+ 
+ 
+ protected mobj_t P_TeleportDestination(line_t line)
+ {
+   int i;
+   for (i = -1; (i = FindSectorFromLineTag(line, i)) >= 0;) {
+     thinker_t th = null;
+     // Thinker classes are not implemented yet.
+     while ((th = NextThinker(th,th_class.th_misc)) != null)
+       if (th.function == think_t.P_MobjThinker) {
+         mobj_t m = (mobj_t)th;
+         if (m.type == mobjtype_t.MT_TELEPORTMAN  &&
+             m.subsector.sector.id == i)
+             return m;
+       }
+   }
+   return null;
+ }
+ 
+/** RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
+ *  Find the next sector with the same tag as a linedef.
+ * Rewritten by Lee Killough to use chained hashing to improve speed
+ * 
+ * @param line
+ * @param start
+ * @return
+ */
+
+ protected int FindSectorFromLineTag(final line_t line, int start)
+ {
+   start = start >= 0 ? LL.sectors[start].nexttag :
+     LL.sectors[line.tag % LL.numsectors].firsttag;
+   while (start >= 0 && LL.sectors[start].tag != line.tag)
+     start = LL.sectors[start].nexttag;
+   return start;
+ }
+ 
  
  //
 //EVENTS
@@ -2922,7 +2958,7 @@ mobj_t  thing )
     /** fixed_t */
     int[]       tmbbox=new int[4];
     mobj_t      tmthing;
-    int     tmflags;
+    long     tmflags;
     /** fixed_t */
     int     tmx,    tmy;
 
@@ -5149,6 +5185,11 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       }
       }
 
+      // P_InitTagLists() must be called before P_FindSectorFromLineTag()
+      // or P_FindLineFromLineTag() can be called.
+
+      LL.InitTagLists();   // killough 1/30/98: Create xref tables for tags
+      
       
       //  Init other misc stuff
       for (i = 0;i < getMaxCeilings();i++)
@@ -5271,43 +5312,25 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
 
   //
   // P_RunThinkers
-  //
-  public void RunThinkers() {
-      thinker_t currentthinker;
+  // A-la Boom
+    
+  protected void RunThinkers ()
+{
+  for (currentthinker = thinkercap.next;
+       currentthinker != thinkercap;
+       currentthinker = currentthinker.next)
 
-      currentthinker = thinkercap.next;
-      while (currentthinker != thinkercap) {
-          if (currentthinker.function == think_t.NOP) {
-              // time to remove it
-              currentthinker.next.prev = currentthinker.prev;
-              currentthinker.prev.next = currentthinker.next;
-              
-              // Problem: freeing was done explicitly on think_t's, not mobj_t's.
-            /*try {
-            	  
-            // According to certian gurus, this method is faster than instanceof
-            // and almost on par with id checking. 
-            // 
-            // http://stackoverflow.com/questions/103564/the-performance-impact-of-using-instanceof-in-java
-            	  if (currentthinker.getClass()==mobj_t.class)
-              
-              mobjpool.checkIn((mobj_t)currentthinker);
-              } catch (ClassCastException e){
-            	  // Object will simply be destroyed without reuse, in this case.
-              }  */
-              // Z_Free (currentthinker);
-          } else {
-              if (currentthinker.acp1!=null)
-                  // Execute thinker's function.
-            	  currentthinker.acp1.invoke((mobj_t) currentthinker);
-              else
-              if (currentthinker.acpss!=null) {
-            	  currentthinker.acpss.invoke(currentthinker);
-              }
-          }
-          currentthinker = currentthinker.next;
+      if (currentthinker.acp1!=null)
+          // Execute thinker's function.
+          currentthinker.acp1.invoke((mobj_t) currentthinker);
+      else
+      if (currentthinker.acpss!=null) {
+          currentthinker.acpss.invoke(currentthinker);
       }
-  }
+
+  // Dedicated thinkers
+  // T_MAPMusic();
+}
 
 
 public void setActiveceilings(ceiling_t[] activeceilings) {
