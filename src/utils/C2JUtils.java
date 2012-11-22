@@ -453,6 +453,10 @@ public final class C2JUtils {
     public static final boolean flags(int flags, int arg) {
         return ((flags & arg) != 0);
     }
+    
+    public static final boolean flags(long flags, long arg) {
+        return ((flags & arg) != 0);
+    }
 
     /**
      * Returns 1 for true and 0 for false. Useful, given the amount of
