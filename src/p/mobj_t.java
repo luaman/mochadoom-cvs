@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import m.fixed_t;
+
 import rr.subsector_t;
 import s.ISoundOrigin;
 import w.IPackableDoomObject;
@@ -84,7 +86,7 @@ import doom.thinker_t;
  * 
  */
 
-public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
+public class mobj_t extends thinker_t implements MobjFlags,ISoundOrigin, Interceptable,
 		IWritableDoomObject, IPackableDoomObject, IReadableDoomObject {
 
 	Actions A;
@@ -147,7 +149,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	public long tics; // state tic counter
 	// MAES: was a pointer
 	public state_t state;
-	public int flags;
+	public long flags;
 	public int health;
 
 	/** Movement direction, movement generation (zig-zagging). */
@@ -189,92 +191,8 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 
 	public mobj_t tracer; // MAES: was a pointer
 
-	// // MF_ flags for mobjs.
-
-	// Call P_SpecialThing when touched.
-	public static final int MF_SPECIAL = 1;
-	// Blocks.
-	public static final int MF_SOLID = 2;
-	// Can be hit.
-	public static final int MF_SHOOTABLE = 4;
-	// Don't use the sector links (invisible but touchable).
-	public static final int MF_NOSECTOR = 8;
-	// Don't use the blocklinks (inert but displayable)
-	public static final int MF_NOBLOCKMAP = 16;
-
-	// Not to be activated by sound, deaf monster.
-	public static final int MF_AMBUSH = 32;
-	// Will try to attack right back.
-	public static final int MF_JUSTHIT = 64;
-	// Will take at least one step before attacking.
-	public static final int MF_JUSTATTACKED = 128;
-	// On level spawning (initial position),
-	// hang from ceiling instead of stand on floor.
-	public static final int MF_SPAWNCEILING = 256;
-	// Don't apply gravity (every tic),
-	// that is, object will float, keeping current height
-	// or changing it actively.
-	public static final int MF_NOGRAVITY = 512;
-
-	// Movement flags.
-	// This allows jumps from high places.
-	public static final int MF_DROPOFF = 0x400;
-	// For players, will pick up items.
-	public static final int MF_PICKUP = 0x800;
-	// Player cheat. ???
-	public static final int MF_NOCLIP = 0x1000;
-	// Player: keep info about sliding along walls.
-	public static final int MF_SLIDE = 0x2000;
-	// Allow moves to any height, no gravity.
-	// For active floaters, e.g. cacodemons, pain elementals.
-	public static final int MF_FLOAT = 0x4000;
-	// Don't cross lines
-	// ??? or look at heights on teleport.
-	public static final int MF_TELEPORT = 0x8000;
-	// Don't hit same species, explode on block.
-	// Player missiles as well as fireballs of various kinds.
-	public static final int MF_MISSILE = 0x10000;
-	// Dropped by a demon, not level spawned.
-	// E.g. ammo clips dropped by dying former humans.
-	public static final int MF_DROPPED = 0x20000;
-	// Use fuzzy draw (shadow demons or spectres),
-	// temporary player invisibility powerup.
-	public static final int MF_SHADOW = 0x40000;
-	// Flag: don't bleed when shot (use puff),
-	// barrels and shootable furniture shall not bleed.
-	public static final int MF_NOBLOOD = 0x80000;
-	// Don't stop moving halfway off a step,
-	// that is, have dead bodies slide down all the way.
-	public static final int MF_CORPSE = 0x100000;
-	// Floating to a height for a move, ???
-	// don't auto float to target's height.
-	public static final int MF_INFLOAT = 0x200000;
-
-	// On kill, count this enemy object
-	// towards intermission kill total.
-	// Happy gathering.
-	public static final int MF_COUNTKILL = 0x400000;
-
-	// On picking up, count this item object
-	// towards intermission item total.
-	public static final int MF_COUNTITEM = 0x800000;
-
-	// Special handling: skull in flight.
-	// Neither a cacodemon nor a missile.
-	public static final int MF_SKULLFLY = 0x1000000;
-
-	// Don't spawn this object
-	// in death match mode (e.g. key cards).
-	public static final int MF_NOTDMATCH = 0x2000000;
-
-	// Player sprites in multiplayer modes are modified
-	// using an internal color lookup table for re-indexing.
-	// If 0x4 0x8 or 0xc,
-	// use a translation table for player colormaps
-	public static final int MF_TRANSLATION = 0xc000000;
-	// Hmm ???.
-	public static final int MF_TRANSSHIFT = 26;
-
+	
+	
 	/*
 	 * The following methods were for the most part "contextless" and
 	 * instance-specific, so they were implemented here rather that being
@@ -473,7 +391,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		b.putInt(pointer(info)); // TODO: mobjinfo
 		b.putInt((int) (this.tics & Tables.BITS32));
 		b.putInt(this.state.id); // TODO: state OK?
-		b.putInt(this.flags);
+		b.putInt((int) this.flags); // truncate
 		b.putInt(this.health);
 		b.putInt(this.movedir);
 		b.putInt(this.movecount);
@@ -518,7 +436,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		this.tics = Tables.BITS32 & b.getInt(); // 100
 		// System.out.println("State"+f.readLEInt());
 		this.stateid = b.getInt(); // TODO: state OK?
-		this.flags = b.getInt();
+		this.flags = b.getInt()&Tables.BITS32; // Only 32-bit flags can be restored
 		this.health = b.getInt();
 		this.movedir = b.getInt();
 		this.movecount = b.getInt();
