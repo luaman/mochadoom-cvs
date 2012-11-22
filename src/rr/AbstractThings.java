@@ -161,7 +161,7 @@ public abstract class AbstractThings<T,V>
         } else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
             colfunc = colfuncs.trans;
             maskedcvars.dc_translation =
-                (T) colormaps.translationtables[(vis.mobjflags & MF_TRANSLATION) >> MF_TRANSSHIFT];
+                (T) colormaps.getTranslationTable(vis.mobjflags);
         }
 
         maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;

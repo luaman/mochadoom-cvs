@@ -173,7 +173,8 @@ public abstract class MaskedWorker<T,V> extends AbstractThings<T,V> implements R
             colfunc = colfuncs.fuzz;
         } else if ((vis.mobjflags & MF_TRANSLATION) != 0) {
             colfunc = colfuncs.trans;
-            maskedcvars.dc_translation = (T) colormaps.translationtables[(vis.mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT];
+            maskedcvars.dc_translation = (T) colormaps.getTranslationTable(vis.mobjflags);
+
         }
 
         maskedcvars.dc_iscale = Math.abs(vis.xiscale) >> view.detailshift;
