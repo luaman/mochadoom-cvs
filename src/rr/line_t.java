@@ -83,6 +83,9 @@ public class line_t
 
     // From Boom
     public int tranlump;
+    
+    /** killough 4/17/98: improves searches for tags. */
+    public int firsttag,nexttag;    
 
     /** For Boom stuff, interprets sidenum specially */
     public int getSpecialSidenum() {
