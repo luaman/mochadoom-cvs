@@ -5,6 +5,7 @@ import static data.Defines.GRAVITY;
 import static data.Defines.VIEWHEIGHT;
 import static data.info.states;
 import static p.MapUtils.AproxDistance;
+import static p.mobj_t.MF_SKULLFLY;
 import static utils.C2JUtils.pointer;
 
 import java.io.DataInputStream;
@@ -410,6 +411,9 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	public int stateid;
 	public int playerid;
 	public int p_tracer;
+
+	/** Unique thing id, used during sync debugging */
+    public int thingnum;
 
 	public void clear() {
 		fastclear.rewind();
