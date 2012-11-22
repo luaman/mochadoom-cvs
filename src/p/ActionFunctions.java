@@ -2893,6 +2893,10 @@ public class ActionFunctions implements DoomStatusAware{
           int     delta;
           boolean nomissile=false; // for the fugly goto
 
+          if (DS.gametic==370 && actor.thingnum==195) {
+        	  System.out.println("Shit will happen...");
+          }
+          
           if (actor.reactiontime!=0)
               actor.reactiontime--;
 
