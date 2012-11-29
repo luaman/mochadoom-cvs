@@ -480,5 +480,9 @@ public class mobj_t extends thinker_t implements MobjFlags,ISoundOrigin, Interce
 	public final int getZ() {
 		return z;
 	}
+	
+	public String toString(){
+	    return String.format("%s %d",this.type,this.thingnum);
+	}
 
 }

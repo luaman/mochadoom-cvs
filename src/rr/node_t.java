@@ -2,12 +2,14 @@ package rr;
 
 import static m.fixed_t.FRACBITS;
 import static m.fixed_t.FixedMul;
+import static utils.C2JUtils.eval;
 
 import java.util.Arrays;
 
 import p.Resettable;
 import utils.C2JUtils;
 import m.BBox;
+import m.ISyncLogger;
 
 /** BSP node.
  * 
@@ -182,10 +184,23 @@ public class node_t implements Resettable{
  	( int	x,
  	  int	y)
  	{
+ 	    
+ 	      int left,right;
+ 	        // Boom-style code. Da fack.
+ 	      // [Maes]: using it leads to very different DEMO4 UD behavior.
+ 	        
+ 	       return
+ 	      (this.dx==0) ? x == this.x ? 2 : x <= this.x ? eval(this.dy > 0) : eval(this.dy < 0) :
+ 	      (this.dy==0) ? (olddemo ? x : y) == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
+ 	      (this.dy==0) ? y == this.y ? 2 : y <= this.y ? eval(this.dx < 0) : eval(this.dx > 0) :
+ 	      (right = ((y - this.y) >> FRACBITS) * (this.dx >> FRACBITS)) <
+ 	      (left  = ((x - this.x) >> FRACBITS) * (this.dy >> FRACBITS)) ? 0 :
+ 	      right == left ? 2 : 1;
+ 	      
+ 	    
+ 	      /*
  	    int	dx; // fixed_t
  	    int	dy;
- 	    int	left;
- 	    int	right;
 
  	    if (this.dx==0)
  	    {
@@ -221,8 +236,27 @@ public class node_t implements Resettable{
  	    if (left == right)
  		return 2;
  	    return 1;		// back side
+ 	    */
+ 	    
  	}
-
+ 	
+ 	private static final boolean olddemo = true;
+ 	
+ 	  public int
+ 	    DivlineSide
+ 	    ( int   x,
+ 	      int   y,
+ 	      ISyncLogger SL,
+ 	      boolean sync)
+ 	    {
+ 	      int result=DivlineSide(x,y);
+ 	      if (sync){
+ 	         SL.sync("DLS %d\n",
+ 	            result);
+ 	      }
+ 	      return result;
+ 	      
+ 	    }
 @Override
     public void reset() {
     x=y=dx = dy = 0;

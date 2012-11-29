@@ -816,14 +816,14 @@ public class ActionFunctions implements DoomStatusAware{
 	class P_MobjThinker implements ActionType1 {
 		public void invoke(mobj_t mobj) {
 		    		    
-		    if (mobj.momx != 0 || mobj.momy != 0){
+		    //if (mobj.momx != 0 || mobj.momy != 0){
 
-                DS.sync("Mobj %d (%d) thingnum = %d xyz %x,%x,%x (%d,%d,%d) mom %d,%d h=%d fl=%x\n",
+                DS.sync("Mobj %d (%d) thingnum = %d xyz %x,%x,%x (%d,%d,%d) mom %d,%d h=%d fl=%x nst=%d\n",
                     mobj.info.doomednum, mobj.type.ordinal(), mobj.thingnum, mobj.x, mobj.y,
                     mobj.z, mobj.x >> 16, mobj.y >> 16, mobj.z >> 16, mobj.momx,
-                    mobj.momy, mobj.health, mobj.flags);
+                    mobj.momy, mobj.health, mobj.flags,mobj.state.nextstate.ordinal());
 
-		    }
+		    //}
 		    
 			// momentum movement
 			if (mobj.momx != 0 || mobj.momy != 0
@@ -2512,6 +2512,10 @@ public class ActionFunctions implements DoomStatusAware{
 
         if ( eval(actor.flags&MF_AMBUSH ))
         {
+            if (DS.gametic==157){
+                System.out.printf("%s about to check sight...\n",actor);
+                
+            }
             seeyou= (EN.CheckSight (actor, actor.target));              
         } else
             seeyou=true;

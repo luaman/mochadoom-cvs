@@ -471,6 +471,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     }
     
     protected final thinker_t[] thinkerclasscap=new thinker_t[th_class.NUMTHCLASS];
+
+    public boolean sight_debug;
     
     protected final void ResizeIntercepts() {
         intercepts=C2JUtils.resize(intercepts[0],intercepts,intercepts.length*2);
@@ -664,6 +666,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             int bytenum;
             int bitnum;
 
+            
+            sight_debug = (DM.gametic == 157 && t1.thingnum == 183);
+            
             // First check for trivial rejection.
 
             // Determine subsector entries in REJECT table.
@@ -1075,6 +1080,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                         + FixedMul((v2.y - v1.y) >> 8, v1.dx);
             frac = FixedDiv(num, den);
 
+
+            if (sight_debug)
+            {
+                DM.sync("INV %d\n", frac);
+            }
+            
             return frac;
         }
 
@@ -1084,6 +1095,13 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
          */
 
         boolean CrossSubsector(int num) {
+            
+            if (sight_debug)
+            {
+             DM.sync("CSS %d\n",
+              num);
+            }
+            
             int seg; // pointer inside segs
             line_t line;
             int s1;
@@ -1123,8 +1141,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
                 //v1 = line.v1;
                 //v2 = line.v2;
-                s1 = strace.DivlineSide(line.v1x, line.v1y);
-                s2 = strace.DivlineSide(line.v2x, line.v2y);
+                s1 = strace.DivlineSide(line.v1x, line.v1y,DM,sight_debug);
+                s2 = strace.DivlineSide(line.v2x, line.v2y,DM,sight_debug);
 
                 // line isn't crossed?
                 if (s1 == s2)
@@ -1134,8 +1152,8 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 divl.y = line.v1y;
                 divl.dx = line.v2x - line.v1x;
                 divl.dy = line.v2y - line.v1y;
-                s1 = divl.DivlineSide(strace.x, strace.y);
-                s2 = divl.DivlineSide(t2x, t2y);
+                s1 = divl.DivlineSide(strace.x, strace.y,DM,sight_debug);
+                s2 = divl.DivlineSide(t2x, t2y,DM,sight_debug);
 
                 // line isn't crossed?
                 if (s1 == s2)
@@ -1201,6 +1219,12 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         boolean CrossBSPNode(int bspnum) {
             node_t bsp;
             int side;
+            
+             if (sight_debug)
+             {
+              DM.sync("CBN %d\n",
+               bspnum);
+             }
 
             if (eval(bspnum& NF_SUBSECTOR)) {
                 if (bspnum == -1)
@@ -1212,7 +1236,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             bsp = LL.nodes[bspnum];
 
             // decide which side the start point is on
-            side = bsp.DivlineSide(strace.x, strace.y);
+            side = bsp.DivlineSide(strace.x, strace.y,DM,sight_debug);
             if (side == 2)
                 side = 0; // an "on" should cross both sides
 
@@ -1221,7 +1245,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 return false;
 
             // the partition plane is crossed here
-            if (side == bsp.DivlineSide(t2x, t2y)) {
+            if (side == bsp.DivlineSide(t2x, t2y,DM,sight_debug)) {
                 // the line doesn't touch the other side
                 return true;
             }

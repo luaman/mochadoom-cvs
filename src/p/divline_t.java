@@ -1,6 +1,7 @@
 package p;
 
 import static m.fixed_t.*;
+import m.ISyncLogger;
 import rr.line_t;
 import static utils.C2JUtils.eval;
 //
@@ -92,7 +93,22 @@ public class divline_t {
 		// TODO Auto-generated constructor stub
 	}
 
-
+     public int
+     DivlineSide
+     ( int   x,
+       int   y,
+       ISyncLogger SL,
+       boolean sync)
+     {
+       int result=DivlineSide(x,y);
+       if (sync){
+          SL.sync("DLS %d\n",
+             result);
+       }
+       return result;
+       
+     }
+     
 
 	/**
  	  * P_DivlineSide
@@ -104,8 +120,9 @@ public class divline_t {
  	  int	y)
  	{
  	    
- 	    int left,right;
+ 	   int left,right;
  	    // Boom-style code. Da fack.
+ 	   // [Maes:] it is MUCH more corrent than the linuxdoom one, for whatever reason.
  	    
  	   return
  	  (this.dx==0) ? x == this.x ? 2 : x <= this.x ? eval(this.dy > 0) : eval(this.dy < 0) :
@@ -114,8 +131,9 @@ public class divline_t {
  	  (right = ((y - this.y) >> FRACBITS) * (this.dx >> FRACBITS)) <
  	  (left  = ((x - this.x) >> FRACBITS) * (this.dy >> FRACBITS)) ? 0 :
  	  right == left ? 2 : 1;
+ 	  
+ 	  /*  
  	    
- 	    /*
  	    int	left,right,dx,dy;
 
  	    if (this.dx==0)
@@ -151,10 +169,11 @@ public class divline_t {
  	    
  	    if (left == right)
  	    return 2;
- 	    return 1;       // back side*/
+ 	    return 1;       // back side
+ 	    */
  	}
  	
- 	private static final boolean olddemo = false;
+ 	private static final boolean olddemo = true;
      
      
  }
