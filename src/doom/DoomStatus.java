@@ -695,11 +695,16 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 
 	// [Maes] call this to dispatch arbitrary reports
 	public void sync(String format, Object ... args){
-		syncdebugfile.printf(format, args);
+		if (sync_debug) syncdebugfile.printf(format, args);
 	}
+	
+	private final boolean sync_debug=false;
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.36.2.3  2012/12/05 23:40:41  velktron
+// sync_debug constant.
+//
 // Revision 1.36.2.2  2012/11/22 08:17:39  velktron
 // No reason for appending. Quite annoying, I think.
 //
