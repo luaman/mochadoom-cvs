@@ -3713,9 +3713,10 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     //
     // This is a kludgy mess.
     //
-    void SlideMove (mobj_t mo)
+    private final void SlideMove (mobj_t mo)
     {
-     
+
+    	
         // SYNC: SLI1
         DM.sync(
             "SLI1 %d %d %d %d %d %d %d\n",
@@ -3734,6 +3735,8 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         if (++hitcount == 3) {
             // goto stairstep
             stairstep(mo);
+            // SYNC: SLI2
+            SLI2(mo);
             return;
         }     // don't loop forever
 
@@ -3775,6 +3778,8 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         {
             // the move most have hit the middle, so stairstep
             stairstep(mo);
+            // SYNC: SLI2
+            SLI2(mo);
             return;
           }     // don't loop forever
 
@@ -3789,6 +3794,8 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         {
             // goto stairstep
             stairstep(mo);
+            // SYNC: SLI2
+            SLI2(mo);
             return;
         }     // don't loop forever
         }
@@ -3819,12 +3826,16 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         while (!TryMove (mo, mo.x+tmxmove, mo.y+tmymove));
       
       // SYNC: SLI2
-      DM.sync(
-          "SLI2 %d %d %d %d %d %d %d\n",
-          mo.info.doomednum, mo.thingnum,
-          mo.x, mo.y, mo.z,
-          mo.momx, mo.momy);
+      SLI2(mo);
       
+    }
+    
+    private final void SLI2(mobj_t mo){
+        DM.sync(
+                "SLI2 %d %d %d %d %d %d %d\n",
+                mo.info.doomednum, mo.thingnum,
+                mo.x, mo.y, mo.z,
+                mo.momx, mo.momy);
     }
 
     private final void stairstep(mobj_t mo){
