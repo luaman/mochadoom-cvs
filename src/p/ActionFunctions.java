@@ -2101,20 +2101,30 @@ public class ActionFunctions implements DoomStatusAware{
          not direct inequalities.
          
         */
-        if (angle - player.mo.angle > ANG180)
+        
+        if (DS.gametic==2534){
+        	System.out.println("SHIT!");
+        }
+        
+        
+        // Yet another screwy place where unsigned BAM angles are used as SIGNED comparisons.
+        long dangle= (angle - player.mo.angle);
+        dangle&=BITS32;
+        if (dangle > ANG180)
         {
-        if (angle - player.mo.angle < -ANG90/20)
+        if ((int)dangle < -ANG90/20)
             player.mo.angle = angle + ANG90/21;
         else
             player.mo.angle -= ANG90/20;
         }
         else
         {
-        if (angle - player.mo.angle > ANG90/20)
+        if (dangle > ANG90/20)
             player.mo.angle = angle - ANG90/21;
         else
             player.mo.angle += ANG90/20;
         }
+        player.mo.angle&=BITS32;
         player.mo.flags |= MF_JUSTATTACKED;
         
         // SYNC DEBUG
