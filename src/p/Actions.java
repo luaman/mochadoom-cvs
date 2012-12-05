@@ -3715,6 +3715,14 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     //
     void SlideMove (mobj_t mo)
     {
+     
+        // SYNC: SLI1
+        DM.sync(
+            "SLI1 %d %d %d %d %d %d %d\n",
+            mo.info.doomednum, mo.thingnum,
+            mo.x, mo.y, mo.z,
+            mo.momx, mo.momy);
+        
         // fixed_t
         int     leadx,leady,trailx,traily,newx,newy;
         int         hitcount;
@@ -3725,8 +3733,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       do {
         if (++hitcount == 3) {
             // goto stairstep
-            if (!TryMove (mo, mo.x, mo.y + mo.momy))
-                TryMove (mo, mo.x + mo.momx, mo.y);
+            stairstep(mo);
             return;
         }     // don't loop forever
 
@@ -3766,10 +3773,9 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         // move up to the wall
         if (bestslidefrac == FRACUNIT+1)
         {
-        // the move most have hit the middle, so stairstep
-              if (!TryMove (mo, mo.x, mo.y + mo.momy))
-                  TryMove (mo, mo.x + mo.momx, mo.y);
-              return;
+            // the move most have hit the middle, so stairstep
+            stairstep(mo);
+            return;
           }     // don't loop forever
 
         // fudge a bit to make sure it doesn't hit
@@ -3782,8 +3788,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         if (!TryMove (mo, mo.x+newx, mo.y+newy))
         {
             // goto stairstep
-            if (!TryMove (mo, mo.x, mo.y + mo.momy))
-                TryMove (mo, mo.x + mo.momx, mo.y);
+            stairstep(mo);
             return;
         }     // don't loop forever
         }
@@ -3806,10 +3811,27 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         mo.momx = tmxmove;
         mo.momy = tmymove;
         
+       // mo.setMomX(tmxmove, "SlideMove");
+       // mo.setMomY(tmymove, "SlideMove");
+        
           }
+      // goto retry
         while (!TryMove (mo, mo.x+tmxmove, mo.y+tmymove));
+      
+      // SYNC: SLI2
+      DM.sync(
+          "SLI2 %d %d %d %d %d %d %d\n",
+          mo.info.doomednum, mo.thingnum,
+          mo.x, mo.y, mo.z,
+          mo.momx, mo.momy);
+      
     }
 
+    private final void stairstep(mobj_t mo){
+        if (!TryMove (mo, mo.x, mo.y + mo.momy))
+            TryMove (mo, mo.x + mo.momx, mo.y);
+    }
+    
     //
     // P_XYMovement  
     //
@@ -3825,7 +3847,6 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
             mo.z, mo.x >> 16, mo.y >> 16, mo.z >> 16, mo.momx,
             mo.momy, mo.health, mo.flags);
         
-    //System.out.println("XYMovement");
     int     ptryx, ptryy; // pointers to fixed_t ???
     player_t   player;
     int  xmove, ymove; // fixed_t
@@ -3950,6 +3971,9 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
     {
     mo.momx = FixedMul (mo.momx, FRICTION);
     mo.momy = FixedMul (mo.momy, FRICTION);
+    
+   // mo.setMomX(FixedMul (mo.momx, FRICTION), "XYMovement");
+   // mo.setMomY(FixedMul (mo.momy, FRICTION), "XYMovement");
     }
     }
     //

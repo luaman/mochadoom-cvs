@@ -138,6 +138,18 @@ public class mobj_t extends thinker_t implements MobjFlags,ISoundOrigin, Interce
 
 	/** (fixed_t) Momentums, used to update position. */
 	public int momx, momy, momz;
+	
+	public void setMomX(int value, String caller){
+	    if (player!=null)
+	        this.A.DM.sync("Thingnum %d momx= %d set to= %d by %s\n",thingnum, momx,value,caller);
+	    this.momx=value;
+	    }
+	
+	public void setMomY(int value, String caller){
+        if (player!=null)
+            this.A.DM.sync("Thingnum %d momy= %d set to= %d by %s\n",thingnum, momy,value,caller);
+        this.momy=value;
+        }
 
 	/** If == validcount, already checked. */
 	public int validcount;

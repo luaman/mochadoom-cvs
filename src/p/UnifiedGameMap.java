@@ -667,7 +667,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             int bitnum;
 
             
-            sight_debug = (DM.gametic == 157 && t1.thingnum == 183);
+            //sight_debug = (DM.gametic == 157 && t1.thingnum == 183);
             
             // First check for trivial rejection.
 

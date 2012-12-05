@@ -263,8 +263,16 @@ public class player_t /*extends mobj_t */
      */
 
     public void Thrust(long angle, int move) {
+        // SYNC: THR
+         DS.sync("THR %d %d %d\n",
+          mo.thingnum,
+          angle, move);
+        
         mo.momx += FixedMul(move, finecosine(angle));
         mo.momy += FixedMul(move, finesine( angle));
+        //mo.setMomX(mo.momx+FixedMul(move, finecosine(angle)),String.format("Thrust at angle %x",angle&BITS32));
+        //mo.setMomY(mo.momy+FixedMul(move, finesine(angle)),String.format("Thrust at angle %x",angle&BITS32));
+        
     }
 
     protected final static int PLAYERTHRUST=2048/TIC_MUL;
@@ -273,6 +281,16 @@ public class player_t /*extends mobj_t */
      * P_MovePlayer
      */
     public void MovePlayer() {
+
+        // SYNC: MPlr1
+        DS.sync(
+            "MPlr1 %d %d xyzpvv %d,%d,%d,%d,%d (%d,%d,%d) mom=%d,%d h=%d\n",
+            mo.info.doomednum, mo.thingnum,
+            mo.x, mo.y, mo.z,
+            viewheight, viewz,
+            mo.x >> 16, mo.y >> 16, mo.z >> 16,
+            mo.momx, mo.momy, mo.health);
+        
         ticcmd_t cmd = this.cmd;
 
         mo.angle += (cmd.angleturn << 16);
@@ -288,10 +306,28 @@ public class player_t /*extends mobj_t */
         if (cmd.sidemove != 0 && onground)
             Thrust((mo.angle - ANG90)&BITS32, cmd.sidemove * PLAYERTHRUST);
 
+        // SYNC: MPlr2
+        DS.sync(
+            "MPlr2 %d %d xyzpvv %d,%d,%d,%d,%d (%d,%d,%d) mom=%d,%d h=%d\n",
+            mo.info.doomednum, mo.thingnum,
+            mo.x, mo.y, mo.z,
+            viewheight, viewz,
+            mo.x >> 16, mo.y >> 16, mo.z >> 16,
+            mo.momx, mo.momy, mo.health);
+        
         if ((cmd.forwardmove != 0 || cmd.sidemove != 0)
                 && mo.state == states[statenum_t.S_PLAY.ordinal()]) {
             this.mo.SetMobjState(statenum_t.S_PLAY_RUN1);
         }
+        
+        // SYNC: MPlr3
+        DS.sync(
+            "MPlr3 %d %d xyzpvv %d,%d,%d,%d,%d (%d,%d,%d) mom=%d,%d h=%d\n",
+            mo.info.doomednum, mo.thingnum,
+            mo.x, mo.y, mo.z,
+            viewheight, viewz,
+            mo.x >> 16, mo.y >> 16, mo.z >> 16,
+            mo.momx, mo.momy, mo.health);
         
         // Freelook code ripped off Heretic. Sieg heil!
         

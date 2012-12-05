@@ -815,6 +815,8 @@ public class ActionFunctions implements DoomStatusAware{
 
 	class P_MobjThinker implements ActionType1 {
 		public void invoke(mobj_t mobj) {
+		    
+		    //if (mobj.thingnum ==0 /*DS.gametic== 2535*/ ){
 		    		    
 		    //if (mobj.momx != 0 || mobj.momy != 0){
 
@@ -822,6 +824,7 @@ public class ActionFunctions implements DoomStatusAware{
                     mobj.info.doomednum, mobj.type.ordinal(), mobj.thingnum, mobj.x, mobj.y,
                     mobj.z, mobj.x >> 16, mobj.y >> 16, mobj.z >> 16, mobj.momx,
                     mobj.momy, mobj.health, mobj.flags,mobj.state.nextstate.ordinal());
+		    //}
 
 		    //}
 		    
@@ -2077,6 +2080,8 @@ public class ActionFunctions implements DoomStatusAware{
         slope = A.AimLineAttack (player.mo, angle, MELEERANGE+1);
         A.LineAttack (player.mo, angle, MELEERANGE+1, slope, damage);
 
+        DS.sync("Saw1 %d %d %d\n",slope, damage, angle);
+        
         if (!eval(A.linetarget))
         {
       	  S.StartSound(player.mo, sfxenum_t.sfx_sawful);
@@ -2111,6 +2116,9 @@ public class ActionFunctions implements DoomStatusAware{
             player.mo.angle += ANG90/20;
         }
         player.mo.flags |= MF_JUSTATTACKED;
+        
+        // SYNC DEBUG
+        DS.sync("Saw2 %d %d\n", angle, player.mo.angle);
         }
     }
 
@@ -2512,10 +2520,6 @@ public class ActionFunctions implements DoomStatusAware{
 
         if ( eval(actor.flags&MF_AMBUSH ))
         {
-            if (DS.gametic==157){
-                System.out.printf("%s about to check sight...\n",actor);
-                
-            }
             seeyou= (EN.CheckSight (actor, actor.target));              
         } else
             seeyou=true;
