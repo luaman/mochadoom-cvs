@@ -22,6 +22,7 @@ import n.DummyNetworkDriver;
 import static data.dstrings.*;
 import p.Actions;
 import p.BoomLevelLoader;
+import p.LevelLoader;
 import p.mobj_t;
 import automap.IAutoMap;
 import automap.Map;
@@ -109,7 +110,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.109.2.1 2012/11/19 22:15:26 velktron Exp $
+// $Id: DoomMain.java,v 1.109.2.2 2012/12/05 16:21:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -135,7 +136,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.109.2.1 2012/11/19 22:15:26 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.109.2.2 2012/12/05 16:21:03 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -1295,17 +1296,6 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         }
 
 
-
-        if ( gameaction != gameaction_t.ga_loadgame )
-        {
-            if (autostart || netgame)
-                InitNew (startskill, startepisode, startmap);
-            else
-                StartTitle ();                // start up intro loop
-
-        }
-
-
         if (fastdemo||normaldemo)
         {
             singledemo = true;              // quit after one demo
@@ -1315,6 +1305,18 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
             DeferedPlayDemo (loaddemo);
             DoomLoop ();  // never returns
         }
+        
+        if ( gameaction != gameaction_t.ga_loadgame)
+        {
+            if (autostart || netgame)
+                InitNew (startskill, startepisode, startmap);
+            else
+                StartTitle ();                // start up intro loop
+
+        }
+
+
+  
 
         
         
@@ -2034,7 +2036,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
 
     private final String turbomessage="is turbo!"; 
-
+    private boolean levelloaded;
+    
+    
     /**
      * G_Ticker
      * Make ticcmd_ts for the players.
@@ -2056,8 +2060,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         { 
             switch (gameaction) 
             { 
-            case ga_loadlevel: 
-                DoLoadLevel ();
+            case ga_loadlevel:
+                levelloaded=DoLoadLevel ();
+                if (!levelloaded) levelLoadFailure();
                 break; 
             case ga_newgame: 
                 DoNewGame (); 
@@ -2889,7 +2894,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
                 break;
             } 
 
-        if (!DoLoadLevel ()) levelLoadFailure();
+        levelloaded=DoLoadLevel ();
+        if (!levelloaded) levelLoadFailure();
     } 
 
     protected void levelLoadFailure(){
@@ -4126,7 +4132,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
         // Then the menu...
         status_holders.add(this.HU=new HU(this));
         status_holders.add(this.M=new Menu(this));
-        status_holders.add(this.LL=new BoomLevelLoader(this));
+        status_holders.add(this.LL=new LevelLoader(this));
         
         // This will set R.
         this.R= selectRenderer();
@@ -4140,7 +4146,7 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 
         //_D_: well, for EndLevel and Finale to work, they need to be instanciated somewhere!
         // it seems to fit perfectly here
-        status_holders.add(this.WI = new EndLevel(this));    
+        status_holders.add(this.WI = new EndLevel<T,V>(this));    
         status_holders.add(this.F = selectFinale());
         
         // TODO: find out if we have requests for a specific resolution,
@@ -4555,6 +4561,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.109.2.2  2012/12/05 16:21:03  velktron
+//Fixed strat LoadLevel
+//
 //Revision 1.109.2.1  2012/11/19 22:15:26  velktron
 //Inits modified DoomRandom
 //
