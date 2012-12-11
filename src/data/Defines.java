@@ -14,7 +14,7 @@ import doom.weapontype_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Defines.java,v 1.48 2012/09/24 17:16:22 velktron Exp $
+// $Id: Defines.java,v 1.48.2.1 2012/12/11 20:37:10 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -89,6 +89,7 @@ public static int MTF_HARD =       4;
 
 // Deaf monsters/do not react to sound.
 public static int MTF_AMBUSH =8;
+public static int MTF_MULTIPLAYER =16;
 
 //Maes: this makes it a bit less retarded.
 public static final int NUMCARDS=card_t.NUMCARDS.ordinal();
@@ -320,6 +321,6 @@ public static final int SAVESTRINGSIZE = 24;
 
  
 static final String
-rcsid = "$Id: Defines.java,v 1.48 2012/09/24 17:16:22 velktron Exp $";
+rcsid = "$Id: Defines.java,v 1.48.2.1 2012/12/11 20:37:10 velktron Exp $";
 }
 
