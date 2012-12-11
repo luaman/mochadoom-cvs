@@ -1765,6 +1765,11 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
  //
 
  protected class PIT_AddThingIntercepts implements PIT_MobjFunction{
+	 
+
+     // maybe make this a shared instance variable?
+     private divline_t dl = new divline_t();
+	 
  public boolean invoke(mobj_t thing) {
      int x1, y1, x2, y2; // fixed_t
 
@@ -1772,8 +1777,6 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
      boolean tracepositive;
 
-     // maybe make this a shared instance variable?
-     divline_t dl = new divline_t();
 
      int frac; // fixed_t
 
@@ -2424,6 +2427,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     @Override
     public void invoke(thinker_t thinker) {
         
+    	/*
         try {
         System.err.printf("Delete: %s %d<= %s %d => %s %d\n",
             ((mobj_t)thinker.prev).type,((mobj_t)thinker.prev).thingnum,
@@ -2431,7 +2435,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             ((mobj_t)thinker.next).type,((mobj_t)thinker.next).thingnum);
         } catch (ClassCastException e){
             
-        }
+        } */
         
         // Unlike Boom, if we reach here it gets zapped anyway
         //if (!thinker->references)
@@ -2445,9 +2449,9 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
             (next.prev = currentthinker = thinker.prev).next = next;
             //thinker.next=thinker.prev=null;
             try {
-            System.err.printf("Delete: %s %d <==> %s %d\n",
-                ((mobj_t)currentthinker.prev).type,((mobj_t)currentthinker.prev).thingnum,
-                ((mobj_t)currentthinker.next).type,((mobj_t)currentthinker.next).thingnum);
+           // System.err.printf("Delete: %s %d <==> %s %d\n",
+           //     ((mobj_t)currentthinker.prev).type,((mobj_t)currentthinker.prev).thingnum,
+           //     ((mobj_t)currentthinker.next).type,((mobj_t)currentthinker.next).thingnum);
             } catch (ClassCastException e){
                 
             }
