@@ -27,6 +27,25 @@ public class divline_t {
      int   y
      )
      {
+    	 
+    	 
+    	 // Using Killough's version.
+    	  return
+    	    (dx==0) ? x <= this.x ? dy > 0 : dy < 0 :
+    	    (dy==0) ? y <= this.y ? dx < 0 : dx > 0 :
+    	    (dy^dx^(x -= this.x)^(y -= this.y)) < 0 ? (dy^x) < 0 :
+    	    FixedMul(y>>8, this.dx>>8) >= FixedMul(this.dy>>8, x>>8);
+    	    /*
+    	    int PUREFUNC P_PointOnDivlineSide(fixed_t x, fixed_t y, const divline_t *line)
+    	    {
+    	      return
+    	        !line->dx ? x <= line->x ? line->dy > 0 : line->dy < 0 :
+    	        !line->dy ? y <= line->y ? line->dx < 0 : line->dx > 0 :
+    	        (line->dy^line->dx^(x -= line->x)^(y -= line->y)) < 0 ? (line->dy^x) < 0 :
+    	        FixedMul(y>>8, line->dx>>8) >= FixedMul(line->dy>>8, x>>8);
+    	    }*/
+    	    
+    /*
       int dx;
       int dy;
       int left;
@@ -64,6 +83,7 @@ public class divline_t {
       if (right < left)
       return false;       // front side
       return true;           // back side
+      */
      }
 
 

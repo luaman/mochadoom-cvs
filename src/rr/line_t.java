@@ -84,6 +84,8 @@ public class line_t
     // From Boom
     public int tranlump;
     
+    public int id;
+    
     /** killough 4/17/98: improves searches for tags. */
     public int firsttag,nexttag;    
 
@@ -112,6 +114,14 @@ public class line_t
     public boolean PointOnLineSide(int x, int y)
 
     {
+    	
+
+    	  return
+    			    (dx==0) ? x <= this.v1x ? this.dy > 0 : this.dy < 0 :
+    			    (dy==0) ? y <= this.v1y ? this.dx < 0 : this.dx > 0 :
+    			    FixedMul(y-this.v1y, this.dx>>FRACBITS) >=
+    			    FixedMul(this.dy>>FRACBITS, x-this.v1x);
+    	/*
         int dx, dy, left, right;
         if (this.dx == 0) {
             if (x <= this.v1x)
@@ -134,7 +144,7 @@ public class line_t
 
         if (right < left)
             return false; // front side
-        return true; // back side
+        return true; // back side*/
     }
 
     /**
