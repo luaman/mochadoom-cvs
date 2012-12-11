@@ -129,7 +129,8 @@ public enum think_t {
 	SpawnBlood, 
 	SpawnMapThing, 
 	SpawnMobj, 
-	SpawnMissile;
+	SpawnMissile,
+	SpawnPuff;
     
 	
 	think_t(){
