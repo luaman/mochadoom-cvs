@@ -1914,10 +1914,10 @@ int       damage )
 {
 mobj_t th;
 
-z += ((RND.P_Random(think_t.SpawnBlood,0)-RND.P_Random(think_t.SpawnBlood,0))<<10);
+z += ((RND.P_Random(think_t.SpawnBlood,0)-RND.P_Random(think_t.SpawnBlood,1))<<10);
 th = SpawnMobj (x,y,z, mobjtype_t.MT_BLOOD);
 th.momz = FRACUNIT*2;
-th.tics -= RND.P_Random(think_t.SpawnBlood,0)&3;
+th.tics -= RND.P_Random(think_t.SpawnBlood,2)&3;
 
 if (th.tics < 1)
 th.tics = 1;
@@ -1944,11 +1944,11 @@ int   z )
 {
 mobj_t th;
 
-z += ((RND.P_Random(think_t.TryWalk,0)-RND.P_Random(think_t.TryWalk,1))<<10);
+z += ((RND.P_Random(think_t.SpawnPuff,0)-RND.P_Random(think_t.SpawnPuff,1))<<10);
 
 th = SpawnMobj (x,y,z, mobjtype_t.MT_PUFF);
 th.momz = FRACUNIT;
-th.tics -= RND.P_Random(think_t.TryWalk,2)&3;
+th.tics -= RND.P_Random(think_t.SpawnPuff,2)&3;
 
 if (th.tics < 1)
 th.tics = 1;
