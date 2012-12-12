@@ -869,6 +869,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         // "amount" is only used for SOME platforms.
         //
         boolean DoPlat(line_t line, plattype_e type, int amount) {
+        	
             plat_t plat;
             int secnum = -1;
             boolean rtn = false;
@@ -898,6 +899,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 plat.type = type;
                 plat.sector = sec;
                 plat.sector.specialdata = plat;
+                System.err.printf("%s got a PLAT!\n",sec);
                 plat.function = think_t.T_PlatRaise;
                 AddThinker(plat);
                 plat.crush = false;
@@ -1830,41 +1832,6 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
     
     
    /////////// BEGIN MAP OBJECT CODE, USE AS BASIC
-    // ///////////////////////
-
-    int test;
-
-    //
-    // P_SetMobjState
-    // Returns true if the mobj is still present.
-    //
-
-    public boolean SetMobjState(mobj_t mobj, statenum_t state) {
-        state_t st;
-
-        do {
-            if (state == statenum_t.S_NULL) {
-                mobj.state = null;
-                RemoveMobj (mobj);
-                return false;
-            }
-
-            st = states[state.ordinal()];
-            mobj.state = st;
-            mobj.tics = st.tics;
-            mobj.sprite = st.sprite;
-            mobj.frame = (int) st.frame;
-
-            // Modified handling.
-            // Call action functions when the state is set
-            if (st.action!=null && st.action.getType() == think_t.acp1)
-                st.acp1.invoke(mobj);
-
-            state = st.nextstate;
-        } while (mobj.tics == 0);
-
-        return true;
-    }
 
     /**
      * P_ExplodeMissile
