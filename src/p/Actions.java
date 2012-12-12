@@ -1156,10 +1156,15 @@ public class Actions extends UnifiedGameMap {
          
           // if the sector has an active thinker, use it
           sec = LL.sides[ line.sidenum[side^1]].sector;
-         // secnum = sec.id;
-
+          
           if (sec.specialdata!=null)
           {
+        
+        	  if (sec.specialdata instanceof plat_t)
+        // [MAES]: demo sync for e1nm0646: emulates active plat_t interpreted
+        // as door. TODO: add our own overflow handling class.
+         door = ((plat_t)sec.specialdata).asVlDoor(LL.sectors);
+        	  else
          door = (vldoor_t) sec.specialdata;
          switch(line.special)
          {
@@ -3163,6 +3168,9 @@ mobj_t  thing )
 protected boolean gotoHitLine(intercept_t in, line_t li) {
     int x, y, z, frac;
 
+    if (DM.gametic==436)
+    	System.out.println("PUFF");
+    
     // position a bit closer
     frac = in.frac - FixedDiv (4*FRACUNIT,attackrange);
     x = trace.x + FixedMul (trace.dx, frac);
@@ -4076,6 +4084,12 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         attackrange = distance;
         aimslope = slope;
             
+        if (DeepSPos)
+        {
+         DM.sync("LineAtk an %d ds %d sl %d dm %d sz %d\n",
+          angle, attackrange, aimslope, damage, shootz);
+        }
+        
         PathTraverse ( t1.x, t1.y,
                  x2, y2,
                  PT_ADDLINES|PT_ADDTHINGS,
@@ -4651,7 +4665,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      
      final int validcount=R.getValidCount();
      
-     for (int list=offset;(lineinblock=LL.blockmap[list])!=-1;list++){
+     for (int list=offset+1;(lineinblock=LL.blockmap[list])!=-1;list++){
     	 ld = LL.lines[lineinblock];
          //System.out.println(ld);
          if (ld.validcount == validcount)
@@ -4780,23 +4794,78 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      mapx = xt1;
      mapy = yt1;
      
+     if (DeepSPos)
+     {
+      DM.sync("PTa: %d %d %d %d %d %d %d\n",
+       xt1, yt1, xt2, yt2, xstep, ystep, partial);
+     
+      DM.sync(
+       "PTb: %d %d\n",
+       xintercept, yintercept);
+     
+      DM.sync(
+       "PTc: %d %d %d %d\n",
+       mapx, mapy, mapxstep, mapystep);
+     }
+     
      for (count = 0 ; count < 64 ; count++)
      {
-     if (eval(flags &PT_ADDLINES))
+    	 
+    	  if (DeepSPos)
+    	  {
+    	   DM.sync("PT1 %d\n", count);
+    	  }
+    	 
+     if (flags(flags,PT_ADDLINES))
      {
-         if (!BlockLinesIterator (mapx, mapy,AddLineIntercepts))
-         return false;   // early out
+    	 
+    	   if (DeepSPos)
+    	   {
+    		   DM.sync("PT2 %d\n", count);
+    	   }
+         if (!BlockLinesIterator (mapx, mapy,AddLineIntercepts)){
+        	    if (DeepSPos)
+        	    {
+        	    	 DM.sync("PT3 %d\n", count);
+        	    }
+        	 return false;   // early out
+         }
      }
      
      if (eval(flags &PT_ADDTHINGS))
      {
-         if (!BlockThingsIterator (mapx, mapy,AddThingIntercepts))
+    	 
+    	 
+  	   if (DeepSPos)
+  	   {
+  		   DM.sync("PT4 %d\n", count);
+  	   }
+  	   
+         if (!BlockThingsIterator (mapx, mapy,AddThingIntercepts)){
+        	 
+      	   if (DeepSPos)
+      	   {
+      		   DM.sync("PT5 %d\n", count);
+      	   }
+         
          return false;   // early out
+         }
      }
          
+	 
+	   if (DeepSPos)
+	   {
+		   DM.sync("PT6 %d\n", count);
+	   }
+     
      if (mapx == xt2
          && mapy == yt2)
      {
+    	 
+  	   if (DeepSPos)
+  	   {
+  		   DM.sync("PT7 %d\n", count);
+  	   }
          break;
      }
      
@@ -4804,14 +4873,29 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      boolean changeY = (xintercept >> FRACBITS) == mapx;
      if (changeX)
      {
+    	 
+    	   if (DeepSPos)
+      	   {
+      		   DM.sync("PT8 %d\n", count);
+      	   }
          yintercept += ystep;
          mapx += mapxstep;
-     }
+     } else //[MAES]: this fixed sync issues. Lookup linuxdoom
      if (changeY)
      {
+    	 
+    	   if (DeepSPos)
+      	   {
+      		   DM.sync("PT9 %d\n", count);
+      	   }
          xintercept += xstep;
          mapy += mapystep;
-     }
+     } 
+     
+	   if (DeepSPos)
+	   {
+		   DM.sync("PT10 %d\n", count);
+	   }
          
      }
      // go through the sorted list
@@ -5395,6 +5479,7 @@ PIT_StompThing StompThing;
 PIT_CheckThing CheckThing;
 PIT_RadiusAttack RadiusAttack;
 PIT_ChangeSector ChangeSector;
+public final boolean DeepSPos=false;
 
 /**
  * PIT_VileCheck
