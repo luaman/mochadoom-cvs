@@ -12,5 +12,7 @@ public enum vldoor_e {
      raiseIn5Mins,
      blazeRaise,
      blazeOpen,
-     blazeClose
+     blazeClose;
+     
+     public static final int VALUES=vldoor_e.values().length;
  }
