@@ -815,8 +815,6 @@ public class ActionFunctions implements DoomStatusAware{
 
 	class P_MobjThinker implements ActionType1 {
 		public void invoke(mobj_t mobj) {
-		    
-		    //if (mobj.thingnum ==0 /*DS.gametic== 2535*/ ){
 		    		    
 		    //if (mobj.momx != 0 || mobj.momy != 0){
 
@@ -824,8 +822,6 @@ public class ActionFunctions implements DoomStatusAware{
                     mobj.info.doomednum, mobj.type.ordinal(), mobj.thingnum, mobj.x, mobj.y,
                     mobj.z, mobj.x >> 16, mobj.y >> 16, mobj.z >> 16, mobj.momx,
                     mobj.momy, mobj.health, mobj.flags,mobj.state.nextstate.ordinal());
-		    //}
-
 		    //}
 		    
 			// momentum movement
@@ -1086,16 +1082,32 @@ public class ActionFunctions implements DoomStatusAware{
         if (actor.target==null)
         return;
 
+    	if (DS.gametic==436 && actor.thingnum==86)
+    		System.out.println("SHIT");
+    		
         S.StartSound(actor, sfxenum_t.sfx_shotgn);
         A_FaceTarget (actor);
         bangle = actor.angle;
         slope = A.AimLineAttack (actor, bangle, MISSILERANGE);
-
+        
         for (i=0 ; i<3 ; i++)
         {
+        	
+        	if (DS.gametic==436 && actor.thingnum==86){
+        		System.out.println("SHIT");
+        	}
         angle = bangle + ((RND.P_Random(think_t.A_SPosAttack,0)-RND.P_Random(think_t.A_SPosAttack,1))<<20);
         damage = ((RND.P_Random(think_t.A_SPosAttack,2)%5)+1)*3;
-        A.LineAttack (actor, angle, MISSILERANGE, slope, damage);
+        
+        //A.DeepSPos = (DS.gametic == 436 && actor.thingnum == 86 && i == 2);
+        
+        if ( A.DeepSPos)
+        {
+         A.DM.sync("DeepSPos an %d sl %d dm %d\n",
+           angle, slope, damage);
+        }
+        
+        A.LineAttack (actor, angle&BITS32, MISSILERANGE, slope, damage);
         }
         }
 	}
