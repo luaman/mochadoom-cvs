@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.62 2012/11/08 17:16:12 velktron Exp $
+// $Id: WadLoader.java,v 1.62.2.1 2013/01/09 14:24:12 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -185,7 +185,7 @@ public class WadLoader implements IWadLoader {
 			singleinfo.size = InputStreamSugar.getSizeEstimate(handle,wadinfo.entry);
 			
 			// Single lumps. Only use 8 characters			
-			singleinfo.name = C2JUtils.removeExtension(uri).toUpperCase();
+			singleinfo.actualname=singleinfo.name = C2JUtils.removeExtension(uri).toUpperCase();
 			
 			// MAES: check out certain known types of extension
 			if (C2JUtils.checkForExtension(uri,"lmp"))			
@@ -1390,6 +1390,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.62.2.1  2013/01/09 14:24:12  velktron
+//Uses the rest of the crap
+//
 //Revision 1.62  2012/11/08 17:16:12  velktron
 //Made GetLumpForNum generic.
 //
