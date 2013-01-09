@@ -269,7 +269,7 @@ public class line_t
     }
 
     public String toString() {
-        return (String.format("Flags: %d Special %d Tag: %d ", this.flags,
+        return (String.format("Line %d Flags: %x Special %d Tag: %d ", this.id,this.flags,
             this.special, this.tag));
     }
 
