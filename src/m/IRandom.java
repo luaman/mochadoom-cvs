@@ -9,6 +9,7 @@ public interface IRandom {
 	public void ClearRandom ();
 	public int getIndex();
 	public int P_Random(int caller);
+	public int P_Random(String message);
 	public int P_Random(think_t caller, int sequence);
 	public int P_Random(think_t caller, mobjtype_t type,int sequence);
 }

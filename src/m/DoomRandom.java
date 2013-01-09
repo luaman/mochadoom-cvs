@@ -6,7 +6,7 @@ import doom.think_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomRandom.java,v 1.2.10.2 2012/11/20 15:59:20 velktron Exp $
+// $Id: DoomRandom.java,v 1.2.10.3 2013/01/09 19:38:26 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: DoomRandom.java,v $
+// Revision 1.2.10.3  2013/01/09 19:38:26  velktron
+// Printing arbitrary messages
+//
 // Revision 1.2.10.2  2012/11/20 15:59:20  velktron
 // More tooling functions.
 //
@@ -114,6 +117,13 @@ public int P_Random ()
 public int P_Random(int caller) {
 	int value = P_Random();
 	SLY.sync("PR #%d [%d]=%d\n",caller,prndindex,value);
+	return value;
+}
+
+public int P_Random(String message) {
+	int value = P_Random();
+	SLY.sync("PR %s [%d]=%d\n", message,
+			prndindex, value);
 	return value;
 }
 
