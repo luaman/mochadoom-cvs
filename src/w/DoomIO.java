@@ -22,10 +22,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomIO.java,v 1.2 2011/10/25 19:40:50 velktron Exp $
+//$Id: DoomIO.java,v 1.2.4.1 2013/01/09 14:23:38 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import m.Swap;
@@ -81,7 +82,7 @@ public class DoomIO  {
 
        dis.read(bb, 0, len);
 
-       return new String(bb, 0, len);
+       return new String(bb, 0, len,Charset.forName("ISO-8859-1"));
    }
 
 /** MAES: Reads a specified number of bytes from a file into a new String.
@@ -119,7 +120,7 @@ public class DoomIO  {
 
        f.read(bb, 0, len);
 
-       return new String(bb, 0, len);
+       return new String(bb, 0, len,Charset.forName("ISO-8859-1"));
    }
    
    /** MAES: Reads a specified number of bytes from a file into a new, NULL TERMINATED String.
@@ -150,7 +151,9 @@ public class DoomIO  {
               }
               
           }
-          return new String(bb, 0, terminator);
+          
+          // This is the One True Encoding for Doom.
+          return new String(bb, 0, terminator,Charset.forName("ISO-8859-1"));
       }
    
    /** MAES: Reads multiple strings with a specified number of bytes from a file.
@@ -213,7 +216,7 @@ public class DoomIO  {
        if (s==null) return;
        
        if (s.length() != 0){
-           byte[] dest=s.getBytes();
+           byte[] dest=s.getBytes("ISO-8859-1");
            dos.write(dest,0,Math.min(len,dest.length));
            // Fill in with 0s if something's left.
            if (dest.length<len){
