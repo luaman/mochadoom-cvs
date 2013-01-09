@@ -1372,6 +1372,7 @@ public class BoomLevelLoader
         for (i = 0; i < numlines; i++) {
             final maplinedef_t mld = data[i];
             line_t ld = lines[i];
+            ld.id=i;
             vertex_t v1, v2;
 
             ld.flags = mld.flags;
