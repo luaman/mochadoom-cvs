@@ -601,6 +601,10 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
         boolean CheckMissileRange(mobj_t actor) {
             int dist; // fixed_t
 
+            if (DM.gametic == 864 && actor.thingnum== 26){
+                System.err.println("Shit!");
+            }
+            
             if (!CheckSight(actor, actor.target))
                 return false;
 
@@ -1056,6 +1060,32 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
 
         int[] sightcounts ;
 
+        
+        /* cph - this is killough's 4/19/98 version of P_InterceptVector and
+         *  P_InterceptVector2 (which were interchangeable). We still use this
+         *  in compatibility mode. */
+        private final int P_InterceptVector2(final divline_t v2, final divline_t v1)
+        {
+          int  den;
+          return eval(den = FixedMul(v1.dy>>8, v2.dx) - FixedMul(v1.dx>>8, v2.dy)) ?
+            FixedDiv(FixedMul((v1.x - v2.x)>>8, v1.dy) +
+                     FixedMul((v2.y - v1.y)>>8, v1.dx), den) : 0;
+        }
+
+        private final int P_InterceptVector(final divline_t v2, final divline_t v1)
+        {
+          if (false/*compatibility_level < prboom_4_compatibility*/)
+            return P_InterceptVector2(v2, v1);
+          else {
+            /* cph - This was introduced at prboom_4_compatibility - no precision/overflow problems */
+            long den = (long)v1.dy * v2.dx - (long)v1.dx * v2.dy;
+            den >>= 16;
+            if (!eval(den))
+              return 0;
+            return (int)(((long)(v1.x - v2.x) * v1.dy - (long)(v1.y - v2.y) * v1.dx) / den);
+          }
+        }
+        
         /**
          * P_InterceptVector2 Returns the fractional intercept point along the
          * first divline. This is only called by the addthings and addlines
@@ -1192,7 +1222,7 @@ public abstract class UnifiedGameMap implements ThinkerList,DoomStatusAware{
                 if (openbottom >= opentop)
                     return false; // stop
 
-                frac = InterceptVector2(strace, divl);
+                frac = P_InterceptVector(strace, divl);
 
                 if (front.floorheight != back.floorheight) {
                     slope = FixedDiv(openbottom - sightzstart, frac);
