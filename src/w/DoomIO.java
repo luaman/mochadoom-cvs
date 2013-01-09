@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomIO.java,v 1.2.4.1 2013/01/09 14:23:38 velktron Exp $
+//$Id: DoomIO.java,v 1.2.4.2 2013/01/09 15:07:36 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
@@ -239,7 +239,7 @@ public class DoomIO  {
    public static void readObjectArrayWithReflection(DataInputStream dis,IReadableDoomObject[] s,int len) throws Exception {
 
        if (len==0) return;
-       Class c=s.getClass().getComponentType();
+       Class<?> c=s.getClass().getComponentType();
        
        for (int i=0;i<Math.min(len,s.length);i++){
            if (s[i]==null) s[i]=(IReadableDoomObject) c.newInstance();
@@ -247,7 +247,7 @@ public class DoomIO  {
        }
    }
    
-   public static void readObjectArray(DataInputStream dis,IReadableDoomObject[] s,int len, Class c) throws Exception {
+   public static void readObjectArray(DataInputStream dis,IReadableDoomObject[] s,int len, Class<?> c) throws Exception {
 
        if ((s==null)||(len==0)) return;
        
