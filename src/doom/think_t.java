@@ -1,31 +1,15 @@
 package doom;
 
-//Historically, "think_t" is yet another
-//function pointer to a routine to handle
-//an actor.
-
-//
-//Experimental stuff.
-//To compile this as "ANSI C with classes"
-//we will need to handle the various
-//action functions cleanly.
-//
-//typedef  void (*actionf_v)();
-//typedef  void (*actionf_p1)( void* );
-//typedef  void (*actionf_p2)( void*, void* );
-
-/*typedef union
-{
-actionf_p1	acp1;
-actionf_v	acv;
-actionf_p2	acp2;
-
-} actionf_t;
-
-*/
+/** Mocha Doom uses the think_t type as an ENUM for available action functions. This
+ * makes enumerations etc. easy to keep track of.
+ * 
+ * @author velktron
+ *
+ */
 
 public enum think_t {
-	NOP, // Special.
+    /** Here's your "decent NOP" function */
+	NOP,
 	A_Light0(2),
     A_WeaponReady(2),
     A_Lower(2),
@@ -69,6 +53,30 @@ public enum think_t {
     A_FireCrackle(1),
     A_Tracer(1),
     A_SkelWhoosh(1),
+  //Historically, "think_t" is yet another
+  //function pointer to a routine to handle
+  //an actor.
+
+  //
+  //Experimental stuff.
+  //To compile this as "ANSI C with classes"
+  //we will need to handle the various
+  //action functions cleanly.
+  //
+  //typedef  void (*actionf_v)();
+  //typedef  void (*actionf_p1)( void* );
+  //typedef  void (*actionf_p2)( void*, void* );
+
+  /*typedef union
+  {
+  actionf_p1  acp1;
+  actionf_v   acv;
+  actionf_p2  acp2;
+
+  } actionf_t;
+
+  */
+
     A_SkelFist(1),
     A_SkelMissile(1),
     A_FatRaise(1),
@@ -109,9 +117,31 @@ public enum think_t {
 	T_MoveFloor(1),
 	T_VerticalDoor(1),
 	T_PlatRaise(1), 
-	T_SlidingDoor(1);
+	T_SlidingDoor(1),
+	// The following are dummies that exist only for demo sync debugging
+	DeathMatchSpawnPlayer,
+	PlayerInSpecialSector, 
+	SpawnLightFlash, 
+	SpawnStrobeFlash, 
+	ExplodeMissile,
+	CheckMissileRange,
+	DoPlat,
+	CheckMissileSpawn,
+	DamageMobj, 
+	KillMobj, 
+	NewChaseDir, 
+	P_GunShot, 
+	PIT_ChangeSector, 
+	PIT_CheckThing, 
+	TryWalk, 
+	SpawnBlood, 
+	SpawnMapThing, 
+	SpawnMobj, 
+	SpawnMissile,
+	SpawnPuff;
+    
 	
-    think_t(){
+	think_t(){
 	    type=0; // Default, but Doom has no "type 0" functions!
 	}
 	
