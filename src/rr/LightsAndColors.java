@@ -1,6 +1,7 @@
 package rr;
 
-import i.BppMode;
+import static p.MobjFlags.MF_TRANSLATION;
+import static p.MobjFlags.MF_TRANSSHIFT;
 import i.Main;
 
 /**
@@ -128,6 +129,10 @@ public class LightsAndColors<V> {
         MAXLIGHTSCALE = 3*LIGHTLEVELS/2;
         LIGHTSCALESHIFT = 17        -LBITS;
         LIGHTZSHIFT=25-LBITS;
+    }
+
+    public final byte[] getTranslationTable(long mobjflags) {
+        return translationtables[(int) ((mobjflags & MF_TRANSLATION)>>MF_TRANSSHIFT)];
     }
     
 }
