@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.16 2012/11/06 16:05:29 velktron Exp $
+// $Id: DoomSystem.java,v 1.17 2013/06/03 10:54:11 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,12 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.17  2013/06/03 10:54:11  velktron
+// System interface allows for a logging subsystem, but implementation details may very well vary.
+//
+// Revision 1.16.2.1  2012/11/19 22:14:35  velktron
+// Sync tooling shutdown.
+//
 // Revision 1.16  2012/11/06 16:05:29  velktron
 // Variables manager now part of Main.
 //
@@ -115,7 +121,7 @@ public class DoomSystem implements IDoomSystem, DoomStatusAware{
 static int	mb_used = 6;
 
 // Even the SYSTEM needs to know about DOOM!!!!
-protected DoomMain DM;
+protected DoomMain<?,?> DM;
 
 @Override
 public void
@@ -164,6 +170,7 @@ public void Quit ()
 	// TODO Auto-generated catch block
 	e.printStackTrace();
 }
+ DM.debugEnd();
  DM.ISND.ShutdownSound();
  DM.IMUS.ShutdownMusic();
  DM.commit();
