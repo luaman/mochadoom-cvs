@@ -95,9 +95,12 @@ public class sector_t
     /** Use for internal identification */
     public int id;
 
+    /** killough 1/30/98: improves searches for tags. */
+    public int nexttag,firsttag;  
+
     public String toString() {
         String str =
-            String.format("Sector: %x %x %d %d %d %d %d", floorheight,
+            String.format("Sector: %d %x %x %d %d %d %d %d", id, floorheight,
                 ceilingheight, floorpic, ceilingpic, lightlevel, special, // needed?
                 tag); // needed?
 
