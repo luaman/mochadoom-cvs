@@ -22,16 +22,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 //Created on 24.07.2004 by RST.
 
-//$Id: DoomIO.java,v 1.2 2011/10/25 19:40:50 velktron Exp $
+//$Id: DoomIO.java,v 1.3 2013/06/03 10:30:20 velktron Exp $
 
 import java.io.*;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.util.List;
 
 import m.Swap;
 
 /**
-* An extenstion of RandomAccessFile, which handles readString/WriteString specially 
+* An extension of RandomAccessFile, which handles readString/WriteString specially 
 * and offers several Doom related (and cross-OS) helper functions for reading/writing
 * arrays of multiple objects or fixed-length strings from/to disk.
 * 
@@ -81,7 +82,7 @@ public class DoomIO  {
 
        dis.read(bb, 0, len);
 
-       return new String(bb, 0, len);
+       return new String(bb, 0, len,Charset.forName("ISO-8859-1"));
    }
 
 /** MAES: Reads a specified number of bytes from a file into a new String.
@@ -119,7 +120,7 @@ public class DoomIO  {
 
        f.read(bb, 0, len);
 
-       return new String(bb, 0, len);
+       return new String(bb, 0, len,Charset.forName("ISO-8859-1"));
    }
    
    /** MAES: Reads a specified number of bytes from a file into a new, NULL TERMINATED String.
@@ -150,7 +151,9 @@ public class DoomIO  {
               }
               
           }
-          return new String(bb, 0, terminator);
+          
+          // This is the One True Encoding for Doom.
+          return new String(bb, 0, terminator,Charset.forName("ISO-8859-1"));
       }
    
    /** MAES: Reads multiple strings with a specified number of bytes from a file.
@@ -213,7 +216,7 @@ public class DoomIO  {
        if (s==null) return;
        
        if (s.length() != 0){
-           byte[] dest=s.getBytes();
+           byte[] dest=s.getBytes("ISO-8859-1");
            dos.write(dest,0,Math.min(len,dest.length));
            // Fill in with 0s if something's left.
            if (dest.length<len){
@@ -236,7 +239,7 @@ public class DoomIO  {
    public static void readObjectArrayWithReflection(DataInputStream dis,IReadableDoomObject[] s,int len) throws Exception {
 
        if (len==0) return;
-       Class c=s.getClass().getComponentType();
+       Class<?> c=s.getClass().getComponentType();
        
        for (int i=0;i<Math.min(len,s.length);i++){
            if (s[i]==null) s[i]=(IReadableDoomObject) c.newInstance();
@@ -244,7 +247,7 @@ public class DoomIO  {
        }
    }
    
-   public static void readObjectArray(DataInputStream dis,IReadableDoomObject[] s,int len, Class c) throws Exception {
+   public static void readObjectArray(DataInputStream dis,IReadableDoomObject[] s,int len, Class<?> c) throws Exception {
 
        if ((s==null)||(len==0)) return;
        
