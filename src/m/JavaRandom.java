@@ -2,10 +2,13 @@ package m;
 
 import java.util.Random;
 
+import data.mobjtype_t;
+import doom.think_t;
+
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: JavaRandom.java,v 1.2 2011/07/27 20:47:46 velktron Exp $
+// $Id: JavaRandom.java,v 1.3 2013/06/03 11:00:03 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -64,10 +67,37 @@ public int getIndex(){
 private Random r;
 private Random m;
 
+@Override
+public int P_Random(int caller) {    
+    // DUMMY
+    return P_Random();
+}
+
+@Override
+public int P_Random(String message) {
+    // DUMMY
+    return P_Random();
+}
+
+@Override
+public int P_Random(think_t caller, int sequence) {
+    // DUMMY
+    return P_Random();
+}
+
+@Override
+public int P_Random(think_t caller, mobjtype_t type, int sequence) {
+    // DUMMY
+    return P_Random();
+}
+
 }
 
 
 //$Log: JavaRandom.java,v $
+//Revision 1.3  2013/06/03 11:00:03  velktron
+//Implements interface without logging.
+//
 //Revision 1.2  2011/07/27 20:47:46  velktron
 //Proper commenting, cleanup.
 //
