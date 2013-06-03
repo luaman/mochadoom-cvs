@@ -18,12 +18,22 @@ public class thinker_t implements CacheableDoomObject,IReadableDoomObject,IPacka
    public thinker_t prev;
    public thinker_t next;
    public think_t     function;
+
+   /* killough 8/29/98: we maintain thinkers in several equivalence classes,
+    * according to various criteria, so as to allow quicker searches.
+    */
+
+   /** Next, previous thinkers in same class */
+   
+   public thinker_t cnext, cprev;
+
+   
    // Thinkers can either have one parameter of type (mobj_t),
    // Or otherwise be sector specials, flickering lights etc.
    // Those are atypical and need special handling.
    public ActionType1     acp1;
    public ActionType2     acp2;
-   public ActionTypeSS     acpss;
+   public ActionTypeSS<?>     acpss;
    
    /** extra fields, to use when archiving/unarchiving for
     * identification. Also in blocklinks, etc.
