@@ -72,11 +72,11 @@ public class seg_t
         int left;
         int right;
 
-        lx = line.v1.x;
-        ly = line.v1.y;
+        lx = line.v1x;
+        ly = line.v1y;
 
-        ldx = line.v2.x - lx;
-        ldy = line.v2.y - ly;
+        ldx = line.v2x - lx;
+        ldy = line.v2y - ly;
 
         if (ldx == 0) {
             if (x <= lx)
@@ -132,11 +132,11 @@ public class seg_t
         int left;
         int right;
 
-        lx = this.v1.x;
-        ly = this.v1.y;
+        lx = this.v1x;
+        ly = this.v1y;
 
-        ldx = this.v2.x - lx;
-        ldy = this.v2.y - ly;
+        ldx = this.v2x - lx;
+        ldy = this.v2y - ly;
 
         if (ldx == 0) {
             if (x <= lx)
@@ -178,7 +178,7 @@ public class seg_t
         return String
                 .format(
                     "Seg %d\n\tFrontsector: %s\n\tBacksector: %s\n\tVertexes: %x %x %x %x",
-                    iSegID, frontsector, backsector, v1.x, v1.y, v2.x, v2.y);
+                    iSegID, frontsector, backsector, v1x, v1y, v2x, v2y);
     }
 
     @Override
