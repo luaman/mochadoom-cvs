@@ -4665,7 +4665,8 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      
      final int validcount=R.getValidCount();
      
-     for (int list=offset+1;(lineinblock=LL.blockmap[list])!=-1;list++){
+     // SYNC ISSUE: offset+1 causes desync on Plutonia DEMO2
+     for (int list=offset;(lineinblock=LL.blockmap[list])!=-1;list++){
     	 ld = LL.lines[lineinblock];
          //System.out.println(ld);
          if (ld.validcount == validcount)
