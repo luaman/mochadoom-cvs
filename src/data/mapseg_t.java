@@ -42,4 +42,9 @@ public class mapseg_t implements CacheableDoomObject{
       
    }
    
+   public String toString(){
+       return String.format("mapseg_t v1,2: %d %d ang: %d ld: %d sd: %d off: %d",
+           (int)v1,(int)v2,(int)angle,(int)linedef,(int)side,(int)offset);
+   }
+   
  };
