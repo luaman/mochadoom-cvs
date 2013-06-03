@@ -21,14 +21,14 @@ import doom.thinker_t;
 import p.AbstractLevelLoader;
 import p.Actions;
 import p.ThinkerList;
-import p.ceiling_t;
-import p.floormove_t;
-import p.glow_t;
-import p.lightflash_t;
 import p.mobj_t;
-import p.plat_t;
-import p.strobe_t;
-import p.vldoor_t;
+import p.specials.ceiling_t;
+import p.specials.floormove_t;
+import p.specials.glow_t;
+import p.specials.lightflash_t;
+import p.specials.plat_t;
+import p.specials.strobe_t;
+import p.specials.vldoor_t;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
@@ -37,7 +37,7 @@ import utils.C2JUtils;
 public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
     
     VanillaDSGHeader header;
-    DoomStatus DS;
+    DoomStatus<?,?> DS;
     AbstractLevelLoader LL;
     Actions A;
     IDoomSystem I;
@@ -137,10 +137,8 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
   */
  protected void ArchivePlayers () throws IOException
  {
-     int     i;
-     int     j;
      
-     for (i=0 ; i<MAXPLAYERS ; i++)
+     for (int i=0 ; i<MAXPLAYERS ; i++)
      {
      // Multiplayer savegames are different!
      if (!DS.playeringame[i])
@@ -165,9 +163,6 @@ protected void ArchiveWorld () throws IOException
   sector_t       sec;
   line_t     li;
   side_t     si;
-  short      put;
-  
-  //put = (short *)save_p;
   
   // do sectors (allocate 14 bytes per sector)
   ByteBuffer buffer=ByteBuffer.allocate(LL.numsectors*14);
