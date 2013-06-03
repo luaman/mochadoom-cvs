@@ -83,6 +83,11 @@ public class line_t
 
     // From Boom
     public int tranlump;
+    
+    public int id;
+    
+    /** killough 4/17/98: improves searches for tags. */
+    public int firsttag,nexttag;    
 
     /** For Boom stuff, interprets sidenum specially */
     public int getSpecialSidenum() {
@@ -109,6 +114,14 @@ public class line_t
     public boolean PointOnLineSide(int x, int y)
 
     {
+    	
+
+    	  return
+    			    (dx==0) ? x <= this.v1x ? this.dy > 0 : this.dy < 0 :
+    			    (dy==0) ? y <= this.v1y ? this.dx < 0 : this.dx > 0 :
+    			    FixedMul(y-this.v1y, this.dx>>FRACBITS) >=
+    			    FixedMul(this.dy>>FRACBITS, x-this.v1x);
+    	/*
         int dx, dy, left, right;
         if (this.dx == 0) {
             if (x <= this.v1x)
@@ -131,7 +144,7 @@ public class line_t
 
         if (right < left)
             return false; // front side
-        return true; // back side
+        return true; // back side*/
     }
 
     /**
@@ -256,7 +269,7 @@ public class line_t
     }
 
     public String toString() {
-        return (String.format("Flags: %d Special %d Tag: %d ", this.flags,
+        return (String.format("Line %d Flags: %x Special %d Tag: %d ", this.id,this.flags,
             this.special, this.tag));
     }
 
