@@ -900,6 +900,35 @@ public abstract class AbstractLevelLoader
         return (int) ((blocky<=this.blockmapyneg)?blocky&0x1FF:blocky);
     }
 
+    /// Sector tag stuff, lifted off Boom
+    
+  /** Hash the sector tags across the sectors and linedefs.
+   *  Call in SpawnSpecials.
+   */
+    
+    public void InitTagLists()
+    {
+      int i;
 
+      for (i=numsectors; --i>=0; )        // Initially make all slots empty.
+        sectors[i].firsttag = -1;
+      for (i=numsectors; --i>=0; )        // Proceed from last to first sector
+        {                                 // so that lower sectors appear first
+          int j = sectors[i].tag % numsectors; // Hash func
+          sectors[i].nexttag = sectors[j].firsttag;   // Prepend sector to chain
+          sectors[j].firsttag = i;
+        }
+
+      // killough 4/17/98: same thing, only for linedefs
+
+      for (i=numlines; --i>=0; )        // Initially make all slots empty.
+        lines[i].firsttag = -1;
+      for (i=numlines; --i>=0; )        // Proceed from last to first linedef
+        {                               // so that lower linedefs appear first
+          int j = lines[i].tag % numlines; // Hash func
+          lines[i].nexttag = lines[j].firsttag;   // Prepend linedef to chain
+          lines[j].firsttag = i;
+        }
+    }
     
 }
