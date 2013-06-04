@@ -6,7 +6,7 @@ import doom.think_t;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomRandom.java,v 1.3 2013/06/03 10:53:29 velktron Exp $
+// $Id: DoomRandom.java,v 1.4 2013/06/04 11:29:25 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,6 +21,9 @@ import doom.think_t;
 // GNU General Public License for more details.
 //
 // $Log: DoomRandom.java,v $
+// Revision 1.4  2013/06/04 11:29:25  velktron
+// Dummy implementations
+//
 // Revision 1.3  2013/06/03 10:53:29  velktron
 // Implements the new IRandom.
 //
@@ -132,15 +135,17 @@ public int P_Random(String message) {
 
 public int P_Random(think_t caller, int sequence) {
 	int value = P_Random();
+	/*
 	SLY.sync("PR #%d %s_%d [%d]=%d\n", caller.ordinal(),caller,sequence,
-			prndindex, value);
+			prndindex, value);*/
 	return value;
 }
 
 public int P_Random(think_t caller, mobjtype_t type,int sequence) {
     int value = P_Random();
+    /*
     SLY.sync("PR #%d %s_%d %s [%d]=%d\n", caller.ordinal(),caller,sequence,
-        type, prndindex, value);
+        type, prndindex, value);*/
     return value;
 }
 
