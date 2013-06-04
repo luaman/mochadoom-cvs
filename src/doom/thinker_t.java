@@ -33,7 +33,7 @@ public class thinker_t implements CacheableDoomObject,IReadableDoomObject,IPacka
    // Those are atypical and need special handling.
    public ActionType1     acp1;
    public ActionType2     acp2;
-   public ActionTypeSS<?>     acpss;
+   public ActionTypeSS     acpss;
    
    /** extra fields, to use when archiving/unarchiving for
     * identification. Also in blocklinks, etc.
