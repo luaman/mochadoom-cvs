@@ -146,7 +146,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	public long tics; // state tic counter
 	// MAES: was a pointer
 	public state_t state;
-	public int flags;
+	public long flags;
 	public int health;
 
 	/** Movement direction, movement generation (zig-zagging). */
@@ -411,6 +411,9 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	public int playerid;
 	public int p_tracer;
 
+	/** Unique thing id, used during sync debugging */
+    public int thingnum;
+
 	public void clear() {
 		fastclear.rewind();
 		try {
@@ -469,7 +472,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		b.putInt(pointer(info)); // TODO: mobjinfo
 		b.putInt((int) (this.tics & Tables.BITS32));
 		b.putInt(this.state.id); // TODO: state OK?
-		b.putInt(this.flags);
+		b.putInt((int) this.flags); // truncate
 		b.putInt(this.health);
 		b.putInt(this.movedir);
 		b.putInt(this.movecount);
@@ -514,7 +517,7 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 		this.tics = Tables.BITS32 & b.getInt(); // 100
 		// System.out.println("State"+f.readLEInt());
 		this.stateid = b.getInt(); // TODO: state OK?
-		this.flags = b.getInt();
+		this.flags = b.getInt()&Tables.BITS32; // Only 32-bit flags can be restored
 		this.health = b.getInt();
 		this.movedir = b.getInt();
 		this.movecount = b.getInt();
@@ -557,6 +560,10 @@ public class mobj_t extends thinker_t implements ISoundOrigin, Interceptable,
 	@Override
 	public final int getZ() {
 		return z;
+	}
+	
+	public String toString(){
+	    return String.format("%s %d",this.type,this.thingnum);
 	}
 
 }
