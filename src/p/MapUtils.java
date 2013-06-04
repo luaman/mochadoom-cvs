@@ -2,6 +2,7 @@ package p;
 
 import static m.fixed_t.FixedDiv;
 import static m.fixed_t.FixedMul;
+import static utils.C2JUtils.eval;
 
 public class MapUtils {
 
@@ -92,6 +93,66 @@ public class MapUtils {
   #endif */
   }
   
+
+  /* cph - this is killough's 4/19/98 version of P_InterceptVector and
+   *  P_InterceptVector2 (which were interchangeable). We still use this
+   *  in compatibility mode. */
+  private static final int P_InterceptVector2(final divline_t v2, final divline_t v1)
+  {
+    int  den;
+    return eval(den = FixedMul(v1.dy>>8, v2.dx) - FixedMul(v1.dx>>8, v2.dy)) ?
+      FixedDiv(FixedMul((v1.x - v2.x)>>8, v1.dy) +
+               FixedMul((v2.y - v1.y)>>8, v1.dx), den) : 0;
+  }
+
   
+  /** Used by CrossSubSector
+   * 
+   * @param v2
+   * @param v1
+   * @return
+   */
+  public static final int P_InterceptVector(final divline_t v2, final divline_t v1)
+  {
+    if (false/*compatibility_level < prboom_4_compatibility*/)
+      return P_InterceptVector2(v2, v1);
+    else {
+      /* cph - This was introduced at prboom_4_compatibility - no precision/overflow problems */
+      long den = (long)v1.dy * v2.dx - (long)v1.dx * v2.dy;
+      den >>= 16;
+      if (!eval(den))
+        return 0;
+      return (int)(((long)(v1.x - v2.x) * v1.dy - (long)(v1.y - v2.y) * v1.dx) / den);
+    }
+  }
+  
+  /**
+   * P_InterceptVector2 Returns the fractional intercept point along the
+   * first divline. This is only called by the addthings and addlines
+   * traversers.
+   * 
+   * @param v2
+   * @param v1
+   * @returnP_InterceptVector2
+   */
+
+  public static final int InterceptVector2(divline_t v2, divline_t v1) {
+      int frac; // fixed_t
+      int num; // fixed_t
+      int den; // fixed_t
+
+      den = FixedMul(v1.dy >> 8, v2.dx) - FixedMul(v1.dx >> 8, v2.dy);
+
+      if (den == 0)
+          return 0;
+      // I_Error ("P_InterceptVector: parallel");
+
+      num =
+          FixedMul((v1.x - v2.x) >> 8, v1.dy)
+                  + FixedMul((v2.y - v1.y) >> 8, v1.dx);
+      frac = FixedDiv(num, den);
+
+      return frac;
+  }
   
 }
