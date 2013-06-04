@@ -66,4 +66,42 @@ public class plat_t extends SectorAction implements IReadableDoomObject{
             b.putInt(type.ordinal()); // 56
         }
         
+        public vldoor_t asVlDoor(sector_t[] sectors){
+        	/*
+        	typedef struct
+        	{
+        	    thinker_t	thinker;
+        	    vldoor_e	type;
+        	    sector_t*	sector;
+        	    fixed_t	topheight;
+        	    fixed_t	speed;
+
+        	    // 1 = up, 0 = waiting at top, -1 = down
+        	    int             direction;
+        	    
+        	    // tics to wait at the top
+        	    int             topwait;
+        	    // (keep in case a door going down is reset)
+        	    // when it reaches 0, start going down
+        	    int             topcountdown;
+        	    
+        	} vldoor_t;
+        	*/
+        	
+        	vldoor_t tmp=new vldoor_t();
+        	tmp.next=this.next;
+        	tmp.prev=this.prev;
+        	tmp.function=this.function;
+        	tmp.type=vldoor_e.values()[sector.id%vldoor_e.VALUES];
+        	tmp.sector=sectors[this.speed%sectors.length];
+        	tmp.topheight=this.low;
+        	tmp.speed=this.high;
+        	tmp.direction=this.wait;
+        	tmp.topwait=this.count;
+        	tmp.topcountdown=this.status.ordinal();
+
+        	
+        	return tmp;
+        }
+        
     } 

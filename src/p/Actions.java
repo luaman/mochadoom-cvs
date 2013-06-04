@@ -1159,6 +1159,12 @@ public class Actions extends UnifiedGameMap {
 
           if (sec.specialdata!=null)
           {
+        
+        	  if (sec.specialdata instanceof plat_t)
+        // [MAES]: demo sync for e1nm0646: emulates active plat_t interpreted
+        // as door. TODO: add our own overflow handling class.
+         door = ((plat_t)sec.specialdata).asVlDoor(LL.sectors);
+        	  else
          door = (vldoor_t) sec.specialdata;
          switch(line.special)
          {
