@@ -21,14 +21,14 @@ import doom.thinker_t;
 import p.AbstractLevelLoader;
 import p.Actions;
 import p.ThinkerList;
+import p.ceiling_t;
+import p.floormove_t;
+import p.glow_t;
+import p.lightflash_t;
 import p.mobj_t;
-import p.specials.ceiling_t;
-import p.specials.floormove_t;
-import p.specials.glow_t;
-import p.specials.lightflash_t;
-import p.specials.plat_t;
-import p.specials.strobe_t;
-import p.specials.vldoor_t;
+import p.plat_t;
+import p.strobe_t;
+import p.vldoor_t;
 import rr.line_t;
 import rr.sector_t;
 import rr.side_t;
@@ -137,7 +137,6 @@ public class VanillaDSG implements IDoomSaveGame, DoomStatusAware {
   */
  protected void ArchivePlayers () throws IOException
  {
-     
      for (int i=0 ; i<MAXPLAYERS ; i++)
      {
      // Multiplayer savegames are different!
@@ -588,7 +587,6 @@ protected enum specials_e
 //
 protected void ArchiveSpecials () throws IOException
 {
-  specials_e        tclass;
 ceiling_t      ceiling;
 vldoor_t       door;
 floormove_t    floor;
@@ -597,12 +595,6 @@ lightflash_t   flash;
 strobe_t       strobe;
 glow_t     glow;
 int i;
-
-// Try estimating the number of thinkers. It doesn't have to be exact, just
-// getting an upper bound will be OK.
-int estimate=0;
-for (thinker_t th = A.getThinkerCap().next ; th != A.getThinkerCap() ; th=th.next)
-    estimate++;
 
 // Most of these objects are quite hefty, but estimating 128 bytes tops
 // for each should do (largest one is 56);
@@ -878,7 +870,7 @@ protected void UnArchiveSpecials () throws IOException
         }
 
     @Override
-    public void updateStatus(DoomStatus DS) {
+    public void updateStatus(DoomStatus<?,?> DS) {
         this.DS=DS;
         this.LL=DS.LL;
         this.A=DS.P;       
