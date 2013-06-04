@@ -2875,7 +2875,7 @@ mobj_t  thing )
     /** fixed_t */
     int[]       tmbbox=new int[4];
     mobj_t      tmthing;
-    int     tmflags;
+    long     tmflags;
     /** fixed_t */
     int     tmx,    tmy;
 
@@ -3636,8 +3636,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
       do {
         if (++hitcount == 3) {
             // goto stairstep
-            if (!TryMove (mo, mo.x, mo.y + mo.momy))
-                TryMove (mo, mo.x + mo.momx, mo.y);
+            stairstep(mo);
             return;
         }     // don't loop forever
 
@@ -3677,10 +3676,9 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         // move up to the wall
         if (bestslidefrac == FRACUNIT+1)
         {
-        // the move most have hit the middle, so stairstep
-              if (!TryMove (mo, mo.x, mo.y + mo.momy))
-                  TryMove (mo, mo.x + mo.momx, mo.y);
-              return;
+            // the move most have hit the middle, so stairstep
+            stairstep(mo);
+            return;
           }     // don't loop forever
 
         // fudge a bit to make sure it doesn't hit
@@ -3693,8 +3691,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         if (!TryMove (mo, mo.x+newx, mo.y+newy))
         {
             // goto stairstep
-            if (!TryMove (mo, mo.x, mo.y + mo.momy))
-                TryMove (mo, mo.x + mo.momx, mo.y);
+            stairstep(mo);
             return;
         }     // don't loop forever
         }
@@ -3718,9 +3715,20 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
         mo.momy = tmymove;
         
           }
+      // goto retry
         while (!TryMove (mo, mo.x+tmxmove, mo.y+tmymove));
     }
 
+    /** Fugly "goto stairstep" simulation
+     * 
+     * @param mo
+     */
+    
+    private final void stairstep(mobj_t mo){
+        if (!TryMove (mo, mo.x, mo.y + mo.momy))
+            TryMove (mo, mo.x + mo.momx, mo.y);
+    }
+    
     //
     // P_XYMovement  
     //
@@ -4520,6 +4528,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      
      final int validcount=R.getValidCount();
      
+     // [SYNC ISSUE]: don't skip offset+1 :-/
      for (int list=offset;(lineinblock=LL.blockmap[list])!=-1;list++){
     	 ld = LL.lines[lineinblock];
          //System.out.println(ld);
@@ -4675,7 +4684,7 @@ protected boolean gotoHitLine(intercept_t in, line_t li) {
      {
          yintercept += ystep;
          mapx += mapxstep;
-     }
+     } else //[MAES]: this fixed sync issues. Lookup linuxdoom
      if (changeY)
      {
          xintercept += xstep;
