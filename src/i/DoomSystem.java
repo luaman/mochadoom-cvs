@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomSystem.java,v 1.17 2013/06/03 10:54:11 velktron Exp $
+// $Id: DoomSystem.java,v 1.18 2013/06/04 11:29:39 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,6 +16,9 @@
 // GNU General Public License for more details.
 //
 // $Log: DoomSystem.java,v $
+// Revision 1.18  2013/06/04 11:29:39  velktron
+// Shut up logger
+//
 // Revision 1.17  2013/06/03 10:54:11  velktron
 // System interface allows for a logging subsystem, but implementation details may very well vary.
 //
@@ -170,7 +173,7 @@ public void Quit ()
 	// TODO Auto-generated catch block
 	e.printStackTrace();
 }
- DM.debugEnd();
+ //DM.debugEnd();
  DM.ISND.ShutdownSound();
  DM.IMUS.ShutdownMusic();
  DM.commit();
