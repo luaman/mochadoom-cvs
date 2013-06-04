@@ -158,14 +158,14 @@ public class ActionFunctions implements DoomStatusAware{
 		
 	}
 		
-	public ActionFunctions(DoomStatus DS, Enemies EN) {
+	public ActionFunctions(DoomStatus<?,?> DS, Enemies EN) {
 		this();
 		this.EN=EN;     
 		updateStatus(DS);
 	}
 
 	@Override
-	public void updateStatus(DoomStatus DS){
+	public void updateStatus(DoomStatus<?,?> DS){
 		this.A=DS.P;
         this.RND=DS.RND;       
         this.R=DS.R;
@@ -182,7 +182,7 @@ public class ActionFunctions implements DoomStatusAware{
 	protected IDoomSound S;
 	protected Enemies EN;
 	protected AbstractLevelLoader LL;
-	protected DoomStatus DS;
+	protected DoomStatus<?,?> DS;
 	protected IDoomGame DG;
 	protected SlideDoor SL;
 	
@@ -262,15 +262,15 @@ public class ActionFunctions implements DoomStatusAware{
     ActionType1  SpawnFly;
     ActionType1  BrainExplode;
     ActionType1  MobjThinker;
-    ActionTypeSS  FireFlicker;
-    ActionTypeSS  LightFlash;
-	ActionTypeSS StrobeFlash;
-	ActionTypeSS  Glow;
-	ActionTypeSS  MoveCeiling;
-	ActionTypeSS  MoveFloor;
-	ActionTypeSS  VerticalDoor;
-	ActionTypeSS PlatRaise;
-	ActionTypeSS SlidingDoor;
+    ActionTypeSS<?>  FireFlicker;
+    ActionTypeSS<?>  LightFlash;
+	ActionTypeSS<?> StrobeFlash;
+	ActionTypeSS<?>  Glow;
+	ActionTypeSS<?>  MoveCeiling;
+	ActionTypeSS<?>  MoveFloor;
+	ActionTypeSS<?>  VerticalDoor;
+	ActionTypeSS<?> PlatRaise;
+	ActionTypeSS<?> SlidingDoor;
 	
 	/** Wires a state to an actual callback depending on its
 	 *  enum. This eliminates the need to have a giant
@@ -868,79 +868,77 @@ public class ActionFunctions implements DoomStatusAware{
 			}
 		}
 	}
-	
-	class T_FireFlicker implements ActionTypeSS{
+
+	class T_FireFlicker implements ActionTypeSS<fireflicker_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((fireflicker_t) a).FireFlicker();
+		public void invoke(fireflicker_t a) {
+			a.FireFlicker();
 			
 		}
 		
 	}
 	
-	class T_LightFlash implements ActionTypeSS{
+	class T_LightFlash implements ActionTypeSS<lightflash_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((lightflash_t) a).LightFlash();			
+		public void invoke(lightflash_t a) {
+			a.LightFlash();			
 		}
 		
 	}
 	
-	class T_StrobeFlash implements ActionTypeSS{
+	class T_StrobeFlash implements ActionTypeSS<strobe_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((strobe_t) a).StrobeFlash();			
+		public void invoke(strobe_t a) {
+			a.StrobeFlash();			
 		}
 		
 	}
 	
-	class T_Glow implements ActionTypeSS{
+	class T_Glow implements ActionTypeSS<glow_t>{
 
 		@Override
-		public void invoke(Object a) {
-			((glow_t) a).Glow();
+		public void invoke(glow_t a) {
+			a.Glow();
 			
 		}
 		
 	}
 	
-	class	T_MoveCeiling implements ActionTypeSS{
+	class	T_MoveCeiling implements ActionTypeSS<ceiling_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.MoveCeiling((ceiling_t) a);
-			
+		public void invoke(ceiling_t a) {
+			A.MoveCeiling(a);			
 		}
 	
 	}
 
-	class T_MoveFloor implements ActionTypeSS{
+	class T_MoveFloor implements ActionTypeSS<floormove_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.MoveFloor((floormove_t) a);			
+		public void invoke(floormove_t a) {
+			A.MoveFloor(a);			
 		}
 	
 	}
 	
-	class	T_VerticalDoor implements ActionTypeSS{
+	class	T_VerticalDoor implements ActionTypeSS<vldoor_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.VerticalDoor((vldoor_t)a);	
+		public void invoke(vldoor_t a) {
+			A.VerticalDoor(a);	
 		}
 	
 	}
 
-	class T_SlidingDoor implements ActionTypeSS {
+	class T_SlidingDoor implements ActionTypeSS<slidedoor_t> {
 
 		@Override
-		public void invoke(Object a) {
+		public void invoke(slidedoor_t door) {
 
-			slidedoor_t door = (slidedoor_t) a;
 			switch (door.status) {
 			case sd_opening:
 				if (door.timer-- == 0) {
@@ -1006,11 +1004,11 @@ public class ActionFunctions implements DoomStatusAware{
 	}
 	
 	
-	class	T_PlatRaise implements ActionTypeSS{
+	class	T_PlatRaise implements ActionTypeSS<plat_t>{
 
 		@Override
-		public void invoke(Object a) {
-			A.PlatRaise((plat_t)a);
+		public void invoke(plat_t a) {
+			A.PlatRaise(a);
 		}
 	
 	}
@@ -2089,20 +2087,25 @@ public class ActionFunctions implements DoomStatusAware{
          not direct inequalities.
          
         */
-        if (angle - player.mo.angle > ANG180)
+        
+        // Yet another screwy place where unsigned BAM angles are used as SIGNED comparisons.
+        long dangle= (angle - player.mo.angle);
+        dangle&=BITS32;
+        if (dangle > ANG180)
         {
-        if (angle - player.mo.angle < -ANG90/20)
+        if ((int)dangle < -ANG90/20)
             player.mo.angle = angle + ANG90/21;
         else
             player.mo.angle -= ANG90/20;
         }
         else
         {
-        if (angle - player.mo.angle > ANG90/20)
+        if (dangle > ANG90/20)
             player.mo.angle = angle - ANG90/21;
         else
             player.mo.angle += ANG90/20;
         }
+        player.mo.angle&=BITS32;
         player.mo.flags |= MF_JUSTATTACKED;
         }
     }
@@ -2944,24 +2947,27 @@ public class ActionFunctions implements DoomStatusAware{
           // check for missile attack
           if (actor.info.missilestate!=statenum_t.S_NULL /*!= null*/) //_D_: this caused a bug where Demon for example were disappearing
           {
+              // Assume that a missile attack is possible
               if (DS.gameskill.ordinal() < skill_t.sk_nightmare.ordinal()
                       && !DS.fastparm && actor.movecount!=0)
               {
+                  // Uhm....no.
                   nomissile=true;
               }
               else
                   if (!EN.CheckMissileRange (actor))
-                      nomissile=true;
+                      nomissile=true; // Out of range
 
               if (!nomissile){
+                  // Perform the attack
                   actor.SetMobjState ( actor.info.missilestate);
                   actor.flags |= MF_JUSTATTACKED;
                   return;
               }
           }
 
-          // ?
-          nomissile:
+          // This should be executed always, if not averted by returns.
+          
               // possibly choose another target
               if (DS.netgame
                       && actor.threshold==0
