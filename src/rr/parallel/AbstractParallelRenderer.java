@@ -210,7 +210,7 @@ public abstract class AbstractParallelRenderer<T, V>
 		}
     }
 
-    protected final class ParallelPlanes<T, V>
+    protected final class ParallelPlanes
             extends PlaneDrawer<T, V> {
 
         protected ParallelPlanes(Renderer<T, V> R) {
@@ -478,7 +478,7 @@ public abstract class AbstractParallelRenderer<T, V>
 
     }
 
-    protected final class ParallelPlanes2<T, V>
+    protected final class ParallelPlanes2
             extends PlaneDrawer<T, V> {
 
         protected ParallelPlanes2(Renderer<T, V> R) {

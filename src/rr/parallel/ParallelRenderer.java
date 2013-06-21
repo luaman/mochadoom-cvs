@@ -254,7 +254,7 @@ public abstract class ParallelRenderer<T, V>
 
 
     	// ...yeah, it works.
-    	if (!(RWIs==null)){ 
+    	if (RWIs!=null){ 
     		ColVars<T,V>[] RWI=RWIs.getRWI();
     		RenderWallExecutor<T,V>[] RWIExec=InitRWIExecutors(NUMWALLTHREADS,RWI);
     		RWIs.setExecutors(RWIExec);
@@ -336,6 +336,9 @@ public abstract class ParallelRenderer<T, V>
             colormaps.scalelight = new short[LIGHTLEVELS][MAXLIGHTSCALE][];
             colormaps.scalelightfixed = new short[MAXLIGHTSCALE][];
             colormaps.zlight = new short[LIGHTLEVELS][MAXLIGHTZ][];
+            
+            // Required
+            completeInit();
         }
 
         protected void InitMaskedWorkers() {
@@ -429,6 +432,9 @@ public abstract class ParallelRenderer<T, V>
             colormaps.scalelight = new int[LIGHTLEVELS][MAXLIGHTSCALE][];
             colormaps.scalelightfixed = new int[MAXLIGHTSCALE][];
             colormaps.zlight = new int[LIGHTLEVELS][MAXLIGHTZ][];
+            
+            // Required, otherwise the masked drawers will not be registered as "detail aware"
+            completeInit();
         }
         
   protected void R_InitDrawingFunctions(){            

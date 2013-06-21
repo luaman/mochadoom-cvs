@@ -363,6 +363,23 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 	public void updateRSI(RenderSegInstruction<V>[] rsi) {
 		this.RSI=rsi;
 		}
+
+	   public static final class TrueColor extends RenderSegExecutor<byte[],int[]>{
+
+	        public TrueColor(int SCREENWIDTH, int SCREENHEIGHT, int id,
+	                int[] screen, TextureManager<byte[]> texman,
+	                RenderSegInstruction<int[]>[] RSI, short[] BLANKCEILINGCLIP,
+	                short[] BLANKFLOORCLIP, short[] ceilingclip, short[] floorclip,
+	                int[] columnofs, long[] xtoviewangle, int[] ylookup,
+	                visplane_t[] visplanes, CyclicBarrier barrier) {
+	            super(SCREENWIDTH, SCREENHEIGHT, id, screen, texman, RSI, BLANKCEILINGCLIP,
+	                    BLANKFLOORCLIP, ceilingclip, floorclip, columnofs, xtoviewangle,
+	                    ylookup, visplanes, barrier);
+	            dcvars=new ColVars<byte[],int[]>();
+	            colfunc=colfunchi=new R_DrawColumnBoomOpt.TrueColor(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
+	            colfunclow=new R_DrawColumnBoomOptLow.TrueColor(SCREENWIDTH, SCREENHEIGHT,ylookup,columnofs,dcvars,screen,null );
+	        }
+	    }
 	
 	public static final class HiColor extends RenderSegExecutor<byte[],short[]>{
 
@@ -401,6 +418,9 @@ public abstract class RenderSegExecutor<T,V> implements Runnable, IVideoScaleAwa
 }
 
 // $Log: RenderSegExecutor.java,v $
+// Revision 1.2.2.1  2013/06/21 14:22:21  velktron
+// Fixed some error with initializing masked workers, closer to make it function agajn...
+//
 // Revision 1.2  2012/09/24 17:16:22  velktron
 // Massive merge between HiColor and HEAD. There's no difference from now on, and development continues on HEAD.
 //

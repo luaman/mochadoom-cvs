@@ -1,6 +1,8 @@
 package rr.parallel;
 
 import static data.Limits.*;
+
+import java.io.IOException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 
@@ -20,39 +22,32 @@ import doom.player_t;
  *
  */
 
-public class ParallelRenderer2 extends AbstractParallelRenderer {
+public class ParallelRenderer2<T,V> extends AbstractParallelRenderer<T,V> {
     
-    public ParallelRenderer2(DoomStatus DS, int wallthread, int floorthreads,int nummaskedthreads) {
+    public ParallelRenderer2(DoomStatus<T,V> DS, int wallthread, int floorthreads,int nummaskedthreads) {
+
+        super(DS,wallthread,floorthreads,nummaskedthreads);
+        System.out.println("Parallel Renderer 2 (Seg-based)");
+        this.MyPlanes=new ParallelPlanes2(this);
+        this.MyThings=new ParallelThings2<T,V>(this);
+    }
+    
+    public static class Indexex extends ParallelRenderer2<byte[],byte[]>{
+    
+    public Indexex(DoomStatus<byte[],byte[]> DS, int wallthread, int floorthreads,int nummaskedthreads) {
 
         super(DS,wallthread,floorthreads,nummaskedthreads);
         System.out.println("Parallel Renderer 2 (Seg-based)");
         
-        this.MySegs=new ParallelSegs2();
-        this.MyPlanes=new ParallelPlanes();
-        this.MyThings=new ParallelThings2(); 
+        this.MySegs=new ParallelSegs2(this);
 
     }
-
-	public ParallelRenderer2(DoomStatus DS, int wallthread, int floorthreads) {
-
-		super(DS,wallthread,floorthreads);
-		System.out.println("Parallel Renderer 2 (Seg-based)");
-		
-		this.MySegs=new ParallelSegs2();
-		this.MyPlanes=new ParallelPlanes();
-		this.MyThings=new ParallelThings2(); 
-
-	}
-
-	/** Default constructor, 2 wall threads and one floor thread.
-	 * 
-	 * @param DM
-	 */
-	public ParallelRenderer2(DoomMain DM) {
-		this(DM,2,1);
-	}
-
-	@Override
+    
+    
+    }
+	
+    
+    @Override
 	protected void InitParallelStuff() {
 		// Prepare parallel stuff
 		RSIExec=new RenderSegExecutor[NUMWALLTHREADS];
@@ -210,6 +205,13 @@ public class ParallelRenderer2 extends AbstractParallelRenderer {
 		this.RSI=new RenderSegInstruction[MAXSEGS*3];
 		C2JUtils.initArrayOfObjects(RSI);
 		}
+
+    @Override
+    protected void InitColormaps()
+            throws IOException {
+        // TODO Auto-generated method stub
+        
+    }
 
 
 }

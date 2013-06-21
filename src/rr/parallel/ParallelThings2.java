@@ -4,7 +4,6 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 
-import rr.AbstractThings;
 import rr.IMaskedDrawer;
 import rr.ISpriteManager;
 import rr.IVisSpriteManagement;
@@ -24,7 +23,8 @@ import v.IVideoScale;
  *  draw nothing, draw partially).
  *  
  *  It uses masked workers to perform the actual work, each of which is a complete
- *  Thing Drawer. 
+ *  Thing Drawer. Extension of AbstractThings is done by the drawers, not by
+ *  ParallelThings itself, even though it does implement the IMaskedDrawer interface.
  * 
  * @author velktron
  *
