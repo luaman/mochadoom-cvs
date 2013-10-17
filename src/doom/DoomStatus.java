@@ -11,6 +11,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 
 import automap.IAutoMap;
 import m.ISyncLogger;
@@ -44,7 +46,7 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 	public static int   RESENDCOUNT =10;
 	public static int   PL_DRONE    =0x80;  // bit flag in doomdata->player
 
-	public String[]		wadfiles=new String[MAXWADFILES];
+	public List<String>		wadfiles=new ArrayList<String>();
 
 	boolean         drone;
 	
@@ -698,10 +700,13 @@ public abstract class DoomStatus<T,V> extends DoomContext<T,V> implements IUseVa
 		if (sync_debug) syncdebugfile.printf(format, args);
 	}
 	
-	private final boolean sync_debug=false;
+	private final boolean sync_debug=true;
 }
 
 // $Log: DoomStatus.java,v $
+// Revision 1.36.2.4  2013/10/17 14:21:42  velktron
+// Use lists instead of arrays for wad URI names.
+//
 // Revision 1.36.2.3  2012/12/05 23:40:41  velktron
 // sync_debug constant.
 //

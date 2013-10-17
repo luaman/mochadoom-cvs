@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.62.2.1 2013/01/09 14:24:12 velktron Exp $
+// $Id: WadLoader.java,v 1.62.2.2 2013/10/17 14:19:23 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -394,7 +394,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitMultipleFiles(java.lang.String[])
 	 */
 	
-	public void InitMultipleFiles(String[] filenames) throws Exception {
+	public void InitMultipleFiles(List<String> filenames) throws Exception {
 		int size;
 
 		// open all the files, load headers, and count lumps
@@ -469,9 +469,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitFile(java.lang.String)
 	 */
 	public void InitFile(String filename) throws Exception {
-		String[] names = new String[1];
+		List<String> names = new ArrayList<String>();
 
-		names[0] = filename;
+		names.add(filename);
 		// names[1] = null;
 		InitMultipleFiles(names);
 	}
@@ -1390,6 +1390,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.62.2.2  2013/10/17 14:19:23  velktron
+//Use lists instead of arrays for wad URI names.
+//
 //Revision 1.62.2.1  2013/01/09 14:24:12  velktron
 //Uses the rest of the crap
 //

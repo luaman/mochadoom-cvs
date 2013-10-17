@@ -110,7 +110,7 @@ import static utils.C2JUtils.*;
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: DoomMain.java,v 1.109.2.3 2012/12/11 15:29:59 velktron Exp $
+// $Id: DoomMain.java,v 1.109.2.4 2013/10/17 14:22:04 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -136,7 +136,7 @@ import static utils.C2JUtils.*;
 
 public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGameNetworking, IDoomGame, IDoom, IVideoScaleAware{
 
-    public static final String rcsid = "$Id: DoomMain.java,v 1.109.2.3 2012/12/11 15:29:59 velktron Exp $";
+    public static final String rcsid = "$Id: DoomMain.java,v 1.109.2.4 2013/10/17 14:22:04 velktron Exp $";
 
     //
     // EVENT HANDLING
@@ -596,15 +596,8 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
      */
     void AddFile (String file)
     {
-        int     numwadfiles;
-        String newfile;
 
-        for (numwadfiles = 0 ; eval(wadfiles[numwadfiles]) ; numwadfiles++)
-            ;
-
-        newfile = new String(file);
-
-        wadfiles[numwadfiles] = newfile;
+        wadfiles.add(new String(file));
     }
     
 
@@ -4563,6 +4556,9 @@ public abstract class DoomMain<T,V> extends DoomStatus<T,V> implements IDoomGame
 }
 
 //$Log: DoomMain.java,v $
+//Revision 1.109.2.4  2013/10/17 14:22:04  velktron
+//Use lists instead of arrays for wad URI names.
+//
 //Revision 1.109.2.3  2012/12/11 15:29:59  velktron
 //Get rid of stray InitNew.
 //
