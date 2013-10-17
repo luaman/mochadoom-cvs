@@ -171,66 +171,15 @@ public abstract class DoomFrame<V> extends JFrame implements DoomVideoInterface<
 	public void InitGraphics()
 	{
 
-	  String		displayname;
-	  String		d;
-	  int			n;
-	  int			pnum;
-	  int			x=0;
-	  int			y=0;
-	  
-	  // warning: char format, different type arg
-	  int		xsign=' ';
-	  int		ysign=' ';
-	  
-	  boolean			oktodraw;
-	  long	attribmask;
-
+	  // 17/10/2013 [MAES]: Got rid of geom parsing. No real use for it, sizing 
+	  // negotiation is done elsewhere 
+	    
 	  // Try setting the locale the US, otherwise there will be problems
 	  // with non-US keyboards.
 	  if (this.getInputContext()==null || !this.getInputContext().selectInputMethod(java.util.Locale.US)){
 		  System.err.println("Could not set the input context to US! Keyboard input will be glitchy!");
 	  } else {
 		  System.err.println("Input context successfully set to US.");
-	  }
-
-	  // check for command-line display name
-	  if ( (pnum=CM.CheckParm("-disp"))!=0 ) // suggest parentheses around assignment
-		displayname = CM.getArgv(pnum+1);
-	  else
-		displayname = null;
-
-	  // check for command-line geometry
-	  if ( (pnum=CM.CheckParm("-geom"))!=0 ) // suggest parentheses around assignment
-	  {
-		  try{
-		  String eval=CM.getArgv(pnum+1).trim();
-		// warning: char format, different type arg 3,5
-		//n = sscanf(myargv[pnum+1], "%c%d%c%d", &xsign, &x, &ysign, &y);
-		// OK, so we have to read a string that may contain
-		// ' '/'+'/'-' and a number. Twice.
-		StringTokenizer tk=new StringTokenizer(eval,"-+ ");
-		// Signs. Consider positive.
-		xsign=1;ysign=1;
-		for (int i=0;i<eval.length();i++){
-			if (eval.charAt(i)=='-'){
-				// First '-' on trimmed string: negagive
-				if (i==0)
-					xsign=-1;
-				else 
-					ysign=-1;
-				}
-			}
-		
-		//this should parse two numbers.
-		if (tk.countTokens()==2){
-			x=xsign*Integer.parseInt(tk.nextToken());
-			y=ysign*Integer.parseInt(tk.nextToken());
-		}
-		  
-
-		  } catch (NumberFormatException e){
-		    I.Error("bad -geom parameter");
-		  }
 	  }
 
 	  // open the display
