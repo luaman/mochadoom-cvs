@@ -27,7 +27,7 @@ public class wadheader_t implements IReadableDoomObject, IWritableDoomObject {
     }
 
     public static int sizeof(){
-        return 16;
+        return 12;
     }
 
     @Override
