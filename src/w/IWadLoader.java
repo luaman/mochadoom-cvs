@@ -1,8 +1,6 @@
 package w;
 
 import java.io.IOException;
-import java.util.List;
-
 import rr.patch_t;
 
 public interface IWadLoader {
@@ -13,7 +11,6 @@ public interface IWadLoader {
 	 * 
 	 * @throws Exception
 	 */
-	@SuppressWarnings("null")
 	public abstract void Reload() throws Exception;
 
 	/**
@@ -39,7 +36,7 @@ public interface IWadLoader {
 	 * 
 	 */
 
-	public abstract void InitMultipleFiles(List<String> filenames) throws Exception;
+	public abstract void InitMultipleFiles(String[] filenames) throws Exception;
 
 	/**
 	 * W_InitFile
@@ -177,7 +174,7 @@ public interface IWadLoader {
 
 	public abstract patch_t CachePatchNum(int num);
 
-	public abstract Object CacheLumpName(String name, int tag, Class what);
+	public abstract <T extends CacheableDoomObject> T CacheLumpName(String name, int tag, Class<T> what);
 
 	/** A lump with size 0 is a marker. This means that it
 	 *  can/must be skipped, and if we want actual data we must
@@ -218,7 +215,7 @@ public interface IWadLoader {
 
 	void UnlockLumpNum(CacheableDoomObject lump);
 	
-	public <T> T[] CacheLumpNumIntoArray(int lump, int num,
+	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num,
 			Class<T> what);
 	
 	/** Verify whether a certain lump number is valid and has

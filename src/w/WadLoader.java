@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.62.2.2 2013/10/17 14:19:23 velktron Exp $
+// $Id: WadLoader.java,v 1.62.2.3 2014/03/28 13:08:37 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -27,7 +27,6 @@ package w;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -326,7 +325,6 @@ public class WadLoader implements IWadLoader {
 	        }
 	    }
 	    
-        // TODO Auto-generated method stub
         return maxsize;
     }
 
@@ -394,7 +392,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitMultipleFiles(java.lang.String[])
 	 */
 	
-	public void InitMultipleFiles(List<String> filenames) throws Exception {
+	public void InitMultipleFiles(String[] filenames) throws Exception {
 		int size;
 
 		// open all the files, load headers, and count lumps
@@ -469,9 +467,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitFile(java.lang.String)
 	 */
 	public void InitFile(String filename) throws Exception {
-		List<String> names = new ArrayList<String>();
+		String[] names = new String[1];
 
-		names.add(filename);
+		names[0] = filename;
 		// names[1] = null;
 		InitMultipleFiles(names);
 	}
@@ -888,7 +886,7 @@ public class WadLoader implements IWadLoader {
 	 *  @return a properly sized array of the correct type.
 	 */
 	
-	public <T> T[] CacheLumpNumIntoArray(int lump, int num,
+	public <T extends CacheableDoomObject> T[] CacheLumpNumIntoArray(int lump, int num,
 			Class<T> what){
 
 		if (lump >= numlumps) {
@@ -905,10 +903,10 @@ public class WadLoader implements IWadLoader {
 			// Read as a byte buffer anyway.
 		    ByteBuffer thebuffer = ByteBuffer.wrap(ReadLump(lump));
 
-			CacheableDoomObject[] stuff=(CacheableDoomObject[]) C2JUtils.createArrayOfObjects(what, num);
+			T[] stuff=(T[]) C2JUtils.createArrayOfObjects(what, num);
 			
 			// Store the buffer anyway (as a CacheableDoomObjectContainer)
-			lumpcache[lump] = new CacheableDoomObjectContainer(stuff);
+			lumpcache[lump] = new CacheableDoomObjectContainer<T>(stuff);
 			
 			// Auto-unpack it, if possible.
 
@@ -932,7 +930,7 @@ public class WadLoader implements IWadLoader {
 
 		if (lumpcache[lump]==null) return null;
 		
-		return (T[]) ((CacheableDoomObjectContainer)lumpcache[lump]).getStuff();
+		return (T[]) ((CacheableDoomObjectContainer<T>)lumpcache[lump]).getStuff();
 	}
 	
 	public CacheableDoomObject CacheLumpNum(int lump)
@@ -1024,7 +1022,7 @@ public class WadLoader implements IWadLoader {
 	/* (non-Javadoc)
 	 * @see w.IWadLoader#CacheLumpName(java.lang.String, int, java.lang.Class)
 	 */
-	public CacheableDoomObject CacheLumpName(String name, int tag, Class what) {
+	public <T extends CacheableDoomObject> T CacheLumpName(String name, int tag, Class<T> what) {
 		return this.CacheLumpNum(this.GetNumForName(name.toUpperCase()), tag,
 				what);
 	}
@@ -1390,8 +1388,14 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
-//Revision 1.62.2.2  2013/10/17 14:19:23  velktron
-//Use lists instead of arrays for wad URI names.
+//Revision 1.62.2.3  2014/03/28 13:08:37  velktron
+//Merged changes from HEAD branch (cleaner handling of generics)
+//
+//Revision 1.64  2014/03/28 00:55:32  velktron
+//Cleaner, generic-based design to minimize warnings and suppressions. <T extends CacheableDoomObject> used whenever possible.
+//
+//Revision 1.63  2013/06/03 10:36:33  velktron
+//Jaguar handling (actualname)
 //
 //Revision 1.62.2.1  2013/01/09 14:24:12  velktron
 //Uses the rest of the crap
