@@ -1,6 +1,8 @@
 package w;
 
 import java.io.IOException;
+import java.util.List;
+
 import rr.patch_t;
 
 public interface IWadLoader {
@@ -36,7 +38,7 @@ public interface IWadLoader {
 	 * 
 	 */
 
-	public abstract void InitMultipleFiles(String[] filenames) throws Exception;
+	public abstract void InitMultipleFiles(List<String> filenames) throws Exception;
 
 	/**
 	 * W_InitFile

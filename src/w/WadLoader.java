@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 // -----------------------------------------------------------------------------
 //
-// $Id: WadLoader.java,v 1.62.2.3 2014/03/28 13:08:37 velktron Exp $
+// $Id: WadLoader.java,v 1.62.2.4 2014/03/28 13:14:58 velktron Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -392,7 +392,7 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitMultipleFiles(java.lang.String[])
 	 */
 	
-	public void InitMultipleFiles(String[] filenames) throws Exception {
+	public void InitMultipleFiles(List<String> filenames) throws Exception {
 		int size;
 
 		// open all the files, load headers, and count lumps
@@ -467,9 +467,9 @@ public class WadLoader implements IWadLoader {
 	 * @see w.IWadLoader#InitFile(java.lang.String)
 	 */
 	public void InitFile(String filename) throws Exception {
-		String[] names = new String[1];
+		List<String> names = new ArrayList<String>();
 
-		names[0] = filename;
+		names.add(filename);
 		// names[1] = null;
 		InitMultipleFiles(names);
 	}
@@ -1388,6 +1388,9 @@ public class WadLoader implements IWadLoader {
 }
 
 //$Log: WadLoader.java,v $
+//Revision 1.62.2.4  2014/03/28 13:14:58  velktron
+//Restored List<String> methods
+//
 //Revision 1.62.2.3  2014/03/28 13:08:37  velktron
 //Merged changes from HEAD branch (cleaner handling of generics)
 //
