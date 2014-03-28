@@ -14,15 +14,15 @@ import java.nio.ByteBuffer;
  * 
  */
 
-public class CacheableDoomObjectContainer implements CacheableDoomObject {
+public class CacheableDoomObjectContainer<T extends CacheableDoomObject> implements CacheableDoomObject {
 	
-	private CacheableDoomObject[] stuff;
+	private T[] stuff;
 	
-	public CacheableDoomObjectContainer(CacheableDoomObject[] stuff){
+	public CacheableDoomObjectContainer(T[] stuff){
 		this.stuff=stuff;
 	}
 	
-	public CacheableDoomObject[] getStuff(){
+	public T[] getStuff(){
 		return stuff;
 	}
 	
